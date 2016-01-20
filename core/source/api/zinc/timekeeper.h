@@ -52,6 +52,28 @@ ZINC_API cmzn_timekeeper_id cmzn_timekeepermodule_get_default_timekeeper(
 	cmzn_timekeepermodule_id timekeepermodule);
 
 /**
+ * Read the json description to the timekeeper module. This will change
+ * the timekeeper in the timekeeper module.
+ *
+ * @param timekeepermodule  Handle to the timekeeper module.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_timekeepermodule_read_description(
+	cmzn_timekeepermodule_id timekeepermodule, const char *description);
+
+/**
+ * Write the json file describing the timekeepers in the timekeeper module,
+ * which can be used to store the current timekeeper settings.
+ *
+ * @param timekeepermodule  Handle to the timekeeper module.
+ * @return  c string containing the json description of timekeeper module,
+ * 	otherwise 0;
+ */
+ZINC_API char *cmzn_timekeepermodule_write_description(
+	cmzn_timekeepermodule_id timekeepermodule);
+
+/**
  * Get new handle to timekeeper, incrementing reference count.
  *
  * @param timekeeper  Handle to timekeeper.

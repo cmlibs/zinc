@@ -53,7 +53,7 @@ int cmzn_nodeset_assign_field_from_source(
 			while (return_code && (0 != (node = cmzn_nodeiterator_next(iterator))))
 			{
 				cmzn_fieldcache_set_node(field_cache, node);
-				if ((!conditional_field) || (CMZN_OK == cmzn_field_evaluate_boolean(conditional_field, field_cache)))
+				if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, field_cache))
 				{
 					if ((CMZN_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
 					{

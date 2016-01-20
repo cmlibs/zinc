@@ -203,6 +203,13 @@ public:
 			cmzn_streaminformation_create_streamresource_memory_buffer(id, buffer, buffer_length)));
 	}
 
+	StreamresourceMemory createStreamresourceMemoryBufferCopy(const void *buffer,
+		unsigned int buffer_length)
+	{
+		return StreamresourceMemory(reinterpret_cast<cmzn_streamresource_memory_id>(
+			cmzn_streaminformation_create_streamresource_memory_buffer_copy(id, buffer, buffer_length)));
+	}
+
 	enum DataCompressionType getResourceDataCompressionType(const Streamresource& resource)
 	{
 		return static_cast<DataCompressionType>(

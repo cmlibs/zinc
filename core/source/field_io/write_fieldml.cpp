@@ -28,6 +28,7 @@
 #include "field_io/write_fieldml.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/message.h"
@@ -549,10 +550,26 @@ int FieldMLWriter::defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, DsL
 		return CMZN_ERROR_GENERAL;
 	int return_code = CMZN_OK;
 	FmlErrorNumber fmlError;
-	if (labels.isContiguous())
+	DsLabelIdentifier firstIdentifier, lastIdentifier; // used if contiguous
+	DsLabelIdentifierRanges ranges;
+	bool contiguous = labels.isContiguous();
+	if (contiguous)
 	{
-		DsLabelIdentifier firstIdentifier = labels.getLabelIdentifier(0);
-		DsLabelIdentifier lastIdentifier = firstIdentifier + labels.getSize() - 1;
+		firstIdentifier = labels.getIdentifier(0);
+		lastIdentifier = firstIdentifier + labels.getSize() - 1;
+	}
+	else
+	{
+		labels.getIdentifierRanges(ranges);
+		if (ranges.size() == 1) // single range = contiguous
+		{
+			contiguous = true;
+			firstIdentifier = ranges[0].first;
+			lastIdentifier = ranges[0].last;
+		}
+	}
+	if (contiguous)
+	{
 		fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEnsembleType,
 			firstIdentifier, lastIdentifier, /*stride*/1);
 		if (fmlError != FML_OK)
@@ -567,8 +584,6 @@ int FieldMLWriter::defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, DsL
 		std::string dataSourceName(labels.getName());
 		dataSourceName += ".data.source";
 		FmlObjectHandle fmlDataSource = Fieldml_CreateArrayDataSource(this->fmlSession, dataSourceName.c_str(), fmlDataResource, /*location*/"0", /*rank*/2);
-		DsLabelIdentifierRanges ranges;
-		labels.getIdentifierRanges(ranges);
 		int sizes[2] = { static_cast<int>(ranges.size()), 2 };
 		Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, sizes);
 		Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, sizes);
@@ -1827,7 +1842,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 		for (int f = 0; (f < outputFieldsCount) && (CMZN_OK == return_code); ++f)
 		{
 			OutputFieldData& outputField = outputFields[f];
-			outputFields[f].isDefined = (0 != FE_field_is_defined_in_element_not_inherited(outputFields[f].feField, element));
+			outputFields[f].isDefined = FE_field_is_defined_in_element_not_inherited(outputFields[f].feField, element);
 			if (!outputField.isDefined)
 				continue;
 			for (int c = 0; c < outputField.componentCount; ++c)

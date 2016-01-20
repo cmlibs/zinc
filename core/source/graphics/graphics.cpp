@@ -192,7 +192,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphics->exterior = false;
-			graphics->face=CMZN_ELEMENT_FACE_TYPE_INVALID; /* do not check face */
+			graphics->face = CMZN_ELEMENT_FACE_TYPE_ALL; /* match all elements, face or no face */
 
 			/* line attributes */
 			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
@@ -471,6 +471,8 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 	return (dimension);
 }
 
+#ifdef OLD_CODE
+// was used to inherit discretisation from an ancestor element satisfying this
 struct cmzn_element_conditional_field_data
 {
 	cmzn_fieldcache_id field_cache;
@@ -486,10 +488,12 @@ int cmzn_element_conditional_field_is_true(cmzn_element_id element,
 	if (element && data)
 	{
 		cmzn_fieldcache_set_element(data->field_cache, element);
-		return cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache);
+		if (cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache))
+			return 1;
 	}
 	return 0;
 }
+#endif // OLD_CODE
 
 /**
  * Converts a finite element into a graphics object with the supplied graphics.
@@ -502,340 +506,318 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 {
 	FE_value initial_xi[3];
 	int i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_xi_points, return_code;
+		number_of_xi_points, return_code = 1;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element;
 	struct cmzn_graphics *graphics;
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
-	if (element && graphics_to_object_data &&
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (fe_mesh && graphics_to_object_data &&
 		(NULL != (graphics = graphics_to_object_data->graphics)) &&
 		graphics->graphics_object)
 	{
-		int element_dimension = get_FE_element_dimension(element);
-		return_code = 1;
-		/* proceed only if graphics uses this element */
-		int draw_element = 1;
-		cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
-		if (draw_element)
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
+		const int element_dimension = fe_mesh->getDimension();
+		const int graphics_domain_dimension = cmzn_graphics_get_domain_dimension(graphics);
+		if (element_dimension != graphics_domain_dimension)
+			return 1; // shouldn't be iterating over wrong dimension
+		if (element_dimension < 3)
 		{
-			int dimension = cmzn_graphics_get_domain_dimension(graphics);
-			draw_element = FE_element_meets_topological_criteria(element, dimension,
-				(element_dimension < 3) ? graphics->exterior : 0,
-				(element_dimension < 3) ? graphics->face : CMZN_ELEMENT_FACE_TYPE_INVALID,
-				graphics->subgroup_field ? cmzn_element_conditional_field_is_true : 0,
-				graphics->subgroup_field ? (void *)&conditional_field_data : 0);
-		}
-		if (draw_element)
-		{
-			// FE_element_meets_topological_criteria may have set element in cache, so must set afterwards
-			cmzn_fieldcache_set_element(graphics_to_object_data->field_cache, element);
-			if (graphics->subgroup_field && (graphics_to_object_data->iteration_mesh == graphics_to_object_data->master_mesh))
+			if ((graphics->exterior) && (!fe_mesh->isElementExterior(elementIndex)))
+				return 1;
+			if (CMZN_ELEMENT_FACE_TYPE_ALL != graphics->face)
 			{
-				draw_element = cmzn_field_evaluate_boolean(graphics->subgroup_field, graphics_to_object_data->field_cache);
-			}
-		}
-		int name_selected = 0;
-		if (draw_element)
-		{
-			if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode) ||
-				(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
-			{
-				if (graphics_to_object_data->selection_group_field)
-					name_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
-				draw_element = ((name_selected && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode)) ||
-					((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode)));
-			}
-		}
-		if (draw_element)
-		{
-			/* determine discretization of element for graphics */
-			// copy top_level_number_in_xi since scaled by native_discretization in
-			// get_FE_element_discretization
-			int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-			{
-				top_level_number_in_xi[dim] = graphics_to_object_data->top_level_number_in_xi[dim];
-			}
-			top_level_element = (struct FE_element *)NULL;
-			struct FE_field *native_discretization_field = 0;
-			if (graphics->tessellation_field)
-			{
-				Computed_field_get_type_finite_element(graphics->tessellation_field, &native_discretization_field);
-			}
-			if (get_FE_element_discretization(element,
-				graphics->subgroup_field ? cmzn_element_conditional_field_is_true : 0,
-				graphics->subgroup_field ? (void *)&conditional_field_data : 0,
-				graphics->face, native_discretization_field, top_level_number_in_xi,
-				&top_level_element, number_in_xi))
-			{
-				switch (graphics->graphics_type)
+				if (CMZN_ELEMENT_FACE_TYPE_NO_FACE == graphics->face)
 				{
-					case CMZN_GRAPHICS_TYPE_LINES:
-					{
-						if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
-						{
-							if (graphics_to_object_data->existing_graphics)
-							{
-								/* So far ignore these */
-							}
-							if (draw_element)
-							{
-								return_code = FE_element_add_line_to_vertex_array(
-									element, graphics_to_object_data->field_cache,
-									GT_object_get_vertex_set(graphics->graphics_object),
-									graphics_to_object_data->rc_coordinate_field,
-									graphics_to_object_data->number_of_data_values,
-									graphics->data_field,
-									graphics->texture_coordinate_field,
-									number_in_xi[0], top_level_element);
-							}
-						}
-						else
-						{
-							if (draw_element)
-							{
-								return_code = FE_element_add_cylinder_to_vertex_array(
-									element, graphics_to_object_data->field_cache,
-									GT_object_get_vertex_set(graphics->graphics_object),
-									graphics_to_object_data->master_mesh,
-									graphics_to_object_data->rc_coordinate_field,
-									graphics->data_field,
-									graphics->line_base_size,
-									graphics->line_scale_factors,
-									graphics->line_orientation_scale_field,
-									number_in_xi[0],
-									cmzn_tessellation_get_circle_divisions(graphics->tessellation),
-									graphics->texture_coordinate_field,
-									top_level_element);
-							}
-						}
-					} break;
-					case CMZN_GRAPHICS_TYPE_SURFACES:
-					{
-						if (draw_element)
-						{
-							return_code = FE_element_add_surface_to_vertex_array(
-								element, graphics_to_object_data->field_cache,
-								graphics_to_object_data->master_mesh,
-								GT_object_get_vertex_set(graphics->graphics_object),
-								graphics_to_object_data->rc_coordinate_field,
-								graphics->texture_coordinate_field,
-								graphics->data_field,
-								number_in_xi[0], number_in_xi[1],
-								/*reverse_normals*/0, top_level_element);
-						}
-					} break;
-					case CMZN_GRAPHICS_TYPE_CONTOURS:
-					{
-						switch (GT_object_get_type(graphics->graphics_object))
-						{
-							case g_SURFACE_VERTEX_BUFFERS:
-							{
-								if (3 == element_dimension)
-								{
-									if (draw_element)
-									{
-										return_code = create_iso_surfaces_from_FE_element(element,
-											graphics_to_object_data->field_cache,
-											graphics_to_object_data->master_mesh,
-											GT_object_get_vertex_set(graphics->graphics_object),
-											number_in_xi, graphics_to_object_data->iso_surface_specification);
-									}
-								}
-							} break;
-							case g_POLYLINE_VERTEX_BUFFERS:
-							{
-								if (2 == element_dimension)
-								{
-									if (draw_element)
-									{
-										if (graphics->isovalues)
-										{
-											for (i = 0 ; i < graphics->number_of_isovalues ; i++)
-											{
-												return_code = create_iso_lines_from_FE_element(element,
-													graphics_to_object_data->field_cache,
-													graphics_to_object_data->rc_coordinate_field,
-													graphics->isoscalar_field, graphics->isovalues[i],
-													graphics->data_field, number_in_xi[0], number_in_xi[1],
-													top_level_element, GT_object_get_vertex_set(graphics->graphics_object));
-											}
-										}
-										else
-										{
-											double isovalue_range;
-											if (graphics->number_of_isovalues > 1)
-											{
-												isovalue_range =
-													(graphics->last_isovalue - graphics->first_isovalue)
-													/ (double)(graphics->number_of_isovalues - 1);
-											}
-											else
-											{
-												isovalue_range = 0;
-											}
-											for (i = 0 ; i < graphics->number_of_isovalues ; i++)
-											{
-												double isovalue =
-													graphics->first_isovalue +
-													(double)i * isovalue_range;
-												return_code = create_iso_lines_from_FE_element(element,
-													graphics_to_object_data->field_cache,
-													graphics_to_object_data->rc_coordinate_field,
-													graphics->isoscalar_field, isovalue,
-													graphics->data_field, number_in_xi[0], number_in_xi[1],
-													top_level_element, GT_object_get_vertex_set(graphics->graphics_object));
-											}
-										}
-									}
-								}
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
-									"Invalid graphics type for contours");
-								return_code = 0;
-							} break;
-						}
-					} break;
-					case CMZN_GRAPHICS_TYPE_POINTS:
+					if (fe_mesh->getElementParentOnFace(elementIndex, CMZN_ELEMENT_FACE_TYPE_ANY_FACE) >= 0)
+						return 1;
+				}
+				else if (fe_mesh->getElementParentOnFace(elementIndex, graphics->face) < 0)
+					return 1;
+			}
+		}
+		cmzn_fieldcache_set_element(graphics_to_object_data->field_cache, element);
+		if (graphics->subgroup_field && (graphics_to_object_data->iteration_mesh == graphics_to_object_data->master_mesh))
+		{
+			if (!cmzn_field_evaluate_boolean(graphics->subgroup_field, graphics_to_object_data->field_cache))
+				return 1;
+		}
+		//cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
+		bool name_selected = false;
+		if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode) ||
+			(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
+		{
+			if (graphics_to_object_data->selection_group_field)
+				name_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
+			if (!((name_selected && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode)) ||
+					((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode))))
+				return 1;
+		}
+		/* determine discretization of element for graphics */
+		// copy top_level_number_in_xi since scaled by native_discretization in
+		// get_FE_element_discretization
+		int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+		{
+			top_level_number_in_xi[dim] = graphics_to_object_data->top_level_number_in_xi[dim];
+		}
+		top_level_element = (struct FE_element *)NULL;
+		struct FE_field *native_discretization_field = 0;
+		if (graphics->tessellation_field)
+		{
+			Computed_field_get_type_finite_element(graphics->tessellation_field, &native_discretization_field);
+		}
+		if (get_FE_element_discretization(element,
+			graphics->face, native_discretization_field, top_level_number_in_xi,
+			&top_level_element, number_in_xi))
+		{
+			switch (graphics->graphics_type)
+			{
+				case CMZN_GRAPHICS_TYPE_LINES:
+				{
+					if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 					{
 						if (graphics_to_object_data->existing_graphics)
 						{
+							/* So far ignore these */
 						}
-						if (draw_element)
-						{
-							for (i = 0; i < 3; i++)
-							{
-								element_point_ranges_identifier.exact_xi[i] =
-										graphics->sample_location[i];
-							}
-							if (FE_element_get_xi_points(element,
-									graphics->sampling_mode, number_in_xi,
-									element_point_ranges_identifier.exact_xi,
-									graphics_to_object_data->field_cache,
-									graphics_to_object_data->rc_coordinate_field,
-									graphics->sample_density_field,
-									&number_of_xi_points, &xi_points))
-							{
-								element_point_ranges_identifier.element = element;
-								element_point_ranges_identifier.top_level_element = top_level_element;
-								element_point_ranges_identifier.sampling_mode = graphics->sampling_mode;
-								for (i = 0; i < element_dimension; i++)
-									element_point_ranges_identifier.number_in_xi[i] = number_in_xi[i];
-								/* NOT an error if no glyph_set produced == empty selection */
-								if (0 < number_of_xi_points)
-								{
-									return_code = add_glyphset_vertex_from_FE_element(
-										graphics->graphics_object,
-										graphics_to_object_data->field_cache,
-										element, top_level_element,
-										graphics_to_object_data->rc_coordinate_field,
-										number_of_xi_points, xi_points,
-										graphics_to_object_data->glyph_gt_object,
-										graphics_to_object_data->wrapper_orientation_scale_field,
-										graphics->signed_scale_field, graphics->data_field,
-										graphics->label_field, graphics->select_mode,
-										name_selected, (struct Multi_range *)NULL,
-										/*point_numbers*/(int *)0);
-								}
-								DEALLOCATE(xi_points);
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-					} break;
-					case CMZN_GRAPHICS_TYPE_STREAMLINES:
-					{
-						/* use local copy of sample_location since tracking function updates it */
-						for (i = 0; i < 3; i++)
-						{
-							initial_xi[i] =  element_point_ranges_identifier.exact_xi[i] = graphics->sample_location[i];
-						}
-						if (FE_element_get_xi_points(element,
-							graphics->sampling_mode, number_in_xi,
-							element_point_ranges_identifier.exact_xi,
-							graphics_to_object_data->field_cache,
+						return_code = FE_element_add_line_to_vertex_array(
+							element, graphics_to_object_data->field_cache,
+							GT_object_get_vertex_set(graphics->graphics_object),
 							graphics_to_object_data->rc_coordinate_field,
-							graphics->sample_density_field,
-							&number_of_xi_points, &xi_points))
-						{
-							switch (graphics->line_shape)
-							{
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
-								{
-									for (i = 0; i < number_of_xi_points; i++)
-									{
-										initial_xi[0] = xi_points[i][0];
-										initial_xi[1] = xi_points[i][1];
-										initial_xi[2] = xi_points[i][2];
-										return_code = create_polyline_streamline_FE_element_vertex_array(
-												element, initial_xi, graphics_to_object_data->field_cache,
-												graphics_to_object_data->rc_coordinate_field,
-												graphics_to_object_data->wrapper_stream_vector_field,
-												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
-												graphics->streamline_length,
-												graphics->streamlines_colour_data_type, graphics->data_field,
-												graphics_to_object_data->fe_region,
-												GT_object_get_vertex_set(graphics->graphics_object));
-									}
-								} break;
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
-								{
-									for (i = 0; i < number_of_xi_points; i++)
-									{
-										initial_xi[0] = xi_points[i][0];
-										initial_xi[1] = xi_points[i][1];
-										initial_xi[2] = xi_points[i][2];
-										return_code = create_surface_streamribbon_FE_element_vertex_array(
-												element, initial_xi, graphics_to_object_data->field_cache,
-												graphics_to_object_data->rc_coordinate_field,
-												graphics_to_object_data->wrapper_stream_vector_field,
-												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
-												graphics->streamline_length,
-												graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
-												graphics->line_base_size, graphics->line_scale_factors,
-												graphics->line_orientation_scale_field,
-												graphics->streamlines_colour_data_type, graphics->data_field,
-												graphics_to_object_data->fe_region,
-												GT_object_get_vertex_set(graphics->graphics_object));
-									}
-								} break;
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_to_graphics_object.  Unknown streamline type");
-									return_code = 0;
-								} break;
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
-						if (xi_points)
-							DEALLOCATE(xi_points);
-					} break;
-					default:
+							graphics_to_object_data->number_of_data_values,
+							graphics->data_field,
+							graphics->texture_coordinate_field,
+							number_in_xi[0], top_level_element);
+					}
+					else
 					{
-						display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
-							"Unknown element graphics type");
+						return_code = FE_element_add_cylinder_to_vertex_array(
+							element, graphics_to_object_data->field_cache,
+							GT_object_get_vertex_set(graphics->graphics_object),
+							graphics_to_object_data->master_mesh,
+							graphics_to_object_data->rc_coordinate_field,
+							graphics->data_field,
+							graphics->line_base_size,
+							graphics->line_scale_factors,
+							graphics->line_orientation_scale_field,
+							number_in_xi[0],
+							cmzn_tessellation_get_circle_divisions(graphics->tessellation),
+							graphics->texture_coordinate_field,
+							top_level_element);
+					}
+				} break;
+				case CMZN_GRAPHICS_TYPE_SURFACES:
+				{
+					return_code = FE_element_add_surface_to_vertex_array(
+						element, graphics_to_object_data->field_cache,
+						graphics_to_object_data->master_mesh,
+						GT_object_get_vertex_set(graphics->graphics_object),
+						graphics_to_object_data->rc_coordinate_field,
+						graphics->texture_coordinate_field,
+						graphics->data_field,
+						number_in_xi[0], number_in_xi[1],
+						/*reverse_normals*/0, top_level_element);
+				} break;
+				case CMZN_GRAPHICS_TYPE_CONTOURS:
+				{
+					switch (GT_object_get_type(graphics->graphics_object))
+					{
+						case g_SURFACE_VERTEX_BUFFERS:
+						{
+							if (3 == element_dimension)
+							{
+								return_code = create_iso_surfaces_from_FE_element(element,
+									graphics_to_object_data->field_cache,
+									graphics_to_object_data->master_mesh,
+									GT_object_get_vertex_set(graphics->graphics_object),
+									number_in_xi, graphics_to_object_data->iso_surface_specification);
+							}
+						} break;
+						case g_POLYLINE_VERTEX_BUFFERS:
+						{
+							if (2 == element_dimension)
+							{
+								if (graphics->isovalues)
+								{
+									for (i = 0 ; i < graphics->number_of_isovalues ; i++)
+									{
+										return_code = create_iso_lines_from_FE_element(element,
+											graphics_to_object_data->field_cache,
+											graphics_to_object_data->rc_coordinate_field,
+											graphics->isoscalar_field, graphics->isovalues[i],
+											graphics->data_field, number_in_xi[0], number_in_xi[1],
+											top_level_element, GT_object_get_vertex_set(graphics->graphics_object));
+									}
+								}
+								else
+								{
+									double isovalue_range;
+									if (graphics->number_of_isovalues > 1)
+									{
+										isovalue_range =
+											(graphics->last_isovalue - graphics->first_isovalue)
+											/ (double)(graphics->number_of_isovalues - 1);
+									}
+									else
+									{
+										isovalue_range = 0;
+									}
+									for (i = 0 ; i < graphics->number_of_isovalues ; i++)
+									{
+										double isovalue =
+											graphics->first_isovalue +
+											(double)i * isovalue_range;
+										return_code = create_iso_lines_from_FE_element(element,
+											graphics_to_object_data->field_cache,
+											graphics_to_object_data->rc_coordinate_field,
+											graphics->isoscalar_field, isovalue,
+											graphics->data_field, number_in_xi[0], number_in_xi[1],
+											top_level_element, GT_object_get_vertex_set(graphics->graphics_object));
+									}
+								}
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
+								"Invalid graphics type for contours");
+							return_code = 0;
+						} break;
+					}
+				} break;
+				case CMZN_GRAPHICS_TYPE_POINTS:
+				{
+					if (graphics_to_object_data->existing_graphics)
+					{
+					}
+					for (i = 0; i < 3; i++)
+					{
+						element_point_ranges_identifier.exact_xi[i] =
+								graphics->sample_location[i];
+					}
+					if (FE_element_get_xi_points(element,
+						graphics->sampling_mode, number_in_xi,
+						element_point_ranges_identifier.exact_xi,
+						graphics_to_object_data->field_cache,
+						graphics_to_object_data->rc_coordinate_field,
+						graphics->sample_density_field,
+						&number_of_xi_points, &xi_points))
+					{
+						element_point_ranges_identifier.element = element;
+						element_point_ranges_identifier.top_level_element = top_level_element;
+						element_point_ranges_identifier.sampling_mode = graphics->sampling_mode;
+						for (i = 0; i < element_dimension; i++)
+							element_point_ranges_identifier.number_in_xi[i] = number_in_xi[i];
+						/* NOT an error if no glyph_set produced == empty selection */
+						if (0 < number_of_xi_points)
+						{
+							return_code = add_glyphset_vertex_from_FE_element(
+								graphics->graphics_object,
+								graphics_to_object_data->field_cache,
+								element, top_level_element,
+								graphics_to_object_data->rc_coordinate_field,
+								number_of_xi_points, xi_points,
+								graphics_to_object_data->glyph_gt_object,
+								graphics_to_object_data->wrapper_orientation_scale_field,
+								graphics->signed_scale_field, graphics->data_field,
+								graphics->label_field, graphics->select_mode,
+								name_selected ? 1 : 0, (struct Multi_range *)NULL,
+								/*point_numbers*/(int *)0);
+						}
+						DEALLOCATE(xi_points);
+					}
+					else
+					{
 						return_code = 0;
-					} break;
-				}
+					}
+				} break;
+				case CMZN_GRAPHICS_TYPE_STREAMLINES:
+				{
+					/* use local copy of sample_location since tracking function updates it */
+					for (i = 0; i < 3; i++)
+					{
+						initial_xi[i] =  element_point_ranges_identifier.exact_xi[i] = graphics->sample_location[i];
+					}
+					if (FE_element_get_xi_points(element,
+						graphics->sampling_mode, number_in_xi,
+						element_point_ranges_identifier.exact_xi,
+						graphics_to_object_data->field_cache,
+						graphics_to_object_data->rc_coordinate_field,
+						graphics->sample_density_field,
+						&number_of_xi_points, &xi_points))
+					{
+						switch (graphics->line_shape)
+						{
+						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
+							{
+								for (i = 0; i < number_of_xi_points; i++)
+								{
+									initial_xi[0] = xi_points[i][0];
+									initial_xi[1] = xi_points[i][1];
+									initial_xi[2] = xi_points[i][2];
+									return_code = create_polyline_streamline_FE_element_vertex_array(
+										element, initial_xi, graphics_to_object_data->field_cache,
+										graphics_to_object_data->rc_coordinate_field,
+										graphics_to_object_data->wrapper_stream_vector_field,
+										static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
+										graphics->streamline_length,
+										graphics->streamlines_colour_data_type, graphics->data_field,
+										GT_object_get_vertex_set(graphics->graphics_object));
+								}
+							} break;
+						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
+							{
+								for (i = 0; i < number_of_xi_points; i++)
+								{
+									initial_xi[0] = xi_points[i][0];
+									initial_xi[1] = xi_points[i][1];
+									initial_xi[2] = xi_points[i][2];
+									return_code = create_surface_streamribbon_FE_element_vertex_array(
+										element, initial_xi, graphics_to_object_data->field_cache,
+										graphics_to_object_data->rc_coordinate_field,
+										graphics_to_object_data->wrapper_stream_vector_field,
+										static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
+										graphics->streamline_length,
+										graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
+										graphics->line_base_size, graphics->line_scale_factors,
+										graphics->line_orientation_scale_field,
+										graphics->streamlines_colour_data_type, graphics->data_field,
+										GT_object_get_vertex_set(graphics->graphics_object));
+								}
+							} break;
+						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_to_graphics_object.  Unknown streamline type");
+								return_code = 0;
+							} break;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+					if (xi_points)
+						DEALLOCATE(xi_points);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
+						"Unknown element graphics type");
+					return_code = 0;
+				} break;
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_to_graphics_object.  Could not get discretization");
-				return_code = 0;
-			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_to_graphics_object.  Could not get discretization");
+			return_code = 0;
 		}
 	}
 	else
@@ -885,7 +867,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 							static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 							graphics->streamline_length,
 							graphics->streamlines_colour_data_type, graphics->data_field,
-							graphics_to_object_data->fe_region, GT_object_get_vertex_set(graphics->graphics_object));
+							GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
@@ -901,7 +883,6 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 						graphics->line_base_size, graphics->line_scale_factors,
 						graphics->line_orientation_scale_field,
 						graphics->streamlines_colour_data_type, graphics->data_field,
-						graphics_to_object_data->fe_region,
 						GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
@@ -1653,11 +1634,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			{
 				append_string(&graphics_string, " exterior", &error);
 			}
-			if (CMZN_ELEMENT_FACE_TYPE_INVALID != graphics->face)
-			{
-				append_string(&graphics_string, " face ", &error);
-				append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
-			}
+			append_string(&graphics_string, " face ", &error);
+			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
 		}
 
 		append_string(&graphics_string, " tessellation ", &error);
@@ -1968,8 +1946,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		{
 			if (graphics->seed_element)
 			{
-				sprintf(temp_string, " seed_element %d",
-					FE_element_get_cm_number(graphics->seed_element));
+				sprintf(temp_string, " seed_element %d", get_FE_element_identifier(graphics->seed_element));
 				append_string(&graphics_string, temp_string, &error);
 			}
 		}
@@ -2401,35 +2378,33 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
 SubObjectGroupHighlightFunctor *create_highlight_functor_element(
 	struct Computed_field *group_field, cmzn_mesh_id mesh)
 {
-  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
-  if (group_field)
-  {
-	cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
-	  if (cmzn_field_group_contains_local_region(sub_group))
-	  {
-		highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
-		highlight_functor->setContainsAll(1);
-	  }
-	  else
-	  {
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
+	SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+	if (group_field)
+	{
+		cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
+		if (cmzn_field_group_contains_local_region(sub_group))
+		{
+			highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
+			highlight_functor->setContainsAll(1);
+		}
+		else
+		{
+			cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
 			if (element_group)
 			{
 				Computed_field_element_group *group_core =
 					Computed_field_element_group_core_cast(element_group);
 				highlight_functor =
 					new SubObjectGroupHighlightFunctor(group_core,
-					&Computed_field_subobject_group::isIdentifierInList);
+					&Computed_field_subobject_group::containsIndex);
 				cmzn_field_element_group_destroy(&element_group);
-		}
+			}
 		}
 	if (sub_group)
-	{
-	  cmzn_field_group_destroy(&sub_group);
+		cmzn_field_group_destroy(&sub_group);
 	}
-  }
 
-  return (highlight_functor);
+	return (highlight_functor);
 }
 
 SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
@@ -2668,14 +2643,552 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_ob
 	return return_code;
 }
 
+int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *graphics,
+	cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
+{
+	int return_code = 1;
+	enum GT_object_type graphics_object_type;
+	char *graphics_string;
+	if (graphics && graphics_to_object_data)
+	{
+		if (graphics->graphics_changed)
+		{
+			cmzn_fieldcache_clear_location(graphics_to_object_data->field_cache);
+			cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
+			Computed_field *coordinate_field = graphics->coordinate_field;
+			if (coordinate_field ||
+				(graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_POINT))
+			{
+				/* RC coordinate_field to pass to FE_element_to_graphics_object */
+				graphics_to_object_data->rc_coordinate_field = (cmzn_field_id)0;
+				graphics_to_object_data->wrapper_orientation_scale_field = (cmzn_field_id)0;
+				graphics_to_object_data->wrapper_stream_vector_field = (cmzn_field_id)0;
+				if (coordinate_field)
+				{
+					graphics_to_object_data->rc_coordinate_field =
+						Computed_field_begin_wrap_coordinate_field(coordinate_field);
+					if (!graphics_to_object_data->rc_coordinate_field)
+					{
+						display_message(ERROR_MESSAGE,
+							"cmzn_graphics_to_graphics_object.  Could not get rc_coordinate_field wrapper");
+						return_code = 0;
+					}
+				}
+				if (return_code && graphics->point_orientation_scale_field)
+				{
+					graphics_to_object_data->wrapper_orientation_scale_field =
+						Computed_field_begin_wrap_orientation_scale_field(
+							graphics->point_orientation_scale_field, graphics_to_object_data->rc_coordinate_field);
+					if (!graphics_to_object_data->wrapper_orientation_scale_field)
+					{
+						display_message(ERROR_MESSAGE,
+							"cmzn_graphics_to_graphics_object.  Could not get orientation_scale_field wrapper");
+						return_code = 0;
+					}
+				}
+				if (return_code && graphics->stream_vector_field)
+				{
+					graphics_to_object_data->wrapper_stream_vector_field =
+						Computed_field_begin_wrap_orientation_scale_field(
+							graphics->stream_vector_field, graphics_to_object_data->rc_coordinate_field);
+					if (!graphics_to_object_data->wrapper_stream_vector_field)
+					{
+						display_message(ERROR_MESSAGE,
+							"cmzn_graphics_to_graphics_object.  Could not get stream_vector_field wrapper");
+						return_code = 0;
+					}
+				}
+				if (return_code && graphics->glyph)
+				{
+					graphics_to_object_data->glyph_gt_object =
+						graphics->glyph->getGraphicsObject(graphics->tessellation, graphics->material, graphics->font);
+				}
+				else
+				{
+					graphics_to_object_data->glyph_gt_object = 0;
+				}
+				if (return_code)
+				{
+#if defined (DEBUG_CODE)
+					/*???debug*/
+					if ((graphics_string = cmzn_graphics_string(graphics,
+						GRAPHICS_STRING_COMPLETE_PLUS)) != NULL)
+					{
+						printf("> building %s\n", graphics_string);
+						DEALLOCATE(graphics_string);
+					}
+#endif /* defined (DEBUG_CODE) */
+					cmzn_graphics_get_top_level_number_in_xi(graphics,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS, graphics_to_object_data->top_level_number_in_xi);
+					graphics_to_object_data->existing_graphics = 0;
+					/* work out the name the graphics object is to have */
+					char *graphics_object_name = cmzn_graphics_get_graphics_object_name(graphics, graphics_to_object_data->name_prefix);
+					if (graphics_object_name)
+					{
+						if (graphics->graphics_object)
+						{
+							GT_object_set_name(graphics->graphics_object, graphics_object_name);
+						}
+						else
+						{
+							graphics_object_type = cmzn_graphics_get_graphics_object_type(graphics);
+							if (graphics_object_type == g_OBJECT_TYPE_INVALID)
+								return_code = 1;
+							if (return_code)
+							{
+								graphics->graphics_object = CREATE(GT_object)(
+									graphics_object_name, graphics_object_type,
+									graphics->material);
+								set_GT_object_render_line_width(graphics->graphics_object, graphics->render_line_width);
+								set_GT_object_render_point_size(graphics->graphics_object, graphics->render_point_size);
+								GT_object_set_select_mode(graphics->graphics_object,
+									graphics->select_mode);
+								if (graphics->secondary_material)
+								{
+									set_GT_object_secondary_material(graphics->graphics_object,
+										graphics->secondary_material);
+								}
+								if (graphics->selected_material)
+								{
+									set_GT_object_selected_material(graphics->graphics_object,
+										graphics->selected_material);
+								}
+							}
+						}
+						DEALLOCATE(graphics_object_name);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"cmzn_graphics_to_graphics_object.  "
+							"Unable to make graphics object name");
+						return_code = 0;
+					}
+					if (graphics->data_field)
+					{
+						graphics_to_object_data->number_of_data_values =
+							Computed_field_get_number_of_components(graphics->data_field);
+						ALLOCATE(graphics_to_object_data->data_copy_buffer,
+							FE_value, graphics_to_object_data->number_of_data_values);
+					}
+					if (graphics->graphics_object)
+					{
+						graphics->selected_graphics_changed=1;
+						/* need graphics for FE_element_to_graphics_object routine */
+						graphics_to_object_data->graphics=graphics;
+						cmzn_graphics_get_iteration_domain(graphics, graphics_to_object_data);
+						switch (graphics->graphics_type)
+						{
+						case CMZN_GRAPHICS_TYPE_POINTS:
+						{
+							switch (graphics->domain_type)
+							{
+							case CMZN_FIELD_DOMAIN_TYPE_NODES:
+							case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
+							{
+								// all nodes are in a single GT_glyphset_vertex_buffer, so rebuild all even if
+								// editing a single node or element
+								GT_object_clear_primitives(graphics->graphics_object);
+								cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
+									graphics_to_object_data->field_module, graphics->domain_type);
+								cmzn_nodeset_id iteration_nodeset = 0;
+								if (graphics->subgroup_field)
+								{
+									cmzn_field_group_id group = cmzn_field_cast_group(graphics->subgroup_field);
+									if (group)
+									{
+										cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
+										if (node_group)
+										{
+											iteration_nodeset =
+												cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+											cmzn_field_node_group_destroy(&node_group);
+										}
+										cmzn_field_group_destroy(&group);
+									}
+									else
+									{
+										cmzn_field_node_group_id node_group = cmzn_field_cast_node_group(graphics->subgroup_field);
+										if (node_group)
+										{
+											// check group is for same master nodeset
+											iteration_nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+											cmzn_nodeset_id temp_master_nodeset = cmzn_nodeset_get_master_nodeset(iteration_nodeset);
+											if (!cmzn_nodeset_match(master_nodeset, temp_master_nodeset))
+											{
+												cmzn_nodeset_destroy(&iteration_nodeset);
+											}
+											cmzn_nodeset_destroy(&temp_master_nodeset);
+											cmzn_field_node_group_destroy(&node_group);
+										}
+										else
+										{
+											iteration_nodeset = cmzn_nodeset_access(master_nodeset);
+										}
+									}
+								}
+								else
+								{
+									iteration_nodeset = cmzn_nodeset_access(master_nodeset);
+								}
+								if (iteration_nodeset)
+								{
+									GT_glyphset_vertex_buffers *glyphset = Nodeset_create_vertex_array(
+										iteration_nodeset, graphics_to_object_data->field_cache,
+										graphics->graphics_object,
+										graphics->glyph_repeat_mode,
+										graphics_to_object_data->rc_coordinate_field,
+										graphics->data_field,
+										graphics_to_object_data->wrapper_orientation_scale_field,
+										graphics->signed_scale_field,
+										graphics->label_field,
+										graphics->label_density_field,
+										(iteration_nodeset == master_nodeset) ? graphics->subgroup_field : 0,
+										graphics_to_object_data->selection_group_field,
+										graphics_to_object_data->glyph_gt_object,
+										graphics->point_base_size, graphics->point_offset, graphics->point_scale_factors,
+										graphics->font,  graphics->label_offset,
+										graphics->label_text,
+										graphics->select_mode);
+									if (!GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
+											graphics->graphics_object, glyphset))
+									{
+										DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
+										return_code = 0;
+									}
+									cmzn_nodeset_destroy(&iteration_nodeset);
+								}
+								cmzn_nodeset_destroy(&master_nodeset);
+							} break;
+							case CMZN_FIELD_DOMAIN_TYPE_POINT:
+							{
+								cmzn_graphics_to_point_vertex_buffer(graphics, graphics_to_object_data);
+							} break;
+							default: // ELEMENTS
+							{
+								GT_glyphset_vertex_buffers *glyphset =
+									CREATE(GT_glyphset_vertex_buffers)();
+								if (GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
+									graphics->graphics_object, glyphset))
+								{
+									Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
+									for (int i = 0; i < 3; i++)
+									{
+										glyph_base_size[i] = static_cast<GLfloat>(graphics->point_base_size[i]);
+										glyph_scale_factors[i] = static_cast<GLfloat>(graphics->point_scale_factors[i]);
+										glyph_offset[i] = static_cast<GLfloat>(graphics->point_offset[i]);
+										glyph_label_offset[i] = static_cast<GLfloat>(graphics->label_offset[i]);
+									}
+									GT_glyphset_vertex_buffers_setup(glyphset, graphics_to_object_data->glyph_gt_object, graphics->glyph_repeat_mode,
+										glyph_base_size, glyph_scale_factors, glyph_offset, graphics->font,
+										glyph_label_offset, graphics->label_text, /*label_bounds_dimension*/0,
+										/*label_bounds_components*/0);
+									if (graphics_to_object_data->iteration_mesh)
+									{
+										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+									}
+								}
+								else
+								{
+									DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
+									return_code = 0;
+								}
+							} break;
+							}
+						} break;
+						case CMZN_GRAPHICS_TYPE_LINES:
+						{
+#if defined(USE_OPENCASCADE)
+							// test here for domain of rc_coordinate_field
+							// if it is a cad_geometry do something about it
+							struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+							int return_code = Computed_field_get_domain( graphics_to_object_data->rc_coordinate_field, domain_field_list );
+							if ( return_code )
+							{
+								// so test for topology domain
+								struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+									( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+								if ( cad_topology_field )
+								{
+									// if topology domain then draw item at location
+									return_code = Cad_shape_to_graphics_object( cad_topology_field, graphics_to_object_data );
+									DESTROY_LIST(Computed_field)(&domain_field_list);
+									break;
+								}
+							}
+							if ( domain_field_list )
+								DESTROY_LIST(Computed_field)(&domain_field_list);
+#endif /* defined(USE_OPENCASCADE) */
+							if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
+							{
+								GT_polyline_vertex_buffers *lines =
+									CREATE(GT_polyline_vertex_buffers)(
+										g_PLAIN, graphics->render_line_width);
+								if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+									graphics->graphics_object, lines))
+								{
+									if (graphics_to_object_data->iteration_mesh)
+									{
+										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+									}
+								}
+								else
+								{
+									DESTROY(GT_polyline_vertex_buffers)(&lines);
+									return_code = 0;
+								}
+							}
+							else if (graphics_to_object_data->iteration_mesh)
+							{
+								GT_surface_vertex_buffers *surfaces =
+									CREATE(GT_surface_vertex_buffers)(
+										g_SHADED_TEXMAP, graphics->render_polygon_mode);
+								if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
+									graphics->graphics_object, surfaces))
+								{
+									if (graphics_to_object_data->iteration_mesh)
+									{
+										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+									}
+								}
+								else
+								{
+									DESTROY(GT_surface_vertex_buffers)(&surfaces);
+									return_code = 0;
+								}
+							}
+						} break;
+						case CMZN_GRAPHICS_TYPE_SURFACES:
+						{
+							bool cad_surfaces = false;
+#if defined(USE_OPENCASCADE)
+							{
+								// test here for domain of rc_coordinate_field
+								// if it is a cad_geometry do something about it
+								//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
+								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+								int return_code = Computed_field_get_domain( graphics_to_object_data->rc_coordinate_field, domain_field_list );
+								if ( return_code )
+								{
+									//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
+									// so test for topology domain
+									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+										( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+									if ( cad_topology_field )
+									{
+										cad_surfaces = true;
+										//printf( "hurrah, we have a cad topology domain.\n" );
+										// if topology domain then draw item at location
+										return_code = Cad_shape_to_graphics_object( cad_topology_field, graphics_to_object_data );
+										DESTROY_LIST(Computed_field)(&domain_field_list);
+										break;
+									}
+								}
+								if ( domain_field_list )
+									DESTROY_LIST(Computed_field)(&domain_field_list);
+							}
+#endif /* defined(USE_OPENCASCADE) */
+							if (!cad_surfaces)
+							{
+								GT_surface_vertex_buffers *surfaces =
+									CREATE(GT_surface_vertex_buffers)(
+										g_SHADED_TEXMAP, graphics->render_polygon_mode);
+								if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
+									graphics->graphics_object, surfaces))
+								{
+									if (graphics_to_object_data->iteration_mesh)
+									{
+										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+									}
+								}
+								else
+								{
+									DESTROY(GT_surface_vertex_buffers)(&surfaces);
+									return_code = 0;
+								}
+							}
+						} break;
+						case CMZN_GRAPHICS_TYPE_CONTOURS:
+						{
+							// Used to call GT_object_clear_primitives(graphics->graphics_object) here
+							// which is very expensive when partial editing. Seems to work without it.
+							if (0 < graphics->number_of_isovalues)
+							{
+								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								{
+									GT_surface_vertex_buffers *surfaces =
+										CREATE(GT_surface_vertex_buffers)(
+											g_SH_DISCONTINUOUS_TEXMAP, graphics->render_polygon_mode);
+									if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
+										graphics->graphics_object, surfaces))
+									{
+										graphics_to_object_data->iso_surface_specification =
+												Iso_surface_specification_create(
+													graphics->number_of_isovalues, graphics->isovalues,
+													graphics->first_isovalue, graphics->last_isovalue,
+													graphics_to_object_data->rc_coordinate_field,
+													graphics->data_field,
+													graphics->isoscalar_field,
+													graphics->texture_coordinate_field);
+									}
+									else
+									{
+										DESTROY(GT_surface_vertex_buffers)(&surfaces);
+										return_code = 0;
+									}
+								}
+								else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								{
+									GT_polyline_vertex_buffers *lines =
+										CREATE(GT_polyline_vertex_buffers)(
+											g_PLAIN, graphics->render_line_width);
+									if (0 == (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+										graphics->graphics_object, lines)))
+									{
+										DESTROY(GT_polyline_vertex_buffers)(&lines);
+										return_code = 0;
+									}
+								}
+								if (graphics_to_object_data->iteration_mesh)
+								{
+									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+								}
+								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								{
+									Iso_surface_specification_destroy(&graphics_to_object_data->iso_surface_specification);
+								}
+							}
+						} break;
+						case CMZN_GRAPHICS_TYPE_STREAMLINES:
+						{
+							if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+							{
+								GT_surface_vertex_buffers *surfaces =
+									CREATE(GT_surface_vertex_buffers)(
+										g_SHADED_TEXMAP, graphics->render_polygon_mode);
+								GT_OBJECT_ADD(GT_surface_vertex_buffers)(
+									graphics->graphics_object, surfaces);
+							}
+							else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+							{
+								GT_polyline_vertex_buffers *lines =
+									CREATE(GT_polyline_vertex_buffers)(
+										g_PLAIN, graphics->render_line_width);
+								GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+									graphics->graphics_object, lines);
+							}
+							if (graphics->seed_element)
+							{
+								return_code = FE_element_to_graphics_object(
+									graphics->seed_element, graphics_to_object_data);
+							}
+							else if (graphics->seed_nodeset &&
+								graphics->seed_node_mesh_location_field)
+							{
+								cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(graphics->seed_nodeset);
+								cmzn_node_id node = 0;
+								while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+								{
+									if (!cmzn_node_to_streamline(node, graphics_to_object_data))
+									{
+										return_code = 0;
+										break;
+									}
+								}
+								cmzn_nodeiterator_destroy(&iterator);
+							}
+							else
+							{
+								if (graphics_to_object_data->iteration_mesh)
+								{
+									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+								}
+							}
+						} break;
+						default:
+						{
+							return_code = 0;
+						} break;
+						} /* end of switch */
+						cmzn_mesh_destroy(&graphics_to_object_data->iteration_mesh);
+						cmzn_mesh_destroy(&graphics_to_object_data->master_mesh);
+						if (return_code)
+						{
+							/* set the spectrum in the graphics object - if required */
+							if ((graphics->data_field) ||
+								((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
+									(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD != graphics->streamlines_colour_data_type)))
+							{
+								set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
+							}
+							/* mark display list as needing updating */
+							graphics->graphics_changed = 0;
+							GT_object_changed(graphics->graphics_object);
+						}
+						else
+						{
+							graphics_string = cmzn_graphics_string(graphics,
+								GRAPHICS_STRING_COMPLETE_PLUS);
+							display_message(ERROR_MESSAGE,
+								"cmzn_graphics_to_graphics_object.  "
+								"Could not build '%s'",graphics_string);
+							DEALLOCATE(graphics_string);
+							/* set return_code to 1, so rest of graphics can be built */
+							return_code = 1;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"cmzn_graphics_to_graphics_object.  "
+							"Could not create graphics object");
+						return_code = 0;
+					}
+					if (graphics_to_object_data->existing_graphics)
+					{
+						DEACCESS(GT_object)(&(graphics_to_object_data->existing_graphics));
+					}
+					if (graphics->data_field)
+					{
+						graphics_to_object_data->number_of_data_values = 0;
+						DEALLOCATE(graphics_to_object_data->data_copy_buffer);
+					}
+				}
+				if (graphics_to_object_data->glyph_gt_object)
+				{
+					DEACCESS(GT_object)(&(graphics_to_object_data->glyph_gt_object));
+				}
+				if (graphics->stream_vector_field)
+				{
+					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_stream_vector_field));
+				}
+				if (graphics->point_orientation_scale_field)
+				{
+					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_orientation_scale_field));
+				}
+				if (graphics_to_object_data->rc_coordinate_field)
+				{
+					Computed_field_end_wrap(&(graphics_to_object_data->rc_coordinate_field));
+				}
+			}
+		}
+		if (graphics->selected_graphics_changed)
+		{
+			if (graphics->graphics_object)
+				GT_object_changed(graphics->graphics_object);
+			graphics->selected_graphics_changed = 0;
+		}
+	}
+	else
+		return_code = 0;
+	return return_code;
+}
+
 int cmzn_graphics_to_graphics_object(
 	struct cmzn_graphics *graphics,void *graphics_to_object_data_void)
 {
-	char *graphics_string;
-	enum GT_object_type graphics_object_type;
 	int return_code;
 
-	ENTER(cmzn_graphics_to_graphics_object);
 	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data =
 		reinterpret_cast<struct cmzn_graphics_to_graphics_object_data *>(graphics_to_object_data_void);
 	if (graphics && graphics_to_object_data)
@@ -2686,533 +3199,8 @@ int cmzn_graphics_to_graphics_object(
 		/* build only if visible and changed */
 		if ((0 == filter) || (cmzn_scenefilter_evaluate_graphics(filter, graphics)))
 		{
-			if (graphics->graphics_changed)
-			{
-				cmzn_fieldcache_clear_location(graphics_to_object_data->field_cache);
-				cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
-				Computed_field *coordinate_field = graphics->coordinate_field;
-				if (coordinate_field ||
-					(graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_POINT))
-				{
-					/* RC coordinate_field to pass to FE_element_to_graphics_object */
-					graphics_to_object_data->rc_coordinate_field = (cmzn_field_id)0;
-					graphics_to_object_data->wrapper_orientation_scale_field = (cmzn_field_id)0;
-					graphics_to_object_data->wrapper_stream_vector_field = (cmzn_field_id)0;
-					if (coordinate_field)
-					{
-						graphics_to_object_data->rc_coordinate_field =
-							Computed_field_begin_wrap_coordinate_field(coordinate_field);
-						if (!graphics_to_object_data->rc_coordinate_field)
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_to_graphics_object.  Could not get rc_coordinate_field wrapper");
-							return_code = 0;
-						}
-					}
-					if (return_code && graphics->point_orientation_scale_field)
-					{
-						graphics_to_object_data->wrapper_orientation_scale_field =
-							Computed_field_begin_wrap_orientation_scale_field(
-								graphics->point_orientation_scale_field, graphics_to_object_data->rc_coordinate_field);
-						if (!graphics_to_object_data->wrapper_orientation_scale_field)
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_to_graphics_object.  Could not get orientation_scale_field wrapper");
-							return_code = 0;
-						}
-					}
-					if (return_code && graphics->stream_vector_field)
-					{
-						graphics_to_object_data->wrapper_stream_vector_field =
-							Computed_field_begin_wrap_orientation_scale_field(
-								graphics->stream_vector_field, graphics_to_object_data->rc_coordinate_field);
-						if (!graphics_to_object_data->wrapper_stream_vector_field)
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_to_graphics_object.  Could not get stream_vector_field wrapper");
-							return_code = 0;
-						}
-					}
-					if (return_code && graphics->glyph)
-					{
-						graphics_to_object_data->glyph_gt_object =
-							graphics->glyph->getGraphicsObject(graphics->tessellation, graphics->material, graphics->font);
-					}
-					else
-					{
-						graphics_to_object_data->glyph_gt_object = 0;
-					}
-					if (return_code)
-					{
-#if defined (DEBUG_CODE)
-						/*???debug*/
-						if ((graphics_string = cmzn_graphics_string(graphics,
-							GRAPHICS_STRING_COMPLETE_PLUS)) != NULL)
-						{
-							printf("> building %s\n", graphics_string);
-							DEALLOCATE(graphics_string);
-						}
-#endif /* defined (DEBUG_CODE) */
-						cmzn_graphics_get_top_level_number_in_xi(graphics,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS, graphics_to_object_data->top_level_number_in_xi);
-						graphics_to_object_data->existing_graphics = 0;
-						/* work out the name the graphics object is to have */
-						char *graphics_object_name = cmzn_graphics_get_graphics_object_name(graphics, graphics_to_object_data->name_prefix);
-						if (graphics_object_name)
-						{
-							if (graphics->graphics_object)
-							{
-								GT_object_set_name(graphics->graphics_object, graphics_object_name);
-							}
-							else
-							{
-								graphics_object_type = cmzn_graphics_get_graphics_object_type(graphics);
-								if (graphics_object_type == g_OBJECT_TYPE_INVALID)
-									return_code = 1;
-								if (return_code)
-								{
-									graphics->graphics_object = CREATE(GT_object)(
-										graphics_object_name, graphics_object_type,
-										graphics->material);
-									set_GT_object_render_line_width(graphics->graphics_object, graphics->render_line_width);
-									set_GT_object_render_point_size(graphics->graphics_object, graphics->render_point_size);
-									GT_object_set_select_mode(graphics->graphics_object,
-										graphics->select_mode);
-									if (graphics->secondary_material)
-									{
-										set_GT_object_secondary_material(graphics->graphics_object,
-											graphics->secondary_material);
-									}
-									if (graphics->selected_material)
-									{
-										set_GT_object_selected_material(graphics->graphics_object,
-											graphics->selected_material);
-									}
-								}
-							}
-							DEALLOCATE(graphics_object_name);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_to_graphics_object.  "
-								"Unable to make graphics object name");
-							return_code = 0;
-						}
-						if (graphics->data_field)
-						{
-							graphics_to_object_data->number_of_data_values =
-								Computed_field_get_number_of_components(graphics->data_field);
-							ALLOCATE(graphics_to_object_data->data_copy_buffer,
-								FE_value, graphics_to_object_data->number_of_data_values);
-						}
-						if (graphics->graphics_object)
-						{
-							graphics->selected_graphics_changed=1;
-							/* need graphics for FE_element_to_graphics_object routine */
-							graphics_to_object_data->graphics=graphics;
-							cmzn_graphics_get_iteration_domain(graphics, graphics_to_object_data);
-							switch (graphics->graphics_type)
-							{
-							case CMZN_GRAPHICS_TYPE_POINTS:
-							{
-								switch (graphics->domain_type)
-								{
-								case CMZN_FIELD_DOMAIN_TYPE_NODES:
-								case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
-								{
-									// all nodes are in a single GT_glyphset_vertex_buffer, so rebuild all even if
-									// editing a single node or element
-									GT_object_clear_primitives(graphics->graphics_object);
-									cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
-										graphics_to_object_data->field_module, graphics->domain_type);
-									cmzn_nodeset_id iteration_nodeset = 0;
-									if (graphics->subgroup_field)
-									{
-										cmzn_field_group_id group = cmzn_field_cast_group(graphics->subgroup_field);
-										if (group)
-										{
-											cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
-											if (node_group)
-											{
-												iteration_nodeset =
-													cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-												cmzn_field_node_group_destroy(&node_group);
-											}
-											cmzn_field_group_destroy(&group);
-										}
-										else
-										{
-											cmzn_field_node_group_id node_group = cmzn_field_cast_node_group(graphics->subgroup_field);
-											if (node_group)
-											{
-												// check group is for same master nodeset
-												iteration_nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-												cmzn_nodeset_id temp_master_nodeset = cmzn_nodeset_get_master_nodeset(iteration_nodeset);
-												if (!cmzn_nodeset_match(master_nodeset, temp_master_nodeset))
-												{
-													cmzn_nodeset_destroy(&iteration_nodeset);
-												}
-												cmzn_nodeset_destroy(&temp_master_nodeset);
-												cmzn_field_node_group_destroy(&node_group);
-											}
-											else
-											{
-												iteration_nodeset = cmzn_nodeset_access(master_nodeset);
-											}
-										}
-									}
-									else
-									{
-										iteration_nodeset = cmzn_nodeset_access(master_nodeset);
-									}
-									if (iteration_nodeset)
-									{
-										GT_glyphset_vertex_buffers *glyphset = Nodeset_create_vertex_array(
-											iteration_nodeset, graphics_to_object_data->field_cache,
-											graphics->graphics_object,
-											graphics->glyph_repeat_mode,
-											graphics_to_object_data->rc_coordinate_field,
-											graphics->data_field,
-											graphics_to_object_data->wrapper_orientation_scale_field,
-											graphics->signed_scale_field,
-											graphics->label_field,
-											graphics->label_density_field,
-											(iteration_nodeset == master_nodeset) ? graphics->subgroup_field : 0,
-											graphics_to_object_data->selection_group_field,
-											graphics_to_object_data->glyph_gt_object,
-											graphics->point_base_size, graphics->point_offset, graphics->point_scale_factors,
-											graphics->font,  graphics->label_offset,
-											graphics->label_text,
-											graphics->select_mode);
-										if (!GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
-												graphics->graphics_object, glyphset))
-										{
-											DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
-											return_code = 0;
-										}
-										cmzn_nodeset_destroy(&iteration_nodeset);
-									}
-									cmzn_nodeset_destroy(&master_nodeset);
-								} break;
-								case CMZN_FIELD_DOMAIN_TYPE_POINT:
-								{
-									cmzn_graphics_to_point_vertex_buffer(graphics, graphics_to_object_data);
-								} break;
-								default: // ELEMENTS
-								{
-									GT_glyphset_vertex_buffers *glyphset =
-										CREATE(GT_glyphset_vertex_buffers)();
-									if (GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
-										graphics->graphics_object, glyphset))
-									{
-										Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
-										for (int i = 0; i < 3; i++)
-										{
-											glyph_base_size[i] = static_cast<GLfloat>(graphics->point_base_size[i]);
-											glyph_scale_factors[i] = static_cast<GLfloat>(graphics->point_scale_factors[i]);
-											glyph_offset[i] = static_cast<GLfloat>(graphics->point_offset[i]);
-											glyph_label_offset[i] = static_cast<GLfloat>(graphics->label_offset[i]);
-										}
-										GT_glyphset_vertex_buffers_setup(glyphset, graphics_to_object_data->glyph_gt_object, graphics->glyph_repeat_mode,
-											glyph_base_size, glyph_scale_factors, glyph_offset, graphics->font,
-											glyph_label_offset, graphics->label_text, /*label_bounds_dimension*/0,
-											/*label_bounds_components*/0);
-										if (graphics_to_object_data->iteration_mesh)
-										{
-											return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-										}
-									}
-									else
-									{
-										DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
-										return_code = 0;
-									}
-								} break;
-								}
-							} break;
-							case CMZN_GRAPHICS_TYPE_LINES:
-							{
-#if defined(USE_OPENCASCADE)
-								// test here for domain of rc_coordinate_field
-								// if it is a cad_geometry do something about it
-								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-								int return_code = Computed_field_get_domain( graphics_to_object_data->rc_coordinate_field, domain_field_list );
-								if ( return_code )
-								{
-									// so test for topology domain
-									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-										( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-									if ( cad_topology_field )
-									{
-										// if topology domain then draw item at location
-										return_code = Cad_shape_to_graphics_object( cad_topology_field, graphics_to_object_data );
-										DESTROY_LIST(Computed_field)(&domain_field_list);
-										break;
-									}
-								}
-								if ( domain_field_list )
-									DESTROY_LIST(Computed_field)(&domain_field_list);
-#endif /* defined(USE_OPENCASCADE) */
-								if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
-								{
-									GT_polyline_vertex_buffers *lines =
-										CREATE(GT_polyline_vertex_buffers)(
-											g_PLAIN, graphics->render_line_width);
-									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-										graphics->graphics_object, lines))
-									{
-										if (graphics_to_object_data->iteration_mesh)
-										{
-											return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-										}
-									}
-									else
-									{
-										DESTROY(GT_polyline_vertex_buffers)(&lines);
-										return_code = 0;
-									}
-								}
-								else if (graphics_to_object_data->iteration_mesh)
-								{
-									GT_surface_vertex_buffers *surfaces =
-										CREATE(GT_surface_vertex_buffers)(
-											g_SHADED_TEXMAP, graphics->render_polygon_mode);
-									if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-										graphics->graphics_object, surfaces))
-									{
-										if (graphics_to_object_data->iteration_mesh)
-										{
-											return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-										}
-									}
-									else
-									{
-										DESTROY(GT_surface_vertex_buffers)(&surfaces);
-										return_code = 0;
-									}
-								}
-							} break;
-							case CMZN_GRAPHICS_TYPE_SURFACES:
-							{
-								bool cad_surfaces = false;
-#if defined(USE_OPENCASCADE)
-								{
-									// test here for domain of rc_coordinate_field
-									// if it is a cad_geometry do something about it
-									//if ( is_cad_geometry( settings_to_object_data->rc_coordinate_field->get_domain() ) )
-									struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-									int return_code = Computed_field_get_domain( graphics_to_object_data->rc_coordinate_field, domain_field_list );
-									if ( return_code )
-									{
-										//printf( "got domain of rc_coordinate_field (%d)\n", NUMBER_IN_LIST(Computed_field)(domain_field_list) );
-										// so test for topology domain
-										struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-											( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-										if ( cad_topology_field )
-										{
-											cad_surfaces = true;
-											//printf( "hurrah, we have a cad topology domain.\n" );
-											// if topology domain then draw item at location
-											return_code = Cad_shape_to_graphics_object( cad_topology_field, graphics_to_object_data );
-											DESTROY_LIST(Computed_field)(&domain_field_list);
-											break;
-										}
-									}
-									if ( domain_field_list )
-										DESTROY_LIST(Computed_field)(&domain_field_list);
-								}
-#endif /* defined(USE_OPENCASCADE) */
-								if (!cad_surfaces)
-								{
-									GT_surface_vertex_buffers *surfaces =
-										CREATE(GT_surface_vertex_buffers)(
-											g_SHADED_TEXMAP, graphics->render_polygon_mode);
-									if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-										graphics->graphics_object, surfaces))
-									{
-										if (graphics_to_object_data->iteration_mesh)
-										{
-											return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-										}
-									}
-									else
-									{
-										DESTROY(GT_surface_vertex_buffers)(&surfaces);
-										return_code = 0;
-									}
-								}
-							} break;
-							case CMZN_GRAPHICS_TYPE_CONTOURS:
-							{
-								// Used to call GT_object_clear_primitives(graphics->graphics_object) here
-								// which is very expensive when partial editing. Seems to work without it.
-								if (0 < graphics->number_of_isovalues)
-								{
-									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-									{
-										GT_surface_vertex_buffers *surfaces =
-											CREATE(GT_surface_vertex_buffers)(
-												g_SH_DISCONTINUOUS_TEXMAP, graphics->render_polygon_mode);
-										if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-											graphics->graphics_object, surfaces))
-										{
-											graphics_to_object_data->iso_surface_specification =
-													Iso_surface_specification_create(
-														graphics->number_of_isovalues, graphics->isovalues,
-														graphics->first_isovalue, graphics->last_isovalue,
-														graphics_to_object_data->rc_coordinate_field,
-														graphics->data_field,
-														graphics->isoscalar_field,
-														graphics->texture_coordinate_field);
-										}
-										else
-										{
-											DESTROY(GT_surface_vertex_buffers)(&surfaces);
-											return_code = 0;
-										}
-									}
-									else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-									{
-										GT_polyline_vertex_buffers *lines =
-											CREATE(GT_polyline_vertex_buffers)(
-												g_PLAIN, graphics->render_line_width);
-										if (0 == (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-											graphics->graphics_object, lines)))
-										{
-											DESTROY(GT_polyline_vertex_buffers)(&lines);
-											return_code = 0;
-										}
-									}
-									if (graphics_to_object_data->iteration_mesh)
-									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-									}
-									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-									{
-										Iso_surface_specification_destroy(&graphics_to_object_data->iso_surface_specification);
-									}
-								}
-							} break;
-							case CMZN_GRAPHICS_TYPE_STREAMLINES:
-							{
-								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-								{
-									GT_surface_vertex_buffers *surfaces =
-										CREATE(GT_surface_vertex_buffers)(
-											g_SHADED_TEXMAP, graphics->render_polygon_mode);
-									GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-										graphics->graphics_object, surfaces);
-								}
-								else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-								{
-									GT_polyline_vertex_buffers *lines =
-										CREATE(GT_polyline_vertex_buffers)(
-											g_PLAIN, graphics->render_line_width);
-									GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-										graphics->graphics_object, lines);
-								}
-								if (graphics->seed_element)
-								{
-									return_code = FE_element_to_graphics_object(
-										graphics->seed_element, graphics_to_object_data);
-								}
-								else if (graphics->seed_nodeset &&
-									graphics->seed_node_mesh_location_field)
-								{
-									cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(graphics->seed_nodeset);
-									cmzn_node_id node = 0;
-									while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-									{
-										if (!cmzn_node_to_streamline(node, graphics_to_object_data))
-										{
-											return_code = 0;
-											break;
-										}
-									}
-									cmzn_nodeiterator_destroy(&iterator);
-								}
-								else
-								{
-									if (graphics_to_object_data->iteration_mesh)
-									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-									}
-								}
-							} break;
-							default:
-							{
-								return_code = 0;
-							} break;
-							} /* end of switch */
-							cmzn_mesh_destroy(&graphics_to_object_data->iteration_mesh);
-							cmzn_mesh_destroy(&graphics_to_object_data->master_mesh);
-							if (return_code)
-							{
-								/* set the spectrum in the graphics object - if required */
-								if ((graphics->data_field) ||
-									((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
-										(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD != graphics->streamlines_colour_data_type)))
-								{
-									set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
-								}
-								/* mark display list as needing updating */
-								graphics->graphics_changed = 0;
-								GT_object_changed(graphics->graphics_object);
-							}
-							else
-							{
-								graphics_string = cmzn_graphics_string(graphics,
-									GRAPHICS_STRING_COMPLETE_PLUS);
-								display_message(ERROR_MESSAGE,
-									"cmzn_graphics_to_graphics_object.  "
-									"Could not build '%s'",graphics_string);
-								DEALLOCATE(graphics_string);
-								/* set return_code to 1, so rest of graphics can be built */
-								return_code = 1;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_to_graphics_object.  "
-								"Could not create graphics object");
-							return_code = 0;
-						}
-						if (graphics_to_object_data->existing_graphics)
-						{
-							DEACCESS(GT_object)(&(graphics_to_object_data->existing_graphics));
-						}
-						if (graphics->data_field)
-						{
-							graphics_to_object_data->number_of_data_values = 0;
-							DEALLOCATE(graphics_to_object_data->data_copy_buffer);
-						}
-					}
-					if (graphics_to_object_data->glyph_gt_object)
-					{
-						DEACCESS(GT_object)(&(graphics_to_object_data->glyph_gt_object));
-					}
-					if (graphics->stream_vector_field)
-					{
-						Computed_field_end_wrap(&(graphics_to_object_data->wrapper_stream_vector_field));
-					}
-					if (graphics->point_orientation_scale_field)
-					{
-						Computed_field_end_wrap(&(graphics_to_object_data->wrapper_orientation_scale_field));
-					}
-					if (graphics_to_object_data->rc_coordinate_field)
-					{
-						Computed_field_end_wrap(&(graphics_to_object_data->rc_coordinate_field));
-					}
-				}
-			}
-			if (graphics->selected_graphics_changed)
-			{
-				if (graphics->graphics_object)
-					GT_object_changed(graphics->graphics_object);
-				graphics->selected_graphics_changed = 0;
-			}
+			return_code = cmzn_graphics_to_graphics_object_no_check_on_filter(graphics,
+				graphics_to_object_data);
 		}
 	}
 	else
@@ -3221,8 +3209,6 @@ int cmzn_graphics_to_graphics_object(
 			"cmzn_graphics_to_graphics_object.  Invalid argument(s)");
 		return_code = 0;
 	}
-
-	LEAVE;
 
 	return (return_code);
 }
@@ -3417,9 +3403,8 @@ cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
 /** data for passing to FE_element_as_graphics_name_has_changed */
 struct FE_element_as_graphics_name_has_changed_data
 {
-	FE_region *fe_region;
-	int domainDimension;
-	struct CHANGE_LOG(FE_element) *elementChanges[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_mesh *fe_mesh;
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CHANGE_LOG(FE_node) *nodeChanges;
 };
 
@@ -3427,15 +3412,15 @@ struct FE_element_as_graphics_name_has_changed_data
  * @param data_void  Pointer to struct FE_element_as_graphics_name_has_changed_data.
  * @return  1 if element has changed according to event.
  */
-int FE_element_as_graphics_name_has_changed(int elementIdentifier, void *data_void)
+int FE_element_as_graphics_name_has_changed(int index, void *data_void)
 {
 	FE_element_as_graphics_name_has_changed_data *data =
-		reinterpret_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
-	FE_element *element = FE_region_get_FE_element_from_identifier(data->fe_region, data->domainDimension, elementIdentifier);
-	// won't find element if it has been removed
-	if (element)
-		return FE_element_or_parent_changed(element, data->elementChanges, data->nodeChanges);
-	else
+		static_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
+	DsLabelIdentifier elementIdentifier = data->fe_mesh->getElementIdentifier(index);
+	if (elementIdentifier < 0)
+		return 1; // element removed
+	FE_element *element = data->fe_mesh->getElement(index);
+	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChanges))
 		return 1;
 	return 0;
 }
@@ -3468,7 +3453,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+			// rebuild all if identifiers changed, for correct picking and editing graphics object
 			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
 			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
 			if (nodeChanges)
@@ -3489,16 +3474,20 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
-			struct CHANGE_LOG(FE_element) *elementChanges = feRegionChanges->getElementChanges(domainDimension);
-			int elementChangeSummary = 0;
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(elementChanges, &elementChangeSummary);
-			if (elementChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
+			bool partialUpdate = (0 != (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT));
+			if (!partialUpdate)
 			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-				return 1;
+				// If element identifiers have changed, cmiss_number and derived fields are
+				// not marked as changed, so need to manually trigger graphics using them to
+				// be updated. However, since renumbering is not common, it's not worth the
+				// complexity of checking such a field is being used, so always partial update.
+				// Also for the future this allows us to send an identifiers all-change
+				// message if reclaimed memory frpm DsLabels and DsMap (all indexes changed).
+				DsLabelsChangeLog *elementChanges = feRegionChanges->getElementChangeLog(domainDimension);
+				if ((elementChanges) && (elementChanges->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
+					partialUpdate = true;
 			}
-			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
+			if (partialUpdate)
 			{
 				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES ||
 					graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS)
@@ -3513,10 +3502,12 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				bool tooManyElementChanges = false;
 				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
 				{
+					DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(dim);
 					int number = 0;
-					CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(feRegionChanges->getElementChanges(dim), &number);
-					if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
-						cmzn_region_get_FE_region(graphics->scene->region), dim))
+					if (elementChangeLog && (elementChangeLog->isAllChange() ||
+						((number = elementChangeLog->getChangeCount())*2 >
+							FE_region_get_number_of_FE_elements_of_dimension(
+								cmzn_region_get_FE_region(graphics->scene->region), dim))))
 					{
 						tooManyElementChanges = true;
 						break;
@@ -3532,10 +3523,10 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					return 1;
 				}
 				FE_element_as_graphics_name_has_changed_data data;
-				data.fe_region = cmzn_region_get_FE_region(graphics->scene->region);
-				data.domainDimension = domainDimension;
+				data.fe_mesh = FE_region_find_FE_mesh_by_dimension(
+					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
 				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-					data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
+					data.elementChangeLogs[dim] = feRegionChanges->getElementChangeLog(dim + 1);
 				data.nodeChanges = nodeChanges;
 				/* partial rebuild for few node/element field changes */
 				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
@@ -5198,6 +5189,84 @@ char *cmzn_graphics_type_enum_to_string(enum cmzn_graphics_type type)
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
+class cmzn_graphicslineattributes_shape_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphicslineattributes_shape_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
+				enum_string = "LINE";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+				enum_string = "RIBBON";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+				enum_string = "CIRCLE_EXTRUSION";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
+				enum_string = "SQUARE_EXTRUSION";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(string);
+}
+
+char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type)
+{
+	const char *type_string = cmzn_graphicslineattributes_shape_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_graphics_select_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_select_mode type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_GRAPHICS_SELECT_MODE_ON:
+			enum_string = "ON";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_OFF:
+			enum_string = "OFF";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED:
+			enum_string = "DRAW_SELECTED";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED:
+			enum_string = "DRAW_UNSELECTED";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_select_mode,
+		cmzn_graphics_select_mode_conversion>(string);
+}
+
+char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type)
+{
+	const char *type_string = cmzn_graphics_select_mode_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
 class cmzn_graphics_render_polygon_mode_conversion
 {
 public:
@@ -5231,6 +5300,79 @@ char *cmzn_graphics_render_polygon_mode_enum_to_string(
 {
 	const char *type_string = cmzn_graphics_render_polygon_mode_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_graphics_streamlines_track_direction_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_streamlines_track_direction direction)
+	{
+		const char *enum_string = 0;
+		switch (direction)
+		{
+		case CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD:
+			enum_string = "FORWARD";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE:
+			enum_string = "REVERSE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_streamlines_track_direction,
+		cmzn_graphics_streamlines_track_direction_conversion>(string);
+}
+
+char *cmzn_graphics_streamlines_track_direction_enum_to_string(
+	enum cmzn_graphics_streamlines_track_direction direction)
+{
+	const char *string = cmzn_graphics_streamlines_track_direction_conversion::to_string(direction);
+	return (string ? duplicate_string(string) : 0);
+}
+
+class cmzn_graphics_streamlines_colour_data_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_streamlines_colour_data_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD:
+			enum_string = "FIELD";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE:
+			enum_string = "MAGNITUDE";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME:
+			enum_string = "TRAVEL_TIME";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_streamlines_colour_data_type,
+		cmzn_graphics_streamlines_colour_data_type_conversion>(string);
+}
+
+char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
+	enum cmzn_graphics_streamlines_colour_data_type type)
+{
+	const char *string = cmzn_graphics_streamlines_colour_data_type_conversion::to_string(type);
+	return (string ? duplicate_string(string) : 0);
 }
 
 enum cmzn_field_domain_type cmzn_graphics_get_field_domain_type(
@@ -6254,7 +6396,7 @@ int cmzn_graphicspointattributes_set_scale_factors(
 	if (graphics && (0 < number) && scale_factors)
 	{
 		bool changed = false;
-		FE_value value;
+		FE_value value = 0.0;
 		for (int i = 0; i < 3; ++i)
 		{
 			if (i < number)
@@ -6525,3 +6667,59 @@ enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics 
 	}
 	return g_OBJECT_TYPE_INVALID;
 }
+
+/**
+ * This function first make a copy of the provided graphics then create the
+ * gt_object required for generating the vertices. Once vertices are generated,
+ * the gt_object will be returned.
+ */
+struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graphics)
+{
+	struct GT_object *return_object = 0;
+	if (graphics && graphics->scene)
+	{
+		cmzn_graphics *copy_graphics=CREATE(cmzn_graphics)(graphics->graphics_type);
+		if (copy_graphics)
+		{
+			/* copy and insert in list */
+			if (cmzn_graphics_copy_without_graphics_object(copy_graphics,graphics))
+			{
+				struct cmzn_graphics_to_graphics_object_data graphics_to_object_data;
+				graphics_to_object_data.name_prefix = "temp";
+				graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
+				graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
+				graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
+				graphics_to_object_data.region = cmzn_scene_get_region_internal(graphics->scene);
+				graphics_to_object_data.field_module = cmzn_region_get_fieldmodule(
+					cmzn_scene_get_region_internal(graphics->scene));
+				// cache changes to avoid reporting add/remove temporary wrapper fields
+				cmzn_fieldmodule_begin_change(graphics_to_object_data.field_module);
+				graphics_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(
+					graphics_to_object_data.field_module);
+				graphics_to_object_data.fe_region = cmzn_region_get_FE_region(
+					cmzn_scene_get_region_internal(graphics->scene));
+				graphics_to_object_data.master_mesh = 0;
+				graphics_to_object_data.iteration_mesh = 0;
+				graphics_to_object_data.scenefilter = 0;
+				graphics_to_object_data.time = 0;
+				graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(
+					graphics->scene);
+				graphics_to_object_data.iso_surface_specification = NULL;
+				cmzn_graphics_to_graphics_object_no_check_on_filter(copy_graphics,
+					&graphics_to_object_data);
+				return_object = ACCESS(GT_object)(copy_graphics->graphics_object);
+				if (graphics_to_object_data.selection_group_field)
+				{
+					cmzn_field_destroy(&graphics_to_object_data.selection_group_field);
+				}
+				cmzn_fieldcache_destroy(&graphics_to_object_data.field_cache);
+				cmzn_fieldmodule_end_change(graphics_to_object_data.field_module);
+				cmzn_fieldmodule_destroy(&graphics_to_object_data.field_module);
+			}
+			cmzn_graphics_destroy(&copy_graphics);
+		}
+	}
+
+	return return_object;
+}
+

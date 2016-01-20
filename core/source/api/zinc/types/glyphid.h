@@ -29,7 +29,7 @@ typedef struct cmzn_glyphmodule *cmzn_glyphmodule_id;
  * point, line, sphere, axes etc.
  * Note that the appearance of some glyphs depend on attributes of point
  * graphics used to draw them: circular glyphs (sphere, cylinder etc.) use the 
- * circle divisions of the tessellation object, axes with labels use the font.
+ * circle divisions of the glyph object, axes with labels use the font.
  * Derived glyph types implement custom axes and spectrum colour bar.
  */
 struct cmzn_glyph;
@@ -125,5 +125,52 @@ enum cmzn_glyph_shape_type
 	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_XYZ,   /*!< unit solid arrow axes with labels x,y,z */
 	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR /*!< unit solid arrow axes with materials red, green, blue */
 };
+
+/**
+ * Bit flags summarising changes to a glyph or glyphs in a glyphmodule.
+ */
+enum cmzn_glyph_change_flag
+{
+	CMZN_GLYPH_CHANGE_FLAG_NONE = 0,
+		/*!< glyph(s) not changed */
+	CMZN_GLYPH_CHANGE_FLAG_ADD = 1,
+		/*!< one or more glyphs added */
+	CMZN_GLYPH_CHANGE_FLAG_REMOVE = 2,
+		/*!< one or more glyphs removed */
+	CMZN_GLYPH_CHANGE_FLAG_IDENTIFIER = 4,
+		/*!< glyph identifier changed */
+	CMZN_GLYPH_CHANGE_FLAG_DEFINITION = 8,
+		/*!< change to glyph attributes other than identifier. */
+	CMZN_GLYPH_CHANGE_FLAG_FULL_RESULT = 16,
+		/*!< all resultant values of glyph changed. */
+	CMZN_GLYPH_CHANGE_FLAG_FINAL = 32768
+		/*!< final notification: owning glyph module i.e. glyph module
+		 * has been destroyed */
+};
+
+/**
+ * Type for passing logical OR of #cmzn_glyph_change_flag
+ */
+typedef int cmzn_glyph_change_flags;
+
+/**
+ * @brief Manages individual user notification of changes with a glyph module.
+ *
+ * Manages individual user notification of changes with a glyph module.
+ */
+struct cmzn_glyphmodulenotifier;
+typedef struct cmzn_glyphmodulenotifier *cmzn_glyphmodulenotifier_id;
+
+/**
+ * @brief Information about changes to glyphs in the glyph module.
+ *
+ * Information about changes to glyphs in the glyph module,
+ * sent with each callback from the glyphmodule notifier.
+ */
+struct cmzn_glyphmoduleevent;
+typedef struct cmzn_glyphmoduleevent *cmzn_glyphmoduleevent_id;
+
+typedef void (*cmzn_glyphmodulenotifier_callback_function)(
+	cmzn_glyphmoduleevent_id event, void *client_data);
 
 #endif

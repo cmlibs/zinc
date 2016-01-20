@@ -30,7 +30,7 @@ extern "C" {
  * @return  New handle to tessellation module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Destroys this handle to the tessellation module (and sets it to NULL).
@@ -41,7 +41,7 @@ ZINC_API cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_destroy(
-	cmzn_tessellationmodule_id *tessellationmodule_address);
+    cmzn_tessellationmodule_id *tessellationmodule_address);
 
 /**
  * Create and return a new tessellation.
@@ -51,7 +51,7 @@ ZINC_API int cmzn_tessellationmodule_destroy(
  * @return  Handle to new tessellation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Create a tessellation iterator object for iterating through the
@@ -67,7 +67,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
  * @return  Handle to tessellation iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationiterator_id cmzn_tessellationmodule_create_tessellationiterator(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Begin caching or increment cache level for this tessellation module. Call this
@@ -101,7 +101,7 @@ ZINC_API int cmzn_tessellationmodule_end_change(cmzn_tessellationmodule_id tesse
  * @return  Handle to tessellation, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
-	cmzn_tessellationmodule_id tessellationmodule, const char *name);
+    cmzn_tessellationmodule_id tessellationmodule, const char *name);
 
 /**
  * Get the default tessellation to be used by new lines, surfaces and
@@ -113,7 +113,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
  * @return  Handle to default tessellation, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Set the default tessellation to be used by new lines, surfaces and
@@ -124,8 +124,8 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_set_default_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule,
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellationmodule_id tessellationmodule,
+    cmzn_tessellation_id tessellation);
 
 /**
  * Get the default tessellation to be used by new points and streamlines
@@ -138,7 +138,7 @@ ZINC_API int cmzn_tessellationmodule_set_default_tessellation(
  * none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Set the default tessellation to be used by new points and streamlines
@@ -149,8 +149,29 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessell
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule,
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellationmodule_id tessellationmodule,
+    cmzn_tessellation_id tessellation);
+
+/**
+ * Read the json description to the tessellation module. This will change
+ * the tessellations in the tessellation module.
+ *
+ * @param tessellationmodule  Handle to the tessellation module.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_tessellationmodule_read_description(
+	cmzn_tessellationmodule_id tessellationmodule, const char *description);
+
+/**
+ * Write the json file describing the tessellations in the tessellation module,
+ * which can be used to store the current tessellation settings.
+ *
+ * @param tessellationmodule  Handle to the tessellation module.
+ * @return  c string containing the json description of tessellation module, otherwise 0;
+ */
+ZINC_API char *cmzn_tessellationmodule_write_description(
+	cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Returns a new handle to the tessellation with reference count incremented.
@@ -179,7 +200,7 @@ ZINC_API int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_addres
  * @return  The number of circle divisions, or 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_circle_divisions(
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellation_id tessellation);
 
 /**
  * Sets the number of line segments used to approximate circles in graphics
@@ -192,7 +213,7 @@ ZINC_API int cmzn_tessellation_get_circle_divisions(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_circle_divisions(
-	cmzn_tessellation_id tessellation, int circleDivisions);
+    cmzn_tessellation_id tessellation, int circleDivisions);
 
 /**
  * Get managed status of tessellation in its owning tessellation module.
@@ -217,7 +238,7 @@ ZINC_API bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation);
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
-	bool value);
+    bool value);
 
 /**
  * Return an allocated string containing tessellation name.
@@ -253,7 +274,7 @@ ZINC_API int cmzn_tessellation_set_name(cmzn_tessellation_id tessellation, const
  * larger array. Returns 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_minimum_divisions(
-	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
+    cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the minimum number of line segments used to approximate curves in each
@@ -269,7 +290,7 @@ ZINC_API int cmzn_tessellation_get_minimum_divisions(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_minimum_divisions(
-	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+    cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Gets the refinements to be used in product with the minimum divisions
@@ -286,7 +307,7 @@ ZINC_API int cmzn_tessellation_set_minimum_divisions(
  * larger array. Returns 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_refinement_factors(
-	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
+    cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the refinements to be used in product with the minimum divisions
@@ -307,7 +328,7 @@ ZINC_API int cmzn_tessellation_get_refinement_factors(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_refinement_factors(
-	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+    cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Returns a new handle to the iterator with reference count incremented.
@@ -317,7 +338,7 @@ ZINC_API int cmzn_tessellation_set_refinement_factors(
  * failure.
  */
 ZINC_API cmzn_tessellationiterator_id cmzn_tessellationiterator_access(
-	cmzn_tessellationiterator_id iterator);
+    cmzn_tessellationiterator_id iterator);
 
 /**
  * Destroys this handle to the tessellation iterator and sets it to NULL.
@@ -333,11 +354,120 @@ ZINC_API int cmzn_tessellationiterator_destroy(cmzn_tessellationiterator_id *ite
  * over then advances the iterator position. The caller is required to destroy
  * the returned tessellation handle.
  *
- * @param iterator  Material iterator to query and advance.
+ * @param iterator  Tessellation iterator to query and advance.
  * @return  Handle to the next tessellation, or NULL/invalid handle if none or
  * failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationiterator_next(cmzn_tessellationiterator_id iterator);
+
+/**
+ * Create a notifier for getting callbacks for changes to the tessellations in the
+ * tessellation module.
+ *
+ * @param tessellationmodule  Handle to the tessellation module to get notifications for.
+ * @return  Handle to new tessellation module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmodulenotifier_id cmzn_tessellationmodule_create_tessellationmodulenotifier(
+	cmzn_tessellationmodule_id tessellationmodule);
+
+/**
+ * Returns a new handle to the tessellation module notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The tessellation module notifier to obtain a new handle to.
+ * @return  New handle to tessellation module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmodulenotifier_id cmzn_tessellationmodulenotifier_access(
+	cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Destroys handle to the tessellation module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of tessellation module notifier handle to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_destroy(
+	cmzn_tessellationmodulenotifier_id *notifier_address);
+
+/**
+ * Stop and clear tessellation module callback. This will stop the callback and also
+ * remove the callback function from the tessellationmodule notifier.
+ *
+ * @param notifier  Handle to the tessellationmodule notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_clear_callback(
+	cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the tessellationmodule notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_tessellationmodulenotifier_callback_function
+ * @param notifier  Handle to the tessellationmodule notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_set_callback(
+	cmzn_tessellationmodulenotifier_id notifier,
+	cmzn_tessellationmodulenotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ * @see cmzn_tessellationmodulenotifier_set_callback
+ *
+ * @see cmzn_tessellationmodulenotifier_set_callback
+ * @param notifier  Handle to the tessellation module notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_tessellationmodulenotifier_get_callback_user_data(
+ cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Returns a new handle to the tessellationmodule event with reference count incremented.
+ *
+ * @param event  The tessellation module event to obtain a new handle to.
+ * @return  New handle to tessellation module event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmoduleevent_id cmzn_tessellationmoduleevent_access(
+	cmzn_tessellationmoduleevent_id event);
+
+/**
+ * Destroys this handle to the tessellationmodule event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event argument passed to the user callback function.
+ *
+ * @param event_address  Address of tessellation module event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmoduleevent_destroy(cmzn_tessellationmoduleevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how tessellations in the tessellation module have changed.
+ * @see cmzn_tessellation_change_flag
+ *
+ * @param event  Handle to the tessellation module event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_tessellation_change_flag values.
+ */
+ZINC_API cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_summary_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the tessellation has changed.
+ * @see cmzn_tessellation_change_flag
+ *
+ * @param event  Handle to the tessellation module event to query.
+ * @param tessellation  The tessellation to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_tessellation_change_flag values. Returns
+ * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event, cmzn_tessellation_id tessellation);
 
 #ifdef __cplusplus
 }

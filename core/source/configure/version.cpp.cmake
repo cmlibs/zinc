@@ -12,7 +12,7 @@
 static const int ZINC_MAJOR_VERSION = @Zinc_VERSION_MAJOR@;
 static const int ZINC_MINOR_VERSION = @Zinc_VERSION_MINOR@;
 static const int ZINC_PATCH_VERSION = @Zinc_VERSION_PATCH@;
-static const char* ZINC_REVISION = "@Zinc_VERSION@";
+static const char* ZINC_REVISION = "@ZINC_REVISION_LONG@";
 static const char* ZINC_BUILD_TYPE = "@CMAKE_BUILD_TYPE@";
 
 int cmzn_context_get_version(cmzn_context_id context, int *version_out)

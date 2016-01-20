@@ -16,6 +16,7 @@
 #include "types/fontid.h"
 #include "types/glyphid.h"
 #include "types/graphicsid.h"
+#include "types/lightid.h"
 #include "types/materialid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
@@ -277,6 +278,17 @@ ZINC_API cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene);
 ZINC_API cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene);
 
 /**
+ * Return the light module which manages light used to control lighting of the
+ * scene. Note on startup only light "default" and "default_ambient" are
+ * defined. Additional custom lights can be defined using light module functions.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the light module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_lightmodule_id cmzn_scene_get_lightmodule(
+	cmzn_scene_id scene);
+
+/**
  * Return the material module which manages materials used to colour, texture
  * and shade graphics. Note on startup only materials "default" and
  * "default_selected" are defined, as white and red, respectively. Additional
@@ -457,7 +469,7 @@ ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
  * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */
-ZINC_API int cmzn_scene_export_scene(cmzn_scene_id scene,
+ZINC_API int cmzn_scene_write(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
 
 /**
@@ -470,8 +482,30 @@ ZINC_API int cmzn_scene_export_scene(cmzn_scene_id scene,
  * @return  Status CMZN_OK if data is successfully imported, any other value
  * 	on failure.
  */
-ZINC_API int cmzn_scene_import_scene(cmzn_scene_id scene,
+ZINC_API int cmzn_scene_read(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
+
+/**
+ * Write the json file describing the scene and its graphics, which can
+ * be used to store the current scene settings.
+ *
+ * @param scene  Handle to the scene.
+ * @return  c string containing the json description of scene, otherwise 0;
+ */
+ZINC_API char *cmzn_scene_write_description(cmzn_scene_id scene);
+
+/**
+ * Read the json description to the scene and graphics. This will change
+ * the settings in scene and its graphics.
+ *
+ * @param scene  Handle to the scene.
+ * @description  The string containing json description
+ * @overwrite  old graphics will be replaced when set to true or new graphics
+ * 	will be added to the existing graphics when set to false
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_scene_read_description(
+	cmzn_scene_id scene, const char *description, bool overwrite);
 
 #ifdef __cplusplus
 }

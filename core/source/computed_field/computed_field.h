@@ -218,14 +218,14 @@ int cmzn_fieldcache_set_mesh_location_with_parent(
  */
 int cmzn_fieldcache_set_assign_in_cache(cmzn_fieldcache_id cache, int assign_in_cache);
 
-/***************************************************************************//**
+/**
  * Internal function.
  * Note: no warnings if not evaluated so can be used for is_defined
  *
- * @return  1 if any field component value is non zero with a small tolerance,
- * otherwise 0.
+ * @return  true if any field component value is non zero with a small tolerance,
+ * otherwise false.
  */
-int cmzn_field_evaluate_boolean(cmzn_field_id field,
+bool cmzn_field_evaluate_boolean(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
 
 /***************************************************************************//**

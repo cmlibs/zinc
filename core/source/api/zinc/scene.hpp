@@ -12,6 +12,7 @@
 #include "zinc/scene.h"
 #include "zinc/field.hpp"
 #include "zinc/graphics.hpp"
+#include "zinc/light.hpp"
 #include "zinc/region.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
@@ -185,6 +186,11 @@ public:
 		return Glyphmodule(cmzn_scene_get_glyphmodule(id));
 	}
 
+	inline Lightmodule getLightmodule()
+	{
+		return Lightmodule(cmzn_scene_get_lightmodule(id));
+	}
+
 	inline Materialmodule getMaterialmodule()
 	{
 		return Materialmodule(cmzn_scene_get_materialmodule(id));
@@ -254,11 +260,21 @@ public:
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
+	char *writeDescription()
+	{
+		return cmzn_scene_write_description(id);
+	}
+
+	int readDescription(const char *description, bool overwrite)
+	{
+		return cmzn_scene_read_description(id, description, overwrite);
+	}
+
 	inline Scenepicker createScenepicker();
 
-	inline int exportScene(const StreaminformationScene& streaminformationScene);
+	inline int write(const StreaminformationScene& streaminformationScene);
 
-	inline int importScene(const StreaminformationScene& streaminformationScene);
+	inline int read(const StreaminformationScene& streaminformationScene);
 
 	inline StreaminformationScene createStreaminformationScene();
 

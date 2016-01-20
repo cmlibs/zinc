@@ -4,6 +4,7 @@ v3.0.1
 API Changes:
 (Break) 3490 Changed enumerator values in enum cmzn_node_value_label to permute in lowest s number fastest, matching cm/Iron. This is a binary break, not a source break.
 (Break) 3490 New format for element fields written to EX file, mapping by derivatives and versions instead of node indices. Old files can still be read; new files can't be read by older versions.
+(Break) 3288 Changed element face type enumeration: ALL replaces INVALID in matching any element, ANY_FACE replaces ALL in matching any element that is a face, NO_FACE option added. Binary enumeration values changed.
 
 v3.0.0
 

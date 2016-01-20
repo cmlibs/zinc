@@ -11,6 +11,7 @@
 
 #include "zinc/sceneviewer.h"
 #include "zinc/context.hpp"
+#include "zinc/light.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenefilter.hpp"
 
@@ -538,6 +539,61 @@ public:
 	{
 		return cmzn_sceneviewer_write_image_to_file(id, file_name, force_onscreen, preferred_width,
 			preferred_height, preferred_antialias, preferred_transparency_layers);
+	}
+
+	int addLight(const Light& light)
+	{
+		return cmzn_sceneviewer_add_light(id, light.getId());
+	}
+
+	bool hasLight(const Light& light)
+	{
+		return cmzn_sceneviewer_has_light(id, light.getId());
+	}
+
+	int removeLight(const Light& light)
+	{
+		return cmzn_sceneviewer_remove_light(id, light.getId());
+	}
+
+	bool isLightingLocalViewer()
+	{
+		return cmzn_sceneviewer_is_lighting_local_viewer(this->id);
+	}
+
+	int setLightingLocalViewer(bool value)
+	{
+		return cmzn_sceneviewer_set_lighting_local_viewer(this->id, value);
+	}
+
+	bool isLightingTwoSided()
+	{
+		return cmzn_sceneviewer_is_lighting_two_sided(this->id);
+	}
+
+	int setLightingTwoSided(bool value)
+	{
+		return cmzn_sceneviewer_set_lighting_two_sided(this->id, value);
+	}
+
+	int transformCoordinates(Scenecoordinatesystem inCoordinateSystem,
+		Scenecoordinatesystem outCoordinateSystem, const Scene& localScene,
+		const double *valuesIn3, double *valuesOut3)
+	{
+		return cmzn_sceneviewer_transform_coordinates(id,
+			static_cast<cmzn_scenecoordinatesystem>(inCoordinateSystem),
+			static_cast<cmzn_scenecoordinatesystem>(outCoordinateSystem),
+			localScene.getId(), valuesIn3, valuesOut3);
+	}
+
+	int readDescription(const char *description)
+	{
+		return cmzn_sceneviewer_read_description(this->id, description);
+	}
+
+	char *writeDescription()
+	{
+		return cmzn_sceneviewer_write_description(this->id);
 	}
 
 	Sceneviewernotifier createSceneviewernotifier()

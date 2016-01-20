@@ -9,8 +9,13 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include <algorithm>
+#include <iterator>
+#include <list>
 #include <cstdlib>
 #include "zinc/status.h"
+#include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -24,15 +29,19 @@
 Module types
 ------------
 */
+typedef std::list<cmzn_tessellationmodulenotifier *> cmzn_tessellationmodulenotifier_list;
 
-/* forward declaration */
 struct cmzn_tessellation *cmzn_tessellation_create_private();
+
+static void cmzn_tessellationmodule_Tessellation_change(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *message, void *tessellationmodule_void);
 
 struct cmzn_tessellationmodule
 {
 
 private:
 
+	void *manager_callback_id;
 	struct MANAGER(cmzn_tessellation) *tessellationManager;
 	cmzn_tessellation *defaultTessellation;
 	cmzn_tessellation *defaultPointsTessellation;
@@ -44,10 +53,24 @@ private:
 		defaultPointsTessellation(0),
 		access_count(1)
 	{
+		notifier_list = new cmzn_tessellationmodulenotifier_list();
+		manager_callback_id = MANAGER_REGISTER(cmzn_tessellation)(
+			cmzn_tessellationmodule_Tessellation_change, (void *)this, tessellationManager);
 	}
 
 	~cmzn_tessellationmodule()
 	{
+		MANAGER_DEREGISTER(cmzn_tessellation)(manager_callback_id, tessellationManager);
+		manager_callback_id = 0;
+		for (cmzn_tessellationmodulenotifier_list::iterator iter = notifier_list->begin();
+			iter != notifier_list->end(); ++iter)
+		{
+			cmzn_tessellationmodulenotifier *notifier = *iter;
+			notifier->tessellationmoduleDestroyed();
+			cmzn_tessellationmodulenotifier::deaccess(notifier);
+		}
+		delete notifier_list;
+		notifier_list = 0;
 		cmzn_tessellation_destroy(&this->defaultTessellation);
 		cmzn_tessellation_destroy(&this->defaultPointsTessellation);
 		DESTROY(MANAGER(cmzn_tessellation))(&(this->tessellationManager));
@@ -55,9 +78,16 @@ private:
 
 public:
 
+	cmzn_tessellationmodulenotifier_list *notifier_list;
+
 	static cmzn_tessellationmodule *create()
 	{
-		return new cmzn_tessellationmodule();
+		cmzn_tessellationmodule *tessellationModule = new cmzn_tessellationmodule();
+		cmzn_tessellation_id tessellation = tessellationModule->getDefaultTessellation();
+		cmzn_tessellation_id pointTessellation = tessellationModule->getDefaultPointsTessellation();
+		cmzn_tessellation_destroy(&tessellation);
+		cmzn_tessellation_destroy(&pointTessellation);
+		return tessellationModule;
 	}
 
 	cmzn_tessellationmodule *access()
@@ -189,6 +219,25 @@ public:
 	{
 		REACCESS(cmzn_tessellation)(&this->defaultPointsTessellation, tessellation);
 		return CMZN_OK;
+	}
+
+	void addNotifier(cmzn_tessellationmodulenotifier *notifier)
+	{
+		notifier_list->push_back(notifier->access());
+	}
+
+	void removeNotifier(cmzn_tessellationmodulenotifier *notifier)
+	{
+		if (notifier)
+		{
+			cmzn_tessellationmodulenotifier_list::iterator iter = std::find(
+				notifier_list->begin(), notifier_list->end(), notifier);
+			if (iter != notifier_list->end())
+			{
+				cmzn_tessellationmodulenotifier::deaccess(notifier);
+				notifier_list->erase(iter);
+			}
+		}
 	}
 
 };
@@ -611,6 +660,219 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
 	return (MANAGER_CHANGE_NONE(cmzn_tessellation));
 }
 
+/**
+ * Tessellation manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the tessellations in the tessellation manager.
+ * @param tessellationmodule_void  Void pointer to changed tessellationmodule).
+ */
+static void cmzn_tessellationmodule_Tessellation_change(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *message, void *tessellationmodule_void)
+{
+	cmzn_tessellationmodule *tessellationmodule = (cmzn_tessellationmodule *)tessellationmodule_void;
+	if (message && tessellationmodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_tessellation)(message);
+
+		if (0 < tessellationmodule->notifier_list->size())
+		{
+			cmzn_tessellationmoduleevent_id event = cmzn_tessellationmoduleevent::create(tessellationmodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_tessellationmodulenotifier_list::iterator iter =
+				tessellationmodule->notifier_list->begin();
+				iter != tessellationmodule->notifier_list->end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_tessellationmoduleevent::deaccess(event);
+		}
+	}
+}
+
+
+cmzn_tessellationmodulenotifier_id cmzn_tessellationmodule_create_tessellationmodulenotifier(
+	cmzn_tessellationmodule_id tessellationmodule)
+{
+	return cmzn_tessellationmodulenotifier::create(tessellationmodule);
+}
+
+cmzn_tessellationmodulenotifier::cmzn_tessellationmodulenotifier(
+	cmzn_tessellationmodule *tessellationmodule) :
+	module(tessellationmodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	tessellationmodule->addNotifier(this);
+}
+
+cmzn_tessellationmodulenotifier::~cmzn_tessellationmodulenotifier()
+{
+}
+
+int cmzn_tessellationmodulenotifier::deaccess(cmzn_tessellationmodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_tessellationmodulenotifier::setCallback(cmzn_tessellationmodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_tessellationmodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_tessellationmodulenotifier::tessellationmoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_tessellationmoduleevent_id event = cmzn_tessellationmoduleevent::create(
+			static_cast<cmzn_tessellationmodule*>(0));
+		event->setChangeFlags(CMZN_TESSELLATION_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_tessellationmoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_tessellationmoduleevent::cmzn_tessellationmoduleevent(
+	cmzn_tessellationmodule *tessellationmoduleIn) :
+	module(cmzn_tessellationmodule_access(tessellationmoduleIn)),
+	changeFlags(CMZN_TESSELLATION_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_tessellationmoduleevent::~cmzn_tessellationmoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_tessellation)(&(this->managerMessage));
+	cmzn_tessellationmodule_destroy(&this->module);
+}
+
+cmzn_tessellation_change_flags cmzn_tessellationmoduleevent::getTessellationChangeFlags(
+	cmzn_tessellation *tessellation) const
+{
+	if (tessellation && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_tessellation)(this->managerMessage, tessellation);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+void cmzn_tessellationmoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_tessellation) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_tessellation)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_tessellation) *cmzn_tessellationmoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_tessellationmoduleevent::deaccess(cmzn_tessellationmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_tessellationmodulenotifier_clear_callback(
+	cmzn_tessellationmodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_tessellationmodulenotifier_set_callback(cmzn_tessellationmodulenotifier_id notifier,
+	cmzn_tessellationmodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_tessellationmodulenotifier_get_callback_user_data(
+ cmzn_tessellationmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_tessellationmodulenotifier_id cmzn_tessellationmodulenotifier_access(
+	cmzn_tessellationmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_tessellationmodulenotifier_destroy(cmzn_tessellationmodulenotifier_id *notifier_address)
+{
+	return cmzn_tessellationmodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_tessellationmoduleevent_id cmzn_tessellationmoduleevent_access(
+	cmzn_tessellationmoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_tessellationmoduleevent_destroy(cmzn_tessellationmoduleevent_id *event_address)
+{
+	return cmzn_tessellationmoduleevent::deaccess(*event_address);
+}
+
+cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_summary_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event, cmzn_tessellation_id tessellation)
+{
+	if (event)
+		return event->getTessellationChangeFlags(tessellation);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
 cmzn_tessellationmodule_id cmzn_tessellationmodule_create()
 {
 	return cmzn_tessellationmodule::create();
@@ -953,10 +1215,15 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 		}
 		cmzn_set_cmzn_tessellation *all_tessellations =
 			reinterpret_cast<cmzn_set_cmzn_tessellation *>(tessellationmodule->getManager()->object_list);
+		cmzn_tessellation *default_points_tessellation =
+			cmzn_tessellationmodule_get_default_points_tessellation(tessellationmodule);
 		for (cmzn_set_cmzn_tessellation::iterator iter = all_tessellations->begin();
 			iter != all_tessellations->end(); ++iter)
 		{
 			cmzn_tessellation_id tempTessellation = *iter;
+			// don't want to use default_points tessellation
+			if (tempTessellation == default_points_tessellation)
+				continue;
 			bool match = (tempTessellation->circleDivisions == useCircleDivisions);
 			if (match)
 			{
@@ -993,6 +1260,7 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 				}
 			}
 		}
+		cmzn_tessellation_destroy(&default_points_tessellation);
 		if (!tessellation)
 		{
 			tessellationmodule->beginChange();
@@ -1036,6 +1304,7 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 		int *temp;
 		if (!REALLOCATE(temp, values, int, size))
 		{
+			DEALLOCATE(values);
 			return_code = 0;
 			break;
 		}
@@ -1099,5 +1368,28 @@ cmzn_tessellation_id cmzn_tessellationiterator_next_non_access(cmzn_tessellation
 {
 	if (iterator)
 		return iterator->next_non_access();
+	return 0;
+}
+
+
+int cmzn_tessellationmodule_read_description(cmzn_tessellationmodule_id tessellationmodule,
+	const char *description)
+{
+	if (tessellationmodule && description)
+	{
+		TessellationmoduleJsonImport jsonImport(tessellationmodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_tessellationmodule_write_description(cmzn_tessellationmodule_id tessellationmodule)
+{
+	if (tessellationmodule)
+	{
+		TessellationmoduleJsonExport jsonExport(tessellationmodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
 	return 0;
 }

@@ -65,7 +65,10 @@ public:
 
 	static cmzn_fontmodule *create()
 	{
-		return new cmzn_fontmodule();
+		cmzn_fontmodule *fontModule = new cmzn_fontmodule();
+		cmzn_font_id font = fontModule->getDefaultFont();
+		cmzn_font_destroy(&font);
+		return fontModule;
 	}
 
 	cmzn_fontmodule *access()

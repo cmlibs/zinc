@@ -143,4 +143,103 @@ void list_divisions(int size, int *divisions);
 
 int list_cmzn_tessellation(struct cmzn_tessellation *tessellation);
 
+struct cmzn_tessellationmodulenotifier
+{
+private:
+	cmzn_tessellationmodule_id module; // not accessed
+	cmzn_tessellationmodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_tessellationmodulenotifier(cmzn_tessellationmodule *tessellationmodule);
+
+	~cmzn_tessellationmodulenotifier();
+
+public:
+
+	/** private: external code must use cmzn_tessellationmodule_create_notifier */
+	static cmzn_tessellationmodulenotifier *create(cmzn_tessellationmodule *tessellationmodule)
+	{
+		if (tessellationmodule)
+			return new cmzn_tessellationmodulenotifier(tessellationmodule);
+		return 0;
+	}
+
+	cmzn_tessellationmodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_tessellationmodulenotifier* &notifier);
+
+	int setCallback(cmzn_tessellationmodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void tessellationmoduleDestroyed();
+
+	void notify(cmzn_tessellationmoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+struct cmzn_tessellationmoduleevent
+{
+private:
+	cmzn_tessellationmodule *module;
+	cmzn_tessellation_change_flags changeFlags;
+	struct MANAGER_MESSAGE(cmzn_tessellation) *managerMessage;
+	int access_count;
+
+	cmzn_tessellationmoduleevent(cmzn_tessellationmodule *tessellationmoduleIn);
+	~cmzn_tessellationmoduleevent();
+
+public:
+
+	/** @param tessellationmoduleIn  Owning tessellationmodule; can be NULL for FINAL event */
+	static cmzn_tessellationmoduleevent *create(cmzn_tessellationmodule *tessellationmoduleIn)
+	{
+		return new cmzn_tessellationmoduleevent(tessellationmoduleIn);
+	}
+
+	cmzn_tessellationmoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_tessellationmoduleevent* &event);
+
+	cmzn_tessellation_change_flags getChangeFlags() const
+	{
+		return this->changeFlags;
+	}
+
+	void setChangeFlags(cmzn_tessellation_change_flags changeFlagsIn)
+	{
+		this->changeFlags = changeFlagsIn;
+	}
+
+	cmzn_tessellation_change_flags getTessellationChangeFlags(cmzn_tessellation *tessellation) const;
+
+	struct MANAGER_MESSAGE(cmzn_tessellation) *getManagerMessage();
+
+	void setManagerMessage(struct MANAGER_MESSAGE(cmzn_tessellation) *managerMessageIn);
+
+	cmzn_tessellationmodule *getTessellationmodule()
+	{
+		return this->module;
+	}
+};
+
 #endif

@@ -41,7 +41,8 @@ include(cmake/FunctionDefinitions.cmake)
 find_package(Git QUIET)
 set(ZINC_REVISION "no-rev")
 if (GIT_FOUND)
-    git_get_revision(ZINC_REVISION)
+    git_get_revision(ZINC_REVISION_LONG)
+    string(SUBSTRING ${ZINC_REVISION_LONG} 0 6 ZINC_REVISION)
 endif()
 set(ZINC_RELEASE FALSE)
 if(ZINC_RELEASE)
@@ -245,7 +246,8 @@ foreach( DEF ${DEPENDENT_DEFINITIONS} )
 endforeach()
 set(ZINC_SHARED_DEFINITIONS )
 
-include_directories(${PROJECT_BINARY_DIR}/core/source/api)
+set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/core/source/api;${PROJECT_BINARY_DIR}/core/source/api")
+#include_directories(${PROJECT_BINARY_DIR}/core/source/api)
 
 # Set those before we define libraries in subfolders
 set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
@@ -255,28 +257,33 @@ set(ZINC_EXPORT_SET_NAME zinc-config)
 
 add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endif()
+
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
 # Create the build tree imported targets
 export(TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}
-    FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
+	FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
 
 # Register the Zinc project with the CMake database
 export(PACKAGE ${ZINC_BASE_NAME})
 
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
-    DESTINATION ${PACKAGE_CONFIG_DIR}
+	DESTINATION ${PACKAGE_CONFIG_DIR}
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
-    COMPATIBILITY AnyNewerVersion)
+	COMPATIBILITY AnyNewerVersion)
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
-    IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
-file(WRITE ${DEPFILE} 
-    "include(CMakeFindDependencyMacro)\r\n"
+	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
+file(WRITE ${DEPFILE}
+	"include(CMakeFindDependencyMacro)\r\n"
 	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
 )
 foreach(ZINCDEP ${ZINC_DEPS})
@@ -285,7 +292,7 @@ foreach(ZINCDEP ${ZINC_DEPS})
     endif()
 endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
-install(FILES 
+install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
@@ -331,9 +338,8 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 			endif()
 			string(SUBSTRING "${DEPLIB}              " 0 11 DEPLIB_FIXED_SIZE)
 			message(STATUS "         ${DEPLIB_FIXED_SIZE}: '${TARGET_ILR}'")
-		endif() 
+		endif()
 	endforeach()
 	message(STATUS "=====================================================")
 	message(STATUS "")
 endif()
-

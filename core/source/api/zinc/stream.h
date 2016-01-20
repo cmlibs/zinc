@@ -103,6 +103,27 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
 	unsigned int buffer_length);
 
 /**
+ * Creates a stream resource of memory type for the buffer of the supplied size
+ * and at the supplied buffer pointer. The resource can then be read into a Zinc
+ * object. This function copies the buffer.
+ *
+ * @see cmzn_field_image_write
+ * @see cmzn_region_write
+ * @see cmzn_field_image_read
+ * @see cmzn_region_read
+ * @see cmzn_streamresource_cast_memory
+ *
+ * @param streaminformation  Stream information which will contains the new
+ * stream resource.
+ * @param buffer  Pointer to the memory buffer
+ * @param buffer_length  length of the buffer
+ * @return  Handle to new stream resource, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffer_copy(
+	cmzn_streaminformation_id streaminformation, const void *buffer,
+	unsigned int buffer_length);
+
+/**
  * Returns a new handle to the stream resource with reference count incremented.
  *
  * @param resource  Handle to stream resource.

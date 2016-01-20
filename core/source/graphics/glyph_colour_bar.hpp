@@ -94,6 +94,11 @@ public:
 
 	int setSideAxis(int valuesCount, const double *valuesIn);
 
+	cmzn_spectrum *getSpectrum()
+	{
+		return this->spectrum;
+	}
+
 	double getTickLength() const
 	{
 		return this->tickLength;

@@ -194,6 +194,11 @@ inline Region Context::getDefaultRegion()
 	return Region(cmzn_context_get_default_region(id));
 }
 
+inline int Context::setDefaultRegion(const Region& region)
+{
+	return cmzn_context_set_default_region(id, region.getId());
+}
+
 inline Region Context::createRegion()
 {
 	return Region(cmzn_context_create_region(id));

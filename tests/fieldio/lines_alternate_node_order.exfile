@@ -1,0 +1,48 @@
+Region: /
+!#nodeset nodes
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=2
+  x.  Value index=1, #Derivatives=0, #Versions=1
+  y.  Value index=2, #Derivatives=0, #Versions=1
+ Node: 1
+ 0 0
+ Node: 2
+ 1 0 
+ Node: 3
+ 1 1 
+ Node: 4
+ 0 1 
+  Shape. Dimension=1, line
+ #Scale factor sets=0
+ #Nodes=3
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=2
+ x. l.Lagrange, no modify, standard node based.
+   #Nodes=2
+   1. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+ y. l.Lagrange, no modify, standard node based.
+   #Nodes=2
+   3. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+ Element: 1 0 0
+ Nodes:
+ 1 2 1
+ Element: 2 0 0
+ Nodes:
+ 2 3 2
+ Element: 3 0 0
+ Nodes:
+ 3 4 3
+ Element: 4 0 0
+ Nodes:
+ 4 1 4
+ 

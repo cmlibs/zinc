@@ -9,7 +9,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <stdlib.h>
+#include <algorithm>
+#include <cstdlib>
 #include "zinc/fieldgroup.h"
 #include "configure/version.h"
 #include "context/context.h"
@@ -20,193 +21,166 @@
 #include "graphics/scene_viewer.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scene.h"
-#include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
 #include "zinc/timekeeper.h"
 //-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for cmzn_region  */
 #include "region/cmiss_region_private.h"
 
-struct Context *cmzn_context_create(const char *id)
+cmzn_context::cmzn_context(const char *idIn) :
+	id(duplicate_string(idIn)),
+	logger(cmzn_logger::create()),
+	root_region(0),
+	element_point_ranges_selection(0),
+	io_stream_package(0),
+	timekeepermodule(cmzn_timekeepermodule::create()),
+	curve_manager(0),
+	graphics_module(0),
+	access_count(1)
 {
-	struct Context *context = NULL;
-	if (ALLOCATE(context, struct Context, 1))
-	{
-		context->graphics_module = NULL;
-		context->root_region = NULL;
-		context->id = duplicate_string(id);
-		context->any_object_selection = NULL;
-		context->element_point_ranges_selection = NULL;
-		context->io_stream_package = NULL;
-		context->curve_manager = NULL;
-		context->timekeepermodule = cmzn_timekeepermodule::create();
-		context->access_count = 1;
-	}
-	return context;
 }
 
-int cmzn_context_destroy(struct Context **context_address)
+cmzn_context::~cmzn_context()
 {
-	int return_code = 0;
-	struct Context *context = NULL;
-
-	if (context_address && NULL != (context = *context_address))
+	if (this->id)
+		DEALLOCATE(this->id);
+	if (this->graphics_module)
 	{
-		context->access_count--;
-		if (0 == context->access_count)
-		{
-			if (context->id)
-				DEALLOCATE(context->id);
-			if (context->graphics_module)
-			{
-				cmzn_graphics_module_remove_external_callback_dependency(
-					context->graphics_module);
-				cmzn_graphics_module_destroy(&context->graphics_module);
-			}
-			if (context->root_region)
-			{
-				/* need the following due to circular references where field owned by region references region itself;
-				 * when following removed also remove #include "region/cmiss_region_private.h". Also scene
-				 * has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
-				cmzn_region_detach_fields_hierarchical(context->root_region);
-				DEACCESS(cmzn_region)(&context->root_region);
-			}
-			if (context->any_object_selection)
-			{
-				DESTROY(Any_object_selection)(&context->any_object_selection);
-			}
-			if (context->element_point_ranges_selection)
-			{
-				DESTROY(Element_point_ranges_selection)(&context->element_point_ranges_selection);
-			}
-			if (context->curve_manager)
-			{
-				DESTROY(MANAGER(Curve))(&context->curve_manager);
-			}
-			if (context->io_stream_package)
-			{
-				DESTROY(IO_stream_package)(&context->io_stream_package);
-			}
-			cmzn_timekeepermodule::deaccess(context->timekeepermodule);
-			DEALLOCATE(*context_address);
-		}
-		*context_address = NULL;
-		return_code = 1;
+		cmzn_graphics_module_remove_external_callback_dependency(
+			this->graphics_module);
+		cmzn_graphics_module_destroy(&this->graphics_module);
 	}
-	else
+	if (this->root_region)
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_destroy.  Missing context address");
-		return_code = 0;
+		/* need the following due to circular references where field owned by region references region itself;
+			* when following removed also remove #include "region/cmiss_region_private.h". Also scene
+			* has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
+		cmzn_region_detach_fields_hierarchical(this->root_region);
+		DEACCESS(cmzn_region)(&this->root_region);
 	}
+	// clear regions' pointers to this context
+	for (std::list<cmzn_region*>::iterator iter = this->allRegions.begin(); iter != this->allRegions.end(); ++iter)
+		cmzn_region_set_context_private(*iter, 0);
+	if (this->element_point_ranges_selection)
+		DESTROY(Element_point_ranges_selection)(&this->element_point_ranges_selection);
+	if (this->curve_manager)
+		DESTROY(MANAGER(Curve))(&this->curve_manager);
+	if (this->io_stream_package)
+		DESTROY(IO_stream_package)(&this->io_stream_package);
+	cmzn_timekeepermodule::deaccess(this->timekeepermodule);
 
 	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 		on.  When MEMORY_CHECKING is off this function does nothing */
 	list_memory(/*count_number*/0, /*show_pointers*/0, /*increment_counter*/0,
 		/*show_structures*/1);
-
-	return return_code;
 }
 
-struct Context *cmzn_context_access(struct Context *context)
+cmzn_context *cmzn_context::create(const char *id)
 {
-	if (context)
-		++(context->access_count);
-	return context;
+	cmzn_context *context = new cmzn_context(id);
+	if (context && context->id && context->timekeepermodule)
+		return context;
+	delete context;
+	return 0;
 }
 
-struct cmzn_region *cmzn_context_get_default_region(struct Context *context)
+cmzn_region *cmzn_context::createRegion()
 {
-	struct cmzn_region *root_region = 0;
-
-	if (context)
+	// all regions share element shapes and bases
+	cmzn_region *baseRegion = (this->allRegions.size() > 0) ? this->allRegions.front() : 0;
+	cmzn_region *region = cmzn_region_create_internal(baseRegion);
+	if (region)
 	{
-		if (!context->root_region)
-		{
-			context->root_region = cmzn_region_create_internal();
-			struct cmzn_graphics_module *graphicsModule = cmzn_context_get_graphics_module(context);
-			cmzn_graphics_module_enable_scenes(graphicsModule, context->root_region);
-			cmzn_graphics_module_destroy(&graphicsModule);
-		}
-		root_region = ACCESS(cmzn_region)(context->root_region);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_default_region.  Missing context");
-	}
-
-	return root_region;
-}
-
-struct cmzn_graphics_module *cmzn_context_get_graphics_module(struct Context *context)
-{
-	struct cmzn_graphics_module *graphics_module = 0;
-
-	if (context)
-	{
-		if (!context->graphics_module)
-		{
-			context->graphics_module = cmzn_graphics_module_create(context);
-		}
-		graphics_module = cmzn_graphics_module_access(context->graphics_module);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_default_graphics_module.  Missing context");
-	}
-
-	return graphics_module;
-}
-
-struct cmzn_region *cmzn_context_create_region(struct Context *context)
-{
-	cmzn_region *region = NULL;
-
-	if (context)
-	{
-		// all regions share the element shapes and bases from the default_region
-		if (!context->root_region)
-		{
-			cmzn_region *default_region = cmzn_context_get_default_region(context);
-			cmzn_region_destroy(&default_region);
-		}
-		region = cmzn_region_create_region(context->root_region);
-		struct cmzn_graphics_module *graphicsModule = cmzn_context_get_graphics_module(context);
-		cmzn_graphics_module_enable_scenes(graphicsModule, region);
-		cmzn_graphics_module_destroy(&graphicsModule);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_create_region.  Missing context");
+		this->allRegions.push_back(region);
+		cmzn_region_set_context_private(region, this);
+		cmzn_graphics_module_enable_scenes(this->getGraphicsmodule(), region);
 	}
 	return region;
 }
 
-struct Any_object_selection *cmzn_context_get_any_object_selection(
-	struct Context *context)
+void cmzn_context::removeRegion(cmzn_region *region)
 {
-	struct Any_object_selection *any_object_selection = NULL;
+	std::list<cmzn_region*>::iterator iter = std::find(this->allRegions.begin(), this->allRegions.end(), region);
+	if (iter != this->allRegions.end())
+	{
+		cmzn_region_set_context_private(region, 0);
+		this->allRegions.erase(iter);
+	}
+}
+
+cmzn_graphics_module *cmzn_context::getGraphicsmodule()
+{
+	if (!this->graphics_module)
+		this->graphics_module = cmzn_graphics_module_create(this);
+	return this->graphics_module;
+}
+
+cmzn_context *cmzn_context_create(const char *id)
+{
+	return cmzn_context::create(id);
+}
+
+cmzn_context *cmzn_context_access(cmzn_context *context)
+{
+	if (context)
+		return context->access();
+	return 0;
+}
+
+int cmzn_context_destroy(cmzn_context **context_address)
+{
+	if (context_address)
+		return cmzn_context::deaccess(*context_address);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+struct cmzn_region *cmzn_context_get_default_region(cmzn_context *context)
+{
 	if (context)
 	{
-		if (!context->any_object_selection)
-		{
-			context->any_object_selection = CREATE(Any_object_selection)();
-		}
-		any_object_selection = context->any_object_selection;
+		if (!context->root_region)
+			context->root_region = context->createRegion();
+		return ACCESS(cmzn_region)(context->root_region);
 	}
-	else
+	display_message(ERROR_MESSAGE, "Zinc Context getDefaultRegion():  Missing context");
+	return 0;
+}
+
+int cmzn_context_set_default_region(cmzn_context_id context,
+	cmzn_region_id region)
+{
+	if (context)
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_any_object_selection.  Missing context.");
+		if (region && (cmzn_region_get_context_private(region) != context))
+		{
+			display_message(ERROR_MESSAGE, "Zinc Context setDefaultRegion():  Region is from a different context");
+			return CMZN_ERROR_ARGUMENT_CONTEXT;
+		}
+		REACCESS(cmzn_region)(&(context->root_region), region);
+		return CMZN_OK;
 	}
-	return any_object_selection;
+	display_message(ERROR_MESSAGE, "Zinc Context setDefaultRegion():  Missing context");
+	return CMZN_ERROR_ARGUMENT;
+}
+
+struct cmzn_graphics_module *cmzn_context_get_graphics_module(cmzn_context *context)
+{
+	if (context)
+		return cmzn_graphics_module_access(context->getGraphicsmodule());
+	display_message(ERROR_MESSAGE, "cmzn_context_get_default_graphics_module.  Missing context");
+	return 0;
+}
+
+struct cmzn_region *cmzn_context_create_region(cmzn_context *context)
+{
+	if (context)
+		return context->createRegion();
+	display_message(ERROR_MESSAGE, "Zinc Context createRegion():  Missing context");
+	return 0;
 }
 
 struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_selection(
-	struct Context *context)
+	cmzn_context *context)
 {
 	struct Element_point_ranges_selection *element_point_ranges_selection = NULL;
 	if (context)
@@ -226,7 +200,7 @@ struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_sel
 }
 
 struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
-	struct Context *context)
+	cmzn_context *context)
 {
 	struct IO_stream_package *io_stream_package = NULL;
 	if (context)
@@ -290,6 +264,21 @@ cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 	return 0;
 }
 
+cmzn_lightmodule_id cmzn_context_get_lightmodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_lightmodule_id lightmodule =
+			cmzn_graphics_module_get_lightmodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return lightmodule;
+	}
+
+	return 0;
+}
 
 cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context)
@@ -382,6 +371,16 @@ cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
 			cmzn_graphics_module_get_glyphmodule(graphicsModule);
 		cmzn_graphics_module_destroy(&graphicsModule);
 		return glyphmodule;
+	}
+
+	return 0;
+}
+
+cmzn_logger_id cmzn_context_get_logger(cmzn_context_id context)
+{
+	if (context)
+	{
+		return cmzn_logger_access(context->logger);
 	}
 
 	return 0;

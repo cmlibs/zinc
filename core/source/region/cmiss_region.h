@@ -33,6 +33,8 @@ Global types
 ------------
 */
 
+struct cmzn_context;
+
 struct cmzn_region;
 /*******************************************************************************
 LAST MODIFIED : 30 September 2002
@@ -73,13 +75,17 @@ Global functions
 
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
 
-/***************************************************************************//**
- * Creates a cmzn_region, able to have its own fields. This is an internal
- * function and should not be exposed to the API.
+/**
+ * Private constructor for a cmzn_region.
+ * Region is created with an access_count of 1; DEACCESS to destroy.
+ * @param base_region  Optional region to share element shape and basis data
+ * with. If NULL, creates independent lists of shape and basis information.
  *
- * @return  Accessed reference to the newly created region, or NULL if none.
+ * Note: This is an internal function and should not be exposed to the API.
+ *
+ * @return  Accessed reference to the newly created region, or NULL if failed.
  */
-struct cmzn_region *cmzn_region_create_internal(void);
+cmzn_region *cmzn_region_create_internal(cmzn_region *base_region);
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
@@ -118,26 +124,6 @@ void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_fieldcache_id cache
 void cmzn_region_remove_field_cache(cmzn_region_id region,
 	cmzn_fieldcache_id cache);
 
-int cmzn_region_begin_change(struct cmzn_region *region);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
-
-DESCRIPTION :
-Increments the change counter in <region>. No update callbacks will occur until
-change counter is restored to zero by calls to cmzn_region_end_change.
-???RC Make recursive/hierarchical?
-==============================================================================*/
-
-int cmzn_region_end_change(struct cmzn_region *region);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
-
-DESCRIPTION :
-Decrements the change counter in <region>. No update callbacks occur until the
-change counter is restored to zero by this function.
-???RC Make recursive/hierarchical?
-==============================================================================*/
-
 int cmzn_region_add_callback(struct cmzn_region *region,
 	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 /*******************************************************************************
@@ -157,27 +143,6 @@ LAST MODIFIED : 2 December 2002
 DESCRIPTION :
 Removes the callback calling <function> with <user_data> from <region>.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Returns the name of the region.
- *
- * @param region  The region whose name is requested.
- * @return  On success: allocated string containing region name.
- */
-char *cmzn_region_get_name(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Sets the name of the region.
- * A valid region name must start with an alphanumeric character, contain only
- * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
- * and may not finish with a space.
- * Fails if the new name is already in use by another region in the same parent.
- *
- * @param region  The region to be named.
- * @param name  The new name for the region.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_region_set_name(struct cmzn_region *region, const char *name);
 
 /***************************************************************************//**
  * Allocates and returns the path to the root_region ("/").
@@ -208,14 +173,6 @@ char *cmzn_region_get_relative_path(struct cmzn_region *region,
 	struct cmzn_region *other_region);
 
 /***************************************************************************//**
- * Returns a reference to the parent region of this region.
- *
- * @param region  The child region.
- * @return  Accessed reference to parent region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region);
-
-/***************************************************************************//**
  * Returns a non-accessed pointer to parent region of this region, if any.
  * Internal only.
  *
@@ -223,107 +180,6 @@ struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region);
  * @return  Non-accessed reference to parent region, or NULL if none.
  */
 struct cmzn_region *cmzn_region_get_parent_internal(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns a reference to the first child region of this region.
- *
- * @param region  The region whose first child is requested.
- * @return  Accessed reference to first child region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns a reference to this region's next sibling region.
- *
- * @param region  The region whose next sibling is requested.
- * @return  Accessed reference to next sibling region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_next_sibling(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns a reference to this region's previous sibling region.
- *
- * @param region  The region whose previous sibling is requested.
- * @return  Accessed reference to previous sibling region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_previous_sibling(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Replaces the region reference with a reference to its next sibling.
- * Convenient for iterating through a child list, equivalent to:
- * {
- *   struct cmzn_region *temp = cmzn_region_get_next_sibling(*region_address);
- *   cmzn_region_destroy(region_address);
- *   *region_address = temp;
- * }
- *
- * @param region_address  The address of the region reference to replace.
- */
-void cmzn_region_reaccess_next_sibling(struct cmzn_region **region_address);
-
-/***************************************************************************//**
- * Adds new_child to the end of the list of child regions of this region.
- * If the new_child is already in the region tree, it is first removed.
- * Fails if new_child contains this region.
- * Fails if new_child is unnamed or the name is already used by another child of
- * this region.
- *
- * @param region  The intended parent region of new_child.
- * @param new_child  The child to add.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_region_append_child(struct cmzn_region *region,
-	struct cmzn_region *new_child);
-
-/***************************************************************************//**
- * Inserts new_child before the existing ref_child in the list of child regions
- * of this region. If ref_child is NULL new_child is added at the end of the
- * list. If the new_child is already in the region tree, it is first removed.
- * Fails if new_child contains this region.
- * Fails if new_child is unnamed or the name is already used by another child of
- * this region.
- *
- * @param region  The intended parent region of new_child.
- * @param new_child  The child to append.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_region_insert_child_before(struct cmzn_region *region,
-	struct cmzn_region *new_child, struct cmzn_region *ref_child);
-
-/***************************************************************************//**
- * Removes old_child from the list of child regions of this region.
- * Fails if old_child is not a child of this region.
- *
- * @param region  The current parent region of old_child.
- * @param old_child  The child to remove.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_region_remove_child(struct cmzn_region *region,
-	struct cmzn_region *old_child);
-
-/***************************************************************************//**
- * Returns a reference to the child region with supplied name, if any.
- *
- * @param region  The region to search.
- * @param name  The name of the child.
- * @return  Accessed reference to the named child, or NULL if no match.
- */
-struct cmzn_region *cmzn_region_find_child_by_name(
-	struct cmzn_region *region, const char *name);
-
-/***************************************************************************//**
- * Returns a reference to the subregion at the path relative to this region.
- * The format of the path string is CHILD_NAME/CHILD_NAME/...
- * i.e. forward slash characters '/' are used as parent/child name separators.
- * Single leading and trailing separator characters are ignored.
- * Hence, both name="" and name="/" find the region itself.
- *
- * @param region  The region to search.
- * @param path  The directory-style path to the subregion.
- * @return  Accessed reference to subregion, or NULL no match.
- */
-struct cmzn_region *cmzn_region_find_subregion_at_path(
-	struct cmzn_region *region, const char *path);
 
 /*******************************************************************************
  * Internal only. External API is cmzn_fieldmodule_find_field_by_name.

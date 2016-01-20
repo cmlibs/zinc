@@ -29,7 +29,7 @@ class SubObjectGroupHighlightFunctor
 			contains_all = 0;
 		};
 
-		int call(int identifier)
+		int call(int object_name)
 		{
 			if (contains_all)
 			{
@@ -37,7 +37,7 @@ class SubObjectGroupHighlightFunctor
 			}
 			else
 			{
-				return (*group.*function_pointer)(identifier);
+				return (*group.*function_pointer)(object_name);
 			}
 		};
 

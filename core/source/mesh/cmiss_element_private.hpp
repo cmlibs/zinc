@@ -15,6 +15,7 @@
 #include "zinc/element.h"
 #include "zinc/region.h"
 #include "zinc/fieldsubobjectgroup.h"
+#include "datastore/labelschangelog.hpp"
 
 struct FE_region;
 
@@ -44,11 +45,10 @@ int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group,
 int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
 
-/** Internal use only.
- * Create a related element list to that in mesh.
- * @return  New element list.
+/** Internal use only
+ * @return non-accessed fe_region for this mesh.
  */
-struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh);
+FE_mesh *cmzn_mesh_get_FE_mesh_internal(cmzn_mesh_id mesh);
 
 /** Internal use only
  * @return non-accessed fe_region for this mesh.
@@ -69,7 +69,7 @@ struct cmzn_meshchanges
 {
 private:
 	cmzn_fieldmoduleevent *event; // accessed
-	CHANGE_LOG(cmzn_element) *changeLog; // just copied from event for correct mesh
+	DsLabelsChangeLog *changeLog; // Accessed from object obtained from correct mesh
 	int access_count;
 
 	cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn);
@@ -92,16 +92,14 @@ public:
 
 	int getNumberOfChanges()
 	{
-		int number = 0;
-		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(this->changeLog, &number);
-		return number;
+		if (this->changeLog->isAllChange())
+			return -1;
+		return this->changeLog->getChangeCount();
 	}
 
 	cmzn_element_change_flags getSummaryElementChangeFlags()
 	{
-		int change = 0;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(this->changeLog, &change);
-		return change;
+		return this->changeLog->getChangeSummary();
 	}
 };
 

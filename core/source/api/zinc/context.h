@@ -15,6 +15,8 @@
 #include "types/contextid.h"
 #include "types/fontid.h"
 #include "types/glyphid.h"
+#include "types/lightid.h"
+#include "types/loggerid.h"
 #include "types/materialid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
@@ -53,12 +55,24 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 
 /**
- * Returns the default region in the context.
+ * Returns the default region in the context. A convenience for applications that
+ * need only one region tree.
  *
  * @param context  Handle to a context object.
  * @return  Handle to region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context);
+
+/**
+ * Sets the default region in the context. A convenience for applications that
+ * need only one region tree.
+ *
+ * @param context  Handle to a context object.
+ * @param region  The new default region.
+ * @return  CMZN_OK on success, otherwise any other status code.
+ */
+ZINC_API int cmzn_context_set_default_region(cmzn_context_id context,
+	cmzn_region_id region);
 
 /**
  * Create a new region and return a handle to it. Use this function to create
@@ -93,6 +107,24 @@ ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
  */
 ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
 	cmzn_context_id context);
+
+/**
+ * Return the light module which manages lights used to calculate the
+ * final colour of vertices in combination with material colour.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the light module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_lightmodule_id cmzn_context_get_lightmodule(
+	cmzn_context_id context);
+
+/**
+ * Return the logger which logs debug messages.
+ *
+ * @param context  The context to request the logger from.
+ * @return  Handle to the logger, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_logger_id cmzn_context_get_logger(cmzn_context_id context);
 
 /**
  * Return the material module which manages materials used to colour, texture
@@ -168,7 +200,7 @@ ZINC_API cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(
 ZINC_API int cmzn_context_get_version(cmzn_context_id context, int *version_out);
 
 /**
- * Get the revision string of this Zinc library.
+ * Get the revision number of this Zinc library.
  *
  * @param context  Handle to the context.
  * @return  Revision of this Zinc library on success, 0 on failure.

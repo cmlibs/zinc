@@ -153,28 +153,6 @@ LAST MODIFIED : 31 July 1998
 DESCRIPTION :
 ==============================================================================*/
 
-/**
- * Gets the fix_minimum flag of the cmzn_spectrumcomponent <spectrum>.
- */
-bool cmzn_spectrumcomponent_get_fix_minimum_flag(struct cmzn_spectrumcomponent *component);
-
-/**
- * Sets the fix_minimum flag of the cmzn_spectrumcomponent <component>.
- */
-int cmzn_spectrumcomponent_set_fix_minimum_flag(struct cmzn_spectrumcomponent *component,
-	bool fix_minimum);
-
-/**
- * Gets the fix_minimum flag of the cmzn_spectrumcomponent <spectrum>.
- */
-bool cmzn_spectrumcomponent_get_fix_maximum_flag(struct cmzn_spectrumcomponent *component);
-
-/**
- * Sets the fix_maximum flag of the cmzn_spectrumcomponent <component>.
- */
-int cmzn_spectrumcomponent_set_fix_maximum_flag(struct cmzn_spectrumcomponent *component,
-	bool fix_maximum);
-
 int cmzn_spectrumcomponent_clear_changed(
 	struct cmzn_spectrumcomponent *component,void *dummy_void);
 /*******************************************************************************

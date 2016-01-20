@@ -1,0 +1,69 @@
+{
+   "DefaultSpectrum" : "new_default",
+   "Spectrums" : [
+      {
+         "Components" : [
+            {
+               "Active" : true,
+               "BandedRatio" : 0.2,
+               "ColourMappingType" : "RAINBOW",
+               "ColourMaximum" : 1,
+               "ColourMinimum" : 0,
+               "ColourReverse" : true,
+               "Exaggeration" : 1,
+               "ExtendAbove" : true,
+               "ExtendBelow" : true,
+               "FieldComponent" : 1,
+               "NumberOfBands" : 10,
+               "RangeMaximum" : 1,
+               "RangeMinimum" : 0,
+               "ScaleType" : "LINEAR",
+               "StepValue" : 0.5
+            }
+         ],
+         "MaterialOverwrite" : true,
+         "Name" : "default"
+      },
+      {
+         "Components" : [
+            {
+               "Active" : false,
+               "BandedRatio" : 0.4,
+               "ColourMappingType" : "MONOCHROME",
+               "ColourMaximum" : 0.5,
+               "ColourMinimum" : 0.4,
+               "ColourReverse" : true,
+               "Exaggeration" : 2,
+               "ExtendAbove" : false,
+               "ExtendBelow" : false,
+               "FieldComponent" : 2,
+               "NumberOfBands" : 6,
+               "RangeMaximum" : 20,
+               "RangeMinimum" : 5,
+               "ScaleType" : "LOG",
+               "StepValue" : 10
+            },
+            {
+               "Active" : true,
+               "BandedRatio" : 0.2,
+               "ColourMappingType" : "RAINBOW",
+               "ColourMaximum" : 1,
+               "ColourMinimum" : 0,
+               "ColourReverse" : false,
+               "Exaggeration" : 1,
+               "ExtendAbove" : true,
+               "ExtendBelow" : true,
+               "FieldComponent" : 1,
+               "NumberOfBands" : 10,
+               "RangeMaximum" : 1,
+               "RangeMinimum" : 0,
+               "ScaleType" : "LINEAR",
+               "StepValue" : 0.5
+            }
+         ],
+         "MaterialOverwrite" : false,
+         "Name" : "new_default"
+      }
+   ]
+}
+

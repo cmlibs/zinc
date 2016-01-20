@@ -15,11 +15,16 @@ Spectrum functions and support code.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
+#include <list>
+#include <vector>
 #include <math.h>
 #include "zinc/spectrum.h"
 #include "zinc/status.h"
+#include "description_io/spectrum_json_io.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/manager_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -38,26 +43,45 @@ Module types
 ------------
 */
 
+typedef std::list<cmzn_spectrummodulenotifier *> cmzn_spectrummodulenotifier_list;
+
 struct cmzn_spectrum *cmzn_spectrum_create_private();
+
+static void cmzn_spectrummodule_Spectrum_change(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *spectrum_module_void);
 
 struct cmzn_spectrummodule
 {
-
 private:
 
 	struct MANAGER(cmzn_spectrum) *spectrumManager;
 	cmzn_spectrum *defaultSpectrum;
 	int access_count;
+	void *manager_callback_id;
 
 	cmzn_spectrummodule() :
 		spectrumManager(CREATE(MANAGER(cmzn_spectrum))()),
 		defaultSpectrum(0),
 		access_count(1)
 	{
+	notifier_list = new cmzn_spectrummodulenotifier_list();
+	manager_callback_id = MANAGER_REGISTER(cmzn_spectrum)(
+		cmzn_spectrummodule_Spectrum_change, (void *)this, spectrumManager);
 	}
 
 	~cmzn_spectrummodule()
 	{
+		MANAGER_DEREGISTER(cmzn_spectrum)(manager_callback_id, spectrumManager);
+		manager_callback_id = 0;
+		for (cmzn_spectrummodulenotifier_list::iterator iter = notifier_list->begin();
+			iter != notifier_list->end(); ++iter)
+		{
+			cmzn_spectrummodulenotifier *notifier = *iter;
+			notifier->spectrummoduleDestroyed();
+			cmzn_spectrummodulenotifier::deaccess(notifier);
+		}
+		delete notifier_list;
+		notifier_list = 0;
 		if (defaultSpectrum)
 		{
 			DEACCESS(cmzn_spectrum)(&(this->defaultSpectrum));
@@ -67,13 +91,17 @@ private:
 
 public:
 
+	cmzn_spectrummodulenotifier_list *notifier_list;
+
 	static cmzn_spectrummodule *create()
 	{
-		return new cmzn_spectrummodule();
+		cmzn_spectrummodule *spectrumModule = new cmzn_spectrummodule();
+		cmzn_spectrum_id spectrum = spectrumModule->getDefaultSpectrum();
+		cmzn_spectrum_destroy(&spectrum);
+		return spectrumModule;
 	}
 
 	cmzn_spectrummodule *access()
-
 	{
 		++access_count;
 		return this;
@@ -117,7 +145,7 @@ public:
 		do
 		{
 			i++;
-			sprintf(temp_name, "temp%d",i);
+			sprintf(temp_name, "spectrum%d",i);
 		}
 		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_spectrum,name)(temp_name,
 			this->spectrumManager));
@@ -129,6 +157,8 @@ public:
 		}
 		return spectrum;
 	}
+
+	cmzn_spectrumiterator *createSpectrumiterator();
 
 	cmzn_spectrum *findSpectrumByName(const char *name)
 	{
@@ -175,6 +205,25 @@ public:
 		return CMZN_OK;
 	}
 
+	void addNotifier(cmzn_spectrummodulenotifier *notifier)
+	{
+	 notifier_list->push_back(notifier->access());
+	}
+
+	void removeNotifier(cmzn_spectrummodulenotifier *notifier)
+	{
+		if (notifier)
+		{
+			cmzn_spectrummodulenotifier_list::iterator iter = std::find(
+				notifier_list->begin(), notifier_list->end(), notifier);
+			if (iter != notifier_list->end())
+			{
+				cmzn_spectrummodulenotifier::deaccess(notifier);
+				notifier_list->erase(iter);
+			}
+		}
+	}
+
 };
 
 cmzn_spectrummodule_id cmzn_spectrummodule_create()
@@ -202,6 +251,14 @@ cmzn_spectrum_id cmzn_spectrummodule_create_spectrum(
 {
 	if (spectrummodule)
 		return spectrummodule->createSpectrum();
+	return 0;
+}
+
+cmzn_spectrumiterator_id cmzn_spectrummodule_create_spectrumiterator(
+	cmzn_spectrummodule_id spectrummodule)
+{
+	if (spectrummodule)
+		return spectrummodule->createSpectrumiterator();
 	return 0;
 }
 
@@ -252,14 +309,7 @@ int cmzn_spectrummodule_set_default_spectrum(
 	return 0;
 }
 
-
 struct cmzn_spectrum *cmzn_spectrum_create_private()
-/*******************************************************************************
-LAST MODIFIED : 14 May 1998
-
-DESCRIPTION :
-Allocates memory and assigns fields for a Spectrum object.
-==============================================================================*/
 {
 	struct cmzn_spectrum *spectrum = 0;
 	if (ALLOCATE(spectrum,struct cmzn_spectrum,1))
@@ -328,29 +378,174 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 	return (return_code);
 } /* DESTROY(cmzn_spectrum) */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(cmzn_spectrum);
+//FULL_DECLARE_INDEXED_LIST_TYPE(cmzn_spectrum);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_spectrum, cmzn_spectrummodule, void *);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with cmzn_set.
+ */
+class cmzn_spectrum_identifier : private cmzn_spectrum
+{
+public:
+	cmzn_spectrum_identifier(const char *name)
+	{
+		cmzn_spectrum::name = name;
+	}
+
+	~cmzn_spectrum_identifier()
+	{
+		cmzn_spectrum::name = NULL;
+	}
+
+	cmzn_spectrum *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering cmzn_set<cmzn_spectrum> by name */
+struct cmzn_spectrum_compare_name
+{
+	bool operator() (const cmzn_spectrum* spectrum1, const cmzn_spectrum* spectrum2) const
+	{
+		return strcmp(spectrum1->name, spectrum2->name) < 0;
+	}
+};
+
+typedef cmzn_set<cmzn_spectrum *,cmzn_spectrum_compare_name> cmzn_set_cmzn_spectrum;
+
+struct cmzn_spectrumiterator : public cmzn_set_cmzn_spectrum::ext_iterator
+{
+private:
+	cmzn_spectrumiterator(cmzn_set_cmzn_spectrum *container);
+	cmzn_spectrumiterator(const cmzn_spectrumiterator&);
+	~cmzn_spectrumiterator();
+
+public:
+
+	static cmzn_spectrumiterator *create(cmzn_set_cmzn_spectrum *container)
+	{
+		return static_cast<cmzn_spectrumiterator *>(cmzn_set_cmzn_spectrum::ext_iterator::create(container));
+	}
+
+	cmzn_spectrumiterator *access()
+	{
+		return static_cast<cmzn_spectrumiterator *>(this->cmzn_set_cmzn_spectrum::ext_iterator::access());
+	}
+
+	static int deaccess(cmzn_spectrumiterator* &iterator)
+	{
+		cmzn_set_cmzn_spectrum::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_spectrum::ext_iterator*>(iterator);
+		iterator = 0;
+		return cmzn_set_cmzn_spectrum::ext_iterator::deaccess(baseIterator);
+	}
+
+};
+
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_spectrum, cmzn_spectrummodule, cmzn_spectrum_change_detail *);
+
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_spectrum);
+
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_spectrum);
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_spectrum);
+
+inline cmzn_spectrum_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_spectrum)(
+	struct cmzn_spectrum *spectrum)
+{
+	return spectrum->extractChangeDetail();
+}
+
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_spectrum)(
+	cmzn_spectrum_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
+
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_spectrum);
 
 /*
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(cmzn_spectrum,name,const char *,strcmp)
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(cmzn_spectrum)
+int cmzn_spectrum::deaccess(cmzn_spectrum **spectrumAddress)
+{
+	int return_code = 0;
+	struct cmzn_spectrum *spectrum = 0;
+	if (spectrumAddress && (spectrum = *spectrumAddress))
+	{
+		--(spectrum->access_count);
+		if (spectrum->access_count <= 0)
+		{
+			DESTROY(cmzn_spectrum)(&spectrum);
+			return_code = 1;
+		}
+		else if ((!spectrum->is_managed_flag) && (spectrum->manager) &&
+			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
+				(MANAGER_CHANGE_NONE(cmzn_spectrum) != spectrum->manager_change_status))))
+		{
+			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_spectrum)(spectrum, spectrum->manager);
+		}
+
+	}
+
+	return return_code;
+}
+
+int cmzn_spectrum::setName(const char *newName)
+{
+	if (!newName)
+		return CMZN_ERROR_ARGUMENT;
+	if (this->name && (0 == strcmp(this->name, newName)))
+		return CMZN_OK;
+	cmzn_set_cmzn_spectrum *allSpectrums = 0;
+	bool restoreObjectToLists = false;
+	if (this->manager)
+	{
+		allSpectrums = reinterpret_cast<cmzn_set_cmzn_spectrum *>(this->manager->object_list);
+		cmzn_spectrum *existingSpectrum = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_spectrum, name)(newName, this->manager);
+		if (existingSpectrum)
+		{
+			display_message(ERROR_MESSAGE, "cmzn_spectrum::setName.  spectrum named '%s' already exists.", newName);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		else
+		{
+			// this temporarily removes the object from all related lists
+			restoreObjectToLists = allSpectrums->begin_identifier_change(this);
+			if (!restoreObjectToLists)
+			{
+				display_message(ERROR_MESSAGE, "cmzn_spectrum::setName.  "
+					"Could not safely change identifier in manager");
+				return CMZN_ERROR_GENERAL;
+			}
+		}
+	}
+	if (this->name)
+		DEALLOCATE(this->name);
+	this->name = duplicate_string(newName);
+	if (restoreObjectToLists)
+		allSpectrums->end_identifier_change();
+	if (this->manager)
+		MANAGED_OBJECT_CHANGE(cmzn_spectrum)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_spectrum));
+	return CMZN_OK;
+}
+
+//DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(cmzn_spectrum,name,const char *,strcmp)
+
 
 /*
 Global functions
 ----------------
 */
-DECLARE_OBJECT_FUNCTIONS(cmzn_spectrum)
+//DECLARE_OBJECT_FUNCTIONS(cmzn_spectrum)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(cmzn_spectrum)
+//DECLARE_INDEXED_LIST_FUNCTIONS(cmzn_spectrum)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(cmzn_spectrum,name,const char *,strcmp)
+//DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(cmzn_spectrum,name,const char *,strcmp)
 
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_spectrum,name)
+//DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_spectrum,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(cmzn_spectrum,name)
 {
@@ -480,13 +675,50 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(cmzn_spectrum,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(cmzn_spectrum,name) */
 
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_spectrum)
+{
+	return object->access();
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_spectrum)
+{
+	return cmzn_spectrum::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_spectrum)
+{
+	if (object_address)
+	{
+		if (new_object)
+			new_object->access();
+		if (*object_address)
+			cmzn_spectrum::deaccess(object_address);
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_spectrum)
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_spectrum)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_spectrum,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_spectrum,name)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_spectrum,cmzn_spectrumiterator)
+
 DECLARE_MANAGER_FUNCTIONS(cmzn_spectrum,manager)
-
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_spectrum,manager)
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_spectrum, name, const char *, manager)
+DECLARE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_spectrum, name)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_spectrum,struct cmzn_spectrummodule)
+//DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_spectrum,name,const char *,manager)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_spectrum,name,const char *,manager)
+//DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_spectrum, struct cmzn_spectrummodule)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_spectrum, struct cmzn_spectrummodule)
+cmzn_spectrumiterator *cmzn_spectrummodule::createSpectrumiterator()
+{
+	return CREATE_LIST_ITERATOR(cmzn_spectrum)(this->spectrumManager->object_list);
+}
 
 int Spectrum_manager_set_owner(struct MANAGER(cmzn_spectrum) *manager,
 	struct cmzn_spectrummodule *spectrummodule)
@@ -507,23 +739,23 @@ DESCRIPTION :
 Wrapper for accessing the component in <spectrum>.
 ==============================================================================*/
 {
-	 struct cmzn_spectrumcomponent *component;
+	struct cmzn_spectrumcomponent *component;
 
-	 ENTER(get_component_at_position_in_GT_element_group);
-	 if (spectrum)
-	 {
-			component=FIND_BY_IDENTIFIER_IN_LIST(cmzn_spectrumcomponent,
-				 position)(position,spectrum->list_of_components);
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "cmzn_spectrum_get_component_at_position.  Invalid arguments");
-			component=(struct cmzn_spectrumcomponent *)NULL;
-	 }
-	 LEAVE;
+	ENTER(get_component_at_position_in_GT_element_group);
+	if (spectrum)
+	{
+		component=FIND_BY_IDENTIFIER_IN_LIST(cmzn_spectrumcomponent,
+				position)(position,spectrum->list_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"cmzn_spectrum_get_component_at_position.  Invalid arguments");
+		component=(struct cmzn_spectrumcomponent *)NULL;
+	}
+	LEAVE;
 
-	 return (component);
+	return (component);
 } /* get_component_at_position_in_GT_element_group */
 
 int Spectrum_set_simple_type(struct cmzn_spectrum *spectrum,
@@ -663,7 +895,7 @@ some predetermined simple types.
 				cmzn_spectrumcomponent_set_range_maximum(component, 0.0);
 				cmzn_spectrumcomponent_set_colour_reverse(component, true);
 				/* fix the maximum (white ) at zero */
-				cmzn_spectrumcomponent_set_fix_maximum_flag(component, true);
+				cmzn_spectrumcomponent_set_fix_maximum(component, true);
 				cmzn_spectrumcomponent_set_extend_below(component, true);
 				cmzn_spectrumcomponent_set_colour_mapping_type(component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE);
 				cmzn_spectrumcomponent_set_colour_minimum(component, 0);
@@ -675,7 +907,7 @@ some predetermined simple types.
 				cmzn_spectrumcomponent_set_range_minimum(second_component, 0.0);
 				cmzn_spectrumcomponent_set_range_maximum(second_component, 1.0);
 				/* fix the minimum (white ) at zero */
-				cmzn_spectrumcomponent_set_fix_minimum_flag(second_component, true);
+				cmzn_spectrumcomponent_set_fix_minimum(second_component, true);
 				cmzn_spectrumcomponent_set_extend_above(second_component, true);
 				cmzn_spectrumcomponent_set_colour_mapping_type(second_component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED);
 				cmzn_spectrumcomponent_set_colour_minimum(second_component, 0);
@@ -930,6 +1162,7 @@ of all subsequent component.
 				}
 				DEACCESS(cmzn_spectrumcomponent)(&component);
 			}
+			cmzn_spectrum_changed(spectrum);
 		}
 		else
 		{
@@ -941,13 +1174,12 @@ of all subsequent component.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_spectrum_remove_all_spectrumcomponents.  Invalid argument(s)");
+			"cmzn_spectrum_remove_spectrumcomponent.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* cmzn_spectrum_remove_all_spectrumcomponents */
-
+} /* cmzn_spectrum_remove_spectrumcomponent */
 
 int cmzn_spectrum_get_component_position(struct cmzn_spectrum *spectrum,
 	struct cmzn_spectrumcomponent *component)
@@ -1103,7 +1335,7 @@ Returns a bit mask for the colour components modified by the spectrum.
 	return (colour_components);
 } /* Spectrum_get_colour_components */
 
-char *Spectrum_get_name(struct cmzn_spectrum *spectrum)
+const char *Spectrum_get_name(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
@@ -1111,7 +1343,7 @@ DESCRIPTION :
 Returns the string of the spectrum.
 ==============================================================================*/
 {
-	char *name;
+	const char *name;
 
 	ENTER(Spectrum_get_name);
 	if (spectrum)
@@ -1330,8 +1562,8 @@ functions are in one place and the iterator can have local scope.
 	{
 		min = cmzn_spectrumcomponent_get_range_minimum(component);
 		max = cmzn_spectrumcomponent_get_range_maximum(component);
-		fixed_minimum = cmzn_spectrumcomponent_get_fix_minimum_flag(component);
-		fixed_maximum = cmzn_spectrumcomponent_get_fix_maximum_flag(component);
+		fixed_minimum = cmzn_spectrumcomponent_is_fix_minimum(component);
+		fixed_maximum = cmzn_spectrumcomponent_is_fix_maximum(component);
 
 		if ( data->first )
 		{
@@ -1521,6 +1753,7 @@ int cmzn_spectrum_changed(cmzn_spectrum_id spectrum)
 	if (spectrum)
 	{
 		spectrum->changed = 1;
+		spectrum->changeDetail.setChanged();
 		if (0 == spectrum->cache)
 		{
 			return cmzn_spectrum_inform_clients(spectrum);
@@ -1749,8 +1982,6 @@ that spectrum.
 
 	return (component_list);
 } /* get_cmzn_spectrumcomponent_list */
-
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_spectrum)
 
 static int Spectrum_render_colour_lookup(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
@@ -2079,6 +2310,212 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 	return (return_code);
 } /* Spectrum_get_colour_lookup_sizes */
 
+/**
+ * Spectrum manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the sepctrum in the spectrum manager.
+ * @param spectrummodule_void  Void pointer to changed spectrummodule).
+ */
+static void cmzn_spectrummodule_Spectrum_change(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *spectrummodule_void)
+{
+	cmzn_spectrummodule *spectrummodule = (cmzn_spectrummodule *)spectrummodule_void;
+	if (message && spectrummodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_spectrum)(message);
+
+		if (0 < spectrummodule->notifier_list->size())
+		{
+			cmzn_spectrummoduleevent_id event = cmzn_spectrummoduleevent::create(spectrummodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_spectrummodulenotifier_list::iterator iter = spectrummodule->notifier_list->begin();
+				iter != spectrummodule->notifier_list->end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_spectrummoduleevent::deaccess(event);
+		}
+	}
+}
+
+cmzn_spectrummodulenotifier_id cmzn_spectrummodule_create_spectrummodulenotifier(
+	cmzn_spectrummodule_id spectrummodule)
+{
+	return cmzn_spectrummodulenotifier::create(spectrummodule);
+}
+
+cmzn_spectrummodulenotifier::cmzn_spectrummodulenotifier(cmzn_spectrummodule *spectrummodule) :
+	module(spectrummodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	spectrummodule->addNotifier(this);
+}
+
+cmzn_spectrummodulenotifier::~cmzn_spectrummodulenotifier()
+{
+}
+
+int cmzn_spectrummodulenotifier::deaccess(cmzn_spectrummodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier::setCallback(cmzn_spectrummodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_spectrummodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_spectrummodulenotifier::spectrummoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_spectrummoduleevent_id event = cmzn_spectrummoduleevent::create(static_cast<cmzn_spectrummodule*>(0));
+		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_spectrummoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_spectrummoduleevent::cmzn_spectrummoduleevent(cmzn_spectrummodule *spectrummoduleIn) :
+	module(cmzn_spectrummodule_access(spectrummoduleIn)),
+	changeFlags(CMZN_SPECTRUM_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_spectrummoduleevent::~cmzn_spectrummoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_spectrum)(&(this->managerMessage));
+	cmzn_spectrummodule_destroy(&this->module);
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent::getSpectrumChangeFlags(cmzn_spectrum *spectrum) const
+{
+	if (spectrum && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(this->managerMessage, spectrum);
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
+
+void cmzn_spectrummoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_spectrum)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_spectrum) *cmzn_spectrummoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_spectrummoduleevent::deaccess(cmzn_spectrummoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier_clear_callback(cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier_set_callback(cmzn_spectrummodulenotifier_id notifier,
+	cmzn_spectrummodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_spectrummodulenotifier_get_callback_user_data(
+ cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_spectrummodulenotifier_id cmzn_spectrummodulenotifier_access(
+	cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_spectrummodulenotifier_destroy(cmzn_spectrummodulenotifier_id *notifier_address)
+{
+	return cmzn_spectrummodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_spectrummoduleevent_id cmzn_spectrummoduleevent_access(
+	cmzn_spectrummoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_spectrummoduleevent_destroy(cmzn_spectrummoduleevent_id *event_address)
+{
+	return cmzn_spectrummoduleevent::deaccess(*event_address);
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_summary_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event, cmzn_spectrum_id spectrum)
+{
+	if (event)
+		return event->getSpectrumChangeFlags(spectrum);
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
+
 double cmzn_spectrum_get_minimum(cmzn_spectrum_id spectrum)
 {
 	double value = 0.0;
@@ -2112,35 +2549,13 @@ int cmzn_spectrum_set_minimum_and_maximum(cmzn_spectrum_id spectrum, double mini
 	return return_code;
 }
 
-int cmzn_spectrum_set_name(
-	cmzn_spectrum_id spectrum, const char *name)
+int cmzn_spectrum_set_name(cmzn_spectrum_id spectrum, const char *name)
 {
-	int return_code = 0;
-
 	if (spectrum && name)
 	{
-		return_code = 1;
-		if (spectrum->manager)
-		{
-			return_code = MANAGER_MODIFY_IDENTIFIER(cmzn_spectrum, name)(
-				spectrum, name, spectrum->manager);
-		}
-		else
-		{
-			char *new_name = duplicate_string(name);
-			if (new_name)
-			{
-				DEALLOCATE(spectrum->name);
-				spectrum->name = new_name;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
+		return spectrum->setName(name);
 	}
-
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_spectrum_get_name(cmzn_spectrum_id spectrum)
@@ -2325,6 +2740,57 @@ int cmzn_spectrum_get_number_of_spectrumcomponents(cmzn_spectrum_id spectrum)
 	{
 		return NUMBER_IN_LIST(cmzn_spectrumcomponent)(
 			get_cmzn_spectrumcomponent_list(spectrum));
+	}
+	return 0;
+}
+
+cmzn_spectrumiterator_id cmzn_spectrumiterator_access(cmzn_spectrumiterator_id iterator)
+{
+	if (iterator)
+		return iterator->access();
+	return 0;
+}
+
+int cmzn_spectrumiterator_destroy(cmzn_spectrumiterator_id *iterator_address)
+{
+	if (!iterator_address)
+		return 0;
+	return cmzn_spectrumiterator::deaccess(*iterator_address);
+}
+
+cmzn_spectrum_id cmzn_spectrumiterator_next(cmzn_spectrumiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
+	return 0;
+}
+
+cmzn_spectrum_id cmzn_spectrumiterator_next_non_access(cmzn_spectrumiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next_non_access();
+	return 0;
+}
+
+
+int cmzn_spectrummodule_read_description(cmzn_spectrummodule_id spectrummodule,
+	const char *description)
+{
+	if (spectrummodule && description)
+	{
+		SpectrummoduleJsonImport jsonImport(spectrummodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_spectrummodule_write_description(cmzn_spectrummodule_id spectrummodule)
+{
+	if (spectrummodule)
+	{
+		SpectrummoduleJsonExport jsonExport(spectrummodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
 	}
 	return 0;
 }

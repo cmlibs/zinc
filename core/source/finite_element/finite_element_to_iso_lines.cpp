@@ -866,7 +866,6 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	int adjusted_number_of_points_in_xi2,n_data_components,i,j,number_of_points,
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		simplex_element,return_code;
-	struct CM_element_information cm_identifier;
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
@@ -877,7 +876,6 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
 		array)
 	{
-		return_code=1;
 		if (data_field)
 		{
 			n_data_components=Computed_field_get_number_of_components(data_field);
@@ -890,7 +888,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			 3 component */
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
-		get_surface_element_segmentation(element,
+		return_code = get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
@@ -999,9 +997,8 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			if (return_code)
 			{
 				Contour_lines_link_ends(contour_lines);
-				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_vertex_array(contour_lines,
-						array, cm_identifier.number))
+						array, get_FE_element_index(element)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

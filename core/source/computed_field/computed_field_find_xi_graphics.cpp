@@ -88,7 +88,6 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	ZnReal red, green, blue;
 	int return_code;
-	struct CM_element_information cm_information;
 	struct FE_element_shape *shape;
 	unsigned int scaled_number;
 
@@ -96,8 +95,9 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	if (data)
 	{
 		/* Code the element number into the colour */
-		if (get_FE_element_identifier(element, &cm_information) &&
-			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
+		int element_identifier = get_FE_element_identifier(element);
+		int dimension = get_FE_element_dimension(element);
+		if (2 == dimension)
 		{
 			scaled_number = (unsigned int)((double)cm_information.number - data->minimum_element_number + 1);
 			blue = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) <<
@@ -127,7 +127,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			glVertex2dv(data->values);
 
 			/* Only need to check the first dimension as this is only working for 2D */
-			if (get_FE_element_shape(element, &shape) &&
+			shape = get_FE_element_shape(element);
+			if ((shape) &&
 				get_FE_element_shape_xi_shape_type(shape,
 				/*xi_number*/0,  &shape_type) &&
 				(SIMPLEX_SHAPE == shape_type))

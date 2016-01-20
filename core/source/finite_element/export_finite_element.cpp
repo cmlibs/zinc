@@ -18,6 +18,7 @@ Functions for exporting finite element data to a file.
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
@@ -98,29 +99,20 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 ==============================================================================*/
 {
 	char element_char;
-	int dimension, i, return_code;
-	struct CM_element_information cm;
+	int i, return_code;
 
 	ENTER(write_element_xi_value);
-	if (output_file && element && get_FE_element_identifier(element, &cm)
-		&& (0 < (dimension = get_FE_element_dimension(element))))
+	int dimension = get_FE_element_dimension(element);
+	if (output_file && (0 < dimension))
 	{
-		switch (cm.type)
-		{
-			case CM_FACE:
-			{
-				element_char = 'F';
-			} break;
-			case CM_LINE:
-			{
-				element_char = 'L';
-			} break;
-			default:
-			{
-				element_char = 'E';
-			} break;
-		}
-		(*output_file) << " " << element_char << " " <<  cm.number << " " << dimension;
+		int identifier = get_FE_element_identifier(element);
+		if (dimension == 2)
+			element_char = 'F';
+		else if (dimension == 1)
+			element_char = 'L';
+		else
+			element_char = 'E';
+		(*output_file) << " " << element_char << " " <<  identifier << " " << dimension;
 		for (i = 0; i < dimension; i++)
 		{
 			char num_string[100];
@@ -470,10 +462,9 @@ static int write_FE_element_shape(ostream *output_file,
 	int return_code = 1;
 
 	ENTER(write_FE_element_shape);
-	int dimension;
-	if (output_file && element_shape &&
-		get_FE_element_shape_dimension(element_shape, &dimension))
+	if (output_file && element_shape)
 	{
+		const int dimension = get_FE_element_shape_dimension(element_shape);
 		(*output_file) << " Shape. Dimension=" << dimension << ", ";
 		char *shape_description = FE_element_shape_get_EX_description(element_shape);
 		if (shape_description)
@@ -511,28 +502,28 @@ output contains no characters before or after the printed numbers.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information cm;
 
 	ENTER(write_FE_element_identifier);
-	if (output_file && element && get_FE_element_identifier(element, &cm))
+	if (output_file && element)
 	{
 		return_code = 1;
 		int dimension = get_FE_element_dimension(element);
+		int identifier = get_FE_element_identifier(element);
 		if ((3 == dimension) || FE_element_is_top_level(element, (void *)NULL))
 		{
-			(*output_file) << cm.number << " 0 0";
+			(*output_file) << identifier << " 0 0";
 		}
 		else if (2 == dimension)
 		{
-			(*output_file) << "0 " << cm.number << " 0";
+			(*output_file) << "0 " << identifier << " 0";
 		}
 		else if (1 == dimension)
 		{
-			(*output_file) << "0 0 " << cm.number;
+			(*output_file) << "0 0 " << identifier;
 		}
 		else
 		{
-			(*output_file) << cm.number << " 0 0";
+			(*output_file) << identifier << " 0 0";
 		}
 	}
 	else
@@ -1320,15 +1311,15 @@ Notes:
 ==============================================================================*/
 {
 	FE_value scale_factor;
-	int field_no, i, number_of_faces, number_of_fields,
+	int field_no, i, number_of_fields,
 		number_of_nodes, number_of_scale_factors, return_code,
 		total_number_of_scale_factors;
-	struct FE_element *face;
 	struct FE_field *field;
 	struct FE_node *node;
 
 	ENTER(write_FE_element);
-	if (output_file && element &&
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (output_file && fe_mesh &&
 		((0 == output_number_of_nodes) || output_node_indices) &&
 		((0 == output_number_of_scale_factors) || output_scale_factor_indices))
 	{
@@ -1340,24 +1331,37 @@ Notes:
 		/* only write faces if writing fields i.e. not with groups */
 		if (!field_order_info || (get_FE_field_order_info_number_of_fields(field_order_info) > 0))
 		{
-			if (get_FE_element_number_of_faces(element, &number_of_faces) &&
-				(0 < number_of_faces))
+			const DsLabelIndex elementIndex = get_FE_element_index(element);
+			const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(elementIndex);
+			FE_mesh *faceMesh = fe_mesh->getFaceMesh();
+			if (!elementShapeFaces)
 			{
-				/* write the faces */
-				(*output_file) << " Faces:\n";
-				for (i = 0; i < number_of_faces; i++)
+				display_message(ERROR_MESSAGE, "write_FE_element.  Missing ElementShapeFaces");
+				return_code = 0;
+			}
+			else if (faceMesh)
+			{
+				const int faceCount = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
+				const DsLabelIndex *faces;
+				if ((0 < faceCount) && (faces = elementShapeFaces->getElementFaces(elementIndex)))
 				{
-					(*output_file) << " ";
-					if (get_FE_element_face(element, i, &face) && face)
+					/* write the faces */
+					(*output_file) << " Faces:\n";
+					for (i = 0; i < faceCount; i++)
 					{
-						write_FE_element_identifier(output_file, face);
+						(*output_file) << " ";
+						struct FE_element *face;
+						if ((faces[i] >= 0) && (face = faceMesh->getElement(faces[i])))
+						{
+							write_FE_element_identifier(output_file, face);
+						}
+						else
+						{
+							/* no face = no number, for compatibility with read_FE_element */
+							(*output_file) << "0 0 0";
+						}
+						(*output_file) << "\n";
 					}
-					else
-					{
-						/* no face = no number, for compatibility with read_FE_element */
-						(*output_file) << "0 0 0";
-					}
-					(*output_file) << "\n";
 				}
 			}
 		}
@@ -1509,7 +1513,7 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_region_element_or_parent_has_field(fe_region, element, field)))
+						FE_field_is_defined_in_element(field, element)))
 					{
 						return_code = 0;
 					}
@@ -1532,7 +1536,7 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && (!return_code); i++)
 				{
 					if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_region_element_or_parent_has_field(fe_region, element, field))
+						FE_field_is_defined_in_element(field, element))
 					{
 						return_code = 1;
 					}
@@ -1558,84 +1562,58 @@ Returns true if the <write_criterion> -- some options of which require the
 } /* FE_element_passes_write_criterion */
 
 
-/***************************************************************************//**
+/**
  * Return true if any fields are to be written for the element.
  */
-static int FE_element_has_fields_to_write(
+static bool FE_element_has_fields_to_write(
 	struct FE_element *element, struct FE_field_order_info *field_order_info)
 {
-	int i, number_of_fields, return_code;
-	struct FE_field *field;
-
 	if (field_order_info)
 	{
-		return_code = 0;
-		number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
-		for (i = 0; i < number_of_fields; i++)
+		struct FE_field *field;
+		int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+		for (int i = 0; i < number_of_fields; ++i)
 		{
 			field = get_FE_field_order_info_field(field_order_info, i);
 			if (FE_field_is_defined_in_element_not_inherited(field, element))
-			{
-				return_code = 1;
-				break;
-			}
+				return true;
 		}
+		return false;
 	}
-	else
-	{
-		return_code = 0 < get_FE_element_number_of_fields(element);
-	}
-
-	return (return_code);
+	return (0 < get_FE_element_number_of_fields(element));
 }
 
-static int FE_elements_have_same_header(
+/**
+ * Returns true if <element_1> and <element_2> can be written to file with the
+ * same field header. If <field_order_info> is supplied only those fields
+ * listed in it are compared.
+ */
+static bool FE_elements_have_same_header(
 	struct FE_element *element_1, struct FE_element *element_2,
 	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Returns true if <element_1> and <element_2> can be written to file with the
-same field header. If <field_order_info> is supplied only those fields
-listed in it are compared.
-==============================================================================*/
 {
-	int i, number_of_fields, return_code;
-	struct FE_field *field;
-
-	ENTER(FE_elements_have_same_header);
 	if (element_1 && element_2)
 	{
 		if (field_order_info)
 		{
-			return_code = 1;
-			number_of_fields =
-				get_FE_field_order_info_number_of_fields(field_order_info);
-			for (i = 0; (i < number_of_fields) && return_code; i++)
+			struct FE_field *field;
+			int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+			for (int i = 0; i < number_of_fields; ++i)
 			{
 				if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
 					equivalent_FE_field_in_elements(field, element_1, element_2)))
 				{
-					return_code = 0;
+					return false;
 				}
 			}
+			return true;
 		}
-		else
-		{
-			return_code = equivalent_FE_fields_in_elements(element_1, element_2);
-		}
+		return (0 != equivalent_FE_fields_in_elements(element_1, element_2));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_elements_have_same_header.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_elements_have_same_header */
+	display_message(ERROR_MESSAGE,
+		"FE_elements_have_same_header.  Invalid argument(s)");
+	return false;
+}
 
 static int write_FE_region_element(struct FE_element *element,
 	Write_FE_region_element_data *write_elements_data)
@@ -1650,7 +1628,7 @@ in the header.
 ==============================================================================*/
 {
 	ostream *output_file;
-	int new_field_header, new_shape, return_code;
+	int return_code;
 	struct FE_element_shape *element_shape, *last_element_shape;
 
 	ENTER(write_FE_region_element);
@@ -1664,17 +1642,15 @@ in the header.
 				write_elements_data->write_criterion, write_elements_data->field_order_info))
 		{
 			/* work out if shape or field header have changed from last element */
-			if (get_FE_element_shape(element, &element_shape))
+			element_shape = get_FE_element_shape(element);
+			if (element_shape)
 			{
-				new_shape = 1;
-				new_field_header = 1;
+				bool new_shape = true;
+				bool new_field_header = true;
 				if (write_elements_data->last_element)
 				{
-					if (get_FE_element_shape(write_elements_data->last_element,
-						&last_element_shape))
-					{
-						new_shape = (element_shape != last_element_shape);
-					}
+					last_element_shape = get_FE_element_shape(write_elements_data->last_element);
+					new_shape = (element_shape != last_element_shape);
 					if (new_shape)
 					{
 						new_field_header = FE_element_has_fields_to_write(element,
@@ -1683,7 +1659,7 @@ in the header.
 					else
 					{
 						new_field_header = !FE_elements_have_same_header(element,
-								write_elements_data->last_element, write_elements_data->field_order_info);
+							write_elements_data->last_element, write_elements_data->field_order_info);
 					}
 				}
 				if (new_shape)

@@ -31,10 +31,12 @@ November 97 Created from rendering part of Drawing.
 #include "zinc/sceneviewerinput.h"
 #include "zinc/status.h"
 #include "computed_field/computed_field_image.h"
+#include "description_io/sceneviewer_json_io.hpp"
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
@@ -46,8 +48,7 @@ November 97 Created from rendering part of Drawing.
 #include "general/message.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
-#include "graphics/light.h"
-#include "graphics/light_model.h"
+#include "graphics/light.hpp"
 #include "graphics/scene.h"
 #include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
@@ -79,6 +80,30 @@ FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
 Module functions
 ----------------
 */
+
+// forward declaration
+void cmzn_sceneviewer_request_changes(cmzn_sceneviewer_id sceneviewer, int changeFlags);
+
+void cmzn_sceneviewer::setLightingLocalViewer(bool value)
+{
+	if (value != this->lightingLocalViewer)
+	{
+		this->lightingLocalViewer = value;
+		cmzn_sceneviewer_request_changes(this,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	}
+}
+
+void cmzn_sceneviewer::setLightingTwoSided(bool value)
+{
+	if (value != this->lightingTwoSided)
+	{
+		this->lightingTwoSided = value;
+		cmzn_sceneviewer_request_changes(this,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	}
+}
+
 cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_viewer *scene_viewer)
 {
 	cmzn_sceneviewerinput_id input = 0;
@@ -184,7 +209,7 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 
 void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
 {
-	if (0 < sceneviewer->notifier_list->size())
+	if (sceneviewer->notifier_list && (0 < sceneviewer->notifier_list->size()))
 	{
 		cmzn_sceneviewernotifier_list notifier_list(*(sceneviewer->notifier_list));
 		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
@@ -1145,11 +1170,16 @@ DESCRIPTION :
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		reset_Lights();
+		rendering_data->renderer->reset_lights();
 		/* turn on lights that are part of the Scene_viewer,
 			ie. headlamps */
-		FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
-			scene_viewer->list_of_lights);
+		cmzn_lightiterator *lightIter = CREATE_LIST_ITERATOR(cmzn_light)(scene_viewer->list_of_lights);
+		cmzn_light *light;
+		while (0 != (light = cmzn_lightiterator_next_non_access(lightIter)))
+		{
+			rendering_data->renderer->cmzn_light_execute(light);
+		}
+		cmzn_lightiterator_destroy(&lightIter);
 
 		glMultMatrixd(scene_viewer->modelview_matrix);
 		/* turn on lights that are part of the Scene and fixed relative
@@ -2238,15 +2268,19 @@ access this function.
 				//glEnable(GL_SCISSOR_TEST);
 
 				/* glPushAttrib(GL_VIEWPORT_BIT); */
-				reset_Lights();
+
+				rendering_data.renderer->reset_lights();
 
 				/* light model */
-				compile_Light_model(scene_viewer->light_model);
-				rendering_data.renderer->Light_model_execute(scene_viewer->light_model);
-
-				/* compile the viewer lights */
-				FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
-					scene_viewer->list_of_lights);
+				if (0 < NUMBER_IN_LIST(cmzn_light)(scene_viewer->list_of_lights))
+				{
+					Colour ambientColour = Light_list_get_total_ambient_colour(scene_viewer->list_of_lights);
+					rendering_data.renderer->Light_model_enable(ambientColour, scene_viewer->isLightingLocalViewer(), scene_viewer->isLightingTwoSided());
+				}
+				else
+				{
+					rendering_data.renderer->Light_model_disable();
+				}
 
 				/********* CALL THE RENDERING CALLSTACK **********/
 				Scene_viewer_call_next_renderer(&rendering_data);
@@ -2522,16 +2556,12 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 	struct MANAGER_MESSAGE(cmzn_scenefilter) *message, void *sceneviewermodule_void);
 
 void cmzn_sceneviewermodule_light_manager_callback(
-	struct MANAGER_MESSAGE(Light) *message, void *sceneviewermodule_void);
-
-void cmzn_sceneviewermodule_light_model_manager_callback(
-	struct MANAGER_MESSAGE(Light_model) *message, void *sceneviewermodule_void);
+	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void);
 
 struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
 	struct Colour *background_colour,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	Light_module *lightModule ,struct Light *default_light,
-	Light_model_module *lightModelModule, struct Light_model *default_light_model,
+	cmzn_lightmodule *lightModule ,struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefiltermodule_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -2542,7 +2572,7 @@ Creates a cmzn_sceneviewermodule.
 {
 	struct cmzn_sceneviewermodule *sceneviewermodule;
 
-	if (background_colour && default_light_model)//-- && user_interface && interactive_tool_manager)
+	if (background_colour)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(sceneviewermodule,struct cmzn_sceneviewermodule,1))
@@ -2550,11 +2580,9 @@ Creates a cmzn_sceneviewermodule.
 			sceneviewermodule->access_count = 1;
 			sceneviewermodule->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			sceneviewermodule->background_colour = *background_colour;
-			sceneviewermodule->interactive_tool_manager = interactive_tool_manager;
-			sceneviewermodule->default_light = ACCESS(Light)(default_light);
-			sceneviewermodule->default_light_model = ACCESS(Light_model)(default_light_model);
-			sceneviewermodule->lightModule = Light_module_access(lightModule);
-			sceneviewermodule->lightModelModule = Light_model_module_access(lightModelModule);
+			sceneviewermodule->default_light = cmzn_light_access(default_light);
+			sceneviewermodule->default_ambient_light = cmzn_light_access(default_ambient_light);
+			sceneviewermodule->lightModule = cmzn_lightmodule_access(lightModule);
 			sceneviewermodule->filterModule = cmzn_scenefiltermodule_access(filterModule);
 			//-- sceneviewermodule->user_interface = user_interface;
 			sceneviewermodule->scene_viewer_list = CREATE(LIST(Scene_viewer))();
@@ -2563,13 +2591,9 @@ Creates a cmzn_sceneviewermodule.
 					(void *)sceneviewermodule,
 					cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
 			sceneviewermodule->light_manager_callback_id =
-				MANAGER_REGISTER(Light)(cmzn_sceneviewermodule_light_manager_callback,
+				MANAGER_REGISTER(cmzn_light)(cmzn_sceneviewermodule_light_manager_callback,
 					(void *)sceneviewermodule,
-					Light_module_get_manager(sceneviewermodule->lightModule));
-			sceneviewermodule->light_model_manager_callback_id =
-				MANAGER_REGISTER(Light_model)(cmzn_sceneviewermodule_light_model_manager_callback,
-					(void *)sceneviewermodule,
-					Light_model_module_get_manager(sceneviewermodule->lightModelModule));
+					cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
 			sceneviewermodule->destroy_callback_list=
 					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))();
 		}
@@ -2663,16 +2687,12 @@ Destroys the sceneviewermodule.
 			sceneviewermodule->scenefilter_manager_callback_id,
 			cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
 		cmzn_scenefiltermodule_destroy(&sceneviewermodule->filterModule);
-		MANAGER_DEREGISTER(Light)(
+		MANAGER_DEREGISTER(cmzn_light)(
 			sceneviewermodule->light_manager_callback_id,
-			Light_module_get_manager(sceneviewermodule->lightModule));
-		Light_module_destroy(&sceneviewermodule->lightModule);
-		DEACCESS(Light)(&sceneviewermodule->default_light);
-		MANAGER_DEREGISTER(Light_model)(
-			sceneviewermodule->light_model_manager_callback_id,
-			Light_model_module_get_manager(sceneviewermodule->lightModelModule));
-		Light_model_module_destroy(&sceneviewermodule->lightModelModule);
-		DEACCESS(Light_model)(&sceneviewermodule->default_light_model);
+			cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
+		cmzn_lightmodule_destroy(&sceneviewermodule->lightModule);
+		cmzn_light_destroy(&sceneviewermodule->default_light);
+		cmzn_light_destroy(&sceneviewermodule->default_ambient_light);
 		DEALLOCATE(*sceneviewermodule_address);
 		return_code = 1;
 	}
@@ -2822,29 +2842,10 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
-
-int Scene_viewer_remove_light_in_list_iterator(struct Light *light,void *scene_viewer_void)
-{
-	int return_code;
-	cmzn_sceneviewer *scene_viewer = (cmzn_sceneviewer *)scene_viewer_void;
-
-	if (light && scene_viewer)
-	{
-		Scene_viewer_remove_light(scene_viewer, light);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* list_Light_name */
-
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
-	struct Light *default_light,
-	struct Light_model *default_light_model,
+	struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefilter_id filter)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -2852,7 +2853,7 @@ LAST MODIFIED : 19 September 2002
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
 Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager, light_model_manager or scene_manager
+If any of light_manager or scene_manager
 are supplied, the scene_viewer will automatically redraw in response to changes
 of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
@@ -2864,7 +2865,7 @@ performed in idle time so that multiple redraws are avoided.
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
-	if (graphics_buffer && background_colour && default_light_model &&
+	if (graphics_buffer && background_colour && default_ambient_light &&
 		Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode) &&
 		Graphics_buffer_get_stereo_mode(graphics_buffer, &graphics_buffer_stereo_mode))
 	{
@@ -2911,7 +2912,7 @@ performed in idle time so that multiple redraws are avoided.
 			/* allocate memory for the scene_viewer structure */
 			ALLOCATE(scene_viewer, Scene_viewer, 1);
 			if (scene_viewer &&
-				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
+				(scene_viewer->list_of_lights=CREATE(LIST(cmzn_light)())))
 			{
 				scene_viewer->access_count = 1;
 				scene_viewer->filter = cmzn_scenefilter_access(filter);
@@ -2950,7 +2951,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->translate_rate=1.0;
 				scene_viewer->tumble_rate=1.5;
 				scene_viewer->zoom_rate=1.0;
-				scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
 				scene_viewer->antialias = 0;
 				scene_viewer->perturb_lines = false;
 				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL;
@@ -2963,11 +2963,11 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->cache = 0;
 				scene_viewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
 				if (default_light)
-				{
-					ACCESS(Light)(default_light);
-					ADD_OBJECT_TO_LIST(Light)(default_light,
-						scene_viewer->list_of_lights);
-				}
+					ADD_OBJECT_TO_LIST(cmzn_light)(default_light, scene_viewer->list_of_lights);
+				if (default_ambient_light)
+					ADD_OBJECT_TO_LIST(cmzn_light)(default_ambient_light, scene_viewer->list_of_lights);
+				scene_viewer->lightingLocalViewer = false;
+				scene_viewer->lightingTwoSided = true;
 				/* managers and callback IDs for automatic updates */
 				(scene_viewer->image_texture).texture=(struct Texture *)NULL;
 				(scene_viewer->image_texture).manager = NULL;
@@ -3093,10 +3093,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* send the destroy callbacks */
 
 		/* dispose of our data structure */
-		DEACCESS(Light_model)(&(scene_viewer->light_model));
-		for_each_Light_in_Scene_viewer(scene_viewer,Scene_viewer_remove_light_in_list_iterator,
-			(void *)scene_viewer);
-		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
+		DESTROY(LIST(cmzn_light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
 		{
 			order_independent_finalise(
@@ -3170,7 +3167,7 @@ struct Scene_viewer *create_Scene_viewer_from_module(
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			&sceneviewermodule->background_colour,
 			sceneviewermodule->default_light,
-			sceneviewermodule->default_light_model,
+			sceneviewermodule->default_ambient_light,
 			filter);
 		cmzn_scenefilter_destroy(&filter);
 		if (scene_viewer)
@@ -4092,80 +4089,34 @@ Sets the input_mode of the Scene_viewer.
 	return (return_code);
 } /* Scene_viewer_set_input_mode */
 
-int Scene_viewer_add_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Adds a light to the Scene_viewer list_of_lights.
-==============================================================================*/
+int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_add_light);
-	if (scene_viewer&&light)
+	if (sceneviewer && light)
 	{
-		if (!IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights))
-		{
-			ACCESS(Light)(light);
-			return_code=ADD_OBJECT_TO_LIST(Light)(light,scene_viewer->list_of_lights);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_add_light.  Light already in list");
-			return_code=0;
-		}
+		if (IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_ALREADY_EXISTS;
+		if (!ADD_OBJECT_TO_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_GENERAL;
+		cmzn_sceneviewer_request_changes(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_add_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* Scene_viewer_add_light */
-
-int Scene_viewer_has_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 12 December 1997
-
-DESCRIPTION :
-Returns true if <Scene_viewer> has <light> in its list_of_lights, OR if <light>
-is NULL, returns true if <scene_viewer> has any lights.
-==============================================================================*/
+bool cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_has_light);
-	if (scene_viewer)
+	if (sceneviewer && light)
 	{
-		if (light)
-		{
-			return_code=IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights);
-		}
-		else
-		{
-			return_code=NUMBER_IN_LIST(Light)(scene_viewer->list_of_lights);
-		}
+		return (0 != IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_has_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return false;
+}
 
-	return (return_code);
-} /* Scene_viewer_has_light */
-
-int Scene_viewer_has_light_in_list(struct Scene_viewer *scene_viewer,
-	struct LIST(Light) *light_list)
+int cmzn_sceneviewer_has_light_in_list(struct Scene_viewer *scene_viewer,
+	struct LIST(cmzn_light) *light_list)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -4175,10 +4126,10 @@ Returns true if the list_of_lights in <Scene> intersects <light_list>.
 {
 	int return_code;
 
-	ENTER(Scene_viewer_has_light_in_list);
+	ENTER(cmzn_sceneviewer_has_light_in_list);
 	if (scene_viewer && light_list)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Light)(Light_is_in_list,
+		if (FIRST_OBJECT_IN_LIST_THAT(cmzn_light)(cmzn_light_is_in_list,
 			(void *)light_list, scene_viewer->list_of_lights))
 		{
 			return_code = 1;
@@ -4191,51 +4142,333 @@ Returns true if the list_of_lights in <Scene> intersects <light_list>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_has_light_in_list.  Invalid argument(s)");
+			"cmzn_sceneviewer_has_light_in_list.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_has_light_in_list */
+} /* cmzn_sceneviewer_has_light_in_list */
 
-int Scene_viewer_remove_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Removes a light from the Scene_viewer list_of_lights.
-==============================================================================*/
+int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_remove_light);
-	if (scene_viewer&&light)
+	if (sceneviewer && light)
 	{
-		if (IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights))
+		if (!IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_NOT_FOUND;
+		if (!REMOVE_OBJECT_FROM_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_GENERAL;
+		cmzn_sceneviewer_request_changes(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_sceneviewer_is_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+		return sceneviewer->isLightingLocalViewer();
+	return false;
+}
+
+int cmzn_sceneviewer_set_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer, bool value)
+{
+	if (sceneviewer)
+	{
+		sceneviewer->setLightingLocalViewer(value);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_sceneviewer_is_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+		return sceneviewer->isLightingTwoSided();
+	return false;
+}
+
+int cmzn_sceneviewer_set_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer, bool value)
+{
+	if (sceneviewer)
+	{
+		sceneviewer->setLightingTwoSided(value);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewer::getTransformationMatrix(
+  enum cmzn_scenecoordinatesystem fromCoordinateSystem,
+	enum cmzn_scenecoordinatesystem toCoordinateSystem,
+	const gtMatrix *localToWorldTransformationMatrix,
+	double *transformationMatrix16)
+{
+	if (!transformationMatrix16)
+		return CMZN_ERROR_ARGUMENT;
+	double from_projection[16], inverse_to_projection[16];
+	if (fromCoordinateSystem == toCoordinateSystem)
+	{
+		/* identity_projection */
+		for (int i = 0; i < 16; ++i)
+			transformationMatrix16[i] = 0.0;
+		for (int i = 0; i < 16; i += 5)
+			transformationMatrix16[i] = 1.0;
+		return CMZN_OK;
+	}
+	if (!(Scene_viewer_get_transformation_to_window(this, fromCoordinateSystem,
+				localToWorldTransformationMatrix, from_projection) &&
+			Scene_viewer_get_transformation_to_window(this, toCoordinateSystem,
+				localToWorldTransformationMatrix, inverse_to_projection)))
+		return CMZN_ERROR_GENERAL;
+	double lu_d, temp;
+	int i, j, lu_index[4];
+	if (!LU_decompose(/*dimension*/4, inverse_to_projection,
+			lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
+		return CMZN_ERROR_GENERAL;
+	double to_projection[16];
+	for (i = 0 ; i < 4 ; i++)
+	{
+		for (j = 0 ; j < 4 ; j++)
 		{
-			return_code=REMOVE_OBJECT_FROM_LIST(Light)(light,
-				scene_viewer->list_of_lights);
-			DEACCESS(Light)(&light);
+			to_projection[i * 4 + j] = 0.0;
 		}
-		else
+		to_projection[i * 4 + i] = 1.0;
+		LU_backsubstitute(/*dimension*/4, inverse_to_projection,
+			lu_index, to_projection + i * 4);
+	}
+	/* transpose */
+	for (i = 0 ; i < 4 ; i++)
+	{
+		for (j = i + 1 ; j < 4 ; j++)
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_light.  Light not in list");
-			return_code=0;
+			temp = to_projection[i*4 + j];
+			to_projection[i*4 + j] = to_projection[j*4 + i];
+			to_projection[j*4 + i] = temp;
 		}
 	}
-	else
+	multiply_matrix(4, 4, 4, to_projection, from_projection, transformationMatrix16);
+#if defined (TEXTURE_PROJECTION)
+	if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
+		Scene_viewer_get_window_projection_matrix(scene_viewer,
+			window_projection_matrix))
 	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+		/* Multiply these matrices */
+		for (i=0;i<4;i++)
+		{
+			for (j=0;j<4;j++)
+			{
+				total_projection_matrix[i * 4 + j] = 0.0;
+				for (k=0;k<4;k++)
+				{
+					total_projection_matrix[i * 4 + j] +=
+						window_projection_matrix[i * 4 + k]	*
+						modelview_matrix[k * 4 + j];
+				}
+			}
+		}
 
-	return (return_code);
-} /* Scene_viewer_remove_light */
+		/* Get the viewport transformation too */
+		Scene_viewer_get_viewport_info(scene_viewer,
+			&viewport_left, &viewport_top,
+			&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
+		Scene_viewer_get_viewport_size(scene_viewer,
+			&viewport_width, &viewport_height);
+		/* Multiply total_projection by viewport matrices */
+		for (i=0;i<4;i++)
+		{
+			for (j=0;j<4;j++)
+			{
+				viewport_matrix[i * 4 + j] = 0.0;
+				for (k=0;k<4;k++)
+				{
+					if ((i == 0) && (k == 0))
+					{
+						viewport_matrix[i * 4 + j] +=
+							0.5 * viewport_width / viewport_pixels_per_unit_x  *
+							total_projection_matrix[k * 4 + j];
+					}
+					else if((i == 1) && (k == 1))
+					{
+						viewport_matrix[i * 4 + j] +=
+							0.5 * viewport_height / viewport_pixels_per_unit_y *
+							total_projection_matrix[k * 4 + j];
+					}
+					else if((i == 0) && (k == 3))
+					{
+						viewport_matrix[i * 4 + j] +=
+							(viewport_left + 0.5 * viewport_width
+								/ viewport_pixels_per_unit_x) *
+								total_projection_matrix[k * 4 + j];
+					}
+					else if((i == 1) && (k == 3))
+					{
+						viewport_matrix[i * 4 + j] +=
+							(viewport_top - 0.5 * viewport_height
+								/ viewport_pixels_per_unit_y) *
+								total_projection_matrix[k * 4 + j];
+					}
+					else if((i == 2) && (k == 2))
+					{
+						viewport_matrix[i * 4 + j] +=
+							total_projection_matrix[k * 4 + j];
+					}
+					else if((i == 3) && (k == 3))
+					{
+						viewport_matrix[i * 4 + j] +=
+							total_projection_matrix[k * 4 + j];
+					}
+					else
+					{
+						viewport_matrix[i * 4 + j] += 0.0;
+					}
+				}
+
+			}
+		}
+		/* texture_projection */
+		Scene_viewer_get_background_texture_info(scene_viewer,
+			&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
+			&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
+		cmzn_field_image_id image_field=
+			Scene_viewer_get_background_image_field(scene_viewer);
+		texture = cmzn_field_image_get_texture(image_field);
+		cmzn_field_image_destroy(&image_field);
+		if (texture)
+		{
+			Texture_get_distortion_info(texture, &distortion_centre_x,
+				&distortion_centre_y, &distortion_factor_k1);
+			Texture_get_physical_size(texture, &texture_width,
+				&texture_height, &texture_depth);
+			if (bk_texture_undistort_on && distortion_factor_k1)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_apply_projection.  Distortion corrected textures are not supported yet");
+				return_code=0;
+				/* identity_projection */
+				for (i=0;i<16;i++)
+				{
+					if (i % 5)
+					{
+						projection_matrix[i] = 0;
+					}
+					else
+					{
+						projection_matrix[i] = 1;
+					}
+				}
+			}
+			else
+			{
+				/* Multiply viewport_matrix by background texture */
+				for (i=0;i<4;i++)
+				{
+					for (j=0;j<4;j++)
+					{
+						texture_projection_matrix[i * 4 + j] = 0.0;
+						for (k=0;k<4;k++)
+						{
+							if ((i == 0) && (k == 0))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									(texture_width / bk_texture_width) *
+									viewport_matrix[k * 4 + j];
+							}
+							else if((i == 1) && (k == 1))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									(texture_height / bk_texture_height) *
+									viewport_matrix[k * 4 + j];
+							}
+							else if((i == 0) && (k == 3))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									(-bk_texture_left *
+										(texture_width / bk_texture_width)) *
+										viewport_matrix[k * 4 + j];
+							}
+							else if((i == 1) && (k == 3))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									(- bk_texture_top *
+										(texture_height / bk_texture_height)
+										+ texture_height) *
+										viewport_matrix[k * 4 + j];
+							}
+							else if((i == 2) && (k == 2))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									viewport_matrix[k * 4 + j];
+							}
+							else if((i == 3) && (k == 3))
+							{
+								texture_projection_matrix[i * 4 + j] +=
+									viewport_matrix[k * 4 + j];
+							}
+							else
+							{
+								texture_projection_matrix[i * 4 + j] += 0.0;
+							}
+						}
+					}
+				}
+				for (i=0;i<16;i++)
+				{
+					projection_matrix[i] = texture_projection_matrix[i];
+				}
+			}
+		}
+	}
+#endif
+	return CMZN_OK;
+}
+
+int cmzn_sceneviewer_transform_coordinates(
+	cmzn_sceneviewer_id sceneviewer,
+  enum cmzn_scenecoordinatesystem in_coordinate_system,
+  enum cmzn_scenecoordinatesystem out_coordinate_system,
+	cmzn_scene_id local_scene, const double *valuesIn3, double *valuesOut3)
+{
+	if (!((sceneviewer) &&(sceneviewer->scene) && (valuesIn3) && (valuesOut3)))
+		return CMZN_ERROR_ARGUMENT;
+	gtMatrix *localToWorldTransformation = 0;
+	if (local_scene)
+		localToWorldTransformation = cmzn_scene_get_total_transformation(local_scene, sceneviewer->scene);
+	double transformationMatrix16[16];
+	int result = sceneviewer->getTransformationMatrix(in_coordinate_system, out_coordinate_system,
+		localToWorldTransformation, transformationMatrix16);
+	if (localToWorldTransformation)
+		DEALLOCATE(localToWorldTransformation);
+	if (CMZN_OK != result)
+		return result;
+	const double h =
+		transformationMatrix16[12]*valuesIn3[0] +
+		transformationMatrix16[13]*valuesIn3[1] +
+		transformationMatrix16[14]*valuesIn3[2] +
+		transformationMatrix16[15]; // perspective division factor
+	valuesOut3[0] = (
+		transformationMatrix16[ 0]*valuesIn3[0] +
+		transformationMatrix16[ 1]*valuesIn3[1] +
+		transformationMatrix16[ 2]*valuesIn3[2] +
+		transformationMatrix16[ 3])/h;
+	valuesOut3[1] = (
+		transformationMatrix16[ 4]*valuesIn3[0] +
+		transformationMatrix16[ 5]*valuesIn3[1] +
+		transformationMatrix16[ 6]*valuesIn3[2] +
+		transformationMatrix16[ 7])/h;
+	valuesOut3[2] = (
+		transformationMatrix16[ 8]*valuesIn3[0] +
+		transformationMatrix16[ 9]*valuesIn3[1] +
+		transformationMatrix16[10]*valuesIn3[2] +
+		transformationMatrix16[11])/h;
+	return CMZN_OK;
+}
 
 int Scene_viewer_add_clip_plane(struct Scene_viewer *scene_viewer,
 	double A, double B, double C, double D)
@@ -4366,65 +4599,6 @@ int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
-
-struct Light_model *Scene_viewer_get_light_model(
-	struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Returns the Scene_viewer light_model.
-==============================================================================*/
-{
-	struct Light_model *return_light_model;
-
-	ENTER(Scene_viewer_get_light_model);
-	if (scene_viewer)
-	{
-		return_light_model=scene_viewer->light_model;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_light_model.  Invalid argument(s)");
-		return_light_model=(struct Light_model *)NULL;
-	}
-	LEAVE;
-
-	return (return_light_model);
-} /* Scene_viewer_get_light_model */
-
-int Scene_viewer_set_light_model(struct Scene_viewer *scene_viewer,
-	struct Light_model *light_model)
-/*******************************************************************************
-LAST MODIFIED : 13 December 1997
-
-DESCRIPTION :
-Sets the Scene_viewer light_model.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_light_model);
-	if (scene_viewer&&light_model)
-	{
-		if (light_model != scene_viewer->light_model)
-		{
-			DEACCESS(Light_model)(&(scene_viewer->light_model));
-			scene_viewer->light_model=ACCESS(Light_model)(light_model);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_light_model.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_light_model */
 
 int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
 	const double *eyeValuesIn3)
@@ -5952,34 +6126,34 @@ int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
 	return CMZN_OK;
 }
 
-int for_each_Light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
-	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data)
+int for_each_cmzn_light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
+	LIST_ITERATOR_FUNCTION(cmzn_light) *iterator_function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 18 December 1997
 
 DESCRIPTION :
 Allows clients of the <scene_viewer> to perform functions with the lights in it.
-The most common task will to list the lights in the scene with show_Light.
+The most common task will to list the lights in the scene with show_cmzn_light.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(for_each_Light_in_Scene_viewer);
+	ENTER(for_each_cmzn_light_in_Scene_viewer);
 	if (scene_viewer)
 	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(Light)(iterator_function,user_data,
+		return_code=FOR_EACH_OBJECT_IN_LIST(cmzn_light)(iterator_function,user_data,
 			scene_viewer->list_of_lights);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"for_each_Light_in_Scene_viewer.  Missing scene_viewer");
+			"for_each_cmzn_light_in_Scene_viewer.  Missing scene_viewer");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* for_each_Light_in_Scene_viewer */
+} /* for_each_cmzn_light_in_Scene_viewer */
 
 int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
 	enum Texture_storage_type storage, int *width, int *height,
@@ -6007,8 +6181,8 @@ graphics window on screen.
 		original_left, original_right, original_bottom, original_top,
 		original_near_plane, original_far_plane, right, top = 0.0,
 		viewport_left, viewport_top = 0.0, viewport_pixels_per_x = 0.0, viewport_pixels_per_y = 0.0,
-		original_viewport_left, original_viewport_top,
-		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
+		original_viewport_left = 0.0, original_viewport_top = 0.0,
+		original_viewport_pixels_per_x = 0.0, original_viewport_pixels_per_y = 0.0,
 		real_left, real_right, real_bottom, real_top,
 		scaled_NDC_width,scaled_NDC_height ;
 #if defined (OPENGL_API) && defined (USE_MSAA)
@@ -7144,7 +7318,7 @@ scene viewer on screen.
 
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	enum cmzn_scenecoordinatesystem coordinate_system,
-	gtMatrix *local_transformation_matrix, double *projection)
+	const gtMatrix *local_transformation_matrix, double *projection)
 {
 	int return_code = 1;
 	if (scene_viewer)
@@ -7291,45 +7465,21 @@ int cmzn_sceneviewer_scenefilter_change(struct Scene_viewer *scene_viewer,	void 
 int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
-	struct MANAGER_MESSAGE(Light) *message = (struct MANAGER_MESSAGE(Light) *)message_void;
+	struct MANAGER_MESSAGE(cmzn_light) *message = (struct MANAGER_MESSAGE(cmzn_light) *)message_void;
 	if (scene_viewer && message)
 	{
 		if (scene_viewer->awaken)
 		{
-			struct LIST(Light) *changed_light_list =
-				MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
+			struct LIST(cmzn_light) *changed_light_list =
+				MANAGER_MESSAGE_GET_CHANGE_LIST(cmzn_light)(message, MANAGER_CHANGE_RESULT(cmzn_light));
 			if (changed_light_list)
 			{
-				if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
+				if (cmzn_sceneviewer_has_light_in_list(scene_viewer, changed_light_list))
 				{
 					cmzn_sceneviewer_request_changes(scene_viewer,
 						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 				}
-				DESTROY_LIST(Light)(&changed_light_list);
-			}
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
-
-int cmzn_sceneviewer_light_model_change(struct Scene_viewer *scene_viewer,	void *message_void)
-{
-	int return_code = 1;
-	struct MANAGER_MESSAGE(Light_model) *message = (struct MANAGER_MESSAGE(Light_model) *)message_void;
-	if (scene_viewer && message)
-	{
-		if (scene_viewer->awaken && scene_viewer->light_model)
-		{
-			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Light_model)(message,
-				scene_viewer->light_model);
-			if (change & MANAGER_CHANGE_RESULT(Light_model))
-			{
-				cmzn_sceneviewer_request_changes(scene_viewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				DESTROY_LIST(cmzn_light)(&changed_light_list);
 			}
 		}
 	}
@@ -7360,37 +7510,18 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 }
 
 void cmzn_sceneviewermodule_light_manager_callback(
-	struct MANAGER_MESSAGE(Light) *message, void *sceneviewermodule_void)
+	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void)
 {
 	cmzn_sceneviewermodule *sceneviewermodule = (cmzn_sceneviewermodule *)sceneviewermodule_void;
 	if (message && sceneviewermodule)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Light))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_light)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_light))
 		{
 			// minimise scene messages while updating
 			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
 				cmzn_sceneviewer_light_change,(void *)message,
-				sceneviewermodule->scene_viewer_list);
-			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
-		}
-	}
-}
-
-void cmzn_sceneviewermodule_light_model_manager_callback(
-	struct MANAGER_MESSAGE(Light_model) *message, void *sceneviewermodule_void)
-{
-	cmzn_sceneviewermodule *sceneviewermodule = (cmzn_sceneviewermodule *)sceneviewermodule_void;
-	if (message && sceneviewermodule)
-	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light_model)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Light_model))
-		{
-			// minimise scene messages while updating
-			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
-			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				cmzn_sceneviewer_light_model_change,(void *)message,
 				sceneviewermodule->scene_viewer_list);
 			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}
@@ -7601,4 +7732,98 @@ cmzn_sceneviewerevent_change_flags cmzn_sceneviewerevent_get_change_flags(
 	cmzn_sceneviewerevent_id event)
 {
 	return event->changeFlags;
+}
+
+class cmzn_sceneviewer_projection_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_sceneviewer_projection_mode projection_mode)
+	{
+		const char *enum_string = 0;
+		switch (projection_mode)
+		{
+			case CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL:
+				enum_string = "PARALLEL";
+				break;
+			case CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE:
+				enum_string = "PERSPECTIVE";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_sceneviewer_projection_mode
+	cmzn_sceneviewer_projection_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_sceneviewer_projection_mode,
+		cmzn_sceneviewer_projection_mode_conversion>(string);
+}
+
+char *cmzn_sceneviewer_projection_mode_enum_to_string(
+	enum cmzn_sceneviewer_projection_mode mode)
+{
+	const char *mode_string = cmzn_sceneviewer_projection_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+
+class cmzn_sceneviewer_transparency_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_sceneviewer_transparency_mode transparency_mode)
+	{
+		const char *enum_string = 0;
+		switch (transparency_mode)
+		{
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST:
+				enum_string = "FAST";
+				break;
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
+				enum_string = "SLOW";
+				break;
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
+				enum_string = "ORDER_INDEPENDENT";
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_sceneviewer_transparency_mode
+	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_sceneviewer_transparency_mode,
+		cmzn_sceneviewer_transparency_mode_conversion>(string);
+}
+
+char *cmzn_sceneviewer_transparency_mode_enum_to_string(
+	enum cmzn_sceneviewer_transparency_mode mode)
+{
+	const char *mode_string = cmzn_sceneviewer_transparency_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+int cmzn_sceneviewer_read_description(cmzn_sceneviewer_id sceneviewer, const char *description)
+{
+	if (sceneviewer && description)
+	{
+		SceneviewerJsonImport jsonImport(sceneviewer);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_sceneviewer_write_description(cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+	{
+		SceneviewerJsonExport jsonExport(sceneviewer);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
 }

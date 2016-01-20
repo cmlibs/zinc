@@ -20,6 +20,7 @@ Global types and function prototypes for displaying messages.
 Global types
 ------------
 */
+
 enum Message_type
 /*******************************************************************************
 LAST MODIFIED : 31 May 1996
@@ -28,12 +29,12 @@ DESCRIPTION :
 The different message types.
 ==============================================================================*/
 {
-	ERROR_MESSAGE,
-	INFORMATION_MESSAGE,
-	WARNING_MESSAGE
+	ERROR_MESSAGE = 0,
+	WARNING_MESSAGE = 1,
+	INFORMATION_MESSAGE = 2
 }; /* enum Message_type */
 
-typedef int (Display_message_function)(const char *,void *);
+typedef int (Display_message_function)(const char *,enum Message_type, void *);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -45,8 +46,10 @@ The type of a function for displaying message strings.
 Global functions
 ----------------
 */
-int set_display_message_function(enum Message_type message_type,
-	Display_message_function *display_message_function,void *data);
+void set_display_message_on_console(bool display_flag);
+
+int set_display_message_function(Display_message_function *display_message_function,
+	void *data);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 

@@ -1,4 +1,4 @@
-	
+
 # Defines GRAPHICS_SRCS
 
 # OpenCMISS-Zinc Library
@@ -8,6 +8,14 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 SET( GRAPHICS_SRCS
+	source/description_io/graphics_json_export.cpp
+	source/description_io/graphics_json_import.cpp
+	source/description_io/graphics_json_io.cpp
+	source/description_io/scene_json_export.cpp
+	source/description_io/scene_json_import.cpp
+	source/description_io/sceneviewer_json_io.cpp
+	source/description_io/spectrum_json_io.cpp
+	source/description_io/tessellation_json_io.cpp
 	source/graphics/auxiliary_graphics_types.cpp
 	source/graphics/graphics.cpp
 	source/graphics/graphics_module.cpp
@@ -21,9 +29,6 @@ SET( GRAPHICS_SRCS
 	source/graphics/glyph_axes.cpp
 	source/graphics/glyph_circular.cpp
 	source/graphics/glyph_colour_bar.cpp
-	source/graphics/graphics_json_export.cpp
-	source/graphics/graphics_json_import.cpp
-	source/graphics/graphics_json_io.cpp
 	source/graphics/graphics_vertex_array.cpp
 	source/graphics/import_graphics_object.cpp
 	source/graphics/iso_field_calculation.cpp
@@ -38,8 +43,6 @@ SET( GRAPHICS_SRCS
 	source/graphics/render_triangularisation.cpp
 	source/graphics/quaternion.cpp
 	source/graphics/scene_coordinate_system.cpp
-	source/graphics/scene_json_export.cpp
-	source/graphics/scene_json_import.cpp
 	source/graphics/scene_viewer.cpp
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
@@ -52,6 +55,14 @@ SET( GRAPHICS_SRCS
 	source/graphics/volume_texture.cpp
 	source/graphics/webgl_export.cpp )
 SET( GRAPHICS_HDRS
+	source/description_io/graphics_json_export.hpp
+	source/description_io/graphics_json_import.hpp
+	source/description_io/graphics_json_io.hpp
+	source/description_io/scene_json_export.hpp
+	source/description_io/scene_json_import.hpp
+	source/description_io/sceneviewer_json_io.hpp
+	source/description_io/spectrum_json_io.hpp
+	source/description_io/tessellation_json_io.hpp
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphics.h
 	source/graphics/graphics_module.h
@@ -66,9 +77,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/glyph_axes.hpp
 	source/graphics/glyph_circular.hpp
 	source/graphics/glyph_colour_bar.hpp
-	source/graphics/graphics_json_export.hpp
-	source/graphics/graphics_json_import.hpp
-	source/graphics/graphics_json_io.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -81,7 +89,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/material.h
 	source/graphics/material.hpp
 	source/graphics/mcubes.h
-	source/graphics/order_independent_transparency.h 
+	source/graphics/order_independent_transparency.h
 	source/graphics/quaternion.hpp
 	source/graphics/render_alias.h
 	source/graphics/render_binary_wavefront.h
@@ -91,8 +99,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
 	source/graphics/scene_coordinate_system.hpp
-	source/graphics/scene_json_export.hpp
-	source/graphics/scene_json_import.hpp
 	source/graphics/scenefilter.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selection.hpp
@@ -114,7 +120,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/graphics_library.cpp
 		source/graphics/graphics_object.cpp
 		source/graphics/light.cpp
-		source/graphics/light_model.cpp
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
 		source/graphics/scenefilter.cpp
@@ -123,8 +128,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
 		source/graphics/font.h
 		source/graphics/graphics_library.h
-		source/graphics/light.h
-		source/graphics/light_model.h
+		source/graphics/light.hpp
 		source/graphics/render.hpp
 		source/graphics/render_gl.h
 		source/graphics/scene_picker.hpp

@@ -30,6 +30,8 @@ extern "C" {
  */
 enum cmzn_status
 {
+	CMZN_ERROR_ARGUMENT_CONTEXT = -7,
+		/*!< An argument is from a different Zinc context */
 	CMZN_ERROR_NOT_IMPLEMENTED = -6,
 		/*!< Cannot complete operation due to unimplemented feature */
 	CMZN_ERROR_INCOMPATIBLE_DATA = -5,

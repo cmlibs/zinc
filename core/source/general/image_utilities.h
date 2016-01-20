@@ -63,6 +63,7 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	TIFF_FILE_FORMAT,
 	YUV_FILE_FORMAT,
 	ANALYZE_FILE_FORMAT,
+	ANALYZE_OBJECT_MAP_FORMAT,
 	/* following used to indicate that the format has not been specified */
 	UNKNOWN_IMAGE_FILE_FORMAT
 }; /* enum Image_file_format */
@@ -280,7 +281,7 @@ enum Image_file_format Cmgui_image_information_get_image_file_format(
  * Clears 'valid' flag if fails.
  */
 int Cmgui_image_information_add_file_name(
-	struct Cmgui_image_information *cmgui_image_information, const char *file_name);
+	struct Cmgui_image_information *cmgui_image_information, char *file_name);
 
 /**
  * Adds a series of file names based on the <file_name_template> to the

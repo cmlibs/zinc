@@ -13,6 +13,8 @@
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
@@ -53,7 +55,6 @@ is in the root_region itself. The REGION_PATH must end in
 {
 	char *location;
 	int dimension, k, return_code;
-	struct CM_element_information cm;
 	struct cmzn_region *region;
 	struct FE_element *element;
 	struct FE_region *fe_region;
@@ -70,6 +71,7 @@ is in the root_region itself. The REGION_PATH must end in
 		char *first_string = 0;
 		char *separator_string = 0;
 		char *second_string = 0;
+		int identifier;
 		IO_stream_read_string(input_file, "[ \n\r\t]", &whitespace_string);
 		if (IO_stream_read_string(input_file, "[^ \n\r\t]", &first_string) &&
 			IO_stream_read_string(input_file, "[ \n\r\t]", &separator_string) &&
@@ -78,13 +80,13 @@ is in the root_region itself. The REGION_PATH must end in
 			char *element_type_string = 0;
 			/* first determine the element_number, which is in the second_string
 				 if the region path has been omitted, otherwise next in the file */
-			if (1 == sscanf(second_string, " %d", &(cm.number)))
+			if (1 == sscanf(second_string, " %d", &identifier))
 			{
 				// Note default changed from root_region to current_region
 				region = current_region;
 				element_type_string = first_string;
 			}
-			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
+			else if (1 == IO_stream_scan(input_file, " %d", &identifier))
 			{
 				if (cmzn_region_get_region_from_path_deprecated(root_region, first_string,
 					&region) && region)
@@ -110,20 +112,17 @@ is in the root_region itself. The REGION_PATH must end in
 				DEALLOCATE(location);
 				return_code = 0;
 			}
-			/* determine the element_type */
+			/* determine the element_type. Redundant since elements stored by dimension */
 			if (element_type_string)
 			{
 				if (fuzzy_string_compare(element_type_string, "element"))
 				{
-					cm.type = CM_ELEMENT;
 				}
 				else if (fuzzy_string_compare(element_type_string, "face"))
 				{
-					cm.type = CM_FACE;
 				}
 				else if (fuzzy_string_compare(element_type_string, "line"))
 				{
-					cm.type = CM_LINE;
 				}
 				else
 				{
@@ -158,10 +157,12 @@ is in the root_region itself. The REGION_PATH must end in
 				{
 					/* get existing element and check it has the dimension, or create
 						 a dummy element with unspecified shape and the dimension */
-					if (NULL != (element = FE_region_get_or_create_FE_element_with_identifier(
-						fe_region, dimension, cm.number, static_cast<FE_element_shape *>(0))))
+					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
+					if (fe_mesh && (NULL != (element = fe_mesh->get_or_create_FE_element_with_identifier(
+						identifier, static_cast<FE_element_shape *>(0)))))
 					{
 						*element_address = element;
+						DEACCESS(FE_element)(&element);
 						/* now read the xi position */
 						for (k = 0; (k < dimension) && return_code; k++)
 						{
@@ -2065,8 +2066,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 	{
 		*field_address = (struct FE_field *)NULL;
 	}
+	FE_mesh *fe_mesh = 0;
 	if (input_file && fe_region && element && field_address &&
-		(0 < (dimension = get_FE_element_dimension(element))))
+		(0 < (dimension = get_FE_element_dimension(element))) &&
+		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		if (NULL != (field = read_FE_field(input_file, fe_region)))
 		{
@@ -2380,10 +2383,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																			noScaleFactors = false;
 																			char *scale_factor_set_name = FE_basis_get_description_string(basis);
 																			cmzn_mesh_scale_factor_set *scale_factor_set =
-																				FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+																				fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 																			if (!scale_factor_set)
 																			{
-																				scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+																				scale_factor_set = fe_mesh->create_scale_factor_set();
 																				scale_factor_set->setName(scale_factor_set_name);
 																			}
 																			FE_element_field_component_set_scale_factor_set(
@@ -2671,7 +2674,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 	return (return_code);
 } /* read_FE_element_field */
 
-static struct FE_element *read_FE_element_field_info(
+static FE_element_template *read_FE_element_field_info(
 	struct IO_stream *input_file, struct FE_region *fe_region,
 	struct FE_element_shape *element_shape,
 	struct FE_field_order_info **field_order_info)
@@ -2679,9 +2682,9 @@ static struct FE_element *read_FE_element_field_info(
 LAST MODIFIED : 5 November 2004
 
 DESCRIPTION :
-Creates an element with <element_shape> and the field information read in from
-<input_file>. Note that the following header is required to return a template
-element with no fields:
+Creates an element template with <element_shape> and the field information read
+in from <input_file>. Note that the following header is required to return an
+element template with no fields:
  #Scale factor sets=0
  #Nodes=0
  #Fields=0
@@ -2693,29 +2696,28 @@ from a previous call to this function.
 ==============================================================================*/
 {
 	char *location;
-	int dimension,i,number_of_fields,number_of_nodes,
+	int i,number_of_fields,number_of_nodes,
 		number_of_scale_factor_sets, return_code;
-	struct CM_element_information element_identifier;
-	struct FE_element *element;
 	struct FE_field *field;
+	FE_mesh *fe_mesh;
 
 	ENTER(read_FE_element_field_info);
-	element = (struct FE_element *)NULL;
-	if (input_file && fe_region && element_shape && field_order_info)
+	FE_element_template *element_template = 0;
+	const int dimension = get_FE_element_shape_dimension(element_shape);
+	if (input_file && fe_region && (0 < dimension) && field_order_info &&
+		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		if (*field_order_info)
 		{
 			DESTROY(FE_field_order_info)(field_order_info);
 			*field_order_info = (struct FE_field_order_info *)NULL;
 		}
-		/* create the element */
-		element_identifier.number = 0;
-		element_identifier.type = CM_ELEMENT;
-		if (NULL != (element = CREATE(FE_element)(&element_identifier, element_shape,
-			fe_region, (struct FE_element *)NULL)))
+		/* create the blank element template */
+		element_template = fe_mesh->create_FE_element_template(element_shape);
+		if (element_template)
 		{
+			FE_element *template_element = element_template->get_template_element();
 			return_code = 1;
-			get_FE_element_shape_dimension(element_shape, &dimension);
 			/* read in the scale factor information */
 			if (!((1 == IO_stream_scan(input_file, "Scale factor sets=%d ",
 				&number_of_scale_factor_sets)) && (0 <= number_of_scale_factor_sets)))
@@ -2748,11 +2750,10 @@ from a previous call to this function.
 						{
 							char *scale_factor_set_name = remove_leading_trailing_blanks(scale_factor_set_text);
 							DEALLOCATE(scale_factor_set_text);
-							cmzn_mesh_scale_factor_set *scale_factor_set =
-								FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+							cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 							if (!scale_factor_set)
 							{
-								scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+								scale_factor_set = fe_mesh->create_scale_factor_set();
 								scale_factor_set->setName(scale_factor_set_name);
 							}
 							DEALLOCATE(scale_factor_set_name);
@@ -2803,8 +2804,8 @@ from a previous call to this function.
 					}
 					if (return_code && (0 < number_of_fields))
 					{
-						if (!(set_FE_element_number_of_nodes(element, number_of_nodes) &&
-							(CMZN_OK == set_FE_element_number_of_scale_factor_sets(element,
+						if (!(set_FE_element_number_of_nodes(template_element, number_of_nodes) &&
+							(CMZN_OK == set_FE_element_number_of_scale_factor_sets(template_element,
 								number_of_scale_factor_sets, scale_factor_set_identifiers,
 								numbers_in_scale_factor_sets))))
 						{
@@ -2822,7 +2823,7 @@ from a previous call to this function.
 						for (i = 0; (i < number_of_fields) && return_code; i++)
 						{
 							field = (struct FE_field *)NULL;
-							if (read_FE_element_field(input_file, fe_region, element, &field))
+							if (read_FE_element_field(input_file, fe_region, template_element, &field))
 							{
 								if (!add_FE_field_order_info_field(*field_order_info, field))
 								{
@@ -2864,10 +2865,7 @@ from a previous call to this function.
 				}
 			}
 			if (!return_code)
-			{
-				DESTROY(FE_element)(&element);
-				element = (struct FE_element *)NULL;
-			}
+				cmzn::Deaccess(element_template);
 		}
 		else
 		{
@@ -2888,57 +2886,62 @@ from a previous call to this function.
 	}
 	LEAVE;
 
-	return (element);
+	return (element_template);
 } /* read_FE_element_field_info */
 
+/**
+ * Returns an element from the element data in the input file.
+ * If the element of that identifier already exists, it is returned but
+ * parsed data is put into the element_template and the existingElement flag
+ * is set which indicates that the caller must merge the element template.
+ * If the element is newly created the new data is already in it.
+ * This behaviour is interim while face/node/scale factor information is
+ * moved from element objects into the mesh.
+ * Format:
+ * Element: # # #
+ * Faces:
+ * # # #
+ * # # #
+ * ...
+ * Values:
+ * # # # ...
+ * Nodes:
+ * # # # ...
+ * Scale factors:
+ * # # # ...
+ * If the element_template has nodes, values or scale factors, those
+ * sections are mandatory. Faces are optional.
+ */
 static struct FE_element *read_FE_element(struct IO_stream *input_file,
-	struct FE_element *template_element, struct FE_region *fe_region,
-	FE_nodeset *fe_nodeset, struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 27 May 2003
-
-DESCRIPTION :
-Reads in an element from an <input_file>.
-Element info may now have no nodes and no scale factors - eg. for reading
-in a grid field.
-==============================================================================*/
+	FE_element_template *element_template, FE_mesh *fe_mesh,
+	FE_nodeset *fe_nodeset, struct FE_field_order_info *field_order_info,
+	bool& existingElement)
 {
 	char *location, test_string[5];
 	enum Value_type value_type;
 	FE_value scale_factor;
-	int dimension, face_token_length, i, j, k, node_number, number_of_components,
+	int face_token_length, i, j, k, node_number, number_of_components,
 		number_of_faces, number_of_fields, number_of_nodes, number_of_scale_factors,
 		number_of_values, return_code, element_num, face_num, line_num;
-	struct CM_element_information element_identifier, face_identifier;
-	struct FE_element *element, *face_element;
 	struct FE_field *field;
 	struct FE_node *node;
 
 	ENTER(read_FE_element);
-	element = (struct FE_element *)NULL;
-	if (input_file && template_element &&
-		(0 < (dimension = get_FE_element_dimension(template_element))) &&
-		fe_region && field_order_info)
+	existingElement = false;
+	FE_element *return_element = (struct FE_element *)NULL;
+	if (input_file && element_template && fe_mesh && field_order_info)
 	{
 		/* read the element identifier */
+		int element_identifier = -1;
 		if (3 == IO_stream_scan(input_file, "lement :%d %d %d",
 			&element_num, &face_num, &line_num))
 		{
 			if (element_num)
-			{
-				element_identifier.number = element_num;
-				element_identifier.type = CM_ELEMENT;
-			}
+				element_identifier = element_num;
 			else if (face_num)
-			{
-				element_identifier.number = face_num;
-				element_identifier.type = CM_FACE;
-			}
+				element_identifier = face_num;
 			else /* line_num */
-			{
-				element_identifier.number = line_num;
-				element_identifier.type = CM_LINE;
-			}
+				element_identifier = line_num;
 			return_code = 1;
 		}
 		else
@@ -2952,18 +2955,88 @@ in a grid field.
 		}
 		if (return_code)
 		{
-			/* create element based on template element; read and fill in contents */
-			if (NULL != (element = CREATE(FE_element)(&element_identifier,
-				(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
-				template_element)))
+			return_element = fe_mesh->findElementByIdentifier(element_identifier);
+			if (return_element)
 			{
-				if (get_FE_element_number_of_faces(element, &number_of_faces))
+				DsLabelIndex index = get_FE_element_index(return_element);
+				FE_element_shape *element_shape = fe_mesh->getElementShape(index);
+				if (element_shape)
+				{
+					if (element_shape != element_template->get_element_shape())
+					{
+						if (FE_element_shape_is_unspecified(element_shape))
+						{
+							if (!fe_mesh->setElementShape(index, element_template->get_element_shape()))
+							{
+								display_message(ERROR_MESSAGE, "read_FE_element.  Could not set element shape for %d-D element %d",
+									fe_mesh->getDimension(), element_identifier);
+								return_element = 0;
+							}
+						}
+						else
+						{
+							location = IO_stream_get_location_string(input_file);
+							display_message(ERROR_MESSAGE, "read_FE_element.  Inconsistent shape for %d-D element %d. %s",
+								fe_mesh->getDimension(), element_identifier, location);
+							DEALLOCATE(location);
+							return_code = 0;
+						}
+					}
+					if (return_element)
+					{
+						existingElement = true;
+						ACCESS(FE_element)(return_element);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "read_FE_element.  Missing element shape for %d-D element %d",
+						fe_mesh->getDimension(), element_identifier);
+					return_element = 0;
+				}
+			}
+			else
+			{
+				return_element = fe_mesh->create_FE_element(element_identifier, element_template);
+				if (!return_element)
+				{
+					display_message(ERROR_MESSAGE, "read_FE_element.  Could not create element");
+					return_code = 0;
+				}
+			}
+			if (return_element)
+			{
+				FE_element *element;
+				FE_element_shape *element_shape;
+				if (existingElement)
+				{
+					element = element_template->get_template_element();
+					element_shape = element_template->get_element_shape();
+				}
+				else
+				{
+					element = return_element;
+					element_shape = get_FE_element_shape(element);
+				}
+				number_of_faces = FE_element_shape_get_number_of_faces(element_shape);
+				if (element_shape)
 				{
 					/* if face_token_length > 0, then faces being read */
 					face_token_length = 0;
 					IO_stream_scan(input_file, " Faces:%n", &face_token_length);
 					if (0 < face_token_length)
 					{
+						FE_mesh *face_mesh = fe_mesh->getFaceMesh();
+						if ((!face_mesh) && (0 < number_of_faces))
+						{
+							location = IO_stream_get_location_string(input_file);
+							display_message(ERROR_MESSAGE, "read_FE_element.  Faces token without face mesh of dimension %d.  %s",
+								fe_mesh->getDimension() - 1, location);
+							DEALLOCATE(location);
+							return_code = 0;
+						}
+						int face_identifier;
+						FE_element *face_element;
 						for (i = 0; (i < number_of_faces) && return_code; i++)
 						{
 							/* file input */
@@ -2971,20 +3044,11 @@ in a grid field.
 								&element_num, &face_num, &line_num))
 							{
 								if (element_num)
-								{
-									face_identifier.number = element_num;
-									face_identifier.type = CM_ELEMENT;
-								}
+									face_identifier = element_num;
 								else if (face_num)
-								{
-									face_identifier.number = face_num;
-									face_identifier.type = CM_FACE;
-								}
+									face_identifier = face_num;
 								else /* line_num */
-								{
-									face_identifier.number = line_num;
-									face_identifier.type = CM_LINE;
-								}
+									face_identifier = line_num;
 								return_code =1;
 							}
 							else
@@ -2998,23 +3062,27 @@ in a grid field.
 							}
 							if (return_code)
 							{
-								/* face number of 0 means no face */
-								if (0 != face_identifier.number)
+								/* face number of 0 means no face. GRC problem since 0 is legal identifier */
+								if (0 != face_identifier)
 								{
-									/* get existing face and check it has the dimension less 1,
-										 or create a dummy face element with unspecified shape and
-										 with dimension one less than parent element */
-									if (NULL != (face_element =
-										FE_region_get_or_create_FE_element_with_identifier(
-											fe_region, dimension - 1, face_identifier.number, static_cast<FE_element_shape *>(0))))
+									face_element = face_mesh->findElementByIdentifier(face_identifier);
+									if (!face_element)
 									{
-										if (!set_FE_element_face(element, i, face_element))
+										// create a face of the expected shape
+										FE_element_shape *face_shape = get_FE_element_shape_of_face(element_shape, i, fe_mesh->get_FE_region());
+										face_element = face_mesh->get_or_create_FE_element_with_identifier(face_identifier, face_shape);
+									}
+									face_element = face_mesh->findElementByIdentifier(face_identifier);
+									if (face_element)
+									{
+										// faces go directly in return element; template does not hold them
+										if (CMZN_OK != fe_mesh->setElementFace(
+											get_FE_element_index(return_element), i, get_FE_element_index(face_element)))
 										{
 											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
-												"Could not set face %d of %s %d", i,
-												CM_element_type_string(element_identifier.type),
-												element_identifier.number);
+												"Could not set face %d of %d-D element %d.  %s", i + 1, fe_mesh->getDimension(),
+												element_identifier, location);
 											DEALLOCATE(location);
 											return_code = 0;
 										}
@@ -3022,9 +3090,8 @@ in a grid field.
 									else
 									{
 										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "read_FE_element.  "
-											"Could not get or create face element.  %s",
-											location);
+										display_message(ERROR_MESSAGE, "read_FE_element.  Could not find %d-D face element %d.  %s",
+											face_mesh->getDimension(), face_identifier, location);
 										DEALLOCATE(location);
 										return_code = 0;
 									}
@@ -3037,9 +3104,8 @@ in a grid field.
 				{
 					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"read_FE_element.  Could not get number of faces of %s %d.  %s",
-						CM_element_type_string(element_identifier.type),
-						element_identifier.number, location);
+						"read_FE_element.  Could not get shape and number of faces of %d-D element %d.  %s",
+						fe_mesh->getDimension(), element_identifier, location);
 					DEALLOCATE(location);
 					return_code = 0;
 				}
@@ -3242,9 +3308,8 @@ in a grid field.
 					{
 						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
-							"read_FE_element.  Could not get number of nodes for %s %d",
-							CM_element_type_string(element_identifier.type),
-							element_identifier.number);
+							"read_FE_element.  Could not get number of nodes for %d-D element %d",
+							fe_mesh->getDimension(), element_identifier);
 						DEALLOCATE(location);
 						return_code = 0;
 					}
@@ -3307,25 +3372,14 @@ in a grid field.
 					{
 						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE, "read_FE_element.  "
-							"Could not get number of scale factors for %s %d",
-							CM_element_type_string(element_identifier.type),
-							element_identifier.number);
+							"Could not get number of scale factors for %d-D element %d",
+							fe_mesh->getDimension(), element_identifier);
 						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
 				if (!return_code)
-				{
-					DESTROY(FE_element)(&element);
-				}
-			}
-			else
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"read_FE_element.  Could not create element");
-				DEALLOCATE(location);
-				return_code = 0;
+					DEACCESS(FE_element)(&element);
 			}
 		}
 	}
@@ -3335,7 +3389,7 @@ in a grid field.
 	}
 	LEAVE;
 
-	return (element);
+	return (return_element);
 } /* read_FE_element */
 
 /***************************************************************************//**
@@ -3370,8 +3424,6 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 	char first_character_in_token, *location,
 		*temp_string, test_string[5];
 	int input_result, return_code;
-	struct CM_element_information element_identifier;
-	struct FE_element *template_element;
 	struct FE_element_shape *element_shape;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node *template_node;
@@ -3389,10 +3441,11 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 		cmzn_nodeset_group_id nodeset_group = 0;
 		cmzn_mesh_group_id mesh_group = 0;
 		struct FE_region *fe_region = 0;
+		FE_mesh *fe_mesh = 0;
 		FE_nodeset *fe_nodeset = 0;
 		field_order_info = (struct FE_field_order_info *)NULL;
 		template_node = (struct FE_node *)NULL;
-		template_element = (struct FE_element *)NULL;
+		FE_element_template *element_template = 0;
 		element_shape = (struct FE_element_shape *)NULL;
 		input_result = 1;
 		return_code = 1;
@@ -3416,6 +3469,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							cmzn_field_group_destroy(&group);
 						}
 						fe_region = (struct FE_region *)NULL;
+						fe_mesh = 0;
 						fe_nodeset = 0;
 						/* Use a %1[:] so that a successful read will return 1 */
 						int valid_token = 0;
@@ -3541,10 +3595,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						{
 							DEACCESS(FE_node)(&template_node);
 						}
-						if (template_element)
-						{
-							DEACCESS(FE_element)(&template_element);
-						}
+						cmzn::Deaccess(element_template);
 						/* default to reading nodes after region / group token */
 						if (element_shape)
 						{
@@ -3578,10 +3629,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							{
 								DEACCESS(FE_node)(&template_node);
 							}
-							if (template_element)
-							{
-								DEACCESS(FE_element)(&template_element);
-							}
+							cmzn::Deaccess(element_template);
 							/* read element shape information */
 							if (read_FE_element_shape(input_file, &element_shape, fe_region))
 							{
@@ -3590,15 +3638,20 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								{
 									ACCESS(FE_element_shape)(element_shape);
 									/* create the initial template element for no fields */
-									element_identifier.type = CM_ELEMENT;
-									element_identifier.number = 0;
-									template_element = CREATE(FE_element)(&element_identifier,
-										element_shape, fe_region, (struct FE_element *)NULL);
-									ACCESS(FE_element)(template_element);
+									const int dimension = get_FE_element_shape_dimension(element_shape);
+									fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
+									if (fe_mesh)
+										element_template = fe_mesh->create_FE_element_template(element_shape);
 									use_data_meta_flag = 0;
 									// elements have nodes not datapoints:
 									fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
 										CMZN_FIELD_DOMAIN_TYPE_NODES);
+									if (!element_template)
+									{
+										display_message(ERROR_MESSAGE,
+											"read_exregion_file_private.  Error creating element template");
+										return_code = 0;
+									}
 								}
 								else
 								{
@@ -3619,7 +3672,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							{
 								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"read_FE_element_group.  Error reading element shape");
+									"read_exregion_file_private.  Error reading element shape");
 								DEALLOCATE(location);
 								return_code = 0;
 							}
@@ -3696,19 +3749,12 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							{
 								DEACCESS(FE_node)(&template_node);
 							}
-							if (template_element)
-							{
-								DEACCESS(FE_element)(&template_element);
-							}
+							cmzn::Deaccess(element_template);
 							if (element_shape)
 							{
 								/* read new element field information and field_order_info */
-								if (NULL != (template_element = read_FE_element_field_info(input_file,
+								if (NULL == (element_template = read_FE_element_field_info(input_file,
 									fe_region, element_shape, &field_order_info)))
-								{
-									ACCESS(FE_element)(template_element);
-								}
-								else
 								{
 									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
@@ -3817,43 +3863,47 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						if (fe_region)
 						{
 							/* ensure we have element field information */
-							if (template_element)
+							if (element_template)
 							{
-								FE_element *tmp_element = read_FE_element(input_file, template_element,
-									fe_region, fe_nodeset, field_order_info);
-								if (tmp_element)
+								bool existingElement = false;
+								FE_element *element = read_FE_element(input_file, element_template,
+									fe_mesh, fe_nodeset, field_order_info, existingElement);
+								if (element)
 								{
-									ACCESS(FE_element)(tmp_element);
-									FE_element *element = FE_region_merge_FE_element(fe_region, tmp_element);
-									if (element)
+									if (existingElement)
 									{
-										if (group && (!mesh_group))
+										int result = fe_mesh->merge_FE_element_template(element, element_template);
+										if (result != CMZN_OK)
 										{
-											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-											cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
-												get_FE_element_dimension(template_element));
-											cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-											if (!element_group)
-											{
-												element_group = cmzn_field_group_create_field_element_group(group, mesh);
-											}
-											mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-											cmzn_field_element_group_destroy(&element_group);
-											cmzn_mesh_destroy(&mesh);
-											cmzn_fieldmodule_destroy(&field_module);
-										}
-										if (mesh_group)
-										{
-											cmzn_mesh_group_add_element(mesh_group, element);
+											location = IO_stream_get_location_string(input_file);
+											display_message(ERROR_MESSAGE,
+												"read_exregion_file.  Failed to merge into existing element.  %s",
+												location);
+											DEALLOCATE(location);
+											return_code = 0;
+											DEACCESS(FE_element)(&element);
 										}
 									}
-									else
+									if (group && (!mesh_group))
 									{
-										display_message(ERROR_MESSAGE, "read_exregion_file.  "
-											"Could not merge element into region");
-										return_code = 0;
+										cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+										cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
+											fe_mesh->getDimension());
+										cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+										if (!element_group)
+										{
+											element_group = cmzn_field_group_create_field_element_group(group, mesh);
+										}
+										mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+										cmzn_field_element_group_destroy(&element_group);
+										cmzn_mesh_destroy(&mesh);
+										cmzn_fieldmodule_destroy(&field_module);
 									}
-									DEACCESS(FE_element)(&tmp_element);
+									if (mesh_group)
+									{
+										cmzn_mesh_group_add_element(mesh_group, element);
+									}
+									DEACCESS(FE_element)(&element);
 								}
 								else
 								{
@@ -3868,7 +3918,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							else
 							{
 								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,"read_FE_element_group.  "
+								display_message(ERROR_MESSAGE,"read_exregion_file_private.  "
 									"No current element field info for element.  %s",
 									location);
 								DEALLOCATE(location);
@@ -3888,7 +3938,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					case 'V': /* Values */
 					{
 						/* read in field values */
-						if ((template_node || template_element) && field_order_info)
+						if ((template_node || element_template) && field_order_info)
 						{
 							if (!read_FE_field_values(input_file, fe_region, root_region,
 								region, field_order_info))
@@ -3933,10 +3983,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 		{
 			DEACCESS(FE_node)(&template_node);
 		}
-		if (template_element)
-		{
-			DEACCESS(FE_element)(&template_element);
-		}
+		cmzn::Deaccess(element_template);
 		if (element_shape)
 		{
 			DEACCESS(FE_element_shape)(&element_shape);

@@ -36,6 +36,7 @@ typedef struct cmzn_streaminformation *cmzn_streaminformation_id;
  * @see cmzn_streaminformation_create_streamresource_file
  * @see cmzn_streaminformation_create_streamresource_memory
  * @see cmzn_streaminformation_create_streamresource_memory_buffer
+ * @see cmzn_streaminformation_create_streamresource_memory_buffer_copy
  */
 struct cmzn_streamresource;
 typedef struct cmzn_streamresource *cmzn_streamresource_id;

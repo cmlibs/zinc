@@ -586,10 +586,10 @@ time is supplied in the workingCache.
 						xi[2] = 1.0;
 					} break;
 				}
-				if (!(get_FE_element_shape(mapping_item->element, &shape) &&
-					FE_element_shape_find_face_number_for_xi(shape, xi, &face_number)
-					&& (((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
-					&number_of_neighbour_elements, &neighbour_elements))))))
+				shape = get_FE_element_shape(mapping_item->element);
+				if (!(FE_element_shape_find_face_number_for_xi(shape, xi, &face_number) &&
+					(((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
+						&number_of_neighbour_elements, &neighbour_elements))))))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -691,10 +691,11 @@ time is supplied in the workingCache.
 		{
 			DESTROY(LIST(FE_field))(&fe_field_list);
 		}
+		shape = get_FE_element_shape(mapping_item->element);
 		if (node_mapping
-			&& get_FE_element_shape(mapping_item->element, &shape)
 			&& FE_element_shape_is_line(shape)
 			&& calculate_FE_element_field_nodes(mapping_item->element,
+				/*inherit_face_number*/-1,
 				fe_field, &number_of_element_field_nodes,
 				&element_field_nodes_array, mapping_item->element))
 		{
@@ -1044,7 +1045,6 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 	// @TODO: resurrect the slightly more efficient old code?
 	FE_value element_to_top_level[9];
 	int return_code;
-	CM_element_information cm;
 	FE_element *top_level_element;
 
 	ENTER(Computed_field_default::is_defined_at_location);
@@ -1072,7 +1072,6 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 					/* Use the mapping from whatever time */
 				}
 				/* 1. Get top_level_element for types that must be calculated on them */
-				get_FE_element_identifier(element, &cm);
 				if (FE_element_is_top_level(element, (void *)NULL))
 				{
 					top_level_element=element;
@@ -1083,8 +1082,7 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 						we don't have a top_level element to test with */
 					if (!(top_level_element=FE_element_get_top_level_element_conversion(
 						element,(struct FE_element *)NULL,
-						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-						CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
+						CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)))
 					{
 						return_code=0;
 					}
@@ -1168,7 +1166,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int coordinate_dimension, element_dimension, i, j, k,
 		top_level_element_dimension = -1;
-	CM_element_information cm;
 	Computed_field *coordinate_field, *integrand;
 
 	int return_code = 1;
@@ -1201,8 +1198,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		}
 		/* 1. Get top_level_element for types that must be calculated on them */
 		element_dimension=get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &cm);
-		// GRC try new code for this:
 		if (FE_element_is_top_level(element, (void *)NULL))
 		{
 			top_level_element=element;
@@ -1217,9 +1212,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		{
 			/* check or get top_level element and xi coordinates for it */
 			top_level_element=FE_element_get_top_level_element_conversion(
-					 element,top_level_element,
-					(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-					 CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level);
+				element, top_level_element,
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level);
 			if (top_level_element != 0)
 			{
 				/* convert xi to top_level_xi */
@@ -1326,7 +1320,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				display_message(ERROR_MESSAGE,
 					"Computed_field_integration::evaluate."
 					"  Element %d not found in Xi texture coordinate mapping field %s",
-					cm.number, field->name);
+					get_FE_element_identifier(element), field->name);
 				return_code=0;
 			}
 		}
@@ -1539,7 +1533,7 @@ DESCRIPTION :
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,"    seed_element : %d\n",
-			FE_element_get_cm_number(seed_element));
+			get_FE_element_identifier(seed_element));
 		display_message(INFORMATION_MESSAGE,"    integrand field : %s\n",
 			field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,"    coordinate field : %s\n",
@@ -1596,7 +1590,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string,
 				computed_field_integration_type_string, &error);
 		}
-		sprintf(temp_string, " seed_element %d", FE_element_get_cm_number(seed_element));
+		sprintf(temp_string, " seed_element %d", get_FE_element_identifier(seed_element));
 		append_string(&command_string, temp_string, &error);
 		if (!xi_texture_coordinates)
 		{

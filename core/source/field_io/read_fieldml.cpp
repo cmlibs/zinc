@@ -27,6 +27,7 @@
 #include "computed_field/computed_field_finite_element.h"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"

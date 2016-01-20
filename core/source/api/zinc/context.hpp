@@ -28,6 +28,8 @@ namespace Zinc
 {
 class Fontmodule;
 class Glyphmodule;
+class Lightmodule;
+class Logger;
 class Materialmodule;
 class Region;
 class Scenefiltermodule;
@@ -108,9 +110,15 @@ public:
 
 	inline Region getDefaultRegion();
 
+	inline int setDefaultRegion(const Region& region);
+
 	inline Fontmodule getFontmodule();
 
 	inline Glyphmodule getGlyphmodule();
+
+	inline Lightmodule getLightmodule();
+
+	inline Logger getLogger();
 
 	inline Materialmodule getMaterialmodule();
 

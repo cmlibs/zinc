@@ -951,7 +951,6 @@ static int write_cm_FE_element(
 		first_basis, i, j, k,
 		node_index, *node_number_array, number_of_element_field_nodes,
 		number_of_nodal_values, occurrences, return_code, version, *versions_array;
-	struct CM_element_information element_id;
 	struct FE_basis *fe_basis;
 	struct FE_element_field_component *component;
 	struct FE_node *node;
@@ -963,9 +962,9 @@ static int write_cm_FE_element(
 		if (FE_field_is_defined_in_element(data->field, element) &&
 			FE_element_field_is_standard_node_based(element, data->field))
 		{
-			get_FE_element_identifier(element, &element_id);
+			int element_identifier = get_FE_element_identifier(element);
 			fprintf(data->ipelem_file, " Element number [    1]:     %d\n",
-				element_id.number);
+				element_identifier);
 			dimension = get_FE_element_dimension(element);
 
 			fprintf(data->ipelem_file, " The number of geometric Xj-coordinates is [3]: %d\n",

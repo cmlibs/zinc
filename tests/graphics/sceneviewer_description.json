@@ -1,0 +1,19 @@
+{
+   "AntialiasSampling" : 8,
+   "BackgroundColourRGB" : [ 0.6, 0.55, 0.4 ],
+   "EyePosition" : [ 0, 1, 0 ],
+   "FarClippingPlane" : 700,
+   "LightingLocalViewer" : true,
+   "LightingTwoSided" : false,
+   "LookatPosition" : [ 1, 0, 0 ],
+   "NearClippingPlane" : 100,
+   "PerturbLinesFlag" : true,
+   "ProjectionMode" : "PARALLEL",
+   "Scenefilter" : "default",
+   "TranslationRate" : 2,
+   "TransparencyMode" : "SLOW",
+   "TumbleRate" : 3,
+   "UpVector" : [ 0, 0, 1 ],
+   "ViewAngle" : 0.2999999999999999,
+   "ZoomRate" : 4
+}

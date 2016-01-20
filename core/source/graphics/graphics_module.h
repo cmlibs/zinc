@@ -19,7 +19,7 @@ FILE : graphics_module.h
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
-#include "graphics/light.h"
+#include "graphics/light.hpp"
 #include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
@@ -34,12 +34,12 @@ struct cmzn_graphics_module;
  * @param glyph_list  List of glyphs
  * @param graphical_material_manager  Material manager
  * @param default_font  Default font
- * @param light_manager  Light Manager
+ * @param light_manager  cmzn_light Manager
  * @param spectrum_manager  Spectrum manager
  * @param default_spectrum  Default spectrum
  * @return  If successfully constructed, return the cmzn_scene
  */
-struct cmzn_graphics_module *cmzn_graphics_module_create(struct Context *context);
+struct cmzn_graphics_module *cmzn_graphics_module_create(cmzn_context *context);
 
 /***************************************************************************//**
  * Return an additional handle to the graphics module. Increments the
@@ -69,7 +69,7 @@ int cmzn_graphics_module_destroy(
  * @return  the light module in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct Light_module *cmzn_graphics_module_get_light_module(
+struct cmzn_lightmodule *cmzn_graphics_module_get_lightmodule(
 	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -89,16 +89,6 @@ struct MANAGER(cmzn_spectrum) *cmzn_graphics_module_get_spectrum_manager(
  * @return  the default font if successfully called, otherwise NULL.
  */
 struct cmzn_font *cmzn_graphics_module_get_default_font(
-	struct cmzn_graphics_module *graphics_module);
-
-/***************************************************************************//**
- * Return the light model module in graphics module.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the light model module in graphics module if successfully called,
- *    otherwise NULL.
- */
-struct Light_model_module *cmzn_graphics_module_get_light_model_module(
 	struct cmzn_graphics_module *graphics_module);
 
 /**

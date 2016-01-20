@@ -16,6 +16,7 @@
 #include "zinc/status.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
+#include "datastore/labels.hpp"
 #include "general/change_log.h"
 #include "general/enumerator.h"
 #include "general/geometry.h"
@@ -29,71 +30,27 @@ Global types
 ------------
 */
 
+class DsLabelsChangeLog;
+
 /**
- * FE_node has pointer to owning FE_nodeset in share field info.
+ * FE_node has pointer to owning FE_nodeset in shared field info.
  */
 class FE_nodeset;
+
+/**
+ * FE_element has pointer to owning FE_mesh in shared field info.
+ */
+class FE_mesh;
+
+/**
+ * Set of scale factors stored by mesh.
+ */
+struct cmzn_mesh_scale_factor_set;
 
 /**
  * FE_field and FE_element haves pointers to owning FE_region in shared field info.
  */
 struct FE_region;
-
-struct cmzn_mesh_scale_factor_set;
-/** Handle to a set of scale factors for a mesh.
- * Scale factors are used to scale global field parameters before use.
- * Actual values are stored under this handle in each element. */
-typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
-
-/**
- * Identifier of set of scale factors, under which scale factors are stored,
- * e.g. in elements.
- */
-struct cmzn_mesh_scale_factor_set
-{
-private:
-	FE_region *fe_region; // non-accessed pointer to owner
-	char *name;
-	int access_count;
-
-	cmzn_mesh_scale_factor_set();
-
-	~cmzn_mesh_scale_factor_set();
-
-	cmzn_mesh_scale_factor_set(FE_region *fe_regionIn, const char *nameIn);
-
-public:
-
-	static cmzn_mesh_scale_factor_set *create(FE_region *fe_regionIn, const char *nameIn)
-	{
-		return new cmzn_mesh_scale_factor_set(fe_regionIn, nameIn);
-	}
-
-	cmzn_mesh_scale_factor_set *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_mesh_scale_factor_set* &scale_factor_set)
-	{
-		if (!scale_factor_set)
-			return CMZN_ERROR_ARGUMENT;
-		--(scale_factor_set->access_count);
-		if (scale_factor_set->access_count <= 0)
-			delete scale_factor_set;
-		scale_factor_set = 0;
-		return CMZN_OK;
-	}
-
-	/** @return  Internal name, not a copy */
-	const char *getName() const
-	{
-		return this->name;
-	}
-
-	int setName(const char *nameIn);
-};
 
 enum CM_field_type
 /*******************************************************************************
@@ -281,32 +238,6 @@ calculated from the element field as required and are then destroyed.
 
 DECLARE_LIST_TYPES(FE_element_field_values);
 
-enum CM_element_type
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-CM element types.
-==============================================================================*/
-{
-  CM_ELEMENT_TYPE_INVALID,
-  CM_ELEMENT,
-  CM_FACE,
-  CM_LINE
-}; /* enum CM_element_type */
-
-struct CM_element_information
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Element information needed by CM.
-==============================================================================*/
-{
-  enum CM_element_type type;
-  int number;
-}; /* struct CM_element_information */
-
 enum FE_element_shape_type
 /*******************************************************************************
 LAST MODIFIED : 25 February 2003
@@ -345,9 +276,8 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 
-DECLARE_LIST_TYPES(FE_element);
-
-DECLARE_CHANGE_LOG_TYPES(FE_element);
+DECLARE_LIST_CONDITIONAL_FUNCTION(FE_element);
+DECLARE_LIST_ITERATOR_FUNCTION(FE_element);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
 
@@ -439,19 +369,6 @@ DESCRIPTION :
 used by all_nodes_in_list
 ==============================================================================*/
 {
-	struct LIST(FE_node) *node_list;
-};
-
-struct FE_element_list_FE_node_list_data
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Structure for passing an FE_element list and an FE_node list to a list iterator
-or conditional function, eg. add_FE_element_using_node_list_to_list.
-==============================================================================*/
-{
-	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 };
 
@@ -576,6 +493,13 @@ struct FE_node *CREATE(FE_node)(int cm_node_identifier,
  * Frees the memory for the node, sets <*node_address> to NULL.
  */
 int DESTROY(FE_node)(struct FE_node **node_address);
+
+/**
+ * Clear content of node and disconnect it from owning nodeset.
+ * Use when removing node from nodeset or deleting nodeset to safely orphan any
+ * externally accessed nodes.
+ */
+void FE_node_invalidate(struct FE_node *node);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node);
@@ -800,17 +724,15 @@ Gets a particular element_xi_value (<version>, <type>) for the field <component>
 should.
 ==============================================================================*/
 
+/**
+ * Sets a particular element_xi_value (<version>, <type>) for the field
+ * <component> at the <node>.
+ * SAB Note: It doesn't use a FE_field_component as I don't think any of them
+ * should.
+ */
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
 	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi);
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Sets a particular element_xi_value (<version>, <type>) for the field <component> at the
-<node>.  SAB Note: It doesn't use a FE_field_component as I don't think any of them
-should.
-==============================================================================*/
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void);
 /*******************************************************************************
@@ -896,32 +818,6 @@ LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 If <node> is in <node_list> it is taken out, otherwise it is added.
-==============================================================================*/
-
-struct FE_node_is_embedded_in_changed_element_data
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Data for passing to FE_node_is_embedded_in_changed_element function.
-Keeps the current <node> and the <changed_element_list> or <changed_node_list>.
-==============================================================================*/
-{
-	/* node is used internally; do not have to set it */
-	struct FE_node *node;
-	struct LIST(FE_element) *changed_element_list;
-	struct LIST(FE_node) *changed_node_list;
-}; /* struct FE_node_is_embedded_in_changed_element_data */
-
-int FE_node_is_embedded_in_changed_element(struct FE_node *node,
-	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Returns true if <node> contains a field which is embedded in one of the elements
-in the <changed_element_list>, or in any elements using nodes from the
-<changed_node_list>, both passed in the <data_void>.
 ==============================================================================*/
 
 /**
@@ -1471,8 +1367,8 @@ Frees the memory for the component and sets <*component_address> to NULL.
 /**
  * Creates and returns a copy of the supplied element field component. Due to
  * references to scale factor sets, the component is valid for use in the
- * current FE_region only.
- * @see FE_element_field_component_switch_FE_region
+ * current FE_mesh only.
+ * @see FE_element_field_component_switch_FE_mesh
  */
 struct FE_element_field_component *copy_create_FE_element_field_component(
 	struct FE_element_field_component *source_component);
@@ -1777,22 +1673,22 @@ Returns true if the <element_field_values> are valid for calculating
 derivatives.
 ==============================================================================*/
 
+/**
+ * If <field> is NULL, element nodes are calculated for the coordinate field.  The
+ * function allocates an array, <*element_field_nodes_array_address> to store the
+ * pointers to the ACCESS'd element nodes.  Components that are not node-based are
+ * ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
+ * fastest in xi2 and so on).
+ * The optional <top_level_element> forces inheritance from it as needed.
+ * NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
+ * @param face_number  If non-negative, calculate nodes for face number of
+ * element, as if the face element were supplied to this function.
+ */
 int calculate_FE_element_field_nodes(struct FE_element *element,
-	struct FE_field *field,int *number_of_element_field_nodes_address,
+	int face_number, struct FE_field *field,
+	int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address,
 	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-If <field> is NULL, element nodes are calculated for the coordinate field.  The
-function allocates an array, <*element_field_nodes_array_address> to store the
-pointers to the ACCESS'd element nodes.  Components that are not node-based are
-ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
-fastest in xi2 and so on).
-The optional <top_level_element> forces inheritance from it as needed.
-NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
-==============================================================================*/
 
 int calculate_FE_element_field(int component_number,
 	struct FE_element_field_values *element_field_values,
@@ -1856,26 +1752,6 @@ will be put in the first position of <values>.
 It is up to the calling function to deallocate the returned string values.
 ==============================================================================*/
 
-int calculate_FE_element_anatomical(
-	struct FE_element_field_values *coordinate_element_field_values,
-	struct FE_element_field_values *anatomical_element_field_values,
-	FE_value *xi_coordinates,FE_value *x,FE_value *y,FE_value *z,FE_value a[3],
-	FE_value b[3],FE_value c[3],FE_value *dx_dxi);
-/*******************************************************************************
-LAST MODIFIED : 16 November 1998
-
-DESCRIPTION :
-Calculates the cartesian coordinates (<x>, <y> and <z>), and the fibre (<a>),
-cross-sheet (<b>) and sheet-normal (<c>) vectors from a coordinate element field
-and an anatomical element field.  The storage for the <x>, <y>, <z>, <a>, <b>
-and <c> should have been allocated outside the function.
-If later conversion of a, b and c to vectors in xi space is required, the
-optional <dx_dxi> parameter should be supplied and point to a enough memory to
-contain the nine derivatives of x,y,z w.r.t. three xi. These are returned in the
-order dx/dxi1, dx/dxi2, dx/dxi3, dy/dxi1 etc. Note that there will always be
-nine values returned, regardless of the element dimension.
-==============================================================================*/
-
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 	const int *type, struct FE_region *fe_region);
 /*******************************************************************************
@@ -1912,6 +1788,11 @@ PROTOTYPE_LIST_FUNCTIONS(FE_element_shape);
 struct FE_element_shape *FE_element_shape_create_simple_type(
 	struct FE_region *fe_region, enum cmzn_element_shape_type shape_type);
 
+/**
+ * Returns the number of faces of the element shape.
+ */
+int FE_element_shape_get_number_of_faces(FE_element_shape *element_shape);
+
 /***************************************************************************//**
  * Returns a cmzn_element_shape_type describing the shape if possible.
  *
@@ -1938,13 +1819,11 @@ char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape
 struct FE_element_shape *FE_element_shape_create_unspecified(
 	struct FE_region *fe_region, int dimension);
 
-int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2002
-
-DESCRIPTION :
-Returns true if the only thing know about <element_shape> is its dimension.
-==============================================================================*/
+/**
+ * Returns true if the only thing know about <element_shape> is its dimension.
+ * Elements are only in this state when defined for element:xi locations.
+ */
+bool FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
 
 int FE_element_shape_is_line(struct FE_element_shape *element_shape);
 /*******************************************************************************
@@ -1964,15 +1843,10 @@ From the parent <shape> returns the FE_element_shape for its face <face_number>.
 The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 ==============================================================================*/
 
-int get_FE_element_shape_dimension(struct FE_element_shape *element_shape,
-	int *dimension_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the dimension of <element_shape>.
-If fails, puts zero at <dimension_address>.
-==============================================================================*/
+/**
+ * @return  The dimension of the element shape, or 0 if error.
+ */
+int get_FE_element_shape_dimension(struct FE_element_shape *element_shape);
 
 /**
  * Return face_to_element map, a square matrix b + A xi for the face_number of
@@ -2038,97 +1912,31 @@ The <tolerance> allows the location to go slightly outside.  If the values for
 are modified to put it on the nearest face.
 ==============================================================================*/
 
-const char *CM_element_type_string(enum CM_element_type cm_element_type);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Returns a static string describing the <cm_element_type>, eg. CM_LINE = 'line'.
-Returned string must not be deallocated!
-==============================================================================*/
-
-int FE_element_to_any_element_string(struct FE_element *element,
-	char **name_ptr);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Writes the element as an allocated string containing TYPE NUMBER. Now does not
-write element for CM_ELEMENT types.
-==============================================================================*/
-
-struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
-	struct FE_element_shape *element_shape,
-	struct FE_region *fe_region, struct FE_element *template_element);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Creates and returns an element with the specified <cm> identifier.
-If <fe_region> is supplied a blank element with the given identifier but no
-fields is returned. If <template_element> is supplied, a copy of it, including
-all fields and values but with the new identifier, is returned.
-Exactly one of <fe_region> or <template_element> must be supplied.
-The <element_shape> is required unless a <template_element> is supplied.
-The new element is set to belong to the ultimate master FE_region of <fe_region>
-if supplied, or to the same master FE_region as <template_element> if supplied.
-Note that the element number in <cm> must be non-negative.
-==============================================================================*/
-
-int DESTROY(FE_element)(struct FE_element **element_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the element, sets <*element_address> to NULL.
-==============================================================================*/
+/**
+ * Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
+ * the step is limited to take <xi> to the boundary, <face_number> is set to be
+ * the limiting face, <fraction> is updated with the fraction of the <increment>
+ * actually used, the <increment> is updated to contain the part not used,
+ * the <xi_face> are calculated for that face and the <xi> are changed to be
+ * on the boundary of the shape.
+ */
+int FE_element_shape_xi_increment(struct FE_element_shape *shape,
+	FE_value *xi,FE_value *increment, FE_value *step_size,
+	int *face_number_address, FE_value *xi_face);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
-/***************************************************************************//**
- * Sets the element shape. Must match the dimension of the existing shape.
- * Beware that face mappings are lost if shape changes are merged into global
- * elements.
- * Does not propagate change messages.
+/**
+ * Returns the list of <adjacent_elements> not including <element> which share
+ * the face indicated by <face_number>.
+ * Limitation: does not handle element being connected to itself.
+ * On success, caller must DEALLOCATE element array.
+ * @return  CMZN_OK on success, any error on failure.
  */
-int set_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape *shape);
-
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
-correct size and should be DEALLOCATED when finished with.
-==============================================================================*/
-
-/**
- * Returns true if <element> meets all the supplied criteria:
- * - it has the given <dimension>;
- * - it is an exterior face or line of its contiguous mesh if <exterior> set;
- * - it is on the <face> of a parent element if <face>
- *   non-negative
- * - parent satisfies conditional function, if supplied.
- * Note that <exterior> and <face_number> requirements are ignored if they
- * make no sense for the element, eg. for n-D elements in an n-D mesh.
- * Only complete up to 3-D.
- *
- * @param element  The element to test against.
- * @param dimension  The dimension to test for.
- * @param exterior  Is an exterior face or line.
- * @param face  The face of the parent element.
- * @param conditional  Optional conditional function. If supplied, limits search to
- * parent elements for which this function passes.
- * @param conditional_data  User data to pass to optional conditional function.
- */
-int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, cmzn_element_face_type face,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
 /**
  * Returns true if <field> is equivalently listed in the field information for
@@ -2147,63 +1955,43 @@ DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.
 ==============================================================================*/
 
+/**
+ * @return  The dimension of the element, or 0 if it cannot be determined.
+ */
 int get_FE_element_dimension(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
 
-DESCRIPTION :
-Returns the dimension of the <element> or an error if it does not have a shape.
-==============================================================================*/
+/**
+ * @return  The non-negative element identifier, otherwise
+ * DS_LABEL_IDENTIFIER_INVALID on error or if not a true element in the mesh.
+ */
+DsLabelIdentifier get_FE_element_identifier(struct FE_element *element);
 
-int FE_element_get_cm_number(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
+/**
+ * @return  The non-negative element index within the mesh otherwise
+ * DS_LABEL_INDEX_INVALID on error or if not a true element in the mesh.
+ */
+DsLabelIndex get_FE_element_index(struct FE_element *element);
 
-DESCRIPTION :
-Returns the cm number of the <element> or an error if it does not have a shape.
-==============================================================================*/
+/**
+ * Set the index of the element in the mesh. Used only by FE_mesh when
+ * merging elements from another region's mesh.
+ * @param element  The element to modify.
+ * @param index  The new index, non-negative. Value is not checked due
+ * to use by privileged caller.
+ */
+void set_FE_element_index(struct FE_element *element, DsLabelIndex index);
 
-int get_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier);
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Fills in the <identifier> of <element>.
-==============================================================================*/
-
-int set_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2003
-
-DESCRIPTION :
-Changes the identifier of <element> to <identifier>.
-Caution! Should only call for elements that are NOT in indexed lists, i.e.
-temporary/non-global elements that are not in FE_regions.
-To enable identifier changes, must wrap calls to this function between
-LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-element is temporarily removed from all the indexed lists it is in and re-added
-afterwards.
-If <element> is in an FE_region, FE_region_change_FE_element_identifier should
-be called to handle the above complications.
-==============================================================================*/
-
-int FE_element_or_parent_changed(struct FE_element *element,
-	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+/**
+ * Returns true if <element> or any of its parent elements is listed in the
+ * element change logs with any of IDENTIFIER, DEFINITION or REMOVED flags.
+ * Since element fields depend on node fields, the element is also considered as
+ * changed if it or any of its parents uses a node listed in the
+ * <fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
+ * OBJECT_NOT_IDENTIFIER_CHANGED.
+ */
+bool FE_element_or_parent_changed(struct FE_element *element,
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 	struct CHANGE_LOG(FE_node) *fe_node_change_log);
-/*******************************************************************************
-LAST MODIFIED : 11 February 2003
-
-DESCRIPTION :
-Returns true if <element> or any of its parent elements is listed in the
-<fe_element_change_log> with any of OBJECT_IDENTIFIER_CHANGED,
-OBJECT_NOT_IDENTIFIER_CHANGED or OBJECT_REMOVED.
-Since element fields depend on node fields, the element is also considered as
-changed if it or any of its parents uses a node listed in the
-<fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
-OBJECT_NOT_IDENTIFIER_CHANGED.
-==============================================================================*/
 
 int get_FE_element_number_of_fields(struct FE_element *element);
 /*******************************************************************************
@@ -2215,94 +2003,16 @@ Does not include fields inherited from parent elements.
 ==============================================================================*/
 
 /**
- * Get the number of parent elements this element has, i.e. how many elements
- * of dimension 1 higher which this element is a face of.
- *
- * @param element  The element to query.
- * @return  The number of next higher dimension elements this element is a face of.
+ * Returns the <shape> of the <element>, if any. Invalid elements (in process
+ * of being constructed or destroyed, or orphaned) have no shape.
  */
-int get_FE_element_number_of_parents(struct FE_element *element);
+FE_element_shape *get_FE_element_shape(struct FE_element *element);
 
 /**
- * Get a parent element of this element by index.
- * @see get_FE_element_number_of_parents.
- *
- * @param element  The element to query.
- * @param index  The index of the parent, from 0 to number_of_parents - 1.
- * @return  Unaccessed pointer to the parent element, or 0 if none.
+ * Returns the <face_element> for face <face_number> of <element>, where NULL
+ * means there is no face. Element must have a shape and face.
  */
-struct FE_element *get_FE_element_parent(struct FE_element *element, int index);
-
-/**
- * @return  true if any parent of element is in the element list.
- */
-bool cmzn_element_has_parent_in_list(cmzn_element *element,
-	LIST(cmzn_element) *elementList);
-
-int FE_element_get_first_parent(struct FE_element *element,
-	struct FE_element **parent_element_address, int *face_number_address);
-/*******************************************************************************
-LAST MODIFIED : 7 April 2003
-
-DESCRIPTION :
-Returns the first <parent_element> of <element> and the <face_number> it is at.
-If there is no parent, a true return_code is returned but with a NULL
-<parent_element>.
-==============================================================================*/
-
-int get_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape **shape);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-Returns the <shape> of the <element>, if any. Only newly created blank elements
-should have no shape.
-==============================================================================*/
-
-int get_FE_element_number_of_faces(struct FE_element *element,
-	int *number_of_faces_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of faces of <element>.
-If fails, puts zero at <number_of_faces_address>.
-==============================================================================*/
-
-int get_FE_element_face(struct FE_element *element,int face_number,
-	struct FE_element **face_element);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-Returns the <face_element> for face <face_number> of <element>, where NULL means
-there is no face. Element must have a shape and face.
-==============================================================================*/
-
-/**
- * Sets face <face_number> of <element> to <face_element>, ensuring the
- * <face_element> has <element> as a parent. <face_element> may be NULL = no face.
- * Must have set the shape with set_FE_element_shape first.
- * Should only be called for unmanaged elements.
- */
-int set_FE_element_face(struct FE_element *element, int face_number,
-	struct FE_element *face_element);
-
-/**
- * Private variant of set_FE_element_face which does not set this element as a 
- * a parent. Used when merging elements from a temporary region.
- * If not done this way then the face_element will temporarily have both the
- * global and temporary elements as parents.
- * Must have set the shape with set_FE_element_shape first.
- */
-int set_FE_element_face_no_parents(struct FE_element *element, int face_number,
-	struct FE_element *face_element);
-
-/**
- * Return the face number of the face in element >= 0, or -1 if not found.
- */
-int get_FE_element_face_number(struct FE_element *element, struct FE_element *face);
+struct FE_element *get_FE_element_face(struct FE_element *element, int face_number);
 
 int set_FE_element_number_of_nodes(struct FE_element *element,
 	int number_of_nodes);
@@ -2531,50 +2241,6 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	struct FE_element *element);
 
 /***************************************************************************//**
- * Returns the first coordinate field define over the element, currently in
- * alphabetical order. Recursively gets it from its first parent if it has no
- * node scale field information. Not reliable for finding the correct coordinate
- * field if multiple defined such as reference, deformed, texture coordinates.
- */
-struct FE_field *get_FE_element_default_coordinate_field(
-	struct FE_element *element);
-
-int FE_element_find_default_coordinate_field_iterator(
-	struct FE_element *element, void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-An FE_element iterator that returns 1 when an appropriate default_coordinate
-fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
-
-struct FE_element_conditional_iterator_data
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-Data for passing to FE_element_conditional_iterator function.
-==============================================================================*/
-{
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function;
-	void *conditional_user_data;
-	LIST_ITERATOR_FUNCTION(FE_element) *iterator_function;
-	void *iterator_user_data;
-}; /* struct FE_element_conditional_iterator_data */
-
-int FE_element_conditional_iterator(struct FE_element *element,
-	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <element> satisfies the <conditional_function> with <conditional_user_data>,
-calls <iterator_function> with it and the <iterator_user_data>.
-<data_void> points at a struct FE_element_conditional_iterator_data.
-==============================================================================*/
-
-/***************************************************************************//**
  * Conditional function returning true if <element> number is in the
  * multi range.
  * @param multi_range_void  A struct Multi_range *.
@@ -2588,66 +2254,6 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
  */
 int FE_element_add_number_to_Multi_range(
 	struct FE_element *element, void *multi_range_void);
-
-int FE_element_is_in_list(struct FE_element *element, void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is in <element_list>.
-==============================================================================*/
-
-int FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is not in <element_list>.
-==============================================================================*/
-
-int FE_element_is_wholly_within_element_list_tree(
-	struct FE_element *element, void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Returns true if <element> is either in <element_list> or has all its parents
-directly or indirectly in the <element_list> tree. Used to check if elements
-will be destroyed, since faces and lines are destroyed with their parents if
-they are not also faces or lines of other elements not being destroyed.
-==============================================================================*/
-
-int add_FE_element_and_faces_to_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Ensures <element>, its faces (and theirs etc.) are in <element_list>.
-Note: this function is recursive.
-==============================================================================*/
-
-struct FE_element_add_faces_not_in_list_data
-/*******************************************************************************
-LAST MODIFIED : 17 February 2003
-
-DESCRIPTION :
-Data for FE_element_add_faces_not_in_list function.
-==============================================================================*/
-{
-	struct LIST(FE_element) *add_element_list;
-	struct LIST(FE_element) *current_element_list;
-};
-
-/***************************************************************************//**
- * If any face of <element> is not in <current_element_list>, and not in
- * <add_element_list>, adds it to <add_element_list>.
- * Does not recurse over faces of faces.
- * @param data_void  A struct FE_element_add_faces_not_in_list_data.
- */
-int FE_element_add_faces_not_in_list(struct FE_element *element,
-	void *data_void);
 
 /**
  * Merges/adds fields from <source> into <destination>. Where existing fields
@@ -2663,18 +2269,11 @@ int FE_element_add_faces_not_in_list(struct FE_element *element,
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list);
 
-/***************************************************************************//**
+/**
  * Writes to the console the element identifier and details of the fields
  * defined over it.
  */
 int list_FE_element(struct FE_element *element);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
-	const struct CM_element_information *);
-
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
 
 /***************************************************************************//**
  * Internal variant of public cmzn_elementiterator_next() which does not
@@ -2685,13 +2284,6 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
  */
 cmzn_element_id cmzn_elementiterator_next_non_access(
 	cmzn_elementiterator_id element_iterator);
-
-/***************************************************************************//**
- * List statistics about btree efficiency for element list.
- */
-void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list);
-
-PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_element);
 
 int theta_closest_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,
@@ -2859,27 +2451,6 @@ bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
  * otherwise returns 0 (false).
  */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
-
-/**
- * Check that each Standard_node_to_element_map used to define field has
- * node_value/version labels as well as offsets into component DOFs and if not
- * find them and check they are consistently used for all elements i.e. that
- * each use of the same array offset in an element refers to the same
- * node_value/version.
- * @param field  The FE_field to check/update.
- * @param target_fe_region  Optional FE_region where nodes and equivalent field
- * of same name can be found. Used if field not defined on node in same region.
- * @return  CMZN_OK if labels are complete and consistent, any other status if
- * failed. Failure can occur if nodal value labels are absent at the nodes, or
- * if the implementation discovers the same element field component uses the
- * same offsets for different nodal labels but is unable to fix it.
- */
-int FE_field_check_element_node_value_labels(FE_field *field,
-	FE_region *target_fe_region);
-
-/** Field list iterator version of FE_field_check_element_node_value_labels. */
-int FE_field_check_element_node_value_labels_iterator(FE_field *field,
-	void *target_fe_region_void);
 
 int FE_field_has_multiple_times(struct FE_field *fe_field);
 /*******************************************************************************
@@ -3390,38 +2961,27 @@ specified component is calculated, otherwise all components are calculated.  The
 storage for the <value> should have been allocated outside the function.
 ==============================================================================*/
 
+/**
+ * Returns the FE_mesh that <element> belongs to.
+ */
+FE_mesh *FE_element_get_FE_mesh(struct FE_element *element);
+
+/**
+ * Returns the FE_region that <element> belongs to.
+ */
 struct FE_region *FE_element_get_FE_region(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
 
-DESCRIPTION :
-Returns the FE_region that <element> belongs to.
-==============================================================================*/
-
-int FE_element_has_top_level_element(struct FE_element *element,
-	void *top_level_element_void);
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is indeed a top_level parent of <element>.
-==============================================================================*/
-
+/**
+ * Returns true if <top_level_element> is a top_level parent of <element>.
+ */
 int FE_element_is_top_level_parent_of_element(
-	struct FE_element *top_level_element,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is a top_level parent of <element>.
-==============================================================================*/
+	struct FE_element *element, void *other_element_void);
 
 /**
  * Returns the/a top level [ultimate parent] element for <element>. If supplied,
  * the function attempts to verify that the <check_top_level_element> is in
  * fact a valid top_level_element for <element>, otherwise it tries to find one
- * passing the <condition> function with <conditional_data>, and with <element>
- * on its <face_number> (if positive), if either are specified.
+ * with the specified face, if supplied.
  *
  * If the returned element is different to <element> (ie. is of higher dimension),
  * then this function also fills the matrix <element_to_top_level> with values for
@@ -3440,7 +3000,6 @@ Returns true if <top_level_element> is a top_level parent of <element>.
  */
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type specified_face, FE_value *element_to_top_level);
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
@@ -3456,26 +3015,22 @@ for the given <element> and <xi>.  If <top_level_element> is already set it
 is checked and the <top_level_xi> calculated.
 ==============================================================================*/
 
+/**
+ * Returns in <number_in_xi> the equivalent discretization of <element> for its
+ * position - element, face or line - in <top_level_element>. Uses
+ * <element_to_top_level> array for line/face conversion as returned by
+ * FE_element_get_top_level_element_conversion.
+ * <number_in_xi> must have space at least MAXIMUM_ELEMENT_XI_DIMENSIONS
+ * integers, as remaining values up to this size are cleared to zero.
+ */
 int get_FE_element_discretization_from_top_level(struct FE_element *element,
-	int *number_in_xi,struct FE_element *top_level_element,
-	int *top_level_number_in_xi,FE_value *element_to_top_level);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1999
-
-DESCRIPTION :
-Returns in <number_in_xi> the equivalent discretization of <element> for its
-position - element, face or line - in <top_level_element>. Uses
-<element_to_top_level> array for line/face conversion as returned by
-FE_element_get_top_level_element_conversion.
-<number_in_xi> must have space at lease MAXIMUM_ELEMENT_XI_DIMENSIONS integers,
-as remaining values up to this size are cleared to zero.
-==============================================================================*/
+	int *number_in_xi, struct FE_element *top_level_element,
+	int *top_level_number_in_xi, FE_value *element_to_top_level);
 
 /**
  * Returns the discretization in <number_in_xi> for displaying graphics over
- * <element>, subject to its ancestors satisfying the <conditional> function
- * with <conditional_data>, and with the <face_number> and suggested
- * <*top_level_element>. If <native_discretization_field> is defined over the
+ * <element>, using the suggested <*top_level_element> if any.
+ * If <native_discretization_field> is defined over the
  * element and is grid-based, it's native discretization is used in preference
  * to the <top_level_number_in_xi>.
  * <*top_level_element> can be NULL; final element used will be returned.
@@ -3484,7 +3039,6 @@ as remaining values up to this size are cleared to zero.
  * in either case the top_level_number_in_xi used is returned.
  */
 int get_FE_element_discretization(struct FE_element *element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);
@@ -3495,9 +3049,9 @@ int get_FE_element_discretization(struct FE_element *element,
  * inward normal.
  *
  * @param element  The element to test.
- * @return  1 if element is an exterior face with inward normal, 0 otherwise.
+ * @return  True if element is an exterior face with inward normal, otherwise false.
  */
-int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
+bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
 
 /**
  * Add nodes directly referenced in element information to the node list.
@@ -3523,158 +3077,11 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
  */
 int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
 
-int FE_element_is_dimension(struct FE_element *element,void *dimension_void);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Returns true if <element> is of the given <dimension>.
-<dimension_void> must be a pointer to an int containing the dimension.
-==============================================================================*/
-
-int FE_element_is_dimension_3(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
-==============================================================================*/
-
-int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
-==============================================================================*/
-
-int FE_element_is_not_top_level(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
-==============================================================================*/
-
 /**
- * Fetches an element with the same identifier as <element> from the <data>
- * <element_list>. Returns true if either:
- * 1. There is no namesake element and <element> has a valid shape.
- * 2. There is a namesake element and <element> has an "unspecified" shape of the
- * same dimension as it, but no fields.
- * 3. There is a namesake element with the same shape and compatible faces
- * (meaning they match or either element has no faces).
- * No field checks are made as element field definitions can be replaced during merge.
+ * Conditional function.
+ * @return  1 if element is top-level i.e. has no parents, otherwise 0.
  */
-bool FE_element_can_be_merged(struct FE_element *element,
-	struct FE_region *global_fe_region);
-
-int ensure_FE_element_is_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to <element_list> if not currently in it.
-==============================================================================*/
-
-struct FE_element_list_conditional_data
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Data for passing to ensure_FE_element_is_in_list_conditional.
-==============================================================================*/
-{
-	struct LIST(FE_element) *element_list;
-	LIST_CONDITIONAL_FUNCTION(FE_element) *function;
-	void *user_data;
-}; /* FE_element_list_conditional_data */
-
-int ensure_FE_element_is_in_list_conditional(struct FE_element *element,
-	void *list_conditional_data_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to a list - if not already in it - if a
-conditional function with user_data is true.
-The element_list, conditional function and user_data are passed in a
-struct FE_element_list_conditional_data * in the second argument.
-Warning: Must not be iterating over the list being added to!
-==============================================================================*/
-
-int ensure_FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for removing <element> from <element_list> if currently in it.
-==============================================================================*/
-
-int toggle_FE_element_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-If <element> is in <element_list> it is taken out, otherwise it is added.
-==============================================================================*/
-
-struct FE_element_list_CM_element_type_data
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator data for functions working with elements of a given CM_element_type
-in an element list, eg. add_FE_element_of_CM_element_type_to_list.
-==============================================================================*/
-{
-	enum CM_element_type cm_element_type;
-	struct LIST(FE_element) *element_list;
-};
-
-int add_FE_element_of_CM_element_type_to_list(struct FE_element *element,
-	void *element_list_type_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator function which, if <element> is of the given CM_element_type, adds it
-to the element_list if not currently in it.
-==============================================================================*/
-
-int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
-	void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures all its nodes are added to the <node_list> if not currently in it.
-==============================================================================*/
-
-int ensure_top_level_FE_element_nodes_are_not_in_list(
-	struct FE_element *element,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures none of its nodes are in <node_list>.
-==============================================================================*/
-
-int FE_element_or_parent_has_field(struct FE_element *element,
-	struct FE_field *field,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
-/***************************************************************************//**
- * Returns true if the <element> or any of its parents has the <field> defined
- * over it.
- * @param conditional  Optional conditional function. If supplied, limits
- * search to ancestor elements for which it returns true.
- * @param conditional_data  User data to pass to conditional function.
- */
+int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
 
 /***************************************************************************//**
  * Evaluates the supplied coordinate_field. Sets non-present components to zero
@@ -3759,20 +3166,17 @@ DESCRIPTION :
 FE_node iterator version of FE_field_is_defined_at_node.
 ==============================================================================*/
 
-int FE_field_is_defined_in_element(struct FE_field *field,
+/**
+ * Returns true if the <field> is defined for the <element>.
+ */
+bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
 
-DESCRIPTION :
-Returns true if the <field> is defined for the <element>.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Returns true if <field> is defined in <element> directly, not inherited from
  * a parent element it is a face of.
  */
-int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
+bool FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 	struct FE_element *element);
 
 int FE_element_field_is_grid_based(struct FE_element *element,
@@ -4315,20 +3719,6 @@ DESCRIPTION :
 As FE_element to previously created FE_element_order_info (passed in dummy)
 ==============================================================================*/
 
-int FE_element_xi_increment_within_element(struct FE_element *element, FE_value *xi,
-	FE_value *increment, FE_value *fraction, int *face_number, FE_value *xi_face);
-/*******************************************************************************
-LAST MODIFIED : 20 January 2004
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-the step is limited to take <xi> to the boundary, <face_number> is set to be
-the limiting face, <fraction> is updated with the fraction of the <increment>
-actually used, the <increment> is updated to contain the part not used,
-the <xi_face> are calculated for that face and the <xi> are changed to be
-on the boundary of the element.
-==============================================================================*/
-
 int FE_element_get_number_of_change_to_adjacent_element_permutations(
 	struct FE_element *element, FE_value *xi, int face_number);
 /*******************************************************************************
@@ -4342,7 +3732,7 @@ to take account of rotations and flipping.
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
-	struct FE_region *fe_region, int permutation);
+	int permutation);
 /*******************************************************************************
 LAST MODIFIED : 31 May 2006
 
@@ -4353,8 +3743,6 @@ If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
 If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
 <permutation> is used to resolve the possible rotation and flipping of the
 local face xi coordinates between the two parents.
 The shape mapping from parents are reused for all elements of the same shape
@@ -4376,15 +3764,6 @@ no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 
-struct FE_element *create_FE_element_with_line_shape(int identifier,
-	struct FE_region *fe_region, int dimension);
-/*******************************************************************************
-LAST MODIFIED : 1 December 2004
-
-DESCRIPTION :
-Creates an element that has a line shape product of the specified <dimension>.
-==============================================================================*/
-
 int FE_element_define_tensor_product_basis(struct FE_element *element,
 	int dimension, enum FE_basis_type basis_type, struct FE_field *field);
 /*******************************************************************************
@@ -4394,4 +3773,22 @@ DESCRIPTION :
 Defines a tensor product basis on <element> with the specified <dimension>
 and <basis_type>.  This does not support mixed basis types in the tensor product.
 ==============================================================================*/
+
+enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
+	const char *string);
+
+char *cmzn_field_domain_type_enum_to_string(enum cmzn_field_domain_type type);
+
+enum cmzn_element_face_type cmzn_element_face_type_enum_from_string(
+	const char *string);
+
+char *cmzn_element_face_type_enum_to_string(enum cmzn_element_face_type type);
+
+enum cmzn_element_point_sampling_mode cmzn_element_point_sampling_mode_enum_from_string(
+	const char *string);
+
+char *cmzn_element_point_sampling_mode_enum_to_string(
+	enum cmzn_element_point_sampling_mode mode);
+
+
 #endif /* !defined (FINITE_ELEMENT_H) */

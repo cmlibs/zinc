@@ -233,9 +233,8 @@ Writes what is invalid about the identifier.
 	ENTER(Element_point_ranges_identifier_is_valid);
 	if (identifier)
 	{
-		if (identifier->element&&identifier->top_level_element&&
-			FE_element_has_top_level_element(identifier->element,
-				(void *)identifier->top_level_element))
+		if (identifier->element && identifier->top_level_element &&
+			FE_element_is_top_level_parent_of_element(identifier->top_level_element, identifier->element))
 		{
 			return_code=1;
 			dimension=get_FE_element_dimension(identifier->element);
@@ -399,8 +398,7 @@ top_level. Assumes <identifier> has been validated.
 		{
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
-				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,
@@ -966,73 +964,6 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 	return (return_code);
 } /* Element_point_ranges_toggle_in_list */
 
-int Element_point_ranges_is_wholly_within_element_list_tree(
-	struct Element_point_ranges *element_point_ranges, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 2 March 2001
-
-DESCRIPTION :
-Returns true if either the top_level_element in the <element_point_ranges>
-identifier is in <element_list>, or if the element is wholly within the list
-tree with FE_element_is_wholly_within_element_list_tree function. Used to check
-if element or top_level_element used by element_point_ranges will be destroyed,
-since faces and lines are destroyed with their parents if they are not also
-faces or lines of other elements not being destroyed.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(Element_point_ranges_is_wholly_within_element_list_tree);
-	if (element_point_ranges &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = IS_OBJECT_IN_LIST(FE_element)(
-			element_point_ranges->id.top_level_element, element_list) ||
-			FE_element_is_wholly_within_element_list_tree(
-				element_point_ranges->id.element, element_list_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_is_wholly_within_element_list_tree.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_is_wholly_within_element_list_tree */
-
-int Element_point_ranges_element_is_in_FE_region(
-	struct Element_point_ranges *element_point_ranges, void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Returns true if the element for <element_point_ranges> is in <fe_region>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Element_point_ranges_element_is_in_FE_region);
-	if (element_point_ranges && (fe_region = (struct FE_region *)fe_region_void))
-	{
-		return_code = FE_region_contains_FE_element(fe_region,
-			element_point_ranges->id.element);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_element_is_in_FE_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_element_is_in_FE_region */
-
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)
@@ -1049,14 +980,12 @@ No Element_point_ranges object is returned without error if:
 ==============================================================================*/
 {
 	int grid_value_in_range,i,number_of_grid_values,*values;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier identifier;
 
 	ENTER(Element_point_ranges_from_grid_field_ranges);
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element && get_FE_element_identifier(element, &element_identifier) &&
-		(CM_ELEMENT == element_identifier.type) && grid_field &&
+	if (element && FE_element_is_top_level(element, (void *)0) && grid_field &&
 		(1==get_FE_field_number_of_components(grid_field))&&
 		(INT_VALUE==get_FE_field_value_type(grid_field))&&ranges)
 	{
@@ -1137,11 +1066,10 @@ Note that there may legitimately be none if <grid_field> is not grid-based in
 The structure is then added to the <element_point_ranges_list>.
 select_data_void should point to a
 struct FE_element_grid_to_Element_point_ranges_list_data.
-Uses only top level elements, type CM_ELEMENT.
+Uses only top level elements.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element_grid_to_Element_point_ranges_list_data *grid_to_list_data;
 
@@ -1150,8 +1078,7 @@ Uses only top level elements, type CM_ELEMENT.
 		(struct FE_element_grid_to_Element_point_ranges_list_data *)
 		grid_to_list_data_void))
 	{
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
 				element,grid_to_list_data->grid_fe_field,
 				grid_to_list_data->grid_value_ranges)))
@@ -1192,7 +1119,6 @@ If field and element_point_ranges not identically grid-based, clear
 {
 	int dimension,native,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
 		number_of_grid_values,return_code,*values;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges_grid_to_multi_range_data
 		*grid_to_multi_range_data;
 	struct FE_element *element;
@@ -1210,8 +1136,7 @@ If field and element_point_ranges not identically grid-based, clear
 		/* work out if element_point_ranges matches the native discretization of
 			 grid_fe_field in element */
 		native=0;
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
 				element_point_ranges->id.sampling_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
@@ -1284,7 +1209,6 @@ in <element> to the <multi_range>.
 ==============================================================================*/
 {
 	int i,number_of_grid_values,return_code,*values;
-	struct CM_element_information element_identifier;
 	struct FE_element_grid_to_multi_range_data *grid_to_multi_range_data;
 	struct FE_field *grid_fe_field;
 	struct Multi_range *multi_range;
@@ -1299,8 +1223,7 @@ in <element> to the <multi_range>.
 		(multi_range=grid_to_multi_range_data->multi_range))
 	{
 		return_code = 1;
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			FE_element_field_is_grid_based(element, grid_fe_field))
 		{
 			if (get_FE_element_field_component_grid_int_values(element,

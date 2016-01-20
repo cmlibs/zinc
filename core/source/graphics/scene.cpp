@@ -29,6 +29,8 @@ FILE : scene.cpp
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_module.hpp"
+#include "description_io/scene_json_import.hpp"
+#include "description_io/scene_json_export.hpp"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphics.h"
@@ -383,15 +385,11 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 			local_selection_changed = true;
 			scene->selectionChanged = false;
 		}
-		int changeSummary = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
-		if ((changeSummary & CMZN_FIELD_CHANGE_FLAG_RESULT) || local_selection_changed)
-		{
-			cmzn_scene_begin_change(scene);
-			struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
-			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
-				(void *)&change_data, scene->list_of_graphics);
-			cmzn_scene_end_change(scene);
-		}
+		cmzn_scene_begin_change(scene);
+		struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
+			(void *)&change_data, scene->list_of_graphics);
+		cmzn_scene_end_change(scene);
 	}
 }
 
@@ -459,92 +457,14 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 	return (scene);
 }
 
-void cmzn_scene_add_child_region(struct cmzn_scene *scene,
-	struct cmzn_region *child_region)
-{
-	struct cmzn_scene *child_scene;
-	if (scene && child_region &&
-		(NULL != (child_scene = cmzn_scene_create_internal(
-			child_region, scene->graphics_module))))
-	{
-		cmzn_scene_set_position(child_scene,	GET_UNIQUE_SCENE_NAME());
-		struct cmzn_region *temp_region = cmzn_region_get_first_child(
-			child_region);
-		while (temp_region)
-		{
-			if (!cmzn_region_has_scene(temp_region))
-			{
-				cmzn_scene_add_child_region(child_scene,
-					temp_region);
-			}
-			cmzn_region_reaccess_next_sibling(&temp_region);
-		}
-	}
-}
-
-int cmzn_scene_update_child_scene(struct cmzn_scene *scene)
-{
-	int return_code;
-
-	ENTER(cmzn_scene_update_child_scene);
-	if (scene)
-	{
-		cmzn_scene_begin_change(scene);
-		/* ensure we have a graphical element for each child region */
-		struct cmzn_region *child_region = cmzn_region_get_first_child(scene->region);
-		while (child_region)
-		{
-			if (!cmzn_region_has_scene(child_region))
-			{
-				cmzn_scene_add_child_region(scene,
-					child_region);
-			}
-			cmzn_region_reaccess_next_sibling(&child_region);
-		}
-		cmzn_scene_end_change(scene);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_update_child_scene.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 static void cmzn_scene_region_change(struct cmzn_region *region,
 	struct cmzn_region_changes *region_changes, void *scene_void)
 {
-	struct cmzn_region *child_region;
-	struct cmzn_scene *scene;
-
-	ENTER(Scene_cmzn_region_change);
-
-	if (region && region_changes && (scene = (struct cmzn_scene *)scene_void))
+	cmzn_scene *scene = static_cast<cmzn_scene *>(scene_void);
+	if (region && region_changes && scene)
 	{
 		if (region_changes->children_changed)
-		{
-			cmzn_scene_begin_change(scene);
-			if (region_changes->child_added)
-			{
-				child_region = region_changes->child_added;
-				cmzn_scene_add_child_region(scene, child_region);
 				cmzn_scene_changed(scene);
-			}
-			else if (region_changes->child_removed)
-			{
-				/* flag it as changed to trigger callback on scene */
-				cmzn_scene_changed(scene);
-			}
-			else
-			{
-				cmzn_scene_update_child_scene(scene);
-			}
-			cmzn_scene_end_change(scene);
-		}
 	}
 	else
 	{
@@ -2605,6 +2525,13 @@ cmzn_materialmodule_id cmzn_scene_get_materialmodule(cmzn_scene_id scene)
 	return 0;
 }
 
+cmzn_lightmodule_id cmzn_scene_get_lightmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_lightmodule(scene->graphics_module);
+	return 0;
+}
+
 cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene)
 {
 	if (scene)
@@ -3674,4 +3601,26 @@ int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id sce
 		return data.number_of_graphics;
 	}
 	return 0;
+}
+
+char *cmzn_scene_write_description(cmzn_scene_id scene)
+{
+	if (scene)
+	{
+		SceneJsonExport jsonExport(scene);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
+}
+
+int cmzn_scene_read_description(
+	cmzn_scene_id scene, const char *description, bool overwrite)
+{
+	if (scene && description)
+	{
+		SceneJsonImport sceneImport(scene, overwrite);
+		std::string inputString(description);
+		return sceneImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }

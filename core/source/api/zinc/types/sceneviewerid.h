@@ -39,7 +39,7 @@ typedef struct cmzn_sceneviewer *cmzn_sceneviewer_id;
  */
 enum cmzn_sceneviewer_blending_mode
 {
-	CMZN_SCENEVIEWER_BLENDING_MODE_INVALID,
+	CMZN_SCENEVIEWER_BLENDING_MODE_INVALID = 0,
 	CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL,
 		/*!< src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA */
 	CMZN_SCENEVIEWER_BLENDING_MODE_NONE,
@@ -64,7 +64,7 @@ enum cmzn_sceneviewer_blending_mode
  */
 enum cmzn_sceneviewer_buffering_mode
 {
-	CMZN_SCENEVIEWER_BUFFERING_MODE_INVALID,
+	CMZN_SCENEVIEWER_BUFFERING_MODE_INVALID = 0,
 	/*!< Invalid scene viewer buffering mode. */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT,
 	/*!< BUFFERING_MODE_DEFAULT will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
@@ -94,7 +94,7 @@ enum cmzn_sceneviewer_buffering_mode
  */
 enum cmzn_sceneviewer_interact_mode
 {
-	CMZN_SCENEVIEWER_INTERACT_MODE_INVALID,
+	CMZN_SCENEVIEWER_INTERACT_MODE_INVALID = 0,
 	/*!< Unspecified scene viewer interaction mode. */
 	CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD,
 		/*!< CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD is the traditional cmgui mode.
@@ -113,7 +113,7 @@ enum cmzn_sceneviewer_interact_mode
  */
 enum cmzn_sceneviewer_projection_mode
 {
-	CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID,
+	CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID = 0,
 	/*!< Unspecified scene viewer projection mode. */
 	CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL,
 	/*!< Parallel (orthographic) projection transformations will be used when drawing. */
@@ -127,7 +127,7 @@ enum cmzn_sceneviewer_projection_mode
  */
 enum cmzn_sceneviewer_stereo_mode
 {
-	CMZN_SCENEVIEWER_STEREO_MODE_INVALID,
+	CMZN_SCENEVIEWER_STEREO_MODE_INVALID = 0,
 	/*!< Unspecified scene viewer stereo mode. */
 	CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT,
 	/*!< either STEREO or MONO depending on other scene viewer requirements */
@@ -173,7 +173,7 @@ enum cmzn_sceneviewer_transparency_mode
  */
 enum cmzn_sceneviewer_viewport_mode
 {
-	CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID,
+	CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID = 0,
 	/*!< Unspecified scene viewer viewport mode. */
 	CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE,
 		/*!< viewport_pixels_per_unit values are used to give and exact mapping from

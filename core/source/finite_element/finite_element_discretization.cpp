@@ -71,7 +71,7 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 ==============================================================================*/
 {
 	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
-	int dimension, return_code;
+	int return_code;
 
 	ENTER(categorize_FE_element_shape);
 	if (element_shape && element_shape_category_address &&
@@ -79,7 +79,7 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 		line_direction_address)
 	{
 		return_code = 1;
-		get_FE_element_shape_dimension(element_shape, &dimension);
+		const int dimension = get_FE_element_shape_dimension(element_shape);
 		switch (dimension)
 		{
 			case 1:
@@ -298,16 +298,15 @@ comments for simplex and polygons shapes for more details.
 {
 	enum FE_element_shape_category element_shape_category;
 	ZnReal xi_j, xi_k;
-	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
+	int i, j, k, line_direction, linked_xi_directions[2],
 		number_in_xi_around_polygon = 0,
 		number_in_xi_simplex = 0, number_of_polygon_sides,
 		number_of_xi_points, return_code;
 	FE_value_triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_centres);
-	if (element_shape && get_FE_element_shape_dimension(element_shape,
-		&element_dimension) && (0 < element_dimension) &&
-		number_in_xi && number_of_xi_points_address)
+	const int element_dimension = get_FE_element_shape_dimension(element_shape);
+	if ((0 < element_dimension) && number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
 		number_of_xi_points = 0;
@@ -542,16 +541,15 @@ comments for simplex and polygons shapes for more details.
 {
 	enum FE_element_shape_category element_shape_category;
 	FE_value xi_j, xi_k;
-	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
+	int i, j, k, line_direction, linked_xi_directions[2],
 		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
 		number_in_xi_simplex = 0, number_of_polygon_sides, number_of_xi_points,
 		points_per_row, return_code;
 	FE_value_triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_corners);
-	if (element_shape && get_FE_element_shape_dimension(element_shape,
-		&element_dimension) && (0 < element_dimension) &&
-		number_in_xi && number_of_xi_points_address)
+	const int element_dimension = get_FE_element_shape_dimension(element_shape);
+	if ((0 < element_dimension) && number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
 		number_of_xi_points = 0;
@@ -868,13 +866,12 @@ Otherwise the routine returns 0.
 ==============================================================================*/
 {
 	enum FE_element_shape_category element_shape_category;
-	int element_dimension, i, line_direction, linked_xi_directions[2],
+	int i, line_direction, linked_xi_directions[2],
 		number_of_polygon_sides, return_code;
 
 	ENTER(FE_element_shape_get_indices_for_xi_location_in_cell_corners);
-	if (element_shape && get_FE_element_shape_dimension(element_shape,
-		&element_dimension) && (0 < element_dimension) && number_in_xi
-		&& xi && indices)
+	const int element_dimension = get_FE_element_shape_dimension(element_shape);
+	if ((0 < element_dimension) && number_in_xi && xi && indices)
 	{
 		return_code = 1;
 		/* check the number_in_xi */
@@ -1571,13 +1568,13 @@ fields, required for DENSITY and POISSON modes.
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
 		number_of_polygon_sides, number_of_xi_points, number_of_xi_points_allocated,
 		return_code;
-	struct FE_element_shape *element_shape;
 	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_xi_points_cell_random);
-	if (element && get_FE_element_shape(element, &element_shape) &&
-		get_FE_element_shape_dimension(element_shape,
-		&element_dimension) && (0 < element_dimension) && number_in_xi &&
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) &&
+		(0 < (element_dimension = get_FE_element_shape_dimension(element_shape))) &&
+		number_in_xi &&
 		(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1876,13 +1873,11 @@ int FE_element_get_xi_points(struct FE_element *element,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 {
 	int return_code;
-	struct CM_element_information identifier;
-	struct FE_element_shape *element_shape;
 	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_xi_points);
-	if (element && get_FE_element_shape(element, &element_shape) &&
-		number_in_xi && number_of_xi_points_address)
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
 		switch (sampling_mode)
@@ -1901,8 +1896,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 			{
 				/* seed random number generator with the element number so "random"
 					 layout is consistent for the same element */
-				get_FE_element_identifier(element, &identifier);
-				CMGUI_SEED_RANDOM(identifier.number);
+				CMGUI_SEED_RANDOM(get_FE_element_identifier(element));
 				return_code = FE_element_get_xi_points_cell_random(element,
 					sampling_mode, number_in_xi, field_cache, coordinate_field, density_field,
 					number_of_xi_points_address, xi_points_address);
@@ -2020,24 +2014,21 @@ a return value here indicates that the xi_points have been converted.
 		line_direction, linked_xi_directions[2], number_of_polygon_sides,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_in_xi1, return_code,
 		top_level_element_dimension, *top_level_xi_point_numbers;
-	struct CM_element_information identifier;
 	struct FE_element *temp_element;
-	struct FE_element_shape *element_shape, *top_level_element_shape;
 
 	ENTER(FE_element_convert_xi_points_cell_corners_to_top_level);
 	if (top_level_xi_point_numbers_address)
 	{
 		*top_level_xi_point_numbers_address = (int *)NULL;
 	}
-	if (element && get_FE_element_shape(element, &element_shape) &&
-		top_level_element &&
-		get_FE_element_shape(top_level_element, &top_level_element_shape) &&
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	FE_element_shape *top_level_element_shape = get_FE_element_shape(top_level_element);
+	if ((element_shape) && (top_level_element_shape) &&
 		top_level_number_in_xi && (0 < number_of_xi_points) &&
 		xi_points && top_level_xi_point_numbers_address)
 	{
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &identifier);
 		top_level_element_dimension = get_FE_element_dimension(top_level_element);
 		/* extract useful information about the element_shape */
 		if (!categorize_FE_element_shape(top_level_element_shape,
@@ -2050,15 +2041,14 @@ a return value here indicates that the xi_points have been converted.
 			return_code = 0;
 		}
 		/* check if descended from a line*line or line*line*line element */
-		if (return_code && (CM_ELEMENT != identifier.type) &&
+		if (return_code &&
 			(element_dimension < top_level_element_dimension) &&
 			((ELEMENT_CATEGORY_2D_SQUARE == top_level_element_shape_category) ||
 				(ELEMENT_CATEGORY_3D_CUBE == top_level_element_shape_category)))
 		{
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
-				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,
 					top_level_element_dimension, top_level_number_in_xi,
@@ -2126,12 +2116,11 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum FE_element_shape_category element_shape_category;
 	int default_behaviour, i, j, k, line_direction, linked_xi_directions[2], m, n,
 		number_of_polygon_sides, number_of_xi_points, return_code;
-	struct FE_element_shape *element_shape;
 	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_numbered_xi_point);
-	if (element && get_FE_element_shape(element, &element_shape) &&
-		number_in_xi && xi)
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && number_in_xi && xi)
 	{
 		return_code = 1;
 		/* extract useful information about the element_shape */

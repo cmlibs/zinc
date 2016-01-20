@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Fieldml version="0.5"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xlink="http://www.w3.org/1999/xlink"
+ xsi:noNamespaceSchemaLocation="http://www.fieldml.org/resources/xml/0.5/FieldML_0.5.xsd">
+<Region name="body">
+
+<Import xlink:href="http://www.fieldml.org/resources/xml/0.5/FieldML_Library_0.5.xml" region="library">
+ <ImportType localName="boolean" remoteName="boolean" />
+ <ImportType localName="real.1d" remoteName="real.1d" />
+ <ImportEvaluator localName="chart.3d.argument" remoteName="chart.3d.argument" />
+ <ImportType localName="coordinates.rc.3d" remoteName="coordinates.rc.3d" />
+ <ImportType localName="coordinates.rc.3d.component" remoteName="coordinates.rc.3d.component" />
+ <ImportEvaluator localName="coordinates.rc.3d.component.argument" remoteName="coordinates.rc.3d.component.argument" />
+ <ImportEvaluator localName="shape.unit.wedge12" remoteName="shape.unit.wedge12"/>
+ <ImportEvaluator localName="shape.unit.cube" remoteName="shape.unit.cube"/>
+ <ImportType localName="triquadraticLagrange.parameters" remoteName="parameters.3d.unit.triquadraticLagrange" />
+ <ImportEvaluator localName="triquadraticLagrange.interpolator"
+  remoteName="interpolator.3d.unit.triquadraticLagrange" />
+ <ImportEvaluator localName="triquadraticLagrange.parameters.argument"
+  remoteName="parameters.3d.unit.triquadraticLagrange.argument" />
+ <ImportEvaluator localName="triquadraticLagrange.parameters.component.argument"
+  remoteName="parameters.3d.unit.triquadraticLagrange.component.argument" />
+ <ImportType localName="triquadraticWedge12.parameters" remoteName="parameters.3d.unit.triquadraticWedge12" />
+ <ImportEvaluator localName="triquadraticWedge12.interpolator"
+  remoteName="interpolator.3d.unit.triquadraticWedge12" />
+ <ImportEvaluator localName="triquadraticWedge12.parameters.argument"
+  remoteName="parameters.3d.unit.triquadraticWedge12.argument" />
+ <ImportType localName="triquadraticWedge12.parameters.component"
+  remoteName="parameters.3d.unit.triquadraticWedge12.component" />
+ <ImportEvaluator localName="triquadraticWedge12.parameters.component.argument"
+  remoteName="parameters.3d.unit.triquadraticWedge12.component.argument" />
+</Import>
+
+<EnsembleType name="nodes">
+ <Members>
+  <MemberRange min="1" max="129" />
+ </Members>
+</EnsembleType>
+
+<ArgumentEvaluator name="nodes.argument" valueType="nodes" />
+
+<MeshType name="mesh3d">
+ <Elements name="elements">
+  <Members>
+   <MemberRange min="1" max="12" />
+  </Members>
+ </Elements>
+ <Chart name="xi">
+  <Components name="mesh3d.xi.components" count="3" />
+ </Chart>
+ <Shapes evaluator="mesh3d.shape" />
+</MeshType>
+
+<ArgumentEvaluator name="mesh3d.argument" valueType="mesh3d" />
+
+<EnsembleType name="mesh3d.shapeid">
+  <Members>
+    <MemberRange min="1" max="2" />
+  </Members>
+</EnsembleType>
+
+<ArgumentEvaluator name="mesh3d.shapeid.argument" valueType="mesh3d.shapeid" />
+
+<DataResource name="wheel.mesh3d.shapeid.resource">
+  <DataResourceDescription>
+    <DataResourceHref xlink:href="wheel_shapeid.txt" format="PLAIN_TEXT"/>
+  </DataResourceDescription>
+  <ArrayDataSource name="wheel.mesh3d.shapeid.data" location="1" rank="1">
+    <RawArraySize>
+      12
+    </RawArraySize>
+  </ArrayDataSource>
+</DataResource>
+
+<ParameterEvaluator name="wheel.mesh3d.shapeid" valueType="mesh3d.shapeid">
+  <DenseArrayData data="wheel.mesh3d.shapeid.data">
+    <DenseIndexes>
+      <IndexEvaluator evaluator="mesh3d.argument.elements"/>
+    </DenseIndexes>
+  </DenseArrayData>
+</ParameterEvaluator>
+
+<PiecewiseEvaluator name="mesh3d.shape" valueType="boolean">
+  <Bindings>
+    <Bind argument="mesh3d.shapeid.argument" source="wheel.mesh3d.shapeid" />
+  </Bindings>
+  <IndexEvaluators>
+    <IndexEvaluator evaluator="mesh3d.shapeid.argument" indexNumber="1" />
+  </IndexEvaluators>
+  <EvaluatorMap>
+   <EvaluatorMapEntry value="1" evaluator="shape.unit.wedge12"/>
+   <EvaluatorMapEntry value="2" evaluator="shape.unit.cube"/>
+  </EvaluatorMap>
+</PiecewiseEvaluator>
+
+<!-- Connectivity data -->
+
+<DataResource name="wheel.wedgeconnectivity.resource">
+ <DataResourceDescription>
+  <DataResourceHref xlink:href="wheel_wedgeconnectivity.txt" format="PLAIN_TEXT"/>
+ </DataResourceDescription>
+ <ArrayDataSource name="wheel.wedgeelementid.data" location="1" rank="2">
+  <ArrayDataSize>6 1</ArrayDataSize>
+  <ArrayDataOffset>0 0</ArrayDataOffset>
+  <RawArraySize>
+   6 19
+  </RawArraySize>
+ </ArrayDataSource>
+ <ArrayDataSource name="wheel.wedgeconnectivity.data" location="1" rank="2">
+  <ArrayDataSize>6 18</ArrayDataSize>
+  <ArrayDataOffset>0 1</ArrayDataOffset>
+  <RawArraySize>
+   6 19 
+  </RawArraySize>
+ </ArrayDataSource>
+</DataResource>
+
+<ParameterEvaluator name="mesh3d.connectivity.triquadraticWedge12.nodes" valueType="nodes">
+ <DOKArrayData keyData="wheel.wedgeelementid.data" valueData="wheel.wedgeconnectivity.data">
+  <DenseIndexes>
+   <IndexEvaluator evaluator="triquadraticWedge12.parameters.component.argument" />
+  </DenseIndexes>
+  <SparseIndexes>
+    <IndexEvaluator evaluator="mesh3d.argument.elements" />
+  </SparseIndexes>
+ </DOKArrayData>
+</ParameterEvaluator>
+
+<DataResource name="wheel.cubeconnectivity.resource">
+ <DataResourceDescription>
+  <DataResourceHref xlink:href="wheel_cubeconnectivity.txt" format="PLAIN_TEXT"/>
+ </DataResourceDescription>
+ <ArrayDataSource name="wheel.cubeelementid.data" location="1" rank="2">
+  <ArrayDataSize>6 1</ArrayDataSize>
+  <ArrayDataOffset>0 0</ArrayDataOffset>
+  <RawArraySize>6 28</RawArraySize>
+ </ArrayDataSource>
+ <ArrayDataSource name="wheel.cubeconnectivity.data" location="1" rank="2">
+  <ArrayDataSize>6 27</ArrayDataSize>
+  <ArrayDataOffset>0 1</ArrayDataOffset>
+  <RawArraySize>6 28</RawArraySize>
+ </ArrayDataSource>
+</DataResource>
+
+<ParameterEvaluator name="mesh3d.connectivity.triquadraticLagrange.nodes" valueType="nodes">
+ <DOKArrayData keyData="wheel.cubeelementid.data" valueData="wheel.cubeconnectivity.data">
+  <DenseIndexes>
+   <IndexEvaluator evaluator="triquadraticLagrange.parameters.component.argument" />
+  </DenseIndexes>
+  <SparseIndexes>
+    <IndexEvaluator evaluator="mesh3d.argument.elements" />
+  </SparseIndexes>
+ </DOKArrayData>
+</ParameterEvaluator>
+
+<!-- Definition of scalar field template -->
+
+<ArgumentEvaluator name="nodes.dofs.argument" valueType="real.1d">
+ <!-- expected to be a function of node -->
+ <Arguments>
+  <Argument name="nodes.argument" />
+ </Arguments>
+</ArgumentEvaluator>
+
+<AggregateEvaluator name="mesh3d.triquadraticWedge12.parameters" valueType="triquadraticWedge12.parameters">
+ <Bindings>
+  <BindIndex argument="triquadraticWedge12.parameters.component.argument" indexNumber="1" />
+  <Bind argument="nodes.argument" source="mesh3d.connectivity.triquadraticWedge12.nodes" />
+ </Bindings>
+ <ComponentEvaluators default="nodes.dofs.argument" />
+</AggregateEvaluator>
+
+<ReferenceEvaluator name="mesh3d.triquadraticWedge12" evaluator="triquadraticWedge12.interpolator" valueType="real.1d">
+ <Bindings>
+  <Bind argument="chart.3d.argument" source="mesh3d.argument.xi" />
+  <Bind argument="triquadraticWedge12.parameters.argument" source="mesh3d.triquadraticWedge12.parameters" />
+ </Bindings>
+</ReferenceEvaluator>
+
+<AggregateEvaluator name="mesh3d.triquadraticLagrange.parameters" valueType="triquadraticLagrange.parameters">
+ <Bindings>
+  <BindIndex argument="triquadraticLagrange.parameters.component.argument" indexNumber="1" />
+  <Bind argument="nodes.argument" source="mesh3d.connectivity.triquadraticLagrange.nodes" />
+ </Bindings>
+ <ComponentEvaluators default="nodes.dofs.argument" />
+</AggregateEvaluator>
+
+<ReferenceEvaluator name="mesh3d.triquadraticLagrange" evaluator="triquadraticLagrange.interpolator" valueType="real.1d">
+ <Bindings>
+  <Bind argument="chart.3d.argument" source="mesh3d.argument.xi" />
+  <Bind argument="triquadraticLagrange.parameters.argument" source="mesh3d.triquadraticLagrange.parameters" />
+ </Bindings>
+</ReferenceEvaluator>
+
+<!-- indirect mapping from element to function via parameter map to shapeid.
+  Scales well, keeping XML size constant for large meshes -->
+<PiecewiseEvaluator name="mesh3d.template1" valueType="real.1d">
+  <Bindings>
+    <Bind argument="mesh3d.shapeid.argument" source="wheel.mesh3d.shapeid" />
+  </Bindings>
+  <IndexEvaluators>
+    <IndexEvaluator evaluator="mesh3d.shapeid.argument" indexNumber="1" />
+  </IndexEvaluators>
+  <EvaluatorMap>
+    <EvaluatorMapEntry value="1" evaluator="mesh3d.triquadraticWedge12"/>
+    <EvaluatorMapEntry value="2" evaluator="mesh3d.triquadraticLagrange"/>
+  </EvaluatorMap>
+</PiecewiseEvaluator>
+
+<!-- Interpolated field definitions -->
+
+<DataResource name="coordinates.resource">
+ <DataResourceDescription>
+  <DataResourceHref xlink:href="wheel_coordinates.txt" format="PLAIN_TEXT"/>
+ </DataResourceDescription>
+ <ArrayDataSource name="coordinates.data" location="1" rank="2">
+  <RawArraySize>
+   129 3
+  </RawArraySize>
+ </ArrayDataSource>
+</DataResource>
+
+<ParameterEvaluator name="nodes.coordinates" valueType="real.1d">
+ <DenseArrayData data="coordinates.data">
+  <DenseIndexes>
+   <IndexEvaluator evaluator="nodes.argument" />
+   <IndexEvaluator evaluator="coordinates.rc.3d.component.argument" />
+  </DenseIndexes>
+ </DenseArrayData>
+</ParameterEvaluator>
+
+<AggregateEvaluator name="coordinates" valueType="coordinates.rc.3d">
+ <Bindings>
+  <BindIndex argument="coordinates.rc.3d.component.argument" indexNumber="1" />
+  <Bind argument="nodes.dofs.argument" source="nodes.coordinates" />
+ </Bindings>
+ <ComponentEvaluators default="mesh3d.template1" />
+</AggregateEvaluator>
+
+</Region>
+</Fieldml>
