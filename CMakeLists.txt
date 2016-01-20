@@ -41,7 +41,8 @@ include(cmake/FunctionDefinitions.cmake)
 find_package(Git QUIET)
 set(ZINC_REVISION "no-rev")
 if (GIT_FOUND)
-    git_get_revision(ZINC_REVISION)
+    git_get_revision(ZINC_REVISION_LONG)
+    string(SUBSTRING ${ZINC_REVISION_LONG} 0 6 ZINC_REVISION)
 endif()
 set(ZINC_RELEASE FALSE)
 if(ZINC_RELEASE)
@@ -271,7 +272,7 @@ install(EXPORT ${ZINC_EXPORT_SET_NAME}
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
-    COMPATIBILITY AnyNewerVersion)
+	COMPATIBILITY AnyNewerVersion)
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
 	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
