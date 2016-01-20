@@ -246,7 +246,8 @@ foreach( DEF ${DEPENDENT_DEFINITIONS} )
 endforeach()
 set(ZINC_SHARED_DEFINITIONS )
 
-include_directories(${PROJECT_BINARY_DIR}/core/source/api)
+set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/core/source/api;${PROJECT_BINARY_DIR}/core/source/api")
+#include_directories(${PROJECT_BINARY_DIR}/core/source/api)
 
 # Set those before we define libraries in subfolders
 set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
@@ -256,19 +257,24 @@ set(ZINC_EXPORT_SET_NAME zinc-config)
 
 add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endif()
+
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
 # Create the build tree imported targets
 export(TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}
-    FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
+	FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
 
 # Register the Zinc project with the CMake database
 export(PACKAGE ${ZINC_BASE_NAME})
 
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
-    DESTINATION ${PACKAGE_CONFIG_DIR}
+	DESTINATION ${PACKAGE_CONFIG_DIR}
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
