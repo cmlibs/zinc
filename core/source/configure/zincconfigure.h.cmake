@@ -28,7 +28,7 @@
 // Extension specific defines
 #cmakedefine USE_OPENCASCADE
 #cmakedefine USE_IMAGEMAGICK
-#cmakedefine USE_ITK
+#cmakedefine ZINC_USE_ITK
 #cmakedefine USE_PERL_INTERPRETER
 #cmakedefine USE_NETGEN
 #cmakedefine USE_GLEW

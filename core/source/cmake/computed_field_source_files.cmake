@@ -109,9 +109,9 @@ SET( COMPUTED_FIELD_HDRS
 	source/computed_field/computed_field_value_index_ranges.h
 	source/stream/field_image_stream.hpp )
 
-IF( USE_ITK )
+IF( ZINC_USE_ITK )
 	SET( COMPUTED_FIELD_SRCS ${COMPUTED_FIELD_SRCS} source/computed_field/computed_field_derivatives.cpp )
 	SET( COMPUTED_FIELD_HDRS ${COMPUTED_FIELD_HDRS} source/computed_field/computed_field_derivatives.h )
-ENDIF( USE_ITK )
+ENDIF( ZINC_USE_ITK )
 
 

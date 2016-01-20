@@ -12,7 +12,7 @@ SET( IMAGE_PROCESSING_SRCS
 SET( IMAGE_PROCESSING_HDRS
 	source/image_processing/computed_field_image_resample.h )
 
-IF( USE_ITK )
+IF( ZINC_USE_ITK )
 	SET( IMAGE_PROCESSING_SRCS ${IMAGE_PROCESSING_SRCS}
 		source/image_processing/computed_field_threshold_image_filter.cpp
 		source/image_processing/computed_field_binary_threshold_image_filter.cpp
@@ -47,4 +47,4 @@ IF( USE_ITK )
 		source/image_processing/computed_field_rescale_intensity_image_filter.h
 		source/image_processing/computed_field_sigmoid_image_filter.h
 		source/image_processing/computed_field_threshold_image_filter.h )
-ENDIF( USE_ITK )
+ENDIF( ZINC_USE_ITK )

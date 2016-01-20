@@ -23,7 +23,7 @@ option(ZINC_USE_NETGEN "Use NetGen" YES)
 option(ZINC_USE_JPEG "Use JPEG" YES)
 option(ZINC_USE_PNG "Use PNG" YES)
 option(ZINC_USE_TIFF "Use TIFF" YES)
-option(ZINC_USE_ITK "Use ITK" YES)
+option(ZINC_ZINC_USE_ITK "Use ITK" YES)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)

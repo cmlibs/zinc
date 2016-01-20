@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 # Find dependent packages
-find_package(GTest REQUIRED)
+find_package(GTest ${GTEST_VERSION} REQUIRED)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 # Test for pthread requirement, and OS X 10.9
@@ -40,8 +40,10 @@ endforeach()
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
-	target_link_libraries(${CURRENT_TEST} ${GTEST_MAIN_LIBRARIES} ${GTEST_LIBRARIES} ${GTEST_THREAD_LIBRARIES} zinc)
-	target_include_directories(${CURRENT_TEST} PRIVATE ${GTEST_INCLUDE_DIRS} ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+	target_link_libraries(${CURRENT_TEST} gtest_main zinc)
+	target_include_directories(${CURRENT_TEST} 
+	    PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+	)
 	add_test(${CURRENT_TEST} ${CURRENT_TEST})
 endforeach()
 

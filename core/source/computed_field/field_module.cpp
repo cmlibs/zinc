@@ -21,7 +21,7 @@
 #include "computed_field/computed_field_conditional.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_deformation.h"
-#if defined (USE_ITK)
+#if defined (ZINC_USE_ITK)
 #include "computed_field/computed_field_derivatives.h"
 #endif
 #include "computed_field/computed_field_finite_element.h"
@@ -37,7 +37,7 @@
 #include "finite_element/finite_element_region.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#if defined (USE_ITK)
+#if defined (ZINC_USE_ITK)
 #include "image_processing/computed_field_threshold_image_filter.h"
 #include "image_processing/computed_field_binary_threshold_image_filter.h"
 #include "image_processing/computed_field_canny_edge_detection_filter.h"
