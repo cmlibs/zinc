@@ -204,7 +204,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 .yuv#### extensions.
 ==============================================================================*/
 
-int Image_file_format_from_file_name(char *file_name,
+int Image_file_format_from_file_name(const char *file_name,
 	enum Image_file_format *image_file_format_address);
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
