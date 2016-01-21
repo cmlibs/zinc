@@ -21,7 +21,6 @@
 // Graphics specific defines
 #cmakedefine OPENGL_API
 #cmakedefine DM_BUFFERS
-#cmakedefine SELECT_DESCRIPTORS
 #cmakedefine REPORT_GL_ERRORS
 #cmakedefine USE_PARAMETER_ON
 
@@ -29,11 +28,9 @@
 #cmakedefine USE_OPENCASCADE
 #cmakedefine ZINC_USE_IMAGEMAGICK
 #cmakedefine ZINC_USE_ITK
-#cmakedefine USE_PERL_INTERPRETER
 #cmakedefine ZINC_USE_NETGEN
 #cmakedefine USE_GLEW
 #cmakedefine ZINC_USE_PNG
-#cmakedefine ZINC_USE_TIFF
 
 // Miscellaneous defines
 #cmakedefine HAVE_VFSCANF

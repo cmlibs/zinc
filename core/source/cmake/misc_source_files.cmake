@@ -45,16 +45,6 @@ SET( INTERACTION_HDRS
 	source/interaction/interaction_volume.h
 	source/interaction/interactive_event.h )
 
-
-SET( IO_DEVICES_SRCS
-	source/io_devices/conversion.cpp
-	source/io_devices/io_device.cpp )
-SET( IO_DEVICES_HDRS
-	source/io_devices/conversion.h
-	source/io_devices/gst_scene.h
-	source/io_devices/gst_transform.h
-	source/io_devices/io_device.h )
-
 SET( FIELD_IO_SRCS
 	source/field_io/fieldml_common.cpp
 	source/field_io/read_fieldml.cpp
