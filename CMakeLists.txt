@@ -23,6 +23,7 @@ if (NOT ZINC_USE_IMAGEMAGICK)
 endif()
 option(ZINC_USE_NETGEN "Use Netgen" YES)
 # option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
+set(ZINC_USE_ITK YES)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
