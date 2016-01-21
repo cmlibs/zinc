@@ -11,7 +11,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 include(GTestChecks)
 
 set(API_TESTS)
-set(TESTIMAGE_GRAY_JPG_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/testimage_gray.jpg")
 
 # Any tests to include must append the test name
 # to the API_TESTS list.  Any source files for the
@@ -41,8 +40,8 @@ foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
 	target_link_libraries(${CURRENT_TEST} gtest_main zinc)
-	target_include_directories(${CURRENT_TEST} 
-	    PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+	target_include_directories(${CURRENT_TEST}
+		PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
 	add_test(${CURRENT_TEST} ${CURRENT_TEST})
 endforeach()

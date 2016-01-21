@@ -27,13 +27,13 @@
 
 // Extension specific defines
 #cmakedefine USE_OPENCASCADE
-#cmakedefine USE_IMAGEMAGICK
+#cmakedefine ZINC_USE_IMAGEMAGICK
 #cmakedefine ZINC_USE_ITK
 #cmakedefine USE_PERL_INTERPRETER
-#cmakedefine USE_NETGEN
+#cmakedefine ZINC_USE_NETGEN
 #cmakedefine USE_GLEW
-#cmakedefine USE_PNG
-#cmakedefine USE_TIFF
+#cmakedefine ZINC_USE_PNG
+#cmakedefine ZINC_USE_TIFF
 
 // Miscellaneous defines
 #cmakedefine HAVE_VFSCANF
