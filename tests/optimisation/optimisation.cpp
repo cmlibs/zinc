@@ -241,7 +241,7 @@ TEST(ZincOptimisation, tricubicFit)
 	};
 
 	double WValues[10];
-	const double tolerance = 1.0E-12;
+	const double tolerance = 1.0E-9;
 	EXPECT_EQ(OK, result = WObjective.evaluateReal(cache, 10, WValues));
 	for (int i = 0; i < 10; ++i)
 		EXPECT_NEAR(expectedWValues[i], WValues[i], tolerance);

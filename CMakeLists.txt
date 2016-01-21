@@ -15,15 +15,15 @@ option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
+
 # Optional libraries
 option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
-option(ZINC_USE_ZLIB "Use zLib" YES)
-option(ZINC_USE_BZIP2 "Use BZip2" YES)
-option(ZINC_USE_NETGEN "Use NetGen" YES)
-option(ZINC_USE_JPEG "Use JPEG" YES)
-option(ZINC_USE_PNG "Use PNG" YES)
-option(ZINC_USE_TIFF "Use TIFF" YES)
-option(ZINC_ZINC_USE_ITK "Use ITK" YES)
+if (NOT ZINC_USE_IMAGEMAGICK)
+    option(ZINC_USE_PNG "Use png" YES)
+endif()
+option(ZINC_USE_NETGEN "Use Netgen" YES)
+# option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
+set(ZINC_USE_ITK YES)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
@@ -60,19 +60,21 @@ foreach( p LIB BIN INC CMAKE )
 endforeach()
 
 # Must have dependencies
+find_package(ZLIB ${ZLIB_VERSION} REQUIRED)
+find_package(BZip2 ${BZIP2_VERSION} REQUIRED)
 find_package(LibXml2 ${LIBXML2_VERSION} REQUIRED)
 find_package(Fieldml-API ${FIELDML-API_VERSION} REQUIRED)
 find_package(FTGL ${FTGL_VERSION} REQUIRED)
 find_package(Freetype REQUIRED)
-include_directories(${FREETYPE_INCLUDE_DIRS})
+#include_directories(${FREETYPE_INCLUDE_DIRS})
 find_package(OPTPP ${OPTPP_VERSION} REQUIRED)
-set(DEPENDENT_LIBS xml2 fieldml-api ftgl optpp)
 find_package(GLEW ${GLEW_VERSION} REQUIRED)
 set(USE_GLEW TRUE)
 if(WIN32)
     set(GLEW_STATIC TRUE)
 endif()
-list(APPEND DEPENDENT_LIBS glew)
+set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-api ftgl optpp glew)
+
 set(USE_MSAA TRUE)
 
 # Define variables to false that need to be at least defined for passsing to option_with_default macro.
@@ -95,11 +97,11 @@ if(${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
     if(NOT ${COMPILER_NAME} MATCHES "msvc" )
         set(REPORT_GL_ERRORS )
     endif()
-ELSE()
+else()
     if(CREATING_FOR_MULTI_BUILD_TYPE )
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DOPTIMISED" )
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DOPTIMISED" )
-    ELSE()
+    else()
         set(OPTIMISED TRUE )
     endif()
 endif()
@@ -128,32 +130,10 @@ SET_PLATFORM_DEFINES( )
 SET_OPERATING_SYSTEM_DEFINES( ) # <-- mostly set automatically by cmake just adding WIN32_SYSTEM to be used instead of WIN32
 SET_GRAPHICS_DEFINES( )
 
-# zlib
-if(ZINC_USE_ZLIB )
-    find_package(ZLIB ${ZLIB_VERSION} REQUIRED)
-    list(APPEND DEPENDENT_LIBS zlib)
-endif()
-
-# bzip2
-if(ZINC_USE_BZIP2 )
-    find_package(BZip2 ${BZIP2_VERSION} REQUIRED)
-    list(APPEND DEPENDENT_LIBS bz2)
-endif()
-
 #netgen
 if(ZINC_USE_NETGEN)
     find_package(NETGEN ${NETGEN_VERSION} REQUIRED)
     list(APPEND DEPENDENT_LIBS nglib)
-endif()
-
-if(ZINC_USE_JPEG)
-    find_package(JPEG ${JPEG_VERSION} REQUIRED)
-    list(APPEND DEPENDENT_LIBS jpeg)
-endif()
-
-if(ZINC_USE_TIFF)
-    find_package(TIFF ${TIFF_VERSION} REQUIRED)
-    list(APPEND DEPENDENT_LIBS tiff)
 endif()
 
 if(ZINC_USE_PNG)

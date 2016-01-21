@@ -58,14 +58,14 @@ SET( FINITE_ELEMENT_ADDITIONAL_HDRS
 	source/finite_element/finite_element_to_iges.h
 	source/finite_element/snake.h )
 
-IF( USE_NETGEN )
+IF( ZINC_USE_NETGEN )
 	SET( FINITE_ELEMENT_CORE_SRCS
 		${FINITE_ELEMENT_CORE_SRCS}
 		source/finite_element/generate_mesh_netgen.cpp )
 	SET( FINITE_ELEMENT_CORE_HDRS
 		${FINITE_ELEMENT_CORE_HDRS}
 		source/finite_element/generate_mesh_netgen.h )
-ENDIF( USE_NETGEN )
+ENDIF( ZINC_USE_NETGEN )
 
 SET( FINITE_ELEMENT_SRCS
 	${FINITE_ELEMENT_CORE_SRCS}

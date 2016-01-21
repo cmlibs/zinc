@@ -30,7 +30,7 @@ Utilities for handling images.
 #include "general/message.h"
 #include "general/enumerator_private.hpp"
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 #  if defined _MSC_VER
    /* When using the gcc compiled headers from msvc we need to replace inline */
 #    define inline __inline
@@ -38,7 +38,7 @@ Utilities for handling images.
 #  endif /* defined _MSC_VER */
 /* image magick interfaces */
 #include "magick/api.h"
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 /* #define DEBUG_CODE 1 */
 
@@ -47,7 +47,7 @@ Module constants
 ----------------
 */
 
-#if ! defined (USE_IMAGEMAGICK)
+#if ! defined (ZINC_USE_IMAGEMAGICK)
 
 #define TIFF_HI_LO 0x4D4D
 #define TIFF_LO_HI 0x4949
@@ -82,20 +82,20 @@ Module constants
 /* planar configuration */
 #define TIFF_CHUNKY_PLANAR_CONFIGURATION 1
 #define TIFF_PLANAR_PLANAR_CONFIGURATION 2
-#endif /* ! defined (USE_IMAGEMAGICK) */
+#endif /* ! defined (ZINC_USE_IMAGEMAGICK) */
 
 /*
 Module types
 ------------
 */
 
-#if !defined (USE_IMAGEMAGICK)
+#if !defined (ZINC_USE_IMAGEMAGICK)
 enum Image_orientation
 {
 	LANDSCAPE_ORIENTATION,
 	PORTRAIT_ORIENTATION
 }; /* enum Image_orientation */
-#endif /* ! defined (USE_IMAGEMAGICK) */
+#endif /* ! defined (ZINC_USE_IMAGEMAGICK) */
 
 struct Cmgui_image_information_memory_block *
 	Cmgui_image_information_memory_block_create(void)
@@ -110,7 +110,7 @@ struct Cmgui_image_information_memory_block *
 	return block;
 }
 
-#if ! defined (USE_IMAGEMAGICK)
+#if ! defined (ZINC_USE_IMAGEMAGICK)
 struct Colour_map_entry
 /*******************************************************************************
 LAST MODIFIED : 20 May 1998
@@ -129,13 +129,13 @@ For creating a colour map and index image in write_tiff_image_file.
 DECLARE_LIST_TYPES(Colour_map_entry);
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Colour_map_entry);
-#endif /* ! defined (USE_IMAGEMAGICK) */
+#endif /* ! defined (ZINC_USE_IMAGEMAGICK) */
 
 /*
 Module functions
 ----------------
 */
-#if ! defined (USE_IMAGEMAGICK)
+#if ! defined (ZINC_USE_IMAGEMAGICK)
 DECLARE_DEFAULT_DESTROY_OBJECT_FUNCTION(Colour_map_entry)
 
 DECLARE_OBJECT_FUNCTIONS(Colour_map_entry)
@@ -698,7 +698,7 @@ For reading a field in an image file directory.
 
 	return (return_code);
 } /* read_tiff_field */
-#endif /* ! defined (USE_IMAGEMAGICK) */
+#endif /* ! defined (ZINC_USE_IMAGEMAGICK) */
 
 /*
 Global functions
@@ -719,7 +719,7 @@ functions, ie. at the start of the program.
 	ENTER(Open_image_environment);
 	if (program_name)
 	{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 #if ! defined (SGI)
 		/* Not calling this on IRIX for the time being as this routine messes with the LOCALE
 			and installs some signal handlers.  These signal handlers caused problems
@@ -729,7 +729,7 @@ functions, ie. at the start of the program.
 		/* InitializeMagick(program_name); */
 		MagickCoreGenesis(program_name, MagickFalse);
 #endif /* ! defined (SGI) */
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		return_code = 1;
 	}
 	else
@@ -755,12 +755,12 @@ Called to finialise the use of the image environment
 
 	ENTER(Close_image_environment);
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 #if ! defined (SGI)
 	/* DestroyMagick(); */
 	MagickCoreTerminus();
 #endif /* ! defined (SGI) */
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	return_code = 1;
 
 	LEAVE;
@@ -1063,7 +1063,7 @@ Returns 1 if a size is successfully determined, and zero without error if not.
 	return (return_code);
 } /* get_yuv_resolution_from_file_size */
 
-#if ! defined (USE_IMAGEMAGICK)
+#if ! defined (ZINC_USE_IMAGEMAGICK)
 int write_rgb_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
@@ -1937,7 +1937,7 @@ Uses pack bits compression to compress a stream of bytes to a file.
 	return (return_code);
 } /* pack_bits_compress_to_file */
 
-#if defined (USE_PNG)
+#if defined (ZINC_USE_PNG)
 #include <png.h>
 
 int write_png_image_file(char *file_name,
@@ -2037,7 +2037,7 @@ int write_png_image_file(char *file_name,
 
 	return return_code;
 }
-#endif /* defined (USE_PNG) */
+#endif /* defined (ZINC_USE_PNG) */
 
 int write_tiff_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
@@ -4693,11 +4693,11 @@ If just the width is specified, the height is computed from the file size.
 
 	return (return_code);
 } /* read_yuv_image_file */
-#endif /* ! defined (USE_IMAGEMAGICK) */
+#endif /* ! defined (ZINC_USE_IMAGEMAGICK) */
 
 #if defined (SAVE_CODE)
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 int read_image_file(char *filename,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,
 	long int *width, long unsigned **image)
@@ -4838,7 +4838,7 @@ be specified in the <width> and <height> arguments.
 
 	return (return_code);
 } /* read_image_file */
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,long int *width,
 	enum Raw_image_storage raw_image_storage, long unsigned **image)
@@ -4913,7 +4913,7 @@ be specified in the <width> and <height> arguments. For the RAW format, the
 
 	return (return_code);
 } /* read_image_file */
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 int undistort_image(unsigned long **image,
 	int number_of_components,int number_of_bytes_per_component,
@@ -5367,7 +5367,7 @@ int Cmgui_image_information_clear_memory_blocks(struct Cmgui_image_information *
 			for (i = 0; i < image_information->number_of_memory_blocks; i++)
 			{
 				block = image_information->memory_blocks[i];
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 				if (remove_memory_blob && block->memory_block_is_imagemagick_blob)
 				{
 					RelinquishMagickMemory(block->buffer);
@@ -6123,7 +6123,7 @@ int Cmgui_image_information_set_write_to_memory_block(
 	return (return_code);
 } /* Cmgui_image_information_set_write_to_memory_block */
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 int get_magick_image_parameters(Image *magick_image, int *width,
 	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test)
 /*******************************************************************************
@@ -6185,9 +6185,9 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 
 	return (return_code);
 } /* get_magick_image_parameters */
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 int get_magick_image_number_of_consistent_images(Image *magick_image)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
@@ -6234,7 +6234,7 @@ Only these parameters matter to Cmgui_image for consistency.
 
 	return (number_of_images);
 } /* get_magick_image_number_of_consistent_images */
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 struct Cmgui_image *CREATE(Cmgui_image)(void)
 /*******************************************************************************
@@ -6250,11 +6250,11 @@ Must be called by specific constructor and left with valid entries.
 	ENTER(CREATE(Cmgui_image));
 	if (ALLOCATE(cmgui_image, struct Cmgui_image, 1))
 	{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		cmgui_image->magick_image = (Image *)NULL;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		cmgui_image->image_arrays = (unsigned char **)NULL;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		cmgui_image->width = 0;
 		cmgui_image->height = 0;
 		cmgui_image->number_of_components = 0;
@@ -6281,22 +6281,22 @@ Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
 {
 	int return_code;
 	struct Cmgui_image *cmgui_image;
-#if defined (USE_IMAGEMAGICK)
-#else /* defined (USE_IMAGEMAGICK) */
+#if defined (ZINC_USE_IMAGEMAGICK)
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	int i;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(DESTROY(Cmgui_image));
 	if (cmgui_image_address && (cmgui_image = *cmgui_image_address))
 	{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		if (cmgui_image->magick_image)
 		{
 			/* destroy linked-list of images */
 			/* DestroyImages(cmgui_image->magick_image); */
 			DestroyImageList(cmgui_image->magick_image);
 		}
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		if (cmgui_image->image_arrays)
 		{
 			for (i = 0; i < cmgui_image->number_of_images; i++)
@@ -6308,7 +6308,7 @@ Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
 			}
 			DEALLOCATE(cmgui_image->image_arrays);
 		}
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		DEALLOCATE(*cmgui_image_address);
 		*cmgui_image_address = NULL;
 		return_code = 1;
@@ -6337,12 +6337,12 @@ Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
 {
 	int return_code;
 	struct Cmgui_image *second_cmgui_image;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	Image *temp_magick_image;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	unsigned char **temp_image_arrays;
 	int i;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_append);
 	if (cmgui_image && second_cmgui_image_address &&
@@ -6355,7 +6355,7 @@ Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
 			(cmgui_image->number_of_bytes_per_component ==
 				second_cmgui_image->number_of_bytes_per_component))
 		{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 			/* add this image to the end of the linked-list of images */
 			temp_magick_image = cmgui_image->magick_image;
 			while (temp_magick_image->next)
@@ -6370,7 +6370,7 @@ Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
 			/* increase the number of images */
 			cmgui_image->number_of_images += second_cmgui_image->number_of_images;
 			return_code = 1;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 			if (REALLOCATE(temp_image_arrays, cmgui_image->image_arrays,
 				unsigned char *, cmgui_image->number_of_images +
 				second_cmgui_image->number_of_images))
@@ -6392,7 +6392,7 @@ Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
 					"Cmgui_image_append.  Could not enlarge image arrays");
 				return_code = 0;
 			}
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		}
 		else
 		{
@@ -6434,12 +6434,12 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 {
 	int return_code = 0;
 	struct Cmgui_image *cmgui_image;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	Image *magick_image;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	unsigned char *destination, *image, *source;
 	int width_bytes;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_constitute);
 	cmgui_image = (struct Cmgui_image *)NULL;
@@ -6453,7 +6453,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 		cmgui_image = CREATE(Cmgui_image)();
 		if (NULL != cmgui_image)
 		{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 #  if MagickLibVersion >= 0x636
 			ExceptionInfo magick_exception;
 			char *magick_map = NULL;
@@ -6696,7 +6696,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 				return_code = 0;
 			}
 #  endif /* MagickLibVersion >= 0x636 */
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 			int i;
 
 			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *, 1))
@@ -6737,7 +6737,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					"Cmgui_image_constitute.  Could not allocate image arrays");
 				return_code = 0;
 			}
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 			if (!return_code)
 			{
 				DESTROY(Cmgui_image)(&cmgui_image);
@@ -6801,16 +6801,16 @@ equal to the number_of_components.
 	int bytes_per_pixel, fill_byte_number, i, number_of_components = 0,
 		padding_bytes, return_code, width_bytes, y, y_limit;
 	unsigned char *destination;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	const char *magick_image_storage;
 	ExceptionInfo magick_exception;
 	Image *magick_image;
 	int image_height_minus_1;
 	StorageType magick_storage_type = CharPixel;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	unsigned char *source;
 	int source_width_bytes;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_dispatch);
 	number_of_components = 0;
@@ -6851,7 +6851,7 @@ equal to the number_of_components.
 		{
 			padding_bytes = 0;
 		}
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		GetExceptionInfo(&magick_exception);
 		/* get the magick_image for this <image_number> */
 		magick_image = cmgui_image->magick_image;
@@ -6917,17 +6917,17 @@ equal to the number_of_components.
 			} break;
 		}
 		image_height_minus_1 = cmgui_image->height - 1;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		source_width_bytes = cmgui_image->width*bytes_per_pixel;
 		source = cmgui_image->image_arrays[image_number] +
 			bottom*source_width_bytes + left*bytes_per_pixel;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		if (return_code)
 		{
 			y_limit = bottom + height;
 			for (y = bottom; y < y_limit; y++)
 			{
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 				/* y is 0 in the top scanline of ImageMagick images, hence reverse */
 				/* DispatchImage(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
@@ -6935,10 +6935,10 @@ equal to the number_of_components.
 				ExportImagePixels(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
 					(void *)destination, &magick_exception);
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 				memcpy(destination, source, width_bytes);
 				source += source_width_bytes;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 				destination += width_bytes;
 				if (0 < padding_bytes)
 				{
@@ -6974,9 +6974,9 @@ equal to the number_of_components.
 				}
 			}
 		}
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		DestroyExceptionInfo(&magick_exception);
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{
@@ -7137,7 +7137,7 @@ the <format>
 	{
 	  switch (format)
 	  {
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		case CMGUI_IMAGE_RGB:
 		{
 			  TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
@@ -7146,7 +7146,7 @@ the <format>
 					  &cmgui_image->number_of_components,
 					  &cmgui_image->number_of_bytes_per_component, 0);
 		} break;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		default:
 		{
 		  display_message(ERROR_MESSAGE, "Cmgui_image_convert_format.  Format conversion not implemented");
@@ -7183,7 +7183,7 @@ and other parameters for formats that require them.
 	const char *file_name;
 	int height, i, return_code, width;
 	struct Cmgui_image *cmgui_image;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	const char *file_name_prefix;
 	char *old_magick_size, magick_size[41];
 	int image_data_length, length, number_of_files;
@@ -7195,16 +7195,16 @@ and other parameters for formats that require them.
 	struct IO_stream *image_file;
 	const void *image_data;
 	struct Cmgui_image_information_memory_block *memory_block = NULL;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
 	int number_of_bytes_per_component, number_of_components;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_read);
 	cmgui_image = (struct Cmgui_image *)NULL;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	magick_image = (Image *)NULL;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	if (cmgui_image_information && cmgui_image_information->valid &&
 		(cmgui_image_information->file_names ||
 		cmgui_image_information->memory_blocks))
@@ -7213,7 +7213,7 @@ and other parameters for formats that require them.
 		if (NULL != cmgui_image)
 		{
 			return_code = 1;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 			GetExceptionInfo(&magick_exception);
 			magick_image_info = CloneImageInfo((ImageInfo *) NULL);
 			if (NULL != magick_image_info)
@@ -7462,7 +7462,7 @@ and other parameters for formats that require them.
 				return_code = 0;
 			}
 			DestroyExceptionInfo(&magick_exception);
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *,
 				cmgui_image_information->number_of_file_names))
 			{
@@ -7567,7 +7567,7 @@ and other parameters for formats that require them.
 					"Cmgui_image_read.  Could not allocate image arrays");
 				return_code = 0;
 			}
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 			if (!return_code)
 			{
 				DESTROY(Cmgui_image)(&cmgui_image);
@@ -7602,16 +7602,16 @@ that the images be adjoined in the single file.
 {
 	char *file_name;
 	int i, number_of_file_names = 0, return_code;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	size_t magick_memory_block_length = 0;
 	void *temp_memory_block = NULL;
 	char *magick_file_name;
 	ExceptionInfo magick_exception;
 	Image *local_magick_image, *magick_image, *temp_next, *temp_previous;
 	ImageInfo *magick_image_info;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_write);
 	if (cmgui_image && cmgui_image_information &&
@@ -7623,7 +7623,7 @@ that the images be adjoined in the single file.
 			(cmgui_image_information->write_to_memory_block)))
 	{
 		return_code = 1;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		GetExceptionInfo(&magick_exception);
 		local_magick_image = (Image *)NULL;
 		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
@@ -7809,7 +7809,7 @@ that the images be adjoined in the single file.
 				"Cmgui_image_write.  Could not create image information");
 			return_code = 0;
 		}
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		/* must have same number of filenames as images */
 		if (number_of_file_names == cmgui_image->number_of_images)
 		{
@@ -7832,7 +7832,7 @@ that the images be adjoined in the single file.
 								/*row_padding*/0,
 								(unsigned long *)cmgui_image->image_arrays[i]);
 						} break;
-#if defined (USE_PNG)
+#if defined (ZINC_USE_PNG)
 						case PNG_FILE_FORMAT:
 						{
 							return_code = write_png_image_file(file_name,
@@ -7843,7 +7843,7 @@ that the images be adjoined in the single file.
 								/*row_padding*/0,
 								(unsigned long *)cmgui_image->image_arrays[i]);
 						} break;
-#endif /* defined (USE_PNG) */
+#endif /* defined (ZINC_USE_PNG) */
 						case TIFF_FILE_FORMAT:
 						{
 							return_code = write_tiff_image_file(file_name,
@@ -7891,7 +7891,7 @@ that the images be adjoined in the single file.
 				number_of_file_names, cmgui_image->number_of_images);
 			return_code = 0;
 		}
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{
@@ -7914,15 +7914,15 @@ If the <property> is set for <cmgui_image> then this returns an allocated
 string containing it's value.  Otherwise returns NULL.
 ==============================================================================*/
 {
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 	const char *value;
-#endif /* defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636 */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636 */
 	char *return_value;
 
 	ENTER(Cmgui_image_get_property);
 	if (cmgui_image)
 	{
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 		value = GetImageProperty(cmgui_image->magick_image, property);
 		if (NULL != value)
 		{
@@ -7932,10 +7932,10 @@ string containing it's value.  Otherwise returns NULL.
 		{
 			return_value = (char *)NULL;
 		}
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		USE_PARAMETER(property);
 		return_value = (char *)NULL;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{
@@ -7962,7 +7962,7 @@ Sets the <property> is for <cmgui_image>.
 	ENTER(Cmgui_image_set_property);
 	if (cmgui_image)
 	{
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 		if (MagickTrue == SetImageProperty(cmgui_image->magick_image,
 			property, value))
 		{
@@ -7972,11 +7972,11 @@ Sets the <property> is for <cmgui_image>.
 		{
 			return_code = 0;
 		}
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		USE_PARAMETER(property);
 		USE_PARAMETER(value);
 		return_code = 0;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{
@@ -8003,12 +8003,12 @@ to the first property.
 	ENTER(Cmgui_image_reset_property_iterator);
 	if (cmgui_image)
 	{
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 		ResetImagePropertyIterator(cmgui_image->magick_image);
 		return_code = 1;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		return_code = 0;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{
@@ -8031,15 +8031,15 @@ the start of the list with Cmgui_image_reset_property_iterator.
 When the end of the list is reached returns NULL.
 ==============================================================================*/
 {
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 	const char *value;
-#endif /* defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636 */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636 */
 	char *return_value;
 
 	ENTER(Cmgui_image_get_property);
 	if (cmgui_image)
 	{
-#if defined (USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+#if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
 
 		value = GetNextImageProperty(cmgui_image->magick_image);
 		if (NULL != value)
@@ -8050,9 +8050,9 @@ When the end of the list is reached returns NULL.
 		{
 			return_value = (char *)NULL;
 		}
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		return_value = (char *)NULL;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
 	{

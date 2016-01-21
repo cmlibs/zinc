@@ -156,13 +156,13 @@ struct Cmgui_image_information
  */
 struct Cmgui_image
 {
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 		/* Image magick images are stored in bottom-to-top format */
 		Image *magick_image;
-#else /* defined (USE_IMAGEMAGICK) */
+#else /* defined (ZINC_USE_IMAGEMAGICK) */
 		/* simple image_array storage is from top-to-bottom */
 		unsigned char **image_arrays;
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		int width, height;
 		int number_of_components;
 		int number_of_bytes_per_component;
@@ -650,7 +650,7 @@ the start of the list with Cmgui_image_reset_property_iterator.
 When the end of the list is reached returns NULL.
 ==============================================================================*/
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 /**
  * @brief get_magick_image_number_of_consistent_images
  * @param magick_image

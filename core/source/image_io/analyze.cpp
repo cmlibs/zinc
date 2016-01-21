@@ -18,7 +18,7 @@
 #include "general/debug.h"
 #include "general/message.h"
 
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 #  if defined _MSC_VER
    /* When using the gcc compiled headers from msvc we need to replace inline */
 #    define inline __inline
@@ -26,7 +26,7 @@
 #  endif /* defined _MSC_VER */
 /* image magick interfaces */
 #include "magick/api.h"
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 #define PRINT_ANALYZE_INFO 0
 
@@ -107,7 +107,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 		enum cmzn_streaminformation_data_compression_type data_compression_type)
 {
 	struct Cmgui_image *cmgui_image = 0;
-#if defined (USE_IMAGEMAGICK)
+#if defined (ZINC_USE_IMAGEMAGICK)
 	const char *file_name = 0, file_name_prefix[] = "aze:";
 	char tmp100[100];
 	char *old_magick_size, magick_size[41];
@@ -349,7 +349,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 #else
 	display_message(ERROR_MESSAGE, "Analyze image handler not implemented for this version.");
 	USE_PARAMETER(cmgui_image_information);
-#endif /* defined (USE_IMAGEMAGICK) */
+#endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 	return cmgui_image;
 }
