@@ -53,6 +53,7 @@ SET(INTERFACE_SRCS
 	../interface/glyph.i
 	../interface/graphics.i
 	../interface/light.i
+	../interface/logger.i
 	../interface/material.i
 	../interface/optimisation.i
 	../interface/node.i
