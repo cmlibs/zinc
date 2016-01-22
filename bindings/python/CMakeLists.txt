@@ -123,11 +123,6 @@ ADD_CUSTOM_COMMAND(TARGET ${SWIG_MODULE_TARGETS} POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/createpackagefiles.cmake"
 	COMMENT "Create Python package initialisation files")
 
-# Copy over the zinc library linked to
-ADD_CUSTOM_COMMAND(TARGET ${SWIG_MODULE_TARGETS} POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ZINC_LOCATION}" "${CMAKE_SWIG_OUTDIR}")
-
-
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
 
