@@ -10,6 +10,8 @@ cmake_minimum_required(VERSION 3.0)
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.0.2 LANGUAGES C CXX)
 
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
 option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
@@ -35,15 +37,18 @@ if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
     message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
 endif()
 
-include(cmake/MacroDefinitions.cmake)
-include(cmake/FunctionDefinitions.cmake)
+include(MacroDefinitions)
+include(FunctionDefinitions)
 
 find_package(Git QUIET)
+find_package(SWIG QUIET)
+
 set(ZINC_REVISION "no-rev")
 if (GIT_FOUND)
     git_get_revision(ZINC_REVISION_LONG)
     string(SUBSTRING ${ZINC_REVISION_LONG} 0 6 ZINC_REVISION)
 endif()
+
 set(ZINC_RELEASE FALSE)
 if(ZINC_RELEASE)
     set(ZINC_DEVELOPER_VERSION "")
@@ -240,6 +245,10 @@ add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endif()
+
+if(SWIG_FOUND)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/bindings)
 endif()
 
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
