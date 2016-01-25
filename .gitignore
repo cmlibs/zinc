@@ -29,3 +29,6 @@
 
 # Qt Creator
 CMakeLists.txt.user*
+
+# compiled python files
+*.pyc

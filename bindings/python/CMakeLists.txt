@@ -160,5 +160,20 @@ if (VIRTUALENV_LOCATION)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/install_virtualenv.in.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake @ONLY)
     install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake)
+    
+    # Add python interface tests
+    set(PYTHON_TESTS import_tests region_tests
+        graphics_tests field_tests logger_tests 
+        sceneviewer_tests imageprocessing_tests
+    )
+    foreach(TESTDIR ${PYTHON_TESTS})
+        string(REPLACE "_" "" TESTNAME ${TESTDIR})
+        add_test(NAME python_bindings_${TESTNAME}
+            COMMAND ${VIRTUALENV_LOCATION}/bin/python ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TESTDIR}/${TESTNAME}.py)
+    endforeach()
+    
+    # Also add a test to see if simple importing of the libraries works
+    add_test(NAME python_bindings_import
+        COMMAND ${VIRTUALENV_LOCATION}/bin/python -c "from opencmiss.zinc.context import Context")
 endif()
 
