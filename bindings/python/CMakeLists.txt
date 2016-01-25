@@ -155,3 +155,10 @@ add_custom_command(OUTPUT ${OPENCMISS_PYTHON_PACKAGE} ${PYPI_GENERATED_SRCS}#"${
 	COMMAND ${CMAKE_COMMAND} -E echo "Dummy command for cleaning generated files.")
 add_custom_target(dontuse DEPENDS ${OPENCMISS_PYTHON_PACKAGE})
 
+# Install step for virtual environment (if given)
+if (VIRTUALENV_LOCATION)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/install_virtualenv.in.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake @ONLY)
+    install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake)
+endif()
+
