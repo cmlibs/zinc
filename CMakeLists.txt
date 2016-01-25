@@ -83,7 +83,7 @@ set(USE_GLEW TRUE)
 if(WIN32)
     set(GLEW_STATIC TRUE)
 endif()
-set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-api ftgl optpp glew)
+set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew)
 
 set(USE_MSAA TRUE)
 
