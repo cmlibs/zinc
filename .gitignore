@@ -32,3 +32,8 @@ CMakeLists.txt.user*
 
 # compiled python files
 *.pyc
+
+# Eclipse
+.project
+.pydevproject
+
