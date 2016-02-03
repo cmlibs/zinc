@@ -155,8 +155,11 @@ add_custom_command(OUTPUT ${OPENCMISS_PYTHON_PACKAGE} ${PYPI_GENERATED_SRCS}#"${
 	COMMAND ${CMAKE_COMMAND} -E echo "Dummy command for cleaning generated files.")
 add_custom_target(dontuse DEPENDS ${OPENCMISS_PYTHON_PACKAGE})
 
+if (NOT PYTHON_BINDINGS_INSTALL_DIR)
+    set(PYTHON_BINDINGS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/python)
+endif()
 # Install step for virtual environment (if given)
-if (VIRTUALENV_LOCATION)
+if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/install_virtualenv.in.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake @ONLY)
     install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/install_virtualenv.cmake)
@@ -169,11 +172,18 @@ if (VIRTUALENV_LOCATION)
     foreach(TESTDIR ${PYTHON_TESTS})
         string(REPLACE "_" "" TESTNAME ${TESTDIR})
         add_test(NAME python_bindings_${TESTNAME}
-            COMMAND ${VIRTUALENV_LOCATION}/bin/python ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TESTDIR}/${TESTNAME}.py)
+            COMMAND ${PYTHON_BINDINGS_INSTALL_DIR}/bin/python ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TESTDIR}/${TESTNAME}.py)
     endforeach()
     
     # Also add a test to see if simple importing of the libraries works
     add_test(NAME python_bindings_import
-        COMMAND ${VIRTUALENV_LOCATION}/bin/python -c "from opencmiss.zinc.context import Context")
+        COMMAND ${PYTHON_BINDINGS_INSTALL_DIR}/bin/python -c "from opencmiss.zinc.context import Context")
+else()
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/opencmiss
+            DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR}
+            FILES_MATCHING PATTERN ${ZINC_SHARED_OBJECT_GLOB})        
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/opencmiss
+            DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR}
+            FILES_MATCHING PATTERN "*.py")            
 endif()
 

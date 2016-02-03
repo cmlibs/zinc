@@ -5,11 +5,11 @@ if (WIN32)
 endif()
 execute_process(
     COMMAND ${PIP_EXEC} install --upgrade "@CMAKE_CURRENT_BINARY_DIR@"
-    WORKING_DIRECTORY "@VIRTUALENV_LOCATION@"
+    WORKING_DIRECTORY "@PYTHON_BINDINGS_INSTALL_DIR@"
     RESULT_VARIABLE _RES
 )    
 #if (NOT _RES EQUAL 0)
-#    message(FATAL_ERROR "Installing python bindings into virtual environment at @VIRTUALENV_LOCATION@ failed\n 
+#    message(FATAL_ERROR "Installing python bindings into virtual environment at @PYTHON_BINDINGS_INSTALL_DIR@ failed\n 
 #        Error code: ${_RES}:
 #        Output: ${_OUT}
 #        Error: ${_ERR}")
