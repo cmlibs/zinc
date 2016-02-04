@@ -32,7 +32,7 @@ class LoggerTestCase(unittest.TestCase):
         self.root_region.readFile('resource/region_incorrect.exregion')
         self.assertEqual(lastloggerevent.getMessageType(), Logger.MESSAGE_TYPE_ERROR)
         self.assertTrue(lastloggerevent.getLogger().isValid())
-        numberOfMessages = self.logger.getNumebrOfMessages()
+        numberOfMessages = self.logger.getNumberOfMessages()
         self.assertEqual(numberOfMessages, 2)
 
 def suite():

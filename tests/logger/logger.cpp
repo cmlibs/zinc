@@ -31,23 +31,23 @@ TEST(cmzn_logger_messages, invalid_args)
 
 	for (int i = 0; i < return_code; i++)
 	{
-		char *new_message = cmzn_logger_get_message_text_at_index(logger, i);
+		char *new_message = cmzn_logger_get_message_text_at_index(logger, i+1);
 		EXPECT_NE((char *)0, new_message);
 		cmzn_deallocate(new_message);
 		EXPECT_EQ(CMZN_LOGGER_MESSAGE_TYPE_ERROR,
-			cmzn_logger_get_message_type_at_index(logger, i));
+			cmzn_logger_get_message_type_at_index(logger, i+1));
 	}
 
 	EXPECT_EQ(CMZN_OK, cmzn_logger_set_maximum_number_of_messages(logger, 2));
 	return_code = cmzn_logger_get_number_of_messages(logger);
 	EXPECT_EQ(2, return_code);
 
-	char *new_message = cmzn_logger_get_message_text_at_index(logger, 0);
+	char *new_message = cmzn_logger_get_message_text_at_index(logger, 1);
 	EXPECT_NE((char *)0, new_message);
 	cmzn_deallocate(new_message);
 
-	new_message = cmzn_logger_get_message_text_at_index(logger, 1);
-	EXPECT_NE((char *)1, new_message);
+	new_message = cmzn_logger_get_message_text_at_index(logger, 2);
+	EXPECT_NE((char *)0, new_message);
 	cmzn_deallocate(new_message);
 
 	cmzn_logger_destroy(&logger);
@@ -113,9 +113,9 @@ private:
 		EXPECT_EQ(Logger::CHANGE_FLAG_NEW_MESSAGE, loggerevent.getChangeFlags());
 		Logger logger = loggerevent.getLogger();
 		EXPECT_TRUE(logger.isValid());
-		EXPECT_EQ(logger.getMessageTypeAtIndex(0), loggerevent.getMessageType());
+		EXPECT_EQ(logger.getMessageTypeAtIndex(1), loggerevent.getMessageType());
 		char *eventMessage = loggerevent.getMessageText();
-		char *loggerMessage = logger.getMessageTextAtIndex(0);
+		char *loggerMessage = logger.getMessageTextAtIndex(1);
 		EXPECT_STREQ(eventMessage, loggerMessage);
 		EXPECT_EQ(CMZN_OK, logger.removeAllMessages());
 		cmzn_deallocate(eventMessage);

@@ -14,7 +14,7 @@
 #include "zinc/zincsharedobject.h"
 
 /**
- * Enumeration of available font typefaces.
+ * Enumeration of available logger message types.
  */
 enum cmzn_logger_message_type
 {
