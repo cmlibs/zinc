@@ -1,8 +1,8 @@
 /**
  * @file logger.h
  *
- * Public interface to the logger object. These describe vertices will be lit in
- * scene_viewer.
+ * Public interface to the logger object, it provides APIs to access messages
+ * emitted from the library.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * Return the numebr of messages currently in the logger.
+ * Return the number of messages currently in the logger.
  *
  * @param logger  Handle to the logger.
  * @return  number of message, or 0 on failure.
@@ -30,8 +30,8 @@ extern "C" {
 ZINC_API int cmzn_logger_get_number_of_messages(cmzn_logger_id logger);
 
 /**
- * Return text of the message at index, oldest message index being 0 and newest
- * message index being number_of_messages - 1;
+ * Return text of the message at index, oldest message index being 1 and newest
+ * message index being number_of_messages;
  *
  * @param logger  Handle to the logger.
  * @param index  index of the message to enquire.
@@ -41,8 +41,8 @@ ZINC_API char *cmzn_logger_get_message_text_at_index(
 	cmzn_logger_id logger, int index);
 
 /**
- * Return type of the message at index, oldest message index being 0 and newest
- * message index being number_of_messages - 1;
+ * Return type of the message at index, oldest message index being 1 and newest
+ * message index being number_of_messages;
  *
  * @see cmzn_logger_message_type
  *
@@ -175,11 +175,11 @@ ZINC_API int cmzn_loggerevent_destroy(cmzn_loggerevent_id *event_address);
  * Get logical OR of flags indicating how the logger has changed.
  * @see cmzn_logger_change_flag
  *
- * @param event  Handle to the tessellation module event to query.
- * @param tessellation  The tessellation to query about.
+ * @param event  Handle to the logger module event to query.
+ * @param logger  The logger to query about.
  * @return  The change flags summarising the change: logical OR of
- * enum cmzn_tessellation_change_flag values. Returns
- * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ * enum cmzn_logger_change_flag values. Returns
+ * CMZN_LOGGER_CHANGE_FLAG_NONE in case of invalid arguments.
  */
 ZINC_API cmzn_logger_change_flags cmzn_loggerevent_get_change_flags(
 	cmzn_loggerevent_id event);

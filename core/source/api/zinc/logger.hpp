@@ -88,7 +88,7 @@ public:
 		return id;
 	}
 
-	int getNumebrOfMessages()
+	int getNumberOfMessages()
 	{
 		return cmzn_logger_get_number_of_messages(id);
 	}

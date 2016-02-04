@@ -71,26 +71,26 @@ int MessageLog::getNumberOfMessages()
 
 enum cmzn_logger_message_type MessageLog::getMessageTypeAtIndex(int index)
 {
-	if (index < 0 || logs_deque.size() <= (unsigned int)index)
+	if (index < 1 || logs_deque.size() < (unsigned int)index)
 	{
 		return CMZN_LOGGER_MESSAGE_TYPE_INVALID;
 	}
 	else
 	{
-		return logs_deque[index].first;
+		return logs_deque[index-1].first;
 	}
 	return CMZN_LOGGER_MESSAGE_TYPE_INVALID;
 }
 
 char *MessageLog::getMessageTextAtIndex(int index)
 {
-	if (index < 0 || logs_deque.size() <= (unsigned int)index)
+	if (index < 1 || logs_deque.size() < (unsigned int)index)
 	{
 		return 0;
 	}
 	else
 	{
-		return duplicate_string(logs_deque[index].second.c_str());
+		return duplicate_string(logs_deque[index-1].second.c_str());
 	}
 	return 0;
 }
