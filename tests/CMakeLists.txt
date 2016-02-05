@@ -43,6 +43,11 @@ foreach( TEST ${API_TESTS} )
 	target_include_directories(${CURRENT_TEST}
 		PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
-	add_test(${CURRENT_TEST} ${CURRENT_TEST})
+	file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/bin" BPATH)
+	file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/lib" LPATH)
+	string(REPLACE "\\" "\\\\" LPATH "${LPATH}")
+	string(REPLACE "\\" "\\\\" BPATH "${BPATH}")
+	add_test(${CURRENT_TEST} ${CURRENT_TEST}
+	    ENVIRONMENT "PATH=${BPATH};${LPATH}")
 endforeach()
 
