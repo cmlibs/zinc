@@ -31,12 +31,11 @@ setup(
 	author='H. Sorby',
 	author_email='h.sorby@auckland.ac.nz',
 	packages=['opencmiss', 'opencmiss.zinc'],
-	package_data={'opencmiss.zinc': ['@ZINC_SHARED_OBJECT_GLOB@']},
+	package_data={'opencmiss.zinc': [@SETUP_PY_PACKAGE_FILES_STR@]},
 	platforms=['any'],
 	url='http://pypi.python.org/pypi/PyZinc/',
 	license='LICENSE.txt',
 	description=doclines[0],
 	classifiers = filter(None, classifiers.split("\n")),
-	long_description=open('README.txt').read(),
+	long_description=open('README.txt').read()
 )
-

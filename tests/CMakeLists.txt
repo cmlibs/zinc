@@ -36,6 +36,20 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
 foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
+
+# Set up the correct environment for the tests
+# See e.g. https://cmake.org/pipermail/cmake/2009-May/029464.html
+if (WIN32)
+   set(LD_VARNAME "PATH")
+   file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/bin" PATH1)
+   set(LD_PATH "${PATH1};$ENV{PATH}")
+   string(REPLACE ";" "\\;" LD_PATH "${LD_PATH}")
+else()
+   set(LD_VARNAME "LD_LIBRARY_PATH")
+   file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/lib" PATH1)
+   set(LD_PATH "${PATH1}:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
@@ -44,5 +58,9 @@ foreach( TEST ${API_TESTS} )
 		PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
 	add_test(${CURRENT_TEST} ${CURRENT_TEST})
+	set_tests_properties(${CURRENT_TEST} PROPERTIES
+        TIMEOUT 30 
+        ENVIRONMENT "${LD_VARNAME}=${LD_PATH}"
+    )
 endforeach()
 
