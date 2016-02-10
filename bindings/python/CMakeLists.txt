@@ -6,30 +6,21 @@
 
 # Create Python bindings for the Zinc library.
 
-set(PYTHON_VERSIONS "2.6;2.7;3.3" CACHE STRING "Identify your preferred version or versions of Python to locate. [2.6, 2.7, 3.0, 3.3]")
+set(PYTHON_VERSION "" CACHE STRING "Identify your preferred version of Python to locate. [2.6, 2.7, 3.0, 3.3, ...]")
 
 # SWIG has already been found at this point.
 include(${SWIG_USE_FILE})
 
-set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSIONS})
-# Force the finding of the python library always incase the desired PYTHON_VERSIONS has changed.
+set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION})
+# Force the finding of the python library always incase the desired PYTHON_VERSION has changed.
 unset(PYTHONLIBS_FOUND CACHE)
 unset(PYTHON_LIBRARY CACHE)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHONINTERP_FOUND CACHE)
 unset(PYTHON_EXECUTABLE CACHE)
-find_package(PythonLibs QUIET)
+unset(PYTHONLIBS_VERSION_STRING)
 find_package(PythonInterp QUIET)
-
-if(${CMAKE_VERSION} VERSION_LESS "2.8.8")
-	if(PYTHON_INCLUDE_DIRS AND EXISTS "${PYTHON_INCLUDE_DIR}/patchlevel.h")
-		file(STRINGS "${PYTHON_INCLUDE_DIR}/patchlevel.h" python_version_str
-			REGEX "^#define[ \t]+PY_VERSION[ \t]+\"[^\"]+\"")
-		string(REGEX REPLACE "^#define[ \t]+PY_VERSION[ \t]+\"([^\"]+)\".*" "\\1"
-			PYTHONLIBS_VERSION_STRING "${python_version_str}")
-		unset(python_version_str)
-	endif()
-endif()
+find_package(PythonLibs QUIET)
 
 string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 1 PYTHONLIBS_MAJOR_VERSION)
 if(${PYTHONLIBS_MAJOR_VERSION} STREQUAL "3")
