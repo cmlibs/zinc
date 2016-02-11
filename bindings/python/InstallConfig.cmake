@@ -5,9 +5,9 @@ endif()
 if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
     # The binary directories for the python environments are different on windows (for what reason exactly?)
     # So we need different subpaths
-    set(VENV_BINDIR bin/)
+    set(VENV_BINDIR bin)
     if (WIN32)
-        set(VENV_BINDIR Scripts/)
+        set(VENV_BINDIR Scripts)
     endif()
     # Convention between manage and iron CMake scripts: On multiconfig-environments, the 
     # installation directories have the build type path element inside the PYTHON_BINDINGS_INSTALL_DIR
@@ -25,24 +25,6 @@ if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
         COMMENT "Installing: opencmiss.iron package for Python virtual environment ..."
     )
     install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Iron_BINARY_DIR}\")")
-       
-    # Add python interface tests
-    set(PYTHON_TESTS import_tests region_tests
-        graphics_tests field_tests logger_tests 
-        sceneviewer_tests imageprocessing_tests
-    )
-    foreach(TESTDIR ${PYTHON_TESTS})
-        string(REPLACE "_" "" TESTNAME ${TESTDIR})
-        add_test(NAME python_bindings_${TESTNAME}
-            COMMAND ${VENV_BINDIR}/python ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TESTDIR}/${TESTNAME}.py
-            WORKING_DIRECTORY "${PYTHON_BINDINGS_INSTALL_DIR}"
-        )
-    endforeach()
-    
-    # Also add a test to see if simple importing of the libraries works
-    add_test(NAME python_bindings_import
-        COMMAND ${VENV_BINDIR}/python -c "from opencmiss.zinc.context import Context"
-        WORKING_DIRECTORY "${PYTHON_BINDINGS_INSTALL_DIR}")
 else()
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/opencmiss
             DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR}

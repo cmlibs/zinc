@@ -185,3 +185,7 @@ add_custom_target(python-bindings-tarball
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/InstallConfig.cmake)
+
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
