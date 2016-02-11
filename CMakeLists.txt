@@ -253,6 +253,35 @@ add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
 if(BUILD_TESTS)
     enable_testing()
+    
+    # Set up the correct environment for the tests
+    # See e.g. https://cmake.org/pipermail/cmake/2009-May/029464.html
+    if (WIN32)
+       set(LD_VARNAME "PATH")
+    else()
+       set(LD_VARNAME "LD_LIBRARY_PATH")
+    endif()
+    
+    # Composes a native PATH-compatible variable to use for DLL/SO finding.
+    # Each extra argument is assumed a path to add. Added in the order specified.
+    function(GET_LD_PATH OUTPUT_VARIABLE)
+        if (WIN32)
+           set(LD_PATH "$ENV{PATH}")
+           foreach(_PATH ${ARGN})
+               file(TO_NATIVE_PATH "${_PATH}" _PATH)
+               set(LD_PATH "${_PATH};${LD_PATH}")
+           endforeach()
+           string(REPLACE ";" "\\;" LD_PATH "${LD_PATH}")
+        else()
+           set(LD_PATH "$ENV{LD_LIBRARY_PATH}")
+           foreach(_PATH ${ARGN})
+               file(TO_NATIVE_PATH "${_PATH}" _PATH)
+               set(LD_PATH "${_PATH}:${LD_PATH}")
+           endforeach()
+        endif()
+        set(${OUTPUT_VARIABLE} "${LD_PATH}" PARENT_SCOPE)
+    endfunction()
+    
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
 

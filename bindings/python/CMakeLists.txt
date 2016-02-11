@@ -85,7 +85,13 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
 	SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
 	SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
 	set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
+	# Disable use of Debug Python libraries (not always present on windows)
+	# See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
+	if (WIN32)
+	    target_compile_definitions(${MODULE_TARGET} PRIVATE $<$<CONFIG:Debug>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>)
+	endif()
 	set_target_properties(${MODULE_TARGET} PROPERTIES
+	    DEBUG_POSTFIX ""
 		LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
 		RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
     )
@@ -170,3 +176,7 @@ add_custom_target(python-bindings-tarball
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/InstallConfig.cmake)
+
+if (BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
