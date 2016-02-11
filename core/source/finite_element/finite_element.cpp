@@ -7491,7 +7491,7 @@ Outputs the information contained in <field>.
 						/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 						for (count=0;count<field->number_of_values;count++)
 						{
-							display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
+							display_message(INFORMATION_MESSAGE, " %" FE_VALUE_STRING,
 								*((FE_value*)(field->values_storage + count*sizeof(FE_value))));
 							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
 								(0==((count+1) % FE_VALUE_MAX_OUTPUT_COLUMNS)))
