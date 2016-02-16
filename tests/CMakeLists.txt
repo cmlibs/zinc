@@ -37,7 +37,11 @@ foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
 
-GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core")
+if (WIN32)
+    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core/$<CONFIG>")
+else()
+    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core")
+endif()
 
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
@@ -46,7 +50,7 @@ foreach( TEST ${API_TESTS} )
 	target_include_directories(${CURRENT_TEST}
 		PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
-	add_test(${CURRENT_TEST} ${CURRENT_TEST})
+	add_test(NAME ${CURRENT_TEST} COMMAND ${CURRENT_TEST})
 	set_tests_properties(${CURRENT_TEST} PROPERTIES
 		TIMEOUT 30
 		ENVIRONMENT "${LD_VARNAME}=${LD_PATH}"

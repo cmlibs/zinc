@@ -269,9 +269,8 @@ if(ZINC_BUILD_TESTS)
            set(LD_PATH "$ENV{PATH}")
            foreach(_PATH ${ARGN})
                file(TO_NATIVE_PATH "${_PATH}" _PATH)
-               set(LD_PATH "${_PATH};${LD_PATH}")
+               set(LD_PATH "${_PATH}\\;${LD_PATH}")
            endforeach()
-           string(REPLACE ";" "\\;" LD_PATH "${LD_PATH}")
         else()
            set(LD_PATH "$ENV{LD_LIBRARY_PATH}")
            foreach(_PATH ${ARGN})
@@ -302,6 +301,7 @@ export(PACKAGE ${ZINC_BASE_NAME})
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
 	DESTINATION ${PACKAGE_CONFIG_DIR}
+	COMPONENT Development
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
@@ -323,6 +323,7 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
+        COMPONENT Development
 )
 
 # Packaging for the Zinc library

@@ -1,8 +1,5 @@
-if (NOT PYTHON_BINDINGS_INSTALL_DIR)
-    set(PYTHON_BINDINGS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/python)
-endif()
 # Install step for virtual environment (if given)
-if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
+if (EXISTS "${INSTALL_TO_VIRTUALENV}")
     # The binary directories for the python environments are different on windows (for what reason exactly?)
     # So we need different subpaths
     set(VENV_BINDIR bin)
@@ -10,7 +7,7 @@ if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
         set(VENV_BINDIR Scripts)
     endif()
     # Convention between manage and iron CMake scripts: On multiconfig-environments, the 
-    # installation directories have the build type path element inside the PYTHON_BINDINGS_INSTALL_DIR
+    # installation directories have the build type path element inside the INSTALL_TO_VIRTUALENV
     if (HAVE_MULTICONFIG_ENV)
         set(VENV_BINDIR $<LOWER_CASE:$<CONFIG>>/${VENV_BINDIR})
     endif()
@@ -21,15 +18,28 @@ if (PYTHON_BINDINGS_INSTALL_DIR_IS_VIRTUALENV)
     add_custom_target(install_venv
         DEPENDS collect_python_binding_files
         COMMAND ${VENV_BINDIR}/pip install --upgrade "${NATIVE_CMAKE_CURRENT_BINARY_DIR}"
-        WORKING_DIRECTORY "${PYTHON_BINDINGS_INSTALL_DIR}"
+        WORKING_DIRECTORY "${INSTALL_TO_VIRTUALENV}"
         COMMENT "Installing: opencmiss.iron package for Python virtual environment ..."
     )
     install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Iron_BINARY_DIR}\")")
-else()
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/opencmiss
-            DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR}
-            FILES_MATCHING PATTERN ${ZINC_SHARED_OBJECT_GLOB})        
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/opencmiss
-            DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR}
-            FILES_MATCHING PATTERN "*.py")            
 endif()
+
+# Always install to install tree - packaging requires this even if virtualenv is used.
+#install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/opencmiss
+#        DESTINATION python/$<CONFIG>
+#        COMPONENT PythonBindings
+#        FILES_MATCHING PATTERN ${ZINC_SHARED_OBJECT_GLOB}
+#)
+install(TARGETS ${SWIG_MODULE_TARGETS}
+    DESTINATION python/$<CONFIG>/opencmiss/zinc
+    COMPONENT PythonBindings
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/setup.py
+        DESTINATION python/$<CONFIG>
+        COMPONENT PythonBindings
+)
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/opencmiss
+        DESTINATION python/$<CONFIG>
+        COMPONENT PythonBindings
+        FILES_MATCHING PATTERN "*.py"
+)

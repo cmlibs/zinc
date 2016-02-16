@@ -116,7 +116,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 		for (i = 0; i < dimension; i++)
 		{
 			char num_string[100];
-			sprintf(num_string, " %"FE_VALUE_STRING, xi[i]);
+			sprintf(num_string, " %" FE_VALUE_STRING, xi[i]);
 			(*output_file) << num_string;
 		}
 		return_code = 1;
@@ -228,13 +228,13 @@ Value_type ELEMENT_XI_VALUE has optional Mesh Dimension=#.
 				case OBLATE_SPHEROIDAL:
 				{
 					char num_string[100];
-					sprintf(num_string, "%"FE_VALUE_STRING, coordinate_system->parameters.focus);
+					sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system->parameters.focus);
 					(*output_file) << ", oblate spheroidal, focus=" << num_string;
 				} break;
 				case PROLATE_SPHEROIDAL:
 				{
 					char num_string[100];
-					sprintf(num_string, "%"FE_VALUE_STRING, coordinate_system->parameters.focus);
+					sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system->parameters.focus);
 					(*output_file) << ", prolate spheroidal, focus=" << num_string;
 				} break;
 				case RECTANGULAR_CARTESIAN:
@@ -338,7 +338,7 @@ indexed. Each component or version starts on a new line.
 						if (get_FE_field_FE_value_value(field,k,&value))
 						{
 							char num_string[100];
-							sprintf(num_string, "%"FE_VALUE_STRING, value);
+							sprintf(num_string, "%" FE_VALUE_STRING, value);
 							(*output_file) << " " << num_string;
 						}
 						else
@@ -1183,7 +1183,7 @@ Writes grid-based values stored with the element.
 										for (j=0;j<number_of_values;j++)
 										{
 											char num_string[100];
-											sprintf(num_string," %"FE_VALUE_STRING,values[j]);
+											sprintf(num_string," %" FE_VALUE_STRING,values[j]);
 											(* output_file) << num_string;
 											if (0==((j+1)%number_of_columns))
 											{
@@ -1445,7 +1445,7 @@ Notes:
 							number_of_scale_factors++;
 							get_FE_element_scale_factor(element, i, &scale_factor);
 							char num_string[100];
-							sprintf(num_string, "%"FE_VALUE_STRING, scale_factor);
+							sprintf(num_string, "%" FE_VALUE_STRING, scale_factor);
 							(*output_file) << " " << num_string;
 							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
 								(0==(number_of_scale_factors%FE_VALUE_MAX_OUTPUT_COLUMNS)))
@@ -1885,7 +1885,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 								for (k=0;k<=number_of_derivatives;k++)
 								{
 									char num_string[100];
-									sprintf(num_string, "%"FE_VALUE_STRING, *value);
+									sprintf(num_string, "%" FE_VALUE_STRING, *value);
 
 									(*output_file) << " " << num_string;
 									value++;

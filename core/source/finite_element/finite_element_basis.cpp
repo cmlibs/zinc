@@ -19,6 +19,8 @@
 #include "general/debug.h"
 #ifndef HAVE_HEAPSORT
 #	include "general/heapsort.h"
+#else
+# 	include <cstdlib>
 #endif
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
