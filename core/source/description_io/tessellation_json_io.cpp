@@ -12,8 +12,8 @@
 
 #include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
-#include "zinc/tessellation.hpp"
-#include "zinc/status.h"
+#include "opencmiss/zinc/tessellation.hpp"
+#include "opencmiss/zinc/status.h"
 
 void TessellationJsonIO::ioEntries(Json::Value &tessellationSettings)
 {

@@ -15,7 +15,7 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 
 #if defined (UNIX)

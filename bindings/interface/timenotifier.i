@@ -41,7 +41,7 @@
 %import "timekeeper.i"
 
 %{
-#include "zinc/timenotifier.hpp"
+#include "opencmiss/zinc/timenotifier.hpp"
 
 static void callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void *user_data)
 {
@@ -60,5 +60,5 @@ static void callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void 
 }
 %}
 
-%include "zinc/timenotifier.hpp"
+%include "opencmiss/zinc/timenotifier.hpp"
 

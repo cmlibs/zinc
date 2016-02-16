@@ -19,8 +19,8 @@
 %import "node.i"
 
 %{
-#include "zinc/fieldcache.hpp"
+#include "opencmiss/zinc/fieldcache.hpp"
 %}
 
-%include "zinc/fieldcache.hpp"
+%include "opencmiss/zinc/fieldcache.hpp"
 

@@ -11,8 +11,8 @@ FILE : graphics_module.h
 #if !defined (GRAPHICS_MODULE_H)
 #define GRAPHICS_MODULE_H
 
-#include "zinc/font.h"
-#include "zinc/scenefilter.h"
+#include "opencmiss/zinc/font.h"
+#include "opencmiss/zinc/scenefilter.h"
 #include "general/object.h"
 #include "context/context.h"
 #include "graphics/font.h"

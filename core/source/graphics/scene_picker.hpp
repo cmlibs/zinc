@@ -8,16 +8,16 @@
 #define SCENE_PICKER_HPP
 
 #include <map>
-#include "zinc/scenepicker.h"
-#include "zinc/types/graphicsid.h"
-#include "zinc/types/scenefilterid.h"
-#include "zinc/types/fieldgroupid.h"
-#include "zinc/types/elementid.h"
-#include "zinc/types/nodeid.h"
-#include "zinc/types/sceneid.h"
-#include "zinc/types/scenecoordinatesystem.h"
-#include "zinc/types/scenepickerid.h"
-#include "zinc/types/sceneviewerid.h"
+#include "opencmiss/zinc/scenepicker.h"
+#include "opencmiss/zinc/types/graphicsid.h"
+#include "opencmiss/zinc/types/scenefilterid.h"
+#include "opencmiss/zinc/types/fieldgroupid.h"
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/nodeid.h"
+#include "opencmiss/zinc/types/sceneid.h"
+#include "opencmiss/zinc/types/scenecoordinatesystem.h"
+#include "opencmiss/zinc/types/scenepickerid.h"
+#include "opencmiss/zinc/types/sceneviewerid.h"
 
 enum cmzn_scenepicker_object_type
 {

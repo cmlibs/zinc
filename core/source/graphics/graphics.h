@@ -10,10 +10,10 @@
 #if !defined (CMZN_GRAPHICS_H)
 #define CMZN_GRAPHICS_H
 
-#include "zinc/fieldgroup.h"
-#include "zinc/graphics.h"
-#include "zinc/types/scenefilterid.h"
-#include "zinc/types/fieldmoduleid.h"
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/graphics.h"
+#include "opencmiss/zinc/types/scenefilterid.h"
+#include "opencmiss/zinc/types/fieldmoduleid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"

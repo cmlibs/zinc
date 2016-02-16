@@ -22,12 +22,12 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/element.hpp"
-#include "zinc/graphics.hpp"
-#include "zinc/node.hpp"
-#include "zinc/scenepicker.hpp"
-#include "zinc/scene.hpp"
-#include "zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/element.hpp"
+#include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/scenepicker.hpp"
+#include "opencmiss/zinc/scene.hpp"
+#include "opencmiss/zinc/sceneviewer.hpp"
 
 TEST(cmzn_scenepicker_api, valid_args)
 {

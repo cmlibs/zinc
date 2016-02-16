@@ -15,6 +15,6 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #if !defined (COMPUTED_FIELD_DERIVATIVES_H)
 #define COMPUTED_FIELD_DERIVATIVES_H
 
-#include "zinc/fieldderivatives.h"
+#include "opencmiss/zinc/fieldderivatives.h"
 
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

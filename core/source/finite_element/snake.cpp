@@ -15,9 +15,9 @@ data points.
 #include <math.h>
 #include <stdio.h>
 
-#include "zinc/element.h"
-#include "zinc/fieldcache.h"
-#include "zinc/fieldmodule.h"
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"

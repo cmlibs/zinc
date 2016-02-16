@@ -27,11 +27,11 @@
 }
 
 %{
-#include "zinc/fieldmodule.hpp"
-#include "zinc/region.hpp"
-#include "zinc/scene.hpp"
-#include "zinc/streamregion.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/region.hpp"
+#include "opencmiss/zinc/scene.hpp"
+#include "opencmiss/zinc/streamregion.hpp"
 %}
 
-%include "zinc/region.hpp"
+%include "opencmiss/zinc/region.hpp"
 

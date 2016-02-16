@@ -10,9 +10,9 @@
 #ifndef MESSAGE_LOG_HPP__
 #define MESSAGE_LOG_HPP__
 
-#include "zinc/types/loggerid.h"
-#include "zinc/logger.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/types/loggerid.h"
+#include "opencmiss/zinc/logger.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"

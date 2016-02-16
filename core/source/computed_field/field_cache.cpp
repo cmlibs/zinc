@@ -10,7 +10,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cstdio>
-#include "zinc/field.h"
+#include "opencmiss/zinc/field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"

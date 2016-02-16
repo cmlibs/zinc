@@ -14,7 +14,7 @@
 #include <iterator>
 #include <list>
 #include <cstdlib>
-#include "zinc/status.h"
+#include "opencmiss/zinc/status.h"
 #include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
 #include "general/manager_private.h"

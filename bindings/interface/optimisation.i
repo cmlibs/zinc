@@ -17,8 +17,8 @@
 %import "field.i"
 
 %{
-#include "zinc/optimisation.hpp"
+#include "opencmiss/zinc/optimisation.hpp"
 %}
 
-%include "zinc/optimisation.hpp"
+%include "opencmiss/zinc/optimisation.hpp"
 

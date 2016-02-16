@@ -9,12 +9,12 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "zinc/element.h"
-#include "zinc/fieldgroup.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/fieldsubobjectgroup.h"
-#include "zinc/node.h"
-#include "zinc/scene.h"
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"

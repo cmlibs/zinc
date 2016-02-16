@@ -14,7 +14,7 @@ Definitions of machine specific stuff.
 #if !defined (MACHINE_H)
 #define MACHINE_H
 
-#include "zinc/zincsharedobject.h"
+#include "opencmiss/zinc/zincsharedobject.h"
 
 #include "general/object.h"
 

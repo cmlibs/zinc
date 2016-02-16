@@ -12,8 +12,8 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
-#include "zinc/fieldgroup.h"
-#include "zinc/region.h"
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/region.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"

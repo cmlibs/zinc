@@ -15,7 +15,7 @@
 %import "sceneviewer.i"
 
 %{
-#include "zinc/sceneviewerinput.hpp"
+#include "opencmiss/zinc/sceneviewerinput.hpp"
 %}
 
-%include "zinc/sceneviewerinput.hpp"
+%include "opencmiss/zinc/sceneviewerinput.hpp"

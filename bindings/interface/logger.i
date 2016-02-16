@@ -48,7 +48,7 @@
 }
 
 %{
-#include "zinc/logger.hpp"
+#include "opencmiss/zinc/logger.hpp"
 
 static void loggerCallbackToPython(cmzn_loggerevent_id loggerevent, 
 	void *user_data)
@@ -72,4 +72,4 @@ static void loggerCallbackToPython(cmzn_loggerevent_id loggerevent,
 }
 %}
 
-%include "zinc/logger.hpp"
+%include "opencmiss/zinc/logger.hpp"

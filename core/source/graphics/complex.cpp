@@ -12,7 +12,7 @@
 
 #include <math.h>
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 #define NRANSI
 #include "graphics/complex.h"
 #undef NRANSI

@@ -13,8 +13,8 @@
 %module(package="opencmiss.zinc") status
 
 %{
-#include "zinc/status.hpp"
+#include "opencmiss/zinc/status.hpp"
 %}
 
-%include "zinc/status.hpp"
+%include "opencmiss/zinc/status.hpp"
 

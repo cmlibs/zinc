@@ -13,7 +13,7 @@
 #if !defined (TIMEKEPER_JSON_IO_HPP)
 #define TIMEKEPER_JSON_IO_HPP
 
-#include "zinc/timekeeper.hpp"
+#include "opencmiss/zinc/timekeeper.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 

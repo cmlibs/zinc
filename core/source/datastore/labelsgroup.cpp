@@ -9,7 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "zinc/status.h"
+#include "opencmiss/zinc/status.h"
 #include "datastore/labelsgroup.hpp"
 
 DsLabelsGroup::DsLabelsGroup(DsLabels *labelsIn) :

@@ -16,11 +16,11 @@ appearance of spectrums.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
-#include "zinc/fieldcache.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/list.h"

@@ -15,11 +15,11 @@
 
 #include <cmath>
 #include <cstdlib>
-#include "zinc/fieldcache.h"
-#include "zinc/fieldconstant.h"
-#include "zinc/fieldlogicaloperators.h"
-#include "zinc/fieldsubobjectgroup.h"
-#include "zinc/fieldtime.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldconstant.h"
+#include "opencmiss/zinc/fieldlogicaloperators.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/fieldtime.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"

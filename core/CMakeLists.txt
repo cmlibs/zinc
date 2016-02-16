@@ -16,8 +16,8 @@ ELSE()
 	SET( ZINC_C_INLINE "static inline" )
 ENDIF()
 
-set( ZINC_CONFIGURE_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincconfigure.h )
-set( ZINC_SHARED_OBJECT_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincsharedobject.h )
+set( ZINC_CONFIGURE_HDR ${PROJECT_BINARY_DIR}/source/api/opencmiss/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${PROJECT_BINARY_DIR}/source/api/opencmiss/zinc/zincsharedobject.h )
 configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
 	${ZINC_CONFIGURE_HDR} )
 configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
@@ -138,10 +138,10 @@ install(FILES
 	${ZINC_SHARED_OBJECT_HDR}
 	${API_HDRS}
 	${APIPP_HDRS}
-	DESTINATION ${ZINC_INSTALL_INC_DIR}/zinc )
+	DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc)
 
 install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
-	DESTINATION ${ZINC_INSTALL_INC_DIR}/zinc/types)
+	DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc/types)
 
 #if( ZINC_SHARED_TARGET )
 #	set( ZINC_SHARED_TARGET ${ZINC_SHARED_TARGET} PARENT_SCOPE )

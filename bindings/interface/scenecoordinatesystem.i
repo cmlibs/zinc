@@ -13,8 +13,8 @@
 %module(package="opencmiss.zinc") scenecoordinatesystem
 
 %{
-#include "zinc/types/scenecoordinatesystem.hpp"
+#include "opencmiss/zinc/types/scenecoordinatesystem.hpp"
 %}
 
-%include "zinc/types/scenecoordinatesystem.hpp"
+%include "opencmiss/zinc/types/scenecoordinatesystem.hpp"
 

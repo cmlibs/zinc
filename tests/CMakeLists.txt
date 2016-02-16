@@ -6,7 +6,7 @@
 # Find dependent packages
 find_package(GTest ${GTEST_VERSION} REQUIRED)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+list(INSERT CMAKE_MODULE_PATH  0 "${CMAKE_CURRENT_SOURCE_DIR}")
 # Test for pthread requirement, and OS X 10.9
 include(GTestChecks)
 
@@ -48,8 +48,8 @@ foreach( TEST ${API_TESTS} )
 	)
 	add_test(${CURRENT_TEST} ${CURRENT_TEST})
 	set_tests_properties(${CURRENT_TEST} PROPERTIES
-        TIMEOUT 30 
-        ENVIRONMENT "${LD_VARNAME}=${LD_PATH}"
-    )
+		TIMEOUT 30
+		ENVIRONMENT "${LD_VARNAME}=${LD_PATH}"
+	)
 endforeach()
 

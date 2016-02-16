@@ -15,9 +15,9 @@ cannot reside in finite element modules.
 #include <stdlib.h>
 #include <math.h>
 
-#include "zinc/fieldcache.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

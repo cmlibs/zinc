@@ -25,11 +25,11 @@ November 97 Created from rendering part of Drawing.
 #include <cmath>
 #include <cstdio>
 #include <map>
-#include "zinc/field.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/scenefilter.h"
-#include "zinc/sceneviewerinput.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/scenefilter.h"
+#include "opencmiss/zinc/sceneviewerinput.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field_image.h"
 #include "description_io/sceneviewer_json_io.hpp"
 #include "general/compare.h"

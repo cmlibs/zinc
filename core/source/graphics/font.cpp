@@ -13,9 +13,9 @@ This provides a Cmgui interface to the font contexts of many types.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <string.h>
-#include "zinc/zincconfigure.h"
-#include "zinc/font.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/font.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
