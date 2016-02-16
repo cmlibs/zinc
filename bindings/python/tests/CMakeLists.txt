@@ -42,4 +42,16 @@ foreach(_TEST ${PYTHONTESTS})
         ENVIRONMENT "PYTHONPATH=${NATIVE_PYTHON_BINDINGS_DIR}${PYTHONPATH_SEP}${NATIVE_TEST_BASE_DIR};${LD_VARNAME}=${LD_PATH}" #:
     )
 endforeach()
+
+if(INSTALL_TO_VIRTUALENV)
+    find_program(VIRTUALENV_EXEC virtualenv)
+    # Add an extra test ensuring the installed opencmiss iron package works in the virtualenvironment
+    add_test(NAME Python_Bindings_Virtualenv
+        COMMAND ${CMAKE_COMMAND}
+        -DWD=${CMAKE_CURRENT_BINARY_DIR}
+        -DVENV_EXEC=${VIRTUALENV_EXEC}
+        -DPACKAGE_DIR=${NATIVE_PYTHON_BINDINGS_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/TestVirtualenv.cmake
+    )
+endif()
     

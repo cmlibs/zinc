@@ -301,6 +301,7 @@ export(PACKAGE ${ZINC_BASE_NAME})
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
 	DESTINATION ${PACKAGE_CONFIG_DIR}
+	COMPONENT Development
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
@@ -322,6 +323,7 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
+        COMPONENT Development
 )
 
 # Packaging for the Zinc library
