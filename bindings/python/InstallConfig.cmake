@@ -21,7 +21,8 @@ if (EXISTS "${INSTALL_TO_VIRTUALENV}")
         WORKING_DIRECTORY "${INSTALL_TO_VIRTUALENV}"
         COMMENT "Installing: opencmiss.iron package for Python virtual environment ..."
     )
-    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Iron_BINARY_DIR}\")")
+    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Iron_BINARY_DIR}\")"
+        COMPONENT VirtualEnv)
 endif()
 
 # Always install to install tree - packaging requires this even if virtualenv is used.
@@ -43,3 +44,7 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/open
         COMPONENT PythonBindings
         FILES_MATCHING PATTERN "*.py"
 )
+install(FILES "${BASE_PYTHON_PACKAGE_DIR}/README.txt"
+    DESTINATION python/$<CONFIG> 
+    COMPONENT PythonBindings)
+

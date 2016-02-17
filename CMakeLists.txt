@@ -306,6 +306,11 @@ install(EXPORT ${ZINC_EXPORT_SET_NAME}
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
 	COMPATIBILITY AnyNewerVersion)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
+        DESTINATION ${PACKAGE_CONFIG_DIR}
+        COMPONENT Development
+)
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
 	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
@@ -320,10 +325,9 @@ foreach(ZINCDEP ${ZINC_DEPS})
 endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
 install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
-        COMPONENT Development
+        COMPONENT DevelopmentSDK
 )
 
 # Packaging for the Zinc library
