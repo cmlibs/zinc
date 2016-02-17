@@ -26,7 +26,7 @@
 
 /****************** Render_graphics_compile_members **********************/
 
-int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_scenefilter_id scenefilter)
+int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_scenefilter *scenefilter)
 {
 	set_Scene(scene);
 	setScenefilter(scenefilter);

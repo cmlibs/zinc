@@ -120,6 +120,11 @@ int cmzn_scenepicker::pickObjects()
 	if (top_scene&&interaction_volume)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_glbeginend_renderer();
+		// Minimal incremental build to avoid locking up with big graphics
+		// This means can only pick what's visible now
+		// Keeping Scene_compile to ensure all objects correctly built for OpenGL
+		GraphicsIncrementalBuild incrementalBuild(0);
+		renderer->setIncrementalBuild(&incrementalBuild);
 		renderer->picking = 1;
 		if (renderer->Scene_compile(top_scene, filter))
 		{
