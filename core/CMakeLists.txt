@@ -105,7 +105,7 @@ if( ZINC_BUILD_STATIC_LIBRARY )
 	target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
 	target_include_directories(${ZINC_STATIC_TARGET} PUBLIC ${FREETYPE_INCLUDE_DIRS})
 	if(WIN32)
-		target_link_libraries( ${ZINC_STATIC_TARGET} winmm.lib )
+		target_link_libraries( ${ZINC_STATIC_TARGET} PUBLIC winmm.lib )
 	endif()
 	set_target_properties( ${ZINC_STATIC_TARGET} PROPERTIES
 		OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
