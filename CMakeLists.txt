@@ -10,8 +10,6 @@ cmake_minimum_required(VERSION 3.0)
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.0.2 LANGUAGES C CXX)
 
-list(INSERT ZINC_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX).")
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_BINDINGS "Build bindings for ${PROJECT_NAME}, requires SWIG." YES)
@@ -19,6 +17,8 @@ option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
 set(ZINC_MODULE_PATH CACHE STRING "List of directories to search for CMake modules.")
+
+list(INSERT ZINC_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_MODULE_PATH ${ZINC_MODULE_PATH})
 
