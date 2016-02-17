@@ -22,15 +22,20 @@ The functions for manipulating graphical textures.
 #endif // defined (WIN32_SYSTEM)
 #include <math.h>
 #if defined (WIN32_SYSTEM)
-// Visual Studio/cl doesn't implement this yet.
-double log2(ZnReal value)
+#if (defined(_MSC_VER) && (_MSC_VER < 1700))
+// Added in Visual Studio 2012
+double log2(double value)
 {
 	return log(value) / M_LN2;
 }
-long lround(ZnReal d)
+#endif
+#if (defined(_MSC_VER) && (_MSC_VER < 1800))
+// Added in Visual Studio 2013
+long lround(double d)
 {
 	return (long)(d>0 ? d+0.5 : ceil(d-0.5));
 }
+#endif
 #endif // defined (WIN32_SYSTEM)
 #include "general/debug.h"
 #include "general/image_utilities.h"
