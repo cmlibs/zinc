@@ -15,8 +15,8 @@ Implements a number of basic component wise operators on computed fields.
 #define COMPUTED_FIELD_ARITHMETIC_OPERATORS_H
 
 #include "general/value.h"
-#include "zinc/field.h"
-#include "zinc/fieldarithmeticoperators.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldarithmeticoperators.h"
 
 /* API functions are prefixed with cmzn */
 #define Computed_field_create_add cmzn_fieldmodule_create_field_add

@@ -12,8 +12,8 @@
 
 #include "description_io/timekeeper_json_io.hpp"
 #include "general/debug.h"
-#include "zinc/timekeeper.hpp"
-#include "zinc/status.h"
+#include "opencmiss/zinc/timekeeper.hpp"
+#include "opencmiss/zinc/status.h"
 
 void TimekeeperJsonIO::ioEntries(Json::Value &timekeeperSettings)
 {

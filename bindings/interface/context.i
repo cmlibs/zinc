@@ -34,19 +34,19 @@
 }
 
 %{
-#include "zinc/context.hpp"
-#include "zinc/font.hpp"
-#include "zinc/light.hpp"
-#include "zinc/logger.hpp"
-#include "zinc/glyph.hpp"
-#include "zinc/material.hpp"
-#include "zinc/region.hpp"
-#include "zinc/scenefilter.hpp"
-#include "zinc/sceneviewer.hpp"
-#include "zinc/spectrum.hpp"
-#include "zinc/tessellation.hpp"
-#include "zinc/timekeeper.hpp"
+#include "opencmiss/zinc/context.hpp"
+#include "opencmiss/zinc/font.hpp"
+#include "opencmiss/zinc/light.hpp"
+#include "opencmiss/zinc/logger.hpp"
+#include "opencmiss/zinc/glyph.hpp"
+#include "opencmiss/zinc/material.hpp"
+#include "opencmiss/zinc/region.hpp"
+#include "opencmiss/zinc/scenefilter.hpp"
+#include "opencmiss/zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/spectrum.hpp"
+#include "opencmiss/zinc/tessellation.hpp"
+#include "opencmiss/zinc/timekeeper.hpp"
 %}
 
-%include "zinc/context.hpp"
+%include "opencmiss/zinc/context.hpp"
 

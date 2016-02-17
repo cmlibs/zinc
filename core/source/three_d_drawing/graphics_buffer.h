@@ -14,7 +14,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_BUFFER_H)
 #define GRAPHICS_BUFFER_H
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 #if defined (OPENGL_API)
 #  if defined (GTK_USER_INTERFACE)

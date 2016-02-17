@@ -11,7 +11,7 @@
 #if !defined (FIELD_MODULE_H)
 #define FIELD_MODULE_H
 
-#include "zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 
 class FE_region_changes;

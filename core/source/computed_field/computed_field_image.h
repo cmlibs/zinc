@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_IMAGE_H)
 #define COMPUTED_FIELD_IMAGE_H
 
-#include "zinc/fieldimage.h"
+#include "opencmiss/zinc/fieldimage.h"
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 

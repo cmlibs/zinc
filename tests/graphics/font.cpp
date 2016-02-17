@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/font.hpp"
+#include "opencmiss/zinc/font.hpp"
 
 TEST(cmzn_fontmodule_api, valid_args)
 {

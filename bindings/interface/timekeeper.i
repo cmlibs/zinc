@@ -15,9 +15,9 @@
 %import "timenotifier.i"
 
 %{
-#include "zinc/timekeeper.hpp"
-#include "zinc/timenotifier.hpp"
+#include "opencmiss/zinc/timekeeper.hpp"
+#include "opencmiss/zinc/timenotifier.hpp"
 %}
 
-%include "zinc/timekeeper.hpp"
+%include "opencmiss/zinc/timekeeper.hpp"
 

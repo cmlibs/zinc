@@ -15,11 +15,11 @@ Functions for exporting finite element data to a file.
 #define EXPORT_FINITE_ELEMENT_H
 
 #include <stdio.h>
-#include "zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldgroup.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
 #include "region/cmiss_region.h"
-#include "zinc/types/regionid.h"
+#include "opencmiss/zinc/types/regionid.h"
 
 /*
 Global/Public types

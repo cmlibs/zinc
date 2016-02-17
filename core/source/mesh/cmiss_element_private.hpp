@@ -12,9 +12,9 @@
 #if !defined (CMZN_ELEMENT_PRIVATE_HPP)
 #define CMZN_ELEMENT_PRIVATE_HPP
 
-#include "zinc/element.h"
-#include "zinc/region.h"
-#include "zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "datastore/labelschangelog.hpp"
 
 struct FE_region;

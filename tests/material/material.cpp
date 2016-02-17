@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/material.hpp"
+#include "opencmiss/zinc/material.hpp"
 
 TEST(cmzn_materialmodule_api, valid_args)
 {

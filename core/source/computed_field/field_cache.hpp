@@ -12,11 +12,11 @@
 #if !defined (FIELD_CACHE_HPP)
 #define FIELD_CACHE_HPP
 
-#include "zinc/element.h"
-#include "zinc/fieldcache.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/region.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "region/cmiss_region.h"
 #include "computed_field/field_location.hpp"

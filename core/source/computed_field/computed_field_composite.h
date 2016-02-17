@@ -15,9 +15,9 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_COMPOSITE_H)
 #define COMPUTED_FIELD_COMPOSITE_H
 
-#include "zinc/field.h"
-#include "zinc/fieldconstant.h"
-#include "zinc/fieldcomposite.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldconstant.h"
+#include "opencmiss/zinc/fieldcomposite.h"
 
 #define Computed_field_create_constant cmzn_fieldmodule_create_field_constant
 #define Computed_field_create_identity cmzn_fieldmodule_create_field_identity

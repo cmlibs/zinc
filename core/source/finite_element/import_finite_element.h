@@ -16,7 +16,7 @@
 #include "finite_element/finite_element_region.h"
 #include "general/io_stream.h"
 #include "region/cmiss_region.h"
-#include "zinc/types/streamid.h"
+#include "opencmiss/zinc/types/streamid.h"
 
 /*
 Global types

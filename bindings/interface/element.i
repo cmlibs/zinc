@@ -33,9 +33,9 @@
 }
 
 %{
-#include "zinc/fieldimage.hpp"
-#include "zinc/element.hpp"
+#include "opencmiss/zinc/fieldimage.hpp"
+#include "opencmiss/zinc/element.hpp"
 %}
 
-%include "zinc/element.hpp"
+%include "opencmiss/zinc/element.hpp"
 

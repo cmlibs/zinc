@@ -24,9 +24,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
-#include "zinc/types/fontid.h"
-#include "zinc/status.h"
-#include "zinc/material.h"
+#include "opencmiss/zinc/types/fontid.h"
+#include "opencmiss/zinc/status.h"
+#include "opencmiss/zinc/material.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/enumerator_conversion.hpp"

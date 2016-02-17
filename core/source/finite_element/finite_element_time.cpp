@@ -13,7 +13,7 @@ Representing time in finite elements.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 
-#include "zinc/timesequence.h"
+#include "opencmiss/zinc/timesequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"

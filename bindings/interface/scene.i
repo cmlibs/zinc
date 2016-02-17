@@ -27,11 +27,11 @@
 }
 
 %{
-#include "zinc/scene.hpp"
-#include "zinc/scenepicker.hpp"
-#include "zinc/streamscene.hpp"
-#include "zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/scene.hpp"
+#include "opencmiss/zinc/scenepicker.hpp"
+#include "opencmiss/zinc/streamscene.hpp"
+#include "opencmiss/zinc/sceneviewer.hpp"
 %}
 
-%include "zinc/scene.hpp"
+%include "opencmiss/zinc/scene.hpp"
 

@@ -22,9 +22,9 @@ quadratic Lagrange, cubic Lagrange.
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "zinc/region.h"
-#include "zinc/stream.h"
-#include "zinc/streamregion.h"
+#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/stream.h"
+#include "opencmiss/zinc/streamregion.h"
 #include "curve/curve.h"
 #include "general/enumerator_private.hpp"
 #include "general/object.h"

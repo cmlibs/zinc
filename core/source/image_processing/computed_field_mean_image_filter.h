@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (computed_field_mean_image_filter_H)
 #define computed_field_mean_image_filter_H
 
-#include "zinc/field.h"
+#include "opencmiss/zinc/field.h"
 
 int cmzn_field_get_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **radius_sizes);

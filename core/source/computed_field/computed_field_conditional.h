@@ -15,8 +15,8 @@ Implements computed fields which conditionally calculate their inputs.
 #define COMPUTED_FIELD_CONDITIONAL_H
 
 #include "general/value.h"
-#include "zinc/field.h"
-#include "zinc/fieldconditional.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldconditional.h"
 
 #define Computed_field_create_if cmzn_fieldmodule_create_field_if
 

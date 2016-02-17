@@ -13,7 +13,7 @@
 #if !defined (SCENEVIEWER_JSON_IO_HPP)
 #define SCENEVIEWER_JSON_IO_HPP
 
-#include "zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/sceneviewer.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 

@@ -15,7 +15,7 @@ Colour structures and support code.
 #if !defined( COLOUR_H )
 #define COLOUR_H
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 #define COLOUR_VECTOR(colour_struct_ptr) \
 ((COLOUR_PRECISION *)colour_struct_ptr)

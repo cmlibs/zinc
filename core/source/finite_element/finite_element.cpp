@@ -17,7 +17,7 @@
 #include <cstdio>
 #include <vector>
 
-#include "zinc/status.h"
+#include "opencmiss/zinc/status.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list_btree_private.hpp"

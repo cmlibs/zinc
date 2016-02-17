@@ -10,8 +10,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <list>
-#include "zinc/scene.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/scene.h"
+#include "opencmiss/zinc/status.h"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"

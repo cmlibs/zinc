@@ -19,8 +19,8 @@ to file.
 #include <string.h>
 #include <time.h>
 
-#include "zinc/fieldcache.h"
-#include "zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"

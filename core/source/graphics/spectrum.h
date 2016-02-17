@@ -14,8 +14,8 @@ Spectrum structures and support code.
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
 
-#include "zinc/zincconfigure.h"
-#include "zinc/spectrum.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/spectrum.h"
 
 #if defined (USE_GLEW)
 #include <GL/glew.h>

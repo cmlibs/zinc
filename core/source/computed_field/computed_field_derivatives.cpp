@@ -13,7 +13,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "image_processing/computed_field_image_filter.h"

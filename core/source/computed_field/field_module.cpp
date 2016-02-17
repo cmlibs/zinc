@@ -9,9 +9,9 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <string>
-#include "zinc/field.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/timesequence.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/timesequence.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_alias.h"

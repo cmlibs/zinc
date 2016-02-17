@@ -14,8 +14,8 @@
 %module(package="opencmiss.zinc") fieldsmoothing
 
 %{
-#include "zinc/fieldsmoothing.hpp"
+#include "opencmiss/zinc/fieldsmoothing.hpp"
 %}
 
-%include "zinc/fieldsmoothing.hpp"
+%include "opencmiss/zinc/fieldsmoothing.hpp"
 

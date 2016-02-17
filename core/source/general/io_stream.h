@@ -16,7 +16,7 @@ streams.
 #define IO_STREAM_H
 
 #include "general/object.h"
-#include "zinc/types/streamid.h"
+#include "opencmiss/zinc/types/streamid.h"
 /*
 Global types
 ------------

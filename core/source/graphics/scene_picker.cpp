@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
-#include "zinc/scenefilter.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/scenefilter.h"
+#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"

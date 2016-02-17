@@ -25,9 +25,9 @@
 }
 
 %{
-#include "zinc/scenefilter.hpp"
-#include "zinc/fieldconditional.hpp"
+#include "opencmiss/zinc/scenefilter.hpp"
+#include "opencmiss/zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/scenefilter.hpp"
+%include "opencmiss/zinc/scenefilter.hpp"
 

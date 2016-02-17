@@ -15,10 +15,10 @@
 %include "pyzincstringhandling.i"
 
 %{
-#include "zinc/stream.hpp"
-#include "zinc/streamimage.hpp"
-#include "zinc/streamregion.hpp"
-#include "zinc/streamscene.hpp"
+#include "opencmiss/zinc/stream.hpp"
+#include "opencmiss/zinc/streamimage.hpp"
+#include "opencmiss/zinc/streamregion.hpp"
+#include "opencmiss/zinc/streamscene.hpp"
 %}
 
 %extend OpenCMISS::Zinc::Streaminformation {
@@ -30,4 +30,4 @@
 
 %ignore OpenCMISS::Zinc::Streaminformation::createStreamresourceMemoryBuffer(const void *buffer, unsigned int buffer_length);
 
-%include "zinc/stream.hpp"
+%include "opencmiss/zinc/stream.hpp"

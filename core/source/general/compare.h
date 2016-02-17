@@ -14,7 +14,7 @@ Functions used for managers and lists.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #if !defined (COMPARE_H)
 
-#include "zinc/zincsharedobject.h"
+#include "opencmiss/zinc/zincsharedobject.h"
 
 /*
 Global functions
