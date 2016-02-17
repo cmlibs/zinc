@@ -14,6 +14,7 @@ struct cmzn_scene;
 struct cmzn_scenefilter;
 #define Scene cmzn_scene // GRC temp
 struct cmzn_graphics;
+class GraphicsIncrementalBuild;
 struct cmzn_scene;
 struct GT_element_group;
 struct Texture;
@@ -209,7 +210,8 @@ class Render_graphics_compile_members : public Render_graphics
 public:
 	Render_graphics_compile_members() :
 		time(0.0),
-		name_prefix(NULL)
+		name_prefix(NULL),
+		incrementalBuild(0)
 	{
 		for (int i = 0; i < 16; i++)
 		{
@@ -223,6 +225,10 @@ public:
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
 	double world_view_matrix[16];
+	/** object set if scene/graphics to be built incrementally so client UI remains
+	 * somewhat responsive; invokes further redraw/build steps until complete.
+	 * If 0, full scene/graphics rebuild is performed. */
+	GraphicsIncrementalBuild *incrementalBuild;
 	
 	virtual int Scene_compile(cmzn_scene *scene, cmzn_scenefilter *scenefilter);
 
@@ -260,6 +266,16 @@ public:
 		{
 			world_view_matrix[i] = matrix[i];
 		}
+	}
+
+	GraphicsIncrementalBuild *getIncrementalBuild()
+	{
+		return this->incrementalBuild;
+	}
+
+	void setIncrementalBuild(GraphicsIncrementalBuild *incrementalBuildIn)
+	{
+		this->incrementalBuild = incrementalBuildIn;
 	}
 };
 

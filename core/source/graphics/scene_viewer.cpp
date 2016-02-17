@@ -50,6 +50,7 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/graphics_library.h"
 #include "graphics/light.hpp"
 #include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
@@ -1903,9 +1904,8 @@ viewing transformations.
 are all zero then the scene_viewer->widget size is used instead.
 If <override_antialias> or <override_transparency_layers> are non zero
 then they override the default values for just this call.
-There are convienience functions, Scene_viewer_render_scene,
-Scene_viewer_render_scene_with_picking, Scene_viewer_render_scene_in_viewport to
-access this function.
+There are convenience functions, cmzn_sceneviewer_render_scene,
+Scene_viewer_render_scene_in_viewport to access this function.
 ==============================================================================*/
 {
 	GLboolean double_buffer = 0;
@@ -2065,6 +2065,8 @@ access this function.
 			rendering_data.renderer->NDC_height = NDC_height;
 			rendering_data.renderer->NDC_left = NDC_left;
 			rendering_data.renderer->NDC_top = NDC_top;
+			GraphicsIncrementalBuild incrementalBuild;
+			rendering_data.renderer->setIncrementalBuild(&incrementalBuild);
 			rendering_data.renderer->Scene_compile(scene_viewer->scene, scene_viewer->filter);
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
@@ -2302,6 +2304,10 @@ access this function.
 #endif /* defined (REPORT_GL_ERRORS) */
 			DESTROY(LIST(Scene_viewer_render_object))(&rendering_data.render_callstack);
 			delete rendering_data.renderer;
+
+			if (incrementalBuild.isMoreWorkToDo())
+				// request another redraw to build some more graphics
+				cmzn_scene_changed(scene_viewer->scene);
 		}
 		scene_viewer->frame_count++;
 	}
@@ -2316,34 +2322,23 @@ access this function.
 	return (return_code);
 } /* Scene_viewer_render_scene_private */
 
-int Scene_viewer_render_scene(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Called to redraw the Scene_viewer scene after changes in the display lists or
-viewing transformations.
-==============================================================================*/
+int cmzn_sceneviewer_render_scene(struct Scene_viewer *sceneviewer)
 {
 	int return_code;
-
-	ENTER(Scene_viewer_render_scene);
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		return_code=Scene_viewer_render_scene_private(scene_viewer,
+		return_code = Scene_viewer_render_scene_private(sceneviewer,
 			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0, /*override_antialias*/0,
 			/*override_transparency_layers*/0);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_render_scene.  Missing scene_viewer");
+			"cmzn_sceneviewer_render_scene.  Missing scene_viewer");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Scene_viewer_render_scene */
+}
 
 int Scene_viewer_render_scene_in_viewport(struct Scene_viewer *scene_viewer,
 	int left, int bottom, int right, int top)
@@ -2391,7 +2386,7 @@ all the dimensions are zero).  If non_zero then the supplied <antialias> and
 {
 	int return_code = 1;
 
-	ENTER(Scene_viewer_render_scene_in_viewport);
+	ENTER(Scene_viewer_render_scene_in_viewport_with_overrides);
 	if (scene_viewer)
 	{
 		return_code=Scene_viewer_render_scene_private(scene_viewer,
@@ -2400,13 +2395,13 @@ all the dimensions are zero).  If non_zero then the supplied <antialias> and
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_render_scene_in_viewport.  Missing scene_viewer");
+			"Scene_viewer_render_scene_in_viewport_with_overrides.  Missing scene_viewer");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_render_scene_in_viewport */
+} /* Scene_viewer_render_scene_in_viewport_with_overrides */
 
 static int Scene_viewer_unproject(int pointer_x,int pointer_y,
 	double *near_x,double *near_y,double *near_z,
@@ -6191,6 +6186,9 @@ graphics window on screen.
 
 	if (scene_viewer && width && height)
 	{
+		// force complete build of all graphics in scene for image output: not incremental
+		build_Scene(scene_viewer->scene, scene_viewer->filter);
+
 		panel_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 		panel_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		antialias = preferred_antialias;

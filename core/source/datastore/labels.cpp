@@ -409,9 +409,9 @@ void DsLabelIterator::setIndex(DsLabelIndex newIndex)
 {
 	if (this->labels)
 	{
-		if (iter)
+		if (this->iter)
 		{
-			if (!iter->set_object(*labels, newIndex))
+			if (!this->iter->set_object(*labels, newIndex))
 				display_message(ERROR_MESSAGE, "DsLabelIterator::setIndex  Failed");
 		}
 		this->index = newIndex;

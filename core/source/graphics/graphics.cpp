@@ -115,6 +115,7 @@ static int cmzn_graphics_changed(struct cmzn_graphics *graphics,
 			return_code = 0;
 			break;
 		}
+		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
 		if (return_code)
 		{
 			cmzn_scene_changed(graphics->scene);
@@ -286,6 +287,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			/* rendering information defaults */
 			graphics->graphics_object = (struct GT_object *)NULL;
 			graphics->graphics_changed = 1;
+			graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
 			graphics->selected_graphics_changed = 0;
 			graphics->time_dependent = 0;
 
@@ -579,10 +581,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				{
 					if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 					{
-						if (graphics_to_object_data->existing_graphics)
-						{
-							/* So far ignore these */
-						}
 						return_code = FE_element_add_line_to_vertex_array(
 							element, graphics_to_object_data->field_cache,
 							GT_object_get_vertex_set(graphics->graphics_object),
@@ -690,9 +688,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				} break;
 				case CMZN_GRAPHICS_TYPE_POINTS:
 				{
-					if (graphics_to_object_data->existing_graphics)
-					{
-					}
 					for (i = 0; i < 3; i++)
 					{
 						element_point_ranges_identifier.exact_xi[i] =
@@ -2628,9 +2623,15 @@ static char *cmzn_graphics_get_graphics_object_name(cmzn_graphics *graphics, con
 
 static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
-	int return_code = 1;
 	cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
+	if (!iterator)
+		return 0;
+	int return_code = 1;
 	cmzn_element_id element = 0;
+	GraphicsIncrementalBuild *incrementalBuild = graphics_to_object_data->incrementalBuild;
+	cmzn_graphics *graphics = graphics_to_object_data->graphics;
+	if ((incrementalBuild) && (graphics->incrementalBuildIndex != DS_LABEL_INDEX_INVALID))
+		iterator->setIndex(graphics->incrementalBuildIndex);
 	while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 	{
 		if (!FE_element_to_graphics_object(element, graphics_to_object_data))
@@ -2638,8 +2639,17 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_ob
 			return_code = 0;
 			break;
 		}
+		if ((incrementalBuild) && incrementalBuild->incrementDone())
+		{
+			graphics->incrementalBuildIndex = get_FE_element_index(element);
+			if (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+				incrementalBuild->setMoreWorkToDo();
+			break;
+		}
 	}
 	cmzn_elementiterator_destroy(&iterator);
+	if ((incrementalBuild) && !incrementalBuild->isMoreWorkToDo())
+		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
 	return return_code;
 }
 
@@ -2647,11 +2657,18 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 	cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
 	int return_code = 1;
-	enum GT_object_type graphics_object_type;
-	char *graphics_string;
 	if (graphics && graphics_to_object_data)
 	{
-		if (graphics->graphics_changed)
+		GraphicsIncrementalBuild *incrementalBuild = graphics_to_object_data->incrementalBuild;
+		bool buildNow = (0 != graphics->graphics_changed);
+		if (buildNow)
+			if (incrementalBuild)
+				if (incrementalBuild->incrementDone())
+				{
+					buildNow = false; // build next time
+					incrementalBuild->setMoreWorkToDo();
+				}
+		if (buildNow)
 		{
 			cmzn_fieldcache_clear_location(graphics_to_object_data->field_cache);
 			cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
@@ -2709,6 +2726,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				}
 				if (return_code)
 				{
+					char *graphics_string;
 #if defined (DEBUG_CODE)
 					/*???debug*/
 					if ((graphics_string = cmzn_graphics_string(graphics,
@@ -2720,7 +2738,6 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 #endif /* defined (DEBUG_CODE) */
 					cmzn_graphics_get_top_level_number_in_xi(graphics,
 						MAXIMUM_ELEMENT_XI_DIMENSIONS, graphics_to_object_data->top_level_number_in_xi);
-					graphics_to_object_data->existing_graphics = 0;
 					/* work out the name the graphics object is to have */
 					char *graphics_object_name = cmzn_graphics_get_graphics_object_name(graphics, graphics_to_object_data->name_prefix);
 					if (graphics_object_name)
@@ -2731,7 +2748,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 						}
 						else
 						{
-							graphics_object_type = cmzn_graphics_get_graphics_object_type(graphics);
+							enum GT_object_type graphics_object_type = cmzn_graphics_get_graphics_object_type(graphics);
 							if (graphics_object_type == g_OBJECT_TYPE_INVALID)
 								return_code = 1;
 							if (return_code)
@@ -2786,8 +2803,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							case CMZN_FIELD_DOMAIN_TYPE_NODES:
 							case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 							{
-								// all nodes are in a single GT_glyphset_vertex_buffer, so rebuild all even if
-								// editing a single node or element
+								// currently graphics for all nodes/datapoints are always rebuilt entirely
 								GT_object_clear_primitives(graphics->graphics_object);
 								cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 									graphics_to_object_data->field_module, graphics->domain_type);
@@ -2866,10 +2882,19 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							} break;
 							default: // ELEMENTS
 							{
-								GT_glyphset_vertex_buffers *glyphset =
-									CREATE(GT_glyphset_vertex_buffers)();
-								if (GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
-									graphics->graphics_object, glyphset))
+								GT_glyphset_vertex_buffers *glyphset = GT_object_get_GT_glyphset_vertex_buffers(graphics->graphics_object);
+								if (glyphset)
+									GT_object_reset_buffer_binding(graphics->graphics_object);
+								else
+								{
+									glyphset = CREATE(GT_glyphset_vertex_buffers)();
+									if (!GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(graphics->graphics_object, glyphset))
+									{
+										DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
+										return_code = 0;
+									}
+								}
+								if (return_code)
 								{
 									Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
 									for (int i = 0; i < 3; i++)
@@ -2883,15 +2908,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 										glyph_base_size, glyph_scale_factors, glyph_offset, graphics->font,
 										glyph_label_offset, graphics->label_text, /*label_bounds_dimension*/0,
 										/*label_bounds_components*/0);
-									if (graphics_to_object_data->iteration_mesh)
-									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-									}
-								}
-								else
-								{
-									DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
-									return_code = 0;
+									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
 								}
 							} break;
 							}
@@ -2919,44 +2936,33 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							if ( domain_field_list )
 								DESTROY_LIST(Computed_field)(&domain_field_list);
 #endif /* defined(USE_OPENCASCADE) */
-							if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
+							if (GT_object_get_number_of_times(graphics->graphics_object) == 0)
 							{
-								GT_polyline_vertex_buffers *lines =
-									CREATE(GT_polyline_vertex_buffers)(
-										g_PLAIN, graphics->render_line_width);
-								if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-									graphics->graphics_object, lines))
+								if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 								{
-									if (graphics_to_object_data->iteration_mesh)
+									GT_polyline_vertex_buffers *lines =
+										CREATE(GT_polyline_vertex_buffers)(g_PLAIN, graphics->render_line_width);
+									if (!GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics->graphics_object, lines))
 									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+										DESTROY(GT_polyline_vertex_buffers)(&lines);
+										return_code = 0;
 									}
 								}
-								else
+								else if (graphics_to_object_data->iteration_mesh)
 								{
-									DESTROY(GT_polyline_vertex_buffers)(&lines);
-									return_code = 0;
-								}
-							}
-							else if (graphics_to_object_data->iteration_mesh)
-							{
-								GT_surface_vertex_buffers *surfaces =
-									CREATE(GT_surface_vertex_buffers)(
-										g_SHADED_TEXMAP, graphics->render_polygon_mode);
-								if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-									graphics->graphics_object, surfaces))
-								{
-									if (graphics_to_object_data->iteration_mesh)
+									GT_surface_vertex_buffers *surfaces =
+										CREATE(GT_surface_vertex_buffers)(g_SHADED_TEXMAP, graphics->render_polygon_mode);
+									if (!GT_OBJECT_ADD(GT_surface_vertex_buffers)(graphics->graphics_object, surfaces))
 									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+										DESTROY(GT_surface_vertex_buffers)(&surfaces);
+										return_code = 0;
 									}
 								}
-								else
-								{
-									DESTROY(GT_surface_vertex_buffers)(&surfaces);
-									return_code = 0;
-								}
 							}
+							else
+								GT_object_reset_buffer_binding(graphics->graphics_object);
+							if (return_code && (graphics_to_object_data->iteration_mesh))
+								return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
 						} break;
 						case CMZN_GRAPHICS_TYPE_SURFACES:
 						{
@@ -2990,22 +2996,20 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 #endif /* defined(USE_OPENCASCADE) */
 							if (!cad_surfaces)
 							{
-								GT_surface_vertex_buffers *surfaces =
-									CREATE(GT_surface_vertex_buffers)(
-										g_SHADED_TEXMAP, graphics->render_polygon_mode);
-								if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-									graphics->graphics_object, surfaces))
+								if (GT_object_get_number_of_times(graphics->graphics_object) == 0)
 								{
-									if (graphics_to_object_data->iteration_mesh)
+									GT_surface_vertex_buffers *surfaces =
+										CREATE(GT_surface_vertex_buffers)(g_SHADED_TEXMAP, graphics->render_polygon_mode);
+									if (!GT_OBJECT_ADD(GT_surface_vertex_buffers)(graphics->graphics_object, surfaces))
 									{
-										return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
+										DESTROY(GT_surface_vertex_buffers)(&surfaces);
+										return_code = 0;
 									}
 								}
 								else
-								{
-									DESTROY(GT_surface_vertex_buffers)(&surfaces);
-									return_code = 0;
-								}
+									GT_object_reset_buffer_binding(graphics->graphics_object);
+								if (return_code && (graphics_to_object_data->iteration_mesh))
+									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
 							}
 						} break;
 						case CMZN_GRAPHICS_TYPE_CONTOURS:
@@ -3014,69 +3018,71 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							// which is very expensive when partial editing. Seems to work without it.
 							if (0 < graphics->number_of_isovalues)
 							{
-								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								if (GT_object_get_number_of_times(graphics->graphics_object) == 0)
 								{
-									GT_surface_vertex_buffers *surfaces =
-										CREATE(GT_surface_vertex_buffers)(
-											g_SH_DISCONTINUOUS_TEXMAP, graphics->render_polygon_mode);
-									if (GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-										graphics->graphics_object, surfaces))
+									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+									{
+										GT_surface_vertex_buffers *surfaces =
+											CREATE(GT_surface_vertex_buffers)(g_SH_DISCONTINUOUS_TEXMAP, graphics->render_polygon_mode);
+										if (!GT_OBJECT_ADD(GT_surface_vertex_buffers)(graphics->graphics_object, surfaces))
+										{
+											DESTROY(GT_surface_vertex_buffers)(&surfaces);
+											return_code = 0;
+										}
+									}
+									else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+									{
+										GT_polyline_vertex_buffers *lines =
+											CREATE(GT_polyline_vertex_buffers)(g_PLAIN, graphics->render_line_width);
+										if (0 == (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics->graphics_object, lines)))
+										{
+											DESTROY(GT_polyline_vertex_buffers)(&lines);
+											return_code = 0;
+										}
+									}
+								}
+								else
+									GT_object_reset_buffer_binding(graphics->graphics_object);
+								if (return_code && (graphics_to_object_data->iteration_mesh))
+								{
+									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
 									{
 										graphics_to_object_data->iso_surface_specification =
-												Iso_surface_specification_create(
-													graphics->number_of_isovalues, graphics->isovalues,
-													graphics->first_isovalue, graphics->last_isovalue,
-													graphics_to_object_data->rc_coordinate_field,
-													graphics->data_field,
-													graphics->isoscalar_field,
-													graphics->texture_coordinate_field);
+											Iso_surface_specification_create(
+												graphics->number_of_isovalues, graphics->isovalues,
+												graphics->first_isovalue, graphics->last_isovalue,
+												graphics_to_object_data->rc_coordinate_field,
+												graphics->data_field,
+												graphics->isoscalar_field,
+												graphics->texture_coordinate_field);
 									}
-									else
-									{
-										DESTROY(GT_surface_vertex_buffers)(&surfaces);
-										return_code = 0;
-									}
-								}
-								else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-								{
-									GT_polyline_vertex_buffers *lines =
-										CREATE(GT_polyline_vertex_buffers)(
-											g_PLAIN, graphics->render_line_width);
-									if (0 == (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-										graphics->graphics_object, lines)))
-									{
-										DESTROY(GT_polyline_vertex_buffers)(&lines);
-										return_code = 0;
-									}
-								}
-								if (graphics_to_object_data->iteration_mesh)
-								{
 									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
-								}
-								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-								{
-									Iso_surface_specification_destroy(&graphics_to_object_data->iso_surface_specification);
+									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+									{
+										Iso_surface_specification_destroy(&graphics_to_object_data->iso_surface_specification);
+									}
 								}
 							}
 						} break;
 						case CMZN_GRAPHICS_TYPE_STREAMLINES:
 						{
-							if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+							if (GT_object_get_number_of_times(graphics->graphics_object) == 0)
 							{
-								GT_surface_vertex_buffers *surfaces =
-									CREATE(GT_surface_vertex_buffers)(
-										g_SHADED_TEXMAP, graphics->render_polygon_mode);
-								GT_OBJECT_ADD(GT_surface_vertex_buffers)(
-									graphics->graphics_object, surfaces);
+								if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								{
+									GT_surface_vertex_buffers *surfaces =
+										CREATE(GT_surface_vertex_buffers)(g_SHADED_TEXMAP, graphics->render_polygon_mode);
+									GT_OBJECT_ADD(GT_surface_vertex_buffers)(graphics->graphics_object, surfaces);
+								}
+								else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
+								{
+									GT_polyline_vertex_buffers *lines =
+										CREATE(GT_polyline_vertex_buffers)(g_PLAIN, graphics->render_line_width);
+									GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics->graphics_object, lines);
+								}
 							}
-							else if (g_POLYLINE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
-							{
-								GT_polyline_vertex_buffers *lines =
-									CREATE(GT_polyline_vertex_buffers)(
-										g_PLAIN, graphics->render_line_width);
-								GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
-									graphics->graphics_object, lines);
-							}
+							else
+								GT_object_reset_buffer_binding(graphics->graphics_object);
 							if (graphics->seed_element)
 							{
 								return_code = FE_element_to_graphics_object(
@@ -3121,8 +3127,9 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							{
 								set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
 							}
+							if (!((incrementalBuild) && incrementalBuild->isMoreWorkToDo()))
+								graphics->graphics_changed = 0;
 							/* mark display list as needing updating */
-							graphics->graphics_changed = 0;
 							GT_object_changed(graphics->graphics_object);
 						}
 						else
@@ -3143,10 +3150,6 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 							"cmzn_graphics_to_graphics_object.  "
 							"Could not create graphics object");
 						return_code = 0;
-					}
-					if (graphics_to_object_data->existing_graphics)
-					{
-						DEACCESS(GT_object)(&(graphics_to_object_data->existing_graphics));
 					}
 					if (graphics->data_field)
 					{

@@ -131,7 +131,6 @@ and the functions given their public names.
 #define Scene_viewer_get_depth_of_field cmzn_sceneviewer_get_depth_of_field
 #define Scene_viewer_set_depth_of_field cmzn_sceneviewer_set_depth_of_field
 #define Scene_viewer_view_all cmzn_sceneviewer_view_all
-#define Scene_viewer_render_scene cmzn_sceneviewer_render_scene
 #define Scene_viewer_get_freespin_tumble_angle cmzn_sceneviewer_get_freespin_tumble_angle
 #define Scene_viewer_set_freespin_tumble_angle cmzn_sceneviewer_set_freespin_tumble_angle
 #define Scene_viewer_get_freespin_tumble_axis cmzn_sceneviewer_get_freespin_tumble_axis
@@ -993,24 +992,6 @@ LAST MODIFIED : 18 December 1997
 DESCRIPTION :
 Allows clients of the <scene_viewer> to perform functions with the lights in it.
 The most common task will to list the lights in the scene with show_cmzn_light.
-==============================================================================*/
-
-int Scene_viewer_render_scene(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 23 July 1999
-
-DESCRIPTION :
-Called to redraw the Scene_viewer scene after changes in the display lists or
-viewing transformations.
-==============================================================================*/
-
-int Scene_viewer_render_scene_with_picking(struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 23 July 1999
-
-DESCRIPTION :
-Called to redraw the Scene_viewer scene after changes in the display lists or
-viewing transformations.  Writes picking names with the primitives.
 ==============================================================================*/
 
 int Scene_viewer_render_scene_in_viewport(struct Scene_viewer *scene_viewer,

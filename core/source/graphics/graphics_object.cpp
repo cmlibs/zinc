@@ -1987,7 +1987,8 @@ int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 {
 	int return_code = 0;
 
-	if (graphics_object && !graphics_object->primitive_lists)
+	if (graphics_object && (g_POLYLINE_VERTEX_BUFFERS == graphics_object->object_type) &&
+		!graphics_object->primitive_lists)
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
 			ALLOCATE(graphics_object->times, ZnReal, 1))
@@ -2011,7 +2012,8 @@ int GT_OBJECT_ADD(GT_surface_vertex_buffers)(
 {
 	int return_code = 0;
 
-	if (graphics_object && !graphics_object->primitive_lists)
+	if (graphics_object && (g_SURFACE_VERTEX_BUFFERS == graphics_object->object_type) &&
+		!graphics_object->primitive_lists)
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
 			ALLOCATE(graphics_object->times, ZnReal, 1))
@@ -2035,7 +2037,8 @@ int GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
 {
 	int return_code = 0;
 
-	if (graphics_object && !graphics_object->primitive_lists)
+	if (graphics_object && (g_GLYPH_SET_VERTEX_BUFFERS == graphics_object->object_type) &&
+		(!graphics_object->primitive_lists))
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
 			ALLOCATE(graphics_object->times, ZnReal, 1))
@@ -2059,7 +2062,8 @@ int GT_OBJECT_ADD(GT_pointset_vertex_buffers)(
 {
 	int return_code = 0;
 
-	if (graphics_object && !graphics_object->primitive_lists)
+	if (graphics_object && (g_POINT_SET_VERTEX_BUFFERS == graphics_object->object_type) &&
+		!graphics_object->primitive_lists)
 	{
 		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
 			ALLOCATE(graphics_object->times, ZnReal, 1))
@@ -2076,6 +2080,12 @@ int GT_OBJECT_ADD(GT_pointset_vertex_buffers)(
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+void GT_object_reset_buffer_binding(struct GT_object *graphics_object)
+{
+	if (graphics_object)
+		graphics_object->buffer_binding = 1;
 }
 
 #define DECLARE_GT_OBJECT_GET_FUNCTION(primitive_type, \
@@ -2123,6 +2133,19 @@ Returns pointer to the primitive at the given time in graphics_object. \
 \
 	return (primitive); \
 } /* GT_OBJECT_GET(primitive_type) */
+
+struct GT_glyphset_vertex_buffers *GT_object_get_GT_glyphset_vertex_buffers(
+	struct GT_object *graphics_object)
+{
+	if (graphics_object && (g_GLYPH_SET_VERTEX_BUFFERS == graphics_object->object_type))
+	{
+		if (graphics_object->primitive_lists)
+			return graphics_object->primitive_lists->gt_glyphset_vertex_buffers;
+	}
+	else
+		display_message(ERROR_MESSAGE, "GT_object_get_GT_glyphset_vertex_buffers.  Invalid arguments");
+	return 0;
+}
 
 int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_object,
 	GT_object_primitive_object_name_conditional_function *conditional_function,

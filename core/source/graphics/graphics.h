@@ -10,6 +10,7 @@
 #if !defined (CMZN_GRAPHICS_H)
 #define CMZN_GRAPHICS_H
 
+#include <ctime>
 #include "zinc/fieldgroup.h"
 #include "zinc/graphics.h"
 #include "zinc/types/scenefilterid.h"
@@ -136,6 +137,8 @@ finite element group scene.
 	struct GT_object *graphics_object;
 	/* flag indicating the graphics_object needs rebuilding */
 	int graphics_changed;
+	/* for incremental build: last completed element index to start after (or before first if INVALID) */
+	DsLabelIndex incrementalBuildIndex;
 	/* flag indicating that selected graphics have changed */
 	int selected_graphics_changed;
 	/* flag indicating that this settings needs to be regenerated when time
@@ -192,6 +195,66 @@ struct cmzn_graphics_range
 	enum cmzn_scenecoordinatesystem coordinate_system;
 };
 
+/**
+ * Tracks the time spent building graphics in this increment so it can be stopped
+ * when enough time elapses to just keep the client UI responsive. This is used
+ * primarily to avoid very large models or large tessellation divisions from
+ * causing zinc to seemingly lock up.
+ */
+class GraphicsIncrementalBuild
+{
+private:
+	clock_t startClock; // process clock ticks when this object created
+	clock_t clockLimit; // limit on work to do in incremental build, in clock units
+	bool moreWorkToDo; // set once increment done, but more work to do i.e. another increment needed
+
+public:
+
+	/**
+	 * @param timeLimitIn  Target duration of incremental update, in seconds.
+	 */
+	GraphicsIncrementalBuild(double timeLimitIn = 1.0) :
+		startClock(clock()),
+		clockLimit(static_cast<clock_t>(timeLimitIn*CLOCKS_PER_SEC)),
+		moreWorkToDo(false)
+	{
+		if (timeLimitIn <= 0.0)
+			clockLimit = 0;
+		else if (clockLimit == 0)
+			clockLimit = 1; // ensure at least 1 clock unit
+	}
+
+	~GraphicsIncrementalBuild()
+	{}
+
+	/**
+	 * Returns true if elapsed time exceeds time limit for this incremental build.
+	 * Note every few hours (~59 in Windows) the clock cycles to negative in which
+	 * case the increment goes on indefinitely. This is acceptable as don't want
+	 * this call to take any longer.
+	 */
+	bool incrementDone() const
+	{
+		return (clock() - this->startClock) > clockLimit;
+	}
+
+	/**
+	 * Query whether further incremental build(s) needed.
+	 */
+	bool isMoreWorkToDo() const
+	{
+		return this->moreWorkToDo;
+	}
+
+	/**
+	 * Record that not all graphics are completely built, so another incremental build is needed.
+	 */
+	void setMoreWorkToDo()
+	{
+		this->moreWorkToDo = true;
+	}
+};
+
 struct cmzn_graphics_to_graphics_object_data
 {
 	cmzn_fieldcache_id field_cache;
@@ -210,15 +273,10 @@ struct cmzn_graphics_to_graphics_object_data
 	// different from master mesh if iterating over group; can ignore subgroup_field if set:
 	cmzn_mesh_id iteration_mesh;
 	FE_value time;
+	GraphicsIncrementalBuild *incrementalBuild;
 	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */
 	int build_graphics;
-	/* graphics object in which existing graphics that do not need rebuilding
-		 are stored. They are transferred from the settings->graphics_object and
-		 matched by object_name. Note that the update of existing graphics
-		 relies on them being stored in the same order as the new additions.
-		 Set to NULL to turn off */
-	struct GT_object *existing_graphics;
 	/** The number of components in the data field */
 	int number_of_data_values;
 	/** A buffer allocated large enough for evaluating the data field */

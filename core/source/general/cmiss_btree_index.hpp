@@ -990,7 +990,7 @@ public:
 		bool set_object(owner_type &owner, object_type object)
 		{
 			if (container)
-				return iter.set_object(owner, container->index, object);
+				return this->iter.set_object(owner, container->index, object);
 			return false;
 		}
 

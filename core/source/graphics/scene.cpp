@@ -590,8 +590,7 @@ int cmzn_scene_modify_graphics(struct cmzn_scene *scene,
 }
 
 static int cmzn_scene_build_graphics_objects(
-	struct cmzn_scene *scene, cmzn_scenefilter *scenefilter,
-	FE_value time, const char *name_prefix)
+	struct cmzn_scene *scene, Render_graphics_compile_members *renderer)
 {
 	int return_code = 1;
 	struct cmzn_graphics_to_graphics_object_data graphics_to_object_data;
@@ -601,7 +600,7 @@ static int cmzn_scene_build_graphics_objects(
 	{
 		if ((cmzn_scene_get_number_of_graphics(scene) > 0))
 		{
-			graphics_to_object_data.name_prefix = name_prefix;
+			graphics_to_object_data.name_prefix = renderer->name_prefix;
 			graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
@@ -613,8 +612,9 @@ static int cmzn_scene_build_graphics_objects(
 			graphics_to_object_data.fe_region = cmzn_region_get_FE_region(scene->region);
 			graphics_to_object_data.master_mesh = 0;
 			graphics_to_object_data.iteration_mesh = 0;
-			graphics_to_object_data.scenefilter = scenefilter;
-			graphics_to_object_data.time = time;
+			graphics_to_object_data.scenefilter = renderer->getScenefilter();
+			graphics_to_object_data.time = renderer->time;
+			graphics_to_object_data.incrementalBuild = renderer->getIncrementalBuild();
 			graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(scene);
 			graphics_to_object_data.iso_surface_specification = NULL;
 			return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
@@ -1034,9 +1034,8 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 		}
 
 		/* check whether scene contents need building */
-		return_code = cmzn_scene_build_graphics_objects(scene,
-			renderer->getScenefilter(), renderer->time, renderer->name_prefix);
-	/* Call the renderer to compile each of the graphics */
+		return_code = cmzn_scene_build_graphics_objects(scene, renderer);
+		/* call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,
 			scene->list_of_graphics);
@@ -1078,7 +1077,7 @@ int cmzn_scene_compile_scene(cmzn_scene *scene,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_scene_compile.  Invalid argument(s)");
+			"cmzn_scene_compile_scene.  Invalid argument(s)");
 		return_code = 0;
 	}
 
@@ -2994,7 +2993,7 @@ cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position)
 	return scene_of_position;
 }
 
-int build_Scene(cmzn_scene_id scene, cmzn_scenefilter_id filter)
+int build_Scene(cmzn_scene *scene, cmzn_scenefilter *filter)
 {
 	if (scene)
 	{
@@ -3037,7 +3036,7 @@ int cmzn_scene_compile_tree(cmzn_scene *scene,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_scene_compile.  Invalid argument(s)");
+			"cmzn_scene_compile_tree.  Invalid argument(s)");
 		return_code = 0;
 	}
 
