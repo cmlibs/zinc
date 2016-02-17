@@ -31,10 +31,10 @@
 }
 
 %{
-#include "zinc/node.hpp"
-#include "zinc/field.hpp"
-#include "zinc/fieldconditional.hpp"
+#include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/node.hpp"
+%include "opencmiss/zinc/node.hpp"
 

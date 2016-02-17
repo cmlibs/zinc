@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/spectrum.hpp"
+#include "opencmiss/zinc/spectrum.hpp"
 
 #include "test_resources.h"
 

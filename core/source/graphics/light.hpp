@@ -20,7 +20,7 @@ The data structures used for representing graphical lights.
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
-#include "zinc/light.h"
+#include "opencmiss/zinc/light.h"
 
 /*
 Global functions

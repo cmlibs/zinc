@@ -48,7 +48,7 @@
 }
 
 %{
-#include "zinc/tessellation.hpp"
+#include "opencmiss/zinc/tessellation.hpp"
 
 static void tessellationmoduleCallbackToPython(cmzn_tessellationmoduleevent_id tessellationmoduleevent, 
 	void *user_data)
@@ -72,4 +72,4 @@ static void tessellationmoduleCallbackToPython(cmzn_tessellationmoduleevent_id t
 }
 %}
 
-%include "zinc/tessellation.hpp"
+%include "opencmiss/zinc/tessellation.hpp"

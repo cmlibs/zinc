@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_HISTOGRAM_IMAGE_FILTER_H
 
-#include "zinc/field.h"
+#include "opencmiss/zinc/field.h"
 
 int cmzn_field_get_type_histogram_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **numberOfBins, double *marginalScale,

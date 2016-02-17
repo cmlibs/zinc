@@ -27,8 +27,8 @@
 }
 
 %{
-#include "zinc/material.hpp"
-#include "zinc/fieldconditional.hpp"
+#include "opencmiss/zinc/material.hpp"
+#include "opencmiss/zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/material.hpp"
+%include "opencmiss/zinc/material.hpp"

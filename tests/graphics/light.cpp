@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/light.hpp"
+#include "opencmiss/zinc/light.hpp"
 
 TEST(cmzn_lightmodule_api, valid_args)
 {

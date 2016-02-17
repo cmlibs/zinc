@@ -22,13 +22,13 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/graphics.hpp"
-#include "zinc/field.hpp"
-#include "zinc/fieldmodule.hpp"
-#include "zinc/fieldfiniteelement.hpp"
-#include "zinc/fieldsubobjectgroup.hpp"
-#include "zinc/node.hpp"
-#include "zinc/region.hpp"
+#include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/fieldfiniteelement.hpp"
+#include "opencmiss/zinc/fieldsubobjectgroup.hpp"
+#include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/region.hpp"
 
 #include "test_resources.h"
 

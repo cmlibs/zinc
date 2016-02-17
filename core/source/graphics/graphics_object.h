@@ -12,16 +12,16 @@
 #define GRAPHICS_OBJECT_H
 
 
-#include "zinc/zincconfigure.h"
-#include "zinc/types/glyphid.h"
-#include "zinc/graphics.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/types/glyphid.h"
+#include "opencmiss/zinc/graphics.h"
 #include "general/geometry.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
-#include "zinc/fieldcad.h"
+#include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
 /*

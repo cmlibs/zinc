@@ -7,10 +7,10 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "zinc/glyph.h"
-#include "zinc/material.h"
-#include "zinc/scene.h"
-#include "zinc/timekeeper.h"
+#include "opencmiss/zinc/glyph.h"
+#include "opencmiss/zinc/material.h"
+#include "opencmiss/zinc/scene.h"
+#include "opencmiss/zinc/timekeeper.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"

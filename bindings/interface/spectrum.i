@@ -47,7 +47,7 @@
 }
 
 %{
-#include "zinc/spectrum.hpp"
+#include "opencmiss/zinc/spectrum.hpp"
 
 static void spectrummoduleCallbackToPython(cmzn_spectrummoduleevent_id spectrummoduleevent, void *user_data)
 {
@@ -69,4 +69,4 @@ static void spectrummoduleCallbackToPython(cmzn_spectrummoduleevent_id spectrumm
 }
 %}
 
-%include "zinc/spectrum.hpp"
+%include "opencmiss/zinc/spectrum.hpp"

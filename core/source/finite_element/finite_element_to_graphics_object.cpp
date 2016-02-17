@@ -12,9 +12,9 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <cmath>
 #include <cstdlib>
-#include "zinc/differentialoperator.h"
-#include "zinc/element.h"
-#include "zinc/fieldcache.h"
+#include "opencmiss/zinc/differentialoperator.h"
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/fieldcache.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

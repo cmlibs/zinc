@@ -24,7 +24,7 @@
 }
 
 %{
-#include "zinc/light.hpp"
+#include "opencmiss/zinc/light.hpp"
 %}
 
-%include "zinc/light.hpp"
+%include "opencmiss/zinc/light.hpp"

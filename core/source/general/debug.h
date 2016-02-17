@@ -17,8 +17,8 @@ Function definitions for debugging.
 
 #include <cstdarg>
 
-#include "zinc/zincconfigure.h"
-#include "zinc/zincsharedobject.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincsharedobject.h"
 
 /*
 Macros

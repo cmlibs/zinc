@@ -12,7 +12,7 @@
 #ifndef GLYPH_COLOUR_BAR_HPP
 #define GLYPH_COLOUR_BAR_HPP
 
-#include "zinc/material.h"
+#include "opencmiss/zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_spectrum;

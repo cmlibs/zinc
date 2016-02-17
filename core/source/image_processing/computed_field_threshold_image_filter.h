@@ -14,8 +14,8 @@ Wraps itk::ThresholdImageFilter
 #if !defined (COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H
 
-#include "zinc/field.h"
-#include "zinc/fieldimageprocessing.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldimageprocessing.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_imagefilter_threshold_condition);
 

@@ -10,17 +10,24 @@ cmake_minimum_required(VERSION 3.0)
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.0.2 LANGUAGES C CXX)
 
-list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX).")
-option(BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
+option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_BINDINGS "Build bindings for ${PROJECT_NAME}, requires SWIG." YES)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
+set(ZINC_MODULE_PATH CACHE STRING "List of directories to search for CMake modules.")
+
+list(INSERT ZINC_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+set(CMAKE_MODULE_PATH ${ZINC_MODULE_PATH})
 
 if(ZINC_BUILD_BINDINGS)
     option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
+endif()
+
+if (MSVC)
+    set(HAVE_MULTICONFIG_ENV YES)
 endif()
 
 # Optional libraries
@@ -35,9 +42,6 @@ set(ZINC_USE_ITK YES)
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
-if (BUILD_TESTS)
-    set(ZINC_BUILD_TESTS TRUE)
-endif()
 if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
     message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
 endif()
@@ -247,8 +251,36 @@ set(ZINC_EXPORT_SET_NAME zinc-config)
 
 add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
-if(BUILD_TESTS)
+if(ZINC_BUILD_TESTS)
     enable_testing()
+
+    # Set up the correct environment for the tests
+    # See e.g. https://cmake.org/pipermail/cmake/2009-May/029464.html
+    if (WIN32)
+       set(LD_VARNAME "PATH")
+    else()
+       set(LD_VARNAME "LD_LIBRARY_PATH")
+    endif()
+
+    # Composes a native PATH-compatible variable to use for DLL/SO finding.
+    # Each extra argument is assumed a path to add. Added in the order specified.
+    function(GET_LD_PATH OUTPUT_VARIABLE)
+        if (WIN32)
+           set(LD_PATH "$ENV{PATH}")
+           foreach(_PATH ${ARGN})
+               file(TO_NATIVE_PATH "${_PATH}" _PATH)
+               set(LD_PATH "${_PATH}\\;${LD_PATH}")
+           endforeach()
+        else()
+           set(LD_PATH "$ENV{LD_LIBRARY_PATH}")
+           foreach(_PATH ${ARGN})
+               file(TO_NATIVE_PATH "${_PATH}" _PATH)
+               set(LD_PATH "${_PATH}:${LD_PATH}")
+           endforeach()
+        endif()
+        set(${OUTPUT_VARIABLE} "${LD_PATH}" PARENT_SCOPE)
+    endfunction()
+
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
 
@@ -269,10 +301,16 @@ export(PACKAGE ${ZINC_BASE_NAME})
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
 	DESTINATION ${PACKAGE_CONFIG_DIR}
+	COMPONENT Development
 )
 include(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
 	COMPATIBILITY AnyNewerVersion)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
+        DESTINATION ${PACKAGE_CONFIG_DIR}
+        COMPONENT Development
+)
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
 	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
@@ -287,9 +325,9 @@ foreach(ZINCDEP ${ZINC_DEPS})
 endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
 install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
+        COMPONENT DevelopmentSDK
 )
 
 # Packaging for the Zinc library
@@ -313,7 +351,7 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 	message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
 	message(STATUS "         Install dir: '${CMAKE_INSTALL_PREFIX}'")
 	if (VIRTUALENV_LOCATION AND ZINC_BUILD_PYTHON_BINDINGS)
-	    message(STATUS "   Python VirtualEnv: '${VIRTUALENV_LOCATION}'")
+		message(STATUS "   Python VirtualEnv: '${VIRTUALENV_LOCATION}'")
 	endif()
 	foreach(ZINCDEP ${ZINC_DEPS})
 		if (${ZINCDEP}_FOUND)

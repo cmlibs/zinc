@@ -18,12 +18,12 @@
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-#include "zinc/fieldgroup.h"
-#include "zinc/fieldsubobjectgroup.h"
-#include "zinc/scene.h"
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/scene.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/scene.h"
-#include "zinc/fieldcad.h"
+#include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"

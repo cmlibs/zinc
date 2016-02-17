@@ -6,8 +6,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 if(ZINC_BUILD_PYTHON_BINDINGS)
-    find_package(PythonLibs)
     find_package(PythonInterp)
+    find_package(PythonLibs)
 
     if(PYTHONLIBS_FOUND AND PYTHONINTERP_FOUND)
         add_subdirectory(python)

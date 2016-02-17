@@ -6,7 +6,7 @@
 # Find dependent packages
 find_package(GTest ${GTEST_VERSION} REQUIRED)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+list(INSERT CMAKE_MODULE_PATH  0 "${CMAKE_CURRENT_SOURCE_DIR}")
 # Test for pthread requirement, and OS X 10.9
 include(GTestChecks)
 
@@ -36,6 +36,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
 foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
+
+if (WIN32)
+    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core/$<CONFIG>")
+else()
+    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core")
+endif()
+
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
@@ -43,6 +50,10 @@ foreach( TEST ${API_TESTS} )
 	target_include_directories(${CURRENT_TEST}
 		PRIVATE ${ZINC_API_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
-	add_test(${CURRENT_TEST} ${CURRENT_TEST})
+	add_test(NAME ${CURRENT_TEST} COMMAND ${CURRENT_TEST})
+	set_tests_properties(${CURRENT_TEST} PROPERTIES
+		TIMEOUT 30
+		ENVIRONMENT "${LD_VARNAME}=${LD_PATH}"
+	)
 endforeach()
 

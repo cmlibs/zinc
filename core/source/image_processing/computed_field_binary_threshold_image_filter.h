@@ -13,8 +13,8 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H
 
-#include "zinc/field.h"
-#include "zinc/fieldimageprocessing.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldimageprocessing.h"
 
 /*****************************************************************************//**
  * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER,

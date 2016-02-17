@@ -15,7 +15,7 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #define GENERAL_TIME_H
 
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */

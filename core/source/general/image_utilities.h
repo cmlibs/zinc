@@ -14,7 +14,7 @@ Utilities for handling images.
 #if !defined (IMAGE_UTILITIES_H)
 #define IMAGE_UTILITIES_H
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 #include "general/enumerator.h"
 #include "general/object.h"
 

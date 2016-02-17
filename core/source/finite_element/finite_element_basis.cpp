@@ -14,11 +14,13 @@
 
 #include <cstdio>
 #include <cmath>
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 #include "finite_element/finite_element_basis.h"
 #include "general/debug.h"
 #ifndef HAVE_HEAPSORT
 #	include "general/heapsort.h"
+#else
+# 	include <cstdlib>
 #endif
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"

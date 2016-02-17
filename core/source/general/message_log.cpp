@@ -8,7 +8,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/message_log.hpp"
-#include "zinc/types/loggerid.h"
+#include "opencmiss/zinc/types/loggerid.h"
 #include <algorithm>
 #include <sstream>
 

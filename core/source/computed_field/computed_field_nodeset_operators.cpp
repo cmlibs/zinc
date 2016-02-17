@@ -14,7 +14,7 @@
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "zinc/fieldnodesetoperators.h"
+#include "opencmiss/zinc/fieldnodesetoperators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"

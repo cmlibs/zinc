@@ -11,10 +11,10 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdarg.h>
-#include "zinc/fieldmodule.h"
-#include "zinc/node.h"
-#include "zinc/timesequence.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/timesequence.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"

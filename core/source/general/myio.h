@@ -16,7 +16,7 @@ Some additions/modifications to stdio.
 
 #include <stdio.h>
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 
 #if defined (UNIX) && defined (GENERIC_PC)
