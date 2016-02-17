@@ -15,8 +15,8 @@ The functions for manipulating graphical textures.
 #include <stdlib.h>
 #include <string.h>
 
-#include "zinc/zincconfigure.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/status.h"
 #if defined (WIN32_SYSTEM)
 #define _USE_MATH_DEFINES
 #endif // defined (WIN32_SYSTEM)

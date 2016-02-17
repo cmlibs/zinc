@@ -16,7 +16,7 @@ The data structures used for representing textures.
 
 #include <stdio.h>
 
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
 #include "general/enumerator.h"
 #include "general/object.h"

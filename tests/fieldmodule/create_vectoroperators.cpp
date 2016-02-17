@@ -19,9 +19,9 @@
 #include "zinctestsetupcpp.hpp"
 #include <zinc/differentialoperator.hpp>
 #include <zinc/fieldcache.hpp>
-#include "zinc/fieldconstant.hpp"
-#include "zinc/fieldfiniteelement.hpp"
-#include "zinc/fieldvectoroperators.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/fieldfiniteelement.hpp"
+#include "opencmiss/zinc/fieldvectoroperators.hpp"
 
 #include "test_resources.h"
 

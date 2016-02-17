@@ -11,7 +11,7 @@
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-#include "zinc/field.h"
-#include "zinc/fieldlogicaloperators.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldlogicaloperators.h"
 
 #endif /* !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H) */

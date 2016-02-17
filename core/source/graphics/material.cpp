@@ -30,10 +30,10 @@ return to direct rendering, as described with these routines.
 #include <string.h>
 #include <math.h>
 
-#include "zinc/status.h"
-#include "zinc/zincconfigure.h"
-#include "zinc/fieldmodule.h"
-#include "zinc/material.h"
+#include "opencmiss/zinc/status.h"
+#include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/material.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"

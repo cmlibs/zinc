@@ -19,7 +19,7 @@
 %import "stream.i"
 
 %{
-#include "zinc/streamregion.hpp"
+#include "opencmiss/zinc/streamregion.hpp"
 %}
 
-%include "zinc/streamregion.hpp"
+%include "opencmiss/zinc/streamregion.hpp"

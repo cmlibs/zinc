@@ -13,7 +13,7 @@
 #if !defined (COMPUTED_FIELD_ALIAS_H)
 #define COMPUTED_FIELD_ALIAS_H
 
-#include "zinc/fieldalias.h"
+#include "opencmiss/zinc/fieldalias.h"
 
 /*****************************************************************************//**
  * Sets up command data for alias field.

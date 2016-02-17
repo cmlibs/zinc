@@ -12,11 +12,11 @@
 
 #include "description_io/sceneviewer_json_io.hpp"
 #include "general/debug.h"
-#include "zinc/scene.hpp"
-#include "zinc/sceneviewer.hpp"
-#include "zinc/region.hpp"
+#include "opencmiss/zinc/scene.hpp"
+#include "opencmiss/zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/region.hpp"
 #include "region/cmiss_region.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/status.h"
 
 
 void SceneviewerJsonIO::ioEntries(Json::Value &sceneviewerSettings)

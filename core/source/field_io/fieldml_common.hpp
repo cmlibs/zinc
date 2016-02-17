@@ -13,7 +13,7 @@
 #define CMZN_FIELDML_COMMON_HPP
 
 #include <vector>
-#include "zinc/element.h"
+#include "opencmiss/zinc/element.h"
 #include "fieldml_api.h"
 #include "datastore/labels.hpp"
 #include "datastore/map.hpp"

@@ -15,8 +15,8 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "zinc/field.h"
-#include "zinc/fieldmodule.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"

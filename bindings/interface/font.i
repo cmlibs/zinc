@@ -24,9 +24,9 @@
 }
 
 %{
-#include "zinc/font.hpp"
-#include "zinc/fieldconditional.hpp"
+#include "opencmiss/zinc/font.hpp"
+#include "opencmiss/zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/font.hpp"
+%include "opencmiss/zinc/font.hpp"
 

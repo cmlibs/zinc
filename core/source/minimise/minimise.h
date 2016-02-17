@@ -11,7 +11,7 @@
 #if !defined (CMZN_MINIMISE_INTERNAL_H)
 #define CMZN_MINIMISE_INTERNAL_H
 
-#include "zinc/optimisation.h"
+#include "opencmiss/zinc/optimisation.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_optimisation_method);
 

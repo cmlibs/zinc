@@ -47,8 +47,8 @@
 }
 
 %{
-#include "zinc/glyph.hpp"
-#include "zinc/graphics.hpp"
+#include "opencmiss/zinc/glyph.hpp"
+#include "opencmiss/zinc/graphics.hpp"
 
 static void glyphmoduleCallbackToPython(cmzn_glyphmoduleevent_id glyphmoduleevent, 
 	void *user_data)
@@ -72,4 +72,4 @@ static void glyphmoduleCallbackToPython(cmzn_glyphmoduleevent_id glyphmoduleeven
 }
 %}
 
-%include "zinc/glyph.hpp"
+%include "opencmiss/zinc/glyph.hpp"

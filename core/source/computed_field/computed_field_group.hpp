@@ -13,8 +13,8 @@
 #if !defined (COMPUTED_FIELD_GROUP_HPP)
 #define COMPUTED_FIELD_GROUP_HPP
 
-#include "zinc/fieldmodule.h"
-#include "zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldgroup.h"
 #include "computed_field/computed_field_group_base.hpp"
 #include <map>
 

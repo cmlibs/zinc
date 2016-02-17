@@ -11,7 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
-#include "zinc/graphics.hpp"
+#include "opencmiss/zinc/graphics.hpp"
 #include "description_io/graphics_json_export.hpp"
 #include "description_io/scene_json_export.hpp"
 #include "graphics/scene.h"

@@ -14,8 +14,8 @@
 #define CMZN_SCENE_STREAM_HPP
 
 #include "graphics/scene.h"
-#include "zinc/scenefilter.h"
-#include "zinc/scenepicker.h"
+#include "opencmiss/zinc/scenefilter.h"
+#include "opencmiss/zinc/scenepicker.h"
 #include "stream/stream_private.hpp"
 
 struct cmzn_streaminformation_scene : cmzn_streaminformation

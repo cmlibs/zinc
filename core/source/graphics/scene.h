@@ -13,7 +13,7 @@ FILE : scene.h
 
 #include <list>
 #include <string>
-#include "zinc/scene.h"
+#include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
 #include "general/any_object_prototype.h"
@@ -23,7 +23,7 @@ FILE : scene.h
 #include "graphics/graphics_library.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
-#include "zinc/types/timenotifierid.h"
+#include "opencmiss/zinc/types/timenotifierid.h"
 #include "general/enumerator_private.hpp"
 
 typedef std::list<cmzn_selectionnotifier *> cmzn_selectionnotifier_list;

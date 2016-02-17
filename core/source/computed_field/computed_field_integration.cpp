@@ -15,7 +15,7 @@ and the nodes for 1D elements.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
 #include <stdio.h>
-#include "zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"

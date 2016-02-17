@@ -11,7 +11,7 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include "zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldgroup.h"
 #include "configure/version.h"
 #include "context/context.h"
 #include "curve/curve.h"
@@ -22,7 +22,7 @@
 #include "graphics/graphics_module.h"
 #include "graphics/scene.h"
 #include "region/cmiss_region.h"
-#include "zinc/timekeeper.h"
+#include "opencmiss/zinc/timekeeper.h"
 //-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for cmzn_region  */
 #include "region/cmiss_region_private.h"

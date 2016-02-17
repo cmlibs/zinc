@@ -12,8 +12,8 @@
 #if !defined (CMZN_FIELDSMOOTHINGPRIVATE_HPP)
 #define CMZN_FIELDSMOOTHINGPRIVATE_HPP
 
-#include "zinc/fieldsmoothing.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/fieldsmoothing.h"
+#include "opencmiss/zinc/status.h"
 
 struct cmzn_fieldsmoothing
 {

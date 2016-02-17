@@ -20,9 +20,9 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/graphics.hpp"
-#include "zinc/fieldconstant.hpp"
-#include "zinc/font.hpp"
+#include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/font.hpp"
 
 #include "test_resources.h"
 

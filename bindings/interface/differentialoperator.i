@@ -13,7 +13,7 @@
 %module(package="opencmiss.zinc") differentialoperator
 
 %{
-#include "zinc/differentialoperator.hpp"
+#include "opencmiss/zinc/differentialoperator.hpp"
 %}
 
-%include "zinc/differentialoperator.hpp"
+%include "opencmiss/zinc/differentialoperator.hpp"

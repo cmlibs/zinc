@@ -31,10 +31,10 @@
 }
 
 %{
-#include "zinc/fieldmodule.hpp"
-#include "zinc/graphics.hpp"
-#include "zinc/scene.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/scene.hpp"
 %}
 
-%include "zinc/graphics.hpp"
+%include "opencmiss/zinc/graphics.hpp"
 

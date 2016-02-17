@@ -14,8 +14,8 @@ Renders gtObjects to VRML file
 #if !defined (render_vrml_H)
 #define render_vrml_H
 
-#include "zinc/types/sceneid.h"
-#include "zinc/types/scenefilterid.h"
+#include "opencmiss/zinc/types/sceneid.h"
+#include "opencmiss/zinc/types/scenefilterid.h"
 
 /*
 Global functions

@@ -20,8 +20,8 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/fieldconstant.hpp"
-#include "zinc/graphics.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/graphics.hpp"
 
 TEST(cmzn_graphics_streamlines, create_cast)
 {

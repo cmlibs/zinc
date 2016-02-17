@@ -39,7 +39,7 @@
 %ignore OpenCMISS::Zinc::Selectionnotifier::clearCallback();
 
 %{
-#include "zinc/selection.hpp"
+#include "opencmiss/zinc/selection.hpp"
 
 static void selectionCallbackToPython(cmzn_selectionevent_id selectionevent, void *user_data)
 {
@@ -61,4 +61,4 @@ static void selectionCallbackToPython(cmzn_selectionevent_id selectionevent, voi
 }
 %}
 
-%include "zinc/selection.hpp"
+%include "opencmiss/zinc/selection.hpp"

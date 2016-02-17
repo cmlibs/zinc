@@ -14,7 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/tessellation.hpp"
+#include "opencmiss/zinc/tessellation.hpp"
 
 #include "test_resources.h"
 

@@ -9,7 +9,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 #include <math.h>
-#include "zinc/scenefilter.h"
+#include "opencmiss/zinc/scenefilter.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"

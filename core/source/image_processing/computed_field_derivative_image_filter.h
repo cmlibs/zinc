@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (computed_field_derivative_image_filter_H)
 #define computed_field_derivative_image_filter_H
 
-#include "zinc/field.h"
+#include "opencmiss/zinc/field.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK derivative image filter on scalar source field

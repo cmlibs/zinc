@@ -19,12 +19,12 @@ gtObject/gtWindow management routines.
 
 #include <stdio.h>
 #include <math.h>
-#include "zinc/zincconfigure.h"
+#include "opencmiss/zinc/zincconfigure.h"
 
-#include "zinc/field.h"
-#include "zinc/fieldsubobjectgroup.h"
-#include "zinc/material.h"
-#include "zinc/status.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/material.h"
+#include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -38,7 +38,7 @@ gtObject/gtWindow management routines.
 #include "graphics/volume_texture.h"
 #include "general/message.h"
 #if defined (USE_OPENCASCADE)
-#include "zinc/fieldcad.h"
+#include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "graphics/render_gl.h"
 #include "graphics/graphics_object.hpp"

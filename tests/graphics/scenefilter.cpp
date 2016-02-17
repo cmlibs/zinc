@@ -15,7 +15,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/scenefilter.hpp"
+#include "opencmiss/zinc/scenefilter.hpp"
 
 TEST(cmzn_scenefiltermodule_api, valid_args)
 {
