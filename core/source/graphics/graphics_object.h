@@ -530,6 +530,9 @@ int GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
 int GT_OBJECT_ADD(GT_pointset_vertex_buffers)(
 	struct GT_object *graphics_object, struct GT_pointset_vertex_buffers *primitive);
 
+/** When incrementally building graphics object with vertex arrays, call this to rebind a larger buffer each time */
+void GT_object_reset_buffer_binding(struct GT_object *graphics_object);
+
 #if ! defined (SHORT_NAMES)
 #define GT_OBJECT_GET_(primitive_type) GT_object_get_ ## primitive_type
 #else
@@ -547,6 +550,10 @@ DESCRIPTION : \
 Returns pointer to the primitive at the given time in graphics_object. \
 ???RC only used in spectrum_editor.c and should be replaced.
 ============================================================================*/
+
+/** Get the vertex buffer primitive iff graphics object is of corresponding type */
+struct GT_glyphset_vertex_buffers *GT_object_get_GT_glyphset_vertex_buffers(
+	struct GT_object *graphics_object);
 
 typedef int (GT_object_primitive_object_name_conditional_function) \
 	(int object_name, void *user_data);

@@ -627,6 +627,11 @@ public:
 		}
 		return 0;
 	}
+
+	void setIndex(DsLabelIndex index)
+	{
+		this->iter->setIndex(index);
+	}
 };
 
 #endif /* !defined (FINITE_ELEMENT_MESH_HPP) */
