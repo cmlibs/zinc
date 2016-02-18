@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "zinctestsetup.hpp"
-#include <zinc/zincconfigure.h>
+#include <opencmiss/zinc/zincconfigure.h>
 #include <zinc/core.h>
 #include <zinc/field.h>
 #include <zinc/fieldconditional.h>

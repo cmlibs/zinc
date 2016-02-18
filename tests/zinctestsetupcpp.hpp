@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/zincconfigure.h>
+#include <opencmiss/zinc/zincconfigure.h>
 #include <zinc/status.hpp>
 #include <zinc/context.hpp>
 #include <zinc/region.hpp>

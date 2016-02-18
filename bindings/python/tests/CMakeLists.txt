@@ -21,11 +21,7 @@ add_test(NAME Python_Bindings_Import
 list(APPEND PYTHONTESTS Python_Bindings_Import)
 
 # Common test settings
-if (HAVE_MULTICONFIG_ENV)
-    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core/$<CONFIG>")
-else()
-    GET_LD_PATH(LD_PATH "${Zinc_BINARY_DIR}/core")
-endif()
+get_library_path(PATH_DEF "${Zinc_BINARY_DIR}/core")
 if (WIN32)
     set(PYTHONPATH_SEP "\\;") # Needs to be \; to prevent cmake from expanding into a list
 else()
@@ -39,7 +35,7 @@ file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" NATIVE_TEST_BASE_DIR)
 foreach(_TEST ${PYTHONTESTS})
     set_tests_properties(${_TEST} PROPERTIES
         TIMEOUT 30
-        ENVIRONMENT "PYTHONPATH=${NATIVE_PYTHON_BINDINGS_DIR}${PYTHONPATH_SEP}${NATIVE_TEST_BASE_DIR};${LD_VARNAME}=${LD_PATH}" #:
+        ENVIRONMENT "PYTHONPATH=${NATIVE_PYTHON_BINDINGS_DIR}${PYTHONPATH_SEP}${NATIVE_TEST_BASE_DIR};${PATH_DEF}"
     )
 endforeach()
 
@@ -52,6 +48,10 @@ if(INSTALL_TO_VIRTUALENV)
         -DVENV_EXEC=${VIRTUALENV_EXEC}
         -DPACKAGE_DIR=${NATIVE_PYTHON_BINDINGS_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/TestVirtualenv.cmake
+    )
+    set_tests_properties(${_TEST} PROPERTIES
+        TIMEOUT 30
+        ENVIRONMENT "${PATH_DEF}"
     )
 endif()
     
