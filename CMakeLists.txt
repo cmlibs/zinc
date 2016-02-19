@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.1 LANGUAGES C CXX)
+project(Zinc VERSION 3.1.1 LANGUAGES C CXX)
 
 set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX).")
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
