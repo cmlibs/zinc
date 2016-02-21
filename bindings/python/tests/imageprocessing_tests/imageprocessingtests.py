@@ -13,7 +13,10 @@ Created on October 11, 2013
 '''
 import unittest
 
-from imageprocessing_tests import imagefilterbinarythresholdtests, imagefilterconnectedthresholdtests, imagefilterhistogramtests, imagefiltermeantests, imagefilterthresholdtests, imagefilterdiscretegaussiantests
+try:
+    from imageprocessing_tests import imagefilterbinarythresholdtests, imagefilterconnectedthresholdtests, imagefilterhistogramtests, imagefiltermeantests, imagefilterthresholdtests, imagefilterdiscretegaussiantests
+except ImportError:
+    import imagefilterbinarythresholdtests, imagefilterconnectedthresholdtests, imagefilterhistogramtests, imagefiltermeantests, imagefilterthresholdtests, imagefilterdiscretegaussiantests
 
 def suite():
     #import ImportTestCase

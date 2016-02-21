@@ -13,15 +13,19 @@ Created on May 23, 2013
 '''
 import unittest
 
-from field_tests import compositetests, fieldmodulenotifiertests, sceneviewerprojectionfieldtests, vectoroperatortests
-
+try:
+    from field_tests import compositetests, fieldmodulenotifiertests, sceneviewerprojectionfieldtests, vectoroperatortests
+except ImportError:
+    import compositetests, fieldmodulenotifiertests, sceneviewerprojectionfieldtests, vectoroperatortests
+    
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
-    tests.addTests(compositetests.suite())
+
     tests.addTests(fieldmodulenotifiertests.suite())
     tests.addTests(sceneviewerprojectionfieldtests.suite())
     tests.addTests(vectoroperatortests.suite())
+    tests.addTests(compositetests.suite())
     
     return tests
 
