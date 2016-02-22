@@ -8,20 +8,20 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/field.h>
-#include <zinc/fieldgroup.h>
-#include <zinc/fieldsubobjectgroup.h>
-#include <zinc/node.h>
-#include <zinc/scene.h>
-#include <zinc/selection.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldgroup.h>
+#include <opencmiss/zinc/fieldsubobjectgroup.h>
+#include <opencmiss/zinc/node.h>
+#include <opencmiss/zinc/scene.h>
+#include <opencmiss/zinc/selection.h>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldgroup.hpp>
-#include <zinc/fieldsubobjectgroup.hpp>
-#include <zinc/node.hpp>
-#include <zinc/scene.hpp>
-#include <zinc/selection.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/node.hpp>
+#include <opencmiss/zinc/scene.hpp>
+#include <opencmiss/zinc/selection.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/element.hpp>
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldsmoothing.hpp>
-#include <zinc/node.hpp>
-#include <zinc/status.hpp>
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldsmoothing.hpp>
+#include <opencmiss/zinc/node.hpp>
+#include <opencmiss/zinc/status.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

@@ -11,12 +11,12 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
-#include <zinc/context.h>
-#include <zinc/region.h>
-#include <zinc/fieldmodule.h>
-#include <zinc/glyph.h>
-#include <zinc/scene.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/fieldmodule.h>
+#include <opencmiss/zinc/glyph.h>
+#include <opencmiss/zinc/scene.h>
 
 class ZincTestSetup
 {

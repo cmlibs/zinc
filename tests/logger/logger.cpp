@@ -2,12 +2,12 @@
 
 #include "zinctestsetup.hpp"
 #include <opencmiss/zinc/zincconfigure.h>
-#include <zinc/core.h>
-#include <zinc/logger.h>
-#include <zinc/region.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/logger.h>
+#include <opencmiss/zinc/region.h>
 #include "zinctestsetupcpp.hpp"
-#include <zinc/region.hpp>
-#include <zinc/logger.hpp>
+#include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/logger.hpp>
 
 #include "test_resources.h"
 

@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/sceneviewer.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/sceneviewer.h>
 
-#include <zinc/context.hpp>
-#include <zinc/light.hpp>
-#include <zinc/sceneviewer.hpp>
+#include <opencmiss/zinc/context.hpp>
+#include <opencmiss/zinc/light.hpp>
+#include <opencmiss/zinc/sceneviewer.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

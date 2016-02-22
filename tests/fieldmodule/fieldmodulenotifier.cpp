@@ -8,18 +8,18 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/field.h>
-#include <zinc/fieldcache.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldfiniteelement.h>
-#include <zinc/fieldvectoroperators.h>
-#include <zinc/status.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldcache.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldfiniteelement.h>
+#include <opencmiss/zinc/fieldvectoroperators.h>
+#include <opencmiss/zinc/status.h>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldvectoroperators.hpp>
-#include <zinc/status.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/status.hpp>
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"

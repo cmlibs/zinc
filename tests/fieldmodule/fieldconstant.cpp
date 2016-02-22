@@ -8,11 +8,11 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/field.h>
-#include <zinc/fieldarithmeticoperators.h>
-#include <zinc/fieldcache.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/status.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldarithmeticoperators.h>
+#include <opencmiss/zinc/fieldcache.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/status.h>
 
 #include "zinctestsetup.hpp"
 

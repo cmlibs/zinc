@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
+#include <opencmiss/zinc/core.h>
 
-#include <zinc/timekeeper.h>
-#include <zinc/timenotifier.h>
+#include <opencmiss/zinc/timekeeper.h>
+#include <opencmiss/zinc/timenotifier.h>
 
-#include <zinc/timekeeper.hpp>
-#include <zinc/timenotifier.hpp>
+#include <opencmiss/zinc/timekeeper.hpp>
+#include <opencmiss/zinc/timenotifier.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
