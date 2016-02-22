@@ -8,30 +8,30 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
-#include <zinc/core.h>
-#include <zinc/fieldarithmeticoperators.h>
-#include <zinc/fieldcomposite.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldvectoroperators.h>
-#include <zinc/graphics.h>
-#include <zinc/region.h>
-#include <zinc/scenefilter.h>
-#include <zinc/streamscene.h>
-#include <zinc/stream.h>
-#include <zinc/sceneviewer.h>
-#include <zinc/spectrum.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/fieldarithmeticoperators.h>
+#include <opencmiss/zinc/fieldcomposite.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldvectoroperators.h>
+#include <opencmiss/zinc/graphics.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/scenefilter.h>
+#include <opencmiss/zinc/streamscene.h>
+#include <opencmiss/zinc/stream.h>
+#include <opencmiss/zinc/sceneviewer.h>
+#include <opencmiss/zinc/spectrum.h>
 
-#include <zinc/fieldarithmeticoperators.hpp>
-#include <zinc/fieldcomposite.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldvectoroperators.hpp>
-#include <zinc/graphics.hpp>
-#include <zinc/scene.hpp>
-#include <zinc/scenefilter.hpp>
-#include <zinc/sceneviewer.hpp>
-#include <zinc/spectrum.hpp>
-#include <zinc/streamscene.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/graphics.hpp>
+#include <opencmiss/zinc/scene.hpp>
+#include <opencmiss/zinc/scenefilter.hpp>
+#include <opencmiss/zinc/sceneviewer.hpp>
+#include <opencmiss/zinc/spectrum.hpp>
+#include <opencmiss/zinc/streamscene.hpp>
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"

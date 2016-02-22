@@ -8,17 +8,17 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
-#include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/field.h>
-#include <zinc/fieldgroup.h>
-#include <zinc/region.h>
-#include <zinc/graphics.h>
-#include <zinc/scene.h>
-#include <zinc/scenefilter.h>
-#include <zinc/sceneviewer.h>
-#include <zinc/scenepicker.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldgroup.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/graphics.h>
+#include <opencmiss/zinc/scene.h>
+#include <opencmiss/zinc/scenefilter.h>
+#include <opencmiss/zinc/sceneviewer.h>
+#include <opencmiss/zinc/scenepicker.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

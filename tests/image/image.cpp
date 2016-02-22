@@ -10,18 +10,18 @@
 
 #include "zinctestsetup.hpp"
 #include <opencmiss/zinc/zincconfigure.h>
-#include <zinc/core.h>
-#include <zinc/field.h>
-#include <zinc/fieldconditional.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldimage.h>
-#include <zinc/stream.h>
-#include <zinc/streamimage.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldconditional.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldimage.h>
+#include <opencmiss/zinc/stream.h>
+#include <opencmiss/zinc/streamimage.h>
 
 #include "zinctestsetupcpp.hpp"
-#include <zinc/fieldimage.hpp>
-#include <zinc/stream.hpp>
-#include <zinc/streamimage.hpp>
+#include <opencmiss/zinc/fieldimage.hpp>
+#include <opencmiss/zinc/stream.hpp>
+#include <opencmiss/zinc/streamimage.hpp>
 
 #include "test_resources.h"
 

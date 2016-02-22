@@ -9,25 +9,25 @@
 #include <gtest/gtest.h>
 
 #include "zinctestsetup.hpp"
-#include <zinc/core.h>
-#include <zinc/field.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/optimisation.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/optimisation.h>
 
 #include "zinctestsetupcpp.hpp"
-#include <zinc/field.hpp>
-#include <zinc/fieldarithmeticoperators.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldcomposite.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldderivatives.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/fieldmatrixoperators.hpp>
-#include <zinc/fieldmeshoperators.hpp>
-#include <zinc/fieldnodesetoperators.hpp>
-#include <zinc/fieldsubobjectgroup.hpp>
-#include <zinc/optimisation.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmatrixoperators.hpp>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
+#include <opencmiss/zinc/fieldnodesetoperators.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/optimisation.hpp>
 
 #include "test_resources.h"
 

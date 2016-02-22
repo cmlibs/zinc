@@ -8,28 +8,28 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/element.h>
-#include <zinc/field.h>
-#include <zinc/fieldmodule.h>
-#include <zinc/fieldfiniteelement.h>
-#include <zinc/node.h>
-#include <zinc/region.h>
-#include <zinc/status.h>
-#include <zinc/stream.h>
-#include <zinc/streamregion.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/element.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldmodule.h>
+#include <opencmiss/zinc/fieldfiniteelement.h>
+#include <opencmiss/zinc/node.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/stream.h>
+#include <opencmiss/zinc/streamregion.h>
 
-#include <zinc/context.hpp>
-#include <zinc/element.hpp>
-#include <zinc/field.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/fieldmodule.hpp>
-#include <zinc/node.hpp>
-#include <zinc/status.hpp>
-#include <zinc/stream.hpp>
-#include <zinc/streamregion.hpp>
+#include <opencmiss/zinc/context.hpp>
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/node.hpp>
+#include <opencmiss/zinc/status.hpp>
+#include <opencmiss/zinc/stream.hpp>
+#include <opencmiss/zinc/streamregion.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 

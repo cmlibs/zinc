@@ -9,16 +9,16 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/fieldmeshoperators.hpp>
-#include <zinc/fieldmodule.hpp>
-#include <zinc/fieldsubobjectgroup.hpp>
-#include <zinc/region.hpp>
-#include <zinc/streamregion.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
+#include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 #include "utilities/fileio.hpp"

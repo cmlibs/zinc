@@ -8,15 +8,15 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/field.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldimage.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldimage.h>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldimage.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldimage.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 

@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
-#include <zinc/core.h>
-#include <zinc/material.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/material.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

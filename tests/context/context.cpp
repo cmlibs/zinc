@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "opencmiss/zinc/core.h"
-#include <zinc/region.hpp>
+#include <opencmiss/zinc/region.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 

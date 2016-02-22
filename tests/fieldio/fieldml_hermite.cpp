@@ -10,18 +10,18 @@
 #include <cmath>
 #include <vector>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldarithmeticoperators.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldgroup.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/fieldmeshoperators.hpp>
-#include <zinc/fieldmodule.hpp>
-#include <zinc/fieldsubobjectgroup.hpp>
-#include <zinc/region.hpp>
-#include <zinc/streamregion.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
+#include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 #include "utilities/fileio.hpp"

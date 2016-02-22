@@ -11,8 +11,8 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/status.h>
-#include <zinc/context.h>
+#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/context.h>
 
 class ZincTestSetup
 {

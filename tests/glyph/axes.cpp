@@ -8,11 +8,11 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/glyph.h>
-#include <zinc/material.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/glyph.h>
+#include <opencmiss/zinc/material.h>
 
-#include <zinc/material.hpp>
+#include <opencmiss/zinc/material.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

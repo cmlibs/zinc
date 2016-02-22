@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/timesequence.hpp>
+#include <opencmiss/zinc/timesequence.hpp>
 #include "zinctestsetupcpp.hpp"
 
 TEST(ZincTimesequence, api)
