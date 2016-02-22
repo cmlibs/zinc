@@ -13,8 +13,8 @@
 #if !defined (GRAPHICS_JSON_IMPORT_HPP)
 #define GRAPHICS_JSON_IMPORT_HPP
 
-#include "zinc/graphics.h"
-#include "zinc/graphics.hpp"
+#include "opencmiss/zinc/graphics.h"
+#include "opencmiss/zinc/graphics.hpp"
 #include "graphics/graphics_json_io.hpp"
 #include "jsoncpp/json.h"
 #include <string>
