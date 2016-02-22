@@ -8,32 +8,32 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/element.h>
-#include <zinc/field.h>
-#include <zinc/fieldcache.h>
-#include <zinc/fieldcomposite.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldfiniteelement.h>
-#include <zinc/fieldgroup.h>
-#include <zinc/fieldlogicaloperators.h>
-#include <zinc/fieldmeshoperators.hpp>
-#include <zinc/fieldnodesetoperators.hpp>
-#include <zinc/fieldsubobjectgroup.h>
-#include <zinc/node.h>
-#include <zinc/region.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/element.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldcache.h>
+#include <opencmiss/zinc/fieldcomposite.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldfiniteelement.h>
+#include <opencmiss/zinc/fieldgroup.h>
+#include <opencmiss/zinc/fieldlogicaloperators.h>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
+#include <opencmiss/zinc/fieldnodesetoperators.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.h>
+#include <opencmiss/zinc/node.h>
+#include <opencmiss/zinc/region.h>
 
-#include <zinc/element.hpp>
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldcomposite.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldgroup.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/fieldsubobjectgroup.hpp>
-#include <zinc/node.hpp>
-#include <zinc/region.hpp>
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/node.hpp>
+#include <opencmiss/zinc/region.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

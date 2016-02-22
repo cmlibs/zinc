@@ -8,14 +8,14 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/element.hpp>
-#include <zinc/field.hpp>
-#include <zinc/fieldcache.hpp>
-#include <zinc/fieldarithmeticoperators.hpp>
-#include <zinc/fieldconstant.hpp>
-#include <zinc/fieldfiniteelement.hpp>
-#include <zinc/fieldlogicaloperators.hpp>
-#include <zinc/region.hpp>
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/region.hpp>
 
 #include "zinctestsetupcpp.hpp"
 

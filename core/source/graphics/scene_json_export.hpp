@@ -13,8 +13,8 @@
 #if !defined (SCENE_JSON_EXPORT_HPP)
 #define SCENE_JSON_EXPORT_HPP
 
-#include "zinc/scene.h"
-#include "zinc/scene.hpp"
+#include "opencmiss/zinc/scene.h"
+#include "opencmiss/zinc/scene.hpp"
 #include "jsoncpp/json.h"
 #include <string>
 

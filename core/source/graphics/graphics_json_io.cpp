@@ -10,9 +10,9 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "zinc/spectrum.hpp"
-#include "zinc/scene.hpp"
-#include "zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/spectrum.hpp"
+#include "opencmiss/zinc/scene.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
 #include "general/debug.h"
 #include "graphics/graphics_json_export.hpp"
 #include <string.h>

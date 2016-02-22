@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/region.h>
-#include <zinc/fieldmodule.h>
-#include <zinc/field.h>
-#include <zinc/fieldfibres.h>
-#include <zinc/fieldconstant.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/fieldmodule.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldfibres.h>
+#include <opencmiss/zinc/fieldconstant.h>
 
 TEST(cmzn_fieldmodule_create_field_fibre_axes, invalid_args)
 {

@@ -8,15 +8,15 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/region.h>
-#include <zinc/fieldmodule.h>
-#include <zinc/scene.h>
-#include <zinc/field.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/graphics.h>
-#include <zinc/spectrum.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/context.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/fieldmodule.h>
+#include <opencmiss/zinc/scene.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/graphics.h>
+#include <opencmiss/zinc/spectrum.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

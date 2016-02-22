@@ -8,23 +8,23 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/core.h>
-#include <zinc/field.h>
-#include <zinc/fieldcache.h>
-#include <zinc/fieldcomposite.h>
-#include <zinc/fieldconstant.h>
-#include <zinc/fieldimage.h>
-#include <zinc/fieldimageprocessing.h>
-#include <zinc/fieldmodule.h>
-#include <zinc/region.h>
-#include <zinc/stream.h>
-#include <zinc/streamimage.h>
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldcache.h>
+#include <opencmiss/zinc/fieldcomposite.h>
+#include <opencmiss/zinc/fieldconstant.h>
+#include <opencmiss/zinc/fieldimage.h>
+#include <opencmiss/zinc/fieldimageprocessing.h>
+#include <opencmiss/zinc/fieldmodule.h>
+#include <opencmiss/zinc/region.h>
+#include <opencmiss/zinc/stream.h>
+#include <opencmiss/zinc/streamimage.h>
 
-#include <zinc/field.hpp>
-#include <zinc/fieldimage.hpp>
-#include <zinc/fieldimageprocessing.hpp>
-#include <zinc/fieldmodule.hpp>
-#include <zinc/streamimage.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldimage.hpp>
+#include <opencmiss/zinc/fieldimageprocessing.hpp>
+#include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/streamimage.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
