@@ -10,6 +10,8 @@
 #ifndef CMZN_SPECTRUM_H__
 #define CMZN_SPECTRUM_H__
 
+#include "types/scenefilterid.h"
+#include "types/sceneid.h"
 #include "types/spectrumid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -326,6 +328,20 @@ ZINC_API int cmzn_spectrum_remove_spectrumcomponent(cmzn_spectrum_id spectrum,
  * any other value on failure.
  */
 ZINC_API int cmzn_spectrum_remove_all_spectrumcomponents(cmzn_spectrum_id spectrum);
+
+/**
+ * Set the minimum and maximum value for the specified spectrum to
+ * match the minimum and maximum field value in scene's grpahics
+ * which are coloured with the specified spectrum.
+ *
+ * @param spectrum  Handle to the spectrum.
+ * @param scene  scene to get the autorange data from.
+ * @param  filter filter for the scene
+ * @return  Status CMZN_OK if successfully autorange, any other value
+ * on failure.
+ */
+ZINC_API int cmzn_spectrum_autorange(cmzn_spectrum_id spectrum,
+	cmzn_scene_id scene, cmzn_scenefilter_id filter);
 
 /**
  * Returns a new handle to the spectrum component with reference count
@@ -925,6 +941,7 @@ ZINC_API cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_summary_spectru
  */
 ZINC_API cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_spectrum_change_flags(
 	cmzn_spectrummoduleevent_id event, cmzn_spectrum_id spectrum);
+
 
 #ifdef __cplusplus
 }
