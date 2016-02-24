@@ -2794,3 +2794,137 @@ char *cmzn_spectrummodule_write_description(cmzn_spectrummodule_id spectrummodul
 	}
 	return 0;
 }
+
+void cmzn_spectrum_get_components_range(cmzn_spectrum_id spectrum, int valuesCount,
+	double *minimum, double *maximum)
+{
+	if (spectrum && valuesCount && minimum && maximum)
+	{
+		int *valuesSet;
+		valuesSet = new int [valuesCount];
+		for (int i = 0; i < valuesCount; i++)
+		{
+			maximum[i] = 1.0;
+			minimum[i] = 0.0;
+			valuesSet[i] = 0;
+		}
+		cmzn_spectrumcomponent_id component = cmzn_spectrum_get_first_spectrumcomponent(spectrum);
+		while (component)
+		{
+			int current_index = cmzn_spectrumcomponent_get_field_component(component) - 1;
+			if (current_index >= 0)
+			{
+				double currentMaxValue = cmzn_spectrumcomponent_get_range_maximum(component);
+				double currentMinValue = cmzn_spectrumcomponent_get_range_minimum(component);
+				bool fixed_minimum = cmzn_spectrumcomponent_is_fix_minimum(component);
+				bool fixed_maximum = cmzn_spectrumcomponent_is_fix_maximum(component);
+
+				if (valuesSet[current_index] == 0)
+				{
+					if (!fixed_minimum && !fixed_maximum)
+					{
+						minimum[current_index] = currentMinValue;
+						maximum[current_index] = currentMaxValue;
+					}
+					else if (!fixed_minimum)
+					{
+						minimum[current_index] = currentMinValue;
+						maximum[current_index] = currentMinValue;
+					}
+					else if (!fixed_maximum)
+					{
+						minimum[current_index] = currentMaxValue;
+						maximum[current_index] = currentMaxValue;
+					}
+					valuesSet[current_index] = 1;
+				}
+				else
+				{
+					if (!fixed_maximum && (maximum[current_index] < currentMaxValue))
+						maximum[current_index] = currentMaxValue;
+					if (!fixed_minimum && (minimum[current_index] < currentMinValue))
+						minimum[current_index] = currentMinValue;
+				}
+			}
+			cmzn_spectrumcomponent_id next_component =
+				cmzn_spectrum_get_next_spectrumcomponent(spectrum, component);
+			cmzn_spectrumcomponent_destroy(&component);
+			component = next_component;
+		}
+		delete[] valuesSet;
+	}
+}
+
+void cmzn_spectrum_rerange_components(cmzn_spectrum_id spectrum, int maxRanges,
+	double *minimum, double *maximum, double *oldMinValues, double *oldMaxValues)
+{
+	if (spectrum && minimum && maximum && oldMinValues && oldMaxValues)
+	{
+		cmzn_spectrumcomponent_id component = cmzn_spectrum_get_first_spectrumcomponent(spectrum);
+		while (component)
+		{
+			int dataComponent = cmzn_spectrumcomponent_get_field_component(component);
+			if ((0 < dataComponent) && (dataComponent <= maxRanges))
+			{
+				double oldComponentRange =  oldMaxValues[dataComponent-1] - oldMinValues[dataComponent-1];
+				double thisMinimum = cmzn_spectrumcomponent_get_range_minimum(component);
+				double thisMaximum = cmzn_spectrumcomponent_get_range_maximum(component);
+				double minimumRatio = (thisMinimum - oldMinValues[dataComponent - 1]) / oldComponentRange;
+				double maximumRatio = (thisMaximum - oldMinValues[dataComponent - 1]) / oldComponentRange;
+				double dataMinimum = minimum[dataComponent - 1];
+				double dataMaximum = maximum[dataComponent - 1];
+				double newComponentRange = dataMaximum - dataMinimum;
+				double newComponentMinimum = dataMinimum + minimumRatio*newComponentRange;
+				double newComponentMaximum = dataMinimum + maximumRatio*newComponentRange;
+				if (!cmzn_spectrumcomponent_is_fix_minimum(component))
+					cmzn_spectrumcomponent_set_range_minimum(component, newComponentMinimum);
+				if (!cmzn_spectrumcomponent_is_fix_maximum(component))
+					cmzn_spectrumcomponent_set_range_maximum(component, newComponentMaximum);
+			 }
+			cmzn_spectrumcomponent_id next_component =
+				cmzn_spectrum_get_next_spectrumcomponent(spectrum, component);
+			cmzn_spectrumcomponent_destroy(&component);
+			component = next_component;
+		}
+	}
+}
+
+int cmzn_spectrum_autorange(cmzn_spectrum_id spectrum,
+	cmzn_scene_id scene, cmzn_scenefilter_id filter)
+{
+	if (spectrum && scene)
+	{
+		int number_of_components = 0;
+		cmzn_spectrumcomponent_id component = cmzn_spectrum_get_first_spectrumcomponent(spectrum);
+		while (component)
+		{
+			int current_field_lookup = cmzn_spectrumcomponent_get_field_component(component);
+			if (current_field_lookup > number_of_components)
+				number_of_components = current_field_lookup;
+			cmzn_spectrumcomponent_id next_component =
+				cmzn_spectrum_get_next_spectrumcomponent(spectrum, component);
+			cmzn_spectrumcomponent_destroy(&component);
+			component = next_component;
+		}
+		double *oldMaxValues, *oldMinValues, *maximum, *minimum;
+		maximum = new double[number_of_components];
+		minimum = new double[number_of_components];
+		oldMaxValues = new double[number_of_components];
+		oldMinValues = new double[number_of_components];
+		cmzn_spectrum_get_components_range(spectrum, number_of_components,
+			oldMinValues, oldMaxValues);
+		int maxRanges = cmzn_scene_get_spectrum_data_range(scene, filter, spectrum,
+			number_of_components, minimum, maximum);
+		if ( maxRanges >= 1 )
+		{
+			cmzn_spectrum_rerange_components(spectrum, maxRanges, minimum, maximum, oldMinValues, oldMaxValues);
+		}
+		delete[] maximum;
+		delete[] minimum;
+		delete[] oldMaxValues;
+		delete[] oldMinValues;
+		return CMZN_OK;
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}

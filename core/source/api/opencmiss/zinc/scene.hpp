@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/region.hpp"
 #include "opencmiss/zinc/scenefilter.hpp"
 #include "opencmiss/zinc/selection.hpp"
+#include "opencmiss/zinc/spectrum.hpp"
 #include "opencmiss/zinc/timekeeper.hpp"
 
 namespace OpenCMISS
@@ -293,6 +294,11 @@ inline Scene Region::getScene()
 inline Scene Graphics::getScene()
 {
 	return Scene(cmzn_graphics_get_scene(id));
+}
+
+inline int Spectrum::autorange(Scene &scene, Scenefilter &scenefilter)
+{
+	return cmzn_spectrum_autorange(id, scene.getId(), scenefilter.getId());
 }
 
 } // namespace Zinc

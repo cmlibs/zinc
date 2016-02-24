@@ -412,6 +412,10 @@ TEST(cmzn_spectrum_api, description_io_cpp)
 
 	EXPECT_FALSE(component1.isExtendBelow());
 
+	EXPECT_TRUE(component1.isFixMaximum());
+
+	EXPECT_TRUE(component1.isFixMinimum());
+
 	EXPECT_EQ(2, component1.getFieldComponent());
 
 	EXPECT_EQ(6, component1.getNumberOfBands());

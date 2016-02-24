@@ -30,6 +30,8 @@ void SpectrumcomponentJsonIO::ioBoolEntries(Json::Value &componentSettings)
 		componentSettings["ColourReverse"] = spectrumcomponent.isColourReverse();
 		componentSettings["ExtendAbove"] = spectrumcomponent.isExtendAbove();
 		componentSettings["ExtendBelow"] = spectrumcomponent.isExtendBelow();
+		componentSettings["FixMaximum"] = spectrumcomponent.isFixMaximum();
+		componentSettings["FixMinimum"] = spectrumcomponent.isFixMinimum();
 	}
 	else
 	{
@@ -41,6 +43,10 @@ void SpectrumcomponentJsonIO::ioBoolEntries(Json::Value &componentSettings)
 			spectrumcomponent.setExtendAbove(componentSettings["ExtendAbove"].asBool());
 		if (componentSettings["ExtendBelow"].isBool())
 			spectrumcomponent.setExtendBelow(componentSettings["ExtendBelow"].asBool());
+		if (componentSettings["FixMinimum"].isBool())
+			spectrumcomponent.setFixMinimum(componentSettings["FixMinimum"].asBool());
+		if (componentSettings["FixMaximum"].isBool())
+			spectrumcomponent.setFixMaximum(componentSettings["FixMaximum"].asBool());
 	}
 }
 
