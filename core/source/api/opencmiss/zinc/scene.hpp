@@ -296,7 +296,7 @@ inline Scene Graphics::getScene()
 	return Scene(cmzn_graphics_get_scene(id));
 }
 
-inline int Spectrum::autorange(Scene &scene, Scenefilter &scenefilter)
+inline int Spectrum::autorange(const Scene &scene, const Scenefilter &scenefilter)
 {
 	return cmzn_spectrum_autorange(id, scene.getId(), scenefilter.getId());
 }

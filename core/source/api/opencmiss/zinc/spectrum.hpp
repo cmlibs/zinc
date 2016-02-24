@@ -429,7 +429,7 @@ public:
 		return cmzn_spectrum_set_material_overwrite(id, overwrite);
 	}
 
-	inline int autorange(Scene &scene, Scenefilter &scenefilter);
+	inline int autorange(const Scene &scene, const Scenefilter &scenefilter);
 
 };
 
