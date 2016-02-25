@@ -800,19 +800,11 @@ some predetermined simple types.
 					CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW);
 				cmzn_spectrumcomponent_set_extend_above(component,true);
 				cmzn_spectrumcomponent_set_extend_below(component, true);
-				switch (type)
+				if (type == BLUE_TO_RED_SPECTRUM)
 				{
-					case RED_TO_BLUE_SPECTRUM:
-					{
-						cmzn_spectrumcomponent_set_colour_reverse(component,false);
-					} break;
-					case BLUE_TO_RED_SPECTRUM:
-					{
-						cmzn_spectrumcomponent_set_colour_reverse(component, true);
-					} break;
-					default:
-					{
-					} break;
+					// reverse mapped colour values; avoiding using reverse mode as it's confusing
+					cmzn_spectrumcomponent_set_colour_minimum(component, 1.0);
+					cmzn_spectrumcomponent_set_colour_maximum(component, 0.0);
 				}
 				cmzn_spectrumcomponent_destroy(&component);
 			} break;
@@ -2842,7 +2834,7 @@ void cmzn_spectrum_get_components_range(cmzn_spectrum_id spectrum, int valuesCou
 				{
 					if (!fixed_maximum && (maximum[current_index] < currentMaxValue))
 						maximum[current_index] = currentMaxValue;
-					if (!fixed_minimum && (minimum[current_index] < currentMinValue))
+					if (!fixed_minimum && (minimum[current_index] > currentMinValue))
 						minimum[current_index] = currentMinValue;
 				}
 			}
@@ -2869,18 +2861,22 @@ void cmzn_spectrum_rerange_components(cmzn_spectrum_id spectrum, int maxRanges,
 				double oldComponentRange =  oldMaxValues[dataComponent-1] - oldMinValues[dataComponent-1];
 				double thisMinimum = cmzn_spectrumcomponent_get_range_minimum(component);
 				double thisMaximum = cmzn_spectrumcomponent_get_range_maximum(component);
-				double minimumRatio = (thisMinimum - oldMinValues[dataComponent - 1]) / oldComponentRange;
-				double maximumRatio = (thisMaximum - oldMinValues[dataComponent - 1]) / oldComponentRange;
+				double minimumRatio = 0.0;
+				double maximumRatio = 1.0;
+				if (oldComponentRange != 0.0)
+				{
+					minimumRatio = (thisMinimum - oldMinValues[dataComponent - 1]) / oldComponentRange;
+					maximumRatio = (thisMaximum - oldMinValues[dataComponent - 1]) / oldComponentRange;
+				}
 				double dataMinimum = minimum[dataComponent - 1];
 				double dataMaximum = maximum[dataComponent - 1];
-				double newComponentRange = dataMaximum - dataMinimum;
-				double newComponentMinimum = dataMinimum + minimumRatio*newComponentRange;
-				double newComponentMaximum = dataMinimum + maximumRatio*newComponentRange;
+				double newComponentMinimum = dataMinimum*(1.0 - minimumRatio) + dataMaximum*minimumRatio;
+				double newComponentMaximum = dataMinimum*(1.0 - maximumRatio) + dataMaximum*maximumRatio;
 				if (!cmzn_spectrumcomponent_is_fix_minimum(component))
 					cmzn_spectrumcomponent_set_range_minimum(component, newComponentMinimum);
 				if (!cmzn_spectrumcomponent_is_fix_maximum(component))
 					cmzn_spectrumcomponent_set_range_maximum(component, newComponentMaximum);
-			 }
+			}
 			cmzn_spectrumcomponent_id next_component =
 				cmzn_spectrum_get_next_spectrumcomponent(spectrum, component);
 			cmzn_spectrumcomponent_destroy(&component);

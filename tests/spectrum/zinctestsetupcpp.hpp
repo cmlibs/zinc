@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/status.hpp>
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
@@ -39,7 +39,7 @@ public:
 		scene = root_region.getScene();
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(glyphmodule.isValid());
-		EXPECT_EQ(CMZN_OK, glyphmodule.defineStandardGlyphs());
+		EXPECT_EQ(OK, glyphmodule.defineStandardGlyphs());
 		EXPECT_TRUE(scene.isValid());
 	}
 

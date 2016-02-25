@@ -14,6 +14,9 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "opencmiss/zinc/fieldarithmeticoperators.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 
 #include "test_resources.h"
@@ -521,4 +524,107 @@ TEST(ZincSpectrummodulenotifier, changeCallback)
 	EXPECT_EQ(CMZN_OK, component.setColourMaximum(0.9));
 	EXPECT_EQ(Spectrum::CHANGE_FLAG_FULL_RESULT |Spectrum::CHANGE_FLAG_DEFINITION,
 		callback.getChangeSummary());
+}
+
+TEST(ZincSpectrum, autorange)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	const double scaleValues[] = { 2.2, 3.7, 1.5 };
+	FieldConstant scale = zinc.fm.createFieldConstant(3, scaleValues);
+	EXPECT_TRUE(scale.isValid());
+	const double offsetValues[] = { -0.1, -0.2, 0.3 };
+	FieldConstant offset = zinc.fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	FieldMultiply scaledCoordinates = scale*coordinates;
+	FieldAdd offsetScaledCoordinates = scaledCoordinates + offset;
+	EXPECT_TRUE(offsetScaledCoordinates.isValid());
+
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+	EXPECT_EQ(OK, surfaces.setCoordinateField(coordinates));
+	EXPECT_EQ(OK, surfaces.setDataField(offsetScaledCoordinates));
+	Spectrummodule sm = zinc.context.getSpectrummodule();
+	EXPECT_TRUE(sm.isValid());
+	Spectrum spectrum = sm.createSpectrum();
+
+	Spectrumcomponent sc1 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc1.isValid());
+	EXPECT_EQ(OK, sc1.setFieldComponent(1));
+	EXPECT_EQ(OK, sc1.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_RED));
+	EXPECT_EQ(OK, sc1.setRangeMinimum(0.0));
+	EXPECT_EQ(OK, sc1.setRangeMaximum(1.0));
+	Spectrumcomponent sc2 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc2.isValid());
+	EXPECT_EQ(OK, sc2.setFieldComponent(1));
+	EXPECT_EQ(OK, sc2.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_GREEN));
+	EXPECT_EQ(OK, sc2.setRangeMinimum(0.5));
+	EXPECT_EQ(OK, sc2.setRangeMaximum(5.0));
+	EXPECT_EQ(OK, sc2.setFixMaximum(true));
+	Spectrumcomponent sc3 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc3.isValid());
+	EXPECT_EQ(OK, sc3.setFieldComponent(2));
+	EXPECT_EQ(OK, sc3.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_BLUE));
+	EXPECT_EQ(OK, sc3.setRangeMinimum(0.2));
+	EXPECT_EQ(OK, sc3.setFixMinimum(true));
+	EXPECT_EQ(OK, sc3.setRangeMaximum(0.2));
+	Spectrumcomponent sc4 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc4.isValid());
+	EXPECT_EQ(OK, sc4.setFieldComponent(3));
+	EXPECT_EQ(OK, sc4.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_ALPHA));
+	EXPECT_EQ(OK, sc4.setRangeMinimum(-200.0));
+	EXPECT_EQ(OK, sc4.setRangeMaximum(200.0));
+	Spectrumcomponent sc5 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc5.isValid());
+	EXPECT_EQ(OK, sc5.setFieldComponent(3));
+	EXPECT_EQ(OK, sc5.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_STEP));
+	EXPECT_EQ(OK, sc5.setRangeMinimum(50.0));
+	EXPECT_EQ(OK, sc5.setRangeMaximum(150.0));
+	Spectrumcomponent sc6 = spectrum.createSpectrumcomponent();
+	EXPECT_TRUE(sc6.isValid());
+	EXPECT_EQ(OK, sc6.setFieldComponent(4));
+	EXPECT_EQ(OK, sc6.setColourMappingType(Spectrumcomponent::COLOUR_MAPPING_TYPE_BANDED));
+	EXPECT_EQ(OK, sc6.setRangeMinimum(-1.23));
+	EXPECT_EQ(OK, sc6.setRangeMaximum(4.56));
+
+	EXPECT_EQ(OK, surfaces.setSpectrum(spectrum));
+
+	Scenefiltermodule scenefiltermodule = zinc.context.getScenefiltermodule();
+	Scenefilter defaultScenefilter = scenefiltermodule.getDefaultScenefilter();
+
+	double maximums[3], minimums[3];
+	EXPECT_EQ(3, zinc.scene.getSpectrumDataRange(defaultScenefilter, spectrum, 3, minimums, maximums));
+	const double tolerance = 1.0E-7;
+	EXPECT_NEAR(-0.1, minimums[0], tolerance);
+	EXPECT_NEAR(-0.2, minimums[1], tolerance);
+	EXPECT_NEAR(0.3, minimums[2], tolerance);
+	EXPECT_NEAR(2.1, maximums[0], tolerance);
+	EXPECT_NEAR(3.5, maximums[1], tolerance);
+	EXPECT_NEAR(1.8, maximums[2], tolerance);
+
+	EXPECT_EQ(OK, spectrum.autorange(zinc.scene, defaultScenefilter));
+
+	EXPECT_NEAR(-0.1, sc1.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(2.1, sc1.getRangeMaximum(), tolerance);
+
+	EXPECT_NEAR(1.0, sc2.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(5.0, sc2.getRangeMaximum(), tolerance);
+
+	EXPECT_NEAR(0.2, sc3.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(3.5, sc3.getRangeMaximum(), tolerance);
+
+	EXPECT_NEAR(0.3, sc4.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(1.8, sc4.getRangeMaximum(), tolerance);
+
+	EXPECT_NEAR(1.2375, sc5.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(1.6125, sc5.getRangeMaximum(), tolerance);
+
+	EXPECT_NEAR(-1.23, sc6.getRangeMinimum(), tolerance);
+	EXPECT_NEAR(4.56, sc6.getRangeMaximum(), tolerance);
 }

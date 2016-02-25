@@ -921,10 +921,6 @@ int cmzn_spectrumcomponent_set_colour_minimum(
 		if (value != component->min_value)
 		{
 			component->min_value = value;
-			if (value > component->max_value)
-			{
-				component->max_value = value;
-			}
 			cmzn_spectrumcomponent_changed(component);
 		}
 		return CMZN_OK;
@@ -952,10 +948,6 @@ int cmzn_spectrumcomponent_set_colour_maximum(
 		if (value != component->max_value)
 		{
 			component->max_value = value;
-			if (value < component->min_value)
-			{
-				component->min_value = value;
-			}
 			cmzn_spectrumcomponent_changed(component);
 		}
 		return CMZN_OK;
