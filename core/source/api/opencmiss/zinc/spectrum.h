@@ -411,52 +411,59 @@ ZINC_API int cmzn_spectrumcomponent_set_range_maximum(
 	cmzn_spectrumcomponent_id component,	double value);
 
 /**
- * Get the normalised minimum value for the colour type of this spectrum
- * component. The range of colour displayed by this spectrum ranges from
- * minimum value of colour to the maximum value of colour
+ * Get the colour value mapped to the minimum spectrum component data range.
+ * This is a normalised value from 0.0 to 1.0.
  *
- * @param component  The handle of the spectrum component.
- * @return  minimum value of colour on success.
+ * @param component  The handle to the spectrum component.
+ * @return  Minimum colour value from 0.0 to 1.0, or 0.0 if invalid component.
  */
 ZINC_API double cmzn_spectrumcomponent_get_colour_minimum(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Set the normalised minimum value for the colour type of this spectrum
- * component. The range of colour displayed by this spectrum ranges from
- * minimum value of colour to the miximum value of colour
- * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED, use
- * cmzn_spectrumcomponent_set_number_of_bands to set the number of bands.
+ * Set the colour value mapped to the minimum spectrum component data range.
+ * This is a normalised value from 0.0 to 1.0, mapping to a position in the
+ * colour map. For simple colour mappings red, green, blue and alpha, this
+ * gives the exact colour component value at the minimum data range, which is
+ * interpolated to the maximum colour at the maximum data range.
+ * Note that setting 'reverse' colours reverses the association of colour range
+ * and data range; it is recommended the colour minimum and maximum be swapped
+ * instead of using reverse.
+ * @see cmzn_spectrumcomponent_set_colour_reverse
+ * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED which is
+ * only affected by the number and ratio of bands.
  *
- * @param component  The handle of the spectrum component.
- * @value  the minimum colour value to be set
- *
+ * @param component  The handle to the spectrum component.
+ * @value  The minimum colour value to set, from 0.0 to 1.0.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_colour_minimum(
 	cmzn_spectrumcomponent_id component, double value);
 
 /**
- * Get the normalised maximum value for the colour type of this spectrum
- * component. The range of colour displayed by this spectrum ranges from
- * minimum value of colour to the maximum value of colour
+ * Get the colour value mapped to the maximum spectrum component data range.
+ * This is a normalised value from 0.0 to 1.0.
  *
- * @param component  The handle of the spectrum component.
- * @return  maximum value of colour on success.
+ * @param component  The handle to the spectrum component.
+ * @return  Maximum colour value from 0.0 to 1.0, or 0.0 if invalid component.
  */
 ZINC_API double cmzn_spectrumcomponent_get_colour_maximum(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Set the normalised maximum value for the colour type of this spectrum
- * component. The range of colour displayed by this spectrum ranges from
- * minimum value of colour to the miximum value of colour.
- * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED, use
- * cmzn_spectrumcomponent_set_number_of_bands to set the number of bands.
+ * Set the colour value mapped to the maximum spectrum component data range.
+ * This is a normalised value from 0.0 to 1.0, mapping to a position in the
+ * colour map. For simple colour mappings red, green, blue and alpha, this
+ * gives the exact colour component value at the maximum data range, which is
+ * interpolated to the minimum colour at the minimum data range.
+ * Note that setting 'reverse' colours reverses the association of colour range
+ * and data range; it is recommended the colour minimum and maximum be swapped
+ * instead of using reverse.
+ * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED which is
+ * only affected by the number and ratio of bands.
  *
- * @param component  The handle of the spectrum component.
- * @value  the maximum colour value to be set
- *
+ * @param component  The handle to the spectrum component.
+ * @value  The maximum colour value to set, from 0.0 to 1.0.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_colour_maximum(
@@ -560,7 +567,7 @@ ZINC_API int cmzn_spectrumcomponent_set_active(
 
 /**
  * Get the reverse flag of a spectrum component, reverse spectrum component will
- * have the colour rendered reversely
+ * have the colour rendered reversely.
  *
  * @param component  Handle to the zinc spectrum component.
  * @return  true if spectrum component is reverse, false if
@@ -570,8 +577,11 @@ ZINC_API bool cmzn_spectrumcomponent_is_colour_reverse(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Set the reverse flag of a spectrum component, reverse spectrum component will
- * have the colour rendered reversely
+ * Set the reverse flag of a spectrum component, which if set maps the colour
+ * maximum to the data range minimum, and the colour minimum to the data range
+ * maximum. This is primarily intended to reverse the rainbow colour map.
+ * With most colour maps, swapping the colour minimum and maximum values is
+ * easier to explain and achieves the same result.
  *
  * @param component  Handle to the zinc spectrum component.
  * @param reverse  Value to be set to the zinc spectrum component.

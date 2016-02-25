@@ -800,19 +800,11 @@ some predetermined simple types.
 					CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW);
 				cmzn_spectrumcomponent_set_extend_above(component,true);
 				cmzn_spectrumcomponent_set_extend_below(component, true);
-				switch (type)
+				if (type == BLUE_TO_RED_SPECTRUM)
 				{
-					case RED_TO_BLUE_SPECTRUM:
-					{
-						cmzn_spectrumcomponent_set_colour_reverse(component,false);
-					} break;
-					case BLUE_TO_RED_SPECTRUM:
-					{
-						cmzn_spectrumcomponent_set_colour_reverse(component, true);
-					} break;
-					default:
-					{
-					} break;
+					// reverse mapped colour values; avoiding using reverse mode as it's confusing
+					cmzn_spectrumcomponent_set_colour_minimum(component, 1.0);
+					cmzn_spectrumcomponent_set_colour_maximum(component, 0.0);
 				}
 				cmzn_spectrumcomponent_destroy(&component);
 			} break;
