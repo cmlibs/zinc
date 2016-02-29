@@ -172,8 +172,7 @@ Global functions
  * If <basis_manager> or <element_shape_list> are not supplied then new ones
  * are created for this region.
  */
-struct FE_region *FE_region_create(struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list);
+struct FE_region *FE_region_create(struct FE_region *base_fe_region);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 

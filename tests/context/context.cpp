@@ -8,7 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include "opencmiss/zinc/core.h"
+#include <opencmiss/zinc/core.h>
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/region.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -47,23 +49,41 @@ TEST(ZincContext, getVersion)
 	cmzn_deallocate(versionString);
 }
 
+void testCreateFiniteElement(const Region &region)
+{
+	Fieldmodule fm = region.getFieldmodule();
+	EXPECT_TRUE(fm.isValid());
+	Mesh mesh = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh.isValid());
+	Elementtemplate elementtemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(OK, mesh.defineElement(-1, elementtemplate));
+}
+
 TEST(ZincContext, default_region)
 {
 	ZincTestSetupCpp zinc;
 
 	Region r1 = zinc.context.getDefaultRegion();
 	EXPECT_TRUE(r1.isValid());
+	testCreateFiniteElement(r1);
 	Region r2 = zinc.context.createRegion();
 	EXPECT_TRUE(r2.isValid());
+	testCreateFiniteElement(r2);
 	EXPECT_EQ(OK, zinc.context.setDefaultRegion(r2));
 	Region r3 = zinc.context.getDefaultRegion();
 	EXPECT_EQ(r2, r3);
 
+	// test fixed bug: creation of finite elements on region crashes after first region destroyed
+	r1 = Region();
+	testCreateFiniteElement(r2);
+
 	Context nullContext;
 	Region nullRegion;
 	EXPECT_EQ(nullRegion, nullContext.getDefaultRegion());
-	EXPECT_EQ(ERROR_ARGUMENT, nullContext.setDefaultRegion(r1));
+	EXPECT_EQ(ERROR_ARGUMENT, nullContext.setDefaultRegion(r2));
 
 	Context otherContext = Context("other");
-	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r1));
+	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
 }

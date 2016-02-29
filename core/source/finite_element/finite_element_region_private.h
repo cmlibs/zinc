@@ -23,6 +23,51 @@ Private types
 -------------
 */
 
+/**
+ * Reference counted sets of all element bases and shapes, shared by all regions in context.
+ */
+class FE_region_bases_and_shapes
+{
+	struct MANAGER(FE_basis) *basis_manager;
+	struct LIST(FE_element_shape) *element_shape_list;
+	int access_count;
+
+	FE_region_bases_and_shapes();
+	~FE_region_bases_and_shapes();
+
+public:
+	static FE_region_bases_and_shapes *create()
+	{
+		return new FE_region_bases_and_shapes();
+	}
+
+	FE_region_bases_and_shapes *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static void FE_region_bases_and_shapes::deaccess(FE_region_bases_and_shapes* &bases_and_shapes)
+	{
+		if (!bases_and_shapes)
+			return;
+		--(bases_and_shapes->access_count);
+		if (bases_and_shapes->access_count <= 0)
+			delete bases_and_shapes;
+		bases_and_shapes = 0;
+	}
+
+	inline struct MANAGER(FE_basis) *getBasisManager() const
+	{
+		return this->basis_manager;
+	}
+
+	inline struct LIST(FE_element_shape) *getElementShapeList() const
+	{
+		return this->element_shape_list;
+	}
+};
+
 struct FE_region
 {
 	/* pointer to the cmzn_region this FE_region is in: NOT ACCESSED */
@@ -32,16 +77,10 @@ struct FE_region
 	struct FE_time_sequence_package *fe_time;
 	struct LIST(FE_field) *fe_field_list;
 	struct FE_field_info *fe_field_info;
-	struct MANAGER(FE_basis) *basis_manager;
-	/* This flag indicates whether this region explictly created the basis manager
-		and therefore should destroy it when destroyed.  Would prefer to have an
-		access count on the MANAGER but these don't */
-	bool ownsBasisManager;
-	struct LIST(FE_element_shape) *element_shape_list;
-	/* This flag indicates whether this region explictly created the element_shape_list
-		and therefore should destroy it when destroyed.  Would prefer to have an
-		access count on the LIST(FE_element_shape) but these don't */
-	bool ownsElementShapeList;
+
+	/* FE bases and shapes shared by all regions */
+	FE_region_bases_and_shapes *bases_and_shapes;
+
 	/* lists of nodes and elements in this region */
 	FE_nodeset *nodesets[2];
 	FE_mesh *meshes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -65,8 +104,7 @@ struct FE_region
 	/* number of objects using this region */
 	int access_count;
 
-	FE_region(struct MANAGER(FE_basis) *basis_manager,
-		struct LIST(FE_element_shape) *element_shape_list);
+	FE_region(FE_region *base_fe_region);
 
 	~FE_region();
 
