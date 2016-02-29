@@ -337,9 +337,7 @@ cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
 		Computed_field_manager_set_region(region->field_manager, region);
 		region->field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
 			cmzn_region_Computed_field_change, (void *)region, region->field_manager);
-		region->fe_region = FE_region_create(
-			base_region ? FE_region_get_basis_manager(base_region->fe_region) : 0,
-			base_region ? FE_region_get_FE_element_shape_list(base_region->fe_region) : 0);
+		region->fe_region = FE_region_create(base_region ? base_region->fe_region : 0);
 		FE_region_set_cmzn_region_private(region->fe_region, region);
 		region->field_cache_size = 0;
 		region->field_caches = new std::list<cmzn_fieldcache_id>();

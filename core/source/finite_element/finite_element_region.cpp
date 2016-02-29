@@ -135,16 +135,25 @@ Module functions
 ----------------
 */
 
-FE_region::FE_region(struct MANAGER(FE_basis) *basisManagerIn,
-		struct LIST(FE_element_shape) *elementShapeListIn) :
+FE_region_bases_and_shapes::FE_region_bases_and_shapes() :
+	basis_manager(CREATE(MANAGER(FE_basis))()),
+	element_shape_list(CREATE(LIST(FE_element_shape))()),
+	access_count(1)
+{
+}
+
+FE_region_bases_and_shapes::~FE_region_bases_and_shapes()
+{
+	DESTROY(MANAGER(FE_basis))(&this->basis_manager);
+	DESTROY(LIST(FE_element_shape))(&this->element_shape_list);
+}
+
+FE_region::FE_region(FE_region *base_fe_region) :
 	cmiss_region(0),
 	fe_time(CREATE(FE_time_sequence_package)()),
 	fe_field_list(CREATE(LIST(FE_field))()),
 	fe_field_info(0),
-	basis_manager(basisManagerIn ? basisManagerIn : CREATE(MANAGER(FE_basis))()),
-	ownsBasisManager(basisManagerIn ? false : true),
-	element_shape_list(elementShapeListIn ? elementShapeListIn : CREATE(LIST(FE_element_shape))()),
-	ownsElementShapeList(elementShapeListIn ? false : true),
+	bases_and_shapes(base_fe_region ? base_fe_region->bases_and_shapes->access() : FE_region_bases_and_shapes::create()),
 	change_level(0),
 	fe_field_changes(0),
 	informed_make_cmiss_number_field(false),
@@ -190,10 +199,9 @@ FE_region::~FE_region()
 		FE_field_info_clear_FE_region(this->fe_field_info);
 		DEACCESS(FE_field_info)(&(this->fe_field_info));
 	}
-	if (this->ownsBasisManager)
-		DESTROY(MANAGER(FE_basis))(&this->basis_manager);
-	if (this->ownsElementShapeList)
-		DESTROY(LIST(FE_element_shape))(&this->element_shape_list);
+
+	FE_region_bases_and_shapes::deaccess(this->bases_and_shapes);
+
 	DESTROY(LIST(FE_field))(&(this->fe_field_list));
 	DESTROY(FE_time_sequence_package)(&(this->fe_time));
 
@@ -251,10 +259,9 @@ Global functions
 ----------------
 */
 
-struct FE_region *FE_region_create(struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list)
+struct FE_region *FE_region_create(struct FE_region *base_fe_region)
 {
-	return new FE_region(basis_manager, element_shape_list);
+	return new FE_region(base_fe_region);
 }
 
 /**
@@ -806,7 +813,7 @@ struct MANAGER(FE_basis) *FE_region_get_basis_manager(
 	struct FE_region *fe_region)
 {
 	if (fe_region)
-		return fe_region->basis_manager;
+		return fe_region->bases_and_shapes->getBasisManager();
 	return 0;
 }
 
@@ -821,7 +828,7 @@ struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
 	struct FE_region *fe_region)
 {
 	if (fe_region)
-		return fe_region->element_shape_list;
+		return fe_region->bases_and_shapes->getElementShapeList();
 	return 0;
 }
 
@@ -1123,7 +1130,7 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	struct FE_region *fe_region, int *basis_type)
 {
 	if (fe_region && basis_type)
-		return make_FE_basis(basis_type, fe_region->basis_manager);
+		return make_FE_basis(basis_type, fe_region->bases_and_shapes->getBasisManager());
 	return 0;
 }
 
