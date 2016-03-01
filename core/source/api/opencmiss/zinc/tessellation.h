@@ -106,7 +106,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
 /**
  * Get the default tessellation to be used by new lines, surfaces and
  * isosurfaces graphics. If there is none, one is automatically created with
- * minimum divisions 1, refinement factors 4, and circle divisions 12,
+ * minimum divisions 1, refinement factors 6, and circle divisions 12,
  * and given the name "default".
  *
  * @param tessellationmodule  Tessellation module to query.
