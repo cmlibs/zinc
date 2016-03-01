@@ -540,3 +540,35 @@ TEST(ZincSceneviewer, callback)
 	EXPECT_EQ(CMZN_OK, result = sceneviewernotifier.clearCallback());
 }
 
+TEST(ZincSceneviewermodule, defaultBackgroundColour)
+{
+	ZincTestSetupCpp zinc;
+
+	Sceneviewermodule svm = zinc.context.getSceneviewermodule();
+	EXPECT_TRUE(svm.isValid());
+	const double oldColour[3] = { 0.0, 0.0, 0.0 };
+	double colour[3];
+	EXPECT_EQ(OK, svm.getDefaultBackgroundColourRGB(colour));
+	EXPECT_EQ(oldColour[0], colour[0]);
+	EXPECT_EQ(oldColour[1], colour[1]);
+	EXPECT_EQ(oldColour[2], colour[2]);
+	Sceneviewer sv1 = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
+	EXPECT_TRUE(sv1.isValid());
+	EXPECT_EQ(OK, sv1.getBackgroundColourRGB(colour));
+	EXPECT_EQ(oldColour[0], colour[0]);
+	EXPECT_EQ(oldColour[1], colour[1]);
+	EXPECT_EQ(oldColour[2], colour[2]);
+
+	const double newColour[3] = { 1.0, 1.0, 1.0 };
+	EXPECT_EQ(OK, svm.setDefaultBackgroundColourRGB(newColour));
+	EXPECT_EQ(OK, svm.getDefaultBackgroundColourRGB(colour));
+	EXPECT_EQ(newColour[0], colour[0]);
+	EXPECT_EQ(newColour[1], colour[1]);
+	EXPECT_EQ(newColour[2], colour[2]);
+	Sceneviewer sv2 = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
+	EXPECT_TRUE(sv2.isValid());
+	EXPECT_EQ(OK, sv2.getBackgroundColourRGB(colour));
+	EXPECT_EQ(newColour[0], colour[0]);
+	EXPECT_EQ(newColour[1], colour[1]);
+	EXPECT_EQ(newColour[2], colour[2]);
+}

@@ -2701,6 +2701,35 @@ Destroys the sceneviewermodule.
 	return (return_code);
 } /* DESTROY(cmzn_sceneviewermodule) */
 
+int cmzn_sceneviewermodule_get_default_background_colour_rgb(
+	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
+{
+	int return_code = CMZN_ERROR_ARGUMENT;
+	struct Colour colour;
+
+	if (sceneviewermodule && valuesOut3)
+	{
+		valuesOut3[0] = sceneviewermodule->background_colour.red;
+		valuesOut3[1] = sceneviewermodule->background_colour.green;
+		valuesOut3[2] = sceneviewermodule->background_colour.blue;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule_set_default_background_colour_rgb(
+	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn3)
+{
+	if (sceneviewermodule && valuesIn3)
+	{
+		sceneviewermodule->background_colour.red = valuesIn3[0];
+		sceneviewermodule->background_colour.green = valuesIn3[1];
+		sceneviewermodule->background_colour.blue = valuesIn3[2];
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_id sceneviewermodule)
 {
 	if (sceneviewermodule)

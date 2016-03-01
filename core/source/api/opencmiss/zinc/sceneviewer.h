@@ -672,6 +672,31 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	enum cmzn_sceneviewer_stereo_mode stereo_mode);
 
 /**
+* Gets the default background colour for new scene viewers created from this
+* scene viewer module.
+* The component order in the array is [red, green, blue]
+*
+* @param sceneviewermodule  The handle to the scene viewer module.
+* @param valuesOut3  The rgb components of the colour with values in [0, 1.0].
+* @return  CMZN_OK if successful, otherwise CMZN_ERROR_ARGUMENT.
+*/
+ZINC_API int cmzn_sceneviewermodule_get_default_background_colour_rgb(
+	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3);
+
+/**
+* Sets the default background colour for new scene viewers created from this
+* scene viewer module.
+* Each component should be in the range [0, 1.0].
+* The component order is [red, green, blue].
+*
+* @param sceneviewermodule  The handle to the scene viewer module.
+* @param valuesIn3  The RGB components of the colour.
+* @return  CMZN_OK if successful, otherwise CMZN_ERROR_ARGUMENT.
+*/
+ZINC_API int cmzn_sceneviewermodule_set_default_background_colour_rgb(
+	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn3);
+
+/**
  * Returns a new handle to the scene viewer module with the reference counter
  * incremented.
  *
