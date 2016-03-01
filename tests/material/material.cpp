@@ -310,6 +310,69 @@ TEST(ZincMaterial, unmanage)
 	EXPECT_FALSE(material.isValid());
 }
 
+TEST(ZincMaterialmodule, defaultMaterialsAndGraphics)
+{
+	ZincTestSetupCpp zinc;
+	Material tmpMaterial;
+
+	Materialmodule materialmodule = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(materialmodule.isValid());
+
+	Material defaultMaterial = materialmodule.getDefaultMaterial();
+	EXPECT_TRUE(defaultMaterial.isValid());
+	tmpMaterial = materialmodule.findMaterialByName("default");
+	EXPECT_EQ(tmpMaterial, defaultMaterial);
+
+	Material defaultSelectedMaterial = materialmodule.getDefaultSelectedMaterial();
+	EXPECT_TRUE(defaultSelectedMaterial.isValid());
+	tmpMaterial = materialmodule.findMaterialByName("default_selected");
+	EXPECT_EQ(tmpMaterial, defaultSelectedMaterial);
+
+	Material defaultSurfaceMaterial = materialmodule.getDefaultSurfaceMaterial();
+	EXPECT_FALSE(defaultSurfaceMaterial.isValid());
+	EXPECT_EQ(OK, materialmodule.defineStandardMaterials());
+	Material whiteMaterial = materialmodule.findMaterialByName("white");
+	EXPECT_TRUE(whiteMaterial.isValid());
+	EXPECT_EQ(OK, materialmodule.setDefaultSurfaceMaterial(whiteMaterial));
+	defaultSurfaceMaterial = materialmodule.getDefaultSurfaceMaterial();
+	EXPECT_EQ(whiteMaterial, defaultSurfaceMaterial);
+
+	GraphicsContours contours = zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(contours.isValid());
+	tmpMaterial = contours.getMaterial();
+	EXPECT_EQ(defaultSurfaceMaterial, tmpMaterial);
+	tmpMaterial = contours.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
+
+	GraphicsLines lines = zinc.scene.createGraphicsLines();
+	EXPECT_TRUE(lines.isValid());
+	tmpMaterial = lines.getMaterial();
+	EXPECT_EQ(defaultMaterial, tmpMaterial);
+	tmpMaterial = lines.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
+
+	GraphicsPoints points = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(points.isValid());
+	tmpMaterial = points.getMaterial();
+	EXPECT_EQ(defaultMaterial, tmpMaterial);
+	tmpMaterial = points.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
+
+	GraphicsStreamlines streamlines = zinc.scene.createGraphicsStreamlines();
+	EXPECT_TRUE(streamlines.isValid());
+	tmpMaterial = streamlines.getMaterial();
+	EXPECT_EQ(defaultMaterial, tmpMaterial);
+	tmpMaterial = streamlines.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
+
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+	tmpMaterial = surfaces.getMaterial();
+	EXPECT_EQ(defaultSurfaceMaterial, tmpMaterial);
+	tmpMaterial = surfaces.getSelectedMaterial();
+	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
+}
+
 TEST(ZincMaterialiterator, iteration)
 {
 	ZincTestSetupCpp zinc;
