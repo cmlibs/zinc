@@ -175,7 +175,7 @@ public:
 			const int default_minimum_divisions = 1;
 			cmzn_tessellation_set_minimum_divisions(tessellation,
 				/*dimensions*/1, &default_minimum_divisions);
-			const int default_refinement_factor = 4;
+			const int default_refinement_factor = 6;
 			cmzn_tessellation_set_refinement_factors(tessellation,
 				/*dimensions*/1, &default_refinement_factor);
 			cmzn_tessellation_set_circle_divisions(tessellation, 12);

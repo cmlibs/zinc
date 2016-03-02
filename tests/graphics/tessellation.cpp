@@ -36,7 +36,7 @@ TEST(cmzn_tessellationmodule_api, valid_args)
 	EXPECT_EQ(1, value);
 	result = cmzn_tessellation_get_refinement_factors(tessellation, 1, &value);
 	EXPECT_EQ(1, result);
-	EXPECT_EQ(4, value);
+	EXPECT_EQ(6, value);
 	result = cmzn_tessellation_get_circle_divisions(tessellation);
 	EXPECT_EQ(12, result);
 	cmzn_tessellation_destroy(&tessellation);
@@ -108,7 +108,7 @@ TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 	EXPECT_EQ(1, value);
 	result = tessellation.getRefinementFactors(1, &value);
 	EXPECT_EQ(1, result);
-	EXPECT_EQ(4, value);
+	EXPECT_EQ(6, value);
 	result = tessellation.getCircleDivisions();
 	EXPECT_EQ(12, result);
 
@@ -184,22 +184,24 @@ TEST(cmzn_tessellation_api, valid_args)
 	result = cmzn_tessellation_is_managed(tessellation);
 	EXPECT_EQ(1, result);
 
-	int inValues[3], outValues[3];
-	inValues[0] = 4;
-	inValues[1] = 4;
-	inValues[2] = 4;
+	const int inValues[3] = { 2, 3, 4 };
+	int outValues[3];
 
 	result = cmzn_tessellation_set_minimum_divisions(tessellation, 3, &inValues[0]);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellation_get_minimum_divisions(tessellation, 3, &outValues[0]);
 	EXPECT_EQ(3, result);
+	for (int i = 0; i < 3; ++i)
+		EXPECT_EQ(inValues[i], outValues[i]);
 
 	result = cmzn_tessellation_set_refinement_factors(tessellation, 3, &inValues[0]);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellation_get_refinement_factors(tessellation, 3, &outValues[0]);
 	EXPECT_EQ(3, result);
+	for (int i = 0; i < 3; ++i)
+		EXPECT_EQ(inValues[i], outValues[i]);
 
 	cmzn_tessellation_destroy(&tessellation);
 
@@ -235,22 +237,24 @@ TEST(cmzn_tessellation_api, valid_args_cpp)
 
 	EXPECT_TRUE(tessellation.isManaged());
 
-	int inValues[3], outValues[3];
-	inValues[0] = 4;
-	inValues[1] = 4;
-	inValues[2] = 4;
+	const int inValues[3] = { 2, 3, 4 };
+	int outValues[3];
 
 	result = tessellation.setMinimumDivisions(3, &inValues[0]);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = tessellation.getMinimumDivisions(3, &outValues[0]);
 	EXPECT_EQ(3, result);
+	for (int i = 0; i < 3; ++i)
+		EXPECT_EQ(inValues[i], outValues[i]);
 
 	result = tessellation.setRefinementFactors(3, &inValues[0]);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = tessellation.getRefinementFactors(3, &outValues[0]);
 	EXPECT_EQ(3, result);
+	for (int i = 0; i < 3; ++i)
+		EXPECT_EQ(inValues[i], outValues[i]);
 
 }
 

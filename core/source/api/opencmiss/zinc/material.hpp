@@ -287,6 +287,16 @@ public:
 	{
 		return cmzn_materialmodule_set_default_selected_material(id, material.getId());
 	}
+
+	Material getDefaultSurfaceMaterial()
+	{
+		return Material(cmzn_materialmodule_get_default_surface_material(id));
+	}
+
+	int setDefaultSurfaceMaterial(const Material& material)
+	{
+		return cmzn_materialmodule_set_default_surface_material(id, material.getId());
+	}
 };
 
 inline Materialmodule Context::getMaterialmodule()

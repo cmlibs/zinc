@@ -104,6 +104,7 @@ ZINC_API cmzn_material_id cmzn_materialmodule_find_material_by_name(
 
 /**
  * Get the default material, if any.
+ * @see cmzn_materialmodule_set_default_material
  *
  * @param materialmodule  material module to query.
  * @return  Handle to material, or NULL/invalid handle if none or failed.
@@ -112,16 +113,17 @@ ZINC_API cmzn_material_id cmzn_materialmodule_get_default_material(
 	cmzn_materialmodule_id materialmodule);
 
 /**
- * Set the default material. This material is used as the default
- * material for any new graphics.
+ * Set the default material. This material is used as the default material for
+ * new graphics, but note if the default surface material is set it is used
+ * instead for new surface and contours graphics.
+ * @see cmzn_materialmodule_set_default_surface_material
  *
- * @param materialmodule  material module to modify
+ * @param materialmodule  Material module to modify.
  * @param material  The material to set as default.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_materialmodule_set_default_material(
-	cmzn_materialmodule_id materialmodule,
-	cmzn_material_id material);
+	cmzn_materialmodule_id materialmodule, cmzn_material_id material);
 
 /**
  * Get the default selected material, if any. This material is used as the
@@ -143,6 +145,28 @@ ZINC_API cmzn_material_id cmzn_materialmodule_get_default_selected_material(
 ZINC_API int cmzn_materialmodule_set_default_selected_material(
 	cmzn_materialmodule_id materialmodule,
 	cmzn_material_id material);
+
+/**
+ * Get the default surface material, if any.
+ * @see cmzn_materialmodule_set_default_surface_material
+ *
+ * @param materialmodule  material module to query.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_material_id cmzn_materialmodule_get_default_surface_material(
+	cmzn_materialmodule_id materialmodule);
+
+/**
+ * Set the default surface material set for new surface and contours graphics.
+ * If this is not set, the default material is used instead.
+ *
+ * @param materialmodule  Material module to modify.
+ * @param material  The material to set as default for surfaces. Pass NULL or
+ * unvalid material to clear.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_materialmodule_set_default_surface_material(
+	cmzn_materialmodule_id materialmodule, cmzn_material_id material);
 
 /**
  * Define a list of standard cmgui materials and store them as they are managed

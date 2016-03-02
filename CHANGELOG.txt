@@ -1,5 +1,11 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.1.1
+Default behaviour changes:
+Default ratio of diffuse to ambient light changed from 0.9:0.1 to 0.8:0.2.
+Default tessellation refinement factors increased from 4 to 6.
+2753 Incremental graphics build. Graphics build for approximately 1 second before display in scene viewer and triggering another build/redraw. Currently limited to whole elements or nodesets.
+
 v3.0.1
 API Changes:
 (Break) 3490 Changed enumerator values in enum cmzn_node_value_label to permute in lowest s number fastest, matching cm/Iron. This is a binary break, not a source break.

@@ -514,8 +514,11 @@ int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
 		}
 
 		struct cmzn_materialmodule *materialmodule = cmzn_graphics_module_get_materialmodule(scene->graphics_module);
-		cmzn_material *default_material =
-			cmzn_materialmodule_get_default_material(materialmodule);
+		cmzn_material *default_material = 0;
+		if ((graphics_type == CMZN_GRAPHICS_TYPE_SURFACES) || (graphics_type == CMZN_GRAPHICS_TYPE_CONTOURS))
+			default_material = cmzn_materialmodule_get_default_surface_material(materialmodule);
+		if (!default_material)
+			default_material = cmzn_materialmodule_get_default_material(materialmodule);
 		cmzn_graphics_set_material(graphics, default_material);
 		cmzn_material_destroy(&default_material);
 		cmzn_material *default_selected =

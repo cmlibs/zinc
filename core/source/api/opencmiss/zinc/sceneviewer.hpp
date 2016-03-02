@@ -658,6 +658,16 @@ public:
 			static_cast<cmzn_sceneviewer_stereo_mode>(stereo_mode)));
 	}
 
+	int getDefaultBackgroundColourRGB(double *valuesOut3)
+	{
+		return cmzn_sceneviewermodule_get_default_background_colour_rgb(id, valuesOut3);
+	}
+
+	int setDefaultBackgroundColourRGB(const double *valuesIn3)
+	{
+		return cmzn_sceneviewermodule_set_default_background_colour_rgb(id, valuesIn3);
+	}
+
 };
 
 inline Sceneviewermodule Context::getSceneviewermodule()
