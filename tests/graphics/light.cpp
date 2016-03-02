@@ -31,9 +31,9 @@ TEST(cmzn_lightmodule_api, valid_args)
 	double float_values[3] = {0.0, 0.0, 0.0};
 	result = cmzn_light_get_colour_rgb(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_DOUBLE_EQ(0.9, float_values[0]);
-	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
-	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[0]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[1]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[2]);
 
 	result = cmzn_light_get_direction(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
@@ -60,9 +60,9 @@ TEST(cmzn_lightmodule_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_light *>(0), light);
 	result = cmzn_light_get_colour_rgb(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_DOUBLE_EQ(0.1, float_values[0]);
-	EXPECT_DOUBLE_EQ(0.1, float_values[1]);
-	EXPECT_DOUBLE_EQ(0.1, float_values[2]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[0]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[1]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[2]);
 	light_type = cmzn_light_get_type(light);
 	EXPECT_EQ(CMZN_LIGHT_TYPE_AMBIENT, light_type);
 	EXPECT_EQ(cmzn_light_destroy(&light), result);
@@ -120,9 +120,9 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	double float_values[3] = {0.0, 0.0, 0.0};
 	result = light.getColourRGB(&float_values[0]);
 	EXPECT_EQ(OK, result);
-	EXPECT_DOUBLE_EQ(0.9, float_values[0]);
-	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
-	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[0]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[1]);
+	EXPECT_DOUBLE_EQ(0.8, float_values[2]);
 
 	result = light.getDirection(&float_values[0]);
 	EXPECT_EQ(OK, result);
@@ -148,9 +148,9 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_TRUE(light.isValid());
 	result = light.getColourRGB( &float_values[0]);
 	EXPECT_EQ(OK, result);
-	EXPECT_DOUBLE_EQ(0.1, float_values[0]);
-	EXPECT_DOUBLE_EQ(0.1, float_values[1]);
-	EXPECT_DOUBLE_EQ(0.1, float_values[2]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[0]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[1]);
+	EXPECT_DOUBLE_EQ(0.2, float_values[2]);
 	lightType = light.getType();
 	EXPECT_EQ(Light::TYPE_AMBIENT, lightType);
 

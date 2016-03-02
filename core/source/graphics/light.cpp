@@ -159,9 +159,9 @@ public:
 			double default_light_direction[3]={0.0,-0.5,-1.0};
 			double default_colour[3];
 			cmzn_light_set_type(light,CMZN_LIGHT_TYPE_DIRECTIONAL);
-			default_colour[0]=0.9;
-			default_colour[1]=0.9;
-			default_colour[2]=0.9;
+			default_colour[0] = 0.8;
+			default_colour[1] = 0.8;
+			default_colour[2] = 0.8;
 			cmzn_light_set_colour_rgb(light, &default_colour[0]);
 			cmzn_light_set_direction(light, default_light_direction);
 			this->setDefaultLight(light);
@@ -203,9 +203,9 @@ public:
 			cmzn_light_set_name(light, "default_ambient");
 			double default_colour[3];
 			cmzn_light_set_type(light,CMZN_LIGHT_TYPE_AMBIENT);
-			default_colour[0]=0.1;
-			default_colour[1]=0.1;
-			default_colour[2]=0.1;
+			default_colour[0] = 0.2;
+			default_colour[1] = 0.2;
+			default_colour[2] = 0.2;
 			cmzn_light_set_colour_rgb(light,&default_colour[0]);
 			this->setDefaultAmbientLight(light);
 			this->endChange();
@@ -225,9 +225,8 @@ public:
 
 };
 
-/***************************************************************************//**
- * Object describing how elements / continuous field domains are tessellated
- * or sampled into graphics.
+/**
+ * Object representing an OpenGL light for lighting graphics.
  */
 struct cmzn_light
 {
@@ -267,9 +266,9 @@ protected:
 		is_managed_flag(false),
 		access_count(1)
 	{
-		colour.red = 0.9;
-		colour.green = 0.9;
-		colour.blue = 0.9;
+		colour.red = 0.8;
+		colour.green = 0.8;
+		colour.blue = 0.8;
 		position[0] = 0;
 		position[1] = 0;
 		position[2] = 0;
@@ -1194,14 +1193,14 @@ int cmzn_lightmodule_begin_change(cmzn_lightmodule *lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->beginChange();
-   return CMZN_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_lightmodule_end_change(cmzn_lightmodule *lightmodule)
 {
 	if (lightmodule)
 		return lightmodule->endChange();
-   return CMZN_ERROR_ARGUMENT;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_light *cmzn_lightmodule_find_light_by_name(
@@ -1209,7 +1208,7 @@ cmzn_light *cmzn_lightmodule_find_light_by_name(
 {
 	if (lightmodule)
 		return lightmodule->findLightByName(name);
-   return 0;
+	return 0;
 }
 
 cmzn_light *cmzn_lightmodule_get_default_light(cmzn_lightmodule *lightmodule)

@@ -106,8 +106,10 @@ ZINC_API cmzn_light_id cmzn_lightmodule_find_light_by_name(
 /**
  * Get the default light to be used in sceneviewer. If there is none,
  * a default directional light is automatically created with RGB value of
- * [0.9, 0.9, 0.9] and [0.0, -0.5, -1.0] for its direction i.e. into the
+ * [0.8, 0.8, 0.8] and [0.0, -0.5, -1.0] for its direction i.e. into the
  * screen and slightly down.
+ * Note that the colour of this light and the default ambient light sum to 1.0
+ * to ensure colours of graphics are not oversaturated with default settings.
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default light, or NULL/invalid handle if none or failed.
@@ -129,7 +131,9 @@ ZINC_API int cmzn_lightmodule_set_default_light(
 
 /**
  * Get the default ambient light to be used in new scene viewers. If none,
- * one is automatically created with RGB colour value of [0.1, 0.1, 0.1].
+ * one is automatically created with RGB colour value of [0.2, 0.2, 0.2].
+ * Note that the colour of this light and the default light sum to 1.0 to
+ * ensure colours of graphics are not oversaturated with default settings.
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default ambient light, or NULL/invalid handle if
