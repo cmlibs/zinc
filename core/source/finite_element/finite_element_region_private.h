@@ -47,7 +47,7 @@ public:
 		return this;
 	}
 
-	static void FE_region_bases_and_shapes::deaccess(FE_region_bases_and_shapes* &bases_and_shapes)
+	static void deaccess(FE_region_bases_and_shapes* &bases_and_shapes)
 	{
 		if (!bases_and_shapes)
 			return;
