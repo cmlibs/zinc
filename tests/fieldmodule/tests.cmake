@@ -20,6 +20,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fielditerator.cpp
 	${CURRENT_TEST}/fieldlogicaloperators.cpp
 	${CURRENT_TEST}/fieldmeshoperators.cpp
+	${CURRENT_TEST}/fieldmoduledescription.cpp
 	${CURRENT_TEST}/fieldmodulenotifier.cpp
 	${CURRENT_TEST}/fieldsmoothing.cpp
 	${CURRENT_TEST}/finiteelement.cpp
@@ -40,3 +41,5 @@ SET(FIELDMODULE_ALLSHAPES_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/allshapes.exformat
 SET(FIELDMODULE_CUBE_XYZP_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/cube_xyzp.exformat")
 SET(FIELDMODULE_CUBESQUARELINE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/cubesquareline.exformat")
 SET(TESTIMAGE_GRAY_JPG_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/testimage_gray.jpg")
+SET(FIELDMODULE_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/fieldmodule_description.json")
+

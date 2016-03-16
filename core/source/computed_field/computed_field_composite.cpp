@@ -62,6 +62,7 @@ public:
 		 source values for the field. */
 	int *source_field_numbers;
 	int *source_value_numbers;
+	enum cmzn_field_type type;
 
 	Computed_field_composite(int number_of_components,
 		const int *source_field_numbers_in, const int *source_value_numbers_in) : Computed_field_core()
@@ -74,6 +75,7 @@ public:
 			source_field_numbers[i] = source_field_numbers_in[i];
 			source_value_numbers[i] = source_value_numbers_in[i];
 		}
+		type = CMZN_FIELD_TYPE_COMPONENT;
 	}
 
 	~Computed_field_composite();
@@ -116,6 +118,11 @@ private:
 	const char* get_type_string()
 	{
 		return(computed_field_composite_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return type;
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -1025,6 +1032,12 @@ Changes <field> into type composite with one input field, the <source_field>.
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
 				source_field_numbers, source_value_numbers);
+			if (field && field->core)
+			{
+				Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+					field->core);
+				fieldComposite->type = CMZN_FIELD_TYPE_IDENTITY;
+			}
 		}
 		else
 		{
@@ -1141,6 +1154,12 @@ struct Computed_field *Computed_field_create_concatenate(
 				number_of_source_fields, source_fields,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
 				source_field_numbers, source_value_numbers);
+			if (field && field->core)
+			{
+				Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+					field->core);
+				fieldComposite->type = CMZN_FIELD_TYPE_CONCATENATE;
+			}
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);

@@ -62,6 +62,28 @@ functions are given their public names.
 	cmzn_field_get_number_of_components
 #define Computed_field_set_type cmzn_field_set_type
 
+enum cmzn_field_type
+{
+	CMZN_FIELD_TYPE_INVALID = 0,
+	/*field alias */
+	CMZN_FIELD_TYPE_ALIAS = 1,
+	/* field arithmetic operators */
+	CMZN_FIELD_TYPE_ADD = 2,
+	CMZN_FIELD_TYPE_POWER = 3,
+	CMZN_FIELD_TYPE_MULTIPLY = 4,
+	CMZN_FIELD_TYPE_DIVIDE = 5,
+	CMZN_FIELD_TYPE_SUBTRACT = 6,
+	CMZN_FIELD_TYPE_LOG = 7,
+	CMZN_FIELD_TYPE_SQRT = 8,
+	CMZN_FIELD_TYPE_EXP = 9,
+	CMZN_FIELD_TYPE_ABS = 10,
+	/* field composite */
+	CMZN_FIELD_TYPE_IDENTITY = 11,
+	CMZN_FIELD_TYPE_COMPONENT = 12,
+	CMZN_FIELD_TYPE_CONCATENATE = 13
+};
+
+
 /*
 Global types
 ------------
@@ -629,5 +651,11 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
  */
 int cmzn_field_get_access_count(cmzn_field_id field);
 #endif /* defined (DEBUG_CODE) */
+
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string);
+
+char *cmzn_field_type_enum_to_string(enum cmzn_field_type type);
+
+enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_H) */

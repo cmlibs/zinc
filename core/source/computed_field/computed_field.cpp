@@ -3191,3 +3191,76 @@ char *cmzn_field_coordinate_system_type_enum_to_string(enum cmzn_field_coordinat
 	const char *coordinate_system_type_string = cmzn_field_coordinate_system_type_conversion::to_string(coordinate_system_type);
 	return (coordinate_system_type_string ? duplicate_string(coordinate_system_type_string) : 0);
 }
+
+class cmzn_field_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_FIELD_TYPE_INVALID:
+				enum_string = "INVALID";
+				break;
+			case CMZN_FIELD_TYPE_ALIAS:
+				enum_string = "ALIAS";
+				break;
+			case CMZN_FIELD_TYPE_ADD:
+				enum_string = "ADD";
+				break;
+			case CMZN_FIELD_TYPE_POWER:
+				enum_string = "POWER";
+				break;
+			case CMZN_FIELD_TYPE_MULTIPLY:
+				enum_string = "MULTIPLY";
+				break;
+			case CMZN_FIELD_TYPE_DIVIDE:
+				enum_string = "DIVIDE";
+				break;
+			case CMZN_FIELD_TYPE_SUBTRACT:
+				enum_string = "SUBTRACT";
+				break;
+			case CMZN_FIELD_TYPE_LOG:
+				enum_string = "LOG";
+				break;
+			case CMZN_FIELD_TYPE_SQRT:
+				enum_string = "SQRT";
+				break;
+			case CMZN_FIELD_TYPE_EXP:
+				enum_string = "EXP";
+				break;
+			case CMZN_FIELD_TYPE_ABS:
+				enum_string = "ABS";
+				break;
+			case CMZN_FIELD_TYPE_IDENTITY:
+				enum_string = "IDENTITY";
+				break;
+			case CMZN_FIELD_TYPE_COMPONENT:
+				enum_string = "COMPONENT";
+				break;
+			case CMZN_FIELD_TYPE_CONCATENATE:
+				enum_string = "CONCATENATE";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_conversion>(string);
+}
+
+char *cmzn_field_type_enum_to_string(enum cmzn_field_type type)
+{
+	const char *type_string = cmzn_field_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
+{
+	return field->core->get_type();
+}

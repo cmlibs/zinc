@@ -1,0 +1,58 @@
+{
+   "Fields" : [
+      {
+         "ComponentName" : [ "1" ],
+         "CoordinateSystemFocus" : 1,
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "Name" : "add",
+         "NumberOfComponents" : 1,
+         "NumberOfSourceFields" : 2,
+         "SourceField" : [ "firstComponent", "temperature" ],
+         "Type" : "ADD",
+         "TypeCoordinate" : false,
+         "IsManaged" : true
+      },
+      {
+         "ComponentName" : [ "1", "2" ],
+         "CoordinateSystemFocus" : 1,
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldComponent" : {
+            "SourceComponentIndex" : [ 2, 1 ]
+         },
+         "Name" : "component",
+         "NumberOfComponents" : 2,
+         "NumberOfSourceFields" : 1,
+         "SourceField" : [ "coordinates" ],
+         "Type" : "COMPONENT",
+         "TypeCoordinate" : false,
+         "IsManaged" : true
+      },
+      {
+         "ComponentName" : [ "1", "2", "3", "4" ],
+         "CoordinateSystemFocus" : 1,
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "Name" : "concatenate",
+         "NumberOfComponents" : 4,
+         "NumberOfSourceFields" : 2,
+         "SourceField" : [ "coordinates", "temperature" ],
+         "Type" : "CONCATENATE",
+         "TypeCoordinate" : false,
+         "IsManaged" : true
+      },
+      {
+         "ComponentName" : [ "1" ],
+         "CoordinateSystemFocus" : 1,
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldComponent" : {
+            "SourceComponentIndex" : [ 1 ]
+         },
+         "Name" : "firstComponent",
+         "NumberOfComponents" : 1,
+         "NumberOfSourceFields" : 1,
+         "SourceField" : [ "coordinates" ],
+         "Type" : "COMPONENT",
+         "TypeCoordinate" : false,
+         "IsManaged" : false
+      }
+   ]
+}
