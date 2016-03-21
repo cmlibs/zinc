@@ -12,7 +12,7 @@ if(ZINC_BUILD_PYTHON_BINDINGS)
     if(PYTHONLIBS_FOUND AND PYTHONINTERP_FOUND)
         add_subdirectory(python)
     else()
-        message(WARNING "Python bindings requested but a Python interperter and library was not found.")
+        message(WARNING "Python bindings requested but a Python interpreter and library were not found.")
     endif()
 endif()
 
