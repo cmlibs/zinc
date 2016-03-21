@@ -81,9 +81,35 @@ free($1);
 		PyObject *o = $input;
 		
 		char *temp_string = PyString_AsString(o);
-		int length =strlen(temp_string);
-		$2[0] = new char[length];
+		int length = strlen(temp_string);
+		$2[0] = new char[length + 1];
 		strcpy($2[0], temp_string);
+	}
+	else if (PyUnicode_Check($input))
+	{
+		$1 = 1;
+		$2 = new char*[1];
+		PyObject *o = $input;
+%#if PY_VERSION_HEX < 0x03030000
+		PyObject *utf8_obj = PyUnicode_AsUTF8String(o);
+		char *temp_string = PyString_AsString(utf8_obj);
+		Py_ssize_t length = PyString_Size(utf8_obj);
+%#else
+		Py_ssize_t length;
+		char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+%#endif
+		if (temp_string != NULL)
+		{
+			$2[0] = new char[length + 1];
+			strcpy($2[0], temp_string);
+		}
+		else
+		{
+			PyErr_SetString(PyExc_ValueError,"Not a UTF8 compatible string");
+			delete[] $2;
+			$2 = 0;
+			return NULL;
+		}
 	}
 	else if (PyList_Check($input))
 	{
@@ -95,13 +121,36 @@ free($1);
 			if (PyString_Check(o))
 			{
 				char *temp_string = PyString_AsString(o);
-				int length =strlen(temp_string);
-				$2[i] = new char[length];
+				int length = strlen(temp_string);
+				$2[i] = new char[length + 1];
 				strcpy($2[i], temp_string);
+			}
+			else if (PyUnicode_Check(o))
+			{
+%#if PY_VERSION_HEX < 0x03030000
+				PyObject *utf8_obj = PyUnicode_AsUTF8String(o);
+				char *temp_string = PyString_AsString(utf8_obj);
+				Py_ssize_t length = PyString_Size(utf8_obj);
+%#else
+				Py_ssize_t length;
+				char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+%#endif
+				if (temp_string != NULL)
+				{
+					$2[i] = new char[length + 1];
+					strcpy($2[i], temp_string);
+				}
+				else
+				{
+					PyErr_SetString(PyExc_ValueError,"Not a UTF8 compatible string");
+					delete[] $2;
+					$2 = 0;
+					return NULL;
+				}
 			}
 			else
 			{
-				PyErr_SetString(PyExc_TypeError,"list may only contain string");
+				PyErr_SetString(PyExc_TypeError,"List may only contain string");
 				delete[] $2;
 				$2 = 0;
 				return NULL;
@@ -110,7 +159,7 @@ free($1);
 	}
 	else
 	{
-		PyErr_SetString(PyExc_TypeError,"not a list, or single value");
+		PyErr_SetString(PyExc_TypeError,"Not a list, nor a single string value");
 		$2 = 0;
 		return NULL;
 	}
