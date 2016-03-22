@@ -53,6 +53,10 @@ public:
 
 	void ioEntries(Json::Value &fieldSettings);
 
+	void exportTypeSpecificParameters(Json::Value &fieldSettings);
+
+	void ioFiniteElementOnlyEntries(Json::Value &fieldSettings);
+
 protected:
 
 	OpenCMISS::Zinc::Field field;

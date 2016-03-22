@@ -3242,6 +3242,78 @@ public:
 			case CMZN_FIELD_TYPE_CONCATENATE:
 				enum_string = "CONCATENATE";
 				break;
+			case CMZN_FIELD_TYPE_IF:
+				enum_string = "IF";
+				break;
+			case CMZN_FIELD_TYPE_CONSTANT:
+				enum_string = "CONSTANT";
+				break;
+			case CMZN_FIELD_TYPE_STRING_CONSTANT:
+				enum_string = "STRING_CONSTANT";
+				break;
+			case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
+				enum_string = "COORDINATE_TRANFORMATION";
+				break;
+			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION:
+				enum_string = "VECTOR_COORDINATE_TRANFORMATION";
+				break;
+			case CMZN_FIELD_TYPE_DERIVATIVE:
+				enum_string = "DERIVATIVE";
+				break;
+			case CMZN_FIELD_TYPE_CURL:
+				enum_string = "CURL";
+				break;
+			case CMZN_FIELD_TYPE_DIVERGENCE:
+				enum_string = "DIVERGENCE";
+				break;
+			case CMZN_FIELD_TYPE_GRADIENT:
+				enum_string = "GRADIENT";
+				break;
+			case CMZN_FIELD_TYPE_FIBRE_AXES:
+				enum_string = "FIBRE_AXES";
+				break;
+			case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
+				enum_string = "EDGE_DISCONTINUITY";
+				break;
+			case CMZN_FIELD_TYPE_EMBEDDED:
+				enum_string = "EMBEDDED";
+				break;
+			case CMZN_FIELD_TYPE_NODE_VALUE:
+				enum_string = "NODE_VALUE";
+				break;
+			case CMZN_FIELD_TYPE_STORED_STRING:
+				enum_string = "STORED_STRING";
+				break;
+			case CMZN_FIELD_TYPE_IS_EXTERIOR:
+				enum_string = "IS_EXTERIOR";
+				break;
+			case CMZN_FIELD_TYPE_IS_ON_FACE:
+				enum_string = "IS_ON_FACE";
+				break;
+			case CMZN_FIELD_TYPE_AND:
+				enum_string = "AND";
+				break;
+			case CMZN_FIELD_TYPE_EQUAL_TO:
+				enum_string = "EQUAL_TO";
+				break;
+			case CMZN_FIELD_TYPE_GREATER_THAN:
+				enum_string = "GREATER_THAN";
+				break;
+			case CMZN_FIELD_TYPE_IS_DEFINED:
+				enum_string = "IS_DEFINED";
+				break;
+			case CMZN_FIELD_TYPE_LESS_THAN:
+				enum_string = "LESS_THAN";
+				break;
+			case CMZN_FIELD_TYPE_OR:
+				enum_string = "OR";
+				break;
+			case CMZN_FIELD_TYPE_NOT:
+				enum_string = "NOT";
+				break;
+			case CMZN_FIELD_TYPE_XOR:
+				enum_string = "XOR";
+				break;
 			default:
 				break;
 		}

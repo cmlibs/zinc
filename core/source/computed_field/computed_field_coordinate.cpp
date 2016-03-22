@@ -44,6 +44,11 @@ private:
 		return(computed_field_coordinate_transformation_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_coordinate_transformation*>(other_field))
@@ -303,6 +308,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_vector_coordinate_transformation_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION;
 	}
 
 	int compare(Computed_field_core* other_field)

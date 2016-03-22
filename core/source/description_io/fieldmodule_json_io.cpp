@@ -65,7 +65,7 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_n
 	OpenCMISS::Zinc::Field field = fieldmodule.findFieldByName(field_name);
 	if (!field.isValid())
 	{
-		int index = 0;
+		unsigned int index = 0;
 		while (index < fieldsList.size() || field.isValid())
 		{
 			Json::Value fieldJson = fieldsList[index];
@@ -100,10 +100,11 @@ int FieldmoduleJsonImport::import(const std::string &jsonString)
 			{
 				importField(fieldsList[index]);
 			}
-			for (unsigned int index = 0; index < fieldsList.size(); ++index )
+/*			for (unsigned int index = 0; index < fieldsList.size(); ++index )
 			{
 				setManaged(fieldsList[index]);
 			}
+*/
 		}
 		return_code = CMZN_OK;
 		fieldmodule.endChange();

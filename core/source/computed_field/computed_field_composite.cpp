@@ -811,6 +811,12 @@ convenience function for building a composite field which has <number_of_values>
 				/*number_of_source_values*/number_of_values,
 				/*source_values*/values,
 				source_field_numbers, source_value_numbers);
+			if (field && field->core)
+			{
+				Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+					field->core);
+				fieldComposite->type = CMZN_FIELD_TYPE_CONSTANT;
+			}
 		}
 		else
 		{

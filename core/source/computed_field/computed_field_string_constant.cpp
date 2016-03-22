@@ -62,6 +62,11 @@ private:
 		return(computed_field_string_constant_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_STRING_CONSTANT;
+	}
+
 	int compare(Computed_field_core* other_field);
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
