@@ -696,6 +696,10 @@ enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string);
 
 char *cmzn_field_type_enum_to_string(enum cmzn_field_type type);
 
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string);
+
+char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
+
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_H) */

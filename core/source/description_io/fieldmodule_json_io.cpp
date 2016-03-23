@@ -24,13 +24,8 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(Json::Value &fieldSett
 	field = fieldmodule.findFieldByName(fieldSettings["Name"].asCString());
 	if (!field.isValid())
 	{
-		if (fieldSettings["Type"].isString())
-		{
-			enum cmzn_field_type type = CMZN_FIELD_TYPE_INVALID;
-			type = cmzn_field_type_enum_from_string(fieldSettings["Type"].asCString());
-			field = importTypeSpecificField(type, fieldmodule, fieldSettings, this);
-			FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).ioEntries(fieldSettings);
-		}
+		field = importTypeSpecificField(fieldmodule, fieldSettings, this);
+		FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).ioEntries(fieldSettings);
 	}
 
 	return field;

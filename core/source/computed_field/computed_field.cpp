@@ -3192,6 +3192,7 @@ char *cmzn_field_coordinate_system_type_enum_to_string(enum cmzn_field_coordinat
 	return (coordinate_system_type_string ? duplicate_string(coordinate_system_type_string) : 0);
 }
 
+
 class cmzn_field_type_conversion
 {
 public:
@@ -3329,6 +3330,146 @@ enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string)
 char *cmzn_field_type_enum_to_string(enum cmzn_field_type type)
 {
 	const char *type_string = cmzn_field_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_field_type_class_name_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_type type)
+	{
+		const char *class_name = 0;
+		switch (type)
+		{
+			case CMZN_FIELD_TYPE_INVALID:
+				class_name = "Invalid";
+				break;
+			case CMZN_FIELD_TYPE_ALIAS:
+				class_name = "FieldAlias";
+				break;
+			case CMZN_FIELD_TYPE_ADD:
+				class_name = "FieldAdd";
+				break;
+			case CMZN_FIELD_TYPE_POWER:
+				class_name = "FieldPower";
+				break;
+			case CMZN_FIELD_TYPE_MULTIPLY:
+				class_name = "FieldMultiply";
+				break;
+			case CMZN_FIELD_TYPE_DIVIDE:
+				class_name = "FieldDivine";
+				break;
+			case CMZN_FIELD_TYPE_SUBTRACT:
+				class_name = "FieldSubtract";
+				break;
+			case CMZN_FIELD_TYPE_LOG:
+				class_name = "FieldLog";
+				break;
+			case CMZN_FIELD_TYPE_SQRT:
+				class_name = "FieldSqrt";
+				break;
+			case CMZN_FIELD_TYPE_EXP:
+				class_name = "FieldExp";
+				break;
+			case CMZN_FIELD_TYPE_ABS:
+				class_name = "FieldAbs";
+				break;
+			case CMZN_FIELD_TYPE_IDENTITY:
+				class_name = "FieldIdentity";
+				break;
+			case CMZN_FIELD_TYPE_COMPONENT:
+				class_name = "FieldComponent";
+				break;
+			case CMZN_FIELD_TYPE_CONCATENATE:
+				class_name = "FieldConcatenate";
+				break;
+			case CMZN_FIELD_TYPE_IF:
+				class_name = "FieldIf";
+				break;
+			case CMZN_FIELD_TYPE_CONSTANT:
+				class_name = "FieldConstant";
+				break;
+			case CMZN_FIELD_TYPE_STRING_CONSTANT:
+				class_name = "FieldStringConstant";
+				break;
+			case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
+				class_name = "FieldCoordinateTransformation";
+				break;
+			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION:
+				class_name = "FieldVectorCoordinateTransformation";
+				break;
+			case CMZN_FIELD_TYPE_DERIVATIVE:
+				class_name = "FieldDerivative";
+				break;
+			case CMZN_FIELD_TYPE_CURL:
+				class_name = "FieldCurl";
+				break;
+			case CMZN_FIELD_TYPE_DIVERGENCE:
+				class_name = "FieldDivergence";
+				break;
+			case CMZN_FIELD_TYPE_GRADIENT:
+				class_name = "FieldGradient";
+				break;
+			case CMZN_FIELD_TYPE_FIBRE_AXES:
+				class_name = "FieldFibreAxes";
+				break;
+			case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
+				class_name = "FieldEdgeDiscontinuity";
+				break;
+			case CMZN_FIELD_TYPE_EMBEDDED:
+				class_name = "FieldEmbedded";
+				break;
+			case CMZN_FIELD_TYPE_NODE_VALUE:
+				class_name = "FieldNodeValue";
+				break;
+			case CMZN_FIELD_TYPE_STORED_STRING:
+				class_name = "FieldStoredString";
+				break;
+			case CMZN_FIELD_TYPE_IS_EXTERIOR:
+				class_name = "FieldIsExterior";
+				break;
+			case CMZN_FIELD_TYPE_IS_ON_FACE:
+				class_name = "FieldIsOnFace";
+				break;
+			case CMZN_FIELD_TYPE_AND:
+				class_name = "FieldAnd";
+				break;
+			case CMZN_FIELD_TYPE_EQUAL_TO:
+				class_name = "FieldEqualTo";
+				break;
+			case CMZN_FIELD_TYPE_GREATER_THAN:
+				class_name = "FieldGreaterThan";
+				break;
+			case CMZN_FIELD_TYPE_IS_DEFINED:
+				class_name = "FieldIsDefined";
+				break;
+			case CMZN_FIELD_TYPE_LESS_THAN:
+				class_name = "FieldLessThan";
+				break;
+			case CMZN_FIELD_TYPE_OR:
+				class_name = "FieldOr";
+				break;
+			case CMZN_FIELD_TYPE_NOT:
+				class_name = "FieldNot";
+				break;
+			case CMZN_FIELD_TYPE_XOR:
+				class_name = "FieldXor";
+				break;
+			default:
+				break;
+		}
+		return class_name;
+	}
+};
+
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string)
+{
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_class_name_conversion>(string);
+}
+
+char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
+{
+	const char *type_string = cmzn_field_type_class_name_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 

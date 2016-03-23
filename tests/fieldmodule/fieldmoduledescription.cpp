@@ -100,6 +100,8 @@ TEST(fieldmodule_description, write)
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);
 
+	printf("%s", description_string);
+
 	cmzn_field_destroy(&firstComponentField);
 	cmzn_field_destroy(&addField);
 	cmzn_field_destroy(&concatenateField);
@@ -190,7 +192,7 @@ TEST(fieldmodule_description, read)
 	cmzn_field_id firstComponentField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "firstComponent");
 	EXPECT_NE(static_cast<cmzn_field *>(0), firstComponentField);
-	EXPECT_FALSE(cmzn_field_is_managed(firstComponentField));
+	EXPECT_TRUE(cmzn_field_is_managed(firstComponentField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(firstComponentField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_components(firstComponentField));
 	temp = cmzn_field_get_source_field(firstComponentField, 1);

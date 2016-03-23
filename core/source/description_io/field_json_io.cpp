@@ -31,7 +31,7 @@
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.hpp"
-
+#include <stdio.h>
 #include <string.h>
 
 /*
@@ -43,28 +43,22 @@
  *
  */
 
-OpenCMISS::Zinc::Field *getSourceFields(Json::Value &fieldSettings, int *count,
+OpenCMISS::Zinc::Field *getSourceFields(Json::Value &typeSettings, unsigned int *count,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int numberOfSourceFields = 0;
-	if (fieldSettings["NumberOfSourceFields"].isInt())
-	{
-		numberOfSourceFields = fieldSettings["NumberOfSourceFields"].asInt();
-	}
 
 	OpenCMISS::Zinc::Field *sourceFields = 0;
 
-	if (numberOfSourceFields > 0)
+	if (typeSettings["SourceFields"].isArray() &&
+		typeSettings["SourceFields"].size() > 0)
 	{
+		numberOfSourceFields = typeSettings["SourceFields"].size();
 		sourceFields = new OpenCMISS::Zinc::Field[numberOfSourceFields];
-		if (fieldSettings["SourceField"].isArray() &&
-			fieldSettings["SourceField"].size() == numberOfSourceFields)
+		for (unsigned int i = 0; i < numberOfSourceFields; i++)
 		{
-			for (unsigned int i = 0; i < fieldSettings["SourceField"].size(); i++)
-			{
-				const char *sourceFieldName = fieldSettings["SourceField"][i].asCString();
-				sourceFields[i] = jsonImport->getFieldByName(sourceFieldName);
-			}
+			const char *sourceFieldName = typeSettings["SourceFields"][i].asCString();
+			sourceFields[i] = jsonImport->getFieldByName(sourceFieldName);
 		}
 	}
 	*count = numberOfSourceFields;
@@ -73,12 +67,12 @@ OpenCMISS::Zinc::Field *getSourceFields(Json::Value &fieldSettings, int *count,
 }
 
 OpenCMISS::Zinc::Field importGenericOneComponentsField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	int sourcesCount = 0;
+	unsigned int sourcesCount = 0;
 	OpenCMISS::Zinc::Field field(0);
-	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 		jsonImport);
 	if (sourcesCount == 1)
 	{
@@ -124,10 +118,9 @@ OpenCMISS::Zinc::Field importGenericOneComponentsField(enum cmzn_field_type type
 				break;
 			case CMZN_FIELD_TYPE_TRANSPOSE:
 			{
-				if (fieldSettings["FieldTranspose"]["SourceNumberOfRows"].isInt())
+				if (typeSettings["SourceNumberOfRows"].isInt())
 				{
-					field = fieldmodule.createFieldTranspose(
-						fieldSettings["FieldTranspose"]["SourceNumberOfRows"].asInt(),
+					field = fieldmodule.createFieldTranspose(typeSettings["SourceNumberOfRows"].asInt(),
 						sourcefields[0]);
 				}
 			}	break;
@@ -140,12 +133,12 @@ OpenCMISS::Zinc::Field importGenericOneComponentsField(enum cmzn_field_type type
 }
 
 OpenCMISS::Zinc::Field importGenericTwoComponentsField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	int sourcesCount = 0;
+	unsigned int sourcesCount = 0;
 	OpenCMISS::Zinc::Field field(0);
-	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 		jsonImport);
 	if (sourcesCount == 2)
 	{
@@ -207,11 +200,10 @@ OpenCMISS::Zinc::Field importGenericTwoComponentsField(enum cmzn_field_type type
 				break;
 			case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
 			{
-				if (fieldSettings["FieldMatrixMultiply"]["NumberOfRows"].isInt())
+				if (typeSettings["NumberOfRows"].isInt())
 				{
 					field = fieldmodule.createFieldMatrixMultiply(
-						fieldSettings["FieldMatrixMultiply"]["NumberOfRows"].asInt(),
-						sourcefields[0], sourcefields[1]);
+						typeSettings["NumberOfRows"].asInt(), sourcefields[0], sourcefields[1]);
 				}
 			}	break;
 			default:
@@ -224,12 +216,12 @@ OpenCMISS::Zinc::Field importGenericTwoComponentsField(enum cmzn_field_type type
 }
 
 OpenCMISS::Zinc::Field importGenericThreeComponentsField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	int sourcesCount = 0;
+	unsigned int sourcesCount = 0;
 	OpenCMISS::Zinc::Field field(0);
-	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 		jsonImport);
 	if (sourcesCount == 3)
 	{
@@ -248,33 +240,32 @@ OpenCMISS::Zinc::Field importGenericThreeComponentsField(enum cmzn_field_type ty
 }
 
 OpenCMISS::Zinc::Field importCompositeField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	int sourcesCount = 0;
+	unsigned int sourcesCount = 0;
 	OpenCMISS::Zinc::Field field(0);
-	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 		jsonImport);
 	if (sourcesCount > 0)
 	{
 		switch (type)
 		{
 			case CMZN_FIELD_TYPE_COMPONENT:
-				if (fieldSettings["FieldComponent"].isObject())
+				if (typeSettings.isObject())
 				{
-					Json::Value typeSettings = fieldSettings["FieldComponent"];
-					if (typeSettings["SourceComponentIndex"].isArray())
+					if (typeSettings["SourceComponentIndexes"].isArray())
 					{
-						int componentCount = typeSettings["SourceComponentIndex"].size();
+						int componentCount = typeSettings["SourceComponentIndexes"].size();
 						if (componentCount == 1)
 							field = fieldmodule.createFieldComponent(
-								sourcefields[0], typeSettings["SourceComponentIndex"][0].asInt());
+								sourcefields[0], typeSettings["SourceComponentIndexes"][0].asInt());
 						if (componentCount > 1)
 						{
 							int *indexes;
 							indexes = new int[componentCount];
 							for (int i = 0; i < componentCount; i++)
-								indexes[i] = typeSettings["SourceComponentIndex"][i].asInt();
+								indexes[i] = typeSettings["SourceComponentIndexes"][i].asInt();
 							field = fieldmodule.createFieldComponent(sourcefields[0],
 								componentCount, indexes);
 							delete[] indexes;
@@ -293,7 +284,7 @@ OpenCMISS::Zinc::Field importCompositeField(enum cmzn_field_type type,
 }
 
 OpenCMISS::Zinc::Field importConstantField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings)
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings)
 {
 	OpenCMISS::Zinc::Field field(0);
 
@@ -301,22 +292,22 @@ OpenCMISS::Zinc::Field importConstantField(enum cmzn_field_type type,
 	{
 		case CMZN_FIELD_TYPE_CONSTANT:
 		{
-			if (fieldSettings["FieldConstant"]["values"].isArray())
+			if (typeSettings["Values"].isArray())
 			{
-				unsigned int count = fieldSettings["FieldConstant"]["values"].size();
+				unsigned int count = typeSettings["Values"].size();
 				double *values;
 				values = new double[count];
 				for (unsigned int i = 0; i < count; i++)
-					values[i] = fieldSettings["FieldConstant"]["values"][i].asDouble();
+					values[i] = typeSettings["Values"][i].asDouble();
 				field = fieldmodule.createFieldConstant(count, values);
 				delete[] values;
 			}
 		} break;
 		case CMZN_FIELD_TYPE_STRING_CONSTANT:
 		{
-			if (fieldSettings["FieldStringConstant"]["stringValue"].isString())
+			if (typeSettings["StringValue"].isString())
 				field = fieldmodule.createFieldStringConstant(
-					fieldSettings["FieldStringConstant"]["stringValue"].asCString());
+					typeSettings["StringValue"].asCString());
 		} break;
 		default:
 			break;
@@ -325,12 +316,12 @@ OpenCMISS::Zinc::Field importConstantField(enum cmzn_field_type type,
 }
 
 OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	int sourcesCount = 0;
+	unsigned int sourcesCount = 0;
 	OpenCMISS::Zinc::Field field(0);
-	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+	OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 		jsonImport);
 	if (sourcesCount == 1)
 	{
@@ -338,11 +329,10 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 		{
 			case CMZN_FIELD_TYPE_DERIVATIVE:
 			{
-				if (fieldSettings["FieldDerivative"]["xiIndex"].isInt())
+				if (typeSettings["XiIndex"].isInt())
 				{
-
 					field = fieldmodule.createFieldDerivative(sourcefields[0],
-						fieldSettings["FieldDerivative"]["xiIndex"].asInt());
+						typeSettings["XiIndex"].asInt());
 				}
 			} break;
 			default:
@@ -354,14 +344,14 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 }
 
 OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	OpenCMISS::Zinc::Field field(0);
 	switch (type)
 	{
 		case CMZN_FIELD_TYPE_EMBEDDED:
-			field = importGenericTwoComponentsField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importGenericTwoComponentsField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_STORED_STRING:
 			field = fieldmodule.createFieldStoredString();
@@ -371,18 +361,18 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 			break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{
-			if (fieldSettings["FieldIsOnFace"]["ElementFaceType"].isString())
+			if (typeSettings["ElementFaceType"].isString())
 			{
 				enum cmzn_element_face_type type = cmzn_element_face_type_enum_from_string(
-					fieldSettings["FieldIsOnFace"]["ElementFaceType"].asCString());
+					typeSettings["ElementFaceType"].asCString());
 				field = OpenCMISS::Zinc::Field(cmzn_fieldmodule_create_field_is_on_face(
 					fieldmodule.getId(), type));
 			}
 		}	break;
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		{
-			int sourcesCount = 0;
-			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+			unsigned int sourcesCount = 0;
+			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 				jsonImport);
 			if (sourcesCount > 0)
 			{
@@ -392,24 +382,24 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 				{
 					derivedField.setConditionalField(sourcefields[1]);
 				}
-				if (fieldSettings["FieldEdgeDiscontinuity"]["Measure"].isString())
+				if (typeSettings["Measure"].isString())
 					cmzn_field_edge_discontinuity_set_measure(derivedField.getDerivedId(),
 						cmzn_field_edge_discontinuity_measure_enum_from_string(
-							fieldSettings["FieldEdgeDiscontinuity"]["Measure"].asCString()));
+							typeSettings["Measure"].asCString()));
 				field = derivedField;
 			}
 			delete[] sourcefields;
 		}	break;
 		case CMZN_FIELD_TYPE_NODE_VALUE:
 		{
-			int sourcesCount = 0;
-			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(fieldSettings, &sourcesCount,
+			unsigned int sourcesCount = 0;
+			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
 				jsonImport);
-			if (sourcesCount == 1 && fieldSettings["FieldNodeValue"]["NodeValueLabel"].isString())
+			if (sourcesCount == 1 && typeSettings["NodeValueLabel"].isString())
 			{
 				enum cmzn_node_value_label valueLabel = cmzn_node_value_label_enum_from_string(
-					fieldSettings["FieldNodeValue"]["NodeValueLabel"].asCString());
-				int version = fieldSettings["FieldNodeValue"]["VersionNumber"].isInt();
+					typeSettings["NodeValueLabel"].asCString());
+				int version = typeSettings["VersionNumber"].isInt();
 				field = OpenCMISS::Zinc::Field(
 					cmzn_fieldmodule_create_field_node_value(fieldmodule.getId(),
 						sourcefields[0].getId(), valueLabel, version));
@@ -423,12 +413,33 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 	return field;
 }
 
-OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
+Json::Value getDerviedFieldValue(Json::Value &fieldSettings, enum cmzn_field_type *type)
+{
+	Json::Value typeSettings;
+	Json::Value::Members members = fieldSettings.getMemberNames();
+	Json::Value::Members::iterator it = members.begin();
+	*type = CMZN_FIELD_TYPE_INVALID;
+	while (it != members.end() && (*type == CMZN_FIELD_TYPE_INVALID))
+	{
+
+		*type = cmzn_field_type_enum_from_class_name((*it).c_str());
+		if (*type != CMZN_FIELD_TYPE_INVALID)
+		{
+			typeSettings = fieldSettings[(*it)];
+		}
+		++it;
+	}
+	return typeSettings;
+}
+
+
+OpenCMISS::Zinc::Field importTypeSpecificField(
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	OpenCMISS::Zinc::Field field(0);
-
+	enum cmzn_field_type type = CMZN_FIELD_TYPE_INVALID;
+	Json::Value typeSettings = getDerviedFieldValue(fieldSettings, &type);
 	switch (type)
 	{
 		case CMZN_FIELD_TYPE_ALIAS:
@@ -444,7 +455,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
 		case CMZN_FIELD_TYPE_EIGENVALUES:
 		case CMZN_FIELD_TYPE_EIGENVECTORS:
 		case CMZN_FIELD_TYPE_MATRIX_INVERT:
-			field = importGenericOneComponentsField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importGenericOneComponentsField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_ADD:
 		case CMZN_FIELD_TYPE_POWER:
@@ -464,21 +475,21 @@ OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
 		case CMZN_FIELD_TYPE_XOR:
 		case CMZN_FIELD_TYPE_PROJECTION:
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
-			field = importGenericTwoComponentsField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importGenericTwoComponentsField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_COMPONENT:
 		case CMZN_FIELD_TYPE_CONCATENATE:
-			field = importCompositeField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importCompositeField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_IF:
-			field = importGenericThreeComponentsField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importGenericThreeComponentsField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_CONSTANT:
 		case CMZN_FIELD_TYPE_STRING_CONSTANT:
-			field = importConstantField(type, fieldmodule, fieldSettings);
+			field = importConstantField(type, fieldmodule, typeSettings);
 			break;
 		case CMZN_FIELD_TYPE_DERIVATIVE:
-			field = importDerivativeField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importDerivativeField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_EMBEDDED:
 		case CMZN_FIELD_TYPE_STORED_STRING:
@@ -486,7 +497,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		case CMZN_FIELD_TYPE_NODE_VALUE:
-			field = importFiniteElementField(type, fieldmodule, fieldSettings, jsonImport);
+			field = importFiniteElementField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		default:
 			break;
@@ -499,51 +510,53 @@ OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
 void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 {
 	enum cmzn_field_type type = cmzn_field_get_type(field.getId());
-	char *type_string = cmzn_field_type_enum_to_string(cmzn_field_get_type(field.getId()));
-	fieldSettings["Type"] = type_string;
-	DEALLOCATE(type_string);
 	int numberOfComponent = field.getNumberOfComponents();
+
+	Json::Value typeSettings;
+	int numberOfSourceFields = field.getNumberOfSourceFields();
+	for (int i = 0; i < numberOfSourceFields; i++)
+	{
+		OpenCMISS::Zinc::Field sourceField = field.getSourceField(1 + i);
+		char *sourceName = sourceField.getName();
+		typeSettings["SourceFields"].append(sourceName);
+		DEALLOCATE(sourceName);
+	}
+	char *className = cmzn_field_type_enum_to_class_name(type);
 	switch (type)
 	{
+		case CMZN_FIELD_TYPE_INVALID:
+			break;
 		case CMZN_FIELD_TYPE_COMPONENT:
 		{
 			OpenCMISS::Zinc::FieldComponent fieldComponent = field.castComponent();
-			Json::Value typeSettings;
 			for (int i = 0; i < numberOfComponent; i++)
 			{
-				typeSettings["SourceComponentIndex"].append(fieldComponent.getSourceComponentIndex(i+1));
+				typeSettings["SourceComponentIndexes"].append(fieldComponent.getSourceComponentIndex(i+1));
 			}
-			fieldSettings["FieldComponent"] = typeSettings;
 		} break;
 		case CMZN_FIELD_TYPE_CONSTANT:
 		{
-			Json::Value typeSettings;
 			OpenCMISS::Zinc::Fieldcache fieldcache = fieldmodule.createFieldcache();
 			double *values = 0;
 			values = new double[numberOfComponent];
 			field.evaluateReal(fieldcache, numberOfComponent, values);
 			for (int i = 0; i < numberOfComponent; i++)
 			{
-				typeSettings["values"].append(values[i]);
+				typeSettings["Values"].append(values[i]);
 			}
 			delete[] values;
-			fieldSettings["FieldConstant"] = typeSettings;
 		} break;
 		case CMZN_FIELD_TYPE_STRING_CONSTANT:
 		{
-			Json::Value typeSettings;
 			OpenCMISS::Zinc::Fieldcache fieldcache = fieldmodule.createFieldcache();
 			char *string_value = field.evaluateString(fieldcache);
-			typeSettings["stringValue"] = string_value;
-			fieldSettings["FieldStringConstant"] = typeSettings;
+			typeSettings["StringValue"] = string_value;
 			DEALLOCATE(string_value);
 		} break;
 		case CMZN_FIELD_TYPE_DERIVATIVE:
 		{
-			Json::Value typeSettings;
 			int xi_index = cmzn_field_derivative_get_xi_index(field.getId());
-			typeSettings["xiIndex"] = xi_index;
-			fieldSettings["FieldDerivative"] = typeSettings;
+			typeSettings["XiIndex"] = xi_index;
 		} break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{
@@ -555,11 +568,9 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 				typeSettings["ElementFaceType"] = enumString;
 				DEALLOCATE(enumString);
 			}
-			fieldSettings["FieldIsOnFace"] = typeSettings;
-		}	break;
+		} break;
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		{
-			Json::Value typeSettings;
 			char *enumString = cmzn_field_edge_discontinuity_measure_enum_to_string(
 				cmzn_field_edge_discontinuity_get_measure(field.castEdgeDiscontinuity().getDerivedId()));
 			if (enumString)
@@ -567,11 +578,9 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 				typeSettings["Measure"] = enumString;
 				DEALLOCATE(enumString);
 			}
-			fieldSettings["FieldEdgeDiscontinuity"] = typeSettings;
-		}	break;
+		} break;
 		case CMZN_FIELD_TYPE_NODE_VALUE:
 		{
-			Json::Value typeSettings;
 			char *enumString = cmzn_node_value_label_enum_to_string(
 				cmzn_field_node_value_get_value_label(field.getId()));
 			if (enumString)
@@ -581,25 +590,25 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			}
 			int versioNumber = cmzn_field_node_value_get_version(field.getId());
 			typeSettings["VersionNumber"] = versioNumber;
-			fieldSettings["FieldNodeValue"] = typeSettings;
-		}	break;
+		} break;
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
 		{
-			Json::Value typeSettings;
 			int numberOfRows = cmzn_field_matrix_multiply_get_number_of_rows(field.getId());
 			typeSettings["NumberOfRows"] = numberOfRows;
-			fieldSettings["FieldMatrixMultiply"] = typeSettings;
-		}	break;
+		} break;
 		case CMZN_FIELD_TYPE_TRANSPOSE:
 		{
-			Json::Value typeSettings;
 			int sourceNumberOfRows = cmzn_field_transpose_get_source_number_of_rowss(field.getId());
 			typeSettings["SourceNumberOfRows"] = sourceNumberOfRows;
-			fieldSettings["FieldTranspose"] = typeSettings;
-		}	break;
+		} break;
 		default:
-			break;
+		{
+		} break;
 	}
+	if (CMZN_FIELD_TYPE_INVALID != type)
+		fieldSettings[className] = typeSettings;
+
+	DEALLOCATE(className);
 }
 
 void FieldJsonIO::ioFiniteElementOnlyEntries(Json::Value &fieldSettings)
@@ -645,15 +654,6 @@ void FieldJsonIO::ioEntries(Json::Value &fieldSettings)
 		fieldSettings["CoordinateSystemType"] = system_string;
 		fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
 		DEALLOCATE(system_string);
-		int numberOfSourceFields = field.getNumberOfSourceFields();
-		fieldSettings["NumberOfSourceFields"] = numberOfSourceFields;
-		for (int i = 0; i < numberOfSourceFields; i++)
-		{
-			OpenCMISS::Zinc::Field sourceField = field.getSourceField(1 + i);
-			char *sourceName = sourceField.getName();
-			fieldSettings["SourceField"].append(sourceName);
-			DEALLOCATE(sourceName);
-		}
 		exportTypeSpecificParameters(fieldSettings);
 	}
 	else

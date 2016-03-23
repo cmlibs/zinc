@@ -21,7 +21,7 @@
 #include "jsoncpp/json.h"
 #include <string>
 
-OpenCMISS::Zinc::Field importTypeSpecificField(enum cmzn_field_type type,
+OpenCMISS::Zinc::Field importTypeSpecificField(
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport);
 
