@@ -24,7 +24,7 @@ find_package(PythonLibs QUIET)
 
 string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 1 PYTHONLIBS_MAJOR_VERSION)
 if(${PYTHONLIBS_MAJOR_VERSION} STREQUAL "3")
-	set(PYTHONLIBS_SWIG_FLAGS -py3)
+    set(PYTHONLIBS_SWIG_FLAGS -py3)
 endif()
 
 # We have to set the include directories onto the directory because the swig
@@ -35,39 +35,39 @@ include_directories(${ZINC_API_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 set(CMAKE_SWIG_FLAGS -w381 -w382 -w361 -w362 ${PYTHONLIBS_SWIG_FLAGS})
 
 set(INTERFACE_SRCS
-	../interface/context.i
-	../interface/differentialoperator.i
-	../interface/element.i
-	../interface/field.i
-	../interface/fieldmodule.i
-	../interface/fieldcache.i
-	../interface/fieldsmoothing.i
-	../interface/font.i
-	../interface/glyph.i
-	../interface/graphics.i
-	../interface/light.i
-	../interface/logger.i
-	../interface/material.i
-	../interface/optimisation.i
-	../interface/node.i
-	../interface/scene.i
-	../interface/scenecoordinatesystem.i
-	../interface/scenefilter.i
-	../interface/scenepicker.i
-	../interface/sceneviewer.i
-	../interface/sceneviewerinput.i
-	../interface/selection.i
-	../interface/spectrum.i
-	../interface/region.i
-	../interface/status.i
-	../interface/stream.i
-	../interface/streamimage.i
-	../interface/streamregion.i
-	../interface/streamscene.i
-	../interface/tessellation.i
-	../interface/timekeeper.i
-	../interface/timenotifier.i
-	../interface/timesequence.i)
+    ../interface/context.i
+    ../interface/differentialoperator.i
+    ../interface/element.i
+    ../interface/field.i
+    ../interface/fieldmodule.i
+    ../interface/fieldcache.i
+    ../interface/fieldsmoothing.i
+    ../interface/font.i
+    ../interface/glyph.i
+    ../interface/graphics.i
+    ../interface/light.i
+    ../interface/logger.i
+    ../interface/material.i
+    ../interface/optimisation.i
+    ../interface/node.i
+    ../interface/scene.i
+    ../interface/scenecoordinatesystem.i
+    ../interface/scenefilter.i
+    ../interface/scenepicker.i
+    ../interface/sceneviewer.i
+    ../interface/sceneviewerinput.i
+    ../interface/selection.i
+    ../interface/spectrum.i
+    ../interface/region.i
+    ../interface/status.i
+    ../interface/stream.i
+    ../interface/streamimage.i
+    ../interface/streamregion.i
+    ../interface/streamscene.i
+    ../interface/tessellation.i
+    ../interface/timekeeper.i
+    ../interface/timenotifier.i
+    ../interface/timesequence.i)
 
 set_source_files_properties(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)
 
@@ -80,25 +80,25 @@ set(SWIG_MODULE_TARGETS )
 set(MODULE_PY_FILES )
 set(SETUP_PY_PACKAGE_FILES )
 foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
-	get_filename_component(MODULE_NAME ${SWIG_INTERFACE} NAME_WE)
-	list(APPEND MODULE_PY_FILES ${MODULE_NAME}.py)
-	SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
-	SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
-	set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
-	# Disable use of Debug Python libraries when not present on Windows
-	# See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
-	if (WIN32)
-	    if(NOT PYTHON_DEBUG_LIBRARY)
-	        target_compile_definitions(${MODULE_TARGET} PRIVATE $<$<CONFIG:Debug>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>)
-	    endif()
-	endif()
-	set_target_properties(${MODULE_TARGET} PROPERTIES
-	    DEBUG_POSTFIX ""
-		LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
-		RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
+    get_filename_component(MODULE_NAME ${SWIG_INTERFACE} NAME_WE)
+    list(APPEND MODULE_PY_FILES ${MODULE_NAME}.py)
+    SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
+    SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
+    set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
+    # Disable use of Debug Python libraries when not present on Windows
+    # See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
+    if (WIN32)
+        if(NOT PYTHON_DEBUG_LIBRARY)
+            target_compile_definitions(${MODULE_TARGET} PRIVATE $<$<CONFIG:Debug>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>)
+        endif()
+    endif()
+    set_target_properties(${MODULE_TARGET} PROPERTIES
+        DEBUG_POSTFIX ""
+        LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
+        RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
     )
-	list(APPEND SWIG_MODULE_TARGETS ${MODULE_TARGET})
-	list(APPEND SETUP_PY_PACKAGE_FILES "'$<TARGET_FILE_NAME:${MODULE_TARGET}>'")
+    list(APPEND SWIG_MODULE_TARGETS ${MODULE_TARGET})
+    list(APPEND SETUP_PY_PACKAGE_FILES "'$<TARGET_FILE_NAME:${MODULE_TARGET}>'")
 endforeach()
 add_custom_target(collect_python_binding_files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/opencmiss/zinc
@@ -106,16 +106,16 @@ add_custom_target(collect_python_binding_files ALL
 
 set(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 if(WIN32)
-	# Sometimes we cross-compile on Windows so we'll set
-	# the PYZINC_ARCHITECTURE manually
-	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-		set(PYZINC_ARCHITECTURE x86)
-	else()
-		set(PYZINC_ARCHITECTURE amd64)
-	endif()
+    # Sometimes we cross-compile on Windows so we'll set
+    # the PYZINC_ARCHITECTURE manually
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set(PYZINC_ARCHITECTURE x86)
+    else()
+        set(PYZINC_ARCHITECTURE amd64)
+    endif()
 endif()
 if(APPLE)
-	set(PYZINC_ARCHITECTURE universal)
+    set(PYZINC_ARCHITECTURE universal)
 endif()
 
 string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION)
@@ -130,10 +130,10 @@ set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_DEVELOPER_VERSION}-${PYZINC
 ################################################################
 # Generate the required package files
 set(ADDITIONAL_PACKAGE_FILES
-	CHANGES.txt
-	LICENSE.txt
-	README.txt
-	docs/main.rst)
+    CHANGES.txt
+    LICENSE.txt
+    README.txt
+    docs/main.rst)
 
 # 1. Configure stage
 set(SETUP_PY_PACKAGE_FILES_STR "${SETUP_PY_PACKAGE_FILES}")
@@ -165,9 +165,9 @@ file(GENERATE OUTPUT "${ZINC_PYTHON_PACKAGE_DIR}/__init__.py"
     INPUT "${CMAKE_CURRENT_BINARY_DIR}/zinc__init__.py"
 )
 foreach(_file ${ADDITIONAL_PACKAGE_FILES})
-	file(GENERATE OUTPUT "${BASE_PYTHON_PACKAGE_DIR}/${_file}"
-	    INPUT "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
-	)
+    file(GENERATE OUTPUT "${BASE_PYTHON_PACKAGE_DIR}/${_file}"
+        INPUT "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
+    )
 endforeach()
 
 
