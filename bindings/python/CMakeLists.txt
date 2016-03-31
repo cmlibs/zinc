@@ -85,10 +85,12 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
 	SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
 	SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
 	set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
-	# Disable use of Debug Python libraries (not always present on windows)
+	# Disable use of Debug Python libraries when not present on Windows
 	# See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
 	if (WIN32)
-	    target_compile_definitions(${MODULE_TARGET} PRIVATE $<$<CONFIG:Debug>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>)
+	    if(NOT PYTHON_DEBUG_LIBRARY)
+	        target_compile_definitions(${MODULE_TARGET} PRIVATE $<$<CONFIG:Debug>:SWIG_PYTHON_INTERPRETER_NO_DEBUG>)
+	    endif()
 	endif()
 	set_target_properties(${MODULE_TARGET} PROPERTIES
 	    DEBUG_POSTFIX ""
