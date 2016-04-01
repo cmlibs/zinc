@@ -272,7 +272,7 @@ ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 
 /**
  * Write the json file describing the fields in this fieldmodule, which can
- * be used to store the current non-finite elemment cmzn_field settings.
+ * be used to store the current cmzn_field settings.
  *
  * @param fieldmodule  Handle to the fieldmodule.
  * @return  c string containing the json description of fieldmodule, otherwise 0;
@@ -280,8 +280,8 @@ ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 ZINC_API char *cmzn_fieldmodule_write_description(cmzn_fieldmodule_id fieldmodule);
 
 /**
- * Write the json file describing the fields in this fieldmodule. This will change
- * the settings in fieldmodule and its fields.
+ * Write the json file describing the fields in this fieldmodule. This may change
+ * the current fields' definition.
  *
  * @param fieldmodule  Handle to the fieldmodule.
  * @description  The string containing json description
