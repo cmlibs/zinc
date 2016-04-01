@@ -1,6 +1,7 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.1.1
+Deprecated API status headers and enums for result/error codes. Use result headers and enums instead.
 Default behaviour changes:
 Default ratio of diffuse to ambient light changed from 0.9:0.1 to 0.8:0.2.
 Default tessellation refinement factors increased from 4 to 6.

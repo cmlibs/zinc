@@ -59,6 +59,7 @@ set(INTERFACE_SRCS
     ../interface/selection.i
     ../interface/spectrum.i
     ../interface/region.i
+    ../interface/result.i
     ../interface/status.i
     ../interface/stream.i
     ../interface/streamimage.i

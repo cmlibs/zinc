@@ -20,10 +20,10 @@ TEST(cmzn_context, getVersion)
 	ZincTestSetup zinc;
 
 	int version[3];
-	int result = CMZN_ERROR_ARGUMENT;
+	int result = CMZN_RESULT_ERROR_ARGUMENT;
 	const char *revision;
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_context_get_version(zinc.context, &version[0]));
+	EXPECT_EQ(CMZN_RESULT_OK, result = cmzn_context_get_version(zinc.context, &version[0]));
 	EXPECT_GE(version[0], 2);
 
 	EXPECT_EQ(cmzn_context_get_revision(0), (const char *)0);
@@ -38,8 +38,8 @@ TEST(ZincContext, getVersion)
 	ZincTestSetupCpp zinc;
 	int version[3];
 
-	int result = CMZN_ERROR_ARGUMENT;
-	EXPECT_EQ(CMZN_OK, result = zinc.context.getVersion(&version[0]));
+	int result = RESULT_ERROR_ARGUMENT;
+	EXPECT_EQ(RESULT_OK, result = zinc.context.getVersion(&version[0]));
 	EXPECT_GE(version[0], 2);
 
 	EXPECT_STRNE(zinc.context.getRevision(), "");
@@ -57,8 +57,8 @@ void testCreateFiniteElement(const Region &region)
 	EXPECT_TRUE(mesh.isValid());
 	Elementtemplate elementtemplate = mesh.createElementtemplate();
 	EXPECT_TRUE(elementtemplate.isValid());
-	EXPECT_EQ(OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
-	EXPECT_EQ(OK, mesh.defineElement(-1, elementtemplate));
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, mesh.defineElement(-1, elementtemplate));
 }
 
 TEST(ZincContext, default_region)
@@ -71,7 +71,7 @@ TEST(ZincContext, default_region)
 	Region r2 = zinc.context.createRegion();
 	EXPECT_TRUE(r2.isValid());
 	testCreateFiniteElement(r2);
-	EXPECT_EQ(OK, zinc.context.setDefaultRegion(r2));
+	EXPECT_EQ(RESULT_OK, zinc.context.setDefaultRegion(r2));
 	Region r3 = zinc.context.getDefaultRegion();
 	EXPECT_EQ(r2, r3);
 
@@ -82,8 +82,8 @@ TEST(ZincContext, default_region)
 	Context nullContext;
 	Region nullRegion;
 	EXPECT_EQ(nullRegion, nullContext.getDefaultRegion());
-	EXPECT_EQ(ERROR_ARGUMENT, nullContext.setDefaultRegion(r2));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nullContext.setDefaultRegion(r2));
 
 	Context otherContext = Context("other");
-	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r2));
 }

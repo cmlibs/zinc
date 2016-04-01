@@ -46,6 +46,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scene.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenefilter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenepicker.h
