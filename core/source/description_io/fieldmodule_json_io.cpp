@@ -95,11 +95,6 @@ int FieldmoduleJsonImport::import(const std::string &jsonString)
 			{
 				importField(fieldsList[index]);
 			}
-/*			for (unsigned int index = 0; index < fieldsList.size(); ++index )
-			{
-				setManaged(fieldsList[index]);
-			}
-*/
 		}
 		return_code = CMZN_OK;
 		fieldmodule.endChange();

@@ -1724,7 +1724,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int cmzn_field_transpose_get_source_number_of_rowss(cmzn_field_id field)
+int cmzn_field_transpose_get_source_number_of_rows(cmzn_field_id field)
 {
 	int source_number_of_rows = 0;
 	if (field && field->core)

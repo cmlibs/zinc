@@ -45,6 +45,11 @@ private:
 		return(computed_field_normalise_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NORMALISE;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_normalise*>(other_field))
@@ -237,6 +242,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_cross_product_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_CROSS_PRODUCT;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -602,6 +612,11 @@ private:
 		return(computed_field_dot_product_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_DOT_PRODUCT;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_dot_product*>(other_field))
@@ -826,6 +841,11 @@ private:
 		return(computed_field_magnitude_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MAGNITUDE;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_magnitude*>(other_field))
@@ -1041,6 +1061,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_sum_components_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_SUM_COMPONENTS;
 	}
 
 	int compare(Computed_field_core* other_field)

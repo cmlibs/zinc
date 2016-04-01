@@ -1303,6 +1303,12 @@ cmzn_field *Computed_field_create_finite_element_internal(
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+		}
 	}
 	else
 	{
@@ -1356,6 +1362,12 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
 	{
 		field = cmzn_fieldmodule_create_field_finite_element_internal(
 			field_module, FE_VALUE_VALUE, number_of_components);
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+		}
 	}
 	else
 	{

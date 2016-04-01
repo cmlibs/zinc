@@ -3315,6 +3315,72 @@ public:
 			case CMZN_FIELD_TYPE_XOR:
 				enum_string = "XOR";
 				break;
+			case CMZN_FIELD_TYPE_DETERMINANT:
+				enum_string = "DETERMINANT";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVALUES:
+				enum_string = "EIGENVALUES";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVECTORS:
+				enum_string = "EIGENVECTORS";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_INVERT:
+				enum_string = "MATRIX_INVERT";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
+				enum_string = "MATRIX_MULTIPLY";
+				break;
+			case CMZN_FIELD_TYPE_PROJECTION:
+				enum_string = "PROJECTION";
+				break;
+			case CMZN_FIELD_TYPE_TRANSPOSE:
+				enum_string = "TRANSPOSE";
+				break;
+			case CMZN_FIELD_TYPE_TIME_LOOKUP:
+				enum_string = "TIME_LOOKUP";
+				break;
+			case CMZN_FIELD_TYPE_SIN:
+				enum_string = "SIN";
+				break;
+			case CMZN_FIELD_TYPE_COS:
+				enum_string = "COS";
+				break;
+			case CMZN_FIELD_TYPE_TAN:
+				enum_string = "TAN";
+				break;
+			case CMZN_FIELD_TYPE_ASIN:
+				enum_string = "ASIN";
+				break;
+			case CMZN_FIELD_TYPE_ACOS:
+				enum_string = "ACOS";
+				break;
+			case CMZN_FIELD_TYPE_ATAN:
+				enum_string = "ATAN";
+				break;
+			case CMZN_FIELD_TYPE_ATAN2:
+				enum_string = "ATAN2";
+				break;
+			case CMZN_FIELD_TYPE_CROSS_PRODUCT:
+				enum_string = "CROSS_PRODUCT";
+				break;
+			case CMZN_FIELD_TYPE_DOT_PRODUCT:
+				enum_string = "DOT_PRODUCT";
+				break;
+			case CMZN_FIELD_TYPE_MAGNITUDE:
+				enum_string = "MAGNITUDE";
+				break;
+			case CMZN_FIELD_TYPE_NORMALISE:
+				enum_string = "NORMALISE";
+				break;
+			case CMZN_FIELD_TYPE_SUM_COMPONENTS:
+				enum_string = "SUM_COMPONENTS";
+				break;
+			case CMZN_FIELD_TYPE_FINITE_ELEMENT:
+				enum_string = "FINITE_ELEMENT";
+				break;
+			case CMZN_FIELD_TYPE_TIME_VALUE:
+				enum_string = "TIME_VALUE";
+				break;
 			default:
 				break;
 		}
@@ -3454,6 +3520,72 @@ public:
 				break;
 			case CMZN_FIELD_TYPE_XOR:
 				class_name = "FieldXor";
+				break;
+			case CMZN_FIELD_TYPE_DETERMINANT:
+				class_name = "FieldDeterminant";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVALUES:
+				class_name = "FieldEigenvalues";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVECTORS:
+				class_name = "FieldEigenvectors";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_INVERT:
+				class_name = "FieldMatrixInvert";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
+				class_name = "FieldMatrixMultiply";
+				break;
+			case CMZN_FIELD_TYPE_PROJECTION:
+				class_name = "FieldProjection";
+				break;
+			case CMZN_FIELD_TYPE_TRANSPOSE:
+				class_name = "FieldTranspose";
+				break;
+			case CMZN_FIELD_TYPE_TIME_LOOKUP:
+				class_name = "FieldTimeLookup";
+				break;
+			case CMZN_FIELD_TYPE_SIN:
+				class_name = "FieldSin";
+				break;
+			case CMZN_FIELD_TYPE_COS:
+				class_name = "FieldCos";
+				break;
+			case CMZN_FIELD_TYPE_TAN:
+				class_name = "FieldTan";
+				break;
+			case CMZN_FIELD_TYPE_ASIN:
+				class_name = "FieldAsin";
+				break;
+			case CMZN_FIELD_TYPE_ACOS:
+				class_name = "FieldAcos";
+				break;
+			case CMZN_FIELD_TYPE_ATAN:
+				class_name = "FieldAtan";
+				break;
+			case CMZN_FIELD_TYPE_ATAN2:
+				class_name = "FieldAtan2";
+				break;
+			case CMZN_FIELD_TYPE_CROSS_PRODUCT:
+				class_name = "FieldCrossProduct";
+				break;
+			case CMZN_FIELD_TYPE_DOT_PRODUCT:
+				class_name = "FieldDotProduct";
+				break;
+			case CMZN_FIELD_TYPE_MAGNITUDE:
+				class_name = "FieldMagnitude";
+				break;
+			case CMZN_FIELD_TYPE_NORMALISE:
+				class_name = "FieldNormalise";
+				break;
+			case CMZN_FIELD_TYPE_SUM_COMPONENTS:
+				class_name = "FieldSumComponents";
+				break;
+			case CMZN_FIELD_TYPE_FINITE_ELEMENT:
+				class_name = "FieldFiniteElement";
+				break;
+			case CMZN_FIELD_TYPE_TIME_VALUE:
+				class_name = "FieldTimeValue";
 				break;
 			default:
 				break;

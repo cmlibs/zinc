@@ -36,15 +36,19 @@ public:
 
 	int import(const std::string &jsonString);
 
+	/* Get field by name from fieldmodule if available, otherwise create it
+	 * based on the json definition
+	 */
 	OpenCMISS::Zinc::Field getFieldByName(const char *field_name);
 
+	/* deserialise field definition into the fieldmodule */
 	OpenCMISS::Zinc::Field importField(Json::Value &fieldSettings);
 
 	void setManaged(Json::Value &fieldSettings);
 };
 
 /*
- * Class to export attributes from spectrum module.
+ * Class to export attributes from fieldmodule module.
  */
 class FieldmoduleJsonExport
 {
@@ -57,6 +61,7 @@ public:
 		fieldmodule(cmzn_fieldmodule_access(fieldmodule_in))
 	{  }
 
+	/* function to serialise fields definition into json string */
 	std::string getExportString();
 };
 #endif

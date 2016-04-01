@@ -51,11 +51,13 @@ public:
 		field(field_in), fieldmodule(fieldmodule_in), mode(mode_in)
 	{	}
 
-	void ioEntries(Json::Value &fieldSettings);
+	/* serialise/deserialise fields definition from json format */
+	void ioEntries(Json::Value &typeSettings);
 
+	/* methods to customise output based on field type */
 	void exportTypeSpecificParameters(Json::Value &fieldSettings);
 
-	void ioFiniteElementOnlyEntries(Json::Value &fieldSettings);
+	void ioFiniteElementEntries(Json::Value &fieldSettings);
 
 protected:
 
