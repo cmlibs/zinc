@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 
-class cmzn_logger;
+struct cmzn_logger;
 
 typedef std::pair<cmzn_logger_message_type, std::string> Logs;
 
@@ -177,7 +177,7 @@ public:
 
 typedef std::list<cmzn_loggernotifier *> cmzn_loggernotifier_list;
 
-class cmzn_logger : public MessageLog
+struct cmzn_logger : public MessageLog
 {
 private:
 
