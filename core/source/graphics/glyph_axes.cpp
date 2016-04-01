@@ -89,7 +89,7 @@ GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
 	{
 		staticLabels[i] = axisLabels[i];
 	}
-	Triple glyph_base_size = { 1.0f, axisWidth, axisWidth };
+	Triple glyph_base_size = { 1.0f, static_cast<GLfloat>(axisWidth), static_cast<GLfloat>(axisWidth) };
 	Triple glyph_scale_factors = { 0.0f, 0.0f, 0.0f };
 	Triple glyph_offset = { 0.0f, 0.0f, 0.0f };
 	Triple glyph_label_offset = { 1.1f, 0.0f, 0.0f };
