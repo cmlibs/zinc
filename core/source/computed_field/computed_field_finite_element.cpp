@@ -4447,7 +4447,7 @@ int cmzn_field_node_value_get_version(cmzn_field_id field)
 	{
 		Computed_field_node_value *fieldNodeValue= static_cast<Computed_field_node_value*>(
 			field->core);
-		version = fieldNodeValue->version_number;
+		version = fieldNodeValue->version_number + 1;
 	}
 	return version;
 }

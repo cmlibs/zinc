@@ -57,7 +57,7 @@ public:
 	/* methods to customise output based on field type */
 	void exportTypeSpecificParameters(Json::Value &fieldSettings);
 
-	void ioFiniteElementEntries(Json::Value &fieldSettings);
+	void ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value &typeSettings);
 
 protected:
 

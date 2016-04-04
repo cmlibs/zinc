@@ -102,23 +102,6 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 			case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
 			{
 				field = fieldmodule.createFieldCoordinateTransformation(sourcefields[0]);
-				if (typeSettings["CoordinateSystemType"].isString())
-				{
-					enum cmzn_field_coordinate_system_type coordinateSystemType =
-						cmzn_field_coordinate_system_type_enum_from_string(
-							typeSettings["CoordinateSystemType"].asCString());
-					cmzn_field_set_coordinate_system_type(field.getId(),
-						coordinateSystemType);
-					if (coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL ||
-						coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL)
-					{
-						if (typeSettings["CoordinateSystemFocus"].isDouble())
-						{
-							cmzn_field_set_coordinate_system_focus(field.getId(),
-								typeSettings["CoordinateSystemFocus"].asDouble());
-						}
-					}
-				}
 				break;
 			}
 			case CMZN_FIELD_TYPE_IS_DEFINED:
@@ -395,10 +378,10 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 		{
 			case CMZN_FIELD_TYPE_DERIVATIVE:
 			{
-				if (typeSettings["XiIndex"].isInt())
+				if (typeSettings["XiIndexes"].isInt())
 				{
 					field = fieldmodule.createFieldDerivative(sourcefields[0],
-						typeSettings["XiIndex"].asInt());
+						typeSettings["XiIndexes"].asInt());
 				}
 			} break;
 			default:
@@ -657,6 +640,36 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		typeSettings["SourceFields"].append(sourceName);
 		DEALLOCATE(sourceName);
 	}
+	/* check if coordiantesSystem should be exported */
+	bool exportCoordinatesSystemType = false;
+	enum cmzn_field_coordinate_system_type originalCoordinateSystemType =
+		cmzn_field_get_coordinate_system_type(field.getId());
+	if ((type == CMZN_FIELD_TYPE_FINITE_ELEMENT ||
+		type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION ||
+		type == CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION) ||
+		numberOfSourceFields == 0)
+		exportCoordinatesSystemType = true;
+
+	if (!exportCoordinatesSystemType && numberOfSourceFields > 0)
+	{
+		OpenCMISS::Zinc::Field sourceField = field.getSourceField(1);
+		enum cmzn_field_coordinate_system_type sourceCoordinateSystemType =
+			cmzn_field_get_coordinate_system_type(sourceField.getId());
+		if (sourceCoordinateSystemType != originalCoordinateSystemType)
+			exportCoordinatesSystemType = true;
+	}
+	if (exportCoordinatesSystemType)
+	{
+		char *system_string = cmzn_field_coordinate_system_type_enum_to_string(
+			originalCoordinateSystemType);
+		fieldSettings["CoordinateSystemType"] = system_string;
+		DEALLOCATE(system_string);
+	}
+	if (originalCoordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL ||
+		originalCoordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL)
+		fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+
+
 	char *className = cmzn_field_type_enum_to_class_name(type);
 	switch (type)
 	{
@@ -692,7 +705,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		case CMZN_FIELD_TYPE_DERIVATIVE:
 		{
 			int xi_index = cmzn_field_derivative_get_xi_index(field.getId());
-			typeSettings["XiIndex"] = xi_index;
+			typeSettings["XiIndexes"] = xi_index;
 		} break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{
@@ -738,42 +751,29 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
 		{
-			ioFiniteElementEntries(typeSettings);
+			ioFiniteElementEntries(fieldSettings, typeSettings);
 		} break;
-		case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION:
-		case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
+		case CMZN_FIELD_TYPE_TIME_VALUE:
 		{
-			enum cmzn_field_coordinate_system_type coordinateSystemType =
-				cmzn_field_get_coordinate_system_type(field.getId());
-			char *system_string = cmzn_field_coordinate_system_type_enum_to_string(coordinateSystemType);
-			typeSettings["CoordinateSystemType"] = system_string;
-			if (coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL ||
-				coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL)
-				typeSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+			typeSettings["Timekeeper"] = "default";
 		} break;
 		default:
 		{
 		} break;
 	}
+
 	if (CMZN_FIELD_TYPE_INVALID != type)
 		fieldSettings[className] = typeSettings;
 
 	DEALLOCATE(className);
 }
 
-void FieldJsonIO::ioFiniteElementEntries(Json::Value &typeSettings)
+void FieldJsonIO::ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value &typeSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		enum cmzn_field_coordinate_system_type type = (
-			cmzn_field_get_coordinate_system_type(field.getId()));
-		char *system_string = cmzn_field_coordinate_system_type_enum_to_string(type);
-		typeSettings["CoordinateSystemType"] = system_string;
-		if (type == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL ||
-			type == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL)
-			typeSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
 		int numberOfComponents = field.getNumberOfComponents();
-		typeSettings["TypeCoordinate"] = field.isTypeCoordinate();
+		fieldSettings["IsTypeCoordinate"] = field.isTypeCoordinate();
 		typeSettings["NumberOfComponents"] = numberOfComponents;
 		for (int i = 0; i < numberOfComponents; i++)
 		{
@@ -784,8 +784,8 @@ void FieldJsonIO::ioFiniteElementEntries(Json::Value &typeSettings)
 	}
 	else
 	{
-		if (typeSettings["TypeCoordinate"].isBool())
-			field.setTypeCoordinate(typeSettings["TypeCoordinate"].asBool());
+		if (fieldSettings["IsTypeCoordinate"].isBool())
+			field.setTypeCoordinate(fieldSettings["IsTypeCoordinate"].asBool());
 		if (typeSettings["ComponentName"].isArray())
 		{
 			unsigned int numberOfComponents = typeSettings["ComponentName"].size();

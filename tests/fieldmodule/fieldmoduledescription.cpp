@@ -236,7 +236,7 @@ TEST(fieldmodule_description, write)
 
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);
-	printf("%s", description_string);
+	//printf("%s", description_string);
 	cmzn_deallocate(description_string);
 
 	cmzn_field_destroy(&isOnFaceField);
