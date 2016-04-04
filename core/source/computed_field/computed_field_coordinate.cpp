@@ -46,7 +46,7 @@ private:
 
 	virtual enum cmzn_field_type get_type()
 	{
-		return CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION;
+		return CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -312,7 +312,7 @@ private:
 
 	virtual enum cmzn_field_type get_type()
 	{
-		return CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION;
+		return CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION;
 	}
 
 	int compare(Computed_field_core* other_field)

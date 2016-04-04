@@ -99,7 +99,7 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 			case CMZN_FIELD_TYPE_ABS:
 				field = fieldmodule.createFieldAbs(sourcefields[0]);
 				break;
-			case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
+			case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
 			{
 				field = fieldmodule.createFieldCoordinateTransformation(sourcefields[0]);
 				break;
@@ -195,7 +195,7 @@ OpenCMISS::Zinc::Field importGenericTwoSourcesField(enum cmzn_field_type type,
 			case CMZN_FIELD_TYPE_SUBTRACT:
 				field = fieldmodule.createFieldSubtract(sourcefields[0], sourcefields[1]);
 				break;
-			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION:
+			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION:
 				field = fieldmodule.createFieldVectorCoordinateTransformation(sourcefields[0], sourcefields[1]);
 				break;
 			case CMZN_FIELD_TYPE_CURL:
@@ -548,7 +548,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_EXP:
 		case CMZN_FIELD_TYPE_ABS:
 		case CMZN_FIELD_TYPE_IDENTITY:
-		case CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION:
+		case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
 		case CMZN_FIELD_TYPE_IS_DEFINED:
 		case CMZN_FIELD_TYPE_NOT:
 		case CMZN_FIELD_TYPE_DETERMINANT:
@@ -572,7 +572,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_MULTIPLY:
 		case CMZN_FIELD_TYPE_DIVIDE:
 		case CMZN_FIELD_TYPE_SUBTRACT:
-		case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION:
+		case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION:
 		case CMZN_FIELD_TYPE_CURL:
 		case CMZN_FIELD_TYPE_DIVERGENCE:
 		case CMZN_FIELD_TYPE_GRADIENT:
@@ -645,8 +645,8 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 	enum cmzn_field_coordinate_system_type originalCoordinateSystemType =
 		cmzn_field_get_coordinate_system_type(field.getId());
 	if ((type == CMZN_FIELD_TYPE_FINITE_ELEMENT ||
-		type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANFORMATION ||
-		type == CMZN_FIELD_TYPE_COORDINATE_TRANFORMATION) ||
+		type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION ||
+		type == CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION) ||
 		numberOfSourceFields == 0)
 		exportCoordinatesSystemType = true;
 
