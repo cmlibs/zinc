@@ -1330,3 +1330,40 @@ FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
 	}
 	return fe_nodal_value_type;
 }
+
+enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
+	FE_nodal_value_type value_type)
+{
+	enum cmzn_node_value_label value_label = CMZN_NODE_VALUE_LABEL_INVALID;
+	switch (value_type)
+	{
+		case FE_NODAL_UNKNOWN:
+			value_label = CMZN_NODE_VALUE_LABEL_INVALID;
+			break;
+		case FE_NODAL_VALUE:
+			value_label = CMZN_NODE_VALUE_LABEL_VALUE;
+			break;
+		case FE_NODAL_D_DS1:
+			value_label = CMZN_NODE_VALUE_LABEL_D_DS1;
+			break;
+		case FE_NODAL_D_DS2:
+			value_label = CMZN_NODE_VALUE_LABEL_D_DS2;
+			break;
+		case FE_NODAL_D2_DS1DS2:
+			value_label = CMZN_NODE_VALUE_LABEL_D2_DS1DS2;
+			break;
+		case FE_NODAL_D_DS3:
+			value_label = CMZN_NODE_VALUE_LABEL_D_DS3;
+			break;
+		case FE_NODAL_D2_DS1DS3:
+			value_label = CMZN_NODE_VALUE_LABEL_D2_DS1DS3;
+			break;
+		case FE_NODAL_D2_DS2DS3:
+			value_label = CMZN_NODE_VALUE_LABEL_D2_DS2DS3;
+			break;
+		case FE_NODAL_D3_DS1DS2DS3:
+			value_label = CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3;
+			break;
+	}
+	return value_label;
+}

@@ -1,0 +1,234 @@
+{
+   "Fields" : [
+      {
+         "FieldAdd" : {
+            "SourceFields" : [ "firstComponent", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "add"
+      },
+      {
+         "FieldAnd" : {
+            "SourceFields" : [ "constant", "temperature_1" ]
+         },
+         "IsManaged" : true,
+         "Name" : "and"
+      },
+      {
+         "FieldComponent" : {
+            "SourceComponentIndexes" : [ 2, 1 ],
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "component"
+      },
+      {
+         "FieldConcatenate" : {
+            "SourceFields" : [ "coordinates", "temperature" ]
+         },
+         "IsManaged" : true,
+         "Name" : "concatenate"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldConstant" : {
+            "Values" : [ 1, 4, 2 ]
+         },
+         "IsManaged" : true,
+         "Name" : "constant"
+      },
+      {
+         "CoordinateSystemFocus" : 0.7,
+         "CoordinateSystemType" : "PROLATE_SPHEROIDAL",
+         "FieldCoordinateTransformation" : {
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "coordinateTransformation"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldFiniteElement" : {
+            "ComponentNames" : [ "x", "y", "z" ],
+            "NumberOfComponents" : 3
+         },
+         "IsManaged" : true,
+         "IsTypeCoordinate" : true,
+         "Name" : "coordinates"
+      },
+      {
+         "FieldCrossProduct" : {
+            "SourceFields" : [ "constant", "secondConstant" ]
+         },
+         "IsManaged" : true,
+         "Name" : "crossProduct"
+      },
+      {
+         "FieldDerivative" : {
+            "SourceFields" : [ "coordinates" ],
+            "XiIndexes" : [ 1 ]
+         },
+         "IsManaged" : true,
+         "Name" : "derivative"
+      },
+      {
+         "FieldDeterminant" : {
+            "SourceFields" : [ "matrix" ]
+         },
+         "IsManaged" : true,
+         "Name" : "determinant"
+      },
+      {
+         "FieldEdgeDiscontinuity" : {
+            "Measure" : "C1",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "edgeDiscontinuity"
+      },
+      {
+         "FieldEigenvalues" : {
+            "SourceFields" : [ "matrix" ]
+         },
+         "IsManaged" : true,
+         "Name" : "eigenvalues"
+      },
+      {
+         "FieldEigenvectors" : {
+            "SourceFields" : [ "eigenvalues" ]
+         },
+         "IsManaged" : true,
+         "Name" : "eigenvectors"
+      },
+      {
+         "FieldFindMeshLocation" : {
+            "Mesh" : "mesh2d",
+            "SearchMode" : "FIND_EXACT",
+            "SourceFields" : [ "coordinates", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "findMeshLocation"
+      },
+      {
+         "FieldComponent" : {
+            "SourceComponentIndexes" : [ 1 ],
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : false,
+         "Name" : "firstComponent"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldIsOnFace" : {
+            "ElementFaceType" : "XI1_0"
+         },
+         "IsManaged" : true,
+         "Name" : "isOnFace"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldConstant" : {
+            "Values" : [ 2, 2, 3, 4, 5, 6, 7, 8, 9 ]
+         },
+         "IsManaged" : false,
+         "Name" : "matrix"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldConstant" : {
+            "Values" : [ 9, 8, 7, 6, 5, 4, 3, 2, 2 ]
+         },
+         "IsManaged" : false,
+         "Name" : "matrix2"
+      },
+      {
+         "FieldMatrixMultiply" : {
+            "NumberOfRows" : 3,
+            "SourceFields" : [ "matrix", "matrix2" ]
+         },
+         "IsManaged" : true,
+         "Name" : "matrixMultiply"
+      },
+      {
+         "FieldNodeValue" : {
+            "NodeValueLabel" : "VALUE",
+            "SourceFields" : [ "coordinates" ],
+            "VersionNumber" : 1
+         },
+         "IsManaged" : true,
+         "Name" : "nodeValue"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldConstant" : {
+            "Values" : [ 3, 2, 1 ]
+         },
+         "IsManaged" : false,
+         "Name" : "secondConstant"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldStoredMeshLocation" : {
+            "Mesh" : "mesh2d"
+         },
+         "IsManaged" : true,
+         "Name" : "storedMeshLocation"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldStringConstant" : {
+            "StringValue" : "string_constant"
+         },
+         "IsManaged" : true,
+         "Name" : "stringConstant"
+      },
+      {
+         "FieldSumComponents" : {
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "sumComponent"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldFiniteElement" : {
+            "ComponentNames" : [ "1" ],
+            "NumberOfComponents" : 1
+         },
+         "IsManaged" : true,
+         "IsTypeCoordinate" : false,
+         "Name" : "temperature"
+      },
+      {
+         "FieldComponent" : {
+            "SourceComponentIndexes" : [ 1, 1, 1 ],
+            "SourceFields" : [ "temperature" ]
+         },
+         "IsManaged" : false,
+         "Name" : "temperature_1"
+      },
+      {
+         "FieldTimeLookup" : {
+            "SourceFields" : [ "coordinates", "timeValue" ]
+         },
+         "IsManaged" : true,
+         "Name" : "timeLookup"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldTimeValue" : {
+            "Timekeeper" : "default"
+         },
+         "IsManaged" : true,
+         "Name" : "timeValue"
+      },
+      {
+         "FieldTranspose" : {
+            "SourceFields" : [ "matrix" ],
+            "SourceNumberOfRows" : 3
+         },
+         "IsManaged" : true,
+         "Name" : "transpose"
+      }
+   ]
+}

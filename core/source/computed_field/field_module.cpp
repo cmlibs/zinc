@@ -32,6 +32,7 @@
 #include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_trigonometry.h"
+#include "description_io/fieldmodule_json_io.hpp"
 #include "image_processing/computed_field_image_resample.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element_region.h"
@@ -554,3 +555,25 @@ cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 {
 	return cmzn_nodesetchanges::create(event, nodeset);
 }
+
+ char *cmzn_fieldmodule_write_description(cmzn_fieldmodule_id fieldmodule)
+ {
+ 	if (fieldmodule)
+ 	{
+ 		FieldmoduleJsonExport jsonExport(fieldmodule);
+ 		return duplicate_string(jsonExport.getExportString().c_str());
+ 	}
+ 	return 0;
+ }
+
+ int cmzn_fieldmodule_read_description(
+	cmzn_fieldmodule_id fieldmodule, const char *description)
+ {
+ 	if (fieldmodule && description)
+ 	{
+ 		FieldmoduleJsonImport jsonImport(fieldmodule);
+ 		std::string inputString(description);
+ 		return jsonImport.import(inputString);
+ 	}
+ 	return CMZN_ERROR_ARGUMENT;
+ }

@@ -227,6 +227,11 @@ public:
 
 	virtual const char *get_type_string() = 0;
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_INVALID;
+	};
+
 	// override for fields requiring specialised value caches
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/);
 

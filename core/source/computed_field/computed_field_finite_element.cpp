@@ -246,6 +246,7 @@ class Computed_field_finite_element : public Computed_field_core
 {
 public:
 	FE_field* fe_field;
+	enum cmzn_field_type type;
 
 public:
 	Computed_field_finite_element(FE_field *fe_field) :
@@ -253,6 +254,7 @@ public:
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
 		FE_field_add_wrapper(fe_field);
+		type = CMZN_FIELD_TYPE_INVALID;
 	};
 
 	virtual ~Computed_field_finite_element();
@@ -271,6 +273,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_finite_element_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return type;
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -1296,6 +1303,27 @@ cmzn_field *Computed_field_create_finite_element_internal(
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			enum Value_type fe_value_type = get_FE_field_value_type(fieldFiniteElement->fe_field);
+			switch (fe_value_type)
+			{
+				case ELEMENT_XI_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
+					break;
+				case STRING_VALUE:
+				case URL_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_STRING;
+					break;
+				case FE_VALUE_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+					break;
+				default:
+					break;
+			}
+		}
 	}
 	else
 	{
@@ -1349,6 +1377,12 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
 	{
 		field = cmzn_fieldmodule_create_field_finite_element_internal(
 			field_module, FE_VALUE_VALUE, number_of_components);
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+		}
 	}
 	else
 	{
@@ -1403,6 +1437,34 @@ int cmzn_field_finite_element_set_node_parameters(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+char *cmzn_field_stored_mesh_location_get_mesh_name(cmzn_field_id field)
+{
+	char *name = 0;
+	if (field && field->core)
+	{
+		Computed_field_finite_element *fieldFiniteElement=
+			static_cast<Computed_field_finite_element*>(field->core);
+		struct FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		int dimension = FE_field_get_element_xi_mesh_dimension(fe_field);
+		switch (dimension)
+		{
+			case 1:
+				name = duplicate_string("mesh1d");
+				break;
+			case 2:
+				name = duplicate_string("mesh2d");
+				break;
+			case 3:
+				name = duplicate_string("mesh3d");
+				break;
+			default:
+				break;
+		}
+	}
+	return name;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh)
 {
@@ -1415,6 +1477,12 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 		struct FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		FE_field_set_element_xi_mesh_dimension(fe_field, cmzn_mesh_get_dimension(mesh));
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
+		}
 	}
 	else
 	{
@@ -1451,8 +1519,15 @@ int cmzn_field_stored_mesh_location_destroy(
 cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
 	cmzn_fieldmodule_id field_module)
 {
-	return cmzn_fieldmodule_create_field_finite_element_internal(
+	cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_internal(
 		field_module, STRING_VALUE, /*number_of_components*/1);
+	if (field && field->core)
+	{
+		Computed_field_finite_element *fieldFiniteElement= static_cast<Computed_field_finite_element*>(
+			field->core);
+		fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_STRING;
+	}
+	return field;
 }
 
 cmzn_field_stored_string_id cmzn_field_cast_stored_string(cmzn_field_id field)
@@ -1883,6 +1958,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_node_value_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NODE_VALUE;
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -2419,6 +2499,11 @@ private:
 		return (computed_field_edge_discontinuity_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EDGE_DISCONTINUITY;
+	}
+
 	int compare(Computed_field_core* other_core)
 	{
 		return (field && (0 != dynamic_cast<Computed_field_edge_discontinuity*>(other_core)));
@@ -2775,6 +2860,11 @@ private:
 		return(computed_field_embedded_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EMBEDDED;
+	}
+
 	int compare(Computed_field_core* other_field);
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
@@ -3006,6 +3096,11 @@ public:
 	cmzn_field_id get_source_field()
 	{
 		return field->source_fields[0];
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_FIND_MESH_LOCATION;
 	}
 
 	cmzn_field_id get_mesh_field()
@@ -4386,6 +4481,31 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 	return (time_sequence);
 } /* Computed_field_get_FE_node_field_FE_time_sequence */
 
+enum cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
+{
+	enum cmzn_node_value_label value_label = CMZN_NODE_VALUE_LABEL_INVALID;
+	if (field && field->core)
+	{
+		Computed_field_node_value *fieldNodeValue= static_cast<Computed_field_node_value*>(
+			field->core);
+		value_label = FE_nodal_value_type_to_cmzn_node_value_label(
+			fieldNodeValue->nodal_value_type);
+	}
+	return value_label;
+}
+
+int cmzn_field_node_value_get_version(cmzn_field_id field)
+{
+	int version = 0;
+	if (field && field->core)
+	{
+		Computed_field_node_value *fieldNodeValue= static_cast<Computed_field_node_value*>(
+			field->core);
+		version = fieldNodeValue->version_number + 1;
+	}
+	return version;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	cmzn_fieldmodule_id field_module, cmzn_field_id field,
 	enum cmzn_node_value_label node_value_label, int version)
@@ -4419,6 +4539,11 @@ private:
 	const char *get_type_string()
 	{
 		return (computed_field_is_exterior_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_IS_EXTERIOR;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -4494,6 +4619,11 @@ public:
 	{
 	};
 
+	cmzn_element_face_type get_face_type()
+	{
+		return faceType;
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -4503,6 +4633,11 @@ private:
 	const char *get_type_string()
 	{
 		return (computed_field_is_on_face_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_IS_ON_FACE;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -4563,6 +4698,18 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 } // namespace
 
+enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field)
+{
+	enum cmzn_element_face_type type = CMZN_ELEMENT_FACE_TYPE_INVALID;
+	if (field && field->core)
+	{
+		Computed_field_is_on_face *fieldIsOnFace= static_cast<Computed_field_is_on_face*>(
+			field->core);
+		type = fieldIsOnFace->get_face_type();
+	}
+	return type;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face)
 {
@@ -4574,4 +4721,43 @@ cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 		/*number_of_source_fields*/0, NULL,
 		/*number_of_source_values*/0, NULL,
 		new Computed_field_is_on_face(face));
+}
+
+
+class cmzn_field_edge_discontinuity_measure_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_edge_discontinuity_measure measure)
+	{
+		const char *enum_string = 0;
+		switch (measure)
+		{
+			case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1:
+				enum_string = "C1";
+				break;
+			case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1:
+				enum_string = "G1";
+				break;
+			case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL:
+				enum_string = "SURFACE_NORMAL";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_field_edge_discontinuity_measure
+cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_field_edge_discontinuity_measure,
+		cmzn_field_edge_discontinuity_measure_conversion>(string);
+}
+
+char *cmzn_field_edge_discontinuity_measure_enum_to_string(
+	enum cmzn_field_edge_discontinuity_measure measure)
+{
+	const char *measure_string = cmzn_field_edge_discontinuity_measure_conversion::to_string(measure);
+	return (measure_string ? duplicate_string(measure_string) : 0);
 }
