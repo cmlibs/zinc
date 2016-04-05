@@ -672,35 +672,45 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		typeSettings["SourceFields"].append(sourceName);
 		DEALLOCATE(sourceName);
 	}
-	/* check if coordiantesSystem should be exported */
-	bool exportCoordinatesSystemType = false;
-	enum cmzn_field_coordinate_system_type originalCoordinateSystemType =
-		cmzn_field_get_coordinate_system_type(field.getId());
-	if ((type == CMZN_FIELD_TYPE_FINITE_ELEMENT ||
-		type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION ||
-		type == CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION) ||
-		numberOfSourceFields == 0)
-		exportCoordinatesSystemType = true;
-
-	if (!exportCoordinatesSystemType && numberOfSourceFields > 0)
+	if (field.getValueType() == OpenCMISS::Zinc::Field::VALUE_TYPE_REAL)
 	{
-		OpenCMISS::Zinc::Field sourceField = field.getSourceField(1);
-		enum cmzn_field_coordinate_system_type sourceCoordinateSystemType =
-			cmzn_field_get_coordinate_system_type(sourceField.getId());
-		if (sourceCoordinateSystemType != originalCoordinateSystemType)
-			exportCoordinatesSystemType = true;
-	}
-	if (exportCoordinatesSystemType)
-	{
-		char *system_string = cmzn_field_coordinate_system_type_enum_to_string(
-			originalCoordinateSystemType);
-		fieldSettings["CoordinateSystemType"] = system_string;
-		DEALLOCATE(system_string);
-	}
-	if (originalCoordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL ||
-		originalCoordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL)
-		fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+		// check if coordinate system should be exported
+		bool exportCoordinateSystemType = false;
+		enum cmzn_field_coordinate_system_type coordinateSystemType =
+			cmzn_field_get_coordinate_system_type(field.getId());
+		const bool coordinateSystemUsesFocus =
+			(coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL) ||
+			(coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL);
 
+		if ((type == CMZN_FIELD_TYPE_FINITE_ELEMENT ||
+			type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION ||
+			type == CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION) ||
+			(numberOfSourceFields == 0))
+		{
+			exportCoordinateSystemType = true;
+		}
+		else if (numberOfSourceFields > 0)
+		{
+			OpenCMISS::Zinc::Field sourceField = field.getSourceField(1);
+			enum cmzn_field_coordinate_system_type sourceCoordinateSystemType =
+				cmzn_field_get_coordinate_system_type(sourceField.getId());
+			if ((sourceCoordinateSystemType != coordinateSystemType) ||
+				(coordinateSystemUsesFocus &&
+					(field.getCoordinateSystemFocus() != sourceField.getCoordinateSystemFocus())))
+			{
+				exportCoordinateSystemType = true;
+			}
+		}
+		if (exportCoordinateSystemType)
+		{
+			char *system_string =
+				cmzn_field_coordinate_system_type_enum_to_string(coordinateSystemType);
+			fieldSettings["CoordinateSystemType"] = system_string;
+			DEALLOCATE(system_string);
+			if (coordinateSystemUsesFocus)
+				fieldSettings["CoordinateSystemFocus"] = field.getCoordinateSystemFocus();
+		}
+	}
 
 	char *className = cmzn_field_type_enum_to_class_name(type);
 	switch (type)
