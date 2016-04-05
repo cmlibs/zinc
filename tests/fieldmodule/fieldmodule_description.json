@@ -167,7 +167,6 @@
          "Name" : "secondConstant"
       },
       {
-         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldStoredMeshLocation" : {
             "Mesh" : "mesh2d"
          },
@@ -175,7 +174,6 @@
          "Name" : "storedMeshLocation"
       },
       {
-         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldStringConstant" : {
             "StringValue" : "string_constant"
          },
