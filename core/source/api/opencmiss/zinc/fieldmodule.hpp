@@ -225,6 +225,16 @@ public:
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
+	char *writeDescription()
+	{
+		return cmzn_fieldmodule_write_description(id);
+	}
+
+	int readDescription(const char *description)
+	{
+		return cmzn_fieldmodule_read_description(id, description);
+	}
+
 	inline Timesequence getMatchingTimesequence(int timesCount, const double *timesIn)
 	{
 		return Timesequence(cmzn_fieldmodule_get_matching_timesequence(

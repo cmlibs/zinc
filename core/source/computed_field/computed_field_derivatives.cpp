@@ -247,6 +247,11 @@ private:
 		return(computed_field_derivative_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_DERIVATIVE;
+	}
+
 	int compare(Computed_field_core* other_field);
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -466,6 +471,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
+int cmzn_field_derivative_get_xi_index(cmzn_field_id field)
+{
+	int index = -1;
+	if (field && field->core)
+	{
+		Computed_field_derivative *fieldDerivative= static_cast<Computed_field_derivative*>(
+			field->core);
+		index = fieldDerivative->xi_index + 1;
+	}
+	return index;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_derivative(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, int xi_index)
@@ -542,6 +559,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_curl_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_CURL;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -818,6 +840,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_divergence_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_DIVERGENCE;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -1106,6 +1133,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_gradient_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_GRADIENT;
 	}
 
 	int compare(Computed_field_core* other_field)

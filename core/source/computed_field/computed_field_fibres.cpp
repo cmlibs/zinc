@@ -49,6 +49,11 @@ private:
 		return(computed_field_fibre_axes_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_FIBRE_AXES;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_fibre_axes*>(other_field))

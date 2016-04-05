@@ -63,6 +63,11 @@ private:
 		return(computed_field_if_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_IF;
+	}
+
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /* parentCache */)
 	{
 		if (value_type == CMZN_FIELD_VALUE_TYPE_REAL)

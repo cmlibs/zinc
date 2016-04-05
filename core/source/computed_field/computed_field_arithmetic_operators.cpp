@@ -48,6 +48,11 @@ private:
 		return(computed_field_power_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_POWER;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_power*>(other_field))
@@ -284,6 +289,11 @@ private:
 		return(computed_field_multiply_components_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MULTIPLY;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_multiply_components*>(other_field))
@@ -510,6 +520,11 @@ private:
 		return(computed_field_divide_components_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_DIVIDE;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_divide_components*>(other_field))
@@ -724,8 +739,12 @@ const char computed_field_add_type_string[] = "add";
 class Computed_field_add : public Computed_field_core
 {
 public:
+
+	enum cmzn_field_type type;
+
 	Computed_field_add() : Computed_field_core()
 	{
+		type = CMZN_FIELD_TYPE_ADD;
 	};
 
 private:
@@ -737,6 +756,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_add_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return type;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -930,8 +954,16 @@ Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
-	return(Computed_field_create_weighted_add(field_module,
-		source_field_one, 1.0, source_field_two, -1.0));
+	struct Computed_field *field = Computed_field_create_weighted_add(field_module,
+		source_field_one, 1.0, source_field_two, -1.0);
+	if (field && field->core)
+	{
+		Computed_field_add *fieldAdd= static_cast<Computed_field_add*>(
+			field->core);
+		fieldAdd->type = CMZN_FIELD_TYPE_SUBTRACT;
+	}
+
+	return field;
 } /* Computed_field_create_subtract */
 
 int Computed_field_get_type_add(struct Computed_field *field,
@@ -2364,6 +2396,11 @@ private:
 		return(computed_field_log_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_LOG;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_log*>(other_field))
@@ -2557,6 +2594,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_sqrt_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_SQRT;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -2755,6 +2797,11 @@ private:
 		return(computed_field_exp_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EXP;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_exp*>(other_field))
@@ -2949,6 +2996,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_abs_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_ABS;
 	}
 
 	int compare(Computed_field_core* other_field)

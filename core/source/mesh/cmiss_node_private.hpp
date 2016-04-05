@@ -143,4 +143,10 @@ public:
 FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
 	enum cmzn_node_value_label nodal_value_label);
 
+/**
+ * Convert internal finite element value type to external node value label.
+ */
+enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
+	FE_nodal_value_type value_type);
+
 #endif /* !defined (CMZN_NODE_PRIVATE_HPP) */

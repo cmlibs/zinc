@@ -45,6 +45,11 @@ private:
 		return(computed_field_or_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_OR;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_or*>(other_field))
@@ -172,6 +177,11 @@ private:
 		return(computed_field_and_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_AND;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_and*>(other_field))
@@ -297,6 +307,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_xor_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_XOR;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -430,6 +445,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_equal_to_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EQUAL_TO;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -583,6 +603,11 @@ private:
 		return(computed_field_less_than_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_LESS_THAN;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_less_than*>(other_field))
@@ -705,6 +730,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_greater_than_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_GREATER_THAN;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -831,6 +861,11 @@ private:
 		return(computed_field_is_defined_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_IS_DEFINED;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_is_defined*>(other_field))
@@ -920,6 +955,11 @@ private:
 	const char *get_type_string()
 	{
 		return (computed_field_not_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_NOT;
 	}
 
 	int compare(Computed_field_core* other_field)

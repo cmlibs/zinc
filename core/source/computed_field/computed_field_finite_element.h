@@ -176,4 +176,16 @@ struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
 
+enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field);
+
+enum cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
+
+int cmzn_field_node_value_get_version(cmzn_field_id field);
+
+enum cmzn_field_edge_discontinuity_measure
+cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string);
+
+char *cmzn_field_edge_discontinuity_measure_enum_to_string(
+	enum cmzn_field_edge_discontinuity_measure measure);
+
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */
