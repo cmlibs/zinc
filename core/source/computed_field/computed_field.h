@@ -139,7 +139,9 @@ enum cmzn_field_type
 	/*field finite element */
 	CMZN_FIELD_TYPE_FINITE_ELEMENT = 58,
 	/*field time */
-	CMZN_FIELD_TYPE_TIME_VALUE = 59
+	CMZN_FIELD_TYPE_TIME_VALUE = 59,
+	CMZN_FIELD_TYPE_STORED_MESH_LOCATION = 60,
+	CMZN_FIELD_TYPE_FIND_MESH_LOCATION = 61
 };
 
 
@@ -720,5 +722,7 @@ enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string);
 char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
 
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
+
+char *cmzn_field_stored_mesh_location_get_mesh_name(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_H) */

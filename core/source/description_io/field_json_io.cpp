@@ -378,10 +378,14 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 		{
 			case CMZN_FIELD_TYPE_DERIVATIVE:
 			{
-				if (typeSettings["XiIndexes"].isInt())
+				if (typeSettings["XiIndexes"].isArray())
 				{
-					field = fieldmodule.createFieldDerivative(sourcefields[0],
-						typeSettings["XiIndexes"].asInt());
+					unsigned int size = typeSettings["XiIndexes"].size();
+					if (size > 0)
+					{
+						field = fieldmodule.createFieldDerivative(sourcefields[0],
+							typeSettings["XiIndexes"][0].asInt());
+					}
 				}
 			} break;
 			default:
@@ -456,6 +460,32 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 			}
 			delete[] sourcefields;
 		}	break;
+		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+		{
+			if (typeSettings["Mesh"].isString())
+			{
+				OpenCMISS::Zinc::Mesh mesh = fieldmodule.findMeshByName(typeSettings["Mesh"].asCString());
+				field = fieldmodule.createFieldStoredMeshLocation(mesh);
+			}
+		}	break;
+		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+		{
+			unsigned int sourcesCount = 0;
+			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
+				jsonImport);
+			if (sourcesCount == 2 && typeSettings["Mesh"].isString() && typeSettings["SearchMode"].isString())
+			{
+				OpenCMISS::Zinc::Mesh mesh = fieldmodule.findMeshByName(typeSettings["Mesh"].asCString());
+				enum cmzn_field_find_mesh_location_search_mode searchMode =
+					cmzn_field_find_mesh_location_search_mode_enum_from_string(typeSettings["SearchMode"].asCString());
+				OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation =
+					fieldmodule.createFieldFindMeshLocation(sourcefields[0], sourcefields[1], mesh);
+				fieldFindMeshLocation.setSearchMode(
+					static_cast<OpenCMISS::Zinc::FieldFindMeshLocation::SearchMode>(searchMode));
+				field = fieldFindMeshLocation;
+			}
+			delete[] sourcefields;
+		} break;
 		default:
 			break;
 
@@ -610,6 +640,8 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		case CMZN_FIELD_TYPE_NODE_VALUE:
+		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 			field = importFiniteElementField(type, fieldmodule, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_CROSS_PRODUCT:
@@ -705,7 +737,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		case CMZN_FIELD_TYPE_DERIVATIVE:
 		{
 			int xi_index = cmzn_field_derivative_get_xi_index(field.getId());
-			typeSettings["XiIndexes"] = xi_index;
+			typeSettings["XiIndexes"].append(xi_index);
 		} break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{
@@ -757,6 +789,24 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		{
 			typeSettings["Timekeeper"] = "default";
 		} break;
+		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+		{
+			char *meshName = cmzn_field_stored_mesh_location_get_mesh_name(field.getId());
+			typeSettings["Mesh"] = meshName;
+			DEALLOCATE(meshName);
+		} break;
+		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+		{
+			OpenCMISS::Zinc::Mesh mesh = field.castFindMeshLocation().getMesh();
+			char *meshName = mesh.getName();
+			enum cmzn_field_find_mesh_location_search_mode searchMode =
+				static_cast<cmzn_field_find_mesh_location_search_mode>(field.castFindMeshLocation().getSearchMode());
+			char *modeName = cmzn_field_find_mesh_location_search_mode_enum_to_string(searchMode);
+			typeSettings["Mesh"] = meshName;
+			typeSettings["SearchMode"] = modeName;
+			DEALLOCATE(meshName);
+			DEALLOCATE(modeName);
+		} break;
 		default:
 		{
 		} break;
@@ -778,7 +828,7 @@ void FieldJsonIO::ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value
 		for (int i = 0; i < numberOfComponents; i++)
 		{
 			char *name = field.getComponentName(1 + i);
-			typeSettings["ComponentName"].append(name);
+			typeSettings["ComponentNames"].append(name);
 			DEALLOCATE(name);
 		}
 	}
@@ -786,12 +836,12 @@ void FieldJsonIO::ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value
 	{
 		if (fieldSettings["IsTypeCoordinate"].isBool())
 			field.setTypeCoordinate(fieldSettings["IsTypeCoordinate"].asBool());
-		if (typeSettings["ComponentName"].isArray())
+		if (typeSettings["ComponentNames"].isArray())
 		{
-			unsigned int numberOfComponents = typeSettings["ComponentName"].size();
+			unsigned int numberOfComponents = typeSettings["ComponentNames"].size();
 			for (unsigned int i = 0; i < numberOfComponents; i++)
 			{
-				field.setComponentName(i+1, typeSettings["ComponentName"][i].asCString());
+				field.setComponentName(i+1, typeSettings["ComponentNames"][i].asCString());
 			}
 		}
 	}

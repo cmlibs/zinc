@@ -29,7 +29,6 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(Json::Value &fieldSett
 	}
 
 	return field;
-	//const char *fieldName = fieldSettings["Name"].asCString();
 
 	/*
 	OpenCMISS::Zinc::Field field = fieldmodule.findFieldByName(fieldName);

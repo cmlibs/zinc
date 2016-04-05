@@ -3381,6 +3381,12 @@ public:
 			case CMZN_FIELD_TYPE_TIME_VALUE:
 				enum_string = "TIME_VALUE";
 				break;
+			case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+				enum_string = "STORED_MESH_LOCATION";
+				break;
+			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+				enum_string = "FIND_MESH_LOCATION";
+				break;
 			default:
 				break;
 		}
@@ -3586,6 +3592,12 @@ public:
 				break;
 			case CMZN_FIELD_TYPE_TIME_VALUE:
 				class_name = "FieldTimeValue";
+				break;
+			case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+				class_name = "FieldStoredMeshLocation";
+				break;
+			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+				class_name = "FieldFindMeshLocation";
 				break;
 			default:
 				break;

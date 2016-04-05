@@ -1307,7 +1307,22 @@ cmzn_field *Computed_field_create_finite_element_internal(
 		{
 			Computed_field_finite_element *fieldFiniteElement=
 				static_cast<Computed_field_finite_element*>(field->core);
-			fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+			enum Value_type fe_value_type = get_FE_field_value_type(fieldFiniteElement->fe_field);
+			switch (fe_value_type)
+			{
+				case ELEMENT_XI_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
+					break;
+				case STRING_VALUE:
+				case URL_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_STRING;
+					break;
+				case FE_VALUE_VALUE:
+					fieldFiniteElement->type = CMZN_FIELD_TYPE_FINITE_ELEMENT;
+					break;
+				default:
+					break;
+			}
 		}
 	}
 	else
@@ -1422,6 +1437,34 @@ int cmzn_field_finite_element_set_node_parameters(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+char *cmzn_field_stored_mesh_location_get_mesh_name(cmzn_field_id field)
+{
+	char *name = 0;
+	if (field && field->core)
+	{
+		Computed_field_finite_element *fieldFiniteElement=
+			static_cast<Computed_field_finite_element*>(field->core);
+		struct FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		int dimension = FE_field_get_element_xi_mesh_dimension(fe_field);
+		switch (dimension)
+		{
+			case 1:
+				name = duplicate_string("mesh1d");
+				break;
+			case 2:
+				name = duplicate_string("mesh2d");
+				break;
+			case 3:
+				name = duplicate_string("mesh3d");
+				break;
+			default:
+				break;
+		}
+	}
+	return name;
+}
+
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh)
 {
@@ -1434,6 +1477,12 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 		struct FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		FE_field_set_element_xi_mesh_dimension(fe_field, cmzn_mesh_get_dimension(mesh));
+		if (field && field->core)
+		{
+			Computed_field_finite_element *fieldFiniteElement=
+				static_cast<Computed_field_finite_element*>(field->core);
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
+		}
 	}
 	else
 	{
@@ -3047,6 +3096,11 @@ public:
 	cmzn_field_id get_source_field()
 	{
 		return field->source_fields[0];
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_FIND_MESH_LOCATION;
 	}
 
 	cmzn_field_id get_mesh_field()

@@ -148,7 +148,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(derivativeField));
 
 	cmzn_field_id coordinateTransformationField =
-		cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinateTransoformation");
+		cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinateTransformation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinateTransformationField);
 	EXPECT_TRUE(cmzn_field_is_managed(coordinateTransformationField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(coordinateTransformationField));
@@ -201,8 +201,18 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		fieldmodule, "isOnFace");
 	EXPECT_NE(static_cast<cmzn_field *>(0), isOnFaceField);
 
+	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "storedMeshLocation");
+	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
+
+	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "findMeshLocation");
+	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
+
 	cmzn_deallocate(returned_string);
 	cmzn_fieldcache_destroy(&fieldCache);
+	cmzn_field_destroy(&findMeshLocationField);
+	cmzn_field_destroy(&storedMeshLocationField);
 	cmzn_field_destroy(&isOnFaceField);
 	cmzn_field_destroy(&nodeValueField);
 	cmzn_field_destroy(&transposeField);
@@ -371,7 +381,7 @@ TEST(fieldmodule_description, write)
 			fieldmodule, coordinatesField);
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinateTransformationField);
 	cmzn_field_set_managed(coordinateTransformationField, true);
-	cmzn_field_set_name(coordinateTransformationField, "coordinateTransoformation");
+	cmzn_field_set_name(coordinateTransformationField, "coordinateTransformation");
 	cmzn_field_set_coordinate_system_type(coordinateTransformationField,
 		CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL);
 	cmzn_field_set_coordinate_system_focus(coordinateTransformationField, 0.7);
@@ -459,9 +469,23 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_managed(isOnFaceField, true);
 	cmzn_field_set_name(isOnFaceField, "isOnFace");
 
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_name(fieldmodule, "mesh2d");
+	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_create_field_stored_mesh_location(
+		fieldmodule, mesh);
+	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
+	cmzn_field_set_managed(storedMeshLocationField, true);
+	cmzn_field_set_name(storedMeshLocationField, "storedMeshLocation");
+
+	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_create_field_find_mesh_location(
+		fieldmodule, coordinatesField, coordinatesField, mesh);
+	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
+	cmzn_field_set_managed(findMeshLocationField, true);
+	cmzn_field_set_name(findMeshLocationField, "findMeshLocation");
+	cmzn_mesh_destroy(&mesh);
+
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);
-	//printf("%s", description_string);
+	printf("%s", description_string);
 
 	cmzn_region_id region = cmzn_region_create_child(root_region, "test");
 	TestDescriptionOutput(region, description_string);
@@ -469,6 +493,8 @@ TEST(fieldmodule_description, write)
 
 	cmzn_deallocate(description_string);
 
+	cmzn_field_destroy(&findMeshLocationField);
+	cmzn_field_destroy(&storedMeshLocationField);
 	cmzn_field_destroy(&isOnFaceField);
 	cmzn_field_destroy(&nodeValueField);
 	cmzn_field_destroy(&transposeField);

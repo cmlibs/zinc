@@ -44,12 +44,12 @@
             "SourceFields" : [ "coordinates" ]
          },
          "IsManaged" : true,
-         "Name" : "coordinateTransoformation"
+         "Name" : "coordinateTransformation"
       },
       {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldFiniteElement" : {
-            "ComponentName" : [ "x", "y", "z" ],
+            "ComponentNames" : [ "x", "y", "z" ],
             "NumberOfComponents" : 3
          },
          "IsManaged" : true,
@@ -66,7 +66,7 @@
       {
          "FieldDerivative" : {
             "SourceFields" : [ "coordinates" ],
-            "XiIndexes" : 1
+            "XiIndexes" : [ 1 ]
          },
          "IsManaged" : true,
          "Name" : "derivative"
@@ -99,6 +99,15 @@
          },
          "IsManaged" : true,
          "Name" : "eigenvectors"
+      },
+      {
+         "FieldFindMeshLocation" : {
+            "Mesh" : "mesh2d",
+            "SearchMode" : "FIND_EXACT",
+            "SourceFields" : [ "coordinates", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "findMeshLocation"
       },
       {
          "FieldComponent" : {
@@ -159,6 +168,14 @@
       },
       {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
+         "FieldStoredMeshLocation" : {
+            "Mesh" : "mesh2d"
+         },
+         "IsManaged" : true,
+         "Name" : "storedMeshLocation"
+      },
+      {
+         "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldStringConstant" : {
             "StringValue" : "string_constant"
          },
@@ -175,7 +192,7 @@
       {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldFiniteElement" : {
-            "ComponentName" : [ "1" ],
+            "ComponentNames" : [ "1" ],
             "NumberOfComponents" : 1
          },
          "IsManaged" : true,
