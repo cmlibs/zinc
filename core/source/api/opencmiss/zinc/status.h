@@ -20,6 +20,8 @@ extern "C" {
 
 /**
  * Generic status codes returned by API functions to indicate success or error.
+ * DEPRECATED: Please use 'result' codes defined in result header instead.
+ * @see cmzn_result
  *
  * WARNING: Planned future binary compatibility break.
  * At a future date we will change the value of CMZN_OK to 0, and
