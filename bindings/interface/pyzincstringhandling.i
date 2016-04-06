@@ -177,5 +177,55 @@ free($1);
 	}
 };
 
+%typemap(in) (const char *name)
+{
+	if (PyString_Check($input))
+	{
+		PyObject *o = $input;
+		
+		char *temp_string = PyString_AsString(o);
+		int length = strlen(temp_string);
+		$1 = new char[length + 1];
+		strcpy($1, temp_string);
+	}
+	else if (PyUnicode_Check($input))
+	{
+		PyObject *o = $input;
+%#if PY_VERSION_HEX < 0x03030000
+		PyObject *utf8_obj = PyUnicode_AsUTF8String(o);
+		char *temp_string = PyString_AsString(utf8_obj);
+		Py_ssize_t length = PyString_Size(utf8_obj);
+%#else
+		Py_ssize_t length;
+		char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+%#endif
+		if (temp_string != NULL)
+		{
+			$1 = new char[length + 1];
+			strcpy($1, temp_string);
+		}
+		else
+		{
+			PyErr_SetString(PyExc_ValueError,"Not a UTF8 compatible string");
+			$1 = 0;
+			return NULL;
+		}
+	}
+	else
+	{
+		PyErr_SetString(PyExc_TypeError,"Not a single string value");
+		$1 = 0;
+		return NULL;
+	}
+};
+
+%typemap(freearg) (const char *name)
+{
+	if ($1)
+	{
+		delete[] $1;
+	}
+};
+
 %typemap(in) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);
 %typemap(freearg) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);
