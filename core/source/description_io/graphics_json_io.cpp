@@ -651,8 +651,8 @@ void GraphicsJsonIO::ioContoursEntries(Json::Value &graphicsSettings)
 				attributesSettings["RangeLastIsovalue"] = temp;
 				num = contours.getRangeNumberOfIsovalues();
 				attributesSettings["RangeNumberOfIsovalues"] = num;
-				graphicsSettings["Contours"] = attributesSettings;
 			}
+			graphicsSettings["Contours"] = attributesSettings;
 		}
 		else if (graphicsSettings["Contours"].isObject())
 		{
