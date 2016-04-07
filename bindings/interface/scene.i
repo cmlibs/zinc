@@ -11,6 +11,7 @@
  */
 
 %module(package="opencmiss.zinc") scene
+%include "pyzincstringhandling.i"
 
 %import "graphics.i"
 %import "scenefilter.i"

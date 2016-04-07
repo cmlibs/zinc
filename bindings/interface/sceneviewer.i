@@ -16,6 +16,8 @@
 %apply double *OUTPUT { double *left, double *right, double *bottom, double *top, double *near_plane, double *far_plane};
 %apply double *OUTPUT { double *x, double *y, double *z};
 %apply int *OUTPUT {int *width, int *height};
+%include "pyzincstringhandling.i"
+%typemap(in) (const char *file_name) = (const char *name);
 
 %import "light.i"
 %import "scene.i"

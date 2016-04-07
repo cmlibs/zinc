@@ -14,6 +14,8 @@
 %module(package="opencmiss.zinc") region
 
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *path) = (const char *name);
+%typemap(in) (const char *fileName) = (const char *name);
 
 %import "fieldmodule.i"
 %import "scene.i"

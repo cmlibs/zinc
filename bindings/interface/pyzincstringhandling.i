@@ -227,5 +227,6 @@ free($1);
 	}
 };
 
+%typemap(in) (const char *description) = (const char *name);
 %typemap(in) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);
 %typemap(freearg) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);

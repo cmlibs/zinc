@@ -13,6 +13,10 @@
 
 %module(package="opencmiss.zinc") context
 
+%include "pyzincstringhandling.i"
+
+%typemap(in) (const char *contextName) = (const char *name);
+
 %import "font.i"
 %import "glyph.i"
 %import "light.i"

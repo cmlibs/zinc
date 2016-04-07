@@ -14,6 +14,7 @@
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *labelText) = (const char *name);
 
 %import "field.i"
 %import "font.i"

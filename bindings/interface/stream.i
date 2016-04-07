@@ -13,6 +13,7 @@
 %module(package="opencmiss.zinc") stream
 
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *file_name) = (const char *name);
 
 %{
 #include "opencmiss/zinc/stream.hpp"
