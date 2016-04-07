@@ -11,6 +11,7 @@
  */
 
 %module(package="opencmiss.zinc") timekeeper
+%include "pyzincstringhandling.i"
 
 %import "timenotifier.i"
 

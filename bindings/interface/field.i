@@ -17,6 +17,10 @@
 %include "doublevaluesarraytypemap.i"
 %include "fieldoperators.i"
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *stringValue) = (const char *name);
+%typemap(in) (const char *stringConstant) = (const char *name);
+%typemap(in) (const char *fileName) = (const char *name);
+%typemap(in) (const char *property) = (const char *name);
 
 %import "differentialoperator.i"
 %import "element.i"

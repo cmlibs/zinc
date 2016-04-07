@@ -14,6 +14,7 @@
 %module(package="opencmiss.zinc") streamregion
 
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *groupName) = (const char *name);
 
 %import "field.i"
 %import "stream.i"

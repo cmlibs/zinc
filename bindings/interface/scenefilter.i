@@ -13,6 +13,7 @@
 %module(package="opencmiss.zinc") scenefilter
 
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *matchName) = (const char *name);
 
 %import "graphics.i"
 %import "region.i"

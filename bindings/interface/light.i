@@ -12,6 +12,7 @@
  */
 
 %module(package="opencmiss.zinc") light
+%include "pyzincstringhandling.i"
 
 %include "doublevaluesarraytypemap.i"
 %include "pyzincstringhandling.i"
