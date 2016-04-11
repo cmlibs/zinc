@@ -65,7 +65,7 @@ Structure for maintaining a graphical scene of region.
 	/* callback list for transformation changes */
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)) *transformation_callback_list;
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
-	unsigned int position;
+	unsigned int picking_name;
 	cmzn_field_group_id selection_group;
 	bool selectionChanged;
 	cmzn_selectionnotifier_list *selectionnotifier_list;
@@ -101,15 +101,7 @@ cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene);
  */
 int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address);
 
-int cmzn_scene_get_position(struct cmzn_scene *scene);
-
-int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position);
-/***************************************************************************//**
- * Set the position of the scene
- * @param scene to be edited
- * @param position Position to be set for the scene
- * @return If successfully set the position, otherwise NULL
- */
+int cmzn_scene_get_picking_name(struct cmzn_scene *scene);
 
 /**
  * Return non-accessed handle to the scene for this region.
@@ -431,7 +423,7 @@ int Scene_export_region_graphics_object(cmzn_scene *scene,
 	cmzn_region *region, const char *graphics_name, cmzn_scenefilter_id filter,
 	graphics_object_tree_iterator_function iterator_function, void *user_data);
 
-cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position);
+cmzn_scene *cmzn_scene_get_child_of_picking_name(cmzn_scene *scene, int position);
 
 int cmzn_scene_triggers_top_region_change_callback(
 	struct cmzn_scene *scene);
