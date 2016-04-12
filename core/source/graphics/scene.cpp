@@ -243,7 +243,7 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 				scene->time_notifier = NULL;
 				scene->cache = 0;
 				scene->changed = 0;
-				scene->position = 0;
+				scene->picking_name = GET_UNIQUE_SCENE_NAME();
 				scene->transformation_callback_list =
 					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))();
 				scene->top_region_change_callback_list =
@@ -643,49 +643,21 @@ static int cmzn_scene_build_graphics_objects(
 	return (return_code);
 }
 
-int cmzn_scene_get_position(struct cmzn_scene *scene)
+int cmzn_scene_get_picking_name(struct cmzn_scene *scene)
 {
 	int return_code;
 
-	ENTER(cmzn_scene_set_position);
 	if (scene)
-	{
-		return_code = scene->position;
-	}
+		return_code = scene->picking_name;
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_scene_set_position.  Invalid argument(s)");
+			"cmzn_scene_get_picking_name.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* cmzn_scene_set_position */
-
-
-
-int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position)
-{
-	int return_code;
-
-	ENTER(cmzn_scene_set_position);
-	if (scene&&(0<position))
-	{
-		scene->position=position;
-		return_code=1;
-
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_set_position.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_scene_set_position */
+} /* cmzn_scene_get_picking_name */
 
 /***************************************************************************//**
  * Get the range of coordinates of visible graphics in the scene and all its
@@ -1194,7 +1166,7 @@ int execute_cmzn_scene(struct cmzn_scene *scene,
 		//
 		//printf("%i \n", scene->position);
 		if (renderer->picking)
-			glLoadName((GLuint)scene->position);
+			glLoadName((GLuint)scene->picking_name);
 		/* save a matrix multiply when identity transformation */
 		if(scene->transformation)
 		{
@@ -2963,13 +2935,13 @@ int cmzn_scene_remove_all_graphics(cmzn_scene_id scene)
 	return return_code;
 }
 
-cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position)
+cmzn_scene *cmzn_scene_get_child_of_picking_name(cmzn_scene *scene, int position)
 {
 	cmzn_scene *scene_of_position = NULL;
 
 	if (scene && (position != 0))
 	{
-		if (position == (cmzn_scene_get_position(scene)))
+		if (position == (cmzn_scene_get_picking_name(scene)))
 		{
 			scene_of_position = cmzn_scene_access(scene);
 		}
@@ -2979,7 +2951,7 @@ cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position)
 			cmzn_scene *child_scene = cmzn_region_get_scene_private(child_region);
 			if (child_scene)
 			{
-				scene_of_position = cmzn_scene_get_child_of_position(child_scene, position);
+				scene_of_position = cmzn_scene_get_child_of_picking_name(child_scene, position);
 			}
 			cmzn_region_reaccess_next_sibling(&child_region);
 		}
@@ -2990,7 +2962,7 @@ cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position)
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"cmzn_scene_get_child_of_position.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"cmzn_scene_get_child_of_picking_name.  Invalid argument(s)");
 	}
 
 	return scene_of_position;

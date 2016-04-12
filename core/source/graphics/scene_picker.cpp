@@ -207,7 +207,7 @@ int cmzn_scenepicker::getSceneAndGraphics(GLuint *select_buffer_ptr,
 {
 	if (top_scene && select_buffer_ptr)
 	{
-		*picked_scene = cmzn_scene_get_child_of_position(top_scene, (int)(select_buffer_ptr[3]));
+		*picked_scene = cmzn_scene_get_child_of_picking_name(top_scene, (int)(select_buffer_ptr[3]));
 		*graphics = cmzn_scene_get_graphics_at_position(*picked_scene,
 			(int)(select_buffer_ptr[4]));
 		return 1;

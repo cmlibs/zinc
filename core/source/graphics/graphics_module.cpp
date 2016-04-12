@@ -387,10 +387,7 @@ int cmzn_graphics_module_create_scene(
 		if (!(scene))
 		{
 			if (NULL != (scene = cmzn_scene_create_internal(cmiss_region, graphics_module)))
-			{
-				cmzn_scene_set_position(scene, 1);
 				return_code = 1;
-			}
 			else
 			{
 				return_code = 0;
