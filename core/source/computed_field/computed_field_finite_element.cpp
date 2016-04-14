@@ -719,13 +719,14 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 								return_code=calculate_FE_element_field(-1,
 									feValueCache.fe_element_field_values,xi,feValueCache.values,
 									feValueCache.derivatives);
-								feValueCache.derivatives_valid = (0<number_of_derivatives);
+								feValueCache.derivatives_valid = 1;
 							}
 							else
 							{
 								return_code=calculate_FE_element_field(-1,
 									feValueCache.fe_element_field_values,xi,feValueCache.values,
 									(FE_value *)NULL);
+								feValueCache.derivatives_valid = 0;
 							}
 						} break;
 						case INT_VALUE:
@@ -3857,13 +3858,14 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 						return_code=calculate_FE_element_field(-1,
 							feValueCache.fe_element_field_values,xi,feValueCache.values,
 							feValueCache.derivatives);
-						feValueCache.derivatives_valid = (0<number_of_derivatives);
+						feValueCache.derivatives_valid = 1;
 					}
 					else
 					{
 						return_code=calculate_FE_element_field(-1,
 							feValueCache.fe_element_field_values,xi,feValueCache.values,
 							(FE_value *)NULL);
+						feValueCache.derivatives_valid = 0;
 					}
 				} break;
 				default:

@@ -224,7 +224,7 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	const double expectedNonLinearScaledSurfaceArea[4] =
 		{ 35.077246331415274, 35.021495747953381, 35.021673194493403, 35.021707031197636 };
 	double expectedNonLinearScaledSurfaceArea2[4] =
-		{ 33.793631094781738, 33.154980715337537, 33.156021138639595, 33.156471874247998 };
+		{ 36.079008317562128, 35.392219543449272, 35.393251193873191, 35.393732818145985 };
 
 	double nonLinearScaledVolume = 0;
 	double nonLinearScaledSurfaceArea = 0;
