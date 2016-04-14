@@ -32,7 +32,8 @@ public:
 	CompareDoubleArrays() :
 		generate(false)
 	{
-		this->output.precision(std::numeric_limits<double>::max_digits10);
+		//this->output.precision(std::numeric_limits<double>::max_digits10);
+		this->output.precision(17);
 	}
 
 	~CompareDoubleArrays()
@@ -337,8 +338,8 @@ TEST(ZincField, field_operator_derivatives_3d)
 		0.0051631064475936772, 0.0062285459592151451, 0.0057418813359171733
 	};
 
-	const double coordinatesTol = 1.0E-12;
-	const double temperatureTol = 1.0E-10;
+	const double coordinatesTol = 1.0E-11;
+	const double temperatureTol = 1.0E-8;
 
 	compare_double_array("expected_coordinates_values", expected_coordinates_values, coordinates_values, 4, 3, coordinatesTol);
 	compare_double_array("expected_deformed_values", expected_deformed_values, deformed_values, 4, 3, coordinatesTol);
@@ -572,8 +573,8 @@ TEST(ZincField, field_operator_derivatives_3d)
 		-0.00083992420620707684, -0.0017585746719378712, 0.0078642028087554036
 	};
 
-	const double coordinatesDerivatives1Tol = 1.0E-12;
-	const double temperatureDerivatives1Tol = 1.0E-10;
+	const double coordinatesDerivatives1Tol = 1.0E-11;
+	const double temperatureDerivatives1Tol = 1.0E-8;
 
 	compare_double_array("expected_coordinates_derivatives1", expected_coordinates_derivatives1, coordinates_derivatives1, 12, 3, coordinatesDerivatives1Tol);
 	compare_double_array("expected_deformed_derivatives1", expected_deformed_derivatives1, deformed_derivatives1, 12, 3, coordinatesDerivatives1Tol);

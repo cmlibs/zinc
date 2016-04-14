@@ -485,7 +485,7 @@ TEST(fieldmodule_description, write)
 
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);
-	printf("%s", description_string);
+	//printf("%s", description_string);
 
 	cmzn_region_id region = cmzn_region_create_child(root_region, "test");
 	TestDescriptionOutput(region, description_string);
