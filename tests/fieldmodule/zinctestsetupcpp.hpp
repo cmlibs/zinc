@@ -15,6 +15,7 @@
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/result.hpp>
 
 using namespace OpenCMISS::Zinc;
 

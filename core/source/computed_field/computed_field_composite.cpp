@@ -228,7 +228,7 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	if (return_code)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		valueCache.derivatives_valid = number_of_derivatives;
+		valueCache.derivatives_valid = (0 < number_of_derivatives);
 		FE_value *destination = number_of_derivatives ? valueCache.derivatives : 0;
 		for (int i=0;i<field->number_of_components;i++)
 		{
