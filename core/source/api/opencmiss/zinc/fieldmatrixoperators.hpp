@@ -140,6 +140,11 @@ inline FieldDeterminant Fieldmodule::createFieldDeterminant(const Field& sourceF
 		sourceField.getId()));
 }
 
+inline FieldEigenvalues Field::castEigenvalues()
+{
+	return FieldEigenvalues(cmzn_field_cast_eigenvalues(id));
+}
+
 inline FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField)
 {
 	return FieldEigenvalues(cmzn_fieldmodule_create_field_eigenvalues(id,

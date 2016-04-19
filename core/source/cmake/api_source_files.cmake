@@ -75,6 +75,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldimageid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldimageprocessingid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmatrixoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmeshoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldsmoothingid.h

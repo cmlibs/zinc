@@ -3429,7 +3429,7 @@ public:
 				class_name = "FieldMultiply";
 				break;
 			case CMZN_FIELD_TYPE_DIVIDE:
-				class_name = "FieldDivine";
+				class_name = "FieldDivide";
 				break;
 			case CMZN_FIELD_TYPE_SUBTRACT:
 				class_name = "FieldSubtract";
