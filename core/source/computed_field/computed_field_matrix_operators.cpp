@@ -386,6 +386,8 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_eigenvalues::get_command_string */
 
+} //namespace
+
 
 cmzn_field_eigenvalues_id cmzn_field_cast_eigenvalues(cmzn_field_id field)
 {
@@ -435,8 +437,6 @@ Returns true if <field> has the appropriate static type string.
 
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues */
-
-} //namespace
 
 int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
 	void *dummy_void)

@@ -37,13 +37,14 @@ public:
 class FieldEigenvalues : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEigenvalues(cmzn_field_id field_id) : Field(field_id)
-	{	}
 
 	friend FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField);
 
 public:
+
+	explicit FieldEigenvalues(cmzn_field_eigenvalues_id field_eigenvalues_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_eigenvalues_id))
+	{	}
 
 	FieldEigenvalues() : Field(0)
 	{	}
@@ -58,7 +59,7 @@ private:
 	{	}
 
 	friend FieldEigenvectors Fieldmodule::createFieldEigenvectors(
-		const FieldEigenvalues& eigenValuesField);
+		const FieldEigenvalues& eigenvaluesField);
 
 public:
 
@@ -147,8 +148,8 @@ inline FieldEigenvalues Field::castEigenvalues()
 
 inline FieldEigenvalues Fieldmodule::createFieldEigenvalues(const Field& sourceField)
 {
-	return FieldEigenvalues(cmzn_fieldmodule_create_field_eigenvalues(id,
-		sourceField.getId()));
+	return FieldEigenvalues(reinterpret_cast<cmzn_field_eigenvalues_id>(
+		cmzn_fieldmodule_create_field_eigenvalues(id,sourceField.getId())));
 }
 
 inline FieldEigenvectors Fieldmodule::createFieldEigenvectors(const FieldEigenvalues& eigenValuesField)
