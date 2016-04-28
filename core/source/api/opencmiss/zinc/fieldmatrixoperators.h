@@ -75,7 +75,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_eigenvalues_base_cast(
  * Destroys handle to the eigenvalues field (and sets it to NULL).
  * Internally this decrements the reference count.
  *
- * @param mesh_integral_field_address  Address of handle to the field to
+ * @param eigenvalues_field_address  Address of handle to the field to
  * destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
