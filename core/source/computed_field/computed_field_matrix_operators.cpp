@@ -386,6 +386,25 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_eigenvalues::get_command_string */
 
+} //namespace
+
+
+cmzn_field_eigenvalues_id cmzn_field_cast_eigenvalues(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_eigenvalues*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_eigenvalues_id>(field));
+	}
+	return 0;
+}
+
+int cmzn_field_eigenvalues_destroy(
+	cmzn_field_eigenvalues_id *eigenvalues_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(eigenvalues_field_address));
+}
+
 int Computed_field_is_type_eigenvalues(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -418,8 +437,6 @@ Returns true if <field> has the appropriate static type string.
 
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues */
-
-} //namespace
 
 int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
 	void *dummy_void)
