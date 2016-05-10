@@ -10,9 +10,12 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
+#include "opencmiss/zinc/material.h"
 #include "graphics/threejs_export.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
+#include "graphics/material.h"
+#include "graphics/texture.h"
 #include <iostream>
 #include <string>
 #include <math.h>
@@ -260,6 +263,64 @@ void Threejs_export::writeMorphVertexBuffer(const char *output_variable_name,
 	}
 }
 
+void Threejs_export::exportMaterial(cmzn_material_id material)
+{
+	if (material)
+	{
+		char new_string[100];
+		sprintf(new_string, "\t\"materials\" : [ {\n");
+		outputString += new_string;
+		sprintf(new_string, "\t\"DbgColor\" : 15658734,\n");
+		outputString += new_string;
+		sprintf(new_string, "\t\"DbgIndex\" : 0,\n");
+		outputString += new_string;
+		sprintf(new_string, "\t\"DbgName\" : \"my_material\",\n");
+		outputString += new_string;
+		double values[3];
+		cmzn_material_get_attribute_real3(material,
+			CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &values[0]);
+		sprintf(new_string, "\t\"colorDiffuse\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
+		outputString += new_string;
+		cmzn_material_get_attribute_real3(material,
+			CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &values[0]);
+		sprintf(new_string, "\t\"colorSpecular\" : [%g, %g, %g],\n", values[0], values[1], values[2]);
+		outputString += new_string;
+
+		struct Texture *texture = Graphical_material_get_texture(material);
+		if (texture)
+		{
+			/* non-accessed */
+			char *textureName = Texture_get_image_file_name(texture);
+			if (!textureName)
+				textureName = "my_texture.png";
+			sprintf(new_string, "\t\"mapDiffuse\" : \"%s\",\n", textureName);
+			outputString += new_string;
+			enum Texture_wrap_mode mode = Texture_get_wrap_mode(texture);
+			if (mode == TEXTURE_MIRRORED_REPEAT_WRAP)
+			{
+				sprintf(new_string, "\t\"mapDiffuseWrap\" : [\"mirror\", \"mirror\"],\n");
+			}
+			else
+			{
+				sprintf(new_string, "\t\"mapDiffuseWrap\" : [\"repeat\", \"repeat\"],\n");
+			}
+			outputString += new_string;
+		}
+		sprintf(new_string, "\t\"shading\" : \"Phong\",\n");
+		outputString += new_string;
+		double shininess = cmzn_material_get_attribute_real(material,
+			CMZN_MATERIAL_ATTRIBUTE_SHININESS);
+		sprintf(new_string, "\t\"specularCoef\" : %d,\n", (int)(shininess * 100));
+		outputString += new_string;
+		double alpha = cmzn_material_get_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_ALPHA);
+		sprintf(new_string, "\t\"opacity\" : %g,\n", alpha);
+		outputString += new_string;
+		sprintf(new_string, "\t\"vertexColors\" : true\n");
+		outputString += new_string;
+		sprintf(new_string, "\t}],\n\n");
+		outputString += new_string;
+	}
+}
 
 void Threejs_export::writeIndexBuffer(struct GT_object *object, int typeMask, int number_of_points)
 {
@@ -511,6 +572,41 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 	}
 }
 
+void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values_per_vertex,
+	unsigned int vertex_count)
+{
+	if (texture_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
+	{
+		unsigned int valid_output_per_vertex = 2;
+
+		GLfloat *currentVertex = texture_buffer;
+		char new_string[100];
+		sprintf(new_string, "\t\"uvs\" : [[");
+		outputString += new_string;
+		for (unsigned int i = 0; i < vertex_count; i++)
+		{
+			if ((i % 10) == 0)
+				outputString += "\n\t\t";
+			if (textureSizes[0] > 0.0)
+				sprintf(new_string, "%f,", currentVertex[0]/textureSizes[0]);
+			else
+				sprintf(new_string, "%f,", 0.0);
+			outputString += new_string;
+			if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
+				sprintf(new_string, "%f", currentVertex[1]/textureSizes[1]);
+			else
+				sprintf(new_string, "%f", 0.0);
+			outputString += new_string;
+			if (i < vertex_count - 1)
+			{
+				outputString += ",";
+			}
+			currentVertex+=values_per_vertex;
+		}
+		outputString += "\n\t]],\n\n";
+	}
+}
+
 
 int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step)
 {
@@ -634,22 +730,19 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
-/*
+
 			GLfloat *texture_coordinate0_buffer = NULL;
 			unsigned int texture_coordinate0_values_per_vertex,
 			texture_coordinate0_vertex_count;
 			if (object->vertex_array->get_float_vertex_buffer(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
 				&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
-				&texture_coordinate0_vertex_count)
-				&& (texture_coordinate0_vertex_count == position_vertex_count))
+				&texture_coordinate0_vertex_count))
 			{
 				typebitmask |= THREEJS_TYPE_VERTEX_TEX_COORD;
-				writeVertexBuffer("uvs",
-					texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
+				writeUVsBuffer(texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
 					texture_coordinate0_vertex_count);
 			}
-			*/
 			if (time_step == 0)
 			{
 				writeIndexBuffer(object, typebitmask, position_vertex_count);
