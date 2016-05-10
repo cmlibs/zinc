@@ -28,7 +28,6 @@ private:
 	std::string normalMorphString;
 	std::string colorsMorphString;
 	std::string outputString;
-	std::string materialString;
 	double textureSizes[3];
 
 	void writeVertexBuffer(const char *output_variable_name,
@@ -82,7 +81,6 @@ public:
 		normalMorphString.clear();
 		facesString.clear();
 		outputString.clear();
-		materialString.clear();
 	}
 
 	~Threejs_export();
