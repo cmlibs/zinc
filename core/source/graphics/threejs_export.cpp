@@ -739,9 +739,12 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
 				&texture_coordinate0_vertex_count))
 			{
-				typebitmask |= THREEJS_TYPE_VERTEX_TEX_COORD;
-				writeUVsBuffer(texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
-					texture_coordinate0_vertex_count);
+				if (time_step == 0)
+				{
+					typebitmask |= THREEJS_TYPE_VERTEX_TEX_COORD;
+					writeUVsBuffer(texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
+						texture_coordinate0_vertex_count);
+				}
 			}
 			if (time_step == 0)
 			{
