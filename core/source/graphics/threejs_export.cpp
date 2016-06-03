@@ -306,6 +306,26 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 			}
 			outputString += new_string;
 		}
+		texture = Graphical_material_get_second_texture(material);
+		if (texture)
+		{
+			/* non-accessed */
+			char *textureName = Texture_get_image_file_name(texture);
+			if (!textureName)
+				textureName = "my_texture.png";
+			sprintf(new_string, "\t\"mapNormal\" : \"%s\",\n", textureName);
+			outputString += new_string;
+			enum Texture_wrap_mode mode = Texture_get_wrap_mode(texture);
+			if (mode == TEXTURE_MIRRORED_REPEAT_WRAP)
+			{
+				sprintf(new_string, "\t\"mapNormalWrap\" : [\"mirror\", \"mirror\"],\n");
+			}
+			else
+			{
+				sprintf(new_string, "\t\"mapNormalWrap\" : [\"repeat\", \"repeat\"],\n");
+			}
+			outputString += new_string;
+		}
 		sprintf(new_string, "\t\"shading\" : \"Phong\",\n");
 		outputString += new_string;
 		double shininess = cmzn_material_get_attribute_real(material,
