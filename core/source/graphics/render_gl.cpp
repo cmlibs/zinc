@@ -701,6 +701,15 @@ public:
 			Threejs_export *threejs_export = 0;
 			if (number_of_time_steps == 0 || current_time_frame == 0)
 			{
+				cmzn_material_id material = cmzn_graphics_get_material(graphics);
+				/* non-accessed */
+				struct Texture *texture = Graphical_material_get_texture(
+					material);
+				double textureSizes[3] = {0.0, 0.0, 0.0};
+				if (texture)
+				{
+					cmzn_texture_get_texture_coordinate_sizes(texture, 3, textureSizes);
+				}
 				char *graphics_name = cmzn_graphics_get_name_internal(graphics);
 				struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
 				struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
@@ -711,8 +720,10 @@ public:
 				else
 					sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
 				threejs_export = new Threejs_export(new_file_prefix, number_of_time_steps, mode,
-					morphVertices, morphColours, morphNormals);
+					morphVertices, morphColours, morphNormals, &textureSizes[0]);
 				threejs_export->beginExport();
+				threejs_export->exportMaterial(material);
+				cmzn_material_destroy(&material);
 				DEALLOCATE(graphics_name);
 				if (region_name)
 					DEALLOCATE(region_name);

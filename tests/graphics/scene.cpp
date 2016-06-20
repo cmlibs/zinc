@@ -25,8 +25,11 @@
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldimage.hpp>
+#include <opencmiss/zinc/streamimage.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include <opencmiss/zinc/graphics.hpp>
+#include <opencmiss/zinc/material.hpp>
 #include <opencmiss/zinc/scene.hpp>
 #include <opencmiss/zinc/scenefilter.hpp>
 #include <opencmiss/zinc/sceneviewer.hpp>
@@ -411,6 +414,89 @@ TEST(ZincScene, graphics_list)
 
 	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeAllGraphics());
 }
+
+TEST(cmzn_scene, threejs_export_texture_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	int result;
+
+	Materialmodule material_module = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(material_module.isValid());
+	Material material = material_module.createMaterial();
+	EXPECT_TRUE(material.isValid());
+	EXPECT_EQ(CMZN_OK, result =  material.setName("myyellow"));
+	EXPECT_EQ(CMZN_OK, result =  material.setManaged(true));
+	double double_value[3] = {0.9, 0.9, 0.0};
+
+	EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_AMBIENT, double_value));
+	EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, double_value));
+
+	Fieldmodule field_module = zinc.root_region.getFieldmodule();
+	EXPECT_TRUE(field_module.isValid());
+	FieldImage image_field = field_module.createFieldImage();
+	EXPECT_TRUE(image_field.isValid());
+	EXPECT_EQ(CMZN_OK, result =  image_field.setName("texture"));
+
+	StreaminformationImage stream_information = image_field.createStreaminformationImage();
+	EXPECT_TRUE(stream_information.isValid());
+	stream_information.createStreamresourceFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
+	EXPECT_EQ(CMZN_OK, result =  image_field.read(stream_information));
+	EXPECT_EQ(CMZN_OK, result =  image_field.setTextureCoordinateWidth(1.0));
+	EXPECT_EQ(CMZN_OK, result =  image_field.setTextureCoordinateHeight(1.0));
+	EXPECT_EQ(CMZN_OK, result =  material.setTextureField(1, image_field));
+
+	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+
+	Field coordinateField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinateField.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+	EXPECT_EQ(CMZN_OK, result = surfaces.setTextureCoordinateField(coordinateField));
+	EXPECT_EQ(CMZN_OK, result = surfaces.setMaterial(material));
+
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+	EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	double double_result = 0.0;
+	EXPECT_EQ(0.0, double_result = si.getInitialTime());
+	EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	char *memory_buffer;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	char *temp_char = strstr ( memory_buffer, "vertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "uvs");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "materials");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "mapDiffuse");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
 
 TEST(cmzn_scene, threejs_export_cpp)
 {

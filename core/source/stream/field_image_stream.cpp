@@ -34,6 +34,7 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 	{
 		char *field_name = cmzn_field_get_name(cmzn_field_image_base_cast(image_field));
 		const cmzn_stream_properties_list streams_list = streaminformation_image->getResourcesList();
+		char *texture_file_name = 0;
 		if (!(streams_list.empty()))
 		{
 			cmzn_streaminformation_id streaminformation = cmzn_streaminformation_image_base_cast(
@@ -57,6 +58,8 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
+						if (!texture_file_name)
+							texture_file_name = duplicate_string(file_name);
 						fileStream = 1;
 						if (!memoryStream)
 						{
@@ -74,6 +77,8 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 				}
 				else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 				{
+					if (!texture_file_name)
+						texture_file_name = duplicate_string(field_name);
 					void *memory_block = NULL;
 					unsigned int buffer_size = 0;
 					memory_resource->getBuffer(&memory_block, &buffer_size);
@@ -123,7 +128,7 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 					char *property, *value;
 					Texture *texture= CREATE(Texture)(field_name);
 					if (texture && Texture_set_image(texture, cmgui_image,
-						field_name, /*file_number_pattern*/NULL,
+						texture_file_name, /*file_number_pattern*/NULL,
 						/*file_number_series_data.start*/0,
 						/*file_number_series_data.stop*/0,
 						/*file_number_series_data.increment*/1,
@@ -188,6 +193,8 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 		}
 		if (field_name)
 			DEALLOCATE(field_name);
+		if (texture_file_name)
+			DEALLOCATE(texture_file_name);
 	}
 	else
 	{
