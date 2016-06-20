@@ -312,7 +312,7 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 			/* non-accessed */
 			char *textureName = Texture_get_image_file_name(texture);
 			if (!textureName)
-				textureName = "my_texture.png";
+				textureName = "normal_texture.png";
 			sprintf(new_string, "\t\"mapNormal\" : \"%s\",\n", textureName);
 			outputString += new_string;
 			enum Texture_wrap_mode mode = Texture_get_wrap_mode(texture);
