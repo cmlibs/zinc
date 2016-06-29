@@ -499,6 +499,19 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face);
 
+/**
+ * Creates a field whose value equals source field calculated at the lookup node
+ * instead of the domain location requested.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to evaluate.
+ * @param lookup_node  Node from same region as source field to evaluate value at.
+ * @return Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
+	struct cmzn_fieldmodule *field_module, cmzn_field_id field,
+	cmzn_node_id lookup_node);
+
 #ifdef __cplusplus
 }
 #endif

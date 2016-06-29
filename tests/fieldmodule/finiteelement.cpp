@@ -1076,6 +1076,38 @@ TEST(ZincFieldFiniteElement, redefine_element_field)
 	zinc.fm.endChange();
 }
 
+
+TEST(ZincFieldNodeLookup, Evaluate)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinatesField.isValid());
+
+	Nodeset nodeset = zinc.fm.findNodesetByName("nodes");
+	EXPECT_TRUE(nodeset.isValid());
+
+	Node node = nodeset.findNodeByIdentifier(12);
+	EXPECT_TRUE(node.isValid());
+
+	FieldNodeLookup nodeLookup = zinc.fm.createFieldNodeLookup(coordinatesField, node);
+	EXPECT_TRUE(nodeLookup.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	double values[3] = {0.0, 0.0, 0.0};
+	EXPECT_EQ(OK, result = nodeLookup.evaluateReal(cache, 3, &values[0]));
+	EXPECT_DOUBLE_EQ(20.0, values[0]);
+	EXPECT_DOUBLE_EQ(10.0, values[1]);
+	EXPECT_DOUBLE_EQ(10.0, values[2]);
+}
+
+
 class FieldmodulecallbackCheckExterior : public Fieldmodulecallback
 {
 public:
