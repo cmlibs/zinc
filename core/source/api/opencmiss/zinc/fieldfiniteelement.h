@@ -505,11 +505,11 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
  *
  * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Field to evaluate.
- * @param lookup_node  Node from same region as source field to evaluate value at.
+ * @param lookup_node  The node to evaluate the source field at.
  * @return Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
-	cmzn_fieldmodule_id fieldmodule, cmzn_field_id field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_node_id lookup_node);
 
 #ifdef __cplusplus

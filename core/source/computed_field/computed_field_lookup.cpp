@@ -276,17 +276,17 @@ int Computed_field_nodal_lookup::check_dependency()
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
-	cmzn_fieldmodule_id field_module, cmzn_field_id field, cmzn_node_id lookup_node)
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field, cmzn_node_id lookup_node)
 {
-	Computed_field *resulting_field = NULL;
-	if (field && field->isNumerical() && lookup_node &&
+	Computed_field *field = NULL;
+	if (source_field && source_field->isNumerical() && lookup_node &&
 		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
 			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
 	{
-		resulting_field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
-			field->number_of_components,
-			/*number_of_source_fields*/1, &field,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_nodal_lookup(lookup_node));
 	}
@@ -296,7 +296,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
 			"Computed_field_create_nodal_lookup.  Invalid argument(s)");
 	}
 
-	return (resulting_field);
+	return (field);
 }
 
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
