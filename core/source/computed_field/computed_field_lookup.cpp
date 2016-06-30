@@ -275,9 +275,8 @@ int Computed_field_nodal_lookup::check_dependency()
 
 } //namespace
 
-struct Computed_field *Computed_field_create_nodal_lookup(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct FE_node *lookup_node)
+cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field, cmzn_node_id lookup_node)
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
