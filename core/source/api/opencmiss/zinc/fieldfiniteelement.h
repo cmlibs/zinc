@@ -485,7 +485,7 @@ ZINC_API int cmzn_field_stored_string_destroy(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
-	struct cmzn_fieldmodule *field_module);
+	cmzn_fieldmodule_id fieldmodule);
 
 /**
  * Creates a field which returns 1 on 2-D faces and 1-D lines considered
@@ -497,7 +497,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
-	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face);
+	cmzn_fieldmodule_id fieldmodule, cmzn_element_face_type face);
 
 /**
  * Creates a field whose value equals source field calculated at the lookup node
@@ -509,7 +509,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
  * @return Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
-	struct cmzn_fieldmodule *field_module, cmzn_field_id field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id field,
 	cmzn_node_id lookup_node);
 
 #ifdef __cplusplus
