@@ -571,4 +571,7 @@ enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *st
 
 char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type);
 
+bool cmzn_glyph_contains_surface_primitives(cmzn_glyph *glyph, cmzn_tessellation *tessellation,
+	cmzn_material *material, cmzn_font *font);
+
 #endif /* !defined (GLYPH_HPP) */

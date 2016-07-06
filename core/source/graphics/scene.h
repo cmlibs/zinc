@@ -453,7 +453,8 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string,
-	int morphColours, int morphNormals, int morphVertices);
+	int morphColours, int morphNormals, int morphVertices,
+	int numberOfFiles, char **file_names);
 
 int Scene_render_webgl(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *name_prefix);
@@ -462,6 +463,14 @@ int Scene_get_number_of_graphics_with_type_in_tree(
 	cmzn_scene_id scene, cmzn_scenefilter_id scenefilter, enum cmzn_graphics_type type);
 
 int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter);
+
+/* this include surfaces graphics and line graphics with surfaces (cylinder)*/
+int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter);
+
+/* Only glyphs with surfaces are compatible at this moment */
+int Scene_get_number_of_web_compatible_glyph_in_tree(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter);
 
 #endif /* !defined (SCENE_H) */

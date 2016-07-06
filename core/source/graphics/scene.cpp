@@ -3482,13 +3482,14 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string,
-	 int morphVertices, int morphColours, int morphNormals)
+	int morphVertices, int morphColours, int morphNormals,
+	int numberOfFiles, char **file_names)
 {
 	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
 			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
-			output_string, morphVertices, morphColours, morphNormals);
+			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;
 
@@ -3527,14 +3528,26 @@ int Scene_get_number_of_graphics_with_condition(cmzn_scene_id scene, void *Scene
 		{
 			graphics = FIND_BY_IDENTIFIER_IN_LIST(cmzn_graphics, position)(
 				i+1, scene->list_of_graphics);
-
-			if  (graphics &&
-				((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_type(graphics) == data->type)) &&
-				((data->graphics_object_type == g_OBJECT_TYPE_INVALID) ||
-				 (cmzn_graphics_get_graphics_object_type(graphics) == data->graphics_object_type)) &&
-				((0 == data->scenefilter) || cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics)))
+			if (graphics && ((0 == data->scenefilter) || (cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics))))
 			{
-				data->number_of_graphics++;
+				if (((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_type(graphics) == data->type)) &&
+					((data->graphics_object_type == g_OBJECT_TYPE_INVALID) ||
+				 (cmzn_graphics_get_graphics_object_type(graphics) == data->graphics_object_type)))
+				{
+					data->number_of_graphics++;
+				}
+				else if ((cmzn_graphics_get_type(graphics) == CMZN_GRAPHICS_TYPE_POINTS) &&
+					(data->type == CMZN_GRAPHICS_TYPE_POINTS))
+				{
+					cmzn_graphicspointattributes_id pointAttr = cmzn_graphics_get_graphicspointattributes(
+						graphics);
+					if ((data->graphics_object_type == g_SURFACE_VERTEX_BUFFERS) &&
+						(cmzn_graphicspointattributes_contain_surfaces(pointAttr)))
+					{
+						data->number_of_graphics++;
+					}
+					cmzn_graphicspointattributes_destroy(&pointAttr);
+				}
 			}
 		}
 		return 1;
@@ -3568,6 +3581,23 @@ int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id sce
 		struct Scene_get_number_of_graphics_data data;
 		data.scenefilter = scenefilter;
 		data.type = CMZN_GRAPHICS_TYPE_INVALID;
+		data.graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
+		data.number_of_graphics = 0;
+		for_each_child_scene_in_scene_tree(
+			scene, Scene_get_number_of_graphics_with_condition, &(data));
+		return data.number_of_graphics;
+	}
+	return 0;
+}
+
+int Scene_get_number_of_web_compatible_glyph_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter)
+{
+	if (scene)
+	{
+		struct Scene_get_number_of_graphics_data data;
+		data.scenefilter = scenefilter;
+		data.type = CMZN_GRAPHICS_TYPE_POINTS;
 		data.graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
 		data.number_of_graphics = 0;
 		for_each_child_scene_in_scene_tree(

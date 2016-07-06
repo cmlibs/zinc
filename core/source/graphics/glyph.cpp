@@ -2568,3 +2568,40 @@ int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject)
 		return glyph->setGraphicsObject(graphicsObject);
 	return CMZN_ERROR_ARGUMENT;
 }
+
+bool cmzn_glyph_contains_surface_primitives(cmzn_glyph *glyph,
+	cmzn_tessellation *tessellation, cmzn_material *material, cmzn_font *font)
+{
+	bool return_code = false;
+	if (glyph)
+	{
+		GT_object *gt_object = glyph->getGraphicsObject(tessellation, material, font);
+		if (gt_object)
+		{
+			switch (GT_object_get_type(gt_object))
+			{
+				case g_SURFACE_VERTEX_BUFFERS:
+					return_code = true;
+				break;
+				default:
+				{
+					GT_object *temp_glyph = GT_object_get_next_object(gt_object);
+					while (temp_glyph)
+					{
+						if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(temp_glyph))
+						{
+							return_code =  true;
+							temp_glyph = 0;
+						}
+						else
+						{
+							temp_glyph = GT_object_get_next_object(temp_glyph);
+						}
+					}
+				}	break;
+			}
+			DEACCESS(GT_object)(&gt_object);
+		}
+	}
+	return return_code;
+}

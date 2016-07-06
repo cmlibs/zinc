@@ -4705,13 +4705,7 @@ int cmzn_graphics_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphics->point_orientation_scale_field &&
-			Computed_field_has_multiple_times(graphics->point_orientation_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->signed_scale_field &&
-			Computed_field_has_multiple_times(graphics->signed_scale_field))
+		if (cmzn_graphics_point_attribute_is_time_dependent(graphics))
 		{
 			time_dependent = 1;
 		}
@@ -4730,18 +4724,12 @@ int cmzn_graphics_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphics->signed_scale_field &&
-			Computed_field_has_multiple_times(graphics->signed_scale_field))
-		{
-			time_dependent = 1;
-		}
 		if (graphics->stream_vector_field &&
 			Computed_field_has_multiple_times(graphics->stream_vector_field))
 		{
 			time_dependent = 1;
 		}
-		if (graphics->data_field &&
-			Computed_field_has_multiple_times(graphics->data_field))
+		if (cmzn_graphics_data_is_time_dependent(graphics))
 		{
 			time_dependent = 1;
 		}
@@ -6724,5 +6712,62 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 	}
 
 	return return_object;
+}
+
+bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_id point_attributes)
+{
+	bool return_code = false;
+	if (point_attributes)
+	{
+		cmzn_graphics_id graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
+		cmzn_glyph_id glyph = cmzn_graphicspointattributes_get_glyph(
+			point_attributes);
+		if (cmzn_glyph_contains_surface_primitives(glyph,
+			graphics->tessellation, graphics->material, graphics->font))
+		{
+			return_code = true;
+		}
+		cmzn_glyph_destroy(&glyph);
+	}
+	return return_code;
+}
+
+bool cmzn_graphics_data_is_time_dependent(cmzn_graphics_id graphics)
+{
+	if (graphics && graphics->data_field &&
+		Computed_field_has_multiple_times(graphics->data_field))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool cmzn_graphics_point_attribute_is_time_dependent(cmzn_graphics_id graphics)
+{
+	if (graphics)
+	{
+		if (graphics->point_orientation_scale_field &&
+			Computed_field_has_multiple_times(graphics->point_orientation_scale_field))
+		{
+			return  true;
+		}
+		if (graphics->signed_scale_field &&
+			Computed_field_has_multiple_times(graphics->signed_scale_field))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics)
+{
+	if (graphics && graphics->coordinate_field &&
+		Computed_field_has_multiple_times(graphics->coordinate_field))
+	{
+		return true;
+	}
+
+	return false;
 }
 

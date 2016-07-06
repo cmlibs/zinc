@@ -687,4 +687,14 @@ enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour
 char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
 	enum cmzn_graphics_streamlines_colour_data_type type);
 
+bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_id point_attributes);
+
+bool cmzn_graphics_contain_surfaces(struct cmzn_graphics *graphics);
+
+bool cmzn_graphics_data_is_time_dependent(cmzn_graphics_id graphics);
+
+bool cmzn_graphics_point_attribute_is_time_dependent(cmzn_graphics_id graphics);
+
+bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics);
+
 #endif
