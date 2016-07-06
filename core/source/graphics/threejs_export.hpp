@@ -13,22 +13,20 @@
 #include "graphics/graphics_library.h"
 #include "graphics/render_gl.h"
 #include <string>
+#include "jsoncpp/json.h"
 
 struct GT_object;
 
+/* generic threejs_export class with many basic methods to export
+ * standard surfaces
+ */
 class Threejs_export
 {
-private:
-	char *filename;
-	int number_of_time_steps;
-	cmzn_streaminformation_scene_io_data_type mode;
+protected:
+
+	bool morphVerticesExported, morphColoursExported, morphNormalsExported;
 	int morphVertices, morphColours, morphNormals;
-	std::string facesString;
-	std::string verticesMorphString;
-	std::string normalMorphString;
-	std::string colorsMorphString;
-	std::string outputString;
-	double textureSizes[3];
+	int number_of_time_steps;
 
 	void writeVertexBuffer(const char *output_variable_name,
 		GLfloat *vertex_buffer, unsigned int values_per_vertex,
@@ -47,20 +45,33 @@ private:
 		unsigned int vertex_count, int time_step);
 
 	void writeIndexBuffer(struct GT_object *object, int typeMask,
-		int number_of_points);
+		int number_of_points, unsigned int offset);
+
+	void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
 
 	void writeSpecialDataBuffer(struct GT_object *object, GLfloat *vertex_buffer,
 		unsigned int values_per_vertex, unsigned int vertex_count);
 
+	/* texture coordinates export*/
 	void writeUVsBuffer(GLfloat *texture_buffer, unsigned int values_per_vertex,
 		unsigned int vertex_count);
 
+private:
+	char *filename;
+	cmzn_streaminformation_scene_io_data_type mode;
+	std::string facesString;
+	std::string verticesMorphString;
+	std::string normalMorphString;
+	std::string colorsMorphString;
+	std::string outputString;
+	double textureSizes[3];
+
 public:
 
-	Threejs_export(const char *filename, int number_of_time_steps_in,
+	Threejs_export(const char *filename_in, int number_of_time_steps_in,
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn, double *textureSizesIn) :
-		filename(duplicate_string(filename)), number_of_time_steps(number_of_time_steps_in),
+			number_of_time_steps(number_of_time_steps_in), filename(duplicate_string(filename_in)),
 		mode(mode_in), morphVertices(morphVerticesIn), morphColours(morphColoursIn),
 		morphNormals(morphNormalsIn)
 	{
@@ -81,11 +92,14 @@ public:
 		normalMorphString.clear();
 		facesString.clear();
 		outputString.clear();
+		morphVerticesExported = false;
+		morphColoursExported = false;
+		morphNormalsExported = false;
 	}
 
-	~Threejs_export();
+	virtual ~Threejs_export();
 
-	int exportGraphicsObject(struct GT_object *object, int time_step);
+	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
 
 	void exportMaterial(cmzn_material_id material);
 
@@ -94,5 +108,64 @@ public:
 	int endExport();
 
 	std::string *getExportString();
+
+	bool getMorphVerticesExported()
+	{
+		return morphVerticesExported;
+	}
+
+	bool getMorphColoursExported()
+	{
+		return morphColoursExported;
+	}
+
+	bool getMorphNormalsExported()
+	{
+		return morphNormalsExported;
+	}
+
+};
+
+/* class for export glyph into WebGL format, only
+ * surface glyphs are supported.
+ */
+class Threejs_export_glyph : public Threejs_export
+{
+private:
+
+	void exportStaticGlyphs(struct GT_object *object);
+
+	void exportGlyphsTransformation(struct GT_object *glyph,  int time_step);
+
+	void writeGlyphIndexBuffer(struct GT_object *object, int typeMask);
+
+	Json::Value metadata, positions_json, axis1_json, axis2_json, axis3_json,
+		color_json;
+
+	std::string glyphTransformationString;
+
+	char *glyphGeometriesURLName;
+
+public:
+
+	Threejs_export_glyph(const char *filename_in, int number_of_time_steps_in,
+		cmzn_streaminformation_scene_io_data_type mode_in,
+		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		double *textureSizesIn) :
+		Threejs_export(filename_in, number_of_time_steps_in,
+		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn)
+	{
+		glyphTransformationString.clear();
+		glyphGeometriesURLName = 0;
+	}
+
+	virtual ~Threejs_export_glyph();
+
+	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
+
+	/* this return json format describing colours and transformation of the glyph */
+	std::string *getGlyphTransformationExportString();
+
+	void setGlyphGeometriesURLName(char *name);
 
 };

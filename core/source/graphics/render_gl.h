@@ -209,7 +209,8 @@ Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 		const char *file_prefix, int number_of_time_steps, double begin_time,
 		double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
 		int *number_of_entries, std::string **output_string,
-		int morphVertices, int morphColours, int morphNormals);
+		int morphVertices, int morphColours, int morphNormals,
+		int numberOfFiles, char **file_names);
 
 /** Routine that uses the objects material and spectrum to convert
 * an array of data to corresponding colour data.

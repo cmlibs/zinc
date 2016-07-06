@@ -37,6 +37,7 @@ GL rendering calls - API specific.
 #include "graphics/texture.hpp"
 #include "graphics/threejs_export.hpp"
 #include "graphics/webgl_export.hpp"
+#include "jsoncpp/json.h"
 
 /*
 Module variables
@@ -577,17 +578,20 @@ public:
 	enum cmzn_streaminformation_scene_io_data_type mode;
 	int *number_of_entries;
 	std::string **output_string;
-	int morphVertices, morphColours, morphNormals;
+	int morphVertices, morphColours, morphNormals, numberOfResources;
+	char **filenames;
 
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
 		enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
-		std::string **output_string_in, int morphVerticesIn, int morphColoursIn, int morphNormalsIn) :
+		std::string **output_string_in, int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		int numberOfFilesIn, char **filenamesIn) :
 		Render_graphics_opengl_vertex_buffer_object(),
 		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
 		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
-		mode(mode_in), number_of_entries(number_of_entries_in)
+		mode(mode_in), number_of_entries(number_of_entries_in), numberOfResources(numberOfFilesIn),
+		filenames(filenamesIn)
 	{
 		exports_map.clear();
 		current_graphics_number = 0;
@@ -604,16 +608,95 @@ public:
 			DEALLOCATE(file_prefix);
 	}
 
+	int get_number_of_entries()
+	{
+		int size = 0;
+		Threejs_export *threejs_export = 0;
+
+		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+			export_iter != exports_map.end(); export_iter++)
+		{
+			size++;
+			threejs_export =  export_iter->second;
+			if (dynamic_cast<Threejs_export_glyph*>(threejs_export))
+				size++;
+		}
+		//Also a file providing metafile, only when there is graphics to be exported
+		if (size > 0)
+			size++;
+
+		return size;
+	}
+
+	/* this will generate the meta data string */
+	std::string get_metadata_string()
+	{
+		Json::Value root;
+		int i = 1;
+		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+			export_iter != exports_map.end(); export_iter++)
+		{
+			Json::Value graphics_json;
+			graphics_json["MorphVertices"] = export_iter->second->getMorphVerticesExported();
+			graphics_json["MorphColours"] = export_iter->second->getMorphColoursExported();
+			graphics_json["MorphNormals"] = export_iter->second->getMorphNormalsExported();
+
+			if (numberOfResources > i)
+			{
+				graphics_json["URL"] = filenames[i];
+			}
+			else
+			{
+				char temp[20];
+				sprintf(temp, "temp_%d.json", i+1);
+				graphics_json["URL"] = temp;
+			}
+			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+			if (glyph_export)
+			{
+				graphics_json["Type"]="Glyph";
+				i++;
+				if (numberOfResources > i)
+				{
+					graphics_json["GlyphGeometriesURL"] = filenames[i];
+					glyph_export->setGlyphGeometriesURLName(filenames[i]);
+				}
+				else
+				{
+					char temp[20];
+					sprintf(temp, "temp_%d.json", i+1);
+					graphics_json["GlyphGeometriesURL"] = temp;
+					glyph_export->setGlyphGeometriesURLName(temp);
+				}
+			}
+			else
+			{
+				graphics_json["Type"]="Surfaces";
+			}
+			i++;
+			root.append(graphics_json);
+		}
+
+		return Json::StyledWriter().write(root);
+	}
+
 	int write_output_string()
 	{
-		*number_of_entries = static_cast<int>(exports_map.size());
+		*number_of_entries = get_number_of_entries();
 		if (*number_of_entries > 0)
 		{
-			int i = 0;
 			*output_string = new std::string[*number_of_entries];
+			(*output_string)[0] = std::string(get_metadata_string());
+			int i = 1;
 			for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
 				export_iter != exports_map.end(); export_iter++)
 			{
+				Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+				if (glyph_export)
+				{
+					(*output_string)[i] = std::string(*glyph_export->getGlyphTransformationExportString());
+					i++;
+				}
 				(*output_string)[i] = std::string(*(export_iter->second->getExportString()));
 				i++;
 			}
@@ -690,6 +773,68 @@ public:
 			graphics));
 	}
 
+	/* Method to export individual graphics */
+	template <class Threejs_export_class>
+	int Graphics_export(cmzn_graphics *graphics)
+	{
+		int return_code = 1;
+		GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			graphics);
+		Threejs_export_class *threejs_export = 0;
+		if (number_of_time_steps == 0 || current_time_frame == 0)
+		{
+			cmzn_material_id material = cmzn_graphics_get_material(graphics);
+			/* non-accessed */
+			struct Texture *texture = Graphical_material_get_texture(
+				material);
+			double textureSizes[3] = {0.0, 0.0, 0.0};
+			if (texture)
+			{
+				cmzn_texture_get_texture_coordinate_sizes(texture, 3, textureSizes);
+			}
+			char *graphics_name = cmzn_graphics_get_name_internal(graphics);
+			struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
+			struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
+			char *region_name = cmzn_region_get_name(region);
+			char new_file_prefix[50];
+			if (region_name)
+				sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
+			else
+				sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
+			bool morphsColoursAllowed = cmzn_graphics_data_is_time_dependent(graphics) && morphColours;
+			bool morphsVerticesAllowed = (cmzn_graphics_point_attribute_is_time_dependent(graphics) ||
+				cmzn_graphics_coordinates_is_time_dependent(graphics)) && morphVertices;
+			bool morphNormalsAllowed = (cmzn_graphics_point_attribute_is_time_dependent(graphics) ||
+				cmzn_graphics_coordinates_is_time_dependent(graphics)) && morphNormals;
+			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
+				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0]);
+			threejs_export->beginExport();
+			threejs_export->exportMaterial(material);
+			cmzn_material_destroy(&material);
+			DEALLOCATE(graphics_name);
+			if (region_name)
+				DEALLOCATE(region_name);
+			exports_map.insert(std::make_pair(graphics, threejs_export));
+		}
+		else
+		{
+			std::map<cmzn_graphics *, Threejs_export *>::iterator iter = exports_map.find(graphics);
+			if (iter != exports_map.end())
+			{
+				threejs_export = dynamic_cast<Threejs_export_class*>(iter->second);
+			}
+		}
+		return_code = threejs_export->exportGraphicsObject(graphics_object, current_time_frame);
+		if ((number_of_time_steps == 0) || (number_of_time_steps == 1) ||
+			(number_of_time_steps - 1 == current_time_frame))
+		{
+			threejs_export->endExport();
+		}
+		return return_code;
+
+	}
+
+	/* This will call the appropriate threejs export class based on the graphcis type */
 	int Graphics_execute(cmzn_graphics *graphics)
 	{
 		int return_code = 1;
@@ -698,52 +843,19 @@ public:
 		if (graphics_object &&
 			(GT_object_get_type(graphics_object) == g_SURFACE_VERTEX_BUFFERS))
 		{
-			Threejs_export *threejs_export = 0;
-			if (number_of_time_steps == 0 || current_time_frame == 0)
-			{
-				cmzn_material_id material = cmzn_graphics_get_material(graphics);
-				/* non-accessed */
-				struct Texture *texture = Graphical_material_get_texture(
-					material);
-				double textureSizes[3] = {0.0, 0.0, 0.0};
-				if (texture)
-				{
-					cmzn_texture_get_texture_coordinate_sizes(texture, 3, textureSizes);
-				}
-				char *graphics_name = cmzn_graphics_get_name_internal(graphics);
-				struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
-				struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
-				char *region_name = cmzn_region_get_name(region);
-				char new_file_prefix[50];
-				if (region_name)
-					sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
-				else
-					sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
-				threejs_export = new Threejs_export(new_file_prefix, number_of_time_steps, mode,
-					morphVertices, morphColours, morphNormals, &textureSizes[0]);
-				threejs_export->beginExport();
-				threejs_export->exportMaterial(material);
-				cmzn_material_destroy(&material);
-				DEALLOCATE(graphics_name);
-				if (region_name)
-					DEALLOCATE(region_name);
-				exports_map.insert(std::make_pair(graphics, threejs_export));
-			}
-			else
-			{
-				std::map<cmzn_graphics *, Threejs_export *>::iterator iter = exports_map.find(graphics);
-				if (iter != exports_map.end())
-				{
-					threejs_export = iter->second;
-				}
-			}
-			return_code = threejs_export->exportGraphicsObject(graphics_object, current_time_frame);
-			if ((number_of_time_steps == 0) || (number_of_time_steps == 1) ||
-				(number_of_time_steps - 1 == current_time_frame))
-			{
-				threejs_export->endExport();
-			}
+			return_code = Graphics_export<Threejs_export>(graphics);
 		}
+		else if (cmzn_graphics_get_type(graphics) == CMZN_GRAPHICS_TYPE_POINTS)
+		{
+			cmzn_graphicspointattributes_id pointAttr = cmzn_graphics_get_graphicspointattributes(
+				graphics);
+			if (cmzn_graphicspointattributes_contain_surfaces(pointAttr))
+			{
+				return_code = Graphics_export<Threejs_export_glyph>(graphics);
+			}
+			cmzn_graphicspointattributes_destroy(&pointAttr);
+		}
+
 		return return_code;
 	}
 
@@ -774,11 +886,12 @@ Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	const char *file_prefix, int number_of_time_steps, double begin_time,
 	double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
 	int *number_of_entries, std::string **output_string,
-	int morphVertices, int morphColours, int morphNormals)
+	int morphVertices, int morphColours, int morphNormals,
+	int numberOfFiles, char **file_names)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
 		begin_time, end_time, mode, number_of_entries, output_string,
-		morphVertices, morphColours, morphNormals);
+		morphVertices, morphColours, morphNormals, numberOfFiles, file_names);
 }
 
 /**
