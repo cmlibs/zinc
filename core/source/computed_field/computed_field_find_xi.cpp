@@ -137,6 +137,27 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 							LU_backsubstitute(number_of_xi, a, indx, b))
 						{
 							converged = 1;
+							if (data->find_nearest_location)
+							{
+								// limit delta xi as search oscillates when surface
+								// is very curved and data point is far away
+								double limit = 0.2;
+								if (iterations > 5)
+								{
+									limit /= 2.0;
+									if (iterations > 20)
+										limit /= 4.0;
+								}
+								double mag_dxi = 0.0;
+								for (i = 0; i < number_of_xi; i++)
+									mag_dxi += b[i]*b[i];
+								mag_dxi = sqrt(mag_dxi);
+								if (mag_dxi > limit)
+								{
+									for (i = 0; i < number_of_xi; i++)
+										b[i] *= limit/mag_dxi;
+								}
+							}
 							for (i = 0; i < number_of_xi; i++)
 							{
 								/* converged if all xi increments on or within tolerance */
@@ -485,7 +506,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 				{
 					for (i = 0 ; i < number_of_xi ; i++)
 					{
-						cache->xi[i] = find_element_xi_data.xi[i];
+						cache->xi[i] = xi[i];
 					}
 				}
 				else
