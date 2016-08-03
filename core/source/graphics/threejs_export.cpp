@@ -1030,7 +1030,10 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 				{
 					int hex_value = 0;
 					hex_value = rgb_to_hex(colours[0], colours[1], colours[2]);
-					color_json[temp_string].append(hex_value);
+					for (int j = 0; j < number_of_glyphs; j++)
+					{
+						color_json[temp_string].append(hex_value);
+					}
 					colours += colour_values_per_vertex;
 					if (time_step != 0)
 						morphColoursExported = true;
