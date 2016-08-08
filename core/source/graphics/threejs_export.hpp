@@ -140,7 +140,7 @@ private:
 	void writeGlyphIndexBuffer(struct GT_object *object, int typeMask);
 
 	Json::Value metadata, positions_json, axis1_json, axis2_json, axis3_json,
-		color_json;
+		scale_json, color_json;
 
 	std::string glyphTransformationString;
 
