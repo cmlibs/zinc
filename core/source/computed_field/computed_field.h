@@ -193,6 +193,26 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
 
+/**
+ * Get non-allocated field name. Internal use only, for error messages etc.
+ *
+ * @param field  Field to get name of.
+ * @return  Internal name of field. Use immediately and do not deallocate.
+ */
+const char *cmzn_field_get_name_internal(cmzn_field_id field);
+
+/**
+ * Set a unique name for field, concatenating first and second parts with a unique
+ * number if needed. Internal use only.
+ *
+ * @param field  Field to set name of.
+ * @param first  First part of name.
+ * @param second  Second part of name.
+ * @return  Standard result code.
+ */
+int cmzn_field_set_name_unique_concatentate(cmzn_field_id field,
+	const char *first, const char *second);
+
 /***************************************************************************//**
  * Internal variant of public cmzn_fielditerator_next() which does not access
  * the returned field, for more efficient if less safe usage.

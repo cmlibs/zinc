@@ -12,6 +12,7 @@ FILE : scene.h
 #define SCENE_H
 
 #include <list>
+#include <map>
 #include <string>
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
@@ -28,38 +29,36 @@ FILE : scene.h
 
 typedef std::list<cmzn_selectionnotifier *> cmzn_selectionnotifier_list;
 
-struct cmzn_scene
-/*******************************************************************************
-LAST MODIFIED : 16 October 2008
+typedef std::map<cmzn_field *, std::pair<cmzn_field *, int> > SceneCoordinateFieldWrapperMap;
+	// int = usage count
+typedef std::map<std::pair<cmzn_field *,cmzn_field*>, std::pair<cmzn_field *, int> > SceneVectorFieldWrapperMap;
+	// pair of fields are in order vector, coordinate field; int = usage count
 
-DESCRIPTION :
-Structure for maintaining a graphical scene of region.
-==============================================================================*/
+/**
+ * Structure for maintaining a graphical scene of region.
+ */
+struct cmzn_scene
 {
 	/* the region being drawn */
 	struct cmzn_region *region;
 	cmzn_fieldmodulenotifier *fieldmodulenotifier;
 	/* settings shared by whole scene */
-	/* default coordinate field for graphics drawn with settings below */
+	// legacy general settings used as defaults for new graphics
 	struct Computed_field *default_coordinate_field;
+	int *element_divisions;
+	int element_divisions_size;
+	int circle_discretization;
 	/* list of objects interested in changes to the cmzn_scene */
 	struct cmzn_scene_callback_data *update_callback_list;
 	struct LIST(cmzn_graphics) *list_of_graphics;
 	/* level of cache in effect */
 	int cache;
 	int changed; /**< true if scene has changed and haven't updated clients */
-	/* for accessing objects */
-	int access_count;
 	gtMatrix *transformation;
 	bool visibility_flag;
-	/* transformaiton field for time dependent transformation */
+	/* transformation field for time dependent transformation */
 	struct Computed_field *transformation_field;
 	int transformation_time_callback_flag;
-	/* curve approximation with line segments over elements */
-	int *element_divisions;
-	int element_divisions_size;
-	/* number of segments used around cylinders */
-	int circle_discretization;
 	struct cmzn_graphics_module *graphics_module;
 	cmzn_timenotifier_id time_notifier;
 	/* callback list for transformation changes */
@@ -69,11 +68,56 @@ Structure for maintaining a graphical scene of region.
 	cmzn_field_group_id selection_group;
 	bool selectionChanged;
 	cmzn_selectionnotifier_list *selectionnotifier_list;
+	bool editorCopy; // is this a temporary scene for Cmgui Scene editor?
+	/* for accessing objects */
+	int access_count;
+
+private:
+	SceneCoordinateFieldWrapperMap coordinateFieldWrappers;
+	SceneVectorFieldWrapperMap vectorFieldWrappers;
+
+private:
+	cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
 
 public:
+	~cmzn_scene(); // to call from DESTROY(cmzn_scene)
+
+	static cmzn_scene *create(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
+
 	void addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier);
 
 	void removeSelectionnotifier(cmzn_selectionnotifier *selectionnotifier);
+
+	/** Register that the coordinate field is in use by graphics.
+	 * Ensures a wrapper RC coordinate field exists for it. */
+	void registerCoordinateField(cmzn_field *coordinateField);
+
+	/** Remove wrapping for this instance of coordinate field. */
+	void deregisterCoordinateField(cmzn_field *coordinateField);
+
+	/** Get the wrapper for coordinate field; will be itself if RC.
+	 * @return  Non-accessed field. */
+	cmzn_field *getCoordinateFieldWrapper(cmzn_field *coordinateField);
+
+	/** Register that the vector field is in use with coordinate field in graphics.
+	* Ensures a wrapper RC vector field exists for it. Note it is required that coordinateField has a wrapper! */
+	void registerVectorField(cmzn_field *vectorField, cmzn_field *coordinateField);
+
+	/** Remove wrapping for this instance of vector and coordinate field. */
+	void deregisterVectorField(cmzn_field *vectorField, cmzn_field *coordinateField);
+
+	/** Get the wrapper for vector field with coordinate field; will be itself if both are RC.
+	 * @return  Non-accessed field. */
+	cmzn_field *getVectorFieldWrapper(cmzn_field *vectorField, cmzn_field *coordinateField);
+
+	/** Check/ensure registered coordinate and vector fields have appropriate wrappers.
+	 * Call if definition of fields changed. */
+	void refreshFieldWrappers();
+
+	bool isEditorCopy() const
+	{
+		return this->editorCopy;
+	}
 }; /* struct cmzn_scene */
 
 struct MANAGER_MESSAGE(cmzn_tessellation);
@@ -92,14 +136,6 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 
 /** @return  Handle to graphics module. Up to caller to destroy */
 cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene);
-
-/***************************************************************************//**
- * Destroy cmzn_scene and clean up the memory it uses.
- *
- * @param  scene_address the address of pointer to the scene to destroy.
- * @return  1 if successfully destroy scene, otherwise 0
- */
-int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address);
 
 int cmzn_scene_get_picking_name(struct cmzn_scene *scene);
 
@@ -427,9 +463,6 @@ cmzn_scene *cmzn_scene_get_child_of_picking_name(cmzn_scene *scene, int position
 
 int cmzn_scene_triggers_top_region_change_callback(
 	struct cmzn_scene *scene);
-
-struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
-	struct cmzn_graphics_module *graphics_module);
 
 /**
  * this function will remove callbacks relying on external objects.

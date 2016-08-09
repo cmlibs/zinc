@@ -115,6 +115,7 @@ like the number of components.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "opencmiss/zinc/result.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -2908,9 +2909,12 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 
 char *cmzn_field_get_name(cmzn_field_id field)
 {
-	char *name = NULL;
-	GET_NAME(Computed_field)(field, &name);
-	return (name);
+	return duplicate_string(field->name);
+}
+
+const char *cmzn_field_get_name_internal(cmzn_field_id field)
+{
+	return field->name;
 }
 
 int cmzn_field_set_name(struct Computed_field *field, const char *name)
@@ -2995,6 +2999,25 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 	}
 
 	return (return_code);
+}
+
+int cmzn_field_set_name_unique_concatentate(cmzn_field_id field, const char *first, const char *second)
+{
+	char *name;
+	const int len = strlen(first) + strlen(second);
+	ALLOCATE(name, char, len + 10);
+	if (!name)
+		return CMZN_RESULT_ERROR_MEMORY;
+	int number = 0;
+	sprintf(name, "%s%s", first, second);
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(name, field->manager))
+	{
+		++number;
+		sprintf(name + len, "%d", number);
+	}
+	int result = cmzn_field_set_name(field, name);
+	DEALLOCATE(name);
+	return result;
 }
 
 int cmzn_field_get_number_of_source_fields(cmzn_field_id field)

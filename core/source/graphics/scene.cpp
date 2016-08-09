@@ -94,6 +94,254 @@ DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_top_region_change, \
 
 static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene);
 
+cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn) :
+	region(regionIn),
+	fieldmodulenotifier(0),
+	default_coordinate_field(0),
+	element_divisions(0),
+	element_divisions_size(0),
+	circle_discretization(0),
+	update_callback_list(0),
+	list_of_graphics(CREATE(LIST(cmzn_graphics))()),
+	cache(0),
+	changed(0),
+	transformation(0),
+	visibility_flag(true),
+	transformation_field(0),
+	transformation_time_callback_flag(0),
+	graphics_module(graphicsmoduleIn),
+	time_notifier(0),
+	transformation_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))()),
+	top_region_change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))()),
+	picking_name(GET_UNIQUE_SCENE_NAME()),
+	selection_group(0),
+	selectionChanged(false),
+	selectionnotifier_list(0),
+	editorCopy(false),
+	access_count(1)
+{
+}
+
+cmzn_scene::~cmzn_scene()
+{
+	if (this->list_of_graphics)
+	{
+		// orphan graphics, first removing scene pointer
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+			cmzn_graphics_set_scene_for_list_private,
+			/*scene*/(void *)0, this->list_of_graphics);
+		DESTROY(LIST(cmzn_graphics))(&list_of_graphics);
+	}
+	// destroy references to RC field wrappers
+	for (SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.begin();
+		iter != this->coordinateFieldWrappers.end(); ++iter)
+	{
+		cmzn_field_destroy(&(iter->second.first));
+	}
+	for (SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.begin();
+		iter != this->vectorFieldWrappers.end(); ++iter)
+	{
+		cmzn_field_destroy(&(iter->second.first));
+	}
+	if (selection_group)
+		cmzn_field_group_destroy(&selection_group);
+	if (transformation)
+		DEALLOCATE(transformation);
+	if (time_notifier)
+		cmzn_timenotifier_destroy(&time_notifier);
+	if (default_coordinate_field)
+		cmzn_field_destroy(&default_coordinate_field);
+	if (element_divisions)
+		DEALLOCATE(element_divisions);
+	if (transformation_field)
+		cmzn_field_destroy(&transformation_field);
+}
+
+cmzn_scene *cmzn_scene::create(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn)
+{
+	if ((regionIn) && (graphicsmoduleIn))
+	{
+		cmzn_scene *scene = new cmzn_scene(regionIn, graphicsmoduleIn);
+		if (scene
+			&& scene->list_of_graphics
+			&& scene->transformation_callback_list
+			&& scene->top_region_change_callback_list)
+			return scene;
+		display_message(ERROR_MESSAGE, "cmzn_scene::create.  Insufficient memory");
+		delete scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::create.  Invalid argument(s)");
+	}
+	return 0;
+}
+
+void cmzn_scene::addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier)
+{
+	if (selectionnotifier)
+	{
+		if (!this->selectionnotifier_list)
+			this->selectionnotifier_list = new cmzn_selectionnotifier_list();
+		this->selectionnotifier_list->push_back(selectionnotifier->access());
+	}
+}
+
+void cmzn_scene::removeSelectionnotifier(cmzn_selectionnotifier *selectionnotifier)
+{
+	if (selectionnotifier && this->selectionnotifier_list)
+	{
+		cmzn_selectionnotifier_list::iterator iter = std::find(
+			this->selectionnotifier_list->begin(), this->selectionnotifier_list->end(), selectionnotifier);
+		if (iter != this->selectionnotifier_list->end())
+		{
+			cmzn_selectionnotifier::deaccess(selectionnotifier);
+			this->selectionnotifier_list->erase(iter);
+		}
+	}
+}
+
+void cmzn_scene::registerCoordinateField(cmzn_field *coordinateField)
+{
+	if (coordinateField)
+	{
+		SceneCoordinateFieldWrapperMap::iterator iter = coordinateFieldWrappers.find(coordinateField);
+		if (iter == coordinateFieldWrappers.end())
+		{
+			cmzn_field *wrapperField = cmzn_field_get_coordinate_field_wrapper(coordinateField);
+			this->coordinateFieldWrappers[coordinateField] = std::pair<cmzn_field *, int>(wrapperField, 1);
+		}
+		else
+		{
+			// increment number of instances of coordinateField using this wrapper
+			++(iter->second.second);
+		}
+	}
+}
+
+void cmzn_scene::deregisterCoordinateField(cmzn_field *coordinateField)
+{
+	SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.find(coordinateField);
+	if (iter == this->coordinateFieldWrappers.end())
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterCoordinateField.  Field %s not registered.",
+			cmzn_field_get_name_internal(coordinateField));
+	}
+	else if (1 < iter->second.second)
+	{
+		// decrement number of instances of coordinateField using this wrapper
+		--(iter->second.second);
+	}
+	else
+	{
+		cmzn_field_destroy(&(iter->second.first));
+		this->coordinateFieldWrappers.erase(iter);
+	}
+}
+
+cmzn_field *cmzn_scene::getCoordinateFieldWrapper(cmzn_field *coordinateField)
+{
+	SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.find(coordinateField);
+	if (iter == this->coordinateFieldWrappers.end())
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::getCoordinateFieldWrapper.  Field %s not registered.",
+			cmzn_field_get_name_internal(coordinateField));
+		return 0;
+	}
+	return iter->second.first;
+}
+
+void cmzn_scene::registerVectorField(cmzn_field *vectorField, cmzn_field *coordinateField)
+{
+	if (vectorField && coordinateField)
+	{
+		std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
+		SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
+		if (iter == this->vectorFieldWrappers.end())
+		{
+			cmzn_field *wrapperField = cmzn_field_get_vector_field_wrapper(vectorField, coordinateField);
+			this->vectorFieldWrappers[key] = std::pair<cmzn_field *, int>(wrapperField, 1);
+		}
+		else
+		{
+			// increment number of instances of pair of fields using this wrapper
+			++(iter->second.second);
+		}
+	}
+}
+
+void cmzn_scene::deregisterVectorField(cmzn_field *vectorField, cmzn_field *coordinateField)
+{
+	std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
+	SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
+	if (iter == this->vectorFieldWrappers.end())
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterVectorField.  Vector, coordinate fields %s, %s not registered.",
+			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+	}
+	else if (1 < iter->second.second)
+	{
+		// decrement number of instances of coordinateField using this wrapper
+		--(iter->second.second);
+	}
+	else
+	{
+		cmzn_field_destroy(&(iter->second.first));
+		this->vectorFieldWrappers.erase(iter);
+	}
+}
+
+cmzn_field *cmzn_scene::getVectorFieldWrapper(cmzn_field *vectorField, cmzn_field *coordinateField)
+{
+	std::pair<cmzn_field *, cmzn_field *> key(vectorField, coordinateField);
+	SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.find(key);
+	if (iter == this->vectorFieldWrappers.end())
+	{
+		display_message(ERROR_MESSAGE, "cmzn_scene::getVectorFieldWrapper.  Vector, coordinate fields %s, %s not registered.",
+			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+		return 0;
+	}
+	return iter->second.first;
+}
+
+void cmzn_scene::refreshFieldWrappers()
+{
+	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(this->region);
+	cmzn_fieldmodule_begin_change(fieldmodule);
+	for (SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.begin();
+		iter != this->coordinateFieldWrappers.end(); ++iter)
+	{
+		cmzn_field *coordinateField = iter->first;
+		const Coordinate_system_type type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinateField));
+		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		const bool typeIsNonLinear = (0 != Coordinate_system_type_is_non_linear(type));
+		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
+			(typeIsNonLinear && (iter->second.first == coordinateField)) ||
+			((!typeIsNonLinear) && (iter->second.first != coordinateField)))
+		{
+			cmzn_field_destroy(&(iter->second.first));
+			iter->second.first = cmzn_field_get_coordinate_field_wrapper(coordinateField);
+		}
+	}
+	for (SceneVectorFieldWrapperMap::iterator iter = this->vectorFieldWrappers.begin();
+		iter != this->vectorFieldWrappers.end(); ++iter)
+	{
+		cmzn_field *vectorField = iter->first.first;
+		cmzn_field *coordinateField = iter->first.second;
+		const bool needWrapper = cmzn_field_vector_needs_wrapping(vectorField);
+		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
+			(needWrapper && (iter->second.first == vectorField)) ||
+			((!needWrapper) && (iter->second.first != vectorField)))
+		{
+			cmzn_field_destroy(&(iter->second.first));
+			iter->second.first = cmzn_field_get_vector_field_wrapper(vectorField, coordinateField);
+		}
+	}
+	cmzn_fieldmodule_end_change(fieldmodule);
+	cmzn_fieldmodule_destroy(&fieldmodule);
+}
+
 /**
  * Informs registered clients of change in the scene.
  */
@@ -208,83 +456,6 @@ static int cmzn_scene_void_detach_from_cmzn_region(void *scene_void)
 	return (return_code);
 }
 
-/***************************************************************************//**
- * Allocates memory and assigns fields for a cmiss scene for the given
- * cmiss_region. Access count is set to 1.
- */
-struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
-	struct cmzn_graphics_module *graphics_module)
-{
-	struct FE_region *fe_region;
-	struct cmzn_scene *scene;
-
-	ENTER(CREATE(cmzn_scene));
-	if (cmiss_region && (fe_region = cmzn_region_get_FE_region(cmiss_region)))
-	{
-		if (ALLOCATE(scene, struct cmzn_scene, 1))
-		{
-			scene->list_of_graphics = NULL;
-			if (NULL != (scene->list_of_graphics =
-					CREATE(LIST(cmzn_graphics))()))
-			{
-				scene->region = cmiss_region;
-				scene->fieldmodulenotifier = 0;
-
-				/* legacy general settings used as defaults for new graphics */
-				scene->element_divisions = NULL;
-				scene->element_divisions_size = 0;
-				scene->circle_discretization = 0;
-				scene->default_coordinate_field = (struct Computed_field *)NULL;
-				scene->visibility_flag = true;
-				scene->update_callback_list=
-					(struct cmzn_scene_callback_data *)NULL;
-				scene->transformation = (gtMatrix *)NULL;
-				scene->graphics_module =	graphics_module;
-				scene->time_notifier = NULL;
-				scene->cache = 0;
-				scene->changed = 0;
-				scene->picking_name = GET_UNIQUE_SCENE_NAME();
-				scene->transformation_callback_list =
-					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))();
-				scene->top_region_change_callback_list =
-					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))();
-				scene->transformation_field = NULL;
-				scene->transformation_time_callback_flag = 0;
-				scene->selection_group = NULL;
-				scene->selectionChanged = false;
-				scene->selectionnotifier_list = NULL;
-			}
-			else
-			{
-				DESTROY(LIST(cmzn_graphics))(
-					&(scene->list_of_graphics));
-				DEALLOCATE(scene);
-				scene = (struct cmzn_scene *)NULL;
-			}
-			scene->access_count = 1;
-		}
-		else
-		{
-			DEALLOCATE(scene);
-			scene = (struct cmzn_scene *)NULL;
-		}
-		if (!scene)
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(cmzn_scene).  Insufficient memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(cmzn_scene).  Invalid argument(s)");
-		scene=(struct cmzn_scene *)NULL;
-	}
-	LEAVE;
-
-	return (scene);
-} /* CREATE(cmzn_scene) */
-
 cmzn_field_id cmzn_scene_guess_coordinate_field(
 	struct cmzn_scene *scene, cmzn_field_domain_type domain_type)
 {
@@ -386,6 +557,9 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 			scene->selectionChanged = false;
 		}
 		cmzn_scene_begin_change(scene);
+		const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
+		if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
+			scene->refreshFieldWrappers();
 		struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
 			(void *)&change_data, scene->list_of_graphics);
@@ -433,23 +607,19 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 	ENTER(cmzn_scene_create);
 	if (cmiss_region && graphics_module)
 	{
-		scene = CREATE(cmzn_scene)(cmiss_region, graphics_module);
+		scene = cmzn_scene::create(cmiss_region, graphics_module);
+		if (scene)
 		{
-			if (!(scene && cmzn_region_attach_scene(cmiss_region,
-						scene)))
-			{
-				DEACCESS(cmzn_scene)(&scene);
-			}
-			else
-			{
+			if (cmzn_region_attach_scene(cmiss_region, scene))
 				cmzn_graphics_module_add_member_region(graphics_module, cmiss_region);
-			}
+			else
+				DEACCESS(cmzn_scene)(&scene);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(cmzn_scene).  Invalid argument(s)");
+			"cmzn_scene_create_internal.  Invalid argument(s)");
 		scene = NULL;
 	}
 	LEAVE;
@@ -473,6 +643,22 @@ static void cmzn_scene_region_change(struct cmzn_region *region,
 	}
 	LEAVE;
 } /* cmzn_scene_region_change */
+
+  /**
+  * Destroy cmzn_scene and clean up the memory it uses.
+  */
+int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address)
+{
+	if (scene_address && *scene_address)
+	{
+		cmzn_scene_detach_from_owner(*scene_address);
+		delete *scene_address;
+		*scene_address = 0;
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "DESTROY(cmzn_scene).  Invalid argument(s)");
+	return 0;
+}
 
 DECLARE_OBJECT_FUNCTIONS(cmzn_scene);
 DEFINE_ANY_OBJECT(cmzn_scene);
@@ -1627,9 +1813,10 @@ struct cmzn_scene *create_editor_copy_cmzn_scene(
 	if (existing_scene)
 	{
 		/* make an empty cmzn_scene for the same groups */
-		if (NULL != (scene = CREATE(cmzn_scene)(
+		if (NULL != (scene = cmzn_scene::create(
 			existing_scene->region, existing_scene->graphics_module)))
 		{
+			scene->editorCopy = true;
 			/* copy settings WITHOUT graphics objects; do not cause whole function
 				 to fail if copy fails */
 			cmzn_scene_copy(scene,existing_scene);
@@ -2360,53 +2547,6 @@ void cmzn_scene_detach_from_owner(cmzn_scene_id scene)
 	}
 }
 
-int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address)
-{
-	int return_code;
-	struct cmzn_scene *scene;
-	if (scene_address && (scene = *scene_address))
-	{
-		cmzn_scene_detach_from_owner(scene);
-		if (scene->selection_group)
-		{
-			cmzn_field_group_destroy(&scene->selection_group);
-		}
-		if (scene->transformation)
-		{
-			DEALLOCATE(scene->transformation);
-		}
-		if (scene->time_notifier)
-		{
-			cmzn_timenotifier_destroy(&scene->time_notifier);
-		}
-		if (scene->default_coordinate_field)
-		{
-			DEACCESS(Computed_field)(&(scene->default_coordinate_field));
-		}
-		if (scene->element_divisions)
-		{
-			DEALLOCATE(scene->element_divisions);
-		}
-		if (scene->list_of_graphics)
-		{
-			DESTROY(LIST(cmzn_graphics))(&(scene->list_of_graphics));
-		}
-		if (scene->transformation_field)
-		{
-			DEACCESS(Computed_field)(&(scene->transformation_field));
-		}
-		DEALLOCATE(*scene_address);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(cmzn_scene).  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
 int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 	cmzn_field_id selection_field)
 {
@@ -2791,30 +2931,6 @@ cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	cmzn_scene_id scene)
 {
 	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_SURFACES);
-}
-
-void cmzn_scene::addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier)
-{
-	if (selectionnotifier)
-	{
-		if (!this->selectionnotifier_list)
-			this->selectionnotifier_list = new cmzn_selectionnotifier_list();
-		this->selectionnotifier_list->push_back(selectionnotifier->access());
-	}
-}
-
-void cmzn_scene::removeSelectionnotifier(cmzn_selectionnotifier *selectionnotifier)
-{
-	if (selectionnotifier && this->selectionnotifier_list)
-	{
-		cmzn_selectionnotifier_list::iterator iter = std::find(
-			this->selectionnotifier_list->begin(), this->selectionnotifier_list->end(), selectionnotifier);
-		if (iter != this->selectionnotifier_list->end())
-		{
-			cmzn_selectionnotifier::deaccess(selectionnotifier);
-			this->selectionnotifier_list->erase(iter);
-		}
-	}
 }
 
 cmzn_selectionnotifier_id cmzn_scene_create_selectionnotifier(cmzn_scene_id scene)
