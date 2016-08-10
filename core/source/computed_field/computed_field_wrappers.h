@@ -17,44 +17,42 @@ fibre_axes out of a fibre field.
 #if !defined (COMPUTED_FIELD_WRAPPERS_H)
 #define COMPUTED_FIELD_WRAPPERS_H
 
-struct Computed_field *Computed_field_begin_wrap_coordinate_field(
-	struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
+struct cmzn_field;
 
-DESCRIPTION :
-Returns a RECTANGULAR_CARTESIAN coordinate field that may be the original
-<coordinate field> if it is already in this coordinate system, or a
-COMPUTED_FIELD_RC_COORDINATE wrapper for it if it is not.
-Notes:
-Used to ensure RC coordinate fields are passed to graphics functions.
-Must call Computed_field_end_wrap() to clean up the returned field after use.
-==============================================================================*/
+/**
+* Returns a RECTANGULAR_CARTESIAN coordinate field that may be the original
+* <coordinate field> if it is already in this coordinate system, or a
+* coordinate transformation field wrapper for it if it is not.
+* Notes:
+* Used to ensure RC coordinate fields are passed to graphics functions.
+* The NORMALISED_WINDOW_COORDINATES system is a rectangular cartesian system
+* but indicates that the graphics objects produced should be displayed in the
+* window coordinates rather than the model 3D coordinates and so are also not
+* wrapped.
+* @return  Accessed field. Up to caller to destroy reference.
+*/
+cmzn_field *cmzn_field_get_coordinate_field_wrapper(
+	cmzn_field *coordinate_field);
 
-struct Computed_field *Computed_field_begin_wrap_orientation_scale_field(
-	struct Computed_field *orientation_scale_field,
-	struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
+/**
+ * @return true if vector field requires wrapping to convert to RC, otherwise false.
+ */
+bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field);
 
-DESCRIPTION :
-Takes the <orientation_scale_field> and returns a field ready for use in the
-rest of the program. This involves making a COMPUTED_FIELD_FIBRE_AXES wrapper
-if the field has 3 or fewer components and a FIBRE coordinate system (this
-requires the coordinate_field too). If the field has 3 or fewer components and
-a non-RECTANGULAR_CARTESIAN coordinate system, a wrapper of type
-COMPUTED_FIELD_RC_ORIENTATION_SCALE will be made for it. If the field is deemed
-already usable in in its orientation_scale role, it is simply returned. Note
-that the function accesses any returned field.
-Note:
-Must call Computed_field_end_wrap() to clean up the returned field after use.
-==============================================================================*/
+/**
+ * Takes the vector and coordinate fields and returns an appropriate rectangular
+ * Cartesian vector field e.g. for use in graphics/conversions.
+ * Will be the same as the original field if both are RC or other non-convertable types.
+ * This involves making a fibre axes field wrapper if the field has 3 or fewer
+ * components and a FIBRE coordinate system (this requires the coordinate_field too).
+ * If the field has 3 or fewer components and a non-RECTANGULAR_CARTESIAN coordinate
+ * system, a vector coordinate transformation field wrapper will be made for it.
+ * NOTE:
+ * @param coordinate_field  The coordinate field at which the vectors are located.
+ * Note: must be RC i.e. already wrapped if non RC.
+ * @return  Accessed field. Up to caller to destroy reference.
+ */
+cmzn_field *cmzn_field_get_vector_field_wrapper(
+	cmzn_field *vector_field, cmzn_field *coordinate_field);
 
-int Computed_field_end_wrap(struct Computed_field **wrapper_field_address);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Cleans up a field accessed/created by a Computed_field_begin_wrap*() function.
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_WRAPPERS_H) */

@@ -319,6 +319,8 @@ int DESTROY(cmzn_graphics)(
 	ENTER(DESTROY(cmzn_graphics));
 	if (graphics_address && (graphics= *graphics_address))
 	{
+		if (graphics->scene)
+			cmzn_graphics_set_scene_private(graphics, NULL);
 		if (graphics->name)
 		{
 			DEALLOCATE(graphics->name);
@@ -1252,7 +1254,27 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 	{
 		if (coordinate_field != graphics->coordinate_field)
 		{
+			if (graphics->scene && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				if (graphics->point_orientation_scale_field)
+					graphics->scene->deregisterVectorField(
+						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				if (graphics->stream_vector_field)
+					graphics->scene->deregisterVectorField(
+						graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->coordinate_field), coordinate_field);
+			if (graphics->scene && graphics->coordinate_field)
+			{
+				graphics->scene->registerCoordinateField(graphics->coordinate_field);
+				if (graphics->point_orientation_scale_field)
+					graphics->scene->registerVectorField(
+						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				if (graphics->stream_vector_field)
+					graphics->scene->registerVectorField(
+						graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -2682,8 +2704,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				graphics_to_object_data->wrapper_stream_vector_field = (cmzn_field_id)0;
 				if (coordinate_field)
 				{
-					graphics_to_object_data->rc_coordinate_field =
-						Computed_field_begin_wrap_coordinate_field(coordinate_field);
+					graphics_to_object_data->rc_coordinate_field = graphics->scene->getCoordinateFieldWrapper(coordinate_field);
 					if (!graphics_to_object_data->rc_coordinate_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -2694,8 +2715,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				if (return_code && graphics->point_orientation_scale_field)
 				{
 					graphics_to_object_data->wrapper_orientation_scale_field =
-						Computed_field_begin_wrap_orientation_scale_field(
-							graphics->point_orientation_scale_field, graphics_to_object_data->rc_coordinate_field);
+						graphics->scene->getVectorFieldWrapper(graphics->point_orientation_scale_field, coordinate_field);
 					if (!graphics_to_object_data->wrapper_orientation_scale_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -2706,8 +2726,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				if (return_code && graphics->stream_vector_field)
 				{
 					graphics_to_object_data->wrapper_stream_vector_field =
-						Computed_field_begin_wrap_orientation_scale_field(
-							graphics->stream_vector_field, graphics_to_object_data->rc_coordinate_field);
+						graphics->scene->getVectorFieldWrapper(graphics->stream_vector_field, coordinate_field);
 					if (!graphics_to_object_data->wrapper_stream_vector_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -3160,18 +3179,6 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				if (graphics_to_object_data->glyph_gt_object)
 				{
 					DEACCESS(GT_object)(&(graphics_to_object_data->glyph_gt_object));
-				}
-				if (graphics->stream_vector_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_stream_vector_field));
-				}
-				if (graphics->point_orientation_scale_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_orientation_scale_field));
-				}
-				if (graphics_to_object_data->rc_coordinate_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->rc_coordinate_field));
 				}
 			}
 		}
@@ -5086,7 +5093,41 @@ int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 {
 	if (graphics && ((NULL == scene) || (NULL == graphics->scene)))
 	{
-		graphics->scene = scene;
+		if (scene != graphics->scene)
+		{
+			if (graphics->scene)
+			{
+				// deregister coordinate/vector field wrappers
+				if (graphics->coordinate_field)
+				{
+					if (graphics->point_orientation_scale_field)
+						graphics->scene->deregisterVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+					if (graphics->stream_vector_field)
+						graphics->scene->deregisterVectorField(graphics->stream_vector_field, graphics->coordinate_field);
+					graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				}
+			}
+			if (scene && (!scene->isEditorCopy()))
+			{
+				graphics->scene = scene;
+				if (graphics->scene)
+				{
+					// register coordinate/vector field wrappers
+					if (graphics->coordinate_field)
+					{
+						if (graphics->point_orientation_scale_field)
+							graphics->scene->registerVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+						if (graphics->stream_vector_field)
+							graphics->scene->registerVectorField(graphics->stream_vector_field, graphics->coordinate_field);
+						graphics->scene->registerCoordinateField(graphics->coordinate_field);
+					}
+				}
+			}
+			else
+			{
+				graphics->scene = 0;
+			}
+		}
 		return 1;
 	}
 	else
@@ -5099,27 +5140,11 @@ int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 
 int cmzn_graphics_set_scene_for_list_private(struct cmzn_graphics *graphics, void *scene_void)
 {
-	cmzn_scene *scene = (cmzn_scene *)scene_void;
-	int return_code = 0;
-	if (graphics && scene)
-	{
-		if (graphics->scene == scene)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = cmzn_graphics_set_scene_private(graphics, NULL);
-			return_code = cmzn_graphics_set_scene_private(graphics, scene);
-		}
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"cmzn_graphics_set_scene_for_list_private.  Invalid argument(s)");
-	}
-
-	return return_code;
+	if (graphics)
+		return cmzn_graphics_set_scene_private(graphics, static_cast<cmzn_scene *>(scene_void));
+	display_message(INFORMATION_MESSAGE,
+		"cmzn_graphics_set_scene_for_list_private.  Invalid argument(s)");
+	return 0;
 }
 
 cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics)
@@ -5713,7 +5738,17 @@ int cmzn_graphics_streamlines_set_stream_vector_field(
 	{
 		if (stream_vector_field != graphics->stream_vector_field)
 		{
+			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterVectorField(
+					graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->stream_vector_field), stream_vector_field);
+			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			{
+				graphics->scene->registerVectorField(
+					graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -6354,7 +6389,17 @@ int cmzn_graphicspointattributes_set_orientation_scale_field(
 	{
 		if (orientation_scale_field != graphics->point_orientation_scale_field)
 		{
+			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterVectorField(
+					graphics->point_orientation_scale_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->point_orientation_scale_field), orientation_scale_field);
+			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			{
+				graphics->scene->registerVectorField(
+					graphics->point_orientation_scale_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;

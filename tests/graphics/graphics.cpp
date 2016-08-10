@@ -22,6 +22,7 @@
 #include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/font.hpp"
 
 #include "test_resources.h"
@@ -1540,4 +1541,130 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	char *return_string = zinc.scene.writeDescription();
 	EXPECT_TRUE(return_string != 0);
 	cmzn_deallocate(return_string);
+}
+
+/* test wrapping of non-RC coordinate and vector fields */
+TEST(ZincGraphics, fieldWrappers)
+{
+	ZincTestSetupCpp zinc;
+
+	Field rc_coordinates = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(rc_coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, rc_coordinates.setName("rc_coordinates"));
+	Field rc_vector = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(rc_vector.isValid());
+	EXPECT_EQ(RESULT_OK, rc_vector.setName("rc_vector"));
+	Field polar_coordinates = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(polar_coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, polar_coordinates.setName("polar_coordinates"));
+	EXPECT_EQ(RESULT_OK, polar_coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	Field polar_vector = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(polar_vector.isValid());
+	EXPECT_EQ(RESULT_OK, polar_vector.setName("polar_vector"));
+	EXPECT_EQ(RESULT_OK, polar_vector.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	Field fibres = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(fibres.isValid());
+	EXPECT_EQ(RESULT_OK, fibres.setName("fibres"));
+	EXPECT_EQ(RESULT_OK, fibres.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_FIBRE));
+
+	Field findField;
+
+	GraphicsPoints points = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(points.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(rc_coordinates));
+	findField = zinc.fm.findFieldByName("rc_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(polar_coordinates));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(rc_coordinates));
+	findField = Field();
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+
+	Graphicspointattributes attr = points.getGraphicspointattributes();
+	EXPECT_TRUE(attr.isValid());
+	EXPECT_EQ(RESULT_OK, attr.setOrientationScaleField(rc_vector));
+	findField = zinc.fm.findFieldByName("rc_vector_cmiss_rc_fibre_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("rc_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+
+	EXPECT_EQ(RESULT_OK, attr.setOrientationScaleField(fibres));
+	findField = zinc.fm.findFieldByName("fibres_cmiss_rc_fibre_wrapper");
+	EXPECT_TRUE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+
+	EXPECT_EQ(RESULT_OK, attr.setOrientationScaleField(polar_vector));
+	findField = zinc.fm.findFieldByName("fibres_cmiss_rc_fibre_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_TRUE(findField.isValid());
+
+	EXPECT_EQ(RESULT_OK, attr.setOrientationScaleField(rc_vector));
+	findField = zinc.fm.findFieldByName("fibres_cmiss_rc_fibre_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(polar_coordinates));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, attr.setOrientationScaleField(polar_vector));
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_TRUE(findField.isValid());
+
+	// check wrappers are refreshed when field coordinate systems change
+
+	findField = Field();
+	EXPECT_EQ(RESULT_OK, polar_coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, polar_coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(findField.isValid());
+
+	findField = Field();
+	EXPECT_EQ(RESULT_OK, polar_vector.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, polar_vector.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_TRUE(findField.isValid());
+
+	// check wrappers are cleaned up when graphics destroyed
+
+	// remove points graphics and check wrappers removed
+	findField = Field(); // must remove reference held by local variable
+	zinc.scene.removeGraphics(points);
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("rc_coordinates_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+
+	// test stream vector field wrapping
+
+	GraphicsStreamlines streamlines = zinc.scene.createGraphicsStreamlines();
+	EXPECT_EQ(RESULT_OK, streamlines.setStreamVectorField(polar_vector));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, streamlines.setCoordinateField(polar_coordinates));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_TRUE(findField.isValid());
+
+	// remove streamlines graphics and check wrappers removed
+	findField = Field(); // must remove reference held by local variable
+	zinc.scene.removeGraphics(streamlines);
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	findField = zinc.fm.findFieldByName("polar_vector_cmiss_rc_vector_wrapper");
+	EXPECT_FALSE(findField.isValid());
+	// check no issues with setting fields while removed
+	EXPECT_EQ(RESULT_OK, streamlines.setCoordinateField(rc_coordinates));
+	EXPECT_EQ(RESULT_OK, streamlines.setStreamVectorField(rc_vector));
 }

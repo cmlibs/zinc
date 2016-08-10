@@ -21,12 +21,16 @@
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include <opencmiss/zinc/node.hpp>
 #include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/scene.hpp>
 #include <opencmiss/zinc/status.hpp>
 
 #include "test_resources.h"
@@ -1317,4 +1321,133 @@ TEST(ZincNodetemplate, define_undefineField)
 	EXPECT_EQ(2, nodetemplate5.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
 	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.defineFieldFromNode(feField, node4));
 	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
+}
+
+// Issue 50: Find mesh location was caching wrong xi between fieldmodule begin/end change
+// Also, convergence was difficult for far away points with high curvature elements.
+// This test loads a curved heart surface mesh and finds nearest xi to 4 quite distant points.
+TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_HEART_SURFACE_RESOURCE)));
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_PLATE_600X300_RESOURCE)));
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	FieldDerivative d1 = zinc.fm.createFieldDerivative(coordinates, 1);
+	EXPECT_TRUE(d1.isValid());
+	FieldDerivative d2 = zinc.fm.createFieldDerivative(coordinates, 2);
+	EXPECT_TRUE(d2.isValid());
+	FieldCrossProduct inside = zinc.fm.createFieldCrossProduct(d1, d2);
+	EXPECT_TRUE(inside.isValid());
+	FieldNormalise norm_inside = zinc.fm.createFieldNormalise(inside);
+	EXPECT_TRUE(norm_inside.isValid());
+
+	Field plate_coordinates = zinc.fm.findFieldByName("plate_coordinates");
+	EXPECT_TRUE(plate_coordinates.isValid());
+	Mesh heart_mesh = zinc.fm.findMeshByName("heart.mesh2d");
+	EXPECT_TRUE(heart_mesh.isValid());
+	FieldFindMeshLocation find_heart = zinc.fm.createFieldFindMeshLocation(plate_coordinates, coordinates, heart_mesh);
+	EXPECT_TRUE(find_heart.isValid());
+	EXPECT_EQ(RESULT_OK, find_heart.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	FieldEmbedded find_heart_coordinates = zinc.fm.createFieldEmbedded(coordinates, find_heart);
+	EXPECT_TRUE(find_heart_coordinates.isValid());
+	Field find_heart_vector = find_heart_coordinates - plate_coordinates;
+	EXPECT_TRUE(find_heart_vector.isValid());
+	FieldNormalise find_heart_norm_vector = zinc.fm.createFieldNormalise(find_heart_vector);
+	EXPECT_TRUE(find_heart_norm_vector.isValid());
+	FieldEmbedded find_heart_norm_inside = zinc.fm.createFieldEmbedded(norm_inside, find_heart);
+	EXPECT_TRUE(find_heart_norm_inside.isValid());
+	FieldDotProduct find_heart_dot = zinc.fm.createFieldDotProduct(find_heart_norm_vector, find_heart_norm_inside);
+	EXPECT_TRUE(find_heart_dot.isValid());
+
+	// between begin/endChange, field evaluation value caching is turned off meaning
+	// find_mesh_location is done twice. This brought up its incorrect cache behaviour.
+	zinc.fm.beginChange();
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	Element plate_element = mesh2d.findElementByIdentifier(10001);
+	EXPECT_TRUE(plate_element.isValid());
+
+	// these are fairly coarse tolerances as full convergence is not expected
+	// with current 50 iteration limit for this test case
+	const double xiTol = 1.0E-4;
+	const double xTol = 0.1;
+	const double xi[4][2] = {
+		{ 0.25, 0.25 },
+		{ 0.75, 0.25 },
+		{ 0.25, 0.75 },
+		{ 0.75, 0.75 }
+	};
+	double xi_out[2];
+	const double expected_xi_out[4][2] = {
+		{0.12406714819971967, 0.25562651372669704},
+		{ 0.88236601025702055, 0.21582949398565682 },
+		{ 0.48618917733895772, 0.10260652064158104 },
+		{ 0.96903006205426667, 0.77350111489974804 }
+	};
+	Element element_out;
+	const int expected_element_out_identifier[4] = { 17, 14, 22, 13 };
+	double x_out[3];
+	const double expected_x_out[4][3] = {
+		{ -40.908162481673017, -40.601121600661465, 362.32017916586187 },
+		{90.298764787257539, -57.849226522130387, 337.95645572195986},
+		{-36.346997111262070, -11.216744873090230, 380.68037451384760},
+		{68.763718878371719, 2.1624108948975049, 351.46269549335761}
+	};
+	double vector_out[3];
+	const double expected_vector_out[4][3] = {
+		{ 109.09183751832698, 34.398878399338535, 12.320179165861873 },
+		{ -59.701235212742461, 17.150773477869613, -12.043544278040144 },
+		{ 113.65300288873793, -86.216744873090235, 30.680374513847596 },
+		{ -81.236281121628281, -72.837589105102495, 1.4626954933576144 }
+	};
+	double dot;
+	double dx_out[3];
+	for (int xin = 0; xin < 4; ++xin)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(plate_element, 2, xi[xin]));
+
+		Element element_out = find_heart.evaluateMeshLocation(cache, 2, xi_out);
+		EXPECT_TRUE(element_out.isValid());
+		int element_out_number = element_out.getIdentifier();
+		EXPECT_EQ(expected_element_out_identifier[xin], element_out_number);
+		EXPECT_NEAR(expected_xi_out[xin][0], xi_out[0], xiTol);
+		EXPECT_NEAR(expected_xi_out[xin][1], xi_out[1], xiTol);
+
+		element_out = find_heart.evaluateMeshLocation(cache, 2, xi_out);
+		EXPECT_TRUE(element_out.isValid());
+		element_out_number = element_out.getIdentifier();
+		EXPECT_EQ(expected_element_out_identifier[xin], element_out_number);
+		EXPECT_NEAR(expected_xi_out[xin][0], xi_out[0], xiTol);
+		EXPECT_NEAR(expected_xi_out[xin][1], xi_out[1], xiTol);
+
+		EXPECT_EQ(RESULT_OK, find_heart_coordinates.evaluateReal(cache, 3, x_out));
+		EXPECT_NEAR(expected_x_out[xin][0], x_out[0], xTol);
+		EXPECT_NEAR(expected_x_out[xin][1], x_out[1], xTol);
+		EXPECT_NEAR(expected_x_out[xin][2], x_out[2], xTol);
+
+		EXPECT_EQ(RESULT_OK, find_heart_vector.evaluateReal(cache, 3, vector_out));
+		EXPECT_NEAR(expected_vector_out[xin][0], vector_out[0], xTol);
+		EXPECT_NEAR(expected_vector_out[xin][1], vector_out[1], xTol);
+		EXPECT_NEAR(expected_vector_out[xin][2], vector_out[2], xTol);
+
+		// all locations are outside of heart surface. Since heart is smooth, dot product
+		// of projection should be normal to surface and same direction as inside surface
+		// normal. The following confirms this (but needs a loose tolerance).
+		EXPECT_EQ(RESULT_OK, find_heart_dot.evaluateReal(cache, 1, &dot));
+		EXPECT_GT(dot, 0.995);
+
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element_out, 2, xi_out));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, dx_out));
+		EXPECT_NEAR(expected_x_out[xin][0], dx_out[0], xTol);
+		EXPECT_NEAR(expected_x_out[xin][1], dx_out[1], xTol);
+		EXPECT_NEAR(expected_x_out[xin][2], dx_out[2], xTol);
+	}
+
+	zinc.fm.endChange();
 }
