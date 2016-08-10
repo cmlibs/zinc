@@ -308,48 +308,8 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 			cache = valueCache->find_element_xi_cache->cache_data;
 			if (cache->number_of_values != number_of_values)
 			{
-				cache->valid_values = 0;
 				DEALLOCATE(cache->values);
 				DEALLOCATE(cache->working_values);
-			}
-			if ((cache->element &&
-				(element_dimension != get_FE_element_dimension(cache->element))) ||
-				(cache->time != field_cache->getTime()))
-			{
-				cache->valid_values = 0;
-			}
-			if (cache->valid_values)
-			{
-				if (search_mesh)
-				{
-					if (cache->get_search_mesh() != search_mesh)
-					{
-						cache->valid_values = 0;
-					}
-					if (cache->element &&
-						!cmzn_mesh_contains_element(search_mesh, cache->element))
-					{
-						cache->valid_values = 0;
-					}
-				}
-				else
-				{
-					if (cache->element != *element_address)
-					{
-						cache->valid_values = 0;
-					}
-				}
-			}
-			if (cache->valid_values)
-			{
-				for (i = 0; i < number_of_values; i++)
-				{
-					if (cache->values[i] != values[i])
-					{
- 						cache->valid_values = 0;
-						break;
-					}
-				}
 			}
 		}
 		else
@@ -393,133 +353,92 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 		}
 		if (return_code)
 		{
-			if (cache->valid_values)
+			find_element_xi_data.values = cache->values;
+			find_element_xi_data.found_values = cache->working_values;
+			/* copy the source values */
+			for (i = 0; i < number_of_values; i++)
 			{
-				/* This could even be valid if *element is NULL */
-				*element_address = cache->element;
-				if (*element_address)
+				find_element_xi_data.values[i] = values[i];
+			}
+			find_element_xi_data.field_cache = field_cache;
+			find_element_xi_data.field = field;
+			find_element_xi_data.number_of_values = number_of_values;
+			find_element_xi_data.found_number_of_xi = 0;
+			find_element_xi_data.found_derivatives = (FE_value *)NULL;
+			find_element_xi_data.xi_tolerance = 1e-05;
+			find_element_xi_data.find_nearest_location = find_nearest;
+			find_element_xi_data.nearest_element = (struct FE_element *)NULL;
+			find_element_xi_data.nearest_element_distance_squared = 0.0;
+			find_element_xi_data.start_with_data_xi = 0;
+
+			if (search_mesh)
+			{
+				*element_address = (struct FE_element *)NULL;
+
+				/* Try the cached element first if it is in the mesh */
+				if ((!find_nearest) && cache->element &&
+					cmzn_mesh_contains_element(search_mesh, cache->element))
 				{
-					number_of_xi = get_FE_element_dimension(*element_address);
-					for (i = 0 ; i < number_of_xi ; i++)
+					if (Computed_field_iterative_element_conditional(
+						cache->element, &find_element_xi_data))
 					{
-						xi[i] = cache->xi[i];
+						*element_address = cache->element;
 					}
+				}
+				/* Now try every element */
+				if (!*element_address)
+				{
+					cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
+					cmzn_element_id element = 0;
+					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+					{
+						if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
+						{
+							*element_address = element;
+							break;
+						}
+					}
+					cmzn_elementiterator_destroy(&iterator);
 				}
 			}
 			else
 			{
-				find_element_xi_data.values = cache->values;
-				find_element_xi_data.found_values = 
-					cache->working_values;
-				/* copy the source values */
-				for (i = 0; i < number_of_values; i++)
-				{
-					find_element_xi_data.values[i] = values[i];
-				}
-				find_element_xi_data.field_cache = field_cache;
-				find_element_xi_data.field = field;
-				find_element_xi_data.number_of_values = number_of_values;
-				find_element_xi_data.found_number_of_xi = 0;
-				find_element_xi_data.found_derivatives = (FE_value *)NULL;
-				find_element_xi_data.xi_tolerance = 1e-05;
-				find_element_xi_data.find_nearest_location = find_nearest;
-				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
-				find_element_xi_data.nearest_element_distance_squared = 0.0;
-				find_element_xi_data.start_with_data_xi = 0;
-
-				if (search_mesh)
+				if ((!Computed_field_iterative_element_conditional(
+					*element_address, &find_element_xi_data)))
 				{
 					*element_address = (struct FE_element *)NULL;
-
-					/* Try the cached element first if it is in the mesh */
-					if (cache->element &&
-						cmzn_mesh_contains_element(search_mesh, cache->element))
-					{
-						/* Start with the xi that worked before too */
-						number_of_xi = get_FE_element_dimension(cache->element);
-						for (i = 0 ; i < number_of_xi ; i++)
-						{
-							find_element_xi_data.xi[i] = cache->xi[i];
-						}
-						find_element_xi_data.start_with_data_xi = 1;
-						if (Computed_field_iterative_element_conditional(
-							cache->element, &find_element_xi_data))
-						{
-							*element_address = cache->element;
-						}
-						find_element_xi_data.start_with_data_xi = 0;
-					}
-					/* Now try every element */
-					if (!*element_address)
-					{
-						cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
-						cmzn_element_id element = 0;
-						while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
-						{
-							if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
-							{
-								*element_address = element;
-								break;
-							}
-						}
-						cmzn_elementiterator_destroy(&iterator);
-					}
 				}
-				else
+			}
+			/* If an exact match is not found then accept the closest one */
+			if (!*element_address && find_nearest)
+			{
+				if (find_element_xi_data.nearest_element)
 				{
-					if ((!Computed_field_iterative_element_conditional(
-						*element_address, &find_element_xi_data)))
-					{
-						*element_address = (struct FE_element *)NULL;
-					}
-				}
-				/* If an exact match is not found then accept the closest one */
-				if (!*element_address && find_nearest)
-				{
-					if (find_element_xi_data.nearest_element)
-					{
-						*element_address = find_element_xi_data.nearest_element;
-						number_of_xi = get_FE_element_dimension(*element_address);
-						for (i = 0 ; i < number_of_xi ; i++)
-						{
-							xi[i] = find_element_xi_data.nearest_xi[i];
-						}
-					}
-				}
-				else if (*element_address)
-				{
+					*element_address = find_element_xi_data.nearest_element;
 					number_of_xi = get_FE_element_dimension(*element_address);
 					for (i = 0 ; i < number_of_xi ; i++)
 					{
-						xi[i] = find_element_xi_data.xi[i];
+						xi[i] = find_element_xi_data.nearest_xi[i];
 					}
 				}
-				/* The search is valid even if the element wasn't found */
-				return_code = 1;
-				if (find_element_xi_data.found_derivatives)
-				{
-					DEALLOCATE(find_element_xi_data.found_derivatives);
-				}
-				/* Copy the results into the cache */
-				cache->element = *element_address;
-				if (cache->element != 0)
-				{
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						cache->xi[i] = xi[i];
-					}
-				}
-				else
-				{
-					/* No element; clear xi to zero */
-					for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-					{
-						cache->xi[i] = 0.0;
-					}
-				}
-				cache->set_search_mesh(search_mesh);
-				cache->valid_values = 1;
 			}
+			else if (*element_address)
+			{
+				number_of_xi = get_FE_element_dimension(*element_address);
+				for (i = 0 ; i < number_of_xi ; i++)
+				{
+					xi[i] = find_element_xi_data.xi[i];
+				}
+			}
+			/* The search is valid even if the element wasn't found */
+			return_code = 1;
+			if (find_element_xi_data.found_derivatives)
+			{
+				DEALLOCATE(find_element_xi_data.found_derivatives);
+			}
+			/* Remember the element and search mesh in the cache */
+			cache->element = *element_address;
+			cache->set_search_mesh(search_mesh);
 		}
 		else
 		{
