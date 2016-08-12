@@ -359,7 +359,7 @@ TEST(ByteSwap, size4)
 
 	float fvalue = 0.12f;
 	test::ByteSwap<float>(&fvalue);
-	EXPECT_EQ(-1.92243393014834230422427828262E-29, fvalue);
+	EXPECT_DOUBLE_EQ(-1.92243393014834230422427828262E-29, fvalue);
 }
 
 union floatbitconvert
