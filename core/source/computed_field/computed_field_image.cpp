@@ -11,6 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/result.h"
 #include "opencmiss/zinc/status.h"
 #include "opencmiss/zinc/stream.h"
 #include "opencmiss/zinc/fieldmodule.h"
@@ -47,27 +48,23 @@ public:
 	double maximum;
 	int native_texture;
 	int number_of_bytes_per_component;
-	/* Flag to indicate that the texture needs to be evaluated
-		 due to changes on the source fields */
+	/* for image from source: flag to indicate that the texture needs to be
+	   evaluated due to changes on the source fields */
 	bool need_evaluate_texture;
-	/* flag to indicate rather the local texture is modifiable */
-	bool allow_modify_texture;
+	/* for image from source: indicate if resolution tracks that of source, false if independent */
+	bool use_source_resolution;
 
 
 	Computed_field_image(Texture *texture_in = NULL) :
 		Computed_field_core(),
-		texture(NULL)
+		texture(texture_in ? ACCESS(Texture)(texture_in) : NULL),
+		minimum(0.0),
+		maximum(1.0),
+		native_texture(1),
+		number_of_bytes_per_component(1),
+		need_evaluate_texture(false),
+		use_source_resolution(true)
 	{
-		if (texture_in)
-		{
-			texture = ACCESS(Texture)(texture_in);
-		}
-		maximum = 1.0;
-		minimum = 0.0;
-		native_texture = 1;
-		number_of_bytes_per_component = 1;
-		need_evaluate_texture = false;
-		allow_modify_texture = true;
 	}
 
 	virtual bool attach_to_field(Computed_field *parent)
@@ -173,6 +170,18 @@ public:
 		number_of_bytes_per_component = number_of_bytes_per_component_in;
 		return (1);
 	}
+
+	// call when texture buffer resized to force rebuild from source field, if appropriate
+	void texture_buffer_changed()
+	{
+		if (texture_is_evaluated_from_source_field())
+			this->need_evaluate_texture = true;
+	}
+
+	// get resolution of image, handling use of source resolution
+	// @param source_texture_coordinate_field_address Optional address to store source texture coordinate field, if exists
+	// @return the dimension of the image, or 0 on error
+	int get_resolution(int& image_width, int& image_height, int& image_depth, cmzn_field **source_texture_coordinate_field_address = 0);
 
 private:
 
@@ -285,98 +294,136 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_image::compare */
 
+int Computed_field_image::get_resolution(int& image_width, int& image_height, int& image_depth, cmzn_field **source_texture_coordinate_field_address)
+{
+	cmzn_field *source_texture_coordinate_field = 0;
+	Texture_get_size(this->texture, &image_width, &image_height, &image_depth);
+	if (this->texture_is_evaluated_from_source_field())
+	{
+		cmzn_field *texture_coordinate_field = this->field->source_fields[0];
+		cmzn_field *source_field = this->field->source_fields[1];
+		int dimension;
+		int *sizes = 0;
+		if (Computed_field_get_native_resolution(source_field,
+			&dimension, &sizes, &source_texture_coordinate_field))
+		{
+			// if not using source resolution, we still needed the source_texture_coordinate_field
+			if (this->use_source_resolution)
+			{
+				image_width = (dimension > 0) ? sizes[0] : 1;
+				image_height = (dimension > 1) ? sizes[1] : 1;
+				image_depth = (dimension > 2) ? sizes[2] : 1;
+			}
+			DEALLOCATE(sizes);
+		}
+		else if (this->use_source_resolution)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_image::get_resolution.  Failed to get native resolution of source.");
+			return 0;
+		}
+	}
+	if (source_texture_coordinate_field_address)
+		*source_texture_coordinate_field_address = source_texture_coordinate_field;
+	return (image_depth > 1) ? 3 : ((image_height > 1) ? 2 : 1);
+}
+
 int Computed_field_image::evaluate_texture_from_source_field()
 {
-	int image_width = -1, image_height = -1, image_depth = -1, bytes_per_pixel,
-	  number_of_components = 1, dimension, *sizes,
-		return_code, tex_number_of_components = 1,
-		use_pixel_location = 1, source_field_is_image = 0;
-	struct Computed_field *texture_coordinate_field = NULL, *source_field = NULL,
-		*source_texture_coordinate_field = NULL;
-	enum Texture_storage_type specify_format = TEXTURE_LUMINANCE;
+	int return_code = 1;
 
-	ENTER(Computed_field_image::evaluate_texture_from_source_field);
-	if (texture && texture_is_evaluated_from_source_field())
+	if (this->texture && this->texture_is_evaluated_from_source_field())
 	{
-		if (Computed_field_is_image_type(field->source_fields[1], NULL))
+		int image_width = 0;
+		int image_height = 0;
+		int image_depth = 0;
+		cmzn_field *texture_coordinate_field = field->source_fields[0];
+		cmzn_field *source_field = field->source_fields[1];
+		cmzn_field *source_texture_coordinate_field = 0;
+		int result = this->get_resolution(image_width, image_height, image_depth, &source_texture_coordinate_field);
+		if (result <= 0)
+			return_code = 0;
+
+		const int tex_number_of_components = cmzn_field_get_number_of_components(texture_coordinate_field);
+		if ((tex_number_of_components < 1) || (tex_number_of_components > 3))
 		{
-			return_code = 1;
-			source_field_is_image = 1;
-			allow_modify_texture = false;
+			display_message(ERROR_MESSAGE,
+				"Computed_field_image::evaluate_texture_from_source_field.  Invalid texture_coordinate field.");
+			return_code = 0;
+		}
+
+		const int number_of_components = cmzn_field_get_number_of_components(source_field);
+		enum Texture_storage_type specify_format = TEXTURE_LUMINANCE;
+		if (number_of_components == 1)
+		{
+			specify_format = TEXTURE_LUMINANCE;
+		}
+		else if (number_of_components == 2)
+		{
+			specify_format = TEXTURE_LUMINANCE_ALPHA;
+		}
+		else if (number_of_components == 3)
+		{
+			specify_format = TEXTURE_RGB;
+		}
+		else if (number_of_components == 4)
+		{
+			specify_format = TEXTURE_RGBA;
 		}
 		else
 		{
-			/* Setup sizes */
-			sizes = (int *)NULL;
-			texture_coordinate_field = field->source_fields[0];
-			source_field = field->source_fields[1];
-			if (Computed_field_get_native_resolution(source_field,
-					&dimension, &sizes, &source_texture_coordinate_field))
+			display_message(ERROR_MESSAGE,
+				"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
+				"the number of components in source field.");
+			return_code = 0;
+		}
+
+		if (return_code)
+		{
+			if (Texture_allocate_image(texture, image_width, image_height,
+				image_depth, specify_format, number_of_bytes_per_component, field->name))
 			{
-				if (dimension > 0)
+				cmzn_field_image *source_image = cmzn_field_cast_image(source_field);
+				//???GRC following logic is probably incomplete:
+				bool use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field) ||
+					(source_image) || source_field->core->is_purely_function_of_field(texture_coordinate_field);
+				int bytes_per_pixel = number_of_components * this->number_of_bytes_per_component;
+				// search_mesh is used to find domain location of texture coordinate field
+				// and evaluate source field there; as defined here it gives no scope to
+				// optimise, e.g. by searching through a subgroup of the mesh
+				const int number_of_texture_coordinate_components =
+					Computed_field_get_number_of_components(texture_coordinate_field);
+				cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+				cmzn_mesh_id search_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
+					number_of_texture_coordinate_components);
+				// determine texture coordinate range to sample source field over
+				double texture_width, texture_height, texture_depth;
+				// ???GRC following logic is incomplete
+				// ideally should get source texture coordinate range / physical size
+				cmzn_field *use_texture_coordinate_field = texture_coordinate_field;
+				if (source_image)
 				{
-					image_width = sizes[0];
+					use_texture_coordinate_field = source_texture_coordinate_field;
+					Texture_get_physical_size(Computed_field_image_core_cast(source_image)->texture,
+						&texture_width, &texture_height, &texture_depth);
 				}
 				else
 				{
-					image_width = 1;
+					Texture_get_physical_size(texture, &texture_width, &texture_height, &texture_depth);
 				}
-
-				if (dimension > 1)
-				{
-					image_height = sizes[1];
-				}
-				else
-				{
-					image_height = 1;
-				}
-
-				if (dimension > 2)
-				{
-					image_depth = sizes[2];
-				}
-				else
-				{
-					image_depth = 1;
-				}
-				DEALLOCATE(sizes);
-			}
-
-			if (3 >= (tex_number_of_components =
-				Computed_field_get_number_of_components(texture_coordinate_field)))
-			{
-				return_code = 1;
+				Set_cmiss_field_value_to_texture(source_field, use_texture_coordinate_field,
+					texture, NULL, NULL, image_width, image_height, image_depth, bytes_per_pixel,
+					number_of_bytes_per_component, use_pixel_location, texture_width, texture_height, texture_depth,
+					specify_format, 0, NULL, search_mesh);
+				cmzn_mesh_destroy(&search_mesh);
+				cmzn_fieldmodule_destroy(&field_module);
+				cmzn_field_image_destroy(&source_image);
+				this->need_evaluate_texture = false;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_image::evaluate_texture_from_source_field.  Invalid texture_coordinate field.");
-				return_code = 0;
-			}
-
-			number_of_components =
-				Computed_field_get_number_of_components(source_field);
-			if (number_of_components == 1)
-			{
-				specify_format = TEXTURE_LUMINANCE;
-			}
-			else if (number_of_components == 2)
-			{
-				specify_format = TEXTURE_LUMINANCE_ALPHA;
-			}
-			else if (number_of_components == 3)
-			{
-				specify_format = TEXTURE_RGB;
-			}
-			else if (number_of_components == 4)
-			{
-				specify_format = TEXTURE_RGBA;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
-					"the number of components in source field.");
+					"Computed_field_image::evaluate_texture_from_source_field.  Could not allocate image in texture");
 				return_code = 0;
 			}
 		}
@@ -386,52 +433,10 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		display_message(ERROR_MESSAGE,
 			"Computed_field_image::evaluate_texture_from_source_field.  Invalid argument(s)");
 		return_code = 0;
-
 	}
-
-	if (return_code)
-	{
-		/* allocate the texture image */
-		if (source_field_is_image)
-		{
-			cmzn_field_image_id source_image_field = cmzn_field_cast_image(field->source_fields[1]);
-			REACCESS(Texture)(&texture, cmzn_field_image_get_texture(source_image_field));
-			cmzn_field_image_destroy(&source_image_field);
-			need_evaluate_texture = false;
-			allow_modify_texture = false;
-		}
-		else if (Texture_allocate_image(texture, image_width, image_height,
-				image_depth, specify_format, number_of_bytes_per_component, field->name))
-		{
-			use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field);
-			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
-			// search_mesh is used to find domain location of texture coordinate field
-			// and evaluate source field there; as defined here it gives no scope to
-			// optimise, e.g. by searching through a subgroup of the mesh
-			const int number_of_texture_coordinate_components =
-				Computed_field_get_number_of_components(texture_coordinate_field);
-			cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
-			cmzn_mesh_id search_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
-				number_of_texture_coordinate_components);
-			Set_cmiss_field_value_to_texture(source_field, texture_coordinate_field,
-				texture, NULL,	NULL, image_height, image_width, image_depth, bytes_per_pixel,
-				number_of_bytes_per_component, use_pixel_location, specify_format, 0, NULL,
-				search_mesh);
-			cmzn_mesh_destroy(&search_mesh);
-			cmzn_fieldmodule_destroy(&field_module);
-			need_evaluate_texture = false;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_image::evaluate_texture_from_source_field.  Could not allocate image in texture");
-			return_code = 0;
-		}
-	}
-	LEAVE;
 
 	return (return_code);
-} /* Computed_field_image::evaluate_texture_from_source_field */
+}
 
 int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
@@ -722,31 +727,48 @@ cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 	if (field_module && source_field &&
 		Computed_field_has_up_to_4_numerical_components(source_field, 0))
 	{
+		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_id domainField = 0;
 		int source_dimension, *source_sizes = 0;
-		if (Computed_field_get_native_resolution(source_field,
-			&source_dimension, &source_sizes, &domainField) && (0 != domainField))
+		Computed_field_get_native_resolution(source_field,
+			&source_dimension, &source_sizes, &domainField);
+		bool generatedDomainField = false;
+		if (0 == domainField)
 		{
-			if (source_sizes)
+			// could eventually discover domain field from source field
+			// there is API to set the domain field if this isn't correct
+			domainField = cmzn_fieldmodule_get_or_create_xi_field(field_module);
+			generatedDomainField = true;
+		}
+		if (domainField)
+		{
+			int number_of_source_fields = 2;
+			cmzn_field_id source_fields[2] = { domainField, source_field };
+			Computed_field_image *image = new Computed_field_image();
+			image->use_source_resolution = (0 != source_sizes);
+			field = Computed_field_create_generic(field_module,
+				/*check_source_field*/true,
+				cmzn_field_get_number_of_components(source_field),
+				number_of_source_fields, source_fields,
+				/*number_of_source_values*/0, static_cast<const double *>(0),
+				image);
+			// copy texture coordinate range from source, if valid
+			cmzn_field_image *image_source = cmzn_field_cast_image(source_field);
+			if (image_source)
 			{
-				DEALLOCATE(source_sizes);
-				int number_of_source_fields = 2;
-				cmzn_field_id source_fields[2] = { domainField, source_field };
-				field = Computed_field_create_generic(field_module,
-					/*check_source_field*/true,
-					cmzn_field_get_number_of_components(source_field),
-					number_of_source_fields, source_fields,
-					/*number_of_source_values*/0, static_cast<const double *>(0),
-					new Computed_field_image());
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_fieldmodule_create_field_image_from_source.  "
-					"Source field does not contain any information about sizes."
-					"You may consider using image_resample field as the source field");
+				cmzn_field_image *image_field = cmzn_field_cast_image(field);
+				double sizes[3];
+				cmzn_field_image_get_texture_coordinate_sizes(image_source, 3, sizes);
+				cmzn_field_image_set_texture_coordinate_sizes(image_field, 3, sizes);
+				cmzn_field_image_destroy(&image_field);
+				cmzn_field_image_destroy(&image_source);
 			}
 		}
+		if (generatedDomainField)
+			cmzn_field_destroy(&domainField);
+		if (source_sizes)
+			DEALLOCATE(source_sizes);
+		cmzn_fieldmodule_end_change(field_module);
 	}
 	return field;
 }
@@ -796,16 +818,6 @@ cmzn_texture *cmzn_field_image_get_texture(cmzn_field_image_id image_field)
 		cmiss_texture = image_core->get_texture();
 	}
 	return cmiss_texture;
-}
-
-bool cmzn_field_image_texture_can_be_modified(cmzn_field_image_id image_field)
-{
-	if (image_field)
-	{
-		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
-		return image_core->allow_modify_texture;
-	}
-	return false;
 }
 
 int Computed_field_get_type_image(struct Computed_field *field,
@@ -906,10 +918,12 @@ int cmzn_field_image_get_width_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
-		int width = 0, height = 0, depth = 0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_original_size(texture, &width, &height, &depth);
-		return width;
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		int image_width = 0;
+		int image_height = 0;
+		int image_depth = 0;
+		image_core->get_resolution(image_width, image_height, image_depth);
+		return image_width;
 	}
 	return 0;
 }
@@ -918,10 +932,12 @@ int cmzn_field_image_get_height_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
-		int width = 0, height = 0, depth = 0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_original_size(texture, &width, &height, &depth);
-		return height;
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		int image_width = 0;
+		int image_height = 0;
+		int image_depth = 0;
+		image_core->get_resolution(image_width, image_height, image_depth);
+		return image_height;
 	}
 	return 0;
 }
@@ -930,10 +946,12 @@ int cmzn_field_image_get_depth_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
-		int width = 0, height = 0, depth = 0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_original_size(texture, &width, &height, &depth);
-		return depth;
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		int image_width = 0;
+		int image_height = 0;
+		int image_depth = 0;
+		image_core->get_resolution(image_width, image_height, image_depth);
+		return image_depth;
 	}
 	return 0;
 }
@@ -941,13 +959,46 @@ int cmzn_field_image_get_depth_in_pixels(cmzn_field_image_id image)
 int cmzn_field_image_get_size_in_pixels(cmzn_field_image_id image,
 	int valuesCount, int *valuesOut)
 {
-	if (image)
+	if (image && (0 < valuesCount) && (valuesCount <= 3) && valuesOut)
 	{
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		return cmzn_texture_get_pixel_sizes(texture,
-			valuesCount, valuesOut);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		int image_width = 0;
+		int image_height = 0;
+		int image_depth = 0;
+		int result = image_core->get_resolution(image_width, image_height, image_depth);
+		valuesOut[0] = image_width;
+		if (valuesCount > 1)
+			valuesOut[1] = image_height;
+		if (valuesCount > 2)
+			valuesOut[2] = image_depth;
+		return result;
 	}
 	return 0;
+}
+
+int cmzn_field_image_set_size_in_pixels(cmzn_field_image_id image,
+	int valuesCount, const int *valuesIn)
+{
+	if (image && (0 < valuesCount) && (valuesCount <= 3) && valuesIn)
+	{
+		cmzn_field *field = cmzn_field_image_base_cast(image);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		const int image_width = (valuesCount > 0) ? valuesIn[0] : 1;
+		const int image_height = (valuesCount > 1) ? valuesIn[1] : 1;
+		const int image_depth = (valuesCount > 2) ? valuesIn[2] : 1;
+		const enum Texture_storage_type storage = Texture_get_storage_type(image_core->texture);
+		const int number_of_bytes_per_component = Texture_get_number_of_bytes_per_component(image_core->texture);
+		if (Texture_allocate_image(image_core->texture, image_width, image_height, image_depth,
+			storage, number_of_bytes_per_component, field->name))
+		{
+			image_core->use_source_resolution = false;
+			image_core->texture_buffer_changed();
+			Computed_field_changed(field);
+			return CMZN_RESULT_OK;
+		}
+		return CMZN_RESULT_ERROR_GENERAL;
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_id image)
@@ -955,8 +1006,8 @@ double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_id image)
 	if (image)
 	{
 		ZnReal width = 0.0, height = 0.0, depth = 0.0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_physical_size(texture, &width, &height, &depth);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
 		return depth;
 	}
 	return 0.0;
@@ -967,8 +1018,8 @@ double cmzn_field_image_get_texture_coordinate_height(cmzn_field_image_id image)
 	if (image)
 	{
 		ZnReal width = 0.0, height = 0.0, depth = 0.0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_physical_size(texture, &width, &height, &depth);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
 		return height;
 	}
 	return 0.0;
@@ -979,8 +1030,8 @@ double cmzn_field_image_get_texture_coordinate_width(cmzn_field_image_id image)
 	if (image)
 	{
 		ZnReal width = 0.0, height = 0.0, depth = 0.0;
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		Texture_get_physical_size(texture, &width, &height, &depth);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
 		return width;
 	}
 	return 0.0;
@@ -991,34 +1042,33 @@ int cmzn_field_image_get_texture_coordinate_sizes(cmzn_field_image_id image,
 {
 	if (image)
 	{
-		cmzn_texture *texture = cmzn_field_image_get_texture(image);
-		return cmzn_texture_get_texture_coordinate_sizes(texture,
-			valuesCount, valuesOut);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		return cmzn_texture_get_texture_coordinate_sizes(image_core->texture, valuesCount, valuesOut);
 	}
 	return 0;
 }
 
 int cmzn_field_image_set_texture_coordinate_depth(cmzn_field_image_id image, double value)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image);
-	if (texture && cmzn_field_image_texture_can_be_modified(image))
+	if (image && (value > 0.0))
 	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
 		double width = 0.0, height = 0.0, depth = 0.0;
-		Texture_get_physical_size(texture, &width, &height, &depth);
-		Texture_set_physical_size(texture, width, height, value);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
+		Texture_set_physical_size(image_core->texture, width, height, value);
 		return CMZN_OK;
 	}
-	return CMZN_ERROR_ARGUMENT;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 int cmzn_field_image_set_texture_coordinate_width(cmzn_field_image_id image, double value)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image);
-	if (texture && cmzn_field_image_texture_can_be_modified(image))
+	if (image && (value > 0.0))
 	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
 		double width = 0.0, height = 0.0, depth = 0.0;
-		Texture_get_physical_size(texture, &width, &height, &depth);
-		Texture_set_physical_size(texture, value, height, depth);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
+		Texture_set_physical_size(image_core->texture, value, height, depth);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -1026,12 +1076,12 @@ int cmzn_field_image_set_texture_coordinate_width(cmzn_field_image_id image, dou
 
 int cmzn_field_image_set_texture_coordinate_height(cmzn_field_image_id image, double value)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image);
-	if (texture && cmzn_field_image_texture_can_be_modified(image))
+	if (image && (value > 0.0))
 	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
 		double width = 0.0, height = 0.0, depth = 0.0;
-		Texture_get_physical_size(texture, &width, &height, &depth);
-		Texture_set_physical_size(texture, width, value, depth);
+		Texture_get_physical_size(image_core->texture, &width, &height, &depth);
+		Texture_set_physical_size(image_core->texture, width, value, depth);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -1040,10 +1090,10 @@ int cmzn_field_image_set_texture_coordinate_height(cmzn_field_image_id image, do
 int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id image,
 	int valuesCount, const double *valuesIn)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image);
-	if (texture && cmzn_field_image_texture_can_be_modified(image))
+	if (image)
 	{
-		return cmzn_texture_set_texture_coordinate_sizes(texture, valuesCount, valuesIn);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		return cmzn_texture_set_texture_coordinate_sizes(image_core->texture, valuesCount, valuesIn);
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1113,15 +1163,12 @@ int list_image_field(struct Computed_field *field,void *dummy_void)
 	if (field)
 	{
 		return_code = 1;
-		if (Computed_field_is_image_type(field, NULL))
+		cmzn_field_image_id image = cmzn_field_cast_image(field);
+		if (image)
 		{
-			cmzn_field_image_id image_field = cmzn_field_cast_image(field);
-			struct Texture *texture = cmzn_field_image_get_texture(image_field);
-			cmzn_field_image_destroy(&image_field);
-			if (texture)
-			{
-				return_code = list_Texture(texture,NULL);
-			}
+			Computed_field_image *image_core = Computed_field_image_core_cast(image);
+			return_code = list_Texture(image_core->texture, NULL);
+			cmzn_field_image_destroy(&image);
 		}
 	}
 	else
@@ -1140,15 +1187,12 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
 	if (field)
 	{
 		return_code = 1;
-		if (Computed_field_is_image_type(field, NULL))
+		cmzn_field_image_id image = cmzn_field_cast_image(field);
+		if (image)
 		{
-			cmzn_field_image_id image_field = cmzn_field_cast_image(field);
-			struct Texture *texture = cmzn_field_image_get_texture(image_field);
-			cmzn_field_image_destroy(&image_field);
-			if (texture)
-			{
-				return_code = list_Texture_commands(texture,command_prefix_void);
-			}
+			Computed_field_image *image_core = Computed_field_image_core_cast(image);
+			return_code = list_Texture_commands(image_core->texture, command_prefix_void);
+			cmzn_field_image_destroy(&image);
 		}
 	}
 	else
@@ -1161,10 +1205,11 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
 }
 
 int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field *texture_coordinate_field,
-		struct Texture *texture, struct cmzn_spectrum *spectrum,	struct cmzn_material *fail_material,
-		int image_height, int image_width, int image_depth, int bytes_per_pixel, int number_of_bytes_per_component,
-		int use_pixel_location,	enum Texture_storage_type specify_format, int propagate_field,
-		struct Graphics_buffer_package *graphics_buffer_package, cmzn_mesh_id search_mesh)
+	struct Texture *texture, struct cmzn_spectrum *spectrum, struct cmzn_material *fail_material,
+	int image_width, int image_height, int image_depth, int bytes_per_pixel, int number_of_bytes_per_component,
+	bool use_pixel_location, double texture_width, double texture_height, double texture_depth,
+	enum Texture_storage_type specify_format, int propagate_field,
+	struct Graphics_buffer_package *graphics_buffer_package, cmzn_mesh_id search_mesh)
 {
 	unsigned char *image_plane, *ptr = 0;
 	unsigned short *two_bytes_image_plane, *two_bytes_ptr = 0;
@@ -1176,8 +1221,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	ZnReal hint_resolution[3];
 	ZnReal multiplier;
 	struct Colour fail_colour = {0.0, 0.0, 0.0};
-	ZnReal rgba[4], fail_alpha = 0.0, texture_depth, texture_height,
-		texture_width;
+	ZnReal rgba[4], fail_alpha = 0.0;
 	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
@@ -1186,7 +1230,6 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
 	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-	Texture_get_physical_size(texture, &texture_width, &texture_height, &texture_depth);
 	if (image_depth > 1)
 	{
 		dimension = 3;
@@ -1307,7 +1350,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 						}
 						else
 						{
-							use_pixel_location = 0;
+							use_pixel_location = false;
 						}
 					}
 					if (!use_pixel_location)
@@ -1591,38 +1634,33 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 }
 
 enum cmzn_field_image_combine_mode cmzn_field_image_get_combine_mode(
-   cmzn_field_image_id image_field)
+	cmzn_field_image_id image_field)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	int mode = Texture_get_combine_mode(texture) + 1;
-	enum cmzn_field_image_combine_mode combine_mode = (cmzn_field_image_combine_mode)mode;
-	return combine_mode;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		enum Texture_combine_mode  mode = Texture_get_combine_mode(image_core->texture);
+		enum cmzn_field_image_combine_mode combine_mode = (cmzn_field_image_combine_mode)(mode + 1);
+		return combine_mode;
+	}
+	return CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID;
 }
 
 int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
-   enum cmzn_field_image_combine_mode combine_mode)
+	enum cmzn_field_image_combine_mode combine_mode)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	if (texture && cmzn_field_image_texture_can_be_modified(image_field))
+	if (image_field && (combine_mode > CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID))
 	{
-		int mode = combine_mode;
-		if (mode < 1)
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)(combine_mode - 1);
+		if (Texture_get_combine_mode(image_core->texture) != texture_combine_mode)
 		{
-			return 0;
+			Texture_set_combine_mode(image_core->texture, texture_combine_mode);
+			Computed_field_changed(cmzn_field_image_base_cast(image_field));
 		}
-		else
-		{
-			mode = mode - 1;
-			enum Texture_combine_mode texture_combine_mode = (Texture_combine_mode)mode;
-			if (Texture_get_combine_mode(texture) != texture_combine_mode)
-			{
-				Texture_set_combine_mode(texture, texture_combine_mode);
-				Computed_field_changed(cmzn_field_image_base_cast(image_field));
-			}
-			return 1;
-		}
+		return CMZN_RESULT_OK;
 	}
-	return 0;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 cmzn_field_id cmzn_field_image_get_domain_field(
@@ -1722,40 +1760,34 @@ char *cmzn_field_image_combine_mode_enum_to_string(enum cmzn_field_image_combine
 }
 
 enum cmzn_field_image_hardware_compression_mode cmzn_field_image_get_hardware_compression_mode(
-   cmzn_field_image_id image_field)
+	cmzn_field_image_id image_field)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	int mode = Texture_get_compression_mode(texture) + 1;
-	enum cmzn_field_image_hardware_compression_mode compression_mode =
-		(cmzn_field_image_hardware_compression_mode)mode;
-	return compression_mode;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		Texture_compression_mode mode = Texture_get_compression_mode(image_core->texture);
+		enum cmzn_field_image_hardware_compression_mode compression_mode =
+			(cmzn_field_image_hardware_compression_mode)(mode + 1);
+		return compression_mode;
+	}
+	return CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID;
 }
 
 int cmzn_field_image_set_hardware_compression_mode(cmzn_field_image_id image_field,
-   enum cmzn_field_image_hardware_compression_mode compression_mode)
+	enum cmzn_field_image_hardware_compression_mode compression_mode)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	if (texture && cmzn_field_image_texture_can_be_modified(image_field))
+	if (image_field && (compression_mode > CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID))
 	{
-		int mode = compression_mode;
-		if (mode < 1)
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		enum Texture_compression_mode texture_compression_mode = (Texture_compression_mode)(compression_mode - 1);
+		if (Texture_get_compression_mode(image_core->texture) != texture_compression_mode)
 		{
-			return 0;
+			Texture_set_compression_mode(image_core->texture, texture_compression_mode);
+			Computed_field_changed(cmzn_field_image_base_cast(image_field));
 		}
-		else
-		{
-			mode = mode - 1;
-			enum Texture_compression_mode texture_compression_mode =
-				(Texture_compression_mode)mode;
-			if (Texture_get_compression_mode(texture) != texture_compression_mode)
-			{
-				Texture_set_compression_mode(texture, texture_compression_mode);
-				Computed_field_changed(cmzn_field_image_base_cast(image_field));
-			}
-			return 1;
-		}
+		return CMZN_RESULT_OK;
 	}
-	return 0;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 class cmzn_field_image_hardware_compression_mode_conversion
@@ -1794,46 +1826,44 @@ char *cmzn_field_image_hardware_compression_mode_enum_to_string(
 }
 
 enum cmzn_field_image_filter_mode cmzn_field_image_get_filter_mode(
-   cmzn_field_image_id image_field)
+	cmzn_field_image_id image_field)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	int mode = Texture_get_filter_mode(texture) + 1;
-	enum cmzn_field_image_filter_mode filter_mode = (cmzn_field_image_filter_mode)mode;
-	return filter_mode;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		Texture_filter_mode mode = Texture_get_filter_mode(image_core->texture);
+		enum cmzn_field_image_filter_mode filter_mode = (cmzn_field_image_filter_mode)(mode + 1);
+		return filter_mode;
+	}
+	return CMZN_FIELD_IMAGE_FILTER_MODE_INVALID;
 }
 
 int cmzn_field_image_set_filter_mode(cmzn_field_image_id image_field,
-   enum cmzn_field_image_filter_mode filter_mode)
+	enum cmzn_field_image_filter_mode filter_mode)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	if (texture && cmzn_field_image_texture_can_be_modified(image_field))
+	if (image_field && (filter_mode > CMZN_FIELD_IMAGE_FILTER_MODE_INVALID))
 	{
-		int mode = filter_mode;
-		if (mode < 1)
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)(filter_mode - 1);
+		if (Texture_get_filter_mode(image_core->texture) != texture_filter_mode)
 		{
-			return 0;
+			Texture_set_filter_mode(image_core->texture, texture_filter_mode);
+			Computed_field_changed(cmzn_field_image_base_cast(image_field));
 		}
-		else
-		{
-			mode = mode - 1;
-			enum Texture_filter_mode texture_filter_mode = (Texture_filter_mode)mode;
-			if (Texture_get_filter_mode(texture) != texture_filter_mode)
-			{
-				Texture_set_filter_mode(texture, texture_filter_mode);
-				Computed_field_changed(cmzn_field_image_base_cast(image_field));
-			}
-			return 1;
-		}
+		return CMZN_RESULT_OK;
 	}
-	return 0;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 char *cmzn_field_image_get_property(cmzn_field_image_id image,
 	const char* property)
 {
-	cmzn_texture_id texture = cmzn_field_image_get_texture(image);
-
-	return Texture_get_property(texture, property);
+	if (image && property)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image);
+		return Texture_get_property(image_core->texture, property);
+	}
+	return 0;
 }
 
 class cmzn_field_image_filter_mode_conversion
@@ -1880,38 +1910,33 @@ char *cmzn_field_image_filter_mode_enum_to_string(enum cmzn_field_image_filter_m
 }
 
 enum cmzn_field_image_wrap_mode cmzn_field_image_get_wrap_mode(
-   cmzn_field_image_id image_field)
+	cmzn_field_image_id image_field)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	int mode = Texture_get_wrap_mode(texture) + 1;
-	enum cmzn_field_image_wrap_mode wrap_mode = (cmzn_field_image_wrap_mode)mode;
-	return wrap_mode;
+	if (image_field)
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		Texture_wrap_mode mode = Texture_get_wrap_mode(image_core->texture);
+		enum cmzn_field_image_wrap_mode wrap_mode = (cmzn_field_image_wrap_mode)(mode + 1);
+		return wrap_mode;
+	}
+	return CMZN_FIELD_IMAGE_WRAP_MODE_INVALID;
 }
 
 int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
-   enum cmzn_field_image_wrap_mode wrap_mode)
+	enum cmzn_field_image_wrap_mode wrap_mode)
 {
-	cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
-	if (texture && cmzn_field_image_texture_can_be_modified(image_field))
+	if (image_field && (wrap_mode > CMZN_FIELD_IMAGE_WRAP_MODE_INVALID))
 	{
-		int mode = wrap_mode;
-		if (mode < 1)
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		enum Texture_wrap_mode texture_wrap_mode = (Texture_wrap_mode)(wrap_mode - 1);
+		if (Texture_get_wrap_mode(image_core->texture) != texture_wrap_mode)
 		{
-			return 0;
+			Texture_set_wrap_mode(image_core->texture, texture_wrap_mode);
+			Computed_field_changed(cmzn_field_image_base_cast(image_field));
 		}
-		else
-		{
-			mode = mode - 1;
-			enum Texture_wrap_mode texture_wrap_mode = (Texture_wrap_mode)mode;
-			if (Texture_get_wrap_mode(texture) != texture_wrap_mode)
-			{
-				Texture_set_wrap_mode(texture, texture_wrap_mode);
-				Computed_field_changed(cmzn_field_image_base_cast(image_field));
-			}
-			return 1;
-		}
+		return CMZN_RESULT_OK;
 	}
-	return 0;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 class cmzn_field_image_wrap_mode_conversion

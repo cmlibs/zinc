@@ -4097,22 +4097,9 @@ Sets the texture filter: linear or nearest.
 int Texture_allocate_image(struct Texture *texture,
 	int width, int height, int depth, enum Texture_storage_type storage,
 	int number_of_bytes_per_component, const char *source_name)
-/*******************************************************************************
-LAST MODIFIED : 15 March 2002
-
-DESCRIPTION :
-Establishes the texture image as <width>*<height>*<depth> with the storage and
-number_of_components specified in the <storage_type>, and
-<number_of_bytes_per_component> may currently be 1 or 2.
-The allocated space is cleared to values of 0 = black.
-Call Texture_set_image_block to add texel data.
-The optional <source_name> is recorded as the texture's imagefile_name.
-Crop and other parameters are cleared.
-==============================================================================*/
 {
 	int bytes_per_pixel, dimension, padded_width_bytes, number_of_components,
 		return_code;
-	unsigned char *texture_image;
 
 	ENTER(Texture_allocate_image);
 	if (texture && (0 < width) && (0 < height) && (0 < depth) &&
@@ -4121,6 +4108,7 @@ Crop and other parameters are cleared.
 		((1 == number_of_bytes_per_component) ||
 			(2 == number_of_bytes_per_component)))
 	{
+		return_code = 1;
 		if (1 < depth)
 		{
 			dimension = 3;
@@ -4135,13 +4123,32 @@ Crop and other parameters are cleared.
 		}
 		bytes_per_pixel = number_of_components * number_of_bytes_per_component;
 		padded_width_bytes = 4*((width*bytes_per_pixel + 3)/4);
-		/* reallocate existing texture image to save effort */
-		if (REALLOCATE(texture_image, texture->image, unsigned char,
-			depth*height*padded_width_bytes))
+
+		// avoid allocation if already correct size
+		if ((texture->original_width_texels != width) ||
+			(texture->original_height_texels != height) ||
+			(texture->original_depth_texels != depth) ||
+			(Texture_storage_type_get_number_of_components(texture->storage) !=
+				Texture_storage_type_get_number_of_components(storage)) ||
+			(texture->number_of_bytes_per_component != number_of_bytes_per_component))
 		{
-			texture->image = texture_image;
-			/* fill the image with zeros */
-			memset(texture_image, 0, depth*height*padded_width_bytes);
+			unsigned char *texture_image;
+			if (REALLOCATE(texture_image, texture->image, unsigned char,
+				depth*height*padded_width_bytes))
+			{
+				texture->image = texture_image;
+				/* fill the image with zeros */
+				memset(texture_image, 0, depth*height*padded_width_bytes);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_allocate_image.  Could not reallocate texture image");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
 			/* assign values in the texture */
 			texture->dimension = dimension;
 			texture->storage = storage;
@@ -4155,17 +4162,8 @@ Crop and other parameters are cleared.
 			texture->height_texels = height;
 			texture->depth_texels = depth;
 			if (texture->image_file_name)
-			{
 				DEALLOCATE(texture->image_file_name);
-			}
-			if (source_name)
-			{
-				texture->image_file_name = duplicate_string(source_name);
-			}
-			else
-			{
-				texture->image_file_name = (char *)NULL;
-			}
+			texture->image_file_name = source_name ? duplicate_string(source_name) : 0;
 			texture->file_number_pattern = (char *)NULL;
 			texture->start_file_number = 0;
 			texture->stop_file_number = 0;
@@ -4178,12 +4176,6 @@ Crop and other parameters are cleared.
 			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			return_code = 1;
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Texture_allocate_image.  Could not reallocate texture image");
-			return_code = 0;
-		}
 	}
 	else
 	{
@@ -4195,6 +4187,13 @@ Crop and other parameters are cleared.
 
 	return (return_code);
 } /* Texture_allocate_image */
+
+enum Texture_storage_type Texture_get_storage_type(struct Texture *texture)
+{
+	if (texture)
+		return texture->storage;
+	return TEXTURE_STORAGE_TYPE_INVALID;
+}
 
 struct Cmgui_image *Texture_get_image(struct Texture *texture)
 /*******************************************************************************
