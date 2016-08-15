@@ -243,7 +243,24 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(Texture);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Texture);
 
-int Texture_copy_without_identifier(struct Texture *source, struct Texture *destination);
+/**
+ * Copy all the texture attributes that affect display: filter modes etc.
+ * Not image & resolution, nor file attributes.
+ * @return  Result code.
+ */
+int Texture_copy_display_attributes(const struct Texture *source, struct Texture *destination);
+
+/**
+ * Copy the texture image and pixel size information.
+ * All other attributes are untouched.
+ * @return  Result code.
+ */
+int Texture_copy_image(const struct Texture *source, struct Texture *destination);
+
+/**
+ * Copy all essential content of texture: image, display attributes, file attributes.
+ */
+int Texture_copy_without_identifier(const struct Texture *source, struct Texture *destination);
 
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage);

@@ -352,41 +352,18 @@ int Computed_field_image::evaluate_texture_from_source_field()
 			return_code = 0;
 		}
 
-		const int number_of_components = cmzn_field_get_number_of_components(source_field);
-		enum Texture_storage_type specify_format = TEXTURE_LUMINANCE;
-		if (number_of_components == 1)
-		{
-			specify_format = TEXTURE_LUMINANCE;
-		}
-		else if (number_of_components == 2)
-		{
-			specify_format = TEXTURE_LUMINANCE_ALPHA;
-		}
-		else if (number_of_components == 3)
-		{
-			specify_format = TEXTURE_RGB;
-		}
-		else if (number_of_components == 4)
-		{
-			specify_format = TEXTURE_RGBA;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
-				"the number of components in source field.");
-			return_code = 0;
-		}
+		enum Texture_storage_type storage = Texture_get_storage_type(this->texture);
 
 		if (return_code)
 		{
 			if (Texture_allocate_image(texture, image_width, image_height,
-				image_depth, specify_format, number_of_bytes_per_component, field->name))
+				image_depth, storage, this->number_of_bytes_per_component, field->name))
 			{
 				cmzn_field_image *source_image = cmzn_field_cast_image(source_field);
 				//???GRC following logic is probably incomplete:
 				bool use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field) ||
 					(source_image) || source_field->core->is_purely_function_of_field(texture_coordinate_field);
+				const int number_of_components = cmzn_field_get_number_of_components(source_field);
 				int bytes_per_pixel = number_of_components * this->number_of_bytes_per_component;
 				// search_mesh is used to find domain location of texture coordinate field
 				// and evaluate source field there; as defined here it gives no scope to
@@ -414,7 +391,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 				Set_cmiss_field_value_to_texture(source_field, use_texture_coordinate_field,
 					texture, NULL, NULL, image_width, image_height, image_depth, bytes_per_pixel,
 					number_of_bytes_per_component, use_pixel_location, texture_width, texture_height, texture_depth,
-					specify_format, 0, NULL, search_mesh);
+					storage, 0, NULL, search_mesh);
 				cmzn_mesh_destroy(&search_mesh);
 				cmzn_fieldmodule_destroy(&field_module);
 				cmzn_field_image_destroy(&source_image);
@@ -752,17 +729,49 @@ cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 				number_of_source_fields, source_fields,
 				/*number_of_source_values*/0, static_cast<const double *>(0),
 				image);
-			// copy texture coordinate range from source, if valid
-			cmzn_field_image *image_source = cmzn_field_cast_image(source_field);
-			if (image_source)
+			cmzn_field_image *source_field_image = cmzn_field_cast_image(source_field);
+			int image_width = 1, image_height = 1, image_depth = 1;
+			Texture_get_size(image->texture, &image_width, &image_height, &image_depth);
+			enum Texture_storage_type storage = TEXTURE_RGB;
+			if (source_field_image)
 			{
-				cmzn_field_image *image_field = cmzn_field_cast_image(field);
-				double sizes[3];
-				cmzn_field_image_get_texture_coordinate_sizes(image_source, 3, sizes);
-				cmzn_field_image_set_texture_coordinate_sizes(image_field, 3, sizes);
-				cmzn_field_image_destroy(&image_field);
-				cmzn_field_image_destroy(&image_source);
+				// copy texture attributes from source, but keep size at current and
+				// delay copying image until demanded since size attributes may change
+				Computed_field_image *source_image = Computed_field_image_core_cast(source_field_image);
+				Texture_copy_display_attributes(source_image->texture, image->texture);
+				storage = Texture_get_storage_type(source_image->texture);
+				image->number_of_bytes_per_component = Texture_get_number_of_bytes_per_component(source_image->texture);
+				cmzn_field_image_destroy(&source_field_image);
 			}
+			else
+			{
+				const int number_of_components = cmzn_field_get_number_of_components(source_field);
+				if (number_of_components == 1)
+				{
+					storage = TEXTURE_LUMINANCE;
+				}
+				else if (number_of_components == 2)
+				{
+					storage = TEXTURE_LUMINANCE_ALPHA;
+				}
+				else if (number_of_components == 3)
+				{
+					storage = TEXTURE_RGB;
+				}
+				else if (number_of_components == 4)
+				{
+					storage = TEXTURE_RGBA;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_image::cmzn_fieldmodule_create_field_image_from_source.  No texture format supports"
+						"the number of components in source field.");
+				}
+			}
+			// must allocate image to get correct storage type and bytes per component
+			Texture_allocate_image(image->texture, image_width, image_height, image_depth,
+				storage, image->number_of_bytes_per_component, /*source_name*/"");
 		}
 		if (generatedDomainField)
 			cmzn_field_destroy(&domainField);
@@ -987,9 +996,8 @@ int cmzn_field_image_set_size_in_pixels(cmzn_field_image_id image,
 		const int image_height = (valuesCount > 1) ? valuesIn[1] : 1;
 		const int image_depth = (valuesCount > 2) ? valuesIn[2] : 1;
 		const enum Texture_storage_type storage = Texture_get_storage_type(image_core->texture);
-		const int number_of_bytes_per_component = Texture_get_number_of_bytes_per_component(image_core->texture);
 		if (Texture_allocate_image(image_core->texture, image_width, image_height, image_depth,
-			storage, number_of_bytes_per_component, field->name))
+			storage, image_core->number_of_bytes_per_component, field->name))
 		{
 			image_core->use_source_resolution = false;
 			image_core->texture_buffer_changed();

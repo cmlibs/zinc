@@ -541,6 +541,7 @@ TEST(ZincFieldImageFromSource, evaluateImageFromNonImageSource)
 	EXPECT_EQ(sizeIn[0], sizeOut[0]);
 	EXPECT_EQ(sizeIn[1], sizeOut[1]);
 	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, im1.getFilterMode());
 
 	const double xiConst[4][3] = {
 		{ 0.25, 0.25, 0.0 },
@@ -574,6 +575,9 @@ TEST(ZincFieldImageFromSource, evaluateImageFromNonImageSource)
 	EXPECT_EQ(sizeIn[0], sizeOut[0]);
 	EXPECT_EQ(sizeIn[1], sizeOut[1]);
 	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, im2.getFilterMode()); // should match source
+	EXPECT_EQ(RESULT_OK, im2.setFilterMode(FieldImage::FILTER_MODE_LINEAR));
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, im2.getFilterMode());
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -619,6 +623,7 @@ TEST(ZincFieldImageFromSource, evaluateImageFromNonImageSource)
 	EXPECT_EQ(sizeIn2[0], sizeOut[0]);
 	EXPECT_EQ(sizeIn2[1], sizeOut[1]);
 	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, im3.getFilterMode()); // should match source
 
 	// both the following locations setting methods work:
 	for (int i = 0; i < 4; ++i)
