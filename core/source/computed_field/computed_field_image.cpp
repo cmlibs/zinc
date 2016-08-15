@@ -46,7 +46,6 @@ public:
 	Texture* texture;
 	double minimum;
 	double maximum;
-	int native_texture;
 	int number_of_bytes_per_component;
 	/* for image from source: flag to indicate that the texture needs to be
 	   evaluated due to changes on the source fields */
@@ -60,10 +59,9 @@ public:
 		texture(texture_in ? ACCESS(Texture)(texture_in) : NULL),
 		minimum(0.0),
 		maximum(1.0),
-		native_texture(1),
 		number_of_bytes_per_component(1),
 		need_evaluate_texture(false),
-		use_source_resolution(true)
+		use_source_resolution(false)
 	{
 	}
 
@@ -159,12 +157,6 @@ public:
 		return (1);
 	}
 
-	int set_native_texture_flag(int native_texture_flag_in)
-	{
-		native_texture = native_texture_flag_in;
-		return (1);
-	}
-
 	int set_number_of_bytes_per_component(int number_of_bytes_per_component_in)
 	{
 		number_of_bytes_per_component = number_of_bytes_per_component_in;
@@ -252,7 +244,6 @@ Copy the type specific data used by this type.
 ==============================================================================*/
 {
 	Computed_field_image* core = new Computed_field_image(texture);
-	core->set_native_texture_flag(native_texture);
 	core->set_output_range(minimum, maximum);
 	core->set_number_of_bytes_per_component(number_of_bytes_per_component);
 
@@ -275,8 +266,7 @@ Compare the type specific data
 	{
 		if ((texture == other->texture) &&
 			(minimum == other->minimum) &&
-			(maximum == other->maximum) &&
-			(native_texture == other->native_texture))
+			(maximum == other->maximum))
 		{
 			return_code = 1;
 		}
@@ -358,10 +348,11 @@ int Computed_field_image::evaluate_texture_from_source_field()
 		{
 			cmzn_field_image *source_image = cmzn_field_cast_image(source_field);
 			if (source_image && this->use_source_resolution &&
-				(this->number_of_bytes_per_component ==
-					Texture_get_number_of_bytes_per_component(Computed_field_image_core_cast(source_image)->texture)))
+				(this->number_of_bytes_per_component == Computed_field_image_core_cast(source_image)->number_of_bytes_per_component))
 			{
-				int result = Texture_copy_image(Computed_field_image_core_cast(source_image)->texture, this->texture);
+				// must force evaluation of source image texture here:
+				cmzn_texture *source_texture = cmzn_field_image_get_texture(source_image);
+				int result = Texture_copy_image(source_texture, this->texture);
 				if (result == CMZN_RESULT_OK)
 				{
 					this->need_evaluate_texture = false;
@@ -509,11 +500,18 @@ the <field>. These parameters will be used in image processing.
 	if (field)
 	{
 		return_code = 1;
-		check_evaluate_texture();
-		if (native_texture && texture)
+		if (this->texture_is_evaluated_from_source_field() && this->use_source_resolution)
 		{
-			Texture_get_size(texture, &w, &h, &d);
-			Texture_get_dimension(texture,dimension);
+			// this handles case where texture has not yet been evaluated
+			return_code = Computed_field_get_native_resolution(
+				field->source_fields[1], dimension, sizes,
+				texture_coordinate_field);
+		}
+		else
+		{
+			return_code =
+				Texture_get_size(this->texture, &w, &h, &d) &&
+				Texture_get_dimension(this->texture,dimension);
 			if (!(ALLOCATE(*sizes, int, *dimension)))
 			{
 				return_code = 0;
@@ -544,14 +542,6 @@ the <field>. These parameters will be used in image processing.
 				}
 			}
 			*texture_coordinate_field = field->source_fields[0];
-		}
-		else
-		{
-			/* If this field is not the native texture field
-				then propagate this query to the texture coordinates
-				by calling the default implementation. */
-			return_code = Computed_field_core::get_native_resolution(
-				dimension, sizes, texture_coordinate_field);
 		}
 	}
 	else
@@ -589,14 +579,6 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE,"    minimum : %f\n",minimum);
 		display_message(INFORMATION_MESSAGE,"    maximum : %f\n",maximum);
-		if (native_texture)
-		{
-			display_message(INFORMATION_MESSAGE,"    native_texture\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"    not_native_texture\n");
-		}
 		return_code = 1;
 	}
 	else
@@ -662,14 +644,6 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, temp_string, &error);
 		sprintf(temp_string, " maximum %f", maximum);
 		append_string(&command_string, temp_string, &error);
-		if (native_texture)
-		{
-			append_string(&command_string, " native_texture", &error);
-		}
-		else
-		{
-			append_string(&command_string, " not_native_texture", &error);
-		}
 	}
 	else
 	{
@@ -822,18 +796,6 @@ int cmzn_field_image_set_number_of_bytes_per_component(cmzn_field_image_id image
 	return return_code;
 }
 
-int cmzn_field_image_set_native_texture_flag(cmzn_field_image_id image_field, int native_texture_flag)
-{
-	int return_code = 0;
-	if (image_field)
-	{
-		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
-		return_code = image_core->set_native_texture_flag(native_texture_flag);
-	}
-
-	return return_code;
-}
-
 cmzn_texture *cmzn_field_image_get_texture(cmzn_field_image_id image_field)
 {
 	cmzn_texture *cmiss_texture = 0;
@@ -849,7 +811,7 @@ int Computed_field_get_type_image(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **source_field,
 	struct Texture **texture,
-	double *minimum, double *maximum, int *native_texture)
+	double *minimum, double *maximum)
 /*******************************************************************************
 LAST MODIFIED : 5 September 2007
 
@@ -880,7 +842,6 @@ returned.
 		}
 		*minimum = core->minimum;
 		*maximum = core->maximum;
-		*native_texture = core->native_texture;
 		return_code=1;
 	}
 	else
@@ -1130,7 +1091,6 @@ int Computed_field_is_image_type(struct Computed_field *field,
 	struct Computed_field *source_field;
 	struct Texture *texture;
 	double minimum, maximum;
-	int native_texture;
 
 	ENTER(Computed_field_has_string_value_type);
 	USE_PARAMETER(dummy_void);
@@ -1140,7 +1100,7 @@ int Computed_field_is_image_type(struct Computed_field *field,
 		{
 			return_code = Computed_field_get_type_image(field,
 				&texture_coordinate_field, &source_field,
-				&texture, &minimum, &maximum, &native_texture);
+				&texture, &minimum, &maximum);
 		}
 	}
 	else
