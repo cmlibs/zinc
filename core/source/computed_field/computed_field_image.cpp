@@ -356,10 +356,26 @@ int Computed_field_image::evaluate_texture_from_source_field()
 
 		if (return_code)
 		{
-			if (Texture_allocate_image(texture, image_width, image_height,
+			cmzn_field_image *source_image = cmzn_field_cast_image(source_field);
+			if (source_image && this->use_source_resolution &&
+				(this->number_of_bytes_per_component ==
+					Texture_get_number_of_bytes_per_component(Computed_field_image_core_cast(source_image)->texture)))
+			{
+				int result = Texture_copy_image(Computed_field_image_core_cast(source_image)->texture, this->texture);
+				if (result == CMZN_RESULT_OK)
+				{
+					this->need_evaluate_texture = false;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_image::evaluate_texture_from_source_field.  Failed to copy source image");
+					return_code = 0;
+				}
+			}
+			else if (Texture_allocate_image(texture, image_width, image_height,
 				image_depth, storage, this->number_of_bytes_per_component, field->name))
 			{
-				cmzn_field_image *source_image = cmzn_field_cast_image(source_field);
 				//???GRC following logic is probably incomplete:
 				bool use_pixel_location = (texture_coordinate_field == source_texture_coordinate_field) ||
 					(source_image) || source_field->core->is_purely_function_of_field(texture_coordinate_field);
@@ -394,7 +410,6 @@ int Computed_field_image::evaluate_texture_from_source_field()
 					storage, 0, NULL, search_mesh);
 				cmzn_mesh_destroy(&search_mesh);
 				cmzn_fieldmodule_destroy(&field_module);
-				cmzn_field_image_destroy(&source_image);
 				this->need_evaluate_texture = false;
 			}
 			else
@@ -403,6 +418,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 					"Computed_field_image::evaluate_texture_from_source_field.  Could not allocate image in texture");
 				return_code = 0;
 			}
+			cmzn_field_image_destroy(&source_image);
 		}
 	}
 	else
