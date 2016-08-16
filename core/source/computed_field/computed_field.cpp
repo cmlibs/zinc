@@ -2663,6 +2663,16 @@ bool Computed_field_core::is_non_linear() const
 	return false;
 }
 
+bool Computed_field_core::is_purely_function_of_field(cmzn_field *other_field)
+{
+	if (this->field == other_field)
+		return true;
+	for (int i = 0; i < this->field->number_of_source_fields; ++i)
+		if (!this->field->source_fields[i]->core->is_purely_function_of_field(other_field))
+			return false;
+	return true;
+}
+
 int Computed_field_broadcast_field_components(
 	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field **field_one, struct Computed_field **field_two)

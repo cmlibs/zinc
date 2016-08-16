@@ -425,6 +425,14 @@ public:
 		return CMZN_FIELD_VALUE_TYPE_REAL;
 	}
 
+	/* overrides should return true if matching field, false if depends on something else e.g. finite element:
+		virtual bool is_purely_function_of_field(cmzn_field *other_field)
+		{
+			return (this->field == other_field);
+		}
+	*/
+	virtual bool is_purely_function_of_field(cmzn_field *other_field);
+
 protected:
 
 	// call whenever type-specific parameters are changed to notify clients

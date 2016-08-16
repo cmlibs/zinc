@@ -267,6 +267,11 @@ public:
 		cmzn_node_value_label nodeValueLabel, int versionNumber,
 		int valuesCount, const double *valuesIn);
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy();
 
@@ -1611,6 +1616,11 @@ public:
 	{
 	};
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -1787,6 +1797,11 @@ public:
 	{
 	};
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -1951,6 +1966,11 @@ public:
 			Computed_field_set_coordinate_system(field,
 				get_FE_field_coordinate_system(fe_field));
 		}
+	}
+
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
 	}
 
 private:
@@ -2489,6 +2509,11 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -2853,6 +2878,13 @@ public:
 		}
 	}
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		if (this->field == other_field)
+			return true;
+		return this->field->source_fields[1]->core->is_purely_function_of_field(other_field);
+	}
+
 private:
 	Computed_field_core *copy();
 
@@ -3127,6 +3159,13 @@ public:
 			Computed_field_changed(field);
 		}
 		return CMZN_OK;
+	}
+
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		if (this->field == other_field)
+			return true;
+		return this->get_source_field()->core->is_purely_function_of_field(other_field);
 	}
 
 private:
@@ -3449,6 +3488,11 @@ public:
 	{
 	};
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -3660,6 +3704,11 @@ public:
 	};
 
 	virtual ~Computed_field_basis_derivative();
+
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
 
 private:
 	Computed_field_core *copy();
@@ -4532,6 +4581,11 @@ public:
 	{
 	};
 
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
+
 private:
 	Computed_field_core *copy()
 	{
@@ -4624,6 +4678,11 @@ public:
 	cmzn_element_face_type get_face_type()
 	{
 		return faceType;
+	}
+
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
 	}
 
 private:
