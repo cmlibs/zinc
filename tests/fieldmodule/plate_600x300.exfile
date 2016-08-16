@@ -1,0 +1,77 @@
+ Group name: plate
+ #Fields=1
+ 1) plate_coordinates, coordinate, rectangular cartesian, #Components=3
+  x.  Value index=1, #Derivatives=0, #Versions=1
+  y.  Value index=2, #Derivatives=0, #Versions=1
+  z.  Value index=3, #Derivatives=0, #Versions=1
+ Node: 10001
+  -300.0
+  -150.0
+  350.0
+ Node: 10002
+  300.0
+  -150.0
+  350.0
+ Node: 10003
+  -300.0
+  150.0
+  350.0
+ Node: 10004
+  300.0
+  150.0
+  350.0
+ Shape. Dimension=2, line*line
+ #Scale factor sets=0
+ #Nodes=4
+ #Fields=1
+ 1) plate_coordinates, coordinate, rectangular cartesian, #Components=3
+ x. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   2. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   3. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   4. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+ y. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   2. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   3. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   4. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+ z. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   2. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   3. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+   4. #Values=1
+     Value labels: value
+     Scale factor indices: 0
+ Element: 10001 0 0
+ Faces:
+ 0 0 0
+ 0 0 0
+ 0 0 0
+ 0 0 0
+ Nodes:
+ 10001 10002 10003 10004

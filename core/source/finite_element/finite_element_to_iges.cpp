@@ -1064,7 +1064,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 			iges_entity_info_data.field_cache = field_cache;
 			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
 			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
-			iges_entity_info_data.field=Computed_field_begin_wrap_coordinate_field(field);
+			iges_entity_info_data.field=cmzn_field_get_coordinate_field_wrapper(field);
 			iges_entity_info_data.fe_field=(struct FE_field *)NULL;
 			iges_entity_info_data.fe_region=cmzn_region_get_FE_region(region);
 			iges_entity_info_data.element=(struct FE_element *)NULL;
@@ -1089,7 +1089,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					break;
 			}
 			cmzn_elementiterator_destroy(&iter);
-			Computed_field_end_wrap(&(iges_entity_info_data.field));
+			cmzn_field_destroy(&(iges_entity_info_data.field));
 			if (iges_entity_info_data.fe_field)
 			{
 				DEACCESS(FE_field)(&iges_entity_info_data.fe_field);

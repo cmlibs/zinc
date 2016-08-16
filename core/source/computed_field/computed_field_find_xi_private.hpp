@@ -19,19 +19,16 @@ class Computed_field_find_element_xi_base_cache
 	cmzn_mesh_id search_mesh;
 public:
 	struct FE_element *element;
-	int valid_values;
 	int number_of_values;
 	double time;
 	FE_value *values;
 	FE_value *working_values;
 	int in_perform_find_element_xi;
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* Warn when trying to destroy this cache as it is being filled in */
 	
 	Computed_field_find_element_xi_base_cache() :
 		search_mesh(0),
 		element((struct FE_element *)NULL),
-		valid_values(0),
 		number_of_values(0),
 		time(0),
 		values((FE_value *)NULL),

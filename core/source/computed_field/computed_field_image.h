@@ -17,11 +17,12 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 
-/***************************************************************************//**
- * A convenient function to get texture out from a computed_field if it is of
- * type image. This function should not be made available to the external API.
+/**
+ * A convenience function to get texture out from an image, forcing it to be
+ * created from source fields if necessary.
+ * This function should not be made available to the external API.
  *
- * @param field  Compited_field to get the texture from.
+ * @param image_field  Image field to get the texture from.
  * @return  Returns texture if successfully get a texture from the provided
  *   field, otherwise NULL.
  */
@@ -49,15 +50,6 @@ int Computed_field_is_image_type(struct Computed_field *field,
 int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 		struct Texture *texture);
 
-/*****************************************************************************//**
- * A get function that gets the internal cmiss_texture from the image field.
- * This is an internal function.
- *
- * @param image_field  The image field to get the texture from.
- * @return Returns the handle to cmiss texture.
- */
-cmzn_texture_id cmzn_field_image_get_texture(cmzn_field_image_id image_field);
-
 /***************************************************************************//**
  * A function to list information of the texture in an image field.
  */
@@ -68,15 +60,21 @@ int list_image_field(struct Computed_field *field,void *dummy_void);
  */
 int list_image_field_commands(struct Computed_field *field,void *command_prefix_void);
 
-/***************************************************************************//**
+/**
  * A function to evaluate a field into a texture, the texture must allocate the
  * image before passing into this function.
+ * @param  use_pixel_location  Flag if true simply samples the texture
+ * coordinates; if false, finds xi on the field.
+ * @param texture_width  Upper range of 1st texture coordinates to sample.
+ * @param texture_height  Upper range of 2nd texture coordinates to sample.
+ * @param texture_depth  Upper range of 3rd texture coordinates to sample.
  */
 int Set_cmiss_field_value_to_texture(struct cmzn_field *field,
 	struct cmzn_field *texture_coordinate_field, struct Texture *texture,
-	struct cmzn_spectrum *spectrum,	struct cmzn_material *fail_material,
-	int image_height, int image_width, int image_depth, int bytes_per_pixel,
-	int number_of_bytes_per_component, int use_pixel_location,
+	struct cmzn_spectrum *spectrum, struct cmzn_material *fail_material,
+	int image_width, int image_height, int image_depth, int bytes_per_pixel,
+	int number_of_bytes_per_component, bool use_pixel_location,
+	double texture_width, double texture_height, double texture_depth,
 	enum Texture_storage_type specify_format, int propagate_field,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	cmzn_mesh_id search_mesh);
