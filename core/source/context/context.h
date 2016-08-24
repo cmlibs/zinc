@@ -18,6 +18,8 @@
 #include "general/message_log.hpp"
 #include "general/manager.h"
 
+struct cmzn_graphics_module;
+
 struct cmzn_context
 {
 	const char *id;

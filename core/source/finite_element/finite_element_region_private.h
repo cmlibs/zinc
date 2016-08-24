@@ -118,6 +118,7 @@ struct FE_region
 		this->update();
 	}
 
+	cmzn_fielditerator *create_fielditerator();
 };
 
 /*

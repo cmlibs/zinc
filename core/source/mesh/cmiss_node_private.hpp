@@ -15,7 +15,7 @@
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
-#include "general/list.h"
+#include "datastore/labelschangelog.hpp"
 
 struct cmzn_fieldmoduleevent;
 struct FE_region;
@@ -46,12 +46,6 @@ int cmzn_nodeset_group_add_element_nodes(
  */
 int cmzn_nodeset_group_remove_element_nodes(
 	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element);
-
-/** Internal use only.
- * Create a related node list to that in nodeset.
- * @return  New node list.
- */
-struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return non-accessed fe_nodeset for this nodeset. Note this is the master
@@ -95,7 +89,7 @@ struct cmzn_nodesetchanges
 {
 private:
 	cmzn_fieldmoduleevent *event; // accessed
-	CHANGE_LOG(FE_node) *changeLog; // just copied from event for correct nodeset
+	DsLabelsChangeLog *changeLog; // Accessed from object obtained from correct mesh
 	int access_count;
 
 	cmzn_nodesetchanges(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn);
@@ -113,27 +107,18 @@ public:
 
 	static int deaccess(cmzn_nodesetchanges* &nodesetchanges);
 
-	cmzn_node_change_flags getNodeChangeFlags(cmzn_node *node)
-	{
-		int change = 0;
-		CHANGE_LOG_QUERY(FE_node)(this->changeLog, node, &change);
-		return change;
-	}
+	cmzn_node_change_flags getNodeChangeFlags(cmzn_node *node);
 
 	int getNumberOfChanges()
 	{
-		if (CHANGE_LOG_IS_ALL_CHANGE(FE_node)(this->changeLog))
+		if (this->changeLog->isAllChange())
 			return -1;
-		int number = 0;
-		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(this->changeLog, &number);
-		return number;
+		return this->changeLog->getChangeCount();
 	}
 
 	cmzn_node_change_flags getSummaryNodeChangeFlags()
 	{
-		int change = 0;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(this->changeLog, &change);
-		return change;
+		return this->changeLog->getChangeSummary();
 	}
 };
 

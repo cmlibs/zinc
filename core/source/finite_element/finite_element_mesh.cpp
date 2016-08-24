@@ -116,10 +116,10 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	elementShapeMap(/*blockLengthIn*/1024, /*allocInitValueIn*/0),
 	parents(/*blockLengthIn*/128, /*allocInitValueIn*/0),
 	element_field_info_list(CREATE(LIST(FE_element_field_info))()),
+	last_fe_element_field_info(0),
 	parentMesh(0),
 	faceMesh(0),
 	changeLog(0),
-	last_fe_element_field_info(0),
 	element_type_node_sequence_list(0),
 	definingFaces(false),
 	activeElementIterators(0),
@@ -262,11 +262,10 @@ void FE_mesh::elementRemovedChange(FE_element *element)
 	}
 }
 
-// Only to be called by FE_region_clear, or when all elements removed to reset data structures
+// Only to be called by FE_region_clear, or when all elements already removed
+// to reclaim memory in labels and mapped arrays
 void FE_mesh::clear()
 {
-	FE_region_begin_change(this->fe_region);
-
 	if (0 < this->labels.getSize())
 	{
 		const DsLabelIndex indexLimit = this->labels.getIndexSize();
@@ -305,8 +304,6 @@ void FE_mesh::clear()
 	this->parents.clear();
 
 	this->labels.clear();
-
-	FE_region_end_change(this->fe_region);
 }
 
 void FE_mesh::createChangeLog()
@@ -612,7 +609,7 @@ void FE_mesh::list_btree_statistics()
 }
 
 /** Remove iterator from linked list in this mesh */
-void FE_mesh::removeElementIterator(cmzn_elementiterator *iterator)
+void FE_mesh::removeElementiterator(cmzn_elementiterator *iterator)
 {
 	if (iterator == this->activeElementIterators)
 		this->activeElementIterators = iterator->nextIterator;
@@ -624,7 +621,7 @@ void FE_mesh::removeElementIterator(cmzn_elementiterator *iterator)
 		if (prevIterator)
 			prevIterator->nextIterator = iterator->nextIterator;
 		else
-			display_message(ERROR_MESSAGE, "FE_mesh::removeElementIterator.  Iterator not in linked list");
+			display_message(ERROR_MESSAGE, "FE_mesh::removeElementiterator.  Iterator not in linked list");
 	}
 	iterator->nextIterator = 0;
 }
@@ -1446,7 +1443,7 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
  * around multiple calls to this function.
  * This function is recursive.
  */
-int FE_mesh::remove_FE_element(struct FE_element *element)
+int FE_mesh::destroyElement(struct FE_element *element)
 {
 	FE_region_begin_change(this->fe_region);
 	int return_code = this->remove_FE_element_private(element);
@@ -1646,10 +1643,11 @@ struct FE_mesh::Merge_FE_element_external_data
 		}
 	}
 
+	/**
+	 * @return  Target element field info if match, 0 if don't have a match for source.
+	 */
 	FE_element_field_info *get_matching_FE_element_field_info(FE_element_field_info *source_element_field_info)
 	{
-		// 1. Convert element to use a new FE_element_field_info from this mesh
-		// fast path: check if the element_field_info has already been matched
 		FE_element_field_info **matching_element_field_info = this->matching_element_field_info;
 		for (int i = 0; i < this->number_of_matching_element_field_info; ++i)
 		{

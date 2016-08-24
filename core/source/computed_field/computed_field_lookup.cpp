@@ -261,10 +261,8 @@ int Computed_field_nodal_lookup::check_dependency()
 			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
-				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
-				int change = 0;
-				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->lookup_node, &change);
-				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
+				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->lookup_node)))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}
@@ -604,10 +602,8 @@ int Computed_field_quaternion_SLERP::check_dependency()
 			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
-				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
-				int change = 0;
-				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->nodal_lookup_node, &change);
-				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
+				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->nodal_lookup_node)))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}

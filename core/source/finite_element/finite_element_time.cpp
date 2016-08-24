@@ -14,6 +14,7 @@ Representing time in finite elements.
 #include <math.h>
 
 #include "opencmiss/zinc/timesequence.h"
+#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"

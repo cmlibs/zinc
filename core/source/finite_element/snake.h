@@ -22,7 +22,7 @@ int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
 	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
-	struct LIST(FE_node) *data_list,
+	cmzn_nodeset_id data_nodeset,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
 	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group);
 /*******************************************************************************
@@ -32,7 +32,7 @@ DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
 <element_manager> and <element_group>, nodes in <node_manager> and the node
 group of the same name in <node_group_manager>. The snake follows the data in
-<data_list>. <data_list> is unmodified by this function.
+<data_nodeset>; data is unmodified by this function.
 The <fitting_fields> which must be defined on the data are fitted and
 defined on the created elements.  The <coordinate_field> is used to determine
 distances between points.  If specified, the <weight_field> is evaluated at 
