@@ -25,6 +25,7 @@ Global types
 ------------
 */
 
+class FE_node_template;
 class FE_element_template;
 
 enum Curve_extend_mode
@@ -116,7 +117,7 @@ It is designed to be flexible rather than fast.
 	FE_mesh *fe_mesh;
 	FE_nodeset *fe_nodeset;
 	struct FE_field *parameter_field,*value_field;
-	struct FE_node *template_node;
+	FE_node_template *node_template;
 	FE_element_template *element_template;
 
 	/* information useful for editing Curve */

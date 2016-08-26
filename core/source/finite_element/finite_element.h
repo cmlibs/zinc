@@ -13,7 +13,6 @@
 
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "datastore/labels.hpp"
@@ -30,6 +29,7 @@ Global types
 ------------
 */
 
+class DsLabelsGroup;
 class DsLabelsChangeLog;
 
 /**
@@ -180,9 +180,8 @@ struct FE_node_field_creator;
 struct cmzn_node;
 #define FE_node cmzn_node
 
-DECLARE_LIST_TYPES(FE_node);
-
-DECLARE_CHANGE_LOG_TYPES(FE_node);
+DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
+DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
 
 /**
  * Specifies the type of mapping used to get element DOFs for interpolation
@@ -320,35 +319,6 @@ Stores a list of fields in the order they are added.
 The contents of this object are private.
 ==============================================================================*/
 
-struct FE_node_order_info
-/*******************************************************************************
-LAST MODIFIED : 11 August 1999
-
-DESCRIPTION :
-Use to pass info about a node group's nodes, their number, and their order.
-c.f.  FE_field_order_info. Also store a current node, so can iterate, etc
-==============================================================================*/
-{
-	int number_of_nodes,current_node_number;
-	struct FE_node **nodes;
-	int access_count;
-}; /* FE_node_order_info */
-
-struct FE_element_order_info
-/*******************************************************************************
-LAST MODIFIED : 10 January 2000
-
-DESCRIPTION :
-Use to pass info about a element group's elements, their number, and their
-order.
-c.f.  FE_field_order_info. Also store a current element, so can iterate, etc
-==============================================================================*/
-{
-	int number_of_elements,current_element_number;
-	struct FE_element **elements;
-	int access_count;
-}; /* FE_element_order_info */
-
 struct FE_field_and_string_data
 /*******************************************************************************
 LAST MODIFIED : 26 September 2000
@@ -359,17 +329,6 @@ Used by FE_node_has_FE_field_and_string_data
 {
 	struct FE_field *fe_field;
 	char *string;
-};
-
-struct Node_is_in_list_data
-/*******************************************************************************
-LAST MODIFIED : 17 October 2000
-
-DESCRIPTION :
-used by all_nodes_in_list
-==============================================================================*/
-{
-	struct LIST(FE_node) *node_list;
 };
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_domain_type);
@@ -477,40 +436,8 @@ int FE_node_field_creator_has_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type);
 
-/**
- * Creates and returns a node with the specified <cm_node_identifier>.
- * If <fe_nodeset> is supplied a blank node with the given identifier but no
- * fields is returned. If <template_node> is supplied, a copy of it,
- * including all fields and values but with the new identifier, is returned.
- * Exactly one of <fe_nodeset> or <template_node> must be supplied and either
- * directly or indirectly sets the owning nodeset for the new node.
- * Note that <cm_node_identifier> must be non-negative.
- */
-struct FE_node *CREATE(FE_node)(int cm_node_identifier,
-	FE_nodeset *fe_nodeset, struct FE_node *template_node);
-
-/**
- * Frees the memory for the node, sets <*node_address> to NULL.
- */
-int DESTROY(FE_node)(struct FE_node **node_address);
-
-/**
- * Clear content of node and disconnect it from owning nodeset.
- * Use when removing node from nodeset or deleting nodeset to safely orphan any
- * externally accessed nodes.
- */
-void FE_node_invalidate(struct FE_node *node);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
-
-/**
- * Creates a copy of <node> containing only FE_node_fields from <node> which
- * have their FE_field listed in <fe_field_list>.
- */
-struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
-	struct LIST(FE_field) *fe_field_list);
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
 	struct FE_time_sequence *fe_time_seqence,
@@ -522,35 +449,14 @@ DESCRIPTION :
 Defines a field at a node (does not assign values).
 ==============================================================================*/
 
-struct Node_list_field_data
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Iterator/conditional function data containing a node list and FE_field.
-==============================================================================*/
-{
-	struct LIST(FE_node) *fe_node_list;
-	struct FE_field *fe_field;
-};
-
-int FE_element_ensure_FE_field_nodes_are_not_in_list(
-	struct FE_element *element,void *node_list_field_data_void);
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Iterator function which, if <element> has nodes and the listed <fe_field>
-defined on it, ensures those nodes contributing to <fe_field> are not in the
-<fe_node_list>.
-==============================================================================*/
-
 /**
  * Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
  * then removes values storage for it and shifts values storage for all subsequent
  * fields down.
  * Note: Must ensure that the node field is not in-use by any elements before it
  * is undefined!
+ * @return  Result code OK if undefined CMZN_NOT_FOUND if field undefined or
+ * any other error if failed.
  */
 int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field);
 
@@ -608,6 +514,11 @@ DESCRIPTION :
 Returns true if any single field defined at <node> has values stored with
 the field.
 ==============================================================================*/
+
+/**
+ * Get the number of elements referencing the supplied node
+ */
+int FE_node_get_element_usage_count(struct FE_node *node);
 
 /**
  * Returns the FE_nodeset that <node> belongs to.
@@ -761,65 +672,6 @@ DESCRIPTION :
 Iterator function for adding the number of <node> to <multi_range>.
 ==============================================================================*/
 
-int add_FE_node_to_list(struct FE_node *node, void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Iterator function for adding <node> to <node_list>. Does not expect <node> to
-already be in list so more efficient than ensure_FE_node_is_in_list
-==============================================================================*/
-
-int ensure_FE_node_is_in_list(struct FE_node *node,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function for adding <node> to <node_list> if not currently in it.
-==============================================================================*/
-
-struct FE_node_list_conditional_data
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Data for passing to ensure_FE_node_is_in_list_conditional.
-==============================================================================*/
-{
-	struct LIST(FE_node) *node_list;
-	LIST_CONDITIONAL_FUNCTION(FE_node) *function;
-	void *user_data;
-}; /* FE_node_list_conditional_data */
-
-int ensure_FE_node_is_in_list_conditional(struct FE_node *node,
-	void *list_conditional_data_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for adding <node> to a list - if not already in it - if a
-conditional function with user_data is true.
-The node_list, conditional function and user_data are passed in a
-struct FE_node_list_conditional_data * in the second argument.
-Warning: Must not be iterating over the list being added to!
-==============================================================================*/
-
-int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function for removing <node> from <node_list> if currently in it.
-==============================================================================*/
-
-int toggle_FE_node_in_list(struct FE_node *node,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-If <node> is in <node_list> it is taken out, otherwise it is added.
-==============================================================================*/
-
 /**
  * Clears any embedded locations from nodes in nodeset for fields in
  * field_list. This is to avoid circular dependencies which prevent clean-up.
@@ -830,39 +682,11 @@ If <node> is in <node_list> it is taken out, otherwise it is added.
 int FE_nodeset_clear_embedded_locations(FE_nodeset *nodeset,
 	struct LIST(FE_field) *field_list);
 
-struct FE_node_can_be_merged_data
-/*******************************************************************************
-LAST MODIFIED : 15 November 2002
-
-DESCRIPTION :
-Data to be passed to FE_node_can_be_merged.
-<number_of_compatible_node_field_info> and <compatible_node_field_info> must be
-cleared before first call to 0 and NULL respectively. After using the function,
-the <compatible_node_field_info> array must be deallocated. Note this array is
-grows in increments of 2 since first node_field_info of the pair is that of a
-node passed to the function, every second info is that of its counterpart
-obtained from <node_list>
-==============================================================================*/
-{
-	int number_of_compatible_node_field_info;
-	/* store in pairs in the single array to reduce allocations */
-	struct FE_node_field_info **compatible_node_field_info;
-	struct LIST(FE_node) *node_list;
-}; /* struct FE_node_can_be_merged_data */
-
-int FE_node_can_be_merged(struct FE_node *node, void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 November 2002
-
-DESCRIPTION :
-Fetches a node with the same identifier as <node> from <data>->node_list.
-Returns true if there is either no such node in the list or the two nodes have
-the same node field definitions for all fields of the same name.
-Note that the actual field may be different, but it is assumed that the same
-name fields are already proven to be compatible. <data_void> should point at a
-properly initialised struct FE_node_can_be_merged_data.
-After using the function, deallocate data->compatible_node_field_info!
-==============================================================================*/
+/**
+ * @return  true if definition of fields in source node are compatible with
+ * target node.
+ */
+bool FE_node_can_merge(struct FE_node *targetNode, struct FE_node *sourceNode);
 
 int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void);
 /*******************************************************************************
@@ -872,22 +696,6 @@ DESCRIPTION :
 Returns true(1) if the <data_void>->fe_field is define at the <node> AND
 the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string.
 Otherwise returns false (0)
-==============================================================================*/
-
-int FE_node_is_in_list(struct FE_node *node,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns true if <node> is in <node_list>.
-==============================================================================*/
-
-int FE_node_is_not_in_list(struct FE_node *node,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns true if <node> is not in <node_list>.
 ==============================================================================*/
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_nodal_value_type);
@@ -1163,25 +971,26 @@ DESCRIPTION :
 Returns the number of versions for the node field component.
 ==============================================================================*/
 
+/**
+ * @return  The non-negative node identifier, otherwise
+ * DS_LABEL_IDENTIFIER_INVALID on error or if node is orphaned from nodeset.
+*/
 int get_FE_node_identifier(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
 
-DESCRIPTION :
-Returns the integer identifier of the <node>.
-==============================================================================*/
+/**
+ * @return  The non-negative node index within the owning nodeset otherwise
+ * DS_LABEL_INDEX_INVALID on error or if node is orphaned from nodeset.
+ */
+DsLabelIndex get_FE_node_index(struct FE_node *node);
 
-int set_FE_node_identifier(struct FE_node *node, int identifier);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Changes the identifier of <node> to <identifier>.
-Caution! Should only call for nodes that are NOT in indexed lists;
-Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-node is temporarily removed from all the indexed lists it is in and re-added
-afterwards. FE_region should be the only object that needs to call this.
-==============================================================================*/
+/**
+ * Set the index of the node in owning nodeset. Used only by FE_nodeset when
+ * merging nodes from another region's nodeset.
+ * @param node  The node to modify.
+ * @param index  The new index, non-negative. Value is not checked due
+ * to use by privileged caller.
+ */
+void set_FE_node_index(struct FE_node *node, DsLabelIndex index);
 
 /***************************************************************************//**
  * Returns the first coordinate field define at the node, currently in
@@ -1206,12 +1015,6 @@ fe_field is found.  The fe_field found is returned as fe_field_void.
  */
 int list_FE_node(struct FE_node *node);
 
-PROTOTYPE_LIST_FUNCTIONS(FE_node);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node,cm_node_identifier,int);
-
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator);
-
 /***************************************************************************//**
  * Internal variant of public cmzn_nodeiterator_next() which does not access
  * the returned node, for more efficient if less safe usage.
@@ -1221,13 +1024,6 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator);
  */
 cmzn_node_id cmzn_nodeiterator_next_non_access(
 	cmzn_nodeiterator_id node_iterator);
-
-/***************************************************************************//**
- * List statistics about btree efficiency for node list.
- */
-void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list);
-
-PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_node);
 
 /**
  * Creates map with value type and version arrays allocated.
@@ -1925,7 +1721,6 @@ int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	int *face_number_address, FE_value *xi_face);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
 /**
  * Returns the list of <adjacent_elements> not including <element> which share
@@ -1991,7 +1786,7 @@ void set_FE_element_index(struct FE_element *element, DsLabelIndex index);
  */
 bool FE_element_or_parent_changed(struct FE_element *element,
 	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-	struct CHANGE_LOG(FE_node) *fe_node_change_log);
+	DsLabelsChangeLog *nodeChangeLog);
 
 int get_FE_element_number_of_fields(struct FE_element *element);
 /*******************************************************************************
@@ -3054,28 +2849,20 @@ int get_FE_element_discretization(struct FE_element *element,
 bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
 
 /**
- * Add nodes directly referenced in element information to the node list.
- * @param element  The element to add nodes from.
- * @param nodeList  The node list to fill.
- * @param onlyFromNodeList  List of nodes which can be added.
- * @return  CMZN_OK on success, otherwise any other value.
- */
-int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
-	LIST(cmzn_node) *nodeList, LIST(cmzn_node) *onlyFromNodeList);
-
-/**
  * Add nodes used by this element, including inherited from parent elements, to
- * the supplied list.
+ * the supplied labels group.
+ * Caller must ensure the group was created for the appropriate FE_nodeset.
  * @return  CMZN_OK on success, any other value on failure.
  */
-int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
+int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup);
 
 /**
  * Remove nodes used by this element, including inherited from parent elements,
- * from the supplied list.
+ * from the supplied labels group.
+ * Caller must ensure the group was created for the appropriate FE_nodeset.
  * @return CMZN_OK on success, any other value on failure.
  */
-int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
+int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup);
 
 /**
  * Conditional function.
@@ -3271,32 +3058,32 @@ If <field> is standard node based in <element>, returns the <fe_basis> used for
 ==============================================================================*/
 
 /**
- * Partner function to FE_element_smooth_FE_field.
- * Divides the nodal first derivatives of <fe_field> at <time> in <node> by the
- * corresponding integer from <element_count_fe_field>, then undefines
- * <element_count_fe_field>.
- * <node> is not a global object, as from FE_element_smooth_FE_field.
- * Handles multiple versions.
+ * Partner function to FE_element_smooth_FE_field. Averages node derivatives.
+ * Assigns the nodal first derivatives of fe_field at time in node with the
+ * values from node_accumulate_fe_field divided by the value of the
+ * element_count_fe_field, handling multiple versions.
+ * Finally undefines node_accumulate_fe_field and element_count_fe_field.
+ * @return  1 on success, 0 on failure.
  */
 int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
-	FE_value time, struct FE_field *element_count_fe_field);
+	FE_value time, struct FE_field *node_accumulate_fe_field,
+	struct FE_field *element_count_fe_field);
 
 /**
- * For each node contributing to <fe_field> in <element> either its copy is found
- * in <copy_node_list> or one is made and added to this list. The copy node will
- * have <fe_field> defined on it in the same way as the original, plus the integer
- * <element_count_fe_field> with the same number of components as <fe_field> for
- * accumulating the number of elements each first derivative of <fe_field> is
- * referenced by. The copy node starts with all derivatives set to zero.
+ * For each node contributing to <fe_field> in <element>, accumulates delta
+ * coordinates along each element edge are accumulated.
+ *
+ * @param node_accumulate_fe_field  Temporary field for accumulating node
+ * values. Must have same number of components as fe_field.
+ * @param element_count_fe_field  Field to store number of elements accumulated
+ * at node, for final averaging.
  *
  * After making calls to this function for all the intended elements, call
  * FE_node_smooth_FE_field for each node to divide the accumulated derivatives
  * by the number of elements they are over and to undefine the
- * <element_count_fe_field>.
- * It is up to the calling funcion to merge the copied information into global
- * elements and nodes.
+ * node_accumulate_fe_field and element_count_fe_field.
  *
- * Sets all scale factors used for <fe_field> to 1.
+ * Sets all scale factors used for <fe_field> to 1.0.
  *
  * Notes:
  * Only works for "line" shapes with Hermite basis functions.
@@ -3310,9 +3097,9 @@ int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
  *   value d/dxi1 d/dxi2 d2/dxi1dxi2 d/dxi3 d2/dxi1dxi3 d2/dxi2dxi3 d3/dxi1dxi2dxi3
  */
 int FE_element_smooth_FE_field(struct FE_element *element,
-	struct FE_field *fe_field, FE_value time,
-	struct FE_field *element_count_fe_field,
-	struct LIST(FE_node) *copy_node_list);
+	struct FE_field *fe_field, FE_value time, 
+	struct FE_field *node_accumulate_fe_field,
+	struct FE_field *element_count_fe_field);
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, int *face_number);
@@ -3396,327 +3183,6 @@ Helper function for create_config_template_node() and
 create_mapping_template_node() that, given the node, field and
 field_order_info, defines the field at the node, and places it at the end of
 the field_order_info list.
-==============================================================================*/
-
-struct FE_node_order_info *CREATE(FE_node_order_info)(
-	int number_of_nodes);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Allocate space for an array of pointers to nodes of length number_of_nodes,
-set these to NULL, copy the number_of_nodes.
-==============================================================================*/
-
-int DESTROY(FE_node_order_info)(
-	struct FE_node_order_info **node_order_info_address);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Frees them memory used by node_order_info.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_node_order_info);
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node_order_info);
-
-int get_FE_node_order_info_number_of_nodes(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> number_of_nodes
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> node at the specified node_number
-==============================================================================*/
-
-int set_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Sets the <node_order_info> node at the specified node_number
-==============================================================================*/
-
-int get_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-gets the <node_order_info> <current_node_number>
-==============================================================================*/
-
-int set_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info,int current_node_number);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Sets the <node_order_info> <current_node_number>
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_current_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> node at the current_node_number
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_next_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the end of the array, return null.
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_prev_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the start of the array, return null.
-==============================================================================*/
-
-int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-As FE_node to previously created FE_node_order_info
-==============================================================================*/
-
-int fill_FE_node_order_info(struct FE_node *node,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-As FE_node to previously created FE_node_order_info (passed in dummy)
-==============================================================================*/
-
-int get_FE_node_order_info_number_of_nodes(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> number_of_nodes
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> node at the specified node_number
-==============================================================================*/
-
-int set_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Sets the <node_order_info> node at the specified node_number
-==============================================================================*/
-
-int get_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-gets the <node_order_info> <current_node_number>
-==============================================================================*/
-
-int set_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info,int current_node_number);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Sets the <node_order_info> <current_node_number>
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_current_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> node at the current_node_number
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_next_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the end of the array, return null.
-==============================================================================*/
-
-struct FE_node *get_FE_node_order_info_prev_node(
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the start of the array, return null.
-==============================================================================*/
-
-int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
-	struct FE_node_order_info *node_order_info);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-As FE_node to previously created FE_node_order_info
-==============================================================================*/
-
-int fill_FE_node_order_info(struct FE_node *node,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-As FE_node to previously created FE_node_order_info (passed in dummy)
-==============================================================================*/
-
-
-struct FE_element_order_info *CREATE(FE_element_order_info)(
-	int number_of_elements);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Allocate space for an array of pointers to elements of length number_of_elements,
-set these to NULL, copy the number_of_elements.
-==============================================================================*/
-
-int DESTROY(FE_element_order_info)(
-	struct FE_element_order_info **element_order_info_address);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Frees them memory used by element_order_info.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_element_order_info);
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element_order_info);
-
-int get_FE_element_order_info_number_of_elements(
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> number_of_elements
-==============================================================================*/
-
-struct FE_element *get_FE_element_order_info_element(
-	struct FE_element_order_info *element_order_info,int element_number);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> element at the specified element_number
-==============================================================================*/
-
-int set_FE_element_order_info_element(
-	struct FE_element_order_info *element_order_info,int element_number,
-	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Sets the <element_order_info> element at the specified element_number
-==============================================================================*/
-
-int get_FE_element_order_info_current_element_number(
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-gets the <element_order_info> <current_element_number>
-==============================================================================*/
-
-int set_FE_element_order_info_current_element_number(
-	struct FE_element_order_info *element_order_info,int current_element_number);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Sets the <element_order_info> <current_element_number>
-==============================================================================*/
-
-struct FE_element *get_FE_element_order_info_current_element(
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> element at the current_element_number
-==============================================================================*/
-
-struct FE_element *get_FE_element_order_info_next_element(
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> next element by incrementing the current_element_number,
-and returning the new current element. If at the end of the array, return null.
-==============================================================================*/
-
-struct FE_element *get_FE_element_order_info_prev_element(
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> next element by incrementing the current_element_number,
-and returning the new current element. If at the start of the array, return null.
-==============================================================================*/
-
-int add_elements_FE_element_order_info(int number_of_elements_to_add,
-	struct FE_element_order_info *element_order_info);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-As FE_element to previously created FE_element_order_info
-==============================================================================*/
-
-int fill_FE_element_order_info(struct FE_element *element,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-As FE_element to previously created FE_element_order_info (passed in dummy)
 ==============================================================================*/
 
 int FE_element_get_number_of_change_to_adjacent_element_permutations(

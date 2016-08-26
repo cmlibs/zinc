@@ -19,6 +19,7 @@
 #include <list>
 #include <sstream>
 #include "opencmiss/zinc/optimisation.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/field_module.hpp"
 
 struct IndependentAndConditionalFields

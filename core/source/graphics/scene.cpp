@@ -43,6 +43,7 @@ FILE : scene.cpp
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "general/mystring.h"
+#include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region_private.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"

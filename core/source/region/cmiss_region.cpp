@@ -358,6 +358,13 @@ cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
 	return (region);
 }
 
+cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region)
+{
+	if (!region)
+		return 0;
+	return Computed_field_manager_create_iterator(region->field_manager);
+}
+
 namespace {
 
 /** partial cleanup of region, needed by destructor and cmzn_region_detach_fields_hierarchical */

@@ -49,7 +49,7 @@ struct Convert_finite_elements_data
 	FE_value tolerance;
 	struct Octree *octree;
 	struct LIST(Octree_object) *nearby_nodes;
-	struct FE_node *template_node;
+	FE_node_template *node_template;
 	FE_element_template *element_template;
 	int number_of_fields;
 	struct Computed_field **field_array;
@@ -75,7 +75,7 @@ struct Convert_finite_elements_data
 		tolerance(tolerance),
 		octree(CREATE(Octree)()),
 		nearby_nodes(CREATE(LIST(Octree_object))()),
-		template_node((struct FE_node *)NULL),
+		node_template(0),
 		element_template(0),
 		number_of_fields(0),
 		field_array(0),
@@ -107,11 +107,8 @@ struct Convert_finite_elements_data
 
 	~Convert_finite_elements_data()
 	{
+		cmzn::Deaccess(this->node_template);
 		cmzn::Deaccess(this->element_template);
-		if (template_node)
-		{
-			DESTROY(FE_node)(&template_node);
-		}
 		if (temporary_values)
 		{
 			DEALLOCATE(temporary_values);
@@ -185,25 +182,18 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 		{
 			FE_value destination_xi[HERMITE_2D_NUMBER_OF_NODES][2] =
 				{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
+			// clear nodes so safe to DEACCESS later
+			for (int n = 0; n < HERMITE_2D_NUMBER_OF_NODES; ++n)
+				nodes[n] = 0;
 			for (i = 0 ; return_code && (i < HERMITE_2D_NUMBER_OF_NODES) ; i++)
 			{
 				node_number = destination_fe_nodeset->get_next_FE_node_identifier(node_number);
-				if ((nodes[i] = CREATE(FE_node)(node_number, (FE_nodeset *)NULL,
-						template_node)))
+				nodes[i] = destination_fe_nodeset->create_FE_node(node_number, this->node_template);
+				if (0 == nodes[i])
 				{
-					if (!destination_fe_nodeset->merge_FE_node(nodes[i]))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_convert_element.  "
-							"Could not merge node into region");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"FE_element_convert_element.  "
-						"Unable to create node.");
-					return_code=0;
+					display_message(ERROR_MESSAGE, "Convert_finite_elements_data::convert_subelement.  Unable to create node.");
+					return_code = 0;
+					break;
 				}
 			}
 			for (j = 0 ; j < number_of_fields ; j++)
@@ -274,6 +264,9 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					"Unable to create element.");
 				return_code=0;
 			}
+			for (int n = 0; n < HERMITE_2D_NUMBER_OF_NODES; ++n)
+				if (nodes[n])
+					DEACCESS(FE_node)(&nodes[n]);
 		} break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
 		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
@@ -302,6 +295,9 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 			const int number_of_local_nodes =
 				(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
 				TRILINEAR_NUMBER_OF_NODES : TRIQUADRATIC_NUMBER_OF_NODES;
+			// clear nodes so safe to DEACCESS later
+			for (int n = 0; n < number_of_local_nodes; ++n)
+				nodes[n] = 0;
 			for (j = 0 ; j < number_of_fields ; j++)
 			{
 				Computed_field *cfield = field_array[j];
@@ -323,29 +319,18 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 							struct FE_node *node = getNearestNode(values);
 							if (node)
 							{
-								nodes[i] = node;
+								nodes[i] = ACCESS(FE_node)(node);
 							}
 							else
 							{
 								node_number = destination_fe_nodeset->get_next_FE_node_identifier(node_number);
-								node = CREATE(FE_node)(node_number, (FE_nodeset *)NULL,
-									template_node);
+								node = destination_fe_nodeset->create_FE_node(node_number, this->node_template);
 								if (node)
 								{
 									set_FE_nodal_field_FE_value_values(destination_fe_fields[j],
 										node, values, &number_of_values, /*time*/0.0);
-									if (destination_fe_nodeset->merge_FE_node(node))
-									{
-										nodes[i] = node;
-										addNode(values, node);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_convert_element.  "
-											"Could not merge node into region");
-										return_code = 0;
-									}
+									nodes[i] = node; // take over access
+									addNode(values, node);
 								}
 								else
 								{
@@ -400,6 +385,9 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					"Unable to create element.");
 				return_code=0;
 			}
+			for (int n = 0; n < number_of_local_nodes; ++n)
+				if (nodes[n])
+					DEACCESS(FE_node)(&nodes[n]);
 		} break;
 		default:
 		{
@@ -580,12 +568,12 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				if (return_code)
 				{
 					/* Make template node defining all the fields in the field list */
-					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, data.destination_fe_nodeset,
-							/*template_node*/(struct FE_node *)NULL)))
+					data.node_template = data.destination_fe_nodeset->create_FE_node_template();
+					if (data.node_template)
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
 						{
-							return_code = define_FE_field_at_node_simple(data.template_node,
+							return_code = define_FE_field_at_node_simple(data.node_template->get_template_node(),
 								data.destination_fe_fields[i], /*number_of_derivatives*/3, hermite_2d_nodal_value_types);
 						}
 					}
@@ -613,7 +601,7 @@ int finite_element_conversion(struct cmzn_region *source_region,
 					else
 					{
 						display_message(ERROR_MESSAGE,"finite_element_conversion.  "
-							"Unable to make hermite template node.");
+							"Unable to make Hermite template node.");
 						return_code=0;
 					}
 				}
@@ -647,20 +635,20 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				if (return_code)
 				{
 					/* Make template node defining all the fields in the field list */
-					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, data.destination_fe_nodeset,
-							/*template_node*/(struct FE_node *)NULL)))
+					data.node_template = data.destination_fe_nodeset->create_FE_node_template();
+					if (data.node_template)
 					{
-						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
+						for (i = 0; return_code && (i < data.number_of_fields); i++)
 						{
-							return_code = define_FE_field_at_node_simple(data.template_node,
+							return_code = define_FE_field_at_node_simple(data.node_template->get_template_node(),
 								data.destination_fe_fields[i], /*number_of_derivatives*/0, NULL);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"finite_element_conversion.  "
-							"Unable to make hermite template node.");
-						return_code=0;
+						display_message(ERROR_MESSAGE, "finite_element_conversion.  "
+							"Unable to make Lagrange template node.");
+						return_code = 0;
 					}
 				}
 				if (return_code)

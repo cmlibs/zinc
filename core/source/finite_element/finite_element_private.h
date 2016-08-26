@@ -305,6 +305,39 @@ in <fe_field_change_log>.
 
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier);
 
+
+/**
+ * Creates and returns a non-global node to be used as a template for
+ * creating other nodes in the supplied mesh.
+ * @param node_field_info  A struct FE_node_field_info linking to the
+ * mesh. Should have no fields.
+ * @return  Accessed node, or 0 on error. Do not merge into FE_nodeset!
+ */
+struct FE_node *create_template_FE_node(FE_node_field_info *node_field_info);
+
+/**
+ * Creates and returns a non-global node with the specified index,
+ * that is a copy of the supplied template node i.e. with all fields
+ * and values from it.
+ * The returned node is ready to be added into the FE_mesh the
+ * template node was created by.
+ * Shape is not set for new node as mapped in mesh.
+ * Faces are not copied from the template node.
+ * @param index  Index of node in mesh, or DS_LABEL_INDEX_INVALID if used
+ * as a non-global template node i.e. when called from
+ * FE_node_template::FE_node_template().
+ * @param template_node  node to copy.
+ * @return  Accessed node, or 0 on error.
+ */
+struct FE_node *create_FE_node_from_template(DsLabelIndex index, struct FE_node *template_node);
+
+/**
+ * Clear content of node and disconnect it from owning nodeset.
+ * Use when removing node from nodeset or deleting nodeset to safely orphan any
+ * externally accessed nodes.
+ */
+void FE_node_invalidate(struct FE_node *node);
+
 int set_FE_node_identifier(struct FE_node *node, int identifier);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2003
@@ -436,17 +469,6 @@ LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
 Returns the element field list contained in the <element_field_info>.
-==============================================================================*/
-
-int FE_element_field_info_log_FE_field_changes(
-	struct FE_element_field_info *fe_element_field_info,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2003
-
-DESCRIPTION :
-Marks each FE_field in <fe_element_field_info> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
 ==============================================================================*/
 
 /**

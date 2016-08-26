@@ -758,19 +758,17 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	return (return_code);
 }
 
-cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
-	FE_mesh *fe_mesh, struct Multi_range *identifierRanges)
+cmzn_field_id cmzn_mesh_create_conditional_field_from_identifier_ranges(
+	cmzn_mesh_id mesh, struct Multi_range *identifierRanges)
 {
-	if (!(fe_mesh && identifierRanges))
+	if (!(mesh && identifierRanges))
 	{
-		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_identifier_ranges.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "cmzn_mesh_create_conditional_field_from_identifier_ranges.  Invalid argument(s)");
 		return 0;
 	}
-	FE_region *fe_region = fe_mesh->get_FE_region();
-	cmzn_region *region = FE_region_get_cmzn_region(fe_region);
-	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
-	cmzn_mesh_id masterMesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, fe_mesh->getDimension());
-	cmzn_field *conditionalField = cmzn_fieldmodule_create_field_element_group(fieldmodule, masterMesh);
+	cmzn_fieldmodule *fieldmodule = cmzn_mesh_get_fieldmodule(mesh);
+	cmzn_fieldmodule_begin_change(fieldmodule);
+	cmzn_field *conditionalField = cmzn_fieldmodule_create_field_element_group(fieldmodule, mesh);
 	cmzn_field_element_group *elementGroupField = cmzn_field_cast_element_group(conditionalField);
 	Computed_field_element_group *elementGroup = Computed_field_element_group_core_cast(elementGroupField);
 	if (elementGroup)
@@ -780,7 +778,7 @@ cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
 		{
 			int start, stop;
 			Multi_range_get_range(identifierRanges, i, &start, &stop);
-			if (CMZN_OK != elementGroup->addElementIdentifierRange(start, stop))
+			if (CMZN_OK != elementGroup->addObjectsInIdentifierRange(start, stop))
 			{
 				cmzn_field_destroy(&conditionalField);
 				break;
@@ -790,29 +788,28 @@ cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
 	else
 		cmzn_field_destroy(&conditionalField);
 	cmzn_field_element_group_destroy(&elementGroupField);
-	cmzn_mesh_destroy(&masterMesh);
+	cmzn_fieldmodule_end_change(fieldmodule);
 	cmzn_fieldmodule_destroy(&fieldmodule);
 	if (!conditionalField)
-		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_identifier_ranges.  Failed");
+		display_message(ERROR_MESSAGE, "cmzn_mesh_create_conditional_field_from_identifier_ranges.  Failed");
 	return conditionalField;
 }
 
-cmzn_field_id FE_mesh_create_conditional_field_from_ranges_and_selection(
-	FE_mesh *fe_mesh, struct Multi_range *identifierRanges,
+cmzn_field_id cmzn_mesh_create_conditional_field_from_ranges_and_selection(
+	cmzn_mesh_id mesh, struct Multi_range *identifierRanges,
 	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
 	cmzn_field_id conditionalField3, FE_value time)
 {
-	if (!fe_mesh)
+	if (!mesh)
 		return 0;
 	bool time_varying = false;
 	cmzn_field *returnField = 0;
 	bool error = false;
-	FE_region *fe_region = fe_mesh->get_FE_region();
-	cmzn_region *region = FE_region_get_cmzn_region(fe_region);
-	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+	cmzn_fieldmodule *fieldmodule = cmzn_mesh_get_fieldmodule(mesh);
+	cmzn_fieldmodule_begin_change(fieldmodule);
 	if (identifierRanges && (Multi_range_get_number_of_ranges(identifierRanges) > 0)) // empty ranges mean not specified
 	{
-		returnField = FE_mesh_create_conditional_field_from_identifier_ranges(fe_mesh, identifierRanges);
+		returnField = cmzn_mesh_create_conditional_field_from_identifier_ranges(mesh, identifierRanges);
 		if (!returnField)
 			error = true;
 	}
@@ -859,10 +856,11 @@ cmzn_field_id FE_mesh_create_conditional_field_from_ranges_and_selection(
 		if (!returnField)
 			error = true;
 	}
+	cmzn_fieldmodule_end_change(fieldmodule);
 	cmzn_fieldmodule_destroy(&fieldmodule);
 	if (error)
 	{
-		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_ranges_and_selection.  Failed");
+		display_message(ERROR_MESSAGE, "cmzn_mesh_create_conditional_field_from_ranges_and_selection.  Failed");
 		cmzn_field_destroy(&returnField);
 	}
 	return returnField;

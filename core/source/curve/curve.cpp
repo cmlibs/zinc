@@ -337,8 +337,8 @@ Used for copy operations and as part of the DESTROY function.
 	ENTER(cc_clean_up);
 	if (curve)
 	{
+		cmzn::Deaccess(curve->node_template);
 		cmzn::Deaccess(curve->element_template);
-		DEACCESS(FE_node)(&(curve->template_node));
 		DEACCESS(FE_field)(&curve->parameter_field);
 		DEACCESS(FE_field)(&curve->value_field);
 		DEACCESS(FE_region)(&curve->fe_region);
@@ -395,7 +395,7 @@ but it is at least destroyable when returned from this function.
 			curve->fe_nodeset=FE_region_find_FE_nodeset_by_field_domain_type(curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
-			curve->template_node=(struct FE_node *)NULL;
+			curve->node_template = 0;
 			curve->element_template = 0;
 
 			curve->max_value=(FE_value *)NULL;
@@ -901,8 +901,8 @@ Works even when <destination> and <source> are the same.
 				destination->fe_region = temp_curve->fe_region;
 				destination->parameter_field=temp_curve->parameter_field;
 				destination->value_field=temp_curve->value_field;
-				destination->template_node=temp_curve->template_node;
-				destination->element_template=temp_curve->element_template;
+				destination->node_template=temp_curve->node_template; // REACCESS?
+				destination->element_template=temp_curve->element_template; // REACCESS?
 				destination->max_value=temp_curve->max_value;
 				destination->min_value=temp_curve->min_value;
 				destination->parameter_grid=temp_curve->parameter_grid;
@@ -1270,15 +1270,14 @@ value will be zero in its initial state.
 				if (return_code)
 				{
 					/* curve must access template_node */
-					curve->template_node = ACCESS(FE_node)(CREATE(FE_node)(
-						/*node_identifier*/0,curve->fe_nodeset,(struct FE_node *)NULL));
-					if (NULL != curve->template_node)
+					curve->node_template = curve->fe_nodeset->create_FE_node_template();
+					if (NULL != curve->node_template)
 					{
 						node_field_creator = CREATE(FE_node_field_creator)(
 							/*number_of_components*/1);
 						FE_node_field_creator_define_derivative(node_field_creator,
 							0, FE_NODAL_D_DS1);
-						if (!define_FE_field_at_node(curve->template_node,
+						if (!define_FE_field_at_node(curve->node_template->get_template_node(),
 							curve->parameter_field,(struct FE_time_sequence *)NULL,
 							node_field_creator))
 						{
@@ -1296,7 +1295,7 @@ value will be zero in its initial state.
 									node_field_creator, j, FE_NODAL_D_DS1);
 							}
 						}
-						if (!define_FE_field_at_node(curve->template_node,
+						if (!define_FE_field_at_node(curve->node_template->get_template_node(),
 							curve->value_field,(struct FE_time_sequence *)NULL,
 							node_field_creator))
 						{
@@ -2157,7 +2156,6 @@ expected to make the element have a finite size.
 {
 	int i,node_no,node_no_increment,number_of_elements,number_of_nodes,
 		return_code;
-	struct FE_node *node,*node_to_copy;
 	struct FE_element *element,*existing_element,*last_element;
 
 	ENTER(Curve_add_element);
@@ -2184,18 +2182,18 @@ expected to make the element have a finite size.
 			element = curve->fe_mesh->create_FE_element(element_no, curve->element_template);
 			if (element)
 			{
+				struct FE_node *node;
 				if (0==number_of_elements)
 				{
 					/* first element: all new nodes from curve->template_node */
 					for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						node = curve->fe_nodeset->create_FE_node_copy(i + 1, curve->template_node);
-						if (NULL != node)
+						node = curve->fe_nodeset->create_FE_node(i + 1, curve->node_template);
+						if (node)
 						{
 							if (!set_FE_element_node(element,i,node))
-							{
 								return_code=0;
-							}
+							DEACCESS(FE_node)(&node);
 						}
 						else
 						{
@@ -2208,23 +2206,21 @@ expected to make the element have a finite size.
 					/* last element: share last node of last element, make new nodes as
 						 copy of it */
 					if ((last_element=curve->fe_mesh->findElementByIdentifier(number_of_elements))&&
-						get_FE_element_node(last_element,curve->value_nodes_per_element-1,
-							&node_to_copy))
+						get_FE_element_node(last_element,curve->value_nodes_per_element-1, &node))
 					{
-						if (!set_FE_element_node(element,0,node_to_copy))
+						if (!set_FE_element_node(element, 0, node))
 						{
 							return_code=0;
 						}
-						node_no=get_FE_node_identifier(node_to_copy);
+						node_no=get_FE_node_identifier(node);
 						for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 						{
-							node = curve->fe_nodeset->create_FE_node_copy(node_no + i, node_to_copy);
-							if (NULL != node)
+							node = curve->fe_nodeset->create_FE_node(node_no + i, curve->node_template);
+							if (node)
 							{
 								if (!set_FE_element_node(element,i,node))
-								{
 									return_code=0;
-								}
+								DEACCESS(FE_node)(&node);
 							}
 							else
 							{
@@ -2244,9 +2240,9 @@ expected to make the element have a finite size.
 						 element_at_pos to last new node for continuity. Renumber subsequent
 						 nodes and elements to keep sequential */
 					if ((existing_element=curve->fe_mesh->findElementByIdentifier(element_no + 1))&&
-						get_FE_element_node(existing_element,0,&node_to_copy)&&
-						(node_no=get_FE_node_identifier(node_to_copy))&&
-						(number_of_nodes = curve->fe_nodeset->get_number_of_FE_nodes()))
+						get_FE_element_node(existing_element,0,&node)&&
+						(node_no=get_FE_node_identifier(node))&&
+						(number_of_nodes = curve->fe_nodeset->getSize()))
 					{
 						/* increment numbers of nodes to follow - not node_no though! */
 						node_no_increment=curve->value_nodes_per_element-1;
@@ -2259,7 +2255,7 @@ expected to make the element have a finite size.
 							}
 						}
 						/* take first node of existing_element */
-						if (!set_FE_element_node(element,0,node_to_copy))
+						if (!set_FE_element_node(element,0,node))
 						{
 							return_code=0;
 						}
@@ -2267,13 +2263,12 @@ expected to make the element have a finite size.
 						node = 0;
 						for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 						{
-							node = curve->fe_nodeset->create_FE_node_copy(node_no + i, node_to_copy);
-							if (NULL != node)
+							node = curve->fe_nodeset->create_FE_node(node_no + i, curve->node_template);
+							if (node)
 							{
 								if (!set_FE_element_node(element,i,node))
-								{
 									return_code=0;
-								}
+								DEACCESS(FE_node)(&node);
 							}
 							else
 							{
@@ -2343,7 +2338,7 @@ at the other end of the element being deleted.
 		(0 != (fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 		curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES))) &&
 		(number_of_elements=FE_region_get_number_of_FE_elements_of_dimension(curve->fe_region, 1))&&
-		(number_of_nodes = fe_nodeset->get_number_of_FE_nodes())&&
+		(number_of_nodes = fe_nodeset->getSize())&&
 		(0<element_no)&&(element_no <= number_of_elements))
 	{
 		return_code=1;
@@ -2439,11 +2434,11 @@ at the other end of the element being deleted.
 				/* remove the element and nodes */
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				if (curve->fe_mesh->remove_FE_element(element_to_delete))
+				if (curve->fe_mesh->destroyElement(element_to_delete))
 				{
 					for (i=first_node_to_delete;(i<=last_node_to_delete)&&return_code;i++)
 					{
-						if (CMZN_OK != fe_nodeset->remove_FE_node(
+						if (CMZN_OK != fe_nodeset->destroyNode(
 							fe_nodeset->findNodeByIdentifier(i)))
 						{
 							return_code=0;
@@ -4443,13 +4438,8 @@ struct Curve *create_Curve_from_file(const char *curve_name,
 						curve->fe_mesh->findElementByIdentifier(1));
 					if (NULL != curve->element_template)
 					{
-						curve->template_node = CREATE(FE_node)(/*identifier*/0, (FE_nodeset *)0,
-							curve->fe_nodeset->findNodeByIdentifier(1));
-						if (curve->template_node)
-						{
-							ACCESS(FE_node)(curve->template_node);
-						}
-						else
+						curve->node_template = curve->fe_nodeset->create_FE_node_template(curve->fe_nodeset->findNodeByIdentifier(1));
+						if (!curve->node_template)
 						{
 							return_code=0;
 						}

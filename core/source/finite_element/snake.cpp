@@ -116,7 +116,7 @@ Evaluates the <field> into the <fitting_field_values>.
 } /* FE_field_evaluate_snake_position */
 
 static int FE_node_accumulate_length(struct FE_node *node,
-	void *accumulate_data_void)
+	struct FE_node_accumulate_length_data *accumulate_data)
 /*******************************************************************************
 LAST MODIFIED : 3 May 2006
 
@@ -127,12 +127,10 @@ Calculates the coordinates and length from the first node.
 	double sum;
 	FE_value *coordinates, distance, *lengths;
 	int i, node_number, number_of_components, return_code;
-	struct FE_node_accumulate_length_data *accumulate_data;
 	struct Computed_field *coordinate_field;
 
 	ENTER(FE_node_accumulate_length);
-	if (node && (accumulate_data =
-		(struct FE_node_accumulate_length_data *)accumulate_data_void) &&
+	if ((node) && (accumulate_data) &&
 		(coordinates = accumulate_data->coordinates) &&
 		(lengths = accumulate_data->lengths) &&
 		(0 <= (node_number = accumulate_data->node_number)) &&
@@ -142,7 +140,7 @@ Calculates the coordinates and length from the first node.
 	{
 		accumulate_data->current_node = node;
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(
-			FE_field_evaluate_snake_position, accumulate_data_void,
+			FE_field_evaluate_snake_position, (void *)accumulate_data,
 			accumulate_data->fe_field_list);
 
 		cmzn_fieldcache_set_node(accumulate_data->field_cache, node);
@@ -546,7 +544,7 @@ int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
 	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
-	struct LIST(FE_node) *data_list,
+	cmzn_nodeset_id data_nodeset,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
 	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group)
 {
@@ -561,9 +559,9 @@ int create_FE_element_snake_from_data_points(
 		number_of_components, number_of_coordinate_components, number_of_data,
 		number_of_fe_fields, number_of_rows, return_code, row, start_row;
 	struct FE_element *element;
-	struct FE_node **nodes, *template_node;
- 	struct FE_node_accumulate_length_data accumulate_data;
- 	struct FE_field_initialise_array_data initialise_array_data;
+	struct FE_node **nodes;
+	struct FE_node_accumulate_length_data accumulate_data;
+	struct FE_field_initialise_array_data initialise_array_data;
 	struct FE_field **fe_field_array;
 	struct LIST(FE_field) *fe_field_list;
 	cmzn_fieldmodule_id field_module;
@@ -571,7 +569,7 @@ int create_FE_element_snake_from_data_points(
 
 	ENTER(create_FE_element_snake_from_data_points);
 	if (fe_region && coordinate_field && 
-		(number_of_fitting_fields > 0) && fitting_fields && data_list &&
+		(number_of_fitting_fields > 0) && fitting_fields && data_nodeset &&
 		(0 < number_of_elements) &&
 		(0.0 <= density_factor) && (1.0 >= density_factor) &&
 		(0.0 <= (double_stiffness = (double)stiffness)))
@@ -603,7 +601,7 @@ int create_FE_element_snake_from_data_points(
 			/* 1. Make table of lengths from first data point up to last */
 			if (0 < number_of_components)
 			{
-				if (1 < (number_of_data = NUMBER_IN_LIST(FE_node)(data_list)))
+				if (1 < (number_of_data = cmzn_nodeset_get_size(data_nodeset)))
 				{
 					if (ALLOCATE(lengths, FE_value, number_of_data) &&
 						ALLOCATE(fitting_field_values, FE_value, number_of_components*number_of_data) &&
@@ -619,8 +617,19 @@ int create_FE_element_snake_from_data_points(
 						accumulate_data.coordinate_field = coordinate_field;
 						accumulate_data.weight_field = weight_field;
 						accumulate_data.fe_field_list = fe_field_list;
-						if (FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_accumulate_length,
-								(void *)&accumulate_data, data_list))
+						cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(data_nodeset);
+						cmzn_node *node;
+						while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
+						{
+							if (!FE_node_accumulate_length(node, &accumulate_data))
+							{
+								display_message(ERROR_MESSAGE,
+									"create_FE_element_snake_from_data_points.  Could not calculate lengths");
+								return_code = 0;
+								break;
+							}
+						}
+						if (return_code)
 						{
 							if (0.0 < lengths[number_of_data - 1])
 							{
@@ -639,13 +648,6 @@ int create_FE_element_snake_from_data_points(
 									"create_FE_element_snake_from_data_points.  Zero length");
 								return_code = 0;
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"create_FE_element_snake_from_data_points.  "
-								"Could not calculate lengths");
-							return_code = 0;
 						}
 					}
 					else
@@ -861,23 +863,24 @@ int create_FE_element_snake_from_data_points(
 					force_vectors + n*number_of_rows,"%8.4f");
 			}
 #endif /* defined (DEBUG_CODE) */
-			template_node = (struct FE_node *)NULL;
+			FE_node_template *node_template = 0;
 			FE_element_template *element_template = 0;
 			nodes = (struct FE_node **)NULL;
 			if (ALLOCATE(nodes, struct FE_node *, number_of_elements + 1))
 			{
+				// clear nodes so safe to DEACCESS later
 				for (j = 0; j <= number_of_elements; j++)
 				{
 					nodes[j] = (struct FE_node *)NULL;
 				}
 				/* create a template node suitable for 1-D Hermite interpolation of the
 					 coordinate_field */
-				if (NULL != (template_node = CREATE(FE_node)(/*node_number*/0, fe_nodeset,
-					/*template_node*/(struct FE_node *)NULL)))
+				node_template = fe_nodeset->create_FE_node_template();
+				if ((node_template))
 				{
 					for (n = 0 ; return_code && (n < number_of_fe_fields) ; n++)
 					{
-						return_code = define_FE_field_at_node_simple(template_node,
+						return_code = define_FE_field_at_node_simple(node_template->get_template_node(),
 							fe_field_array[n], 
 							/*number_of_derivatives*/1, hermite_1d_nodal_value_types);
 					}
@@ -886,19 +889,19 @@ int create_FE_element_snake_from_data_points(
 				{
 					display_message(ERROR_MESSAGE,
 						"create_FE_element_snake_from_data_points.  "
-						"Could not create template_node");
+						"Could not create node template");
 					return_code = 0;
 				}
 				/* create the nodes in the snake as copies of the template, access them
-					 in the nodes array, set their coordinates and derivatives and add
-					 them to the manager and node_group */
+				   in the nodes array, set their coordinates and derivatives and add
+				   them to the manager and node_group */
 				node_number = 1;
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{
 					/* get next unused node number from fe_region */
 					node_number = fe_nodeset->get_next_FE_node_identifier(node_number);
-					if (NULL != (nodes[j] = CREATE(FE_node)(node_number, (FE_nodeset *)0,
-						template_node)))
+					nodes[j] = fe_nodeset->create_FE_node(node_number, node_template);
+					if (nodes[j])
 					{
 						/* set the coordinate and derivatives */
 						component = 0;
@@ -924,20 +927,8 @@ int create_FE_element_snake_from_data_points(
 						}
 						if (return_code)
 						{
-							if (fe_nodeset->merge_FE_node(nodes[j]))
-							{
-								if (nodeset_group)
-								{
-									cmzn_nodeset_group_add_node(nodeset_group, nodes[j]);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"create_FE_element_snake_from_data_points.  "
-									"Could not merge node into region");
-								return_code = 0;
-							}
+							if (nodeset_group)
+								cmzn_nodeset_group_add_node(nodeset_group, nodes[j]);
 						}
 					}
 					else
@@ -991,6 +982,9 @@ int create_FE_element_snake_from_data_points(
 						return_code = 0;
 					}
 				}
+				for (int j = 0; j <= number_of_elements; ++j)
+					DEACCESS(FE_node)(&nodes[j]);
+				DEALLOCATE(nodes);
 			}
 			else
 			{
@@ -999,18 +993,8 @@ int create_FE_element_snake_from_data_points(
 					"Could not allocate nodes array");
 				return_code = 0;
 			}
-			if (nodes)
-			{
-				DEALLOCATE(nodes);
-			}
-			if (template_node)
-			{
-				DESTROY(FE_node)(&template_node);
-			}
-			if (element_template)
-			{
-				cmzn::Deaccess(element_template);
-			}
+			cmzn::Deaccess(node_template);
+			cmzn::Deaccess(element_template);
 			FE_region_end_change(fe_region);
 		}
 		if (fitting_field_values)

@@ -26,6 +26,7 @@
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #include <map>
 #include <vector>
 
@@ -832,9 +833,16 @@ public:
 
 	int mergeIntoElement(cmzn_element_id element)
 	{
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-		if (validate() && (fe_mesh))
-			return fe_mesh->merge_FE_element_template(element, this->fe_element_template);
+		FE_mesh *target_fe_mesh = FE_element_get_FE_mesh(element);
+		if (target_fe_mesh == this->fe_mesh)
+		{
+			if (this->validate())
+				return this->fe_mesh->merge_FE_element_template(element, this->fe_element_template);
+			else
+				display_message(ERROR_MESSAGE, "cmzn_element_merge.  Element template is not valid");
+		}
+		else
+			display_message(ERROR_MESSAGE, "cmzn_element_merge.  Incompatible template");
 		return CMZN_ERROR_ARGUMENT;
 	}
 
@@ -855,7 +863,7 @@ private:
 		FE_mesh::deaccess(this->fe_mesh);
 	}
 
-	FE_element_template *getElementTemplate() { return this->fe_element_template; }
+	FE_element_template *get_FE_element_template() { return this->fe_element_template; }
 
 	cmzn_element_field *getElementField(FE_field *fe_field)
 	{
@@ -951,7 +959,7 @@ public:
 		{
 			if (group)
 				FE_region_begin_change(this->fe_mesh->get_FE_region());
-			element = this->fe_mesh->create_FE_element(identifier, element_template->getElementTemplate());
+			element = this->fe_mesh->create_FE_element(identifier, element_template->get_FE_element_template());
 			if (group)
 			{
 				Computed_field_element_group_core_cast(group)->addObject(element);
@@ -990,8 +998,8 @@ public:
 
 	int destroyElement(cmzn_element_id element)
 	{
-		if (containsElement(element))
-			return this->fe_mesh->remove_FE_element(element);
+		if (this->containsElement(element))
+			return this->fe_mesh->destroyElement(element);
 		return 0;
 	}
 
@@ -2024,7 +2032,7 @@ int cmzn_meshchanges::deaccess(cmzn_meshchanges* &meshchanges)
 // Note: internal and external flags have same numerical values
 cmzn_element_change_flags cmzn_meshchanges::getElementChangeFlags(cmzn_element *element)
 {
-	int change = CMZN_ELEMENT_CHANGE_FLAG_NONE;
+	cmzn_element_change_flags change = CMZN_ELEMENT_CHANGE_FLAG_NONE;
 	if (element)
 	{
 		if (this->changeLog->isIndexChange(get_FE_element_index(element)))

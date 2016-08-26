@@ -17,6 +17,7 @@ elements.
 
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
