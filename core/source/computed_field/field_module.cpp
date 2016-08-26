@@ -353,8 +353,7 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 {
 	if (!fieldmodule)
 		return 0;
-	MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(fieldmodule->region);
-	return Computed_field_manager_create_iterator(manager);
+	return cmzn_region_create_fielditerator(fieldmodule->region);
 }
 
 cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(

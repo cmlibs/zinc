@@ -750,10 +750,8 @@ basis type, however every element type will be converted to a cubic.
 
 				node_field_creator = CREATE(FE_node_field_creator)(
 						 /*number_of_components*/3);
-				FE_node *template_node = CREATE(FE_node)(/*node_number*/0,
-					get_data->destination_fe_nodeset, (struct FE_node *)NULL);
-				ACCESS(FE_node)(template_node);
-				if (!define_FE_field_at_node(template_node, get_data->fe_field,
+				FE_node_template *node_template = get_data->destination_fe_nodeset->create_FE_node_template();
+				if (!(node_template) || !define_FE_field_at_node(node_template->get_template_node(), get_data->fe_field,
 					(struct FE_time_sequence *)NULL, node_field_creator))
 				{
 					display_message(ERROR_MESSAGE,
@@ -764,7 +762,7 @@ basis type, however every element type will be converted to a cubic.
 				DESTROY(FE_node_field_creator)(&(node_field_creator));
 				for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
 				{
-					get_data->nodes[i] = get_data->destination_fe_nodeset->create_FE_node_copy(-1, template_node);
+					get_data->nodes[i] = get_data->destination_fe_nodeset->create_FE_node(-1, node_template);
 					if (get_data->nodes[i] == NULL)
 					{
 						display_message(ERROR_MESSAGE,
@@ -773,7 +771,7 @@ basis type, however every element type will be converted to a cubic.
 						return_code = 0;
 					}
 				}
-				DEACCESS(FE_node)(&template_node);
+				cmzn::Deaccess(node_template);
 				if (return_code)
 				{
 					int shape_type[3] = { LINE_SHAPE, 0, LINE_SHAPE };

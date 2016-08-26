@@ -3415,7 +3415,7 @@ struct FE_element_as_graphics_name_has_changed_data
 {
 	FE_mesh *fe_mesh;
 	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct CHANGE_LOG(FE_node) *nodeChanges;
+	DsLabelsChangeLog *nodeChangeLog;
 };
 
 /**
@@ -3430,7 +3430,7 @@ int FE_element_as_graphics_name_has_changed(int index, void *data_void)
 	if (elementIdentifier < 0)
 		return 1; // element removed
 	FE_element *element = data->fe_mesh->getElement(index);
-	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChanges))
+	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChangeLog))
 		return 1;
 	return 0;
 }
@@ -3464,17 +3464,12 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				return 1;
 			}
 			// rebuild all if identifiers changed, for correct picking and editing graphics object
-			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
+			DsLabelsChangeLog *nodeChangeLog = feRegionChanges->getNodeChangeLog(graphics->domain_type);
 			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
-			if (nodeChanges)
+			if ((nodeChangeLog) && (nodeChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
 			{
-				int nodeChangeSummary = 0;
-				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(nodeChanges, &nodeChangeSummary);
-				if (nodeChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))
-				{
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-					return 1;
-				}
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
 			}
 		}
 		else
@@ -3492,7 +3487,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				// be updated. However, since renumbering is not common, it's not worth the
 				// complexity of checking such a field is being used, so always partial update.
 				// Also for the future this allows us to send an identifiers all-change
-				// message if reclaimed memory frpm DsLabels and DsMap (all indexes changed).
+				// message if reclaimed memory from DsLabels and maps (all indexes changed).
 				DsLabelsChangeLog *elementChanges = feRegionChanges->getElementChangeLog(domainDimension);
 				if ((elementChanges) && (elementChanges->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
 					partialUpdate = true;
@@ -3505,9 +3500,8 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
-				int numberNodeChanges = 0;
-				struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
-				CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(nodeChanges, &numberNodeChanges);
+				DsLabelsChangeLog *nodeChangeLog = feRegionChanges->getNodeChangeLog(CMZN_FIELD_DOMAIN_TYPE_NODES);
+				const int numberNodeChanges = nodeChangeLog->getChangeCount();
 				// must check equal and higher dimension element changes due to field inheritance
 				bool tooManyElementChanges = false;
 				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
@@ -3527,7 +3521,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
 				// if too many node or element changes, just rebuild all
 				if (tooManyElementChanges ||
-					(numberNodeChanges*2 > fe_nodeset->get_number_of_FE_nodes()))
+					(numberNodeChanges*2 > fe_nodeset->getSize()))
 				{
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
@@ -3537,7 +3531,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
 				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 					data.elementChangeLogs[dim] = feRegionChanges->getElementChangeLog(dim + 1);
-				data.nodeChanges = nodeChanges;
+				data.nodeChangeLog = nodeChangeLog;
 				/* partial rebuild for few node/element field changes */
 				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
 					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));

@@ -187,7 +187,6 @@ Global functions
 ----------------
 */
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
-/*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);

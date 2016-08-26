@@ -324,15 +324,10 @@ PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene);
 
 PROTOTYPE_ANY_OBJECT(cmzn_scene);
 
-
-
 /***************************************************************************//**
  * Remove selection groups from scene tree if they are empty.
  */
 void cmzn_scene_flush_tree_selections(cmzn_scene_id scene);
-
-int cmzn_scene_create_node_list_selection(cmzn_scene_id scene,
-	struct LIST(FE_node) *node_list);
 
 /***************************************************************************//**
  * Set default graphics attributes depending on type, e.g. tessellation,

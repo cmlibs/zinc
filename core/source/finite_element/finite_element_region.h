@@ -39,9 +39,9 @@ class DsLabelsChangeLog;
  */
 class FE_region_changes
 {
-	struct CHANGE_LOG(FE_node) *fe_node_changes[2];
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
 	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	DsLabelsChangeLog *nodeChangeLogs[2]; // nodes and datapoints
 	int access_count;
 
 	FE_region_changes(struct FE_region *fe_region);
@@ -85,12 +85,12 @@ public:
 		return this->fe_field_changes;
 	}
 
-	struct CHANGE_LOG(FE_node) *getNodeChanges(cmzn_field_domain_type domainType)
+	DsLabelsChangeLog *getNodeChangeLog(cmzn_field_domain_type domainType)
 	{
 		if (CMZN_FIELD_DOMAIN_TYPE_NODES == domainType)
-			return this->fe_node_changes[0];
+			return this->nodeChangeLogs[0];
 		if (CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == domainType)
-			return this->fe_node_changes[1];
+			return this->nodeChangeLogs[1];
 		return 0;
 	}
 

@@ -29,6 +29,9 @@ extern "C" {
  */
 enum cmzn_result
 {
+	CMZN_RESULT_ERROR_IN_USE = -8,
+		/*!< Operation failed or partially completed due to object(s) being in use.
+		 * e.g. returned when attempting to destroy node in use by elements */
 	CMZN_RESULT_ERROR_ARGUMENT_CONTEXT = -7,
 		/*!< An argument is from a different Zinc context */
 	CMZN_RESULT_ERROR_NOT_IMPLEMENTED = -6,
