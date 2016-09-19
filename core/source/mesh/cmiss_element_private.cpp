@@ -277,7 +277,7 @@ public:
 				if (!(Standard_node_to_element_map_set_nodal_value_type(
 						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(valueNumber + FE_NODAL_VALUE)) &&
 					Standard_node_to_element_map_set_nodal_version(
-						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(1)) &&
+						standard_node_map, valueNumber, 1) &&
 					Standard_node_to_element_map_set_scale_factor_index(
 						standard_node_map, valueNumber, /*no_scale_factor*/-1)))
 				{
@@ -1523,6 +1523,13 @@ int cmzn_elementbasis_destroy(cmzn_elementbasis_id *element_basis_address)
 	if (element_basis_address)
 		return cmzn_elementbasis::deaccess(*element_basis_address);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+FE_basis *cmzn_elementbasis_get_FE_basis(cmzn_elementbasis_id elementbasis)
+{
+	if (elementbasis)
+		return elementbasis->getFeBasis();
+	return 0;
 }
 
 int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis)

@@ -46,12 +46,12 @@ int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
 
 /** Internal use only
- * @return non-accessed fe_region for this mesh.
+ * @return non-accessed FE_mesh for this mesh.
  */
 FE_mesh *cmzn_mesh_get_FE_mesh_internal(cmzn_mesh_id mesh);
 
 /** Internal use only
- * @return non-accessed fe_region for this mesh.
+ * @return non-accessed FE_region for this mesh.
  */
 FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
 
@@ -114,5 +114,12 @@ public:
  */
 cmzn_mesh_group_id cmzn_fieldmodule_create_mesh_group_from_name_internal(
 	cmzn_fieldmodule_id field_module, const char *mesh_group_name);
+
+/**
+ * Internal function for getting the FE_basis for elementbasis in its
+ * current state.
+ * @return  Accessed FE_basis on success, 0 on failure.
+ */
+FE_basis *cmzn_elementbasis_get_FE_basis(cmzn_elementbasis_id elementbasis);
 
 #endif /* !defined (CMZN_ELEMENT_PRIVATE_HPP) */

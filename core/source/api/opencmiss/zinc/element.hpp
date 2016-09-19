@@ -147,6 +147,17 @@ public:
 		}
 	}
 
+	Element& operator=(const Element& element)
+	{
+		cmzn_element_id temp_id = cmzn_element_access(element.id);
+		if (0 != id)
+		{
+			cmzn_element_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
 	bool isValid() const
 	{
 		return (0 != id);
@@ -184,16 +195,21 @@ public:
 		FACE_TYPE_XI3_1 = CMZN_ELEMENT_FACE_TYPE_XI3_1
 	};
 
-	Element& operator=(const Element& element)
+	enum ParameterMappingMode
 	{
-		cmzn_element_id temp_id = cmzn_element_access(element.id);
-		if (0 != id)
-		{
-			cmzn_element_destroy(&id);
-		}
-		id = temp_id;
-		return *this;
-	}
+		PARAMETER_MAPPING_MODE_INVALID = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID,
+		PARAMETER_MAPPING_MODE_CONSTANT = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_CONSTANT,
+		PARAMETER_MAPPING_MODE_ELEMENT = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT,
+		PARAMETER_MAPPING_MODE_NODE = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE
+	};
+
+	enum ScaleFactorType
+	{
+		SCALE_FACTOR_TYPE_INVALID = CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID,
+		SCALE_FACTOR_TYPE_GLOBAL_GENERAL = CMZN_ELEMENT_SCALE_FACTOR_TYPE_GLOBAL_GENERAL,
+		SCALE_FACTOR_TYPE_LOCAL_GENERAL = CMZN_ELEMENT_SCALE_FACTOR_TYPE_LOCAL_GENERAL,
+		SCALE_FACTOR_TYPE_LOCAL_PATCH = CMZN_ELEMENT_SCALE_FACTOR_TYPE_LOCAL_PATCH
+	};
 
 	enum ShapeType
 	{
@@ -260,6 +276,154 @@ inline bool operator==(const Element& a, const Element& b)
 {
 	return a.getId() == b.getId();
 }
+
+
+class Elementfieldtemplate
+{
+private:
+
+	cmzn_elementfieldtemplate_id id;
+
+public:
+
+	Elementfieldtemplate() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Elementfieldtemplate(cmzn_elementfieldtemplate_id elementfieldtemplate_id) :
+		id(elementfieldtemplate_id)
+	{ }
+
+	Elementfieldtemplate(const Elementfieldtemplate& elementfieldtemplate) :
+		id(cmzn_elementfieldtemplate_access(elementfieldtemplate.id))
+	{ }
+
+	Elementfieldtemplate& operator=(const Elementfieldtemplate& elementfieldemplate)
+	{
+		cmzn_elementfieldtemplate_id temp_id = cmzn_elementfieldtemplate_access(elementfieldemplate.id);
+		if (0 != id)
+			cmzn_elementfieldtemplate_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Elementfieldtemplate()
+	{
+		cmzn_elementfieldtemplate_destroy(&id);
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_elementfieldtemplate_id getId() const
+	{
+		return id;
+	}
+
+	Element::ParameterMappingMode getElementParameterMappingMode() const
+	{
+		return static_cast<Element::ParameterMappingMode>(cmzn_elementfieldtemplate_get_element_parameter_mapping_mode(id));
+	}
+
+	int setElementParameterMappingMode(Element::ParameterMappingMode mode)
+	{
+		return cmzn_elementfieldtemplate_set_element_parameter_mapping_mode(id,
+			static_cast<cmzn_element_parameter_mapping_mode>(mode));
+	}
+
+	Element::ScaleFactorType getElementScaleFactorType(int localIndex) const
+	{
+		return static_cast<Element::ScaleFactorType>(
+			cmzn_elementfieldtemplate_get_element_scale_factor_type(id, localIndex));
+	}
+
+	int setElementScaleFactorType(int localIndex, Element::ScaleFactorType type)
+	{
+		return cmzn_elementfieldtemplate_set_element_scale_factor_type(id,
+			localIndex, static_cast<cmzn_element_scale_factor_type>(type));
+	}
+
+	int getElementScaleFactorVersion(int localIndex) const
+	{
+		return static_cast<Element::ScaleFactorType>(
+			cmzn_elementfieldtemplate_get_element_scale_factor_version(id, localIndex));
+	}
+
+	int setElementScaleFactorVersion(int localIndex, int version)
+	{
+		return cmzn_elementfieldtemplate_set_element_scale_factor_version(id, localIndex, version);
+	}
+
+	int getFunctionNumberOfTerms(int functionNumber) const
+	{
+		return cmzn_elementfieldtemplate_get_function_number_of_terms(id, functionNumber);
+	}
+
+	int setFunctionNumberOfTerms(int functionNumber, int newNumberOfTerms)
+	{
+		return cmzn_elementfieldtemplate_set_function_number_of_terms(id, functionNumber, newNumberOfTerms);
+	}
+
+	int getNumberOfFunctions() const
+	{
+		return cmzn_elementfieldtemplate_get_number_of_functions(id);
+	}
+
+	int getNumberOfLocalNodes() const
+	{
+		return cmzn_elementfieldtemplate_get_number_of_local_nodes(id);
+	}
+
+	int setNumberOfLocalNodes(int number)
+	{
+		return cmzn_elementfieldtemplate_set_number_of_local_nodes(id, number);
+	}
+
+	int getNumberOfLocalScaleFactors() const
+	{
+		return cmzn_elementfieldtemplate_get_number_of_local_scale_factors(id);
+	}
+
+	int setNumberOfLocalScaleFactors(int number)
+	{
+		return cmzn_elementfieldtemplate_set_number_of_local_scale_factors(id, number);
+	}
+
+	int getTermLocalNodeIndex(int functionNumber, int term) const
+	{
+		return cmzn_elementfieldtemplate_get_term_local_node_index(id, functionNumber, term);
+	}
+
+	Node::ValueLabel getTermNodeValueLabel(int functionNumber, int term) const
+	{
+		return static_cast<Node::ValueLabel>(cmzn_elementfieldtemplate_get_term_node_value_label(id, functionNumber, term));
+	}
+
+	int getTermNodeVersion(int functionNumber, int term) const
+	{
+		return cmzn_elementfieldtemplate_get_term_node_version(id, functionNumber, term);
+	}
+
+	int setTermNodeParameter(int functionNumber, int term, int localNodeIndex, Node::ValueLabel nodeValueLabel, int version)
+	{
+		return cmzn_elementfieldtemplate_set_term_node_parameter(id, functionNumber, term,
+			localNodeIndex, static_cast<cmzn_node_value_label>(nodeValueLabel), version);
+	}
+
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const
+	{
+		return cmzn_elementfieldtemplate_get_term_scaling(id, functionNumber, term, indexesCount, indexes);
+	}
+
+	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes)
+	{
+		return cmzn_elementfieldtemplate_set_term_scaling(id, functionNumber, term, indexesCount, indexes);
+	}
+
+};
+
 
 class Elementtemplate
 {
@@ -474,6 +638,11 @@ public:
 	bool containsElement(const Element& element)
 	{
 		return cmzn_mesh_contains_element(id, element.getId());
+	}
+
+	Elementfieldtemplate createElementfieldtemplate(const Elementbasis& basis)
+	{
+		return Elementfieldtemplate(cmzn_mesh_create_elementfieldtemplate(id, basis.getId()));
 	}
 
 	Elementtemplate createElementtemplate()

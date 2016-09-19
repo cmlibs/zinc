@@ -143,6 +143,28 @@ ZINC_API bool cmzn_mesh_contains_element(cmzn_mesh_id mesh,
 	cmzn_element_id element);
 
 /**
+ * Create an element field template to describe parameter mapping and
+ * interpolation of a scalar field / field component over elements of the mesh.
+ * The new template defaults to NODE parameter mapping mode, with the standard
+ * number of nodes for the element basis. For Lagrange, simplex and constant
+ * basis function types there are as many nodes as basis functions and the
+ * single parameter per node has VALUE label. For Hermite bases with multiple
+ * functions per node, default parameters are expected in numerical order of
+ * the node value label e.g. for bicubic Hermite the first four functions are
+ * for the first node and expected in order: VALUE D_DS1 D_DS2 D2_DS1DS2.
+ * By default, versions are initialised to 1, and no scaling is used.
+ * In all cases local nodes cycle fastest in lowest element xi direction.
+ *
+ * @param mesh  Handle to the mesh the template works with.
+ * @param elementbasis  The element basis which will be used for interpolation,
+ * which must have the same dimension as the mesh.
+ * @return  Handle to new element field template, or NULL/invalid handle on
+ * failure.
+ */
+ZINC_API cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(
+	cmzn_mesh_id mesh, cmzn_elementbasis_id elementbasis);
+
+/**
  * Create a blank template from which new elements can be created in this mesh.
  * Also used for defining new fields over elements.
  *
@@ -522,16 +544,310 @@ ZINC_API cmzn_element_id cmzn_elementiterator_next(
 	cmzn_elementiterator_id element_iterator);
 
 /**
+ * Returns a new handle to the element field template with reference count
+ * incremented.
+ *
+ * @param elementfieldtemplate  The element field template to obtain a new
+ * handle to.
+ * @return  New handle to element template, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_elementfieldtemplate_id cmzn_elementfieldtemplate_access(
+	cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Destroys this handle to the element field template and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param elementfieldtemplate_address  Address of handle to element field
+ * template to destroy.
+ * @return Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_destroy(
+	cmzn_elementfieldtemplate_id *elementfieldtemplate_address);
+
+/**
+ * Get the parameter mapping mode used for all parameters in the template.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  The parameter mapping mode or INVALID on error.
+ */
+ZINC_API enum cmzn_element_parameter_mapping_mode
+	cmzn_elementfieldtemplate_get_element_parameter_mapping_mode(
+		cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Set the parameter mapping mode used for all parameters in the template.
+ * A current restriction is that all parameters are mapped by NODE, ELEMENT
+ * or CONSTANT.
+ * Note this resets the mapping to the default for the given mapping mode:
+ * one term per basis function with no scaling hence should be the first
+ * setting changed.
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param mode  The parameter mapping mode to set.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_element_parameter_mapping_mode(
+	cmzn_elementfieldtemplate_id elementfieldtemplate,
+	enum cmzn_element_parameter_mapping_mode mode);
+
+/**
+ * Get the type of scale factor required for the local scale factor index.
+ * Used to match common scale factors when merging different fields.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localIndex  The local scale factor index from 1 to number of local
+ * scale factors.
+ * @return  The element scale factor type, or INVALID on error.
+ */
+ZINC_API enum cmzn_element_scale_factor_type
+	cmzn_elementfieldtemplate_get_element_scale_factor_type(
+		cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex);
+
+/**
+ * Set the type of scale factor required for the local scale factor index.
+ * Used to match common scale factors when merging different fields.
+ * Global scale factors are matched by location (e.g. global node),
+ * DOF type (e.g. node value label / derivative) this scale factor type
+ * and scale factor version.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localIndex  The local scale factor index from 1 to number of local
+ * scale factors.
+ * @param type  The element scale factor type.
+ * @return Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_element_scale_factor_type(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
+	enum cmzn_element_scale_factor_type type);
+
+/**
+ * Get the version of scale factor required for the local scale factor index.
+ * Used to match common scale factors when merging different fields.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localIndex  The local scale factor index from 1 to number of local
+ * scale factors.
+ * @return  The element scale factor version number >= 1, or 0 if invalid or
+ * error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_element_scale_factor_version(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex);
+
+/**
+ * Set the version of scale factor required for the local scale factor index.
+ * Used to match common scale factors when merging different fields. After
+ * location (e.g. global node), DOF type (e.g. node value label / derivative)
+ * and scale factor type match, the scale factor version gives a simple
+ * extra numbering scheme for distinguishing different scale factors.
+ * New local scale factors default to version 1.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localIndex  The local scale factor index from 1 to number of local
+ * scale factors.
+ * @param version  The version number >= 1.
+ * @return Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_element_scale_factor_version(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
+	int version);
+
+/**
+ * Get the number of terms that are summed to give the element parameter weighting
+ * the given function number.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @return  Number of terms >= 0, or -1 if invalid function number.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_function_number_of_terms(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber);
+
+/**
+ * Set the number of terms that are summed to give the element parameter
+ * weighting the given basis function number. Currently only supported for node
+ * mapping - other parameter mapping modes are fixed at 1 term.
+ * If reducing number, existing mappings for higher terms are discarded.
+ * If increasing number, new mappings must be completely specified by
+ * subsequent calls; new mappings are unscaled by default.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param newNumberOfTerms  New number of terms to be summed, >= 0.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_function_number_of_terms(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int newNumberOfTerms);
+
+/**
+ * Get the number of basis functions in the element basis used by the template.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  The number of basis functions, 0 on error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_number_of_functions(
+	cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Get the number of local nodes this element field template uses.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  The number of local nodes, or 0 if not node parameter mapping.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_number_of_local_nodes(
+	cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Set the number of local nodes this element field template uses. If reducing
+ * number, template is only valid once all indexes are in the range [1..number].
+ * Only valid in node mapping mode.
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param number  The number of local nodes to set, > 0.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_number_of_local_nodes(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int number);
+
+/**
+ * Get the number of local scale factors this element field template uses.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  The number of local scale factors, 0 if none or error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_number_of_local_scale_factors(
+	cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Set the number of local scale factors this element field template uses.
+ * If reducing number, template is only valid once all indexes are in the range
+ * [1..number]. Only valid in node mapping mode.
+ * New local scale factors default to type LOCAL_GENERAL, version 1.
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param number  The number of local scale factors to set, >= 0.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_number_of_local_scale_factors(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int number);
+
+/**
+ * Get the local node index from which a node parameter is extracted for the
+ * given term for the function number. For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @return  The local node index from 1 to number of local nodes, or 0 if
+ * invalid or error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_term_local_node_index(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term);
+
+/**
+ * Get the node parameter value label mapped to the given term for the function
+ * number. For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @return  The node value label, or INVALID if invalid or error.
+ */
+ZINC_API enum cmzn_node_value_label cmzn_elementfieldtemplate_get_term_node_value_label(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term);
+
+/**
+ * Get the node parameter version mapped to the given term for the function
+ * number. For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @return  The node parameter version >= 1, or 0 if invalid or error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_term_node_version(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term);
+
+/**
+ * Set the node parameter mapped to the given term for the function number, via
+ * the local node index, node value label and node parameter version.
+ * For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @param localNodeIndex  The local node index from 1 to number of local nodes.
+ * @param valueLabel  The node parameter value label.
+ * @param version  The node parameter version >= 1.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_term_node_parameter(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term, int localNodeIndex, cmzn_node_value_label valueLabel, int version);
+
+/**
+ * Get the number and local indexes of scale factors multiplying the given term
+ * for the function number. For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @param indexesCount  The size of the indexes array; can be more or less than
+ * the number of indexes in use.
+ * @param indexes  Array to store indexesCount indexes. Can be NULL if
+ * indexesCount is zero.
+ * @return  The actual number of scaling indexes >= 0 for term, or -1 on error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_term_scaling(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term, int indexesCount, int *indexes);
+
+/**
+ * Set scaling of the function term by the product of scale factors at the
+ * given local scale factor indexes.
+ * Must have set positive number of local scale factors before calling.
+ * For parameter mapping mode NODE only.
+ * \note PROTOTYPE
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param functionNumber  Basis function number from 1 to number of functions.
+ * @param term  The term number, from 1 to function number of terms.
+ * @param indexesCount  The size of the indexes array; can be more or less than
+ * the number of indexes in use.
+ * @param indexes  Array of indexesCount indexes, each from 1 to number of
+ * local scale factors. Can be NULL if indexesCount is zero.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_term_scaling(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
+	int term, int indexesCount, const int *indexes);
+
+/**
  * Returns a new handle to the element template with reference count incremented.
  *
- * @param mesh  The element template to obtain a new handle to.
+ * @param elementtemplate  The element template to obtain a new handle to.
  * @return  New handle to element template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementtemplate_id cmzn_elementtemplate_access(
-	cmzn_elementtemplate_id element_template);
+	cmzn_elementtemplate_id elementtemplate);
 
 /**
- * Destroys this handle to the element_template and sets it to NULL.
+ * Destroys this handle to the element template and sets it to NULL.
  * Internally this decrements the reference count.
  *
  * @param element_template_address  Address of handle to element_template
