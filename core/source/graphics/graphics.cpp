@@ -4701,8 +4701,7 @@ int cmzn_graphics_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphics->isoscalar_field && Computed_field_has_multiple_times(
-			graphics->isoscalar_field))
+		if (cmzn_graphics_isoscalar_field_is_time_dependent(graphics))
 		{
 			time_dependent = 1;
 		}
@@ -4720,8 +4719,7 @@ int cmzn_graphics_update_time_behaviour(
 		{
 			time_dependent = 1;
 		}
-		if (graphics->subgroup_field &&
-			Computed_field_has_multiple_times(graphics->subgroup_field))
+		if (cmzn_graphics_subgroup_field_is_time_dependent(graphics))
 		{
 			time_dependent = 1;
 		}
@@ -6810,3 +6808,24 @@ bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics)
 	return false;
 }
 
+bool cmzn_graphics_subgroup_field_is_time_dependent(cmzn_graphics_id graphics)
+{
+	if (graphics && graphics->subgroup_field &&
+		Computed_field_has_multiple_times(graphics->subgroup_field))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool cmzn_graphics_isoscalar_field_is_time_dependent(cmzn_graphics_id graphics)
+{
+	if (graphics && graphics->isoscalar_field && Computed_field_has_multiple_times(
+	graphics->isoscalar_field))
+	{
+		return true;
+	}
+
+	return false;
+}

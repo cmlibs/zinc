@@ -65,6 +65,8 @@ int rgb_to_hex(float r, float g, float b)
 
 Threejs_export::~Threejs_export()
 {
+	if (groupName)
+		DEALLOCATE(groupName);
 	DEALLOCATE(filename);
 }
 
