@@ -18,6 +18,56 @@ option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
 set(ZINC_MODULE_PATH CACHE STRING "List of directories to search for CMake modules.")
 
+function(git_get_revision VARNAME)
+    if (NOT GIT_FOUND)
+        message(FATAL_ERROR "Cannot use git_get_revision: Git was not found.")
+    endif()
+    
+    cmake_parse_arguments(GIT "SHORT" "WORKING_DIRECTORY;GIT_OPTIONS" "" ${ARGN})
+    
+    if(NOT GIT_WORKING_DIRECTORY OR "${GIT_WORKING_DIRECTORY}" STREQUAL "")
+        set(GIT_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse ${GIT_OPTIONS} --verify -q HEAD
+        OUTPUT_VARIABLE RES
+        ERROR_VARIABLE ERR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY ${GIT_WORKING_DIRECTORY})
+    set(${VARNAME} ${RES} PARENT_SCOPE)
+    if (ERR)
+        message(WARNING "Issuing Git command '${GIT_EXECUTABLE} rev-parse --verify -q HEAD' failed: ${ERR}")
+    endif()
+endfunction()
+
+function(get_library_path OUTPUT_VARIABLE)
+    if (WIN32)
+        set(PSEP "\\;")
+        #set(HAVE_MULTICONFIG_ENV YES)
+        set(LD_VARNAME "PATH")
+    elseif(APPLE)
+        set(LD_VARNAME "DYLD_LIBRARY_PATH")
+        set(PSEP ":")
+    elseif(UNIX)
+        set(LD_VARNAME "LD_LIBRARY_PATH")
+        set(PSEP ":")
+    else()
+        message(WARNING "get_library_path not implemented for '${CMAKE_HOST_SYSTEM}'")
+    endif()
+    # Load system environment - on windows its separated by semicolon, so we need to protect those 
+    string(REPLACE ";" "\\;" LD_PATH "$ENV{${LD_VARNAME}}")
+    foreach(_PATH ${ARGN})
+        # For now: We dont have /Release or /Debug subfolders in any installed/packaged structure.
+        #if (HAVE_MULTICONFIG_ENV)
+        #    file(TO_NATIVE_PATH "${_PATH}/$<CONFIG>" _PATH)
+        #else()
+            file(TO_NATIVE_PATH "${_PATH}" _PATH)
+        #endif()
+        set(LD_PATH "${_PATH}${PSEP}${LD_PATH}")
+    endforeach()
+    set(${OUTPUT_VARIABLE} "${LD_VARNAME}=${LD_PATH}" PARENT_SCOPE)
+endfunction()
+
+
 list(INSERT ZINC_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_MODULE_PATH ${ZINC_MODULE_PATH})
@@ -162,7 +212,8 @@ endif()
 
 if(ZINC_USE_ITK )
     find_package(ITK ${ITK_VERSION} CONFIG REQUIRED)
-    list(APPEND DEPENDENT_LIBS itk)
+    list(APPEND DEPENDENT_LIBS  ${ITK_LIBRARIES})
+    include_directories(${ITK_INCLUDE_DIRS})
 endif()
 
 #if(ZINC_USE_OCE )
@@ -387,3 +438,6 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 	message(STATUS "=====================================================")
 	message(STATUS "")
 endif()
+
+
+
