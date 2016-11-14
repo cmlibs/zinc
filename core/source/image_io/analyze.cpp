@@ -345,7 +345,6 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 			DESTROY(Cmgui_image)(&cmgui_image);
 			cmgui_image = 0;
 		}
-		DestroyExceptionInfo(magick_exception);
 	}
 #else
 	display_message(ERROR_MESSAGE, "Analyze image handler not implemented for this version.");
