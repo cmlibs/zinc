@@ -900,7 +900,7 @@ private:
 				}
 			}
 			
-			bool set_object(owner_type &owner, BTreeNode *root_node, object_type object)
+			bool set_object(const owner_type &owner, BTreeNode *root_node, object_type object)
 			{
 				if (object == invalid_object)
 				{
@@ -964,11 +964,11 @@ public:
 	 */
 	struct ext_iterator
 	{
-		cmzn_btree_index *container; // non-accessed pointer to owning btree, cleared if container destroyed
+		const cmzn_btree_index *container; // non-accessed pointer to owning btree, cleared if container destroyed
 		int_iterator iter;
 		ext_iterator *next_iterator; // for linked list of active_iterators in btree to invalidate on change
 
-		ext_iterator(cmzn_btree_index *container) :
+		ext_iterator(const cmzn_btree_index *container) :
 			container(container),
 			iter(container->index),
 			next_iterator(0)
@@ -987,7 +987,7 @@ public:
 			return *iter;
 		}
 
-		bool set_object(owner_type &owner, object_type object)
+		bool set_object(const owner_type &owner, object_type object)
 		{
 			if (container)
 				return this->iter.set_object(owner, container->index, object);
@@ -1020,7 +1020,7 @@ private:
 	int access_count;
 	mutable cmzn_btree_index *next, *prev; // linked list of related sets
 	object_type temp_removed_object; // removed while changing identifier
-	ext_iterator *active_iterators; // linked-list of iterators to invalidate if btree is modified or destroyed
+	mutable ext_iterator *active_iterators; // linked-list of iterators to invalidate if btree is modified or destroyed
 
 public:
 
@@ -1074,13 +1074,13 @@ public:
 		next->prev = prev;
 	}
 
-	void addIterator(ext_iterator *iter)
+	void addIterator(ext_iterator *iter) const
 	{
 		iter->next_iterator = active_iterators;
 		active_iterators = iter;
 	}
 
-	void removeIterator(ext_iterator *iter)
+	void removeIterator(ext_iterator *iter) const
 	{
 		ext_iterator *tmp = active_iterators;
 		ext_iterator **prev_address = &active_iterators;

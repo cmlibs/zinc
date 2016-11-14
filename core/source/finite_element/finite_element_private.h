@@ -48,27 +48,6 @@ FE_node structures.
 
 DECLARE_LIST_TYPES(FE_node_field_info);
 
-struct FE_element_field;
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Forward declaration since passed to FE_region functions for finding and
-reusing FE_element_field_info.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(FE_element_field);
-
-struct FE_element_field_info;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-The element fields defined on an element and how to calculate them.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(FE_element_field_info);
-
 struct FE_element_type_node_sequence_identifier;
 /*******************************************************************************
 LAST MODIFIED : 13 February 2003
@@ -168,6 +147,73 @@ struct CHANGE_LOG(FE_field) pointed to by <fe_field_change_log_void>.
 ???RC Later may wish to allow more than just RELATED_OBJECT_CHANGED, or have
 separate functions for each type.
 ==============================================================================*/
+
+/**
+ * Specifies how to find the value and derivatives for a field component at a
+ * node. This only appears as part of a FE_node_field.
+ * Public only to allow efficient conversion of legacy node DOF indexes.
+ * @see FE_mesh::checkConvertLegacyNodeParameters
+ */
+struct FE_node_field_component
+{
+	/* the offset for the global value within the list of all global values and
+		derivatives at the node */
+	int value;
+	/* the number of global derivatives.  NB The global derivatives are assumed to
+		follow directly after the global value in the list of all global values and
+		derivatives at the node */
+	int number_of_derivatives;
+	/* the number of versions at the node.  Different fields may use different
+		versions eg if the node is on the axis in prolate spheroidal coordinates
+		(mu=0 or mu=pi).  NB The different versions are assumed to follow directly
+		after each other (only need one starting <value>) and to have the same
+		<number_of derivatives> */
+	int number_of_versions;
+	/* the types the nodal values */
+	enum FE_nodal_value_type *nodal_value_types;
+
+	/** @param dofIndex  Legacy index of parameter at node. From 0 to number of DOFs at node - 1.
+	  * @param valueType  On success, contains the value type of the DOF index.
+	  * @param version  On success, contains the version of the DOF index.
+	  * @return  True on success, 0 if failed. */
+	bool convertLegacyDOFIndexToValueTypeAndVersion(int dofIndex, FE_nodal_value_type &valueType, int &version) const
+	{
+		if (dofIndex < 0)
+			return false;
+		if (!this->nodal_value_types)
+			return false;
+		version = dofIndex / (this->number_of_derivatives + 1);
+		valueType = this->nodal_value_types[dofIndex % (this->number_of_derivatives + 1)];
+		if (version >= this->number_of_versions)
+			return false;
+		return true;
+	}
+};
+
+/**
+ * Describes storage of global values and derivatives for a field at a node.
+ * Public only to allow efficient conversion of legacy node DOF indexes.
+ * @see FE_mesh::checkConvertLegacyNodeParameters
+ */
+struct FE_node_field
+{
+	/* the field which this accesses values and derivatives for */
+	struct FE_field *field;
+	/* an array with <number_of_components> node field components */
+	struct FE_node_field_component *components;
+	/* the time dependence of all components below this point,
+	   if it is non-NULL then every value storage must be an array of
+	   values that matches this fe_time_sequence */
+	struct FE_time_sequence *time_sequence;
+	/* the number of structures that point to this node field.  The node field
+		cannot be destroyed while this is greater than 0 */
+	int access_count;
+
+	const FE_node_field_component *getComponent(int componentIndex) const
+	{
+		return &this->components[componentIndex];
+	}
+};
 
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field);
 
@@ -305,7 +351,6 @@ in <fe_field_change_log>.
 
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier);
 
-
 /**
  * Creates and returns a non-global node to be used as a template for
  * creating other nodes in the supplied mesh.
@@ -338,18 +383,6 @@ struct FE_node *create_FE_node_from_template(DsLabelIndex index, struct FE_node 
  */
 void FE_node_invalidate(struct FE_node *node);
 
-int set_FE_node_identifier(struct FE_node *node, int identifier);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Changes the identifier of <node> to <identifier>.
-Caution! Should only call for nodes that are NOT in indexed lists;
-Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-node is temporarily removed from all the indexed lists it is in and re-added
-afterwards. FE_region should be the only object that needs to call this.
-==============================================================================*/
-
 struct FE_node_field_info *FE_node_get_FE_node_field_info(struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 13 February 2003
@@ -370,6 +403,12 @@ describe the same data layout in the nodal values_storage!
 Private function only to be called by FE_region when merging FE_regions!
 ==============================================================================*/
 
+/** @param node  Not checked, must be valid.
+  * @param field  Not checked, must be valid.
+  * @return  Object giving definition of field on node, or 0 if not defined. */
+const FE_node_field *FE_node_get_FE_node_field(struct FE_node *node,
+	struct FE_field *field);
+
 /**
  * Merges the fields from <source> into <destination>. Existing fields in the
  * <destination> keep the same node field description as before with new field
@@ -379,182 +418,6 @@ Private function only to be called by FE_region when merging FE_regions!
  * Function is atomic; <destination> is unchanged if <source> cannot be merged.
  */
 int merge_FE_node(struct FE_node *destination, struct FE_node *source);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element_field);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field,field, \
-	struct FE_field *);
-
-/**
- * Returns a new FE_element_field list that is identical to <element_field_list>
- * except that it references equivalent same-name fields and scale factor sets
- * from <fe_mesh>.
- * It is an error if an equivalent FE_field is not found.
- */
-struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
-	struct LIST(FE_element_field) *element_field_list, FE_mesh *fe_mesh);
-
-/**
- * Creates a struct FE_element_field_info with a pointer to <fe_region> and a
- * copy of the <fe_element_field_list>.
- * Fails if more than one FE_element_field in the list references the same field.
- * If <fe_element_field_list> is omitted, an empty list is assumed.
- * Note:
- * This should only be called by FE_region functions, and the FE_region must be
- * its own master. The returned object is added to the list of
- * FE_element_field_info in the FE_region and is therefore owned by the FE_region.
- * It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
- * will clear before it is destroyed. If it becomes necessary to have other owners
- * of these objects, the common parts of it and FE_region should be extracted to a
- * common object.
- */
-struct FE_element_field_info *CREATE(FE_element_field_info)(
-	FE_mesh *fe_mesh,
-	struct LIST(FE_element_field) *fe_element_field_list);
-
-int DESTROY(FE_element_field_info)(
-	struct FE_element_field_info **fe_element_field_info_address);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Destroys the FE_element_field_info at *<element_field_info_address>. Frees the
-memory for the information and sets <*element_field_info_address> to NULL.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_element_field_info);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element_field_info);
-
-/**
- * Clears the pointer to FE_mesh in <element_field_info>.
- * Private function only to be called by ~FE_mesh.
- */
-int FE_element_field_info_clear_FE_mesh(
-	struct FE_element_field_info *element_field_info, void *dummy_void);
-
-int FE_element_field_info_has_FE_field(
-	struct FE_element_field_info *element_field_info, void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has an element field for <fe_field>.
-==============================================================================*/
-
-int FE_element_field_info_has_empty_FE_element_field_list(
-	struct FE_element_field_info *element_field_info, void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has no element fields.
-==============================================================================*/
-
-int FE_element_field_info_has_matching_FE_element_field_list(
-	struct FE_element_field_info *element_field_info,
-	void *element_field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has a FE_element_field_list containing all
-the same FE_element_fields as <element_field_list>.
-==============================================================================*/
-
-struct LIST(FE_element_field) *FE_element_field_info_get_element_field_list(
-	struct FE_element_field_info *fe_element_field_info);
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns the element field list contained in the <element_field_info>.
-==============================================================================*/
-
-/**
- * Creates and returns a non-global element to be used as a template for
- * creating other elements in the supplied mesh.
- * @param element_field_info  A struct FE_element_field_info linking to the
- * mesh. Should have no fields.
- * @return  Accessed element, or 0 on error. Do not merge into FE_mesh!
- */
-struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info);
-
-/**
- * Creates and returns a non-global element with the specified index,
- * that is a copy of the supplied template element i.e. with all fields
- * and values from it.
- * The returned element is ready to be added into the FE_mesh the
- * template element was created by.
- * Shape is not set for new element as mapped in mesh.
- * Faces are not copied from the template element.
- * @param index  Index of element in mesh, or DS_LABEL_INDEX_INVALID if used
- * as a non-global template element i.e. when called from
- * FE_element_template::FE_element_template().
- * @param template_element  Element to copy.
- * @return  Accessed element, or 0 on error.
- */
-struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE_element *template_element);
-
-/**
- * Clear content of element and disconnect it from owning mesh.
- * Use when removing element from mesh or deleting mesh to safely orphan any
- * externally accessed elements.
- */
-void FE_element_invalidate(struct FE_element *element);
-
-/**
- * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
- * <fe_field_change_log>.
- * @param recurseParents  Set to true to recursively mark parent element fields
- * as changed. This is only needed if element is being added or removed since
- * graphics built on mesh of element dimension may be affected due to using
- * inherited fields.
- */
-int FE_element_log_FE_field_changes(struct FE_element *element,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents);
-
-PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier);
-
-struct FE_element_field_info *FE_element_get_FE_element_field_info(
-	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns the FE_element_field_info from <element>. Must not be modified!
-==============================================================================*/
-
-int FE_element_set_FE_element_field_info(struct FE_element *element,
-	struct FE_element_field_info *fe_element_field_info);
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Changes the FE_element_field_info at <element> to <fe_element_field_info>.
-Note it is very important that the old and the new FE_element_field_info
-structures describe the same data layout in the element information!
-Private function only to be called by FE_region when merging FE_regions!
-==============================================================================*/
-
-/**
- * Check that each Standard_node_to_element_map used to define field has
- * node_value/version labels as well as offsets into component DOFs and if not
- * find them and check they are consistently used for all elements i.e. that
- * each use of the same array offset in an element refers to the same
- * node_value/version.
- * @param element_field_info  The FE_element_field_info to check against.
- * @param field  The FE_field to check/update.
- * @param target_fe_region  Optional FE_region where nodes and equivalent field
- * of same name can be found. Used if field not defined on node in same region.
- * @return  CMZN_OK if labels are complete and consistent, any other status if
- * failed. Failure can occur if nodal value labels are absent at the nodes, or
- * if the implementation discovers the same element field component uses the
- * same offsets for different nodal labels but is unable to fix it.
- */
-int FE_element_field_info_check_field_node_value_labels(
-	struct FE_element_field_info *element_field_info, FE_field *field,
-	struct FE_region *target_fe_region);
 
 /**
  * Create structure storing an element with its identifier being its cm_type

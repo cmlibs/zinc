@@ -64,11 +64,11 @@ class FE_nodeset
 	DsLabels labels; // node identifiers
 
 	// map labels -> FE_node (accessed)
-	block_array<DsLabelIndex, FE_node*, 128> fe_nodes;
+	block_array<DsLabelIndex, FE_node*> fe_nodes;
 
 	// number of element references to node, so can't destroy while in use
 	typedef unsigned short ElementUsageCountType; // internal use only
-	block_array<DsLabelIndex, ElementUsageCountType, 512> elementUsageCount;
+	block_array<DsLabelIndex, ElementUsageCountType> elementUsageCount;
 
 	struct LIST(FE_node_field_info) *node_field_info_list;
 	struct FE_node_field_info *last_fe_node_field_info;
@@ -84,6 +84,8 @@ class FE_nodeset
 	FE_nodeset(FE_region *fe_region);
 
 	~FE_nodeset();
+
+	void createChangeLog();
 
 	int remove_FE_node_private(struct FE_node *node);
 
@@ -157,8 +159,6 @@ public:
 	}
 
 	void clear();
-
-	void createChangeLog();
 
 	/** @return Accessed changes */
 	DsLabelsChangeLog *extractChangeLog();

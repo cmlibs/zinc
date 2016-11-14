@@ -2171,7 +2171,7 @@ expected to make the element have a finite size.
 			existing_element = curve->fe_mesh->findElementByIdentifier(i);
 			if (NULL != existing_element)
 			{
-				if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i + 1))
+				if (CMZN_OK != existing_element->setIdentifier(i + 1))
 				{
 					return_code=0;
 				}
@@ -2456,7 +2456,7 @@ at the other end of the element being deleted.
 				existing_element = curve->fe_mesh->findElementByIdentifier(i);
 				if (NULL != existing_element)
 				{
-					if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i - 1))
+					if (CMZN_OK != existing_element->setIdentifier(i - 1))
 					{
 						return_code=0;
 					}
@@ -4434,6 +4434,7 @@ struct Curve *create_Curve_from_file(const char *curve_name,
 						cmzn_region_destroy(&child_region);
 					}
 					/* now check mesh is appropriate for a Curve */
+					// GRC removed this overload:
 					curve->element_template = curve->fe_mesh->create_FE_element_template(
 						curve->fe_mesh->findElementByIdentifier(1));
 					if (NULL != curve->element_template)

@@ -52,7 +52,6 @@ const DsLabelIndex DS_LABEL_INDEX_UNALLOCATED = -2;
 class DsLabels;
 
 typedef cmzn_btree_index<DsLabels, DsLabelIndex, DsLabelIdentifier, DS_LABEL_INDEX_INVALID> DsLabelIdentifierToIndexMap;
-typedef cmzn_btree_index<DsLabels, DsLabelIndex, DsLabelIdentifier, DS_LABEL_INDEX_INVALID>::ext_iterator DsLabelIdentifierToIndexMapIterator;
 
 class DsLabelIterator;
 
@@ -74,7 +73,7 @@ class DsLabels : public cmzn::RefCounted
 
 	// linked-lists of active iterators, to invalidate when labels set changes
 	// including eventually when defragmenting memory
-	DsLabelIterator *activeIterators;
+	mutable DsLabelIterator *activeIterators;
 
 public:
 
@@ -158,6 +157,20 @@ public:
 
 	int setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier);
 
+	/** @return  True if index exists in label set, otherwise false. */
+	bool hasIndex(DsLabelIndex index) const
+	{
+		if ((0 <= index) && (index < this->indexSize))
+		{
+			if (this->contiguous)
+				return true;
+			DsLabelIdentifier identifier;
+			if (this->identifiers.getValue(index, identifier) && (identifier != DS_LABEL_IDENTIFIER_INVALID))
+				return true;
+		}
+		return false;
+	}
+
 	/**
 	 * Get first label index in set or DS_LABEL_INDEX_INVALID if none.
 	 * Currently returns index with the lowest identifier in set
@@ -169,9 +182,9 @@ public:
 	 * @param  condition  Boolean array which must be true for given index to include.
 	 * @return accessed iterator, or 0 if failed.
 	 */
-	DsLabelIterator *createLabelIterator(bool_array<DsLabelIndex> *condition = 0);
+	DsLabelIterator *createLabelIterator(bool_array<DsLabelIndex> *condition = 0) const;
 
-	void removeLabelIterator(DsLabelIterator *iterator); // only used by ~DsLabelIterator;
+	void removeLabelIterator(DsLabelIterator *iterator) const; // only used by ~DsLabelIterator;
 
 	void invalidateLabelIterators();
 
@@ -193,8 +206,8 @@ class DsLabelIterator : public cmzn::RefCounted
 	friend class DsLabels;
 	
 private:
-	DsLabels *labels;
-	DsLabelIdentifierToIndexMapIterator *iter; // set and used only if non-contiguous iteration
+	const DsLabels *labels;
+	DsLabelIdentifierToIndexMap::ext_iterator *iter; // set and used only if non-contiguous iteration
 	bool_array<DsLabelIndex> *condition; // set and used if iterating over DsLabelsGroup
 	DsLabelIndex index;
 	DsLabelIterator *next, *previous; // for linked-list in owning DsLabels
@@ -210,7 +223,7 @@ public:
 	// caller must check valid index, use DS_LABEL_INDEX_INVALID to reset to before start
 	void setIndex(DsLabelIndex newIndex);
 
-	DsLabels *getLabels() const { return this->labels; }
+	const DsLabels *getLabels() const { return this->labels; }
 
 	DsLabelIndex getIndex() const { return this->index; }
 

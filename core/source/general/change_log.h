@@ -125,18 +125,12 @@ Global functions
 
 #define PROTOTYPE_CREATE_CHANGE_LOG_FUNCTION( object_type ) \
 struct CHANGE_LOG(object_type) *CREATE_CHANGE_LOG(object_type)( \
-	struct LIST(object_type) *object_list, int max_changes) \
+	struct LIST(object_type) *object_list) \
 /***************************************************************************** \
-LAST MODIFIED : 25 March 2003 \
-\
-DESCRIPTION : \
 Creates and returns a new change_log for recording changes to objects in the \
 <object_list>. The change_log remembers whether objects were added, removed \
-or otherwise modified. Since it is expensive to remember large lists of \
-changed objects the change_log remembers individual changes to objects until \
-<max_changes> is exceeded, then internal flags indicate that all objects in \
-<object_list> have changed. A negative <max_changes> places no limit on the \
-maximum number of changes; <object_list> need not be supplied in this case. \
+or otherwise modified. Additionally all objects can be efficiently marked with \
+certain changes. \
 Note that the change_log maintains a pointer to the <object_list> which will \
 be owned by another object. Make sure the object_list is not destroyed first! \
 ==============================================================================*/
@@ -171,19 +165,23 @@ Clears all entries/flags in the change_log. \
 #define PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION( object_type ) \
 /** \
  * Tells <change_log> that all objects it monitors have undergone the <change>. \
- * Not to be used when max_changes is negative. \
+ * This is efficiently record at the time of this call, but relies on a call to \
+ * CHANGE_LOG_MERGE_ALL_CHANGE prior to sending the change message to merge \
+ * the all change status into individual object changes. \
+ * Cannot call for ADD or REMOVE. \
  */ \
 int CHANGE_LOG_ALL_CHANGE(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log, int change)
-	
-#define CHANGE_LOG_IS_ALL_CHANGE_( object_type ) change_log_is_all_change_ ## object_type
-#define CHANGE_LOG_IS_ALL_CHANGE( object_type ) CHANGE_LOG_IS_ALL_CHANGE_(object_type)
 
-#define PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION( object_type ) \
+#define CHANGE_LOG_MERGE_ALL_CHANGE_( object_type ) change_log_merge_all_change_ ## object_type
+#define CHANGE_LOG_MERGE_ALL_CHANGE( object_type ) CHANGE_LOG_MERGE_ALL_CHANGE_(object_type)
+
+#define PROTOTYPE_CHANGE_LOG_MERGE_ALL_CHANGE_FUNCTION( object_type ) \
 /** \
- * @return  True if all_change flag is set, otherwise false. \
+ * Merge all change status into individual object changes, for use prior \
+ * to sending change message. \
  */ \
-bool CHANGE_LOG_IS_ALL_CHANGE(object_type)( \
+int CHANGE_LOG_MERGE_ALL_CHANGE(object_type)( \
 	struct CHANGE_LOG(object_type) *change_log)
 
 #define CHANGE_LOG_OBJECT_CHANGE_( object_type ) \
@@ -217,23 +215,6 @@ LAST MODIFIED : 4 February 2003 \
 DESCRIPTION : \
 Returns a bitwise OR of all the changes enumerators in the change_log. Check \
 against a particular change by bitwise ANDing with ADD, REMOVE etc. \
-==============================================================================*/
-
-#define CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_( object_type ) \
-	change_log_get_number_of_changed_objects_ ## object_type
-#define CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS( object_type ) \
-	CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_(object_type)
-
-#define PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION( object_type ) \
-int CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, int *number_of_changed_objects_address) \
-/***************************************************************************** \
-LAST MODIFIED : 3 February 2003 \
-\
-DESCRIPTION : \
-Returns the number of changes that have been logged in <change_log>. \
-Note that the returned number may not exactly match the number of objects \
-changed since some objects may have been changed more than once. \
 ==============================================================================*/
 
 #define CHANGE_LOG_QUERY_( object_type ) \
@@ -301,10 +282,9 @@ PROTOTYPE_CREATE_CHANGE_LOG_FUNCTION(object_type); \
 PROTOTYPE_DESTROY_CHANGE_LOG_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_CLEAR_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type); \
+PROTOTYPE_CHANGE_LOG_MERGE_ALL_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type) \

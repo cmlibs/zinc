@@ -287,8 +287,7 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 	struct FE_field *indexer_field, int number_of_indexed_values,
 	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
 	enum Value_type value_type, int number_of_components, char **component_names,
-	int number_of_times, enum Value_type time_value_type,
-	struct FE_field_external_information *external);
+	int number_of_times, enum Value_type time_value_type);
 
 /**
  * Checks <fe_field> is compatible with <fe_region> and any existing FE_field

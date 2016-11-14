@@ -495,6 +495,12 @@ public:
 		return cmzn_elementtemplate_set_number_of_nodes(id, numberOfNodes);
 	}
 
+	int defineField(const Field& field, int componentNumber, const Elementfieldtemplate& eft)
+	{
+		return cmzn_elementtemplate_define_field(this->id, field.getId(),
+			componentNumber, eft.getId());
+	}
+
 	int defineFieldElementConstant(const Field& field, int componentNumber)
 	{
 		return cmzn_elementtemplate_define_field_element_constant(
@@ -532,6 +538,16 @@ public:
 	int setNode(int localNodeIndex, const Node& node)
 	{
 		return cmzn_elementtemplate_set_node(id, localNodeIndex, node.getId());
+	}
+
+	int removeField(const Field& field)
+	{
+		return cmzn_elementtemplate_remove_field(this->id, field.getId());
+	}
+
+	int undefineField(const Field& field)
+	{
+		return cmzn_elementtemplate_undefine_field(this->id, field.getId());
 	}
 };
 

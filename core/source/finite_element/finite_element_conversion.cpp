@@ -538,8 +538,7 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				/*indexer*/NULL, /*number_of_indexed_values*/0,
 				cm_field_type, coordinate_system,
 				/*value_type*/FE_VALUE_VALUE, number_of_components, component_names,
-				/*number_of_times*/0, /*time_value_type*/FE_VALUE_VALUE,
-				/*external*/NULL);
+				/*number_of_times*/0, /*time_value_type*/FE_VALUE_VALUE);
 			ACCESS(FE_field)(data.destination_fe_fields[fi]);
 			for (int j = 0; j < number_of_components; j++)
 			{

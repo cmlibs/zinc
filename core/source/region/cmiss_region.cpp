@@ -1819,7 +1819,7 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 		MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
 
 		// check field wrappers?
-		if ((0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field)))))
+		if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
 		{
 			CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
 				FE_field_to_Computed_field_change, (void *)fieldmodule);

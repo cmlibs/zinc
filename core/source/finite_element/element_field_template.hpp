@@ -14,19 +14,25 @@
 
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/status.h"
+#include <vector>
 
 struct FE_basis;
 class FE_mesh;
+struct FE_node_field_component;
 
 class FE_element_field_template
 {
+	friend FE_mesh;
+
 private:
 
 	FE_mesh *mesh; // accessed
 	FE_basis *basis; // accessed
 	const int numberOfFunctions; // number of basis functions, cached from basis
 
-	bool locked; // set once in use by field or element template, so not modifiable
+	bool locked; // set once in use by mesh/field or element template, so not modifiable
+	int indexInMesh; // if in use by mesh, the index (>=0) of its FE_mesh_element_field_template_data in mesh. Otherwise -1
+
 	cmzn_element_parameter_mapping_mode mappingMode; // NODE|ELEMENT|CONSTANT
 
 	// for each basis function: number of terms summed to give parameter;
@@ -82,6 +88,15 @@ private:
 			(0 <= term) && (term < this->termCounts[functionNumber]);
 	}
 
+	/** Only to be called by FE_mesh */
+	void setIndexInMesh(FE_mesh *meshIn, int indexInMeshIn);
+
+	bool convertNodeParameterLegacyIndexes(std::vector<int> &legacyDOFIndexes,
+		std::vector<const FE_node_field_component*> &nodeFieldComponents);
+
+	bool checkNodeParameterLegacyIndexes(std::vector<int> &legacyDOFIndexes,
+		std::vector<const FE_node_field_component*> &nodeFieldComponents);
+
 public:
 
 	static FE_element_field_template *create(FE_mesh *meshIn, FE_basis *basisIn);
@@ -109,10 +124,29 @@ public:
 		return CMZN_OK;
 	}
 
+	int getIndexInMesh() const
+	{
+		return this->indexInMesh;
+	}
+
+	/** @return  True if Returns true if this template and source are identically defined */
+	bool matches(const FE_element_field_template &source) const;
+
 	/** Returns true if locked i.e. in use and read only; caller should clone to modify */
 	bool isLocked() const
 	{
 		return this->locked;
+	}
+
+	/** @return  Boolean true if this element field template has been merged into its mesh. */
+	bool isMergedInMesh() const
+	{
+		return this->indexInMesh >= 0;
+	}
+
+	FE_basis *getBasis() const
+	{
+		return this->basis;
 	}
 
 	cmzn_element_parameter_mapping_mode getElementParameterMappingMode() const
@@ -122,6 +156,19 @@ public:
 
 	/** Sets the parameter mapping mode, resets to one term per basis function with no scaling hence should be the first setting changed. */
 	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn);
+
+	/** @return  Non-accessed pointer to the mesh for this template. */
+	FE_mesh *getMesh() const
+	{
+		return this->mesh;
+	}
+
+	int getNumberOfElementDOFs() const;
+
+	bool hasElementDOFs() const
+	{
+		return (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT);
+	}
 
 	/** @return  Number of basis functions */
 	int getNumberOfFunctions() const
@@ -166,14 +213,28 @@ public:
 	/** @return  Node value label or INVALID if not set or invalid function or term */
 	cmzn_node_value_label getTermNodeValueLabel(int functionNumber, int term) const;
 
-	/** @return  Local node index starting at 0, or -1 if invalid function or term */
+	/** @return  Version starting at 0, or -1 if invalid function or term */
 	int getTermNodeVersion(int functionNumber, int term) const;
+
+	/** @return  Legacy DOF index starting at 0, or -1 if invalid function or term or not a legacy index */
+	int getTermNodeLegacyIndex(int functionNumber, int term) const;
 
 	/** For node mapping mode, set the given term for function number to look up
 	  * the value of the node value label & version at local node index.
 	  * @param functionNumber Basis function number from 0 to numberOfFunctions - 1.
 	  * @param term  Term number from 0 to function number of terms - 1 */
 	int setTermNodeParameter(int functionNumber, int term, int localNodeIndex, cmzn_node_value_label valueLabel, int version);
+
+	/** Internal-only function for setting legacy parameter mapping by DOF index.
+	  * Used only for reading legacy EX format. Converted to value label + version prior to merge.
+	  * @param functionNumber Basis function number from 0 to numberOfFunctions - 1.
+	  * @param term  Term number from 0 to function number of terms - 1.
+	  * @param nodeDOFIndex  Index of DOF for field component at node, starting at 0. */
+	int setTermNodeParameterLegacyIndex(int functionNumber, int term, int localNodeIndex, int nodeDOFIndex);
+
+	/** @return  True if template maps any node parameters with legacy node parameter indexes
+	  * @see setTermNodeParameterLegacyIndex */
+	bool hasNodeParameterLegacyIndex() const;
 
 	int getNumberOfLocalScaleFactors() const
 	{
@@ -218,6 +279,15 @@ public:
 	  * Must have set positive number of local scale factors.
 	  * @param startIndex  Set to 1 to offset from external indexes which start at 1 */
 	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex = 0);
+
+	int getTotalTermCount() const
+	{
+		return this->totalTermCount;
+	}
+
+	/** @return  True if validated and locked, false if failed. */
+	bool validateAndLock();
+
 };
 
 struct cmzn_elementfieldtemplate
@@ -228,7 +298,7 @@ private:
 	int access_count;
 
 	cmzn_elementfieldtemplate(FE_element_field_template *implIn) :
-		impl(implIn->access()),
+		impl(implIn), // take ownership of access
 		access_count(1)
 	{
 	}
@@ -259,6 +329,13 @@ public:
 		return 0;
 	}
 
+	static cmzn_elementfieldtemplate *create(FE_element_field_template *implIn)
+	{
+		if (implIn)
+			return new cmzn_elementfieldtemplate(implIn->access());
+		return 0;
+	}
+
 	cmzn_elementfieldtemplate *access()
 	{
 		++access_count;
@@ -276,6 +353,11 @@ public:
 		return CMZN_OK;
 	}
 
+	FE_basis *getBasis() const
+	{
+		return this->impl->getBasis();
+	}
+
 	cmzn_element_parameter_mapping_mode getElementParameterMappingMode() const
 	{
 		return this->impl->getElementParameterMappingMode();
@@ -285,6 +367,18 @@ public:
 	{
 		this->copyOnWrite();
 		return this->impl->setElementParameterMappingMode(mode);
+	}
+
+	/** get handle to implementation, needed for internal use */
+	FE_element_field_template *get_FE_element_field_template()
+	{
+		return this->impl;
+	}
+
+	/** @return  Non-accessed pointer to the mesh for this template. */
+	FE_mesh *getMesh() const
+	{
+		return this->impl->getMesh();
 	}
 
 	int getNumberOfFunctions() const
@@ -335,6 +429,12 @@ public:
 		return this->impl->setTermNodeParameter(functionNumber - 1, term - 1, localNodeIndex - 1, valueLabel, version - 1);
 	}
 
+	int setTermNodeParameterLegacyIndex(int functionNumber, int term, int localNodeIndex, int nodeDOFIndex)
+	{
+		this->copyOnWrite();
+		return this->impl->setTermNodeParameterLegacyIndex(functionNumber - 1, term - 1, localNodeIndex - 1, nodeDOFIndex - 1);
+	}
+
 	int getNumberOfLocalScaleFactors() const
 	{
 		return this->impl->getNumberOfLocalScaleFactors();
@@ -377,6 +477,12 @@ public:
 	{
 		this->copyOnWrite();
 		return this->impl->setTermScaling(functionNumber - 1, term - 1, indexesCount, indexes, /*startIndex*/1);
+	}
+
+	/** @return  True if validated and locked, otherwise false. */
+	bool validateAndLock()
+	{
+		return this->impl->validateAndLock();
 	}
 
 };

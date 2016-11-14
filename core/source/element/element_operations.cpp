@@ -716,7 +716,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							if (element_with_identifier)
 							{
 								next_spare_element_number = fe_mesh->get_next_FE_element_identifier(next_spare_element_number);
-								return_code = fe_mesh->change_FE_element_identifier(element_with_identifier, next_spare_element_number);
+								return_code = element_with_identifier->setIdentifier(next_spare_element_number);
 								if (return_code != CMZN_OK)
 								{
 									display_message(ERROR_MESSAGE,
@@ -724,7 +724,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 									break;
 								}
 							}
-							return_code = fe_mesh->change_FE_element_identifier(element_values[i].element, element_values[i].new_number);
+							return_code = element_values[i].element->setIdentifier(element_values[i].new_number);
 							if (return_code != CMZN_OK)
 							{
 								display_message(ERROR_MESSAGE,

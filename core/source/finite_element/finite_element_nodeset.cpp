@@ -15,7 +15,6 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
-#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/debug.h"
@@ -52,6 +51,7 @@ FE_nodeset::FE_nodeset(FE_region *fe_region) :
 	activeNodeIterators(0),
 	access_count(1)
 {
+	this->createChangeLog();
 }
 
 FE_nodeset::~FE_nodeset()
@@ -75,18 +75,19 @@ FE_nodeset::~FE_nodeset()
 	DESTROY(LIST(FE_node_field_info))(&(this->node_field_info_list));
 }
 
+/** Private: assumes current change log pointer is null or invalid */
 void FE_nodeset::createChangeLog()
 {
 	cmzn::Deaccess(this->changeLog);
 	this->changeLog = DsLabelsChangeLog::create(&this->labels);
 	if (!this->changeLog)
-		display_message(ERROR_MESSAGE, "FE_nodeset::createChangeLog.  Failed to create changes object");
+		display_message(ERROR_MESSAGE, "FE_nodeset::createChangeLog.  Failed to create change log");
 	this->last_fe_node_field_info = 0;
 }
 
 DsLabelsChangeLog *FE_nodeset::extractChangeLog()
 {
-	DsLabelsChangeLog *returnChangeLog = cmzn::Access(this->changeLog);
+	DsLabelsChangeLog *returnChangeLog = this->changeLog;
 	this->createChangeLog();
 	return returnChangeLog;
 }
@@ -277,12 +278,11 @@ int FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_fie
 		fe_node_field_info, this->node_field_info_list);
 }
 
+/** Assumes called by FE_region destructor, and change notification is disabled. */
 void FE_nodeset::detach_from_FE_region()
 {
-	FE_region_begin_change(this->fe_region);
 	// clear embedded locations to avoid circular dependencies which prevent cleanup
 	FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
-	FE_region_end_change(this->fe_region);
 	this->fe_region = 0;
 }
 
@@ -436,10 +436,10 @@ void FE_nodeset::decrementElementUsageCount(DsLabelIndex nodeIndex)
 			if (*elementUsageCountAddress > 0)
 				--(*elementUsageCountAddress);
 			else
-				display_message(ERROR_MESSAGE, "FE_nodeset::decrementElementUsageCount.  Usage is already 0");
+				display_message(ERROR_MESSAGE, "FE_nodeset::decrementElementUsageCount.  Count is already 0");
 		}
 		else
-			display_message(ERROR_MESSAGE, "FE_nodeset::decrementElementUsageCount.  Missing usage");
+			display_message(ERROR_MESSAGE, "FE_nodeset::decrementElementUsageCount.  Missing count");
 	}
 }
 

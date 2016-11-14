@@ -22,6 +22,7 @@ and the nodes for 1D elements.
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "general/compare.h"
@@ -308,7 +309,7 @@ public:
 		int magnitude_coordinates) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		seed_element(cmzn_element_access(seed_element)),
+		seed_element(seed_element->access()),
 		magnitude_coordinates(magnitude_coordinates)
 	{
 		cached_time = 0;

@@ -12,8 +12,11 @@
 
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_private.h"
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
+#include <cstring>
 
 namespace {
 
@@ -71,6 +74,7 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	basis(ACCESS(FE_basis)(basisIn)),
 	numberOfFunctions(FE_basis_get_number_of_functions(basisIn)),
 	locked(false),
+	indexInMesh(-1),
 	mappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID),
 	termCounts(new int[this->numberOfFunctions]),
 	totalTermCount(0),
@@ -153,6 +157,81 @@ void FE_element_field_template::clearScaling()
 	this->termLocalScaleFactorIndexesOffsets = 0;
 }
 
+void FE_element_field_template::setIndexInMesh(FE_mesh *meshIn, int indexInMeshIn)
+{
+	if (meshIn != this->mesh)
+		display_message(ERROR_MESSAGE, "FE_element_field_template::setIndexInMesh  Invalid mesh");
+	if (indexInMeshIn < -1)
+		display_message(ERROR_MESSAGE, "FE_element_field_template::setIndexInMesh  Invalid index");
+	else if (!this->locked)
+		display_message(ERROR_MESSAGE, "FE_element_field_template::setIndexInMesh  Template is not locked");
+	else if ((indexInMeshIn >= 0) && (this->indexInMesh >= 0))
+		display_message(ERROR_MESSAGE, "FE_element_field_template::setIndexInMesh  Template already has an index in mesh");
+	this->indexInMesh = indexInMeshIn;
+}
+
+/** For private use by FE_mesh::checkConvertLegacyNodeParameters.
+  * Convert legacy node DOF indexes into value labels and versions.
+  * @param legacyDOFIndexes  Legacy node DOF indexes previously copied out of versions array
+  * @param nodeFieldComponents  Definitions of node fields at the local nodes, where
+  * node value labels and versions are described for DOF indexes. */
+bool FE_element_field_template::convertNodeParameterLegacyIndexes(
+	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_component*> &nodeFieldComponents)
+{
+	for (int tt = 0; tt < this->totalTermCount; ++tt)
+	{
+		const FE_node_field_component *nodeFieldComponent = nodeFieldComponents[this->localNodeIndexes[tt]];
+		const int dofIndex = legacyDOFIndexes[tt];
+		if (0 <= dofIndex) // negative values mean new-style maps: no check
+		{
+			FE_nodal_value_type valueType;
+			if (!nodeFieldComponent->convertLegacyDOFIndexToValueTypeAndVersion(dofIndex, valueType, this->nodeVersions[tt]))
+			{
+				display_message(ERROR_MESSAGE, "Element field template:  Failed to convert legacy node "
+					"DOF index %d for term %d into value label and version.", dofIndex + 1, tt + 1);
+				return false;
+			}
+			this->nodeValueLabels[tt] = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
+		}
+	}
+	return true;
+}
+
+/** For private use by FE_mesh::checkConvertLegacyNodeParameters.
+  * Check legacy node DOF indexes converted into value labels and versions matches eft content.
+  * @param legacyDOFIndexes  Legacy node DOF indexes previously copied out of versions array
+  * @param nodeFieldComponents  Definitions of node fields at the local nodes, where
+  * node value labels and versions are described for DOF indexes. */
+bool FE_element_field_template::checkNodeParameterLegacyIndexes(
+	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_component*> &nodeFieldComponents)
+{
+	for (int tt = 0; tt < this->totalTermCount; ++tt)
+	{
+		const FE_node_field_component *nodeFieldComponent = nodeFieldComponents[this->localNodeIndexes[tt]];
+		const int dofIndex = legacyDOFIndexes[tt];
+		if (0 <= dofIndex) // negative values mean new-style maps: no check
+		{
+			FE_nodal_value_type valueType;
+			int version;
+			if (!nodeFieldComponent->convertLegacyDOFIndexToValueTypeAndVersion(dofIndex, valueType, version))
+			{
+				display_message(ERROR_MESSAGE, "Element field template:  Failed to convert legacy node "
+					"DOF index %d for term %d into value label and version.", dofIndex + 1, tt + 1);
+				return false;
+			}
+			cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
+			if ((this->nodeValueLabels[tt] != valueLabel) || (this->nodeVersions[tt] != version))
+			{
+				display_message(ERROR_MESSAGE, "Element field template:  Value label and/or version for legacy node "
+					"DOF index %d in element term %d does not match prior labelling for element field template.",
+					dofIndex + 1, tt + 1);
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 FE_element_field_template *FE_element_field_template::create(FE_mesh *meshIn, FE_basis *basisIn)
 {
 	int basisDimension = 0;
@@ -161,6 +240,30 @@ FE_element_field_template *FE_element_field_template::create(FE_mesh *meshIn, FE
 		return new FE_element_field_template(meshIn, basisIn);
 	display_message(ERROR_MESSAGE, "FE_element_field_template::create  Invalid argument(s)");
 	return 0;
+}
+
+bool FE_element_field_template::matches(const FE_element_field_template &source) const
+{
+	// Note: no need to compare offset arrays since they will match if counts match
+	if ((this->mesh == source.mesh)
+		&& (this->basis == source.basis)
+		&& (this->mappingMode == source.mappingMode)
+		&& (this->totalTermCount == source.totalTermCount)
+		&& (this->numberOfLocalNodes == source.numberOfLocalNodes)
+		&& (this->numberOfLocalScaleFactors == source.numberOfLocalScaleFactors)
+		&& (0 == memcmp(this->termCounts, source.termCounts, this->numberOfFunctions*sizeof(int)))
+		&& ((this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+			|| ((0 == memcmp(this->localNodeIndexes, source.localNodeIndexes, this->totalTermCount*sizeof(int)))
+				&& (0 == memcmp(this->nodeValueLabels, source.nodeValueLabels, this->totalTermCount*sizeof(cmzn_node_value_label)))
+				&& (0 == memcmp(this->nodeVersions, source.nodeVersions, this->totalTermCount*sizeof(int)))))
+		&& ((0 == this->numberOfLocalScaleFactors)
+			|| ((this->totalLocalScaleFactorIndexes == source.totalLocalScaleFactorIndexes)
+				&& (0 == memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_element_scale_factor_type)))
+				&& (0 == memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
+				&& (0 == memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
+				&& (0 == memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int))))))
+		return true;
+	return false;
 }
 
 int FE_element_field_template::setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn)
@@ -200,6 +303,13 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 		}
 	}
 	return CMZN_OK;
+}
+
+int FE_element_field_template::getNumberOfElementDOFs() const
+{
+	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+		return this->getNumberOfFunctions();
+	return 0;
 }
 
 int FE_element_field_template::setNumberOfLocalNodes(int number)
@@ -290,6 +400,14 @@ int FE_element_field_template::getTermNodeVersion(int functionNumber, int term) 
 	return -1;
 }
 
+int FE_element_field_template::getTermNodeLegacyIndex(int functionNumber, int term) const
+{
+	if (this->validTerm(functionNumber, term)
+		&& (this->nodeValueLabels[this->termOffsets[functionNumber] + term] == CMZN_NODE_VALUE_LABEL_INVALID))
+		return this->nodeVersions[this->termOffsets[functionNumber] + term];
+	return -1;
+}
+
 int FE_element_field_template::setTermNodeParameter(int functionNumber,
 	int term, int localNodeIndex, cmzn_node_value_label valueLabel, int version)
 {
@@ -305,6 +423,36 @@ int FE_element_field_template::setTermNodeParameter(int functionNumber,
 	this->nodeValueLabels[termOffset] = valueLabel;
 	this->nodeVersions[termOffset] = version;
 	return CMZN_OK;
+}
+
+int FE_element_field_template::setTermNodeParameterLegacyIndex(int functionNumber, int term, int localNodeIndex, int nodeDOFIndex)
+{
+	if (this->locked
+		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (!this->validTerm(functionNumber, term))
+		|| (localNodeIndex < 0) || (localNodeIndex >= this->numberOfLocalNodes)
+		|| (nodeDOFIndex < 0))
+		return CMZN_ERROR_ARGUMENT;
+	const int termOffset = this->termOffsets[functionNumber] + term;
+	this->localNodeIndexes[termOffset] = localNodeIndex;
+	// legacy state uses invalid node value label, and stores DOF index in version
+	this->nodeValueLabels[termOffset] = CMZN_NODE_VALUE_LABEL_INVALID;
+	this->nodeVersions[termOffset] = nodeDOFIndex;
+	return CMZN_OK;
+}
+
+bool FE_element_field_template::hasNodeParameterLegacyIndex() const
+{
+	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	{
+		for (int tt = 0; tt < this->totalTermCount; ++tt)
+		{
+			// invalid node label denotes legacy case where version stores a node DOF index
+			if (this->nodeValueLabels[tt] == CMZN_NODE_VALUE_LABEL_INVALID)
+				return true;
+		}
+	}
+	return false;
 }
 
 int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
@@ -410,6 +558,55 @@ int FE_element_field_template::setTermScaling(int functionNumber, int term, int 
 	for (int i = 0; i < indexesCount; ++i)
 		this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] = indexes[i] - startIndex;
 	return CMZN_OK;
+}
+
+bool FE_element_field_template::validateAndLock()
+{
+	if (this->locked)
+		return true; // if locked, it's already validated
+	// following lists all the things that are invalid, but only once
+	bool valid = true;
+	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	{
+		bool localNodesValid = true;
+		bool nodeValueLabelsValid = true;
+		bool nodeVersionsValid = true;
+		for (int tt = 0; tt < this->totalTermCount; ++tt)
+		{
+			if (localNodesValid &&
+				((this->localNodeIndexes[tt] < 0) || (this->localNodeIndexes[tt] >= this->numberOfLocalNodes)))
+			{
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Local node index out of range");
+				valid = localNodesValid = false;
+			}
+			// invalid node label denotes legacy case where version stores a node DOF index
+			if (nodeValueLabelsValid && (this->nodeValueLabels[tt] != CMZN_NODE_VALUE_LABEL_INVALID) &&
+				((this->nodeValueLabels[tt] < CMZN_NODE_VALUE_LABEL_VALUE)
+				|| (this->nodeValueLabels[tt] > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)))
+			{
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Node value label is invalid");
+				valid = nodeValueLabelsValid = false;
+			}
+			if (nodeVersionsValid && (this->nodeVersions[tt] < 0))
+			{
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Node version is invalid");
+				valid = nodeValueLabelsValid = false;
+			}
+		}
+		bool scaleFactorIndexesValid = true;
+		for (int si = 0; si < this->totalLocalScaleFactorIndexes; ++si)
+		{
+			if (scaleFactorIndexesValid &&
+				((this->localScaleFactorIndexes[si] < 0) || (this->localScaleFactorIndexes[si] >= this->numberOfLocalScaleFactors)))
+			{
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Local scale factor index out of range");
+				valid = scaleFactorIndexesValid = false;
+			}
+		}
+	}
+	if (valid)
+		this->locked = true;
+	return valid;
 }
 
 cmzn_elementfieldtemplate_id cmzn_elementfieldtemplate_access(

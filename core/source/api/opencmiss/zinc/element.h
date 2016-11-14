@@ -166,7 +166,10 @@ ZINC_API cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(
 
 /**
  * Create a blank template from which new elements can be created in this mesh.
- * Also used for defining new fields over elements.
+ * Also used for defining new fields over elements. The new element template
+ * does not have a valid shape, which allows adding fields to existing elements
+ * without changing shape, however a valid shape must be set to create new
+ * elements with this element template.
  *
  * @param mesh  Handle to the mesh the template works with.
  * @return  Handle to new element template, or NULL/invalid handle on failure.
@@ -183,7 +186,8 @@ ZINC_API cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
  * @param identifier  Non-negative integer identifier of new element, or -1 to
  * automatically generate, starting from 1. Fails if supplied identifier already
  * used by an existing element.
- * @param element_template  Template for element shape and fields.
+ * @param element_template  Template describing element shape and fields to
+ * define or undefine. Must be valid, with a valid shape.
  * @return  Handle to new element, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
@@ -214,8 +218,9 @@ ZINC_API cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
  * @param identifier  Non-negative integer identifier of new element, or -1 to
  * automatically generate, starting from 1. Fails if supplied identifier already
  * used by an existing element.
- * @param element_template  Template for element shape and fields.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param element_template  Template describing element shape and fields to
+ * define or undefine. Must be valid, with a valid shape.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
 	cmzn_elementtemplate_id element_template);
@@ -858,26 +863,23 @@ ZINC_API int cmzn_elementtemplate_destroy(
 	cmzn_elementtemplate_id *element_template_address);
 
 /**
- * Gets the current element shape type set in the element_template.
+ * Get the current element shape type set in the element template.
  *
  * @param element_template  Element template to query.
- * @return  The element shape type enumeration set in the element template.
+ * @return  The element shape type, or INVALID if not set or error.
  */
 ZINC_API enum cmzn_element_shape_type cmzn_elementtemplate_get_element_shape_type(
 	cmzn_elementtemplate_id element_template);
 
 /**
- * Sets the element shape to a standard element shape type. The shape must have
+ * Set the element shape to a standard element shape type. The shape must have
  * the same dimension as the mesh from which the element template was created.
- * Special value CMZN_ELEMENT_SHAPE_TYPE_INVALID indicates an unspecified shape
- * of known; when this is set in the template it does not override the shape
- * of any elements it is merged into. Beware that face mappings are lost if
- * shape changes are merged into global elements.
- * Shape must be set before the template can set local nodes, create new elements
- * and merge into existing elements.
+ * Beware that face mappings are lost if shape changes are merged into elements.
  *
  * @param element_template  Element template to modify.
- * @param shape_type  Enumeration of standard element shapes.
+ * @param shape_type  Standard element shapes enumerated value. Note can be
+ * INVALID which means the shape is not set when merged into an element, but
+ * new elements cannot be created unless they have a valid shape.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_elementtemplate_set_element_shape_type(
@@ -896,6 +898,7 @@ ZINC_API int cmzn_elementtemplate_get_number_of_nodes(
  * Sets the number of local nodes this element_template can address. This must
  * be done before defining fields that index them.
  * This number cannot be reduced.
+ * \note DEPRECATED. Use element field template functions instead.
  *
  * @param element_template  Element template to modify.
  * @param number_of_nodes  The number of nodes.
@@ -905,11 +908,30 @@ ZINC_API int cmzn_elementtemplate_set_number_of_nodes(
 	cmzn_elementtemplate_id element_template, int number_of_nodes);
 
 /**
+ * Define the field component(s) on the element template using the
+ * element field template. The element template is not valid until
+ * all components are defined for all fields.
+ *
+ * @param elementtemplate  Element template to modify.
+ * @param field  The field to define. May be finite element type only.
+ * @param component_number  The component to define from 1 to the number of
+ * field components, or -1 to define all components.
+ * @param eft  The element field template. Must be for mesh this element
+ * template was created from.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_define_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, cmzn_elementfieldtemplate_id eft);
+
+/**
  * Defines per element constant field or field component in the
  * element_template.
+ * \note DEPRECATED. Use element field template and define field function instead.
+ * @see cmzn_elementtemplate_define_field
  *
  * @param element_template  Element template to modify.
- * @param field  The field to define. Must be finite_element type.
+ * @param field  The field to define. May be finite element type only.
  * @param component_number  The component to define from 1 to the number of
  * field components, or -1 to define all components.
  *
@@ -929,10 +951,12 @@ ZINC_API int cmzn_elementtemplate_define_field_element_constant(
  * expected in order: VALUE D_DS1 D_DS2 D2_DS1DS2.
  * By default, versions are initialised to 1, and no scaling is used.
  * In all cases local nodes cycle fastest in lowest element xi direction.
- * Shape must be set before calling this function.
+ * Do not use in combination with new general define field function.
+ * \note DEPRECATED. Use element field template and define field function instead.
+ * @see cmzn_elementtemplate_define_field
  *
  * @param elementtemplate  Element template to modify.
- * @param field  The field to define. Must be finite_element type.
+ * @param field  The field to define. May be finite element type only.
  * @param component_number  The component to define from 1 to the number of
  * field components, or -1 to define all components with identical basis and
  * nodal mappings.
@@ -957,7 +981,8 @@ ZINC_API int cmzn_elementtemplate_define_field_simple_nodal(
  * or derivative) mapped to one function parameter in the element basis.
  * Note that any values set by this function are reset if the field is
  * re-defined at the node.
- * @see cmzn_elementtemplate_define_field_simple_nodal
+ * Only to be used after define field simple nodal.
+ * \note DEPRECATED. Use element field template instead.
  *
  * @param elementtemplate  Element template to modify.
  * @param field  The field to modify mapping for.
@@ -982,7 +1007,8 @@ ZINC_API int cmzn_elementtemplate_set_map_node_value_label(
  * value mapped to one function parameter in the element basis.
  * Note that any values set by this function are reset if the field is
  * re-defined at the node.
- * @see cmzn_elementtemplate_define_field_simple_nodal
+ * Only to be used after define field simple nodal.
+ * \note DEPRECATED. Use element field template instead.
  *
  * @param elementtemplate  Element template to modify.
  * @param field  The field to modify mapping for.
@@ -1004,8 +1030,7 @@ ZINC_API int cmzn_elementtemplate_set_map_node_version(
 
 /**
  * Gets the global node at a given local node index in the element_template.
- * May only be called after the definition of element fields are complete and
- * valid.
+ * \note DEPRECATED. Only used with deprecated define field simple nodal.
  *
  * @param element_template  Element template to query.
  * @param local_node_index  The index from 1 to number of nodes in template.
@@ -1016,8 +1041,8 @@ ZINC_API cmzn_node_id cmzn_elementtemplate_get_node(
 
 /**
  * Sets the global node at a given local node index in the element_template.
- * May only be called after the definition of element fields are complete and
- * valid. Nodes are reset if new element fields are defined on the template.
+ * \note DEPRECATED. Set nodes directly for the element and element field
+ * template instead.
  *
  * @param element_template  Element template to modify.
  * @param local_node_index  The index from 1 to number of nodes in template.
@@ -1026,6 +1051,28 @@ ZINC_API cmzn_node_id cmzn_elementtemplate_get_node(
  */
 ZINC_API int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 	int local_node_index, cmzn_node_id node);
+
+/**
+ * Removes field from list of fields to define or undefine in element template.
+ *
+ * @param elementtemplate  Element template to modify.
+ * @param field  The field to remove. May be finite element type only.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_remove_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field);
+
+/**
+ * Marks field to be undefined when next merged into an existing element. Has
+ * no effect on newly created elements. Removes field from define list if
+ * present.
+ *
+ * @param elementtemplate  Element template to modify.
+ * @param field  The field to undefine. May be finite element type only.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_undefine_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field);
 
 /**
  * Returns a new handle to the element with reference count incremented.
@@ -1094,16 +1141,18 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_get_shape_type(
 	cmzn_element_id element);
 
 /**
- * Modifies the element to use the fields as defined in the element_template.
- * Note that mappings may be optimised or modified in the merge process, often
- * to minimise the number of local nodes in the merged element.
+ * Modifies the element to define or undefine fields as described in the
+ * element template, and possibly change its shape.
  *
  * @param element  The element to modify.
- * @param element_template  Template containing element field definitions.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param elementtemplate  Template describing fields to define or undefine.
+ * Must be created for this mesh and valid. If the element template has a valid
+ * shape, it will be set for the element; if it has an invalid shape, the
+ * element will keep its current shape.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_merge(cmzn_element_id element,
-	cmzn_elementtemplate_id element_template);
+	cmzn_elementtemplate_id elementtemplate);
 
 /**
  * Returns a new handle to the mesh changes with reference count incremented.

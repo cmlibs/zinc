@@ -3277,7 +3277,7 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 			&& meshLocationValueCache.element)
 		{
-			cmzn_element_access(meshLocationValueCache.element);
+			meshLocationValueCache.element->access();
 			return_code = 1;
 		}
 	}

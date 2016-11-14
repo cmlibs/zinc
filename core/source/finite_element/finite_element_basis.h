@@ -168,9 +168,12 @@ If fails, puts zero at <dimension_address>.
 ==============================================================================*/
 
 /**
- * Returns the number of basis functions of <basis>, or 0 if invalid basis.
+ * @return  Function number >=0 from node number and node function, or -1 if
+ * invalid.
+ * @param nodeNumber  Basis node number starting at 0.
  */
-int FE_basis_get_number_of_functions(struct FE_basis *basis);
+int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
+	int nodeNumber, int nodeFunctionIndex);
 
 /**
  * @return  The number of nodes expected for basis, or 0 if invalid basis.

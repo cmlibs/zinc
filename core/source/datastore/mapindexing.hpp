@@ -251,7 +251,7 @@ private:
 		int labelsArraySizeIn, DsLabels **labelsArrayIn);
 
 	/** get internal Indexing object for supplied DsLabels */
-	Indexing *getIndexingForLabels(DsLabels *labelsIn)
+	Indexing *getIndexingForLabels(const DsLabels *labelsIn)
 	{
 		for (int i = 0; i < labelsArraySize; i++)
 		{

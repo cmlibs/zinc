@@ -14,49 +14,59 @@
 
 #include "general/debug.h"
 
+// DsMapArray assumes following is > 128:
+#define CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES 1024
+
 // IndexType = array index type
-// EntryType = values held in array
-// DefaultBlockLength = default block length if not set in constructor
-template <typename IndexType, typename EntryType, IndexType DefaultBlockLength = 256>
-	class block_array
+// EntryType = type of values held in array
+template <typename IndexType, typename EntryType> class block_array
 {
+	template <typename IndexType, typename EntryType>
+		friend void clearDynamicBlockArray(block_array<IndexType, EntryType> &ba);
+
 private:
-	// Note: any new attributes must be handled by swap()
+	// Note: any new attributes must be handled by swap() and all constructors
 	EntryType **blocks;
 	IndexType blockCount;
 	IndexType blockLength;
-	const EntryType allocInitValue;
+	EntryType allocInitValue;
 
 	EntryType* getOrCreateBlock(IndexType blockIndex)
 	{
-		if (blockIndex >= blockCount)
+		if (blockIndex >= this->blockCount)
 		{
 			IndexType newBlockCount = blockIndex + 1;
-			if (newBlockCount < blockCount*2)
-			{
-				newBlockCount = blockCount*2; // double number of blocks each time
-			}
-			EntryType **newBlocks;
-			if (!REALLOCATE(newBlocks, blocks, EntryType *, newBlockCount))
+			if (newBlockCount < this->blockCount*2)
+				newBlockCount = this->blockCount*2; // double number of blocks each time at a minimum
+			EntryType **newBlocks = new EntryType*[newBlockCount];
+			if (!newBlocks)
 				return 0;
-			for (IndexType i = blockCount; i < newBlockCount; i++)
-			{
+			memcpy(newBlocks, this->blocks, this->blockCount*sizeof(EntryType*));
+			for (IndexType i = blockCount; i < newBlockCount; ++i)
 				newBlocks[i] = 0;
-			}
-			blocks = newBlocks;
-			blockCount = newBlockCount;
+			delete[] this->blocks;
+			this->blocks = newBlocks;
+			this->blockCount = newBlockCount;
 		}
-		EntryType *block = blocks[blockIndex];
+		EntryType *block = this->blocks[blockIndex];
 		if (!block)
 		{
-			if (ALLOCATE(block, EntryType, blockLength))
+			block = new EntryType[this->blockLength];
+			if (block)
 			{
-				for (IndexType i = 0; i < blockLength; i++)
+				for (IndexType i = 0; i < this->blockLength; ++i)
 					block[i] = this->allocInitValue;
-				blocks[blockIndex] = block;
+				this->blocks[blockIndex] = block;
 			}
 		}
 		return block;
+	}
+
+	template<typename TYPE> static void swap_value(TYPE& v1, TYPE& v2)
+	{
+		TYPE tmp = v1;
+		v1 = v2;
+		v2 = tmp;
 	}
 
 public:
@@ -65,12 +75,32 @@ public:
 	 * @param allocInitValue = value each array entry is set to on initialisation.
 	 * Default 0 only OK for numeric and pointer types.
 	 */
-	block_array(IndexType blockLengthIn = DefaultBlockLength, EntryType allocInitValueIn = 0) :
+	block_array(IndexType blockLengthIn = CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES/sizeof(EntryType), EntryType allocInitValueIn = 0) :
 		blocks(0),
 		blockCount(0),
 		blockLength(blockLengthIn),
 		allocInitValue(allocInitValueIn)
 	{
+		if (this->blockLength <= 0)
+			this->blockLength = 1;
+	}
+
+	block_array(const block_array& source) :
+		blocks(new EntryType*[source.blockCount]),
+		blockCount(source.blockCount),
+		blockLength(source.blockLength),
+		allocInitValue(source.allocInitValue)
+	{
+		for (int i = 0; i < this->blockCount; ++i)
+		{
+			if (source.blocks[i])
+			{
+				this->blocks[i] = new EntryType[this->blockLength];
+				memcpy(this->blocks[i], source.blocks[i], this->blockLength*sizeof(EntryType));
+			}
+			else
+				this->blocks[i] = 0;
+		}
 	}
 
 	~block_array()
@@ -80,18 +110,23 @@ public:
 
 	void clear()
 	{
-		for (IndexType i = 0; i < blockCount; i++)
-		{
-			if (blocks[i])
-			{
-				DEALLOCATE(blocks[i]);
-			}
-		}
-		if (blocks)
-		{
-			DEALLOCATE(blocks);
-		}
+		for (IndexType i = 0; i < this->blockCount; ++i)
+			delete[] blocks[i];
+		delete[] blocks;
 		blockCount = 0;
+	}
+
+	/** @param  blockIndex  From 0 to block count - 1. Not checked. */
+	EntryType* getBlock(IndexType blockIndex)
+	{
+		return this->blocks[blockIndex];
+	}
+
+	/** @param  blockIndex  From 0 to block count - 1. Not checked. */
+	void destroyBlock(IndexType blockIndex)
+	{
+		delete[] this->blocks[blockIndex];
+		this->blocks[blockIndex] = 0;
 	}
 
 	IndexType getBlockCount() const
@@ -104,18 +139,38 @@ public:
 		return this->blockLength;
 	}
 
+	/** @return  Allocated block index capacity, for limiting iteration. Returned
+	  * value is one greater than last allocated index. Note that entries may be
+	  * allocated but not in use. */
+	IndexType getIndexLimit() const
+	{
+		for (IndexType blockIndex = this->blockCount - 1; 0 <= blockIndex; --blockIndex)
+		{
+			if (this->blocks[blockIndex])
+				return (blockIndex + 1)*this->blockLength;
+		}
+		return 0;
+	}
+
+	/** @return  First allocated index or zero if no blocks, for lower limit of index iteration.
+	  * Note that entries may be allocated but not in use. */
+	IndexType getIndexStart() const
+	{
+		for (IndexType blockIndex = 0; blockIndex < this->blockCount; ++blockIndex)
+		{
+			if (this->blocks[blockIndex])
+				return blockIndex*this->blockLength;
+		}
+		return 0; // fall back to first
+	}
+
 	/** Swaps all data with other block_array. Cannot fail. */
 	void swap(block_array& other)
 	{
-		EntryType **temp_blocks = this->blocks;
-		IndexType temp_blockCount = this->blockCount;
-		IndexType temp_blockLength = this->blockLength;
-		this->blocks = other.blocks;
-		this->blockCount = other.blockCount;
-		this->blockLength = other.blockLength;
-		other.blocks = temp_blocks;
-		other.blockCount = temp_blockCount;
-		other.blockLength = temp_blockLength;
+		swap_value(this->blocks, other.blocks);
+		swap_value(this->blockCount, other.blockCount);
+		swap_value(this->blockLength, other.blockLength);
+		swap_value(this->allocInitValue, other.allocInitValue);
 	}
 
 	/**
@@ -188,6 +243,45 @@ public:
 	}
 
 	/**
+	 * Get a value from the block_array. Variant suitable only for arrays
+	 * where allocInitValue is not a valid value.
+	 * @param index  The index of the value to retrieve, starting at 0.
+	 * @return  The value at the index, or allocInitValue if none.
+	 */
+	EntryType getValue(IndexType index) const
+	{
+		IndexType blockIndex = index / blockLength;
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (block)
+			{
+				IndexType entryIndex = index % blockLength;
+				return block[entryIndex];
+			}
+		}
+		return this->allocInitValue;
+	}
+
+	/**
+	 * Check matching value held in block_array.
+	 * @param index  The index of the value to check, starting at 0. Must be non-negative.
+	 * @param value  Value to check at index.
+	 * @return  Boolean true if array has value at index.
+	 */
+	bool hasValue(IndexType index, EntryType value) const
+	{
+		IndexType blockIndex = index / blockLength;
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (block)
+				return (block[index % blockLength] == value);
+		}
+		return false;
+	}
+
+	/**
 	 * Set a value in the block_array.
 	 * @param index  The index of the value to set, starting at 0.
 	 * @param value  Value to set at index.
@@ -217,26 +311,51 @@ public:
 	
 };
 
+
+/** Calls delete[] on non-NULL pointer entries in block array, then clears it */
+template <typename IndexType, typename EntryType>
+void clearDynamicBlockArray(block_array<IndexType, EntryType> &ba)
+{
+	const IndexType blockCount = ba.getBlockCount();
+	const IndexType blockLength = ba.getBlockLength();
+	for (IndexType blockIndex = 0; blockIndex < blockCount; ++blockIndex)
+	{
+		EntryType* block = ba.blocks[blockIndex];
+		if (block)
+		{
+			for (IndexType i = 0; i < blockLength; ++i)
+				delete[] block[i];
+		}
+	}
+	ba.clear();
+}
+
 /** stores boolean values as individual bits, with no value equivalent to false */
-template <typename IndexType, IndexType intBlockLength = 32>
-	class bool_array : private block_array<IndexType, unsigned int, intBlockLength>
+template <typename IndexType>
+	class bool_array : private block_array<IndexType, unsigned int>
 {
 public:
+	// default size fits same number of entries as 32-bit index
+	bool_array(IndexType intBlockLength = CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES/32) :
+		block_array(intBlockLength, /*allocInitValueIn*/0)
+	{
+	}
+
 	void clear()
 	{
-		block_array<IndexType, unsigned int, intBlockLength>::clear();
+		block_array<IndexType, unsigned int>::clear();
 	}
 
 	void swap(bool_array& other)
 	{
-		block_array<IndexType, unsigned int, intBlockLength>::swap(other);
+		block_array<IndexType, unsigned int>::swap(other);
 	}
 
-	using block_array<IndexType, unsigned int, intBlockLength>::getBlockCount;
-	using block_array<IndexType, unsigned int, intBlockLength>::getBlockLength;
-	using block_array<IndexType, unsigned int, intBlockLength>::getValue;
-	using block_array<IndexType, unsigned int, intBlockLength>::setValue;
-	using block_array<IndexType, unsigned int, intBlockLength>::setValues;
+	using block_array<IndexType, unsigned int>::getBlockCount;
+	using block_array<IndexType, unsigned int>::getBlockLength;
+	using block_array<IndexType, unsigned int>::getValue;
+	using block_array<IndexType, unsigned int>::setValue;
+	using block_array<IndexType, unsigned int>::setValues;
 
 	/** @param oldValue  Returns old value so client can determine if status changed */
 	bool setBool(IndexType index, bool value, bool& oldValue)

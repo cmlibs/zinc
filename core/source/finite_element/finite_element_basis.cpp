@@ -3842,6 +3842,20 @@ int FE_basis_get_number_of_basis_functions(struct FE_basis *basis)
 	return 0;
 }
 
+int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
+	int nodeNumber, int nodeFunctionIndex)
+{
+	if (basis && (0 <= nodeNumber) && (nodeNumber < FE_basis_get_number_of_nodes(basis)) &&
+		(0 <= nodeFunctionIndex) && (nodeFunctionIndex < FE_basis_get_number_of_functions_per_node(basis, nodeNumber)))
+	{
+		int functionNumber = nodeFunctionIndex;
+		for (int n = 0; n < nodeNumber; ++n)
+			functionNumber += FE_basis_get_number_of_functions_per_node(basis, n);
+		return functionNumber;
+	}
+	return -1;
+}
+
 int FE_basis_get_number_of_nodes(struct FE_basis *basis)
 {
 	if (basis)

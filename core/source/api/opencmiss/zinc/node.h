@@ -485,12 +485,11 @@ ZINC_API int cmzn_nodetemplate_set_timesequence(
 	struct cmzn_timesequence *timesequence);
 
 /**
- * Removes field from list of fields defined at node, or list of fields marked
- * for undefining.
+ * Removes field from list of fields to define or undefine in node template.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to remove.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodetemplate_remove_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);
@@ -502,7 +501,7 @@ ZINC_API int cmzn_nodetemplate_remove_field(cmzn_nodetemplate_id node_template,
  * @param node_template  Node template to modify.
  * @param field  The field to undefine. May be finite_element, stored_string or
  * stored_mesh_location type only.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);

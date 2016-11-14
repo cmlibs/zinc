@@ -11,6 +11,7 @@
 
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_helper.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/message.h"
@@ -120,7 +121,7 @@ int FE_element_define_field_simple(struct FE_element *element,
 			return_code = 0;
 		}
 		FE_basis *basis = FE_region_get_FE_basis_matching_basis_type(
-			FE_element_get_FE_region(element), basis_type_array);
+			element->getMesh()->get_FE_region(), basis_type_array);
 		ACCESS(FE_basis)(basis);
 		DEALLOCATE(basis_type_array);
 		if (!basis)

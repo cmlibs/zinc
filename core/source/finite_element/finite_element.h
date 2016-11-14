@@ -40,6 +40,7 @@ class FE_nodeset;
 /**
  * FE_element has pointer to owning FE_mesh in shared field info.
  */
+class FE_mesh_field_data;
 class FE_mesh;
 
 /**
@@ -85,44 +86,6 @@ DESCRIPTION :
 	UNKNOWN_FE_FIELD
 }; /* enum FE_field_type */
 
-struct FE_field_external_information;
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-A structure that allows external tools have their field information/identifier.
-
-This was developed for cm so that information about where the fields are stored
-in cm can be kept in cmgui.  The version for cm can be found in link/cmiss.c
-==============================================================================*/
-
-typedef int (Compare_FE_field_external_information)( \
-	struct FE_field_external_information *, \
-	struct FE_field_external_information *);
-
-typedef int (Destroy_FE_field_external_information)( \
-	struct FE_field_external_information **);
-
-typedef struct FE_field_external_information * \
-	(Duplicate_FE_field_external_information)( \
-	struct FE_field_external_information *);
-
-struct FE_field_external_information
-{
-	/* function for ordering this structure.  Returns -1 if first<second, 0 if
-		first=second and 1 if first>second */
-	/* also serves as an id so that different external tools can tell if the field
-		is theirs */
-		/*???DB.  Does not allow for more than one external tool of each type */
-	Compare_FE_field_external_information *compare;
-	/* for destroying the structure */
-	Destroy_FE_field_external_information *destroy;
-	/* for duplicating the structure */
-	Duplicate_FE_field_external_information *duplicate;
-	/* the external tool's field information */
-	void *information;
-}; /* struct FE_field_external_information */
-
 struct FE_field;
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
@@ -136,19 +99,6 @@ the point and the Xi coordinates of the point within the element.
 DECLARE_LIST_TYPES(FE_field);
 
 DECLARE_CHANGE_LOG_TYPES(FE_field);
-
-struct FE_field_component
-/*******************************************************************************
-LAST MODIFIED : 27 October 1995
-
-DESCRIPTION :
-Used to specify a component of a field.  If the component <number> is < 0 or
->= the number of components, it specifies all components.
-==============================================================================*/
-{
-	struct FE_field *field;
-	int number;
-}; /* struct FE_field_component */
 
 /* API uses external type enum cmzn_node_value_label */
 enum FE_nodal_value_type
@@ -183,6 +133,7 @@ struct cmzn_node;
 DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
 DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
 
+#if 0 // GRC
 /**
  * Specifies the type of mapping used to get element DOFs for interpolation
  * from global DOFs in a variety of sources (nodes, field etc.)
@@ -225,6 +176,7 @@ cases, such as nodes that have multiple theta values in cylindrical polar,
 spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
 either lying on the z-axis or being the first and last node in a circle.
 ==============================================================================*/
+#endif // GRC
 
 struct FE_element_field_values;
 /*******************************************************************************
@@ -631,15 +583,12 @@ LAST MODIFIED : 23 April 1999
 
 DESCRIPTION :
 Gets a particular element_xi_value (<version>, <type>) for the field <component> at the
-<node>.  SAB Note: It doesn't use a FE_field_component as I don't think any of them
-should.
+<node>.
 ==============================================================================*/
 
 /**
  * Sets a particular element_xi_value (<version>, <type>) for the field
  * <component> at the <node>.
- * SAB Note: It doesn't use a FE_field_component as I don't think any of them
- * should.
  */
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
@@ -1025,6 +974,7 @@ int list_FE_node(struct FE_node *node);
 cmzn_node_id cmzn_nodeiterator_next_non_access(
 	cmzn_nodeiterator_id node_iterator);
 
+#if 0 // GRC
 /**
  * Creates map with value type and version arrays allocated.
  * Allocates memory and assigns fields for a standard node to element map.
@@ -1313,6 +1263,7 @@ LAST MODIFIED : 5 November 2002
 DESCRIPTION :
 Returns the type of mapping used by <element_field_component>.
 ==============================================================================*/
+#endif // GRC
 
 int calculate_grid_field_offsets(int element_dimension,
 	int top_level_element_dimension, const int *top_level_number_in_xi,
@@ -1615,12 +1566,6 @@ char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape
 struct FE_element_shape *FE_element_shape_create_unspecified(
 	struct FE_region *fe_region, int dimension);
 
-/**
- * Returns true if the only thing know about <element_shape> is its dimension.
- * Elements are only in this state when defined for element:xi locations.
- */
-bool FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
-
 int FE_element_shape_is_line(struct FE_element_shape *element_shape);
 /*******************************************************************************
 LAST MODIFIED : 12 March 2003
@@ -1752,29 +1697,23 @@ Returns true if all fields are defined in the same way at the two elements.
 
 /**
  * @return  The dimension of the element, or 0 if it cannot be determined.
+ * @deprecated  Use element->getDimension() instead.
  */
 int get_FE_element_dimension(struct FE_element *element);
 
 /**
  * @return  The non-negative element identifier, otherwise
  * DS_LABEL_IDENTIFIER_INVALID on error or if not a true element in the mesh.
+ * @deprecated  Use element->getIdentifier() instead.
  */
 DsLabelIdentifier get_FE_element_identifier(struct FE_element *element);
 
 /**
  * @return  The non-negative element index within the mesh otherwise
  * DS_LABEL_INDEX_INVALID on error or if not a true element in the mesh.
+ * @deprecated  Use element->getIndex() instead.
  */
 DsLabelIndex get_FE_element_index(struct FE_element *element);
-
-/**
- * Set the index of the element in the mesh. Used only by FE_mesh when
- * merging elements from another region's mesh.
- * @param element  The element to modify.
- * @param index  The new index, non-negative. Value is not checked due
- * to use by privileged caller.
- */
-void set_FE_element_index(struct FE_element *element, DsLabelIndex index);
 
 /**
  * Returns true if <element> or any of its parent elements is listed in the
@@ -1786,7 +1725,7 @@ void set_FE_element_index(struct FE_element *element, DsLabelIndex index);
  */
 bool FE_element_or_parent_changed(struct FE_element *element,
 	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-	DsLabelsChangeLog *nodeChangeLog);
+	DsLabelsChangeLog *nodeChangeLog, struct CHANGE_LOG(FE_field) *fe_field_changes);
 
 int get_FE_element_number_of_fields(struct FE_element *element);
 /*******************************************************************************
@@ -1800,6 +1739,7 @@ Does not include fields inherited from parent elements.
 /**
  * Returns the <shape> of the <element>, if any. Invalid elements (in process
  * of being constructed or destroyed, or orphaned) have no shape.
+ * @deprecated Use element->getElementShape()
  */
 FE_element_shape *get_FE_element_shape(struct FE_element *element);
 
@@ -1809,6 +1749,7 @@ FE_element_shape *get_FE_element_shape(struct FE_element *element);
  */
 struct FE_element *get_FE_element_face(struct FE_element *element, int face_number);
 
+#if 0 // GRC
 int set_FE_element_number_of_nodes(struct FE_element *element,
 	int number_of_nodes);
 /*******************************************************************************
@@ -1829,14 +1770,7 @@ Returns the number of nodes directly referenced by <element>; does not include
 nodes used by fields inherited from parent elements.
 If fails, puts zero at <number_of_nodes_address>.
 ==============================================================================*/
-
-int FE_element_has_FE_node(struct FE_element *element, void *node_void);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Returns true if <element> references the <node>.
-==============================================================================*/
+#endif // GRC
 
 int get_FE_element_node(struct FE_element *element,int node_number,
 	struct FE_node **node);
@@ -1859,6 +1793,7 @@ Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 
+#if 0 // GRC
 /**
  * Get the number and address of the scale factors for the given set in element.
  * @return  The number of scale factors for the set, or 0 if none or invalid
@@ -1998,31 +1933,7 @@ LAST MODIFIED : 24 October 2002
 DESCRIPTION :
 Returns true if <element> has values_storage, eg. for grid-based fields.
 ==============================================================================*/
-
-int for_FE_field_at_element(struct FE_field *field,
-	FE_element_field_iterator_function *iterator,void *user_data,
-	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-If an <iterator> is supplied and the <field> is defined at the <element> then
-the result of the <iterator> is returned.  Otherwise, if an <iterator> is not
-supplied and the <field> is defined at the <element> then a non-zero is
-returned. Otherwise, zero is returned.
-???DB.  Multiple behaviour dangerous ?
-==============================================================================*/
-
-int for_each_FE_field_at_element(FE_element_field_iterator_function *iterator,
-	void *user_data,struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <element> until the
-<iterator> returns 0 or it runs out of fields.  Returns the result of the last
-<iterator> called.
-==============================================================================*/
+#endif // GRC
 
 /***************************************************************************//**
  * Calls the <iterator> for each field defined at the <element> in alphabetical
@@ -2049,20 +1960,6 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
  */
 int FE_element_add_number_to_Multi_range(
 	struct FE_element *element, void *multi_range_void);
-
-/**
- * Merges/adds fields from <source> into <destination>. Where existing fields
- * in <destination> are passed in <source>, the <source> definition and values
- * replace them, otherwise the existing definition and values are maintained.
- * Function is atomic; <destination> is unchanged if <source> cannot be merged.
- * The <changed_fe_field_list> must be supplied. On return it contains the list
- * of FE_fields that have been changed or added to <destination>. Note it is
- * not sufficient to assume just the fields in <source> are changed since
- * changes to common scale factors affect different fields in <destination>;
- * the <change_fe_field_list> includes these fields.
- */
-int merge_FE_element(struct FE_element *destination, struct FE_element *source,
-	struct LIST(FE_field) *changed_fe_field_list);
 
 /**
  * Writes to the console the element identifier and details of the fields
@@ -2141,26 +2038,6 @@ Modifies the already calculated <values>.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(CM_field_type);
 
-int get_FE_field_external_information(struct FE_field *field,
-	struct FE_field_external_information **external_information);
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Creates a copy of the <external_information> of the <field>.
-==============================================================================*/
-
-int set_FE_field_external_information(struct FE_field *field,
-	struct FE_field_external_information *external_information);
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Copies the <external_information> into the <field>.
-
-Should only call this function for unmanaged fields.
-==============================================================================*/
-
 struct FE_field *CREATE(FE_field)(const char *name, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -2207,8 +2084,7 @@ int FE_field_matches_description(struct FE_field *field, const char *name,
 	int number_of_indexed_values,enum CM_field_type cm_field_type,
 	struct Coordinate_system *coordinate_system,enum Value_type value_type,
 	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type,
-	struct FE_field_external_information *external);
+	int number_of_times,enum Value_type time_value_type);
 /*******************************************************************************
 LAST MODIFIED : 31 August 2001
 
@@ -2351,6 +2227,27 @@ LAST MODIFIED : 28 January 1999
 DESCRIPTION :
 Sets the coordinate system of the <field>.
 ==============================================================================*/
+
+/** Ensure field is not defined on mesh
+  * Assumes called with FE_region change caching on; records change but doesn't notify */
+void FE_field_clearMeshFieldData(struct FE_field *field, FE_mesh *mesh);
+
+/**
+ * Note: must get no field data from FE_field_getMeshFieldData first!
+ * @return  New mesh field data defining field over the given mesh, or 0 if failed.
+ * @param field  The field to create data for.
+ * @param mesh  The mesh to create data for. Must be from same region as field.
+ */
+FE_mesh_field_data *FE_field_createMeshFieldData(struct FE_field *field,
+	const FE_mesh *mesh);
+
+/**
+ * @return  Mesh field data defining field over the given mesh, or 0 if none.
+ * @param field  The field to create data for.
+ * @param mesh  The mesh to create data for. Must be from same region as field.
+ */
+FE_mesh_field_data *FE_field_getMeshFieldData(struct FE_field *field,
+	const FE_mesh *mesh);
 
 int get_FE_field_number_of_components(struct FE_field *field);
 /*******************************************************************************
@@ -2741,8 +2638,6 @@ Should only call this function for unmanaged fields.
  */
 int set_FE_field_name(struct FE_field *field, const char *name);
 
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component);
-
 int calculate_FE_field(struct FE_field *field,int component_number,
 	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,
 	FE_value time, FE_value *value);
@@ -2758,13 +2653,9 @@ storage for the <value> should have been allocated outside the function.
 
 /**
  * Returns the FE_mesh that <element> belongs to.
+ * @deprecated  Use element->getMesh()
  */
 FE_mesh *FE_element_get_FE_mesh(struct FE_element *element);
-
-/**
- * Returns the FE_region that <element> belongs to.
- */
-struct FE_region *FE_element_get_FE_region(struct FE_element *element);
 
 /**
  * Returns true if <top_level_element> is a top_level parent of <element>.
@@ -3000,6 +2891,7 @@ int get_FE_element_field_component_grid_map_number_in_xi(struct FE_element *elem
 int get_FE_element_field_component_number_of_grid_values(struct FE_element *element,
 	struct FE_field *field, int component_number);
 
+#if 0 // GRC
 int get_FE_element_field_component(struct FE_element *element,
 	struct FE_field *field, int component_number,
 	struct FE_element_field_component **component_address);
@@ -3012,6 +2904,7 @@ at <element> if defined there; otherwise reports an error.
 If fails, puts NULL in *<component_address> if supplied.
 Note: returned component must not be modified or destroyed!
 ==============================================================================*/
+#endif // GRC
 
 #define PROTOTYPE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
 int get_FE_element_field_component_grid_ ## macro_value_type ## _values( \

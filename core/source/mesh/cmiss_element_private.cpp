@@ -20,6 +20,7 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/differential_operator.hpp"
@@ -230,243 +231,130 @@ private:
 
 namespace {
 
-class cmzn_element_field
+// stores map of EFT local node to legacy element nodes, per-component
+class LegacyElementFieldData
 {
+public:
+	class NodeMap
+	{
+		int nodeIndexesCount;
+		int *nodeIndexes;
+
+	public:
+		NodeMap(int nodeIndexesCountIn, const int *nodeIndexesIn) :
+			nodeIndexesCount(nodeIndexesCountIn),
+			nodeIndexes(new int[nodeIndexesCountIn])
+		{
+			memcpy(this->nodeIndexes, nodeIndexesIn, nodeIndexesCountIn*sizeof(int));
+		}
+
+		~NodeMap()
+		{
+			delete[] this->nodeIndexes;
+		}
+
+		int getNodeIndexesCount() const
+		{
+			return this->nodeIndexesCount;
+		}
+
+		const int *getNodeIndexes() const
+		{
+			return this->nodeIndexes;
+		}
+	};
+
+private:
+
 	FE_field *fe_field;
-	const int number_of_components;
-	FE_element_field_component **components;
+	const int componentCount;
+	NodeMap **componentNodeMaps;
+
+	/** Handles sharing of same node map for multiple components.
+	  * @param componentNumber  Starting at 0, or negative to clear all components. Not checked. */
+	void clearComponentNodeMaps(int componentNumber)
+	{
+		if (componentNumber < 0)
+		{
+			for (int i = 0; i < this->componentCount; i++)
+			{
+				// handle sharing by multiple components
+				for (int j = this->componentCount - 1; i < j; --j)
+					if (this->componentNodeMaps[j] == this->componentNodeMaps[i])
+						this->componentNodeMaps[j] = 0;
+				delete this->componentNodeMaps[i];
+				this->componentNodeMaps[i] = 0;
+			}
+		}
+		else
+		{
+			bool unshared = true;
+			for (int i = 0; i < this->componentCount; i++)
+			{
+				if ((i != componentNumber) && (this->componentNodeMaps[i] == this->componentNodeMaps[componentNumber]))
+				{
+					unshared = false;
+					break;
+				}
+			}
+			if (unshared)
+				delete[] this->componentNodeMaps[componentNumber];
+			this->componentNodeMaps[componentNumber] = 0;
+		}
+	}
 
 public:
 
-	cmzn_element_field(FE_field *fe_field) :
+	LegacyElementFieldData(FE_field *fe_field) :
 		fe_field(ACCESS(FE_field)(fe_field)),
-		number_of_components(get_FE_field_number_of_components(fe_field)),
-		components(new FE_element_field_component*[number_of_components])
+		componentCount(get_FE_field_number_of_components(fe_field)),
+		componentNodeMaps(new NodeMap*[componentCount])
 	{
-		for (int i = 0; i < number_of_components; i++)
-			components[i] = 0;
+		for (int i = 0; i < this->componentCount; i++)
+			componentNodeMaps[i] = 0;
 	}
 
-	~cmzn_element_field()
+	~LegacyElementFieldData()
 	{
 		DEACCESS(FE_field)(&fe_field);
-		for (int i = 0; i < number_of_components; i++)
-		{
-			clearComponent(i);
-		}
-		delete[] components;
+		this->clearComponentNodeMaps(/*componentNumber*/-1);
+		delete[] this->componentNodeMaps;
 	}
 
-	/** @param component_number  -1 for all components, or positive for single component */
-	int buildComponent(int component_number, FE_basis *fe_basis, int number_of_nodes,
-		const int *local_node_indexes)
+	FE_field *getField() const
 	{
-		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components) ||
-				(FE_basis_get_number_of_nodes(fe_basis) != number_of_nodes))
-			return CMZN_ERROR_ARGUMENT;
-		FE_element_field_component *component =
-			CREATE(FE_element_field_component)(STANDARD_NODE_TO_ELEMENT_MAP,
-				number_of_nodes, fe_basis, (FE_element_field_component_modify)NULL);
-		for (int nodeIndex = 0; (nodeIndex < number_of_nodes) && component; nodeIndex++)
-		{
-			const int numberOfValues = FE_basis_get_number_of_functions_per_node(fe_basis, nodeIndex);
-			Standard_node_to_element_map *standard_node_map =
-				Standard_node_to_element_map_create(local_node_indexes[nodeIndex] - 1, numberOfValues);
-			for (int valueNumber = 0; valueNumber < numberOfValues; ++valueNumber)
-			{
-				if (!(Standard_node_to_element_map_set_nodal_value_type(
-						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(valueNumber + FE_NODAL_VALUE)) &&
-					Standard_node_to_element_map_set_nodal_version(
-						standard_node_map, valueNumber, 1) &&
-					Standard_node_to_element_map_set_scale_factor_index(
-						standard_node_map, valueNumber, /*no_scale_factor*/-1)))
-				{
-					DESTROY(FE_element_field_component)(&component);
-					break;
-				}
-			}
-			if (!FE_element_field_component_set_standard_node_map(component,
-				nodeIndex, standard_node_map))
-			{
-				DESTROY(FE_element_field_component)(&component);
-				Standard_node_to_element_map_destroy(&standard_node_map);
-				break;
-			}
-		}
-		if (component)
-		{
-			int first = 0;
-			int limit = number_of_components;
-			if (component_number > 0)
-			{
-				first = component_number - 1;
-				limit = component_number;
-			}
-			for (int i = first; i < limit; i++)
-			{
-				clearComponent(i);
-				this->components[i] = component;
-			}
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_GENERAL;
+		return this->fe_field;
 	}
 
-	int buildElementConstantComponent(int component_number, FE_basis *fe_basis)
+	int getComponentCount() const
 	{
-		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
-			return CMZN_ERROR_ARGUMENT;
-		FE_element_field_component *component =
-			CREATE(FE_element_field_component)(ELEMENT_GRID_MAP,
-				1, fe_basis, (FE_element_field_component_modify)NULL);
-		if (component)
-		{
-			int basis_dimension = 0;
-			FE_basis_get_dimension(fe_basis, &basis_dimension);
-			for (int i = 0; i < basis_dimension; i++)
-			{
-				FE_element_field_component_set_grid_map_number_in_xi(
-					component, i, 0);
-			}
-		}
-		if (component)
-		{
-			FE_element_field_component_set_grid_map_value_index(
-				component, 0);
-			int first = 0;
-			int limit = number_of_components;
-			if (component_number > 0)
-			{
-				first = component_number - 1;
-				limit = component_number;
-			}
-			for (int i = first; i < limit; i++)
-			{
-				clearComponent(i);
-				components[i] = component;
-			}
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_MEMORY;
+		return this->componentCount;
 	}
 
-	/** @param component_number  -1 for all components, or positive for single component */
-	int setMapNodeValueLabel(int componentNumber, int basisNodeIndex,
-		int nodeFunctionIndex, cmzn_node_value_label nodeValueLabel)
+	/** @param componentNumber  Starting at 0, or negative to set for all components. Not checked.
+	  * @param nodeIndexesCount  Size of nodeIndexes. Must equal number of nodes expected by EFT. */
+	int setNodeMap(int componentNumber, int nodeIndexesCount, const int *nodeIndexes)
 	{
-		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > this->number_of_components) ||
-				(basisNodeIndex < 1) || (nodeFunctionIndex < 1))
-			return CMZN_ERROR_ARGUMENT;
-		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
-		const int limit = (componentNumber > 0) ? componentNumber : this->number_of_components;
-		for (int i = first; i < limit; i++)
+		NodeMap *nodeMap = new NodeMap(nodeIndexesCount, nodeIndexes);
+		if (!nodeMap)
+			return CMZN_ERROR_MEMORY;
+		clearComponentNodeMaps(componentNumber);
+		if (componentNumber >= 0)
 		{
-			Global_to_element_map_type mapType;
-			if ((0 == this->components[i]) ||
-					(!FE_element_field_component_get_type(this->components[i], &mapType)) ||
-					(STANDARD_NODE_TO_ELEMENT_MAP != mapType))
-				return CMZN_ERROR_ARGUMENT;
+			this->componentNodeMaps[componentNumber] = nodeMap;
 		}
-		int result = componentCopyOnWrite(componentNumber);
-		if (CMZN_OK != result)
-			return result;
-		for (int i = first; i < limit; i++)
+		else
 		{
-			FE_element_field_component *component = this->components[i];
-			Standard_node_to_element_map *standard_node_map;
-			if (!FE_element_field_component_get_standard_node_map(component, basisNodeIndex - 1, &standard_node_map))
-				return CMZN_ERROR_ARGUMENT;
-			FE_nodal_value_type fe_nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
-			if (!Standard_node_to_element_map_set_nodal_value_type(standard_node_map, nodeFunctionIndex - 1, fe_nodal_value_type))
-				return CMZN_ERROR_GENERAL;
+			for (int i = 0; i < this->componentCount; ++i)
+				this->componentNodeMaps[i] = nodeMap;
 		}
 		return CMZN_OK;
 	}
 
-	/** @param component_number  -1 for all components, or positive for single component */
-	int setMapNodeVersion(int componentNumber, int basisNodeIndex,
-		int nodeFunctionIndex, int versionNumber)
+	/** @param componentNumber  From 0 to count - 1, not checked */
+	const NodeMap *getComponentNodeMap(int componentNumber) const
 	{
-		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > this->number_of_components) ||
-				(basisNodeIndex < 1) || (nodeFunctionIndex < 1) || (versionNumber < 1))
-			return CMZN_ERROR_ARGUMENT;
-		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
-		const int limit = (componentNumber > 0) ? componentNumber : this->number_of_components;
-		for (int i = first; i < limit; i++)
-		{
-			Global_to_element_map_type mapType;
-			if ((0 == this->components[i]) ||
-					(!FE_element_field_component_get_type(this->components[i], &mapType)) ||
-					(STANDARD_NODE_TO_ELEMENT_MAP != mapType))
-				return CMZN_ERROR_ARGUMENT;
-		}
-		int result = componentCopyOnWrite(componentNumber);
-		if (CMZN_OK != result)
-			return result;
-		for (int i = first; i < limit; i++)
-		{
-			FE_element_field_component *component = this->components[i];
-			Standard_node_to_element_map *standard_node_map;
-			if (!FE_element_field_component_get_standard_node_map(component, basisNodeIndex - 1, &standard_node_map))
-				return CMZN_ERROR_ARGUMENT;
-			if (!Standard_node_to_element_map_set_nodal_version(standard_node_map, nodeFunctionIndex - 1, versionNumber))
-				return CMZN_ERROR_GENERAL;
-		}
-		return CMZN_OK;
-	}
-
-	int defineOnElement(FE_element *element)
-	{
-		return define_FE_field_at_element(element, fe_field, components);
-	}
-
-	FE_field *getFeField() const { return fe_field; }
-
-	/** @return  1 if all components have been defined */
-	int isValid() const
-	{
-		for (int i = 0; i < number_of_components; i++)
-		{
-			if (NULL == components[i])
-				return 0;
-		}
-		return 1;
-	}
-
-private:
-	/** clear element field component pointer, but only destroy if no longer in use */
-	void clearComponent(int component_index)
-	{
-		FE_element_field_component *component = components[component_index];
-		components[component_index] = NULL;
-		for (int i = 0; i < number_of_components; i++)
-		{
-			if (components[i] == component)
-				return;
-		}
-		DESTROY(FE_element_field_component)(&component);
-		return;
-	}
-
-	/** copy component map if shared by another component not being modified */
-	int componentCopyOnWrite(int componentNumber)
-	{
-		if ((1 != this->number_of_components) && (componentNumber > 0))
-		{
-			const int index = (componentNumber > 0) ? (componentNumber - 1) : 0;
-			FE_element_field_component *component = this->components[index];
-			for (int i = 0; i < this->number_of_components; i++)
-			{
-				if ((i != index) && (this->components[i] == component))
-				{
-					component = copy_create_FE_element_field_component(component);
-					if (!component)
-						return CMZN_ERROR_MEMORY;
-					break;
-				}
-			}
-		}
-		return CMZN_OK;		
+		return this->componentNodeMaps[componentNumber];
 	}
 
 };
@@ -477,27 +365,172 @@ private:
 
 struct cmzn_elementtemplate
 {
-	friend struct cmzn_mesh; // to obtain internal FE_element_template
 private:
-	FE_mesh *fe_mesh;
-	cmzn_element_shape_type shape_type;
-	bool shape_is_set;
-	int element_number_of_nodes;
-	FE_element_template *fe_element_template;
-	std::vector<cmzn_element_field*> fields;
-	int access_count;
+	FE_element_template *fe_element_template; // internal implementation
+	int legacyNodesCount;
+	cmzn_node **legacyNodes;
+	std::vector<LegacyElementFieldData*> legacyFieldDataList;
+#if 0 // GRC
 	typedef std::map<cmzn_mesh_scale_factor_set*,int> ScaleFactorSetIntMap;
 	ScaleFactorSetIntMap scale_factor_set_sizes;
+#endif // GRC
+	int access_count;
 
-public:
 	cmzn_elementtemplate(FE_mesh *fe_mesh_in) :
-		fe_mesh(fe_mesh_in->access()),
-		shape_type(CMZN_ELEMENT_SHAPE_TYPE_INVALID),
-		shape_is_set(false),
-		element_number_of_nodes(0),
-		fe_element_template(0),
+		fe_element_template(fe_mesh_in->create_FE_element_template()),
+		legacyNodesCount(0),
+		legacyNodes(0),
 		access_count(1)
 	{
+	}
+
+	~cmzn_elementtemplate()
+	{
+#if 0 // GRC
+		for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
+			iter != scale_factor_set_sizes.end(); ++iter)
+		{
+			cmzn_mesh_scale_factor_set *temp = iter->first;
+			cmzn_mesh_scale_factor_set::deaccess(temp);
+		}
+#endif // GRC
+		for (size_t i = this->legacyFieldDataList.size() - 1; 0 <= i; --i)
+			delete this->legacyFieldDataList[i];
+		this->clearLegacyNodes();
+		cmzn::Deaccess(this->fe_element_template);
+	}
+
+	inline void beginChange()
+	{
+		FE_region_begin_change(this->getMesh()->get_FE_region());
+	}
+
+	inline void endChange()
+	{
+		FE_region_end_change(this->getMesh()->get_FE_region());
+	}
+
+	void clearLegacyNodes()
+	{
+		if (this->legacyNodes)
+		{
+			for (int i = 0; i < this->legacyNodesCount; ++i)
+				cmzn_node_destroy(&(this->legacyNodes[i]));
+			delete[] this->legacyNodes;
+			this->legacyNodes = 0;
+		}
+	}
+
+	void clearLegacyElementFieldData(FE_field *fe_field)
+	{
+		for (std::vector<LegacyElementFieldData*>::iterator iter = this->legacyFieldDataList.begin();
+			iter != this->legacyFieldDataList.end(); ++iter)
+		{
+			if ((*iter)->getField() == fe_field)
+			{
+				delete *iter;
+				this->legacyFieldDataList.erase(iter);
+				break;
+			}
+		}
+	}
+
+	LegacyElementFieldData *getLegacyElementFieldData(FE_field *fe_field)
+	{
+		for (size_t i = this->legacyFieldDataList.size() - 1; 0 <= i; --i)
+			if (this->legacyFieldDataList[i]->getField() == fe_field)
+				return this->legacyFieldDataList[i];
+		return 0;
+	}
+
+	LegacyElementFieldData *getOrCreateLegacyElementFieldData(FE_field *fe_field)
+	{
+		LegacyElementFieldData *legacyFieldData = this->getLegacyElementFieldData(fe_field);
+		if (!legacyFieldData)
+		{
+			legacyFieldData = new LegacyElementFieldData(fe_field);
+			this->legacyFieldDataList.push_back(legacyFieldData);
+		}
+		return legacyFieldData;
+	}
+
+	/** only call if have already checked has legacy node maps
+	  * Caller's responsibility to mark element as changed; this marks all fields as changed.
+	  * Expect to be called during FE_region change cache */
+	int setLegacyNodesInElement(cmzn_element *element)
+	{
+		FE_mesh *mesh = this->getMesh();
+		bool localNodeChange = false;
+		std::vector<DsLabelIndex> workingNodeIndexes(this->legacyNodesCount, DS_LABEL_INDEX_INVALID);
+		for (size_t f = this->legacyFieldDataList.size() - 1; 0 <= f; --f)
+		{
+			LegacyElementFieldData *legacyData = this->legacyFieldDataList[f];
+			FE_field *field = legacyData->getField();
+			const int componentCount = legacyData->getComponentCount();
+			const LegacyElementFieldData::NodeMap *lastComponentNodeMap = 0; // keep last one so efficient if used by multiple components
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const LegacyElementFieldData::NodeMap *componentNodeMap = legacyData->getComponentNodeMap(c);
+				if (componentNodeMap && (componentNodeMap != lastComponentNodeMap))
+				{
+					lastComponentNodeMap = componentNodeMap;
+					FE_element_field_template *eft = this->fe_element_template->getElementfieldtemplate(field, c);
+					if (!eft)
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate  setLegacyNodesInElement.  Have legacy node map without field defined");
+						return CMZN_ERROR_NOT_FOUND;
+					}
+					const int nodeIndexesCount = componentNodeMap->getNodeIndexesCount();
+					const int *nodeIndexes = componentNodeMap->getNodeIndexes();
+					if (eft->getNumberOfLocalNodes() != nodeIndexesCount)
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate  setLegacyNodesInElement.  Number of nodes does not match element field template");
+						return CMZN_ERROR_GENERAL;
+					}
+					FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft);
+					if (!eftData)
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate  setLegacyNodesInElement.  Invalid element field template");
+						return CMZN_ERROR_GENERAL;
+					}
+					if (workingNodeIndexes.capacity() < nodeIndexesCount)
+						workingNodeIndexes.reserve(nodeIndexesCount);
+					for (int n = 0; n < nodeIndexesCount; ++n)
+					{
+						cmzn_node *node = this->legacyNodes[nodeIndexes[n]];
+						workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
+					}
+					if (!eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data(), localNodeChange))
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate  setLegacyNodesInElement.  Failed to set element local nodes");
+						return CMZN_ERROR_GENERAL;
+					}
+				}
+			}
+		}
+		if (localNodeChange)
+		{
+			display_message(WARNING_MESSAGE, "Elementtemplate  setLegacyNodesInElement.  "
+				"Change in local-to-global node map in %d-D element %d",
+				mesh->getDimension(), element->getIdentifier());
+		}
+		// simplest to mark all fields as changed as they may share local nodes and scale factors
+		// can optimise in future
+		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		return CMZN_OK;
+	}
+
+public:
+
+	static cmzn_elementtemplate *create(FE_mesh *fe_mesh_in)
+	{
+		if (fe_mesh_in)
+			return new cmzn_elementtemplate(fe_mesh_in);
+		return 0;
 	}
 
 	cmzn_elementtemplate_id access()
@@ -517,28 +550,43 @@ public:
 		return CMZN_OK;
 	}
 
-	cmzn_element_shape_type getShapeType() const { return shape_type; }
-
-	int setShapeType(cmzn_element_shape_type in_shape_type)
+	cmzn_element_shape_type getShapeType() const
 	{
-		if (in_shape_type != CMZN_ELEMENT_SHAPE_TYPE_INVALID)
-		{
-			int shape_dimension = cmzn_element_shape_type_get_dimension(in_shape_type);
-			if (shape_dimension != this->fe_mesh->getDimension())
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate::setShapeType.  Shape dimension is different from mesh");
-				return 0;
-			}
-		}
-		shape_is_set = true;
-		if (in_shape_type == shape_type)
-			return 1;
-		shape_type = in_shape_type;
-		this->invalidate();
-		return 1;
+		return FE_element_shape_get_simple_type(this->fe_element_template->getElementShape());
 	}
 
+	int setElementShapeType(cmzn_element_shape_type shapeTypeIn)
+	{
+		FE_element_shape *elementShape = 0;
+		if (CMZN_ELEMENT_SHAPE_TYPE_INVALID != shapeTypeIn)
+		{
+			const int shapeDimension = cmzn_element_shape_type_get_dimension(shapeTypeIn);
+			if (shapeDimension != this->getMesh()->getDimension())
+			{
+				display_message(ERROR_MESSAGE,
+					"Elementtemplate  setElementShapeType.  Shape dimension is different from template mesh");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			elementShape = FE_element_shape_create_simple_type(this->getMesh()->get_FE_region(), shapeTypeIn);
+			if (!elementShape)
+			{
+				display_message(ERROR_MESSAGE,
+					"Elementtemplate  setElementShapeType.  Failed to create element shape");
+				return CMZN_ERROR_GENERAL;
+			}
+		}
+		int return_code = this->fe_element_template->setElementShape(elementShape);
+		if (elementShape)
+			DEACCESS(FE_element_shape)(&elementShape);
+		return return_code;
+	}
+
+	FE_mesh *getMesh() const
+	{
+		return this->fe_element_template->getMesh();
+	}
+
+#if 0 // GRC
 	int setNumberOfScaleFactors(cmzn_mesh_scale_factor_set_id scale_factor_set, int numberOfScaleFactors)
 	{
 		int return_code = CMZN_OK;
@@ -574,75 +622,104 @@ public:
 		}
 		return return_code;
 	}
+#endif // GRC
 
-	int getNumberOfNodes() const { return element_number_of_nodes; }
-
-	int setNumberOfNodes(int in_element_number_of_nodes)
+	int getNumberOfNodes() const
 	{
-		if (in_element_number_of_nodes < element_number_of_nodes)
+		return legacyNodesCount;
+	}
+
+	int setNumberOfNodes(int legacyNodesCountIn)
+	{
+		if (legacyNodesCountIn < legacyNodesCount)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_set_number_of_nodes.  Cannot reduce number of nodes");
+				"Elementtemplate setNumberOfNodes.  Cannot reduce number of nodes");
 			return CMZN_ERROR_ARGUMENT;
 		}
-		element_number_of_nodes = in_element_number_of_nodes;
-		this->invalidate();
+		cmzn_node **newLegacyNodes = new cmzn_node*[legacyNodesCountIn];
+		if (!newLegacyNodes)
+			return CMZN_ERROR_MEMORY;
+		this->clearLegacyNodes();
+		for (int i = 0; i < legacyNodesCountIn; ++i)
+			newLegacyNodes[i] = 0;
+		this->legacyNodes = newLegacyNodes;
+		this->legacyNodesCount = legacyNodesCountIn;
 		return CMZN_OK;
 	}
 
+	int defineField(cmzn_field_id field, int componentNumber, cmzn_elementfieldtemplate *eft)
+	{
+		if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= cmzn_field_get_number_of_components(field))))
+			&& (eft)))
+		{
+			display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Invalid arguments");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		if (!fe_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Elementtemplate defineField.  Can only define a finite element type field on elements");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		int return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
+		if (CMZN_OK != return_code)
+			display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Failed");
+		return return_code;
+	}
+
 	int defineFieldSimpleNodal(cmzn_field_id field,
-		int component_number, cmzn_elementbasis_id basis, int basis_number_of_nodes,
-		const int *local_node_indexes)
+		int componentNumber, cmzn_elementbasis_id elementbasis, int nodeIndexesCount,
+		const int *nodeIndexes)
 	{
-		int return_code = CMZN_OK;
-		if (basis->getDimension() != this->fe_mesh->getDimension())
+		if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= cmzn_field_get_number_of_components(field))))
+			&& (elementbasis) && ((0 == nodeIndexesCount)  || (nodeIndexes))))
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_define_field_simple_nodal.  "
-				"Basis has different dimension to mesh");
-			return_code = CMZN_ERROR_ARGUMENT;
+				"Elementtemplate defineFieldSimpleNodal.  Invalid arguments");
+			return CMZN_ERROR_ARGUMENT;
 		}
-		FE_basis *fe_basis = basis->getFeBasis();
+		FE_basis *fe_basis = elementbasis->getFeBasis();
 		if (!fe_basis)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_define_field_simple_nodal.  "
-				"Basis is invalid or incomplete");
+				"Elementtemplate defineFieldSimpleNodal.  Element basis is invalid or incomplete");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		int return_code = CMZN_OK;
+		const int expected_basis_number_of_nodes = FE_basis_get_number_of_nodes(fe_basis);
+		if (nodeIndexesCount != expected_basis_number_of_nodes)
+		{
+			display_message(ERROR_MESSAGE,
+				"Elementtemplate defineFieldSimpleNodal.  %d nodes supplied but %d expected for basis",
+				nodeIndexesCount, expected_basis_number_of_nodes);
 			return_code = CMZN_ERROR_ARGUMENT;
 		}
 		else
 		{
-			int expected_basis_number_of_nodes = basis->getNumberOfNodes();
-			if (basis_number_of_nodes != expected_basis_number_of_nodes)
+			for (int i = 0; i < nodeIndexesCount; i++)
 			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_define_field_simple_nodal.  "
-					"%d nodes supplied but %d expected for basis",
-					basis_number_of_nodes, expected_basis_number_of_nodes);
-				return_code = CMZN_ERROR_ARGUMENT;
-			}
-		}
-		for (int i = 0; i < basis_number_of_nodes; i++)
-		{
-			if ((local_node_indexes[i] < 1) || (local_node_indexes[i] > element_number_of_nodes))
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_define_field_simple_nodal.  "
-					"Local node index out of range 1 to number in element(%d)", element_number_of_nodes);
-				return_code = CMZN_ERROR_ARGUMENT;
-				break;
+				if ((nodeIndexes[i] < 1) || (nodeIndexes[i] > this->legacyNodesCount))
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate defineFieldSimpleNodal.  "
+						"Local node index out of range 1 to number in element(%d)", this->legacyNodesCount);
+					return_code = CMZN_ERROR_ARGUMENT;
+					break;
+				}
 			}
 		}
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		FE_field *fe_field = NULL;
+		FE_field *fe_field = 0;
 		if (finite_element_field)
 		{
 			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != this->fe_mesh->get_FE_region())
+			if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_define_field_simple_nodal.  "
-					"Field is from another region");
+					"Elementtemplate defineFieldSimpleNodal.  Field is from another region");
 				return_code = CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_field_finite_element_destroy(&finite_element_field);
@@ -650,248 +727,333 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_define_field_simple_nodal.  "
-				"Can only define real finite_element field type on elements");
+				"Elementtemplate defineFieldSimpleNodal.  "
+				"Can only define real finite element field type on elements");
 			return_code = CMZN_ERROR_ARGUMENT;
 		}
 		if (CMZN_OK == return_code)
 		{
-			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
-			return_code = element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes);
-			this->invalidate();
+			cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(this->getMesh(), fe_basis);
+			if (eft)
+			{
+				return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
+				if (CMZN_OK == return_code)
+				{
+					LegacyElementFieldData *legacyFieldData = getOrCreateLegacyElementFieldData(fe_field);
+					if (!legacyFieldData)
+						return_code = CMZN_ERROR_GENERAL;
+					else
+						return_code = legacyFieldData->setNodeMap(componentNumber - 1, nodeIndexesCount, nodeIndexes);
+					if (CMZN_OK != return_code)
+						display_message(ERROR_MESSAGE, "Elementtemplate defineFieldSimpleNodal.  Failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Elementtemplate defineFieldSimpleNodal.  Could not create element field template");
+				return_code = CMZN_ERROR_GENERAL;
+			}
+			cmzn_elementfieldtemplate::deaccess(eft);
 		}
-		REACCESS(FE_basis)(&fe_basis, NULL);
+		DEACCESS(FE_basis)(&fe_basis);
 		return return_code;
 	}
 
-	int defineFieldElementConstant(cmzn_field_id field, int component_number)
+	int defineFieldElementConstant(cmzn_field_id field, int componentNumber)
 	{
-		int return_code = CMZN_OK;
-
-		cmzn_elementbasis_id basis = new cmzn_elementbasis(
-			this->fe_mesh->get_FE_region(), this->fe_mesh->getDimension(), CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
+		if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= cmzn_field_get_number_of_components(field))))))
+		{
+			display_message(ERROR_MESSAGE,
+				"Elementtemplate defineFieldElementConstant.  Invalid arguments");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		cmzn_elementbasis_id basis = new cmzn_elementbasis(this->getMesh()->get_FE_region(),
+			this->getMesh()->getDimension(), CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
 		FE_basis *fe_basis = basis->getFeBasis();
-		if (!fe_basis)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_define_field_element_constant.  "
-				"Basis is invalid or incomplete");
-			return_code = CMZN_ERROR_ARGUMENT;
-		}
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		FE_field *fe_field = NULL;
-		if (finite_element_field)
-		{
-			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != this->fe_mesh->get_FE_region())
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_define_field_simple_nodal.  "
-					"Field is from another region");
-				return_code = CMZN_ERROR_ARGUMENT;
-			}
-			cmzn_field_finite_element_destroy(&finite_element_field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_define_field_simple_nodal.  "
-				"Can only define real finite_element field type on elements");
-			return_code = CMZN_ERROR_ARGUMENT;
-		}
-		if (CMZN_OK == return_code)
-		{
-			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
-			return_code = element_field.buildElementConstantComponent(component_number, fe_basis);
-			this->invalidate();
-		}
-		REACCESS(FE_basis)(&fe_basis, NULL);
 		cmzn_elementbasis_destroy(&basis);
+		if (!fe_basis)
+		{
+			display_message(ERROR_MESSAGE,
+				"Elementtemplate defineFieldElementConstant.  Failed to create constant basis");
+			return CMZN_ERROR_GENERAL;
+		}
+		int return_code = CMZN_OK;
+		FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		if ((fe_field) && (GENERAL_FE_FIELD == get_FE_field_FE_field_type(fe_field)) &&
+			((FE_VALUE_VALUE == get_FE_field_value_type(fe_field)) || (INT_VALUE == get_FE_field_value_type(fe_field))))
+		{
+			if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
+			{
+				display_message(ERROR_MESSAGE,
+					"Elementtemplate defineFieldElementConstant.  Field is from another region");
+				return_code = CMZN_ERROR_ARGUMENT;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Elementtemplate defineFieldElementConstant.  "
+				"Can only define real or integer finite element field type on elements");
+			return_code = CMZN_ERROR_ARGUMENT;
+		}
+		if (CMZN_OK == return_code)
+		{
+			cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(this->getMesh(), fe_basis);
+			if (eft)
+			{
+				return_code = eft->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT);
+				if (CMZN_OK == return_code)
+					return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
+				if (CMZN_OK != return_code)
+					display_message(ERROR_MESSAGE, "Elementtemplate defineFieldElementConstant.  Failed");
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Elementtemplate defineFieldElementConstant.  Could not create element field template");
+				return_code = CMZN_ERROR_GENERAL;
+			}
+			cmzn_elementfieldtemplate::deaccess(eft);
+		}
+		DEACCESS(FE_basis)(&fe_basis);
 		return return_code;
 	}
 
+	/** @param componentNumber  -1 for all components, or positive for single component
+	  * \note DEPRECATED; only expected to work with defineFieldSimpleNodal */
 	int setMapNodeValueLabel(cmzn_field_id field, int componentNumber,
 		int basisNodeIndex, int nodeFunctionIndex, cmzn_node_value_label nodeValueLabel)
 	{
+		if ((!field) || (componentNumber < -1) || (componentNumber == 0) || (componentNumber > cmzn_field_get_number_of_components(field))
+			|| (basisNodeIndex < 1) || (nodeFunctionIndex < 1))
+			return CMZN_ERROR_ARGUMENT;
 		FE_field *fe_field = 0;
 		if (Computed_field_get_type_finite_element(field, &fe_field))
 		{
-			cmzn_element_field *element_field = this->getElementField(fe_field);
-			if (element_field)
-				return element_field->setMapNodeValueLabel(componentNumber, basisNodeIndex, nodeFunctionIndex, nodeValueLabel);
+			const int firstComponentNumber = (componentNumber < 0) ? 0 : (componentNumber - 1);
+			const int limitComponentNumber = (componentNumber < 0) ? cmzn_field_get_number_of_components(field) : componentNumber;
+			int return_code = CMZN_OK;
+			for (int c = firstComponentNumber; c < limitComponentNumber; ++c)
+			{
+				FE_element_field_template *eftInt = this->fe_element_template->getElementfieldtemplate(fe_field, c);
+				if (!eftInt)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeValueLabel.  Field %s is not defined", get_FE_field_name(fe_field));
+					return CMZN_ERROR_ARGUMENT;
+				}
+				cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(eftInt);
+				if (!eft)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeValueLabel.  Failed to get element field template");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const int functionNumber = FE_basis_get_function_number_from_node_function(eft->getBasis(), basisNodeIndex - 1, nodeFunctionIndex - 1);
+				if (functionNumber < 0)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeValueLabel.  Invalid node or node function index for basis");
+					return_code = CMZN_ERROR_ARGUMENT;
+				}
+				else
+				{
+					const int term = 1;
+					return_code = eft->setTermNodeParameter(functionNumber + 1, term,
+						eft->getTermLocalNodeIndex(functionNumber + 1, term),
+						nodeValueLabel,
+						eft->getTermNodeVersion(functionNumber + 1, term));
+					if (CMZN_OK != return_code)
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate setMapNodeValueLabel.  Failed; only expected to work with defineFieldSimpleNodal.");
+					}
+				}
+				cmzn_elementfieldtemplate::deaccess(eft);
+				if (CMZN_OK != return_code)
+					break;
+			}
+			return return_code;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
+	/** @param componentNumber  -1 for all components, or positive for single component
+	  * \note DEPRECATED; only expected to work with defineFieldSimpleNodal */
 	int setMapNodeVersion(cmzn_field_id field, int componentNumber,
 		int basisNodeIndex, int nodeFunctionIndex, int versionNumber)
 	{
+		if ((!field) || (componentNumber < -1) || (componentNumber == 0) || (componentNumber > cmzn_field_get_number_of_components(field))
+			|| (basisNodeIndex < 1) || (nodeFunctionIndex < 1))
+			return CMZN_ERROR_ARGUMENT;
 		FE_field *fe_field = 0;
 		if (Computed_field_get_type_finite_element(field, &fe_field))
 		{
-			cmzn_element_field *element_field = this->getElementField(fe_field);
-			if (element_field)
-				return element_field->setMapNodeVersion(componentNumber, basisNodeIndex, nodeFunctionIndex, versionNumber);
+			const int firstComponentNumber = (componentNumber < 0) ? 0 : (componentNumber - 1);
+			const int limitComponentNumber = (componentNumber < 0) ? cmzn_field_get_number_of_components(field) : componentNumber;
+			int return_code = CMZN_OK;
+			for (int c = firstComponentNumber; c < limitComponentNumber; ++c)
+			{
+				FE_element_field_template *eftInt = this->fe_element_template->getElementfieldtemplate(fe_field, c);
+				if (!eftInt)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeVersion.  Field %s is not defined", get_FE_field_name(fe_field));
+					return CMZN_ERROR_ARGUMENT;
+				}
+				cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(eftInt);
+				if (!eft)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeVersion.  Failed to get element field template");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const int functionNumber = FE_basis_get_function_number_from_node_function(eft->getBasis(), basisNodeIndex - 1, nodeFunctionIndex - 1);
+				if (functionNumber < 0)
+				{
+					display_message(ERROR_MESSAGE,
+						"Elementtemplate setMapNodeVersion.  Invalid node or node function index for basis");
+					return_code = CMZN_ERROR_ARGUMENT;
+				}
+				else
+				{
+					const int term = 1;
+					return_code = eft->setTermNodeParameter(functionNumber + 1, term,
+						eft->getTermLocalNodeIndex(functionNumber + 1, term),
+						eft->getTermNodeValueLabel(functionNumber + 1, term),
+						versionNumber);
+					if (CMZN_OK != return_code)
+					{
+						display_message(ERROR_MESSAGE,
+							"Elementtemplate setMapNodeVersion.  Failed; only expected to work with defineFieldSimpleNodal.");
+					}
+				}
+				cmzn_elementfieldtemplate::deaccess(eft);
+				if (CMZN_OK != return_code)
+					break;
+			}
+			return return_code;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int validate()
+	bool validate()
 	{
-		if (this->fe_element_template)
-			return 1;
-		int return_code = 1;
-		if (!shape_is_set)
+		return this->fe_element_template->validate();
+	}
+
+	/** @param local_node_index  Index from 1 to legacy nodes count.
+	  * @return  Non-accessed node, or 0 if invalid index or no node at index. */
+	cmzn_node_id getNode(int local_node_index)
+	{
+		if ((0 < local_node_index) && (local_node_index <= this->legacyNodesCount))
+			return this->legacyNodes[local_node_index - 1];
+		return 0;
+	}
+
+	/** @param local_node_index  Index from 1 to legacy nodes count. */
+	int setNode(int local_node_index, cmzn_node_id node)
+	{
+		FE_nodeset *nodeset;
+		if ((0 < local_node_index) && (local_node_index <= this->legacyNodesCount)
+			&& ((!node) || ((0 != (nodeset = FE_node_get_FE_nodeset(node)))
+				&& (nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_NODES)
+				&& (this->fe_element_template->getMesh()->get_FE_region() == nodeset->get_FE_region()))))
 		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_elementtemplate_validate.  Element shape has not been set");
-			return_code = 0;
+			REACCESS(FE_node)(this->legacyNodes + local_node_index - 1, node);
+			return CMZN_OK;
 		}
-		for (unsigned int i = 0; i < fields.size(); i++)
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int removeField(cmzn_field_id field)
+	{
+		if (!field)
+			return CMZN_ERROR_ARGUMENT;
+		FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		if (!fe_field)
 		{
-			if (!fields[i]->isValid())
-			{
-				char *field_name = NULL;
-				GET_NAME(FE_field)(fields[i]->getFeField(), &field_name);
-				display_message(ERROR_MESSAGE, "cmzn_elementtemplate_validate.  "
-					"Field %s definition is invalid or incomplete", field_name);
-				DEALLOCATE(field_name);
-				return_code = 0;
-			}
+			display_message(ERROR_MESSAGE, "Elementtemplate removeField.  Not a finite element field");
+			return CMZN_ERROR_ARGUMENT;
 		}
-		if (return_code)
-		{
-			FE_element_shape *fe_element_shape = NULL;
-			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
-			{
-				fe_element_shape = FE_element_shape_create_unspecified(this->fe_mesh->get_FE_region(), this->fe_mesh->getDimension());
-			}
-			else
-			{
-				fe_element_shape = FE_element_shape_create_simple_type(this->fe_mesh->get_FE_region(), shape_type);
-			}
-			if (fe_element_shape)
-			{
-				this->fe_element_template = this->fe_mesh->create_FE_element_template(fe_element_shape);
-				set_FE_element_number_of_nodes(this->fe_element_template->get_template_element(), element_number_of_nodes);
-				const int number_of_scale_factor_sets = static_cast<int>(scale_factor_set_sizes.size());
-				if (0 < number_of_scale_factor_sets)
-				{
-					cmzn_mesh_scale_factor_set **scale_factor_set_identifiers =
-						new cmzn_mesh_scale_factor_set*[number_of_scale_factor_sets];
-					int *numbers_in_scale_factor_sets = new int[number_of_scale_factor_sets];
-					int i = 0;
-					for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
-						iter != scale_factor_set_sizes.end(); ++iter)
-					{
-						scale_factor_set_identifiers[i] = iter->first;
-						numbers_in_scale_factor_sets[i] = iter->second;
-						++i;
-					}
-					set_FE_element_number_of_scale_factor_sets(this->fe_element_template->get_template_element(), number_of_scale_factor_sets,
-						scale_factor_set_identifiers, numbers_in_scale_factor_sets);
-					delete[] scale_factor_set_identifiers;
-					delete[] numbers_in_scale_factor_sets;
-				}
-				for (unsigned int i = 0; i < fields.size(); i++)
-				{
-					if (!fields[i]->defineOnElement(this->fe_element_template->get_template_element()))
-					{
-						cmzn::Deaccess(this->fe_element_template);
-						break;
-					}
-				}
-				DEACCESS(FE_element_shape)(&fe_element_shape);
-			}
-			if (!this->fe_element_template)
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_validate.  Failed to create fe_element_template");
-				return_code = 0;
-			}
-		}
+		int return_code = this->fe_element_template->removeField(fe_field);
+		if (CMZN_OK == return_code)
+			this->clearLegacyElementFieldData(fe_field);
 		return return_code;
 	}
 
-	cmzn_node_id getNode(int local_node_index)
+	int undefineField(cmzn_field_id field)
 	{
-		if (validate())
+		if (!field)
+			return CMZN_ERROR_ARGUMENT;
+		FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		if (!fe_field)
 		{
-			cmzn_node_id node = NULL;
-			if (get_FE_element_node(this->fe_element_template->get_template_element(), local_node_index - 1, &node))
-				return ACCESS(FE_node)(node);
+			display_message(ERROR_MESSAGE, "Elementtemplate undefineField.  Not a finite element field");
+			return CMZN_ERROR_ARGUMENT;
 		}
-		return 0;
+		int return_code = this->fe_element_template->undefineField(fe_field);
+		this->clearLegacyElementFieldData(fe_field);
+		return return_code;
 	}
 
-	int setNode(int local_node_index, cmzn_node_id node)
+	cmzn_element *createElement(int identifier)
 	{
-		if (validate() && set_FE_element_node(this->fe_element_template->get_template_element(), local_node_index - 1, node))
-			return CMZN_OK;
-		return CMZN_ERROR_GENERAL;
+		if (!this->validate())
+		{
+			display_message(ERROR_MESSAGE, "Mesh createElement.  Element template is not valid");
+			return 0;
+		}
+		if (!this->fe_element_template->getElementShape())
+		{
+			display_message(ERROR_MESSAGE, "Mesh createElement.  Element template does not have a shape set");
+			return 0;
+		}
+		this->beginChange();
+		cmzn_element *element = this->getMesh()->create_FE_element(identifier, this->fe_element_template);
+		if (element && (this->legacyNodes) && (this->legacyFieldDataList.size() > 0))
+		{
+			int return_code = this->setLegacyNodesInElement(element);
+			if (CMZN_OK != return_code)
+			{
+				display_message(ERROR_MESSAGE, "Mesh createElement.  Failed to set legacy nodes (deprecated feature)");
+				cmzn_element::deaccess(element);
+			}
+		}
+		this->endChange();
+		return element;
 	}
 
-	int mergeIntoElement(cmzn_element_id element)
+	int mergeIntoElement(cmzn_element *element)
 	{
-		FE_mesh *target_fe_mesh = FE_element_get_FE_mesh(element);
-		if (target_fe_mesh == this->fe_mesh)
+		if (this->validate())
 		{
-			if (this->validate())
-				return this->fe_mesh->merge_FE_element_template(element, this->fe_element_template);
-			else
-				display_message(ERROR_MESSAGE, "cmzn_element_merge.  Element template is not valid");
+			this->beginChange();
+			int return_code = this->getMesh()->merge_FE_element_template(element, this->fe_element_template);
+			if ((CMZN_OK == return_code) && (this->legacyNodes) && (this->legacyFieldDataList.size() > 0))
+			{
+				return_code = this->setLegacyNodesInElement(element);
+				if (CMZN_OK != return_code)
+				{
+					display_message(ERROR_MESSAGE, "Element merge.  Failed to set legacy nodes (deprecated feature)");
+					cmzn_element::deaccess(element);
+				}
+			}
+			this->endChange();
+			return return_code;
 		}
-		else
-			display_message(ERROR_MESSAGE, "cmzn_element_merge.  Incompatible template");
+		display_message(ERROR_MESSAGE, "Element merge.  Element template is not valid");
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-private:
-	~cmzn_elementtemplate()
+	FE_element_template *get_FE_element_template()
 	{
-		for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
-			iter != scale_factor_set_sizes.end(); ++iter)
-		{
-			cmzn_mesh_scale_factor_set *temp = iter->first;
-			cmzn_mesh_scale_factor_set::deaccess(temp);
-		}
-		for (unsigned int i = 0; i < fields.size(); i++)
-		{
-			delete fields[i];
-		}
-		cmzn::Deaccess(this->fe_element_template);
-		FE_mesh::deaccess(this->fe_mesh);
+		return this->fe_element_template;
 	}
 
-	FE_element_template *get_FE_element_template() { return this->fe_element_template; }
-
-	cmzn_element_field *getElementField(FE_field *fe_field)
-	{
-		for (unsigned int i = 0; i < fields.size(); i++)
-		{
-			if (fields[i]->getFeField() == fe_field)
-				return fields[i];
-		}
-		return 0;
-	}
-
-	cmzn_element_field& getOrCreateElementField(FE_field *fe_field)
-	{
-		cmzn_element_field *element_field = this->getElementField(fe_field);
-		if (!element_field)
-		{
-			element_field = new cmzn_element_field(fe_field);
-			fields.push_back(element_field);
-		}
-		return *element_field;
-	}
-
-	bool hasFields() { return (0 < fields.size()); }
-
-	void invalidate()
-	{
-		cmzn::Deaccess(this->fe_element_template);
-	}
 };
 
 /*============================================================================*/
@@ -952,31 +1114,27 @@ public:
 	}
 
 	cmzn_element_id createElement(int identifier,
-		cmzn_elementtemplate_id element_template)
+		cmzn_elementtemplate_id elementtemplate)
 	{
-		FE_element *element = NULL;
-		if (element_template->validate())
+		if (!elementtemplate)
+			return 0;
+		if (this->group)
 		{
-			if (group)
-				FE_region_begin_change(this->fe_mesh->get_FE_region());
-			element = this->fe_mesh->create_FE_element(identifier, element_template->get_FE_element_template());
-			if (group)
-			{
-				Computed_field_element_group_core_cast(group)->addObject(element);
-				FE_region_end_change(this->fe_mesh->get_FE_region());
-			}
+			FE_region_begin_change(this->fe_mesh->get_FE_region());
 		}
-		else
+		FE_element *element = elementtemplate->createElement(identifier);
+		if (this->group)
 		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_mesh_create_element.  Element template is not valid");
+			if (element)
+				Computed_field_element_group_core_cast(group)->addObject(element);
+			FE_region_end_change(this->fe_mesh->get_FE_region());
 		}
 		return element;
 	}
 
 	cmzn_elementtemplate_id createElementtemplate()
 	{
-		return new cmzn_elementtemplate(this->fe_mesh);
+		return cmzn_elementtemplate::create(this->fe_mesh);
 	}
 
 	cmzn_elementiterator_id createElementiterator()
@@ -1267,7 +1425,7 @@ cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
 cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
 	int identifier, cmzn_elementtemplate_id element_template)
 {
-	if (mesh && element_template)
+	if (mesh)
 		return mesh->createElement(identifier, element_template);
 	return 0;
 }
@@ -1607,10 +1765,11 @@ int cmzn_elementtemplate_set_element_shape_type(cmzn_elementtemplate_id element_
 	enum cmzn_element_shape_type shape_type)
 {
 	if (element_template)
-		return element_template->setShapeType(shape_type);
+		return element_template->setElementShapeType(shape_type);
 	return 0;
 }
 
+#if 0 // GRC
 /**
  * Sets the number of scale factors to be used with a given scale factor set in
  * elements defined from this template.
@@ -1633,6 +1792,7 @@ int cmzn_elementtemplate_set_number_of_scale_factors(
 		return element_template->setNumberOfScaleFactors(scale_factor_set, number_of_scale_factors);
 	return CMZN_ERROR_ARGUMENT;
 }
+#endif // GRC
 
 int cmzn_elementtemplate_get_number_of_nodes(
 	cmzn_elementtemplate_id element_template)
@@ -1650,15 +1810,21 @@ int cmzn_elementtemplate_set_number_of_nodes(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_elementtemplate_define_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, cmzn_elementfieldtemplate_id eft)
+{
+	if (elementtemplate)
+		return elementtemplate->defineField(field, component_number, eft);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_elementtemplate_define_field_element_constant(cmzn_elementtemplate_id element_template,
 	cmzn_field_id field, int component_number)
 {
-	if (element_template && field)
-	{
+	if (element_template)
 		return element_template->defineFieldElementConstant(field, component_number);
-	}
 	return CMZN_ERROR_ARGUMENT;
-
 }
 
 int cmzn_elementtemplate_define_field_simple_nodal(
@@ -1667,12 +1833,9 @@ int cmzn_elementtemplate_define_field_simple_nodal(
 	cmzn_elementbasis_id basis, int number_of_nodes,
 	const int *local_node_indexes)
 {
-	if (elementtemplate && field && basis &&
-		((0 == number_of_nodes) || (local_node_indexes)))
-	{
+	if (elementtemplate)
 		return elementtemplate->defineFieldSimpleNodal(
 			field, component_number, basis, number_of_nodes, local_node_indexes);
-	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1702,8 +1865,12 @@ cmzn_node_id cmzn_elementtemplate_get_node(
 	cmzn_elementtemplate_id element_template, int local_node_index)
 {
 	if (element_template)
-		return element_template->getNode(local_node_index);
-	return NULL;
+	{
+		cmzn_node *node = element_template->getNode(local_node_index);
+		if (node)
+			return cmzn_node_access(node);
+	}
+	return 0;
 }
 
 int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
@@ -1714,23 +1881,42 @@ int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_elementtemplate_remove_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field)
+{
+	if (elementtemplate)
+		return elementtemplate->removeField(field);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_elementtemplate_undefine_field(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field)
+{
+	if (elementtemplate)
+		return elementtemplate->undefineField(field);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 cmzn_element_id cmzn_element_access(cmzn_element_id element)
 {
 	if (element)
-		return ACCESS(FE_element)(element);
+		return element->access();
 	return 0;
 }
 
 int cmzn_element_destroy(cmzn_element_id *element_address)
 {
-	if (element_address && (*element_address))
-	{
-		DEACCESS(FE_element)(element_address);
-		return CMZN_OK;
-	}
+	if (element_address)
+		return cmzn_element::deaccess(*element_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
+{
+	return element->setIdentifier(identifier);
+}
+
+#if 0 // GRC
 /**
  * Gets the scale factors for a scale factor set in an element.
  *
@@ -1798,6 +1984,7 @@ int cmzn_element_set_scale_factors(cmzn_element_id element,
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
+#endif // GRC
 
 int cmzn_element_get_dimension(cmzn_element_id element)
 {
