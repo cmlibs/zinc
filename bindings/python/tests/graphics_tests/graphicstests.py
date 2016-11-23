@@ -101,7 +101,7 @@ class GraphicsTestCase(unittest.TestCase):
         si = self.scene.createStreaminformationScene();
         si.setIOFormat(si.IO_FORMAT_THREEJS)
         result = si.getNumberOfResourcesRequired()
-        self.assertEqual(1, result)
+        self.assertEqual(2, result)
         result = si.setIODataType(si.IO_DATA_TYPE_COLOUR)
         self.assertEqual(1, result)
         memeory_sr = si.createStreamresourceMemory();
