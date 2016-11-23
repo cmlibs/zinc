@@ -39,7 +39,7 @@ foreach(_TEST ${PYTHONTESTS})
     )
 endforeach()
 
-if(PYTHON_BINDINGS_USE_VIRTUALENV AND INSTALL_TO_VIRTUALENV)
+if(PYTHON_BINDINGS_USE_VIRTUALENV AND EXISTS ${INSTALL_TO_VIRTUALENV})
     find_program(VIRTUALENV_EXEC virtualenv)
     # Add an extra test ensuring the installed opencmiss zinc package works in the virtualenvironment
     add_test(NAME Python_Bindings_Virtualenv
