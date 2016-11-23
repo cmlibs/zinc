@@ -1,12 +1,12 @@
 # Install step for virtual environment (if given)
-if (EXISTS "${INSTALL_TO_VIRTUALENV}")
+if (PYTHON_BINDINGS_USE_VIRTUALENV AND EXISTS "${INSTALL_TO_VIRTUALENV}")
     # The binary directories for the python environments are different on windows (for what reason exactly?)
     # So we need different subpaths
     set(VENV_BINDIR bin)
     if (WIN32)
         set(VENV_BINDIR Scripts)
     endif()
-    # Convention between manage and iron CMake scripts: On multiconfig-environments, the 
+    # Convention between manage and zinc CMake scripts: On multiconfig-environments, the 
     # installation directories have the build type path element inside the INSTALL_TO_VIRTUALENV
     if (HAVE_MULTICONFIG_ENV)
         set(VENV_BINDIR $<LOWER_CASE:$<CONFIG>>/${VENV_BINDIR})
@@ -19,9 +19,9 @@ if (EXISTS "${INSTALL_TO_VIRTUALENV}")
         DEPENDS collect_python_binding_files
         COMMAND ${VENV_BINDIR}/pip install --upgrade "${NATIVE_CMAKE_CURRENT_BINARY_DIR}"
         WORKING_DIRECTORY "${INSTALL_TO_VIRTUALENV}"
-        COMMENT "Installing: opencmiss.iron package for Python virtual environment ..."
+        COMMENT "Installing: opencmiss.zinc package for Python virtual environment ..."
     )
-    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Iron_BINARY_DIR}\")"
+    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --build . --target install_venv --config \${CMAKE_INSTALL_CONFIG_NAME} WORKING_DIRECTORY \"${Zinc_BINARY_DIR}\")"
         COMPONENT VirtualEnv)
 endif()
 
