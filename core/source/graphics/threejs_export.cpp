@@ -276,7 +276,7 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 {
 	if (material)
 	{
-		char new_string[500];
+		char new_string[1024];
 		sprintf(new_string, "\t\"materials\" : [ {\n");
 		outputString += new_string;
 		sprintf(new_string, "\t\"DbgColor\" : 15658734,\n");

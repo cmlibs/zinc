@@ -114,7 +114,7 @@ public:
 
 	void invalidateLabelIterators()
 	{
-		this->labels->invalidateLabelIteratorsWithCondition(&this->values);
+		this->labels->invalidateLabelIteratorsWithCondition(&(this->values));
 	}
 
 };

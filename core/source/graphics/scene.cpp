@@ -791,6 +791,11 @@ static int cmzn_scene_build_graphics_objects(
 		if ((cmzn_scene_get_number_of_graphics(scene) > 0))
 		{
 			graphics_to_object_data.name_prefix = renderer->name_prefix;
+			graphics_to_object_data.graphics = 0;
+			graphics_to_object_data.glyph_gt_object = 0;
+			graphics_to_object_data.build_graphics = 0;
+			graphics_to_object_data.number_of_data_values = 0;
+			graphics_to_object_data.scenefilter = 0;
 			graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
@@ -806,7 +811,11 @@ static int cmzn_scene_build_graphics_objects(
 			graphics_to_object_data.time = renderer->time;
 			graphics_to_object_data.incrementalBuild = renderer->getIncrementalBuild();
 			graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(scene);
-			graphics_to_object_data.iso_surface_specification = NULL;
+			graphics_to_object_data.iso_surface_specification = 0;
+			for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+			{
+				graphics_to_object_data.top_level_number_in_xi[i] = 0;
+			}
 			return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_to_graphics_object, (void *) &graphics_to_object_data,
 				scene->list_of_graphics);

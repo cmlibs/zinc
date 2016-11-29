@@ -6714,6 +6714,10 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 			{
 				struct cmzn_graphics_to_graphics_object_data graphics_to_object_data;
 				graphics_to_object_data.name_prefix = "temp";
+				graphics_to_object_data.graphics = 0;
+				graphics_to_object_data.glyph_gt_object = 0;
+				graphics_to_object_data.build_graphics = 0;
+				graphics_to_object_data.number_of_data_values = 0;
 				graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 				graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 				graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
@@ -6730,9 +6734,15 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				graphics_to_object_data.iteration_mesh = 0;
 				graphics_to_object_data.scenefilter = 0;
 				graphics_to_object_data.time = 0;
+				graphics_to_object_data.incrementalBuild = 0;
 				graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(
 					graphics->scene);
-				graphics_to_object_data.iso_surface_specification = NULL;
+				graphics_to_object_data.iso_surface_specification = 0;
+				for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+				{
+					graphics_to_object_data.top_level_number_in_xi[i] = 0;
+				}
+
 				cmzn_graphics_to_graphics_object_no_check_on_filter(copy_graphics,
 					&graphics_to_object_data);
 				return_object = ACCESS(GT_object)(copy_graphics->graphics_object);
