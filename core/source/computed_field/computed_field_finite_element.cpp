@@ -862,7 +862,7 @@ int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int
 		firstComponent = 0;
 		copyValuesCount = this->field->number_of_components;
 	}
-	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
+	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (firstComponent < this->field->number_of_components))) &&
 			(0 < versionNumber) && (valuesCount >= copyValuesCount) && valuesOut))
 		return CMZN_ERROR_ARGUMENT;
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
@@ -907,7 +907,7 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 		firstComponent = 0;
 		copyValuesCount = this->field->number_of_components;
 	}
-	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
+	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (firstComponent < this->field->number_of_components))) &&
 			(0 < versionNumber) && (valuesCount >= copyValuesCount) && valuesIn))
 		return CMZN_ERROR_ARGUMENT;
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
