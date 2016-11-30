@@ -247,16 +247,20 @@ FE_element_field_template *FE_element_field_template::create(FE_mesh *meshIn, FE
 
 bool FE_element_field_template::matches(const FE_element_field_template &source) const
 {
-	// Note: no need to compare offset arrays since they will match if counts match
-	if ((this->mesh == source.mesh)
-		&& (this->basis == source.basis)
-		&& (this->mappingMode == source.mappingMode)
-		&& (this->totalTermCount == source.totalTermCount)
-		&& (this->numberOfLocalNodes == source.numberOfLocalNodes)
-		&& (this->numberOfLocalScaleFactors == source.numberOfLocalScaleFactors)
-		&& (this->legacyModifyThetaMode == source.legacyModifyThetaMode)
-		&& (0 == memcmp(this->termCounts, source.termCounts, this->numberOfFunctions*sizeof(int))))
+	if ((this->mesh != source.mesh)
+		|| (this->basis != source.basis)
+		|| (this->mappingMode != source.mappingMode))
+		return false;
+	// Field mapping can only use a constant basis and uses no other parameters
+	if (this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD)
 	{
+		// Note: no need to compare offset arrays since they will match if counts match
+		if ((this->totalTermCount != source.totalTermCount)
+			|| (this->numberOfLocalNodes != source.numberOfLocalNodes)
+			|| (this->numberOfLocalScaleFactors != source.numberOfLocalScaleFactors)
+			|| (this->legacyModifyThetaMode != source.legacyModifyThetaMode)
+			|| (0 != memcmp(this->termCounts, source.termCounts, this->numberOfFunctions*sizeof(int))))
+			return false;
 		if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
 		{
 			if ((0 != memcmp(this->localNodeIndexes, source.localNodeIndexes, this->totalTermCount*sizeof(int)))
@@ -266,31 +270,57 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 		}
 		else if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
 		{
-			for (int i = 0; i < this->mesh->getDimension(); ++i)
+			if ((this->legacyGridNumberInXi) && (source.legacyGridNumberInXi))
 			{
-				if (this->legacyGridNumberInXi[i] != source.legacyGridNumberInXi[i])
-					return false;
+				for (int i = 0; i < this->mesh->getDimension(); ++i)
+				{
+					if (this->legacyGridNumberInXi[i] != source.legacyGridNumberInXi[i])
+						return false;
+				}
 			}
+			else if (((this->legacyGridNumberInXi) && (!source.legacyGridNumberInXi))
+				|| ((!this->legacyGridNumberInXi) && (source.legacyGridNumberInXi)))
+				return false;
 		}
-		if ((0 == this->numberOfLocalScaleFactors)
-			|| ((this->totalLocalScaleFactorIndexes == source.totalLocalScaleFactorIndexes)
-				&& (0 == memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_element_scale_factor_type)))
-				&& (0 == memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
-				&& (0 == memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
-				&& (0 == memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int)))))
-			return true;
+		if ((0 != this->numberOfLocalScaleFactors)
+			&& ((this->totalLocalScaleFactorIndexes == source.totalLocalScaleFactorIndexes)
+				|| (0 != memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_element_scale_factor_type)))
+				|| (0 != memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
+				|| (0 != memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
+				|| (0 != memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int)))))
+			return false;
 	}
-	return false;
+	return true;
 }
 
 int FE_element_field_template::setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn)
 {
-	if (this->locked || ((modeIn != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
-		&& (modeIn != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
-		&& (modeIn != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_CONSTANT)))
+	if (this->locked ||
+		(!((modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+		|| (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+		|| (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD))))
 		return CMZN_ERROR_ARGUMENT;
+	if (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD)
+	{
+		// can only be constant basis
+		const int dimension = this->mesh->getDimension();
+		for (int i = 0; i < dimension; ++i)
+		{
+			FE_basis_type basisType = FE_BASIS_TYPE_INVALID;
+			FE_basis_get_xi_basis_type(this->basis, i, &basisType);
+			if (basisType != FE_BASIS_CONSTANT)
+			{
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate setElementParameterMappingMode.  "
+					"PARAMETER_MAPPING_MODE_FIELD only works with constant basis");
+				return CMZN_ERROR_ARGUMENT;
+			}
+		}
+	}
 	this->clearNodeMapping();
 	this->clearScaling();
+	delete this->legacyGridNumberInXi;
+	this->legacyGridNumberInXi = 0;
+	this->legacyModifyThetaMode = FE_BASIS_MODIFY_THETA_MODE_INVALID;
 	// reset to single term per function
 	for (int fn = 0; fn < this->numberOfFunctions; ++fn)
 	{
@@ -370,7 +400,8 @@ int FE_element_field_template::setLegacyGridNumberInXi(const int *numberInXiIn)
 
 int FE_element_field_template::setLegacyModifyThetaMode(FE_basis_modify_theta_mode modifyThetaModeIn)
 {
-	if (this->locked)
+	if (this->locked
+		|| (this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE))
 		return CMZN_ERROR_ARGUMENT;
 	this->legacyModifyThetaMode = modifyThetaModeIn;
 	return CMZN_OK;
@@ -382,6 +413,7 @@ int FE_element_field_template::getNumberOfElementDOFs() const
 	{
 		if (this->legacyGridNumberInXi)
 		{
+			// only linear grid supported, and for line shapes
 			int count = 1;
 			for (int i = 0; i < this->mesh->getDimension(); ++i)
 				count *= (this->legacyGridNumberInXi[i] + 1);
@@ -462,28 +494,32 @@ int FE_element_field_template::setFunctionNumberOfTerms(int functionNumber, int 
 
 int FE_element_field_template::getTermLocalNodeIndex(int functionNumber, int term) const
 {
-	if (this->validTerm(functionNumber, term))
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+		&& this->validTerm(functionNumber, term))
 		return this->localNodeIndexes[this->termOffsets[functionNumber] + term];
 	return -1;
 }
 
 cmzn_node_value_label FE_element_field_template::getTermNodeValueLabel(int functionNumber, int term) const
 {
-	if (this->validTerm(functionNumber, term))
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+		&& this->validTerm(functionNumber, term))
 		return this->nodeValueLabels[this->termOffsets[functionNumber] + term];
 	return CMZN_NODE_VALUE_LABEL_INVALID;
 }
 
 int FE_element_field_template::getTermNodeVersion(int functionNumber, int term) const
 {
-	if (this->validTerm(functionNumber, term))
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+		&& this->validTerm(functionNumber, term))
 		return this->nodeVersions[this->termOffsets[functionNumber] + term];
 	return -1;
 }
 
 int FE_element_field_template::getTermNodeLegacyIndex(int functionNumber, int term) const
 {
-	if (this->validTerm(functionNumber, term)
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+		&& this->validTerm(functionNumber, term)
 		&& (this->nodeValueLabels[this->termOffsets[functionNumber] + term] == CMZN_NODE_VALUE_LABEL_INVALID))
 		return this->nodeVersions[this->termOffsets[functionNumber] + term];
 	return -1;

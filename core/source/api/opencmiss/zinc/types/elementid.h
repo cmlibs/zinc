@@ -83,10 +83,10 @@ enum cmzn_element_parameter_mapping_mode
 {
 	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID = 0,
 		/*!< Invalid mapping mode */
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_CONSTANT = 1,
-		/*!< Element parameters are constant for all elements */
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT = 2,
+	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT = 1,
 		/*!< Element parameters are mapped directly by element */
+	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD = 2,
+		/*!< Constant value for field component */
 	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE = 3
 		/*!< Element parameters are mapped from nodes via local-to-global node map */
 };

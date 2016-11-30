@@ -547,7 +547,7 @@ public:
 
 
 /** Stores field component definition on a mesh as a FE_mesh_field_template plus
-  * constant and per-element parameters. */
+  * per-element parameters. */
 class FE_mesh_field_data
 {
 	friend class FE_mesh;
@@ -598,23 +598,17 @@ public:
 
 		block_array<DsLabelIndex, ValueType> elementScalarDOFs;
 		block_array<DsLabelIndex, ValueType*> elementVectorDOFs;
-		// constant DOFs restricted to one EFT, typically constant basis
-		ValueType *constantDOFs;
-		FE_mesh_element_field_template_data *constantEFT;
 
 	public:
 
 		Component(FE_mesh_field_template *fieldTemplateIn) :
-			ComponentBase(fieldTemplateIn),
-			constantDOFs(0),
-			constantEFT(0)
+			ComponentBase(fieldTemplateIn)
 		{
 		}
 
 		virtual ~Component()
 		{
 			clearDynamicBlockArray(this->elementVectorDOFs);
-			delete[] this->constantDOFs;
 		}
 
 		/** @param elementIndex  Element index >= 0. Not checked. */

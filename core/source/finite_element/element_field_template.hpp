@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/status.h"
 #include "general/value.h"
+#include "datastore/labels.hpp"
 #include <vector>
 
 struct FE_basis;
@@ -173,7 +174,10 @@ public:
 		return this->mappingMode;
 	}
 
-	/** Sets the parameter mapping mode, resets to one term per basis function with no scaling hence should be the first setting changed. */
+	/** Sets the parameter mapping mode. Can only set CONSTANT mapping with constant basis,
+	  * mapping a single constant value for a given field component in every element using EFT.
+	  * For other mapping modes, resets to one term per basis function with no scaling hence
+	  * should be the first setting changed. */
 	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn);
 
 	/** @return  Non-accessed pointer to the mesh for this template. */
@@ -196,6 +200,7 @@ public:
 		return this->legacyModifyThetaMode;
 	}
 
+	/** Only valid for PARAMETER_MAPPING_MODE_NODE */
 	int setLegacyModifyThetaMode(FE_basis_modify_theta_mode modifyThetaModeIn);
 
 	int getNumberOfElementDOFs() const;

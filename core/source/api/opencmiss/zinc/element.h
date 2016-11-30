@@ -583,7 +583,7 @@ ZINC_API enum cmzn_element_parameter_mapping_mode
 /**
  * Set the parameter mapping mode used for all parameters in the template.
  * A current restriction is that all parameters are mapped by NODE, ELEMENT
- * or CONSTANT.
+ * or FIELD.
  * Note this resets the mapping to the default for the given mapping mode:
  * one term per basis function with no scaling hence should be the first
  * setting changed.
