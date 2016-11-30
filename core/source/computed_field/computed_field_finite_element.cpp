@@ -954,7 +954,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
 
-		element_dimension = get_FE_element_dimension(element);
+		element_dimension = element->getDimension();
 		if (FE_element_field_is_grid_based(element,fe_field))
 		{
 			FE_element_shape *element_shape = get_FE_element_shape(element);
@@ -1168,7 +1168,7 @@ Returns 0 with no errors if the field is not grid-based.
 
 	ENTER(Computed_field_get_native_discretization_in_element);
 	if (field&&element&&number_in_xi&&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=get_FE_element_dimension(element)))
+		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= element->getDimension()))
 	{
 		if (FE_element_field_is_grid_based(element,fe_field))
 		{
@@ -1433,7 +1433,7 @@ int cmzn_field_finite_element_get_node_parameters(
 }
 
 int cmzn_field_finite_element_set_node_parameters(
-	cmzn_field_finite_element *finite_element_field, cmzn_fieldcache_id cache,
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
 	int component_number, enum cmzn_node_value_label node_value_label,
 	int version_number, int values_count, const double *values_in)
 {
@@ -1663,7 +1663,7 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
 		/* derivatives are always zero for this type, hence always calculated */
-		int element_dimension = get_FE_element_dimension(element);
+		int element_dimension = element->getDimension();
 		for (int i = 0; i < element_dimension; i++)
 		{
 			valueCache.derivatives[i] = 0.0;
@@ -1841,7 +1841,7 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
 		FE_element* element = element_xi_location->get_element();
-		valueCache.values[0] = (FE_value)FE_element_get_access_count(element);
+		valueCache.values[0] = static_cast<FE_value>(element->getAccessCount());
 	}
 	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 	{
@@ -2562,9 +2562,9 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	if (!element_xi_location)
 		return 0;
 	cmzn_element *element = element_xi_location->get_element();
-	if (1 != get_FE_element_dimension(element))
+	if (1 != element->getDimension())
 		return 0;
-	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	FE_mesh *fe_mesh = element->getMesh();
 	if (!fe_mesh)
 		return 0;
 	FE_mesh *parentMesh = fe_mesh->getParentMesh();
@@ -3541,7 +3541,7 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 		/* returns the values in xi, up to the element_dimension and padded
 			with zeroes */
-		int element_dimension = get_FE_element_dimension(element);
+		int element_dimension = element->getDimension();
 		FE_value *temp = valueCache.derivatives;
 		for (int i=0;i<field->number_of_components;i++)
 		{
@@ -3744,7 +3744,7 @@ private:
 
 	virtual bool is_non_linear() const
 	{
-		return FE_field_uses_non_linear_basis(fe_field) == 1; // could check max order
+		return FE_field_uses_non_linear_basis(fe_field); // could check max order
 	}
 
 };
@@ -4632,7 +4632,7 @@ int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_element* element = element_xi_location->get_element();
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		if (fe_mesh && fe_mesh->isElementExterior(get_FE_element_index(element)))
 			valueCache.values[0] = 1.0;
 		else
@@ -4737,7 +4737,7 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_element* element = element_xi_location->get_element();
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		if (fe_mesh &&
 				((CMZN_ELEMENT_FACE_TYPE_ALL == this->faceType) ||
 				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->faceType) &&

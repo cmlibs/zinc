@@ -36,7 +36,8 @@ Module types
 ------------
 */
 
-FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
+FE_region_changes::FE_region_changes(struct FE_region *fe_regionIn) :
+	fe_region(ACCESS(FE_region)(fe_regionIn)),
 	access_count(1)
 {
 	this->fe_field_changes = fe_region->extractFieldChangeLog();
@@ -49,23 +50,24 @@ FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
 	bool parentAllChange = this->nodeChangeLogs[0]->isAllChange();
 	for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
 	{
-		if (0 != (this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog()))
+		this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog();
+		if (parentChange)
 		{
-			if (parentChange)
-			{
-				if (parentAllChange)
-					this->elementChangeLogs[dim]->setAllChange(DS_LABEL_CHANGE_TYPE_RELATED);
-				else
-					this->elementChangeLogs[dim]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
-			}
+			if (parentAllChange)
+				this->elementChangeLogs[dim]->setAllChange(DS_LABEL_CHANGE_TYPE_RELATED);
 			else
-			{
-				int elementChanges = this->elementChangeLogs[dim]->getChangeSummary();
-				parentChange = 0 != (elementChanges & DS_LABEL_CHANGE_TYPE_RELATED);
-			}
-			if (parentChange && !parentAllChange)
-				parentAllChange = this->elementChangeLogs[dim]->isAllChange();
+				this->elementChangeLogs[dim]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
 		}
+		else
+		{
+			int elementChanges = this->elementChangeLogs[dim]->getChangeSummary();
+			parentChange = 0 != (elementChanges & DS_LABEL_CHANGE_TYPE_RELATED);
+		}
+		if (parentChange && !parentAllChange)
+			parentAllChange = this->elementChangeLogs[dim]->isAllChange();
+		// following flag is used for propagation of field changes from
+		// nodes, and on to face elements
+		this->propagatedToDimension[dim] = false;
 	}
 }
 
@@ -76,12 +78,67 @@ FE_region_changes::~FE_region_changes()
 		cmzn::Deaccess(this->nodeChangeLogs[n]);
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		cmzn::Deaccess(this->elementChangeLogs[dim]);
+	DEACCESS(FE_region)(&(this->fe_region));
 }
 
-bool FE_region_changes::elementOrParentChanged(FE_element *element)
+/** If not already done, propagate field changes from nodes, or higher
+  * dimension elements to faces of this dimension.
+  * @param dimension   Mesh dimension from 1 to MAXIMUM_ELEMENT_XI_DIMENSIONS */
+bool FE_region_changes::propagateToDimension(int dimension)
 {
-	return (0 != FE_element_or_parent_changed(element, this->elementChangeLogs, this->nodeChangeLogs[0], this->fe_field_changes));
+	if ((dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		display_message(INFORMATION_MESSAGE, "FE_region_changes::propagateToDimension.  Invalid dimension");
+		return false;
+	}
+	if (this->propagatedToDimension[dimension - 1])
+		return true;
+	if (!this->elementChangeLogs[dimension - 1]->isAllChange())
+	{
+		FE_mesh *mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
+		if (mesh)
+		{
+			// propagate from parent element changes, node changes, both, or neither
+			DsLabelsChangeLog *changeLog = this->elementChangeLogs[dimension - 1];
+			DsLabelsGroup *group = changeLog->getLabelsGroup();
+			const DsLabelsGroup *parentGroup = 0;
+			if (dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS)
+			{
+				this->propagateToDimension(dimension + 1);
+				const DsLabelsChangeLog *parentChangeLog = this->elementChangeLogs[dimension];
+				if (parentChangeLog->getChangeSummary() != DS_LABEL_CHANGE_TYPE_NONE)
+					parentGroup = parentChangeLog->getLabelsGroup();
+			}
+			const DsLabelsChangeLog *nodeChangeLog = this->nodeChangeLogs[0];
+			const DsLabelsGroup *nodeGroup = 0;
+			if (nodeChangeLog->getChangeSummary() != DS_LABEL_CHANGE_TYPE_NONE)
+				nodeGroup = nodeChangeLog->getLabelsGroup();
+			if (parentGroup || nodeGroup)
+			{
+				bool relatedChange = (0 != (changeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_RELATED));
+				const DsLabelIndex elementIndexLimit = mesh->getLabelsIndexSize();
+				for (DsLabelIndex elementIndex = 0; elementIndex < elementIndexLimit; ++elementIndex)
+				{
+					if (relatedChange && group->hasIndex(elementIndex))
+						continue; // optimisation only works after relatedChange is set
+					if (mesh->getElementIdentifier(elementIndex) == DS_LABEL_IDENTIFIER_INVALID)
+						continue; // no element at index, normal if elements have been removed
+					if ((parentGroup && mesh->elementHasParentInGroup(elementIndex, *parentGroup))
+						|| (nodeGroup && mesh->elementHasNodeInGroup(elementIndex, *nodeGroup)))
+					{
+						group->setIndex(elementIndex, true);
+						relatedChange = true;
+					}
+				}
+				if (relatedChange)
+					this->elementChangeLogs[dimension - 1]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
+			}
+		}
+	}
+	this->propagatedToDimension[dimension - 1] = true;
+	return true;
 }
+
 
 /**
  * Tells parent region about changes to fields, nodes and elements.
@@ -167,7 +224,10 @@ FE_region::FE_region(FE_region *base_fe_region) :
 	this->nodesets[1]->setFieldDomainType(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 
 	for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
+	{
 		this->meshes[dimension - 1] = FE_mesh::create(this, dimension);
+		this->meshes[dimension - 1]->setNodeset(this->nodesets[0]);
+	}
 	for (int dimension = 2; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
 		this->meshes[dimension - 1]->setFaceMesh(this->meshes[dimension - 2]);
 	for (int dimension = 1; dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
@@ -1077,20 +1137,42 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				if (!elementIter) 
 					return_code = 0;
 				fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-				FE_element *element;
-				while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
+				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, fe_mesh);
+				if (!meshFieldData)
 				{
-					/* skip elements without field defined appropriately */
-					if (FE_element_field_is_standard_node_based(element, fe_field))
+					display_message(ERROR_MESSAGE,
+						"FE_region_smooth_FE_field.  FE_field is not defined on mesh");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					FE_element *element;
+					const int componentCount = get_FE_field_number_of_components(fe_field);
+					while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
 					{
-						if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
+						/* skip elements without field defined appropriately */
+						bool definedAndNodeBased = true;
+						for (int c = 0; c < componentCount; ++c)
 						{
-							fe_mesh->elementChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
+							FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+							FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+							if (!((eft) && (eft->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)))
+							{
+								definedAndNodeBased = false;
+								break;
+							}
 						}
-						else
+						if (definedAndNodeBased)
 						{
-							return_code = 0;
-							break;
+							if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
+							{
+								fe_mesh->elementChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
+							}
+							else
+							{
+								return_code = 0;
+								break;
+							}
 						}
 					}
 				}

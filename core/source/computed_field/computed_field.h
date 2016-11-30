@@ -598,14 +598,9 @@ This function returns true if the <field> can find element and xi given
 a set of values.
 ==============================================================================*/
 
-int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+/* Returns true if all fields are defined in the same way at the two elements. */
+bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2);

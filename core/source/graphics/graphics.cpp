@@ -517,7 +517,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
-	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	FE_mesh *fe_mesh = element->getMesh();
 	if (fe_mesh && graphics_to_object_data &&
 		(NULL != (graphics = graphics_to_object_data->graphics)) &&
 		graphics->graphics_object)
@@ -3410,38 +3410,13 @@ cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
 	return change;
 }
 
-/** data for passing to FE_element_as_graphics_name_has_changed */
-struct FE_element_as_graphics_name_has_changed_data
-{
-	FE_mesh *fe_mesh;
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	DsLabelsChangeLog *nodeChangeLog;
-};
-
-/**
- * @param data_void  Pointer to struct FE_element_as_graphics_name_has_changed_data.
- * @return  1 if element has changed according to event.
- */
-int FE_element_as_graphics_name_has_changed(int index, void *data_void)
-{
-	FE_element_as_graphics_name_has_changed_data *data =
-		static_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
-	DsLabelIdentifier elementIdentifier = data->fe_mesh->getElementIdentifier(index);
-	if (elementIdentifier < 0)
-		return 1; // element removed
-	FE_element *element = data->fe_mesh->getElement(index);
-	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChangeLog))
-		return 1;
-	return 0;
-}
-
 } // namespace anonymous
 
 int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	void *change_data_void)
 {
 	cmzn_graphics_field_change_data *change_data =
-		reinterpret_cast<cmzn_graphics_field_change_data *>(change_data_void);
+		static_cast<cmzn_graphics_field_change_data *>(change_data_void);
 	if (change_data->selection_changed && (CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
 		cmzn_graphics_update_selected(graphics, (void *)NULL);
 	if (0 == graphics->graphics_object)
@@ -3500,41 +3475,18 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
-				DsLabelsChangeLog *nodeChangeLog = feRegionChanges->getNodeChangeLog(CMZN_FIELD_DOMAIN_TYPE_NODES);
-				const int numberNodeChanges = nodeChangeLog->getChangeCount();
-				// must check equal and higher dimension element changes due to field inheritance
-				bool tooManyElementChanges = false;
-				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				feRegionChanges->propagateToDimension(domainDimension);
+				DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(domainDimension);
+				if (elementChangeLog->isAllChange() || (elementChangeLog->getChangeCount()*2 >
+					FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(graphics->scene->region), domainDimension)->getSize()))
 				{
-					DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(dim);
-					int number = 0;
-					if (elementChangeLog && (elementChangeLog->isAllChange() ||
-						((number = elementChangeLog->getChangeCount())*2 >
-							FE_region_get_number_of_FE_elements_of_dimension(
-								cmzn_region_get_FE_region(graphics->scene->region), dim))))
-					{
-						tooManyElementChanges = true;
-						break;
-					}
-				}
-				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-					cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
-				// if too many node or element changes, just rebuild all
-				if (tooManyElementChanges ||
-					(numberNodeChanges*2 > fe_nodeset->getSize()))
-				{
+					// too many changes for partial rebuild
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
-				FE_element_as_graphics_name_has_changed_data data;
-				data.fe_mesh = FE_region_find_FE_mesh_by_dimension(
-					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
-				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-					data.elementChangeLogs[dim] = feRegionChanges->getElementChangeLog(dim + 1);
-				data.nodeChangeLog = nodeChangeLog;
 				/* partial rebuild for few node/element field changes */
-				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
-					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
+				GT_object_invalidate_selected_primitives(graphics->graphics_object,
+					feRegionChanges->getElementChangeLog(domainDimension));
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
 			}
 		}

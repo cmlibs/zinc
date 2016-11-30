@@ -2249,31 +2249,11 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capable */
 
-int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(equivalent_computed_fields_at_elements);
-	return_code=0;
-	if (element_1&&element_2)
-	{
-		return_code=equivalent_FE_fields_in_elements(element_1,element_2);
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* equivalent_computed_fields_at_elements */
+	return equivalent_FE_fields_in_elements(element_1,element_2);
+}
 
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2)

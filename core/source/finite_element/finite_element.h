@@ -114,16 +114,30 @@ subsequent enumerators to be sequential, unlike the default behaviour which
 starts at 0.
 ==============================================================================*/
 {
-	FE_NODAL_VALUE,
-	FE_NODAL_D_DS1,
-	FE_NODAL_D_DS2,
-	FE_NODAL_D2_DS1DS2,
-	FE_NODAL_D_DS3,
-	FE_NODAL_D2_DS1DS3,
-	FE_NODAL_D2_DS2DS3,
-	FE_NODAL_D3_DS1DS2DS3,
-	FE_NODAL_UNKNOWN
+	FE_NODAL_UNKNOWN = CMZN_NODE_VALUE_LABEL_INVALID,
+	FE_NODAL_VALUE = CMZN_NODE_VALUE_LABEL_VALUE,
+	FE_NODAL_D_DS1 = CMZN_NODE_VALUE_LABEL_D_DS1,
+	FE_NODAL_D_DS2 = CMZN_NODE_VALUE_LABEL_D_DS2,
+	FE_NODAL_D2_DS1DS2 = CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
+	FE_NODAL_D_DS3 = CMZN_NODE_VALUE_LABEL_D_DS3,
+	FE_NODAL_D2_DS1DS3 = CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
+	FE_NODAL_D2_DS2DS3 = CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
+	FE_NODAL_D3_DS1DS2DS3 = CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
 }; /* enum FE_nodal_value_type */
+
+/** Convert external node value label to internal finite element value type. */
+inline FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
+	enum cmzn_node_value_label node_value_label)
+{
+	return static_cast<FE_nodal_value_type>(node_value_label);
+}
+
+/** Convert internal finite element value type to external node value label. */
+inline enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
+	FE_nodal_value_type nodal_value_type)
+{
+	return static_cast<cmzn_node_value_label>(nodal_value_type);
+}
 
 struct FE_node_field_creator;
 
@@ -132,51 +146,6 @@ struct cmzn_node;
 
 DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
 DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
-
-#if 0 // GRC
-/**
- * Specifies the type of mapping used to get element DOFs for interpolation
- * from global DOFs in a variety of sources (nodes, field etc.)
- */
-enum Global_to_element_map_type
-{
-	STANDARD_NODE_TO_ELEMENT_MAP,
-	GENERAL_ELEMENT_MAP,
-	ELEMENT_GRID_MAP
-};
-
-struct Standard_node_to_element_map;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating element values by choosing nodal values
-and applying a diagonal scale factor matrix.  The <nodal_values> and
-<scale_factors> are stored as offsets so that the arrays stored with the nodes
-and elements can be reallocated.
-==============================================================================*/
-
-struct FE_element_field_component;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating element values, with respect to the
-<basis>, from global values (this calculation includes the application of scale
-factors).  There are two types - <NODE_BASED_MAP> and <GENERAL_LINEAR_MAP>.  For
-a node based map, the global values are associated with nodes.  For a general
-linear map, the global values do not have to be associated with nodes.  The node
-based maps could be specified as general linear maps, but the node based
-specification (required by CMISS) cannot be recovered from the general linear
-map specification (important when the front end is being used to create meshs).
-The <modify> function is called after the element values have been calculated
-with respect to the <basis> and before the element values are blended to be with
-respect to the standard basis.  The <modify> function is to allow for special
-cases, such as nodes that have multiple theta values in cylindrical polar,
-spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
-either lying on the z-axis or being the first and last node in a circle.
-==============================================================================*/
-#endif // GRC
 
 struct FE_element_field_values;
 /*******************************************************************************
@@ -235,10 +204,6 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_quadrature_rule);
-
-typedef int (*FE_element_field_component_modify)(
-	struct FE_element_field_component *,struct FE_element *,struct FE_field *,
-	FE_value,int,FE_value *);
 
 typedef int (FE_node_field_iterator_function)(struct FE_node *node, \
 	struct FE_field *field,void *user_data);
@@ -974,297 +939,6 @@ int list_FE_node(struct FE_node *node);
 cmzn_node_id cmzn_nodeiterator_next_non_access(
 	cmzn_nodeiterator_id node_iterator);
 
-#if 0 // GRC
-/**
- * Creates map with value type and version arrays allocated.
- * Allocates memory and assigns fields for a standard node to element map.
- * Allocates storage for the nodal value and scale factor indices and sets to -1.
- */
-Standard_node_to_element_map *Standard_node_to_element_map_create(
-	int node_index, int number_of_nodal_values);
-
-/**
- * Legacy variant of Standard_node_to_element_map_create which defines
- * node value index arrays to be converted into node value type and version
- * arrays at a later time.
- * Use only when reading from EX format.
- */
-Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
-	int node_index, int number_of_nodal_values);
-
-/**
- * Frees the memory for the map and sets <*map_address> to NULL.
- */
-int Standard_node_to_element_map_destroy(
-	struct Standard_node_to_element_map **map_address);
-
-/**
- * Returns the node index from <standard_node_map>.
- * If fails, sets *<node_index_address> to zero.
- */
-int Standard_node_to_element_map_get_node_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int *node_index_address);
-
-/**
- * Returns the number of nodal values used by <standard_node_map>.
- * If fails, sets *<number_of_nodal_values_address> to zero.
- */
-int Standard_node_to_element_map_get_number_of_nodal_values(
-	struct Standard_node_to_element_map *standard_node_map,
-	int *number_of_nodal_values_address);
-
-/**
- * Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
- * If fails, sets *<nodal_value_index_address> to zero.
- * Legacy function, currently not called, but kept to help debug old EX files.
- */
-int Standard_node_to_element_map_get_nodal_value_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int *nodal_value_index_address);
-
-/**
- * Sets nodal_value_index <nodal_value_number> of <standard_node_map> to
- * <nodal_value_index>.
- * Note a negative <nodal_value_index> gives a value of zero without needing to
- * get a value from the node.
- * Legacy function only used when reading old EX files.
- */
-int Standard_node_to_element_map_set_nodal_value_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int nodal_value_index);
-
-/**
- * Returns the nodal value type at <nodal_value_number> in <standard_node_map>.
- * If none, returns FE_NODAL_UNKNOWN.
- */
-FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number);
-
-/**
- * Sets nodal_value_type <nodal_value_number> of <standard_node_map> to
- * <nodal_value_type>.
- * Must have allocated value types and versions.
- */
-int Standard_node_to_element_map_set_nodal_value_type(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, FE_nodal_value_type nodal_value_type);
-
-/**
- * Returns the version number of the nodal value obtained for
- * <nodal_value_number> in <standard_node_map>, starting at 1.
- * If none/error, returns 0.
- */
-int Standard_node_to_element_map_get_nodal_version(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number);
-
-/**
- * Sets nodal version <nodal_value_number> of <standard_node_map> to
- * <version>.
- * Must have allocated value types and versions.
- * @param nodal_version  The nodal version to set, starting at 1.
- */
-int Standard_node_to_element_map_set_nodal_version(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int nodal_version);
-
-/**
- * @return  The index into the scale factors stored for the basis in the
- * element of the scale factor used in mapping the nodal value number.
- * A return value of -1 means unscaled i.e. unit scale factor 1.0.
- * For invalid arguments also returns -1.
- */
-int Standard_node_to_element_map_get_scale_factor_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number);
-
-/**
- * Sets scale_factor_index <nodal_value_number> of <standard_node_map> to
- * <scale_factor_index>.
- * Note a negative <scale_factor_index> gives a unit scale factor without
- * needing to get a value from the scale factor set.
- */
-int Standard_node_to_element_map_set_scale_factor_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int scale_factor_index);
-
-struct FE_element_field_component *CREATE(FE_element_field_component)(
-	enum Global_to_element_map_type type,int number_of_maps,
-	struct FE_basis *basis,FE_element_field_component_modify modify);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Allocates memory and enters values for a component of a element field.
-Allocates storage for the global to element maps and sets to NULL.
-==============================================================================*/
-
-int DESTROY(FE_element_field_component)(
-	struct FE_element_field_component **component_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the component and sets <*component_address> to NULL.
-==============================================================================*/
-
-/**
- * Creates and returns a copy of the supplied element field component. Due to
- * references to scale factor sets, the component is valid for use in the
- * current FE_mesh only.
- * @see FE_element_field_component_switch_FE_mesh
- */
-struct FE_element_field_component *copy_create_FE_element_field_component(
-	struct FE_element_field_component *source_component);
-
-int FE_element_field_component_get_basis(
-	struct FE_element_field_component *element_field_component,
-	struct FE_basis **basis_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <basis> used by <element_field_component>.
-If fails, puts NULL in *<basis_address> if supplied.
-==============================================================================*/
-
-int FE_element_field_component_get_grid_map_number_in_xi(
-	struct FE_element_field_component *element_field_component,
-	int xi_number, int *number_in_xi_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <number_in_xi> = number of spaces between grid points = one less than
-the number of grid points on <xi_number> for <element_field_component> of type
-ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
-of the basis in <element_field_component>.
-If fails, puts zero in *<number_in_xi_address> if supplied.
-==============================================================================*/
-
-int FE_element_field_component_set_grid_map_number_in_xi(
-	struct FE_element_field_component *element_field_component,
-	int xi_number, int number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 16 October 2002
-
-DESCRIPTION :
-Sets the <number_in_xi> = number of spaces between grid points = one less than
-the number of grid points on <xi_number> for <element_field_component> of type
-ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
-of the basis in <element_field_component>. <number_in_xi> must be positive.
-The number_in_xi must currently be unset for this <xi_number>.
-==============================================================================*/
-
-int FE_element_field_component_set_grid_map_value_index(
-	struct FE_element_field_component *element_field_component, int value_index);
-/*******************************************************************************
-LAST MODIFIED : 16 October 2002
-
-DESCRIPTION :
-Sets the <value_index> = starting point in the element's value_storage for the
-grid-based values for <element_field_component> of type ELEMENT_GRID_MAP.
-<value_index> must be non-negative.
-The value_index must currently be 0.
-==============================================================================*/
-
-int FE_element_field_component_get_modify(
-	struct FE_element_field_component *element_field_component,
-	FE_element_field_component_modify *modify_address);
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Gets the <modify> function used by <element_field_component> -- can be NULL.
-If fails, puts NULL in *<modify_address> if supplied.
-==============================================================================*/
-
-int FE_element_field_component_set_modify(
-	struct FE_element_field_component *element_field_component,
-	FE_element_field_component_modify modify);
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Sets the <modify> function used by <element_field_component> -- can be NULL.
-==============================================================================*/
-
-int FE_element_field_component_get_number_of_nodes(
-	struct FE_element_field_component *element_field_component,
-	int *number_of_nodes_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the number of local nodes for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP.
-If fails, puts zero in *<number_of_nodes_address> if supplied.
-==============================================================================*/
-
-/**
- * Fills array of flags (1=true, 0=false) indicating whether local node i is in
- * use by the component map.
- */
-int FE_element_field_component_get_local_node_in_use(
-	FE_element_field_component *component, int numberOfLocalNodes, int *localNodeInUse);
-
-/** @return  Non-accessed pointer to scale factor set, or 0 if none or error */
-cmzn_mesh_scale_factor_set *FE_element_field_component_get_scale_factor_set(
-	FE_element_field_component *component);
-
-/**
- * Set the scale factor set to use with the element field component.
- * Cannot be of type ELEMENT_GRID_MAP.
- *
- * @param component  The element field component to modify.
- * @param scale_factor_set  The scale factor set identifier, or 0 for none.
- * @return CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-int FE_element_field_component_set_scale_factor_set(
-	FE_element_field_component *component, cmzn_mesh_scale_factor_set *scale_factor_set);
-
-int FE_element_field_component_get_standard_node_map(
-	struct FE_element_field_component *element_field_component, int node_number,
-	struct Standard_node_to_element_map **standard_node_map_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <standard_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-If fails, puts NULL in *<standard_node_map_address> if supplied.
-==============================================================================*/
-
-int FE_element_field_component_set_standard_node_map(
-	struct FE_element_field_component *element_field_component,
-	int node_number, struct Standard_node_to_element_map *standard_node_map);
-/*******************************************************************************
-LAST MODIFIED : 16 October 2002
-
-DESCRIPTION :
-Sets the <standard_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-The standard_node_map must currently be unset for this <xi_number>.
-On successful return <standard_node_map> will be owned by the component.
-==============================================================================*/
-
-int FE_element_field_component_get_type(
-	struct FE_element_field_component *element_field_component,
-	enum Global_to_element_map_type *type_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the type of mapping used by <element_field_component>.
-==============================================================================*/
-#endif // GRC
-
 int calculate_grid_field_offsets(int element_dimension,
 	int top_level_element_dimension, const int *top_level_number_in_xi,
 	FE_value *element_to_top_level,int *number_in_xi,int *base_grid_offset,
@@ -1299,19 +973,14 @@ before calling calculate_FE_element_field_values again, and if leaving the
 structure unused for some time so it is not accessing objects.
 ==============================================================================*/
 
-int calculate_FE_element_field_values(struct FE_element *element,
+/**
+* Fill the element_field_values structure; must have already been created.
+* @param topLevelElement  Optional element to inherit field from.
+*/
+int calculate_FE_element_field_values(cmzn_element *element,
 	struct FE_field *field, FE_value time, char calculate_derivatives,
 	struct FE_element_field_values *element_field_values,
-	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-If <field> is NULL, element values are calculated for the coordinate field.  The
-function fills in the fields of the <element_field_values> structure, but does
-not allocate memory for the structure.
-The optional <top_level_element> forces inheritance from it as needed.
-==============================================================================*/
+	cmzn_element *topLevelElement);
 
 int FE_element_field_values_differentiate(
 	struct FE_element_field_values *element_field_values, int xi_index);
@@ -1348,26 +1017,6 @@ memory for the information and sets <*element_field_info_address> to NULL.
 PROTOTYPE_LIST_FUNCTIONS(FE_element_field_values);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field_values,element,struct FE_element *);
-
-int FE_element_field_values_set_no_modify(
-	struct FE_element_field_values *element_field_values);
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-Sets the FE_element_field_values no_modify flag.  When an element field values
-structure is created, the no_modify flag is unset.
-clear_FE_element_field_values also unsets the no_modify flag.
-
-When calculate_FE_element_field_values is called, if the no_modify flag is set
-then the field component modify function, if present, is not called.
-
-???DB.  This was added to fix calculating nodal value derivatives for computed
-	variables.  It was added as a set function because it is specialized and
-	will hopefully be replaced (either by a specialized function for calculating
-	nodal value derivatives instead of calculate_FE_element_field_values or a
-	better way of doing the modify).
-==============================================================================*/
 
 int FE_element_field_values_get_component_values(
 	struct FE_element_field_values *element_field_values, int component_number,
@@ -1421,15 +1070,21 @@ derivatives.
 ==============================================================================*/
 
 /**
- * If <field> is NULL, element nodes are calculated for the coordinate field.  The
- * function allocates an array, <*element_field_nodes_array_address> to store the
+ * The function allocates an array, <*element_field_nodes_array_address> to store the
  * pointers to the ACCESS'd element nodes.  Components that are not node-based are
  * ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
  * fastest in xi2 and so on).
+ * Beware: for general parameter maps, only returns first node affecting a given
+ * element parameter. Also, in general this information is insufficient to determine
+ * a common face since it may differ by versions or general maps, but it is
+ * currently used for this purpose.
  * The optional <top_level_element> forces inheritance from it as needed.
  * NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
  * @param face_number  If non-negative, calculate nodes for face number of
  * element, as if the face element were supplied to this function.
+ * @param field  The field to calculate nodes for, or pass NULL to calculate
+ * nodes for the first coordinate field defined at element, provided it can
+ * be inherited from the optional top_level_element.
  */
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	int face_number, struct FE_field *field,
@@ -1686,14 +1341,12 @@ int adjacent_FE_element(struct FE_element *element,
 bool equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2);
 
-int equivalent_FE_fields_in_elements(struct FE_element *element_1,
+/**
+ * @return  True if all fields are defined in the same way at the two elements.
+ * A prerequisite is that they must be valid elements on the same mesh.
+ */
+bool equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 
 /**
  * @return  The dimension of the element, or 0 if it cannot be determined.
@@ -1715,26 +1368,13 @@ DsLabelIdentifier get_FE_element_identifier(struct FE_element *element);
  */
 DsLabelIndex get_FE_element_index(struct FE_element *element);
 
-/**
- * Returns true if <element> or any of its parent elements is listed in the
- * element change logs with any of IDENTIFIER, DEFINITION or REMOVED flags.
- * Since element fields depend on node fields, the element is also considered as
- * changed if it or any of its parents uses a node listed in the
- * <fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
- * OBJECT_NOT_IDENTIFIER_CHANGED.
- */
-bool FE_element_or_parent_changed(struct FE_element *element,
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-	DsLabelsChangeLog *nodeChangeLog, struct CHANGE_LOG(FE_field) *fe_field_changes);
+/** @return  First coordinate field defined on element or inherited from
+  * parent. Note inheritence is in same order as FE_field::getOrInheritOnElement */
+struct FE_field *FE_element_get_default_coordinate_field(struct FE_element *element);
 
+/** @return  The number of fields defined at <element>.
+  * Does not include fields inherited from parent elements. */
 int get_FE_element_number_of_fields(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2002
-
-DESCRIPTION :
-Returns the number of fields defined at <element>.
-Does not include fields inherited from parent elements.
-==============================================================================*/
 
 /**
  * Returns the <shape> of the <element>, if any. Invalid elements (in process
@@ -1746,194 +1386,9 @@ FE_element_shape *get_FE_element_shape(struct FE_element *element);
 /**
  * Returns the <face_element> for face <face_number> of <element>, where NULL
  * means there is no face. Element must have a shape and face.
+ * Use is discouraged; add new element/mesh API if needed.
  */
 struct FE_element *get_FE_element_face(struct FE_element *element, int face_number);
-
-#if 0 // GRC
-int set_FE_element_number_of_nodes(struct FE_element *element,
-	int number_of_nodes);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2002
-
-DESCRIPTION :
-Establishes storage for <number_of_nodes> in <element>. Can only be increased.
-Should only be called for unmanaged elements.
-==============================================================================*/
-
-int get_FE_element_number_of_nodes(struct FE_element *element,
-	int *number_of_nodes_address);
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Returns the number of nodes directly referenced by <element>; does not include
-nodes used by fields inherited from parent elements.
-If fails, puts zero at <number_of_nodes_address>.
-==============================================================================*/
-#endif // GRC
-
-int get_FE_element_node(struct FE_element *element,int node_number,
-	struct FE_node **node);
-/*******************************************************************************
-LAST MODIFIED : 10 November 1999
-
-DESCRIPTION :
-Gets node <node_number>, from 0 to number_of_nodes-1 of <element> in <node>.
-<element> must already have a shape and node_scale_field_information.
-==============================================================================*/
-
-int set_FE_element_node(struct FE_element *element,int node_number,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 11 October 1999
-
-DESCRIPTION :
-Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
-<element> must already have a shape and node_scale_field_information.
-Should only be called for unmanaged elements.
-==============================================================================*/
-
-#if 0 // GRC
-/**
- * Get the number and address of the scale factors for the given set in element.
- * @return  The number of scale factors for the set, or 0 if none or invalid
- * arguments.
- */
-int get_FE_element_scale_factors_address(struct FE_element *element,
-	cmzn_mesh_scale_factor_set *scale_factor_set, FE_value **scale_factors_address);
-
-/**
- * Establishes storage for <number_of_scale_factor_sets> in <element>, each
- * containing <numbers_in_scale_factor_sets> and identifier by
- * <scale_factor_set_identifiers>.
- * May only be set once; should only be called for unmanaged elements.
- * @return CMZN_OK on success, otherwise any other error code.
- */
-int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int number_of_scale_factor_sets,
-	cmzn_mesh_scale_factor_set **scale_factor_set_identifiers,
-	int *numbers_in_scale_factor_sets);
-
-/**
- * Returns the number of scale factor_sets in <element>.
- * If fails, puts zero at <number_of_scale_factor_sets_address>.
- */
-int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int *number_of_scale_factor_sets_address);
-
-/**
- * Returns the number of scale factors in <scale_factor_set_number> of <element>,
- * where <scale_factor_set_number> is from 0 to one less than the number of sets.
- */
-int get_FE_element_number_in_scale_factor_set_at_index(struct FE_element *element,
-	int scale_factor_set_number);
-
-/**
- * Returns the identifier of <scale_factor_set_number> of <element>,
- * where <scale_factor_set_number> is from 0 to one less than the number of sets.
- * @return  Non-accessed pointer to mesh scale factor set, or 0 if none or error.
- */
-cmzn_mesh_scale_factor_set *get_FE_element_scale_factor_set_identifier_at_index(
-	struct FE_element *element, int scale_factor_set_number);
-
-/**
- * Sets the identifier of <scale_factor_set_number> of <element>,
- * where <scale_factor_set_number> is from 0 to one less than the number of sets.
- * Be careful: only use when merging elements from another region.
- *
- * @param scale_factor_set_identifier  New scale factor set identifier from the
- * owning region of the element.
- * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-int set_FE_element_scale_factor_set_identifier_at_index(
-	struct FE_element *element, int scale_factor_set_number,
-	cmzn_mesh_scale_factor_set *scale_factor_set_identifier);
-
-int get_FE_element_number_of_scale_factors(struct FE_element *element,
-	int *number_of_scale_factors_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of scale factors stored with <element>.
-If fails, puts zero at <number_of_scale_factors_address>.
-==============================================================================*/
-
-int get_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number, FE_value *scale_factor_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
-<element> to <scale_factor>.
-<element> must already have a shape and node_scale_field_information.
-If fails, sets *<scale_factor_address> to 0.0;
-==============================================================================*/
-
-/**
- * Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1
- * of <element> to <scale_factor>.
- * <element> must already have a shape and node_scale_field_information.
- * Should only be called for unmanaged elements.
- * Dangerous; use with care.
- */
-int set_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number, FE_value scale_factor);
-
-int define_FE_field_at_element(struct FE_element *element,
-	struct FE_field *field,struct FE_element_field_component **components);
-/*******************************************************************************
-LAST MODIFIED : 11 October 1999
-
-DESCRIPTION :
-Defines <field> at <element> using the given <components>. <element> must
-already have a shape and node_scale_field_information.
-Checks the range of nodes, scale factors etc. referred to by the components are
-within the range of the node_scale_field_information, and that the basis
-functions are compatible with the element shape.
-If the components indicate the field is grid-based, checks that all the
-components are grid-based with the same number_in_xi.
-The <components> are duplicated by this functions, so the calling function must
-destroy them.
-Should only be called for unmanaged elements.
-==============================================================================*/
-
-int FE_element_has_grid_based_fields(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 24 October 2002
-
-DESCRIPTION :
-Returns true if any of the fields defined for element is grid-based.
-==============================================================================*/
-
-int FE_element_field_is_standard_node_based(struct FE_element *element,
-	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
-
-DESCRIPTION :
-Returns true if <fe_field> is defined on <element> using a standard node to
-element map for any element. Does not consider inherited fields.
-==============================================================================*/
-
-int FE_element_has_FE_field_values(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 19 October 1999
-
-DESCRIPTION :
-Returns true if any single field defined at <element> has values stored with
-the field. Returns 0 without error if no field information at element.
-==============================================================================*/
-
-int FE_element_has_values_storage(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 24 October 2002
-
-DESCRIPTION :
-Returns true if <element> has values_storage, eg. for grid-based fields.
-==============================================================================*/
-#endif // GRC
 
 /***************************************************************************//**
  * Calls the <iterator> for each field defined at the <element> in alphabetical
@@ -1961,12 +1416,6 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
 int FE_element_add_number_to_Multi_range(
 	struct FE_element *element, void *multi_range_void);
 
-/**
- * Writes to the console the element identifier and details of the fields
- * defined over it.
- */
-int list_FE_element(struct FE_element *element);
-
 /***************************************************************************//**
  * Internal variant of public cmzn_elementiterator_next() which does not
  * access the returned element, for more efficient if less safe usage.
@@ -1976,65 +1425,6 @@ int list_FE_element(struct FE_element *element);
  */
 cmzn_element_id cmzn_elementiterator_next_non_access(
 	cmzn_elementiterator_id element_iterator);
-
-int theta_closest_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_CLOSEST_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-
-int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-
-int theta_increasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-
-int theta_non_decreasing_in_xi1(
-	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,FE_value time,int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-
-int theta_non_increasing_in_xi1(
-	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,FE_value time,int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(CM_field_type);
 
@@ -2133,11 +1523,11 @@ This will be improved when regionalised, so that hopefully the node field
 list we will be looking at will not be global but will belong to the region.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Return true if any basis functions used by the field is non-linear i.e.
  * quadratic, cubic, Fourier etc.
  */
-int FE_field_uses_non_linear_basis(struct FE_field *fe_field);
+bool FE_field_uses_non_linear_basis(struct FE_field *fe_field);
 
 struct FE_field *find_first_time_field_at_FE_node(struct FE_node *node);
 /*******************************************************************************
@@ -2184,11 +1574,6 @@ int FE_field_get_access_count(struct FE_field *fe_field);
  * @return  number of objects using fe_node.
  */
 int FE_node_get_access_count(struct FE_node *fe_node);
-
-/***************************************************************************//**
- * @return  number of objects using fe_element.
- */
-int FE_element_get_access_count(struct FE_element *fe_element);
 
 char *get_FE_field_component_name(struct FE_field *field,int component_no);
 /*******************************************************************************
@@ -2239,7 +1624,7 @@ void FE_field_clearMeshFieldData(struct FE_field *field, FE_mesh *mesh);
  * @param mesh  The mesh to create data for. Must be from same region as field.
  */
 FE_mesh_field_data *FE_field_createMeshFieldData(struct FE_field *field,
-	const FE_mesh *mesh);
+	FE_mesh *mesh);
 
 /**
  * @return  Mesh field data defining field over the given mesh, or 0 if none.
@@ -2652,16 +2037,10 @@ storage for the <value> should have been allocated outside the function.
 ==============================================================================*/
 
 /**
- * Returns the FE_mesh that <element> belongs to.
- * @deprecated  Use element->getMesh()
+ * Returns true if element is a top_level parent of other_element.
  */
-FE_mesh *FE_element_get_FE_mesh(struct FE_element *element);
-
-/**
- * Returns true if <top_level_element> is a top_level parent of <element>.
- */
-int FE_element_is_top_level_parent_of_element(
-	struct FE_element *element, void *other_element_void);
+bool FE_element_is_top_level_parent_of_element(
+	struct FE_element *element, struct FE_element *other_element);
 
 /**
  * Returns the/a top level [ultimate parent] element for <element>. If supplied,
@@ -2743,6 +2122,7 @@ bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
  * Add nodes used by this element, including inherited from parent elements, to
  * the supplied labels group.
  * Caller must ensure the group was created for the appropriate FE_nodeset.
+ * Note node inheritance is currently only for default coordinate field.
  * @return  CMZN_OK on success, any other value on failure.
  */
 int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup);
@@ -2751,6 +2131,7 @@ int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup 
  * Remove nodes used by this element, including inherited from parent elements,
  * from the supplied labels group.
  * Caller must ensure the group was created for the appropriate FE_nodeset.
+ * Note node inheritance is currently only for default coordinate field.
  * @return CMZN_OK on success, any other value on failure.
  */
 int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup);
@@ -2760,34 +2141,6 @@ int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsG
  * @return  1 if element is top-level i.e. has no parents, otherwise 0.
  */
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-
-/***************************************************************************//**
- * Evaluates the supplied coordinate_field. Sets non-present components to zero
- * (eg if only had x and y, z would be set to zero).  Converts to rectangular
- * Cartesian coordinates: x,y,z.
- * Note: Does not handle multiple versions.
- *
- * @param coordinate_field  The coordinate field to evaluate.
- * @param coordinate_jacobian  If supplied then fills with the Jacobian for the
- * transformation from native coordinates to rectangular Cartesian.
- * @return  1 on success, 0 on failure.
- */
-int FE_node_get_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field, FE_value *node_x, FE_value *node_y,
-	FE_value *node_z, FE_value *coordinate_jacobian);
-
-/***************************************************************************//**
- * Sets the position of <node> in Cartesian coordinates: x[,y[,z]] using the
- * supplied coordinate_field. The givenCartesian coordinates are converted into
- * the coordinate system of the coordinate_field.
- * Sets all versions.
- *
- * @param coordinate_field  The coordinate field to modify.
- * @return  1 on success, 0 on failure.
- */
-int FE_node_set_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field,
-	FE_value node_x, FE_value node_y, FE_value node_z);
 
 int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void);
 /*******************************************************************************
@@ -2844,8 +2197,8 @@ DESCRIPTION :
 FE_node iterator version of FE_field_is_defined_at_node.
 ==============================================================================*/
 
-/**
- * Returns true if the <field> is defined for the <element>.
+/** @return  True if the <field> is defined on the <element>, directly or
+  * inherited from any parent element it is a face of.
  */
 bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element);
@@ -2857,98 +2210,12 @@ bool FE_field_is_defined_in_element(struct FE_field *field,
 bool FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 	struct FE_element *element);
 
-int FE_element_field_is_grid_based(struct FE_element *element,
+/** @return  True if any component of field is grid-based in element. */
+bool FE_element_field_is_grid_based(struct FE_element *element,
 	struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
 
-DESCRIPTION :
-Returns true if <field> is grid-based in <element>. Only checks the first
-component since we assume all subsequent components have the same basis and
-numbers of grid cells in xi.
-Returns 0 with no error if <field> is not defined over element or not element-
-based in it.
-==============================================================================*/
-
-/***************************************************************************//**
- * If <field> <component_number> is grid-based in <element>, returns in
- * <number_in_xi> the numbers of finite difference cells in each xi-direction
- * of element (equals one less than number of grid points in each direction).
- * <number_in_xi> should be allocated with at least as much space as the number
- * of dimensions in <element>, but is assumed to have no more than
- * MAXIMUM_ELEMENT_XI_DIMENSIONS so that int
- * number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
- */
-int get_FE_element_field_component_grid_map_number_in_xi(struct FE_element *element,
-	struct FE_field *field, int component_number, int *number_in_xi);
-
-/***************************************************************************//**
- * Returns the number of element values used by a component of field in element.
- * If a component is grid based the number of element values is equal
- * to the product of (1+number_in_xi) for each direction. Per-element constant
- * components require 1 value. Nodally interpolated components require 0 values.
- */
-int get_FE_element_field_component_number_of_grid_values(struct FE_element *element,
-	struct FE_field *field, int component_number);
-
-#if 0 // GRC
-int get_FE_element_field_component(struct FE_element *element,
-	struct FE_field *field, int component_number,
-	struct FE_element_field_component **component_address);
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns the element field component structure for <component_number> of <field>
-at <element> if defined there; otherwise reports an error.
-If fails, puts NULL in *<component_address> if supplied.
-Note: returned component must not be modified or destroyed!
-==============================================================================*/
-#endif // GRC
-
-#define PROTOTYPE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
-int get_FE_element_field_component_grid_ ## macro_value_type ## _values( \
-	struct FE_element *element,struct FE_field *field,int component_number, \
-	macro_value_type **values);														\
-/******************************************************************************* \
-LAST MODIFIED : 22 April 2005 \
- \
-DESCRIPTION : \
-If <field> is grid-based in <element>, returns an allocated array of the grid \
-values stored for <component_number>. To get number of values returned, call \
-get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
-It is up to the calling function to DEALLOCATE the returned values. \
-==============================================================================*/
-
-#define PROTOTYPE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
-int set_FE_element_field_component_grid_ ## macro_value_type ## _values( \
-	struct FE_element *element,struct FE_field *field,int component_number, \
-	macro_value_type *values);															\
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
-\
-DESCRIPTION : \
-If <field> is grid-based in <element>, copies <values> into the values storage \
-for <component_number>. To get number of values to pass, call \
-get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
-==============================================================================*/
-
-#define PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( macro_value_type , value_enum ) \
-PROTOTYPE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum) \
-PROTOTYPE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
-
-PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
-PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
-
-int FE_element_field_get_component_FE_basis(struct FE_element *element,
-	struct FE_field *field, int component_number, struct FE_basis **fe_basis);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-If <field> is standard node based in <element>, returns the <fe_basis> used for
-<component_number>.
-==============================================================================*/
+/** @return  True if any field component defined on element is grid-based. */
+bool FE_element_has_grid_based_fields(struct FE_element *element);
 
 /**
  * Partner function to FE_element_smooth_FE_field. Averages node derivatives.
@@ -2989,7 +2256,7 @@ int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
  *   cubic Hermite in xi2, since indexing of element parameters assumes order:
  *   value d/dxi1 d/dxi2 d2/dxi1dxi2 d/dxi3 d2/dxi1dxi3 d2/dxi2dxi3 d3/dxi1dxi2dxi3
  */
-int FE_element_smooth_FE_field(struct FE_element *element,
+bool FE_element_smooth_FE_field(struct FE_element *element,
 	struct FE_field *fe_field, FE_value time, 
 	struct FE_field *node_accumulate_fe_field,
 	struct FE_field *element_count_fe_field);
@@ -3078,60 +2345,41 @@ field_order_info, defines the field at the node, and places it at the end of
 the field_order_info list.
 ==============================================================================*/
 
+/**
+ * Returns the number of permutations known for the changing to the adjacent
+ * element at face <face_number>.  It would be better to extend FE_element_shape
+ * to take account of rotations and flipping.
+ */
 int FE_element_get_number_of_change_to_adjacent_element_permutations(
 	struct FE_element *element, FE_value *xi, int face_number);
-/*******************************************************************************
-LAST MODIFIED : 8 June 2006
 
-DESCRIPTION :
-Returns the number of permutations known for the changing to the adjacent
-element at face <face_number>.  It would be better to extend FE_element_shape
-to take account of rotations and flipping.
-==============================================================================*/
-
+/**
+ * Steps into the adjacent element through face <face_number>, updating the
+ * <element_address> location.
+ * If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
+ * location in the new element.
+ * If <increment> is not NULL then it is converted into an equvalent increment
+ * in the new element.
+ * <permutation> is used to resolve the possible rotation and flipping of the
+ * local face xi coordinates between the two parents.
+ * The shape mapping from parents are reused for all elements of the same shape
+ * and do not take into account the relative orientation of the parents.  It would
+ * be better to do so.  The range of possible permutations is from 0 to the value
+ * returned from FE_element_get_number_of_change_to_adjacent_element_permutations.
+ */
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
 	int permutation);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2006
 
-DESCRIPTION :
-Steps into the adjacent element through face <face_number>, updating the
-<element_address> location.
-If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
-location in the new element.
-If <increment> is not NULL then it is converted into an equvalent increment
-in the new element.
-<permutation> is used to resolve the possible rotation and flipping of the
-local face xi coordinates between the two parents.
-The shape mapping from parents are reused for all elements of the same shape
-and do not take into account the relative orientation of the parents.  It would
-be better to do so.  The range of possible permutations is from 0 to the value
-returned from FE_element_get_number_of_change_to_adjacent_element_permutations.
-==============================================================================*/
-
+/**
+ * Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
+ * if an adjacent element is found then the element and xi location are changed
+ * to this element and the stepping continues using the remaining increment.  If
+ * no adjacent element is found then the <xi> will be on the element boundary and
+ * the <increment> will contain the fraction of the increment not used.
+ */
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 	FE_value *increment);
-/*******************************************************************************
-LAST MODIFIED : 21 January 2004
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-if an adjacent element is found then the element and xi location are changed
-to this element and the stepping continues using the remaining increment.  If
-no adjacent element is found then the <xi> will be on the element boundary and
-the <increment> will contain the fraction of the increment not used.
-==============================================================================*/
-
-int FE_element_define_tensor_product_basis(struct FE_element *element,
-	int dimension, enum FE_basis_type basis_type, struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 1 December 2004
-
-DESCRIPTION :
-Defines a tensor product basis on <element> with the specified <dimension>
-and <basis_type>.  This does not support mixed basis types in the tensor product.
-==============================================================================*/
 
 enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
 	const char *string);

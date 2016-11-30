@@ -216,7 +216,7 @@ DESCRIPTION :
 	{
 		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
 			(1 >= fe_mesh->getElementParentsCount(elementIndex)) &&
@@ -722,7 +722,7 @@ basis type, however every element type will be converted to a cubic.
 	if (element && get_data)
 	{
 		return_code = 1;
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
 			(1 >= fe_mesh->getElementParentsCount(elementIndex)))

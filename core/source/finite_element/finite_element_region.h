@@ -39,8 +39,11 @@ class DsLabelsChangeLog;
  */
 class FE_region_changes
 {
+	struct FE_region *fe_region; // accessed
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
+	// following are set once field changes propagated to given dimension so not redone
+	bool propagatedToDimension[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
 	DsLabelsChangeLog *nodeChangeLogs[2]; // nodes and datapoints
 	int access_count;
 
@@ -94,7 +97,12 @@ public:
 		return 0;
 	}
 
-	bool elementOrParentChanged(FE_element *element);
+	FE_region *get_FE_region() const
+	{
+		return this->fe_region;
+	}
+
+	bool propagateToDimension(int dimension);
 
 };
 

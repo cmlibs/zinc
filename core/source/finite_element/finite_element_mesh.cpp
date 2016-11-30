@@ -414,7 +414,7 @@ void FE_mesh_element_field_template_data::clearElementVaryingData(DsLabelIndex e
 	{
 		if (this->localNodeCount > 0)
 		{
-			FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(mesh->get_FE_region(), CMZN_FIELD_DOMAIN_TYPE_NODES);
+			FE_nodeset *nodeset = mesh->getNodeset();
 			if (nodeset)
 			{
 				DsLabelIndex *nodeIndexes = this->getElementNodeIndexes(elementIndex);
@@ -447,7 +447,7 @@ void FE_mesh_element_field_template_data::clearAllElementVaryingData()
 	{
 		if (this->localNodeCount > 0)
 		{
-			FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(mesh->get_FE_region(), CMZN_FIELD_DOMAIN_TYPE_NODES);
+			FE_nodeset *nodeset = mesh->getNodeset();
 			if (nodeset)
 			{
 				const DsLabelIndex elementIndexLimit = this->getElementIndexLimit();
@@ -558,7 +558,7 @@ bool FE_mesh_element_field_template_data::setElementLocalNodes(
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
 		return false;
-	FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(mesh->get_FE_region(), CMZN_FIELD_DOMAIN_TYPE_NODES);
+	FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
 		return false;
 	DsLabelIndex *elementNodeIndexes = this->localToGlobalNodes.getOrCreateArray(elementIndex);
@@ -598,9 +598,9 @@ bool FE_mesh_element_field_template_data::mergeElementVaryingData(const FE_mesh_
 {
 	const FE_mesh *sourceMesh = source.eft->getMesh();
 	const FE_mesh *targetMesh = this->eft->getMesh();
-	const FE_nodeset *sourceNodeset = FE_region_find_FE_nodeset_by_field_domain_type(sourceMesh->get_FE_region(), CMZN_FIELD_DOMAIN_TYPE_NODES);
+	const FE_nodeset *sourceNodeset = sourceMesh->getNodeset();
 	// following is non-const since changing nodes' element usage counts
-	FE_nodeset *targetNodeset = FE_region_find_FE_nodeset_by_field_domain_type(targetMesh->get_FE_region(), CMZN_FIELD_DOMAIN_TYPE_NODES);
+	FE_nodeset *targetNodeset = targetMesh->getNodeset();
 	// the above should all exist at merge time
 	bool localNodeChange = false;
 	DsLabelIdentifier localNodeChangeElementIdentifier = DS_LABEL_IDENTIFIER_INVALID;
@@ -873,6 +873,14 @@ bool FE_mesh_field_template::mergeWithEFTIndexMap(const FE_mesh_field_template &
 	return true;
 }
 
+/** @return  True if any element of any component uses a non-linear basis in any direction */
+bool FE_mesh_field_template::usesNonLinearBasis() const
+{
+	// GRC cache EFTs in use to make this efficient
+	//	GRC TODO!
+	return false;
+}
+
 DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementIndex, int faceNumber)
 {
 	// could remove following test if good arguments guaranteed
@@ -956,6 +964,7 @@ void FE_mesh::detach_from_FE_region()
 	this->fe_region = 0;
 	this->parentMesh = 0;
 	this->faceMesh = 0;
+	this->nodeset = 0;
 }
 
 /**
@@ -1061,6 +1070,19 @@ void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 		}
 	}
 	display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Field template not found");
+}
+
+/** @return  True if fields defined identically for the two elements
+  * @param elementIndex1, elementIndex2  Element indexes to compare. Not checked, must be valid. */
+bool FE_mesh::equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const
+{
+	for (std::list<FE_mesh_field_template*>::const_iterator iter = this->meshFieldTemplates.begin();
+		iter != this->meshFieldTemplates.begin(); ++iter)
+	{
+		if ((*iter)->getElementEFTIndex(elementIndex1) != (*iter)->getElementEFTIndex(elementIndex1))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -1283,7 +1305,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 		}
 		for (int c = 0; c < elementFieldData->componentCount; ++c)
 		{
-			FE_mesh_field_template *mft = meshFieldData->getComponentMeshFieldTemplate(c);
+			FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
 			elementFieldData->setCacheComponentMeshFieldTemplate(c, mft);
 		}
 	}
@@ -1864,9 +1886,9 @@ int FE_mesh::setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIn
 }
 
 /** return the face number of faceIndex in elementIndex or -1 if not a face */
-int FE_mesh::getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIndex)
+int FE_mesh::getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIndex) const
 {
-	ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+	const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 	if (elementShapeFaces)
 	{
 		const DsLabelIndex *faces = elementShapeFaces->getElementFaces(elementIndex);
@@ -1878,8 +1900,90 @@ int FE_mesh::getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIn
 	return -1;
 }
 
+/** Note this is potentially expensive if there are a lot of EFTs in use.
+  * @return  True if element references any node in the node group. */
+bool FE_mesh::elementHasNodeInGroup(DsLabelIndex elementIndex, const DsLabelsGroup& nodeLabelsGroup) const
+{
+	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
+	{
+		const FE_mesh_element_field_template_data *eftData = this->elementFieldTemplateData[i];
+		if (!eftData)
+			continue;
+		const int localNodeCount = eftData->getElementfieldtemplate()->getNumberOfLocalNodes();
+		if (localNodeCount)
+		{
+			const DsLabelIndex *nodeIndexes = eftData->getElementNodeIndexes(elementIndex);
+			if (nodeIndexes)
+			{
+				for (int n = 0; n < localNodeCount; ++n)
+					if (nodeLabelsGroup.hasIndex(nodeIndexes[n]))
+						return true;
+			}
+		}
+	}
+	return false;
+}
+
+/** Ensure all nodes used by element are in the group.
+  * Does not handle nodes inherited from parent elements.
+  * Note this is potentially expensive if there are a lot of EFTs in use.
+  * @return  True on success, false on failure. */
+bool FE_mesh::addElementNodesToGroup(DsLabelIndex elementIndex, DsLabelsGroup& nodeLabelsGroup)
+{
+	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
+	{
+		const FE_mesh_element_field_template_data *eftData = this->elementFieldTemplateData[i];
+		if (!eftData)
+			continue;
+		const int localNodeCount = eftData->getElementfieldtemplate()->getNumberOfLocalNodes();
+		if (localNodeCount)
+		{
+			const DsLabelIndex *nodeIndexes = eftData->getElementNodeIndexes(elementIndex);
+			if (nodeIndexes)
+				for (int n = 0; n < localNodeCount; ++n)
+					if (nodeIndexes[n] >= 0)
+					{
+						const int result = nodeLabelsGroup.setIndex(nodeIndexes[n], true);
+						if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+							return false;
+					}
+		}
+	}
+	return true;
+}
+
+/** Ensure all nodes used by element are in the group.
+  * Does not handle nodes inherited from parent elements.
+  * Note this is potentially expensive if there are a lot of EFTs in use.
+  * @return  True on success, false on failure. */
+bool FE_mesh::removeElementNodesFromGroup(DsLabelIndex elementIndex, DsLabelsGroup& nodeLabelsGroup)
+{
+	if (elementIndex < 0)
+		return false;
+	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
+	{
+		const FE_mesh_element_field_template_data *eftData = this->elementFieldTemplateData[i];
+		if (!eftData)
+			continue;
+		const int localNodeCount = eftData->getElementfieldtemplate()->getNumberOfLocalNodes();
+		if (localNodeCount)
+		{
+			const DsLabelIndex *nodeIndexes = eftData->getElementNodeIndexes(elementIndex);
+			if (nodeIndexes)
+				for (int n = 0; n < localNodeCount; ++n)
+					if (nodeIndexes[n] >= 0)
+					{
+						const int result = nodeLabelsGroup.setIndex(nodeIndexes[n], false);
+						if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+							return false;
+					}
+		}
+	}
+	return true;
+}
+
 bool FE_mesh::isElementAncestor(DsLabelIndex elementIndex,
-	FE_mesh *descendantMesh, DsLabelIndex descendantIndex)
+	const FE_mesh *descendantMesh, DsLabelIndex descendantIndex)
 {
 	if ((!descendantMesh) || (descendantIndex < 0))
 		return false;
@@ -2366,6 +2470,11 @@ int FE_field_add_real_type_to_vector(struct FE_field *field, void *field_vector_
  */
 bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 {
+	if (!this->nodeset)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::checkConvertLegacyNodeParameters.  Mesh does not have a nodeset");
+		return false;
+	}
 	std::vector<FE_field*> fields;
 	if (!FE_region_for_each_FE_field(this->fe_region, FE_field_add_real_type_to_vector, (void *)&fields))
 		return false;
@@ -2381,12 +2490,6 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 		FE_element_field_template *eft = eftData->getElementfieldtemplate();
 		if (!eft->hasNodeParameterLegacyIndex())
 			continue;
-		FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-		if (!nodeset)
-		{
-			display_message(ERROR_MESSAGE, "FE_mesh::checkConvertLegacyNodeParameters.  Mesh does not have a nodeset");
-			return false;
-		}
 		const DsLabelIndex elementIndexLimit = eftData->getElementIndexLimit();
 		const DsLabelIndex elementIndexStart = eftData->getElementIndexStart();
 
@@ -2422,7 +2525,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 				const DsLabelIndex *nodeIndexes = 0;
 				for (int c = 0; c < componentCount; ++c)
 				{
-					FE_mesh_field_template *mft = meshFieldData->getComponentMeshFieldTemplate(c);
+					FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
 					if (!mft->hasElementfieldtemplate(elementIndex, eft))
 						continue;
 					if (!nodeIndexes)
@@ -2640,8 +2743,8 @@ int FE_field_addMeshFieldComponentMergeData(struct FE_field *sourceField, void *
 			sourceField,
 			targetField,
 			c,
-			sourceMeshFieldData->getComponentMeshFieldTemplate(c),
-			targetMeshFieldData ? targetMeshFieldData->getComponentMeshFieldTemplate(c) : 0,
+			sourceMeshFieldData->getComponentMeshfieldtemplate(c),
+			targetMeshFieldData ? targetMeshFieldData->getComponentMeshfieldtemplate(c) : 0,
 			/*finalMFT*/0
 		};
 		mergeData->fieldComponentMergeData.push_back(componentMergeData);

@@ -13,16 +13,29 @@
 #define CMZN_ELEMENT_FIELD_TEMPLATE_HPP
 
 #include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/status.h"
+#include "general/value.h"
 #include <vector>
 
 struct FE_basis;
+struct FE_field;
 class FE_mesh;
+class FE_nodeset;
 struct FE_node_field_component;
+enum FE_basis_modify_theta_mode;
 
 class FE_element_field_template
 {
 	friend FE_mesh;
+
+	friend int global_to_element_map_values(FE_field *field, int componentNumber,
+		const FE_element_field_template *eft, cmzn_element *element, FE_value time,
+		const FE_nodeset *nodeset, FE_value*& elementValues);
+
+	friend int global_to_element_map_nodes(FE_field *field, int componentNumber,
+		const FE_element_field_template *eft, cmzn_element *element,
+		DsLabelIndex *&basisNodeIndexes);
 
 private:
 
@@ -66,7 +79,13 @@ private:
 	// sum of termScaleFactorCounts[termOffsets[fn] + term] = size of localScaleFactorIndexes array:
 	int totalLocalScaleFactorIndexes;
 
-	bool simpleUnscaledNodeOptimisation; // set once locked: flag for simple case of single term unscaled Lagrange/Simplex with standard node order
+	// for element parameter mapping only, number of linear cells in each xi direction, or 0 for constant
+	int *legacyGridNumberInXi;
+
+	// optional function for modifying element values before use, e.g. to handle wrapping around polar coordinates
+	// @see FE_basis_modify_theta_in_xi1
+	// this is a dirty hack and not for public API, for translating legacy EX files only
+	FE_basis_modify_theta_mode legacyModifyThetaMode;
 
 	int access_count;
 
@@ -162,6 +181,22 @@ public:
 	{
 		return this->mesh;
 	}
+
+	/** @return  For element-based parameters, array containing number of grid
+	  * cells in each xi direction  >= 0, or 0 if not a grid. For immediate use only */
+	const int *getLegacyGridNumberInXi() const
+	{
+		return this->legacyGridNumberInXi;
+	}
+
+	int setLegacyGridNumberInXi(const int *numberInXiIn);
+
+	FE_basis_modify_theta_mode getLegacyModifyThetaMode() const
+	{
+		return this->legacyModifyThetaMode;
+	}
+
+	int setLegacyModifyThetaMode(FE_basis_modify_theta_mode modifyThetaModeIn);
 
 	int getNumberOfElementDOFs() const;
 
@@ -379,6 +414,28 @@ public:
 	FE_mesh *getMesh() const
 	{
 		return this->impl->getMesh();
+	}
+
+	const int *getLegacyGridNumberInXi() const
+	{
+		return this->impl->getLegacyGridNumberInXi();
+	}
+
+	int setLegacyGridNumberInXi(const int *numberInXiIn)
+	{
+		this->copyOnWrite();
+		return this->impl->setLegacyGridNumberInXi(numberInXiIn);
+	}
+
+	FE_basis_modify_theta_mode getLegacyModifyThetaMode() const
+	{
+		return this->impl->getLegacyModifyThetaMode();
+	}
+
+	int setLegacyModifyThetaMode(FE_basis_modify_theta_mode modifyThetaModeIn)
+	{
+		this->copyOnWrite();
+		return this->impl->setLegacyModifyThetaMode(modifyThetaModeIn);
 	}
 
 	int getNumberOfFunctions() const

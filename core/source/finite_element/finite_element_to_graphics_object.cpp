@@ -1691,7 +1691,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
 	enum FE_element_shape_type *shape_type_address)
 {
-	const FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	const FE_mesh *fe_mesh = element->getMesh();
 	if (!fe_mesh)
 		return 0;
 	DsLabelIndex elementIndex = get_FE_element_index(element);

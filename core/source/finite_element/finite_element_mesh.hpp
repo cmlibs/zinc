@@ -273,7 +273,7 @@ public:
 
 	inline cmzn_element *access()
 	{
-		++access_count;
+		++(this->access_count);
 		return this;
 	}
 
@@ -296,6 +296,11 @@ public:
 		if ((element) && (--(element->access_count) == 0))
 			delete element;
 		element = newElement;
+	}
+
+	inline int getAccessCount() const
+	{
+		return this->access_count;
 	}
 
 	inline DsLabelIdentifier getIdentifier() const;
@@ -409,6 +414,20 @@ public:
 		return (this->localNodeCount > 0) || (this->localScaleFactorCount > 0);
 	}
 
+	/** @return  Pointer to array of global node indexes for element, or 0 if none. NOT to be freed.
+	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
+	const FE_value *getElementScaleFactors(DsLabelIndex elementIndex) const
+	{
+		return this->localScaleFactors.getValue(elementIndex);
+	}
+
+	/** @return  Pointer to array of global node indexes for element, or 0 if none. NOT to be freed.
+	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
+	FE_value *getElementScaleFactors(DsLabelIndex elementIndex)
+	{
+		return this->localScaleFactors.getValue(elementIndex);
+	}
+
 	bool setScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
 
 	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
@@ -422,12 +441,14 @@ public:
   * Undefined or -1 value for the eft data map means the field is not defined */
 class FE_mesh_field_template
 {
+public:
 	friend FE_mesh;
 
-	// internal use only. Short integer to save memory in FE_mesh_field_template. Signed to store unset value -1
+	// short integer to save memory in FE_mesh_field_template. Signed to store unset value -1
 	typedef short EFTIndexType;
 	static const EFTIndexType ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID = -1;
 
+private:
 	FE_mesh *mesh; // owning mesh: not ACCESSed since these objects are owned by the mesh
 	block_array<DsLabelIndex, EFTIndexType> eftDataMap;
 	int mapSize; // number of valid entries in map, for trivial comparisons
@@ -495,6 +516,11 @@ public:
 		return this->access_count;
 	}
 
+	inline EFTIndexType FE_mesh_field_template::getElementEFTIndex(DsLabelIndex elementIndex) const
+	{
+		return this->eftDataMap.getValue(elementIndex);
+	}
+
 	inline FE_element_field_template *getElementfieldtemplate(DsLabelIndex elementIndex) const;
 
 	/** @param elementIndex  Not checked; assume valid
@@ -515,6 +541,8 @@ public:
 	bool mergeWithEFTIndexMap(const FE_mesh_field_template &source,
 		const std::vector<EFTIndexType> &sourceEFTIndexMap);
 
+	bool usesNonLinearBasis() const;
+
 };
 
 
@@ -524,6 +552,7 @@ class FE_mesh_field_data
 {
 	friend class FE_mesh;
 
+public:
 	class ComponentBase
 	{
 		friend class FE_mesh;
@@ -546,7 +575,7 @@ class FE_mesh_field_data
 		virtual void clearElementData(DsLabelIndex elementIndex) = 0;
 
 		/** @return  Non-accessed field template */
-		FE_mesh_field_template *getMeshFieldTemplate() const
+		FE_mesh_field_template *getMeshfieldtemplate() const
 		{
 			return this->meshFieldTemplate;
 		}
@@ -715,10 +744,24 @@ public:
 	}
 
 	/** @param componentNumber  From 0 to componentCount, not checked
-	  * @return  Non-accessed field template */
-	FE_mesh_field_template *getComponentMeshFieldTemplate(int componentNumber) const
+	  * @return  Non-accessed component base */
+	ComponentBase *getComponentBase(int componentNumber) const
 	{
-		return this->components[componentNumber]->getMeshFieldTemplate();
+		return this->components[componentNumber];
+	}
+
+	/** @param componentNumber  From 0 to componentCount, not checked
+	  * @return  Non-accessed field template */
+	const FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber) const
+	{
+		return this->components[componentNumber]->getMeshfieldtemplate();
+	}
+
+	/** @param componentNumber  From 0 to componentCount, not checked
+	  * @return  Non-accessed field template */
+	FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber)
+	{
+		return this->components[componentNumber]->getMeshfieldtemplate();
 	}
 
 	/** @param componentNumber  From 0 to componentCount, not checked */
@@ -729,7 +772,16 @@ public:
 
 	bool isDefinedOnElements()
 	{
-		return !this->components[0]->getMeshFieldTemplate()->isBlank();
+		return !this->components[0]->getMeshfieldtemplate()->isBlank();
+	}
+
+	/** @return  True if any element of any component uses a non-linear basis in any direction */
+	bool usesNonLinearBasis() const
+	{
+		for (int i = 0; i < this->componentCount; ++i)
+			if (this->components[0]->getMeshfieldtemplate()->usesNonLinearBasis())
+				return true;
+		return false;
 	}
 };
 
@@ -848,8 +900,10 @@ private:
 	// not accessed, since FE_element_template accesses mesh
 	FE_element_template *lastMergedElementTemplate;
 
+	// following are cleared when detached from owning FE_region (i.e. when it is destroyed)
 	FE_mesh *parentMesh; // not accessed
 	FE_mesh *faceMesh; // not accessed
+	FE_nodeset *nodeset; // not accessed
 
 	/* log of elements added, removed or otherwise changed */
 	DsLabelsChangeLog *changeLog;
@@ -959,6 +1013,13 @@ public:
 
 	/** @param eftIndex  Index of EFT in this mesh. Not checked.
 	  * @return  Non-accessed mesh element field template data. */
+	const FE_mesh_element_field_template_data *getElementfieldtemplateData(int eftIndex) const
+	{
+		return this->elementFieldTemplateData[eftIndex];
+	}
+
+	/** @param eftIndex  Index of EFT in this mesh. Not checked.
+	  * @return  Non-accessed mesh element field template data. */
 	FE_mesh_element_field_template_data *getElementfieldtemplateData(int eftIndex)
 	{
 		return this->elementFieldTemplateData[eftIndex];
@@ -978,6 +1039,8 @@ public:
 	FE_mesh_field_template *getOrCreateBlankMeshFieldTemplate();
 
 	void removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate);
+
+	bool equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const;
 
 	FE_mesh *access()
 	{
@@ -1026,6 +1089,17 @@ public:
 	void setParentMesh(FE_mesh *parentMeshIn)
 	{
 		this->parentMesh = parentMeshIn;
+	}
+
+	void setNodeset(FE_nodeset *nodesetIn)
+	{
+		this->nodeset = nodesetIn;
+	}
+
+	/** @return  Nodeset for this mesh, or 0 if detached from FE_region. */
+	FE_nodeset *getNodeset() const
+	{
+		return this->nodeset;
 	}
 
 	void clear();
@@ -1158,10 +1232,10 @@ public:
 
 	int setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIndex faceIndex);
 
-	int getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIndex);
+	int getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIndex) const;
 
 	/** @return  Number of parent elements.
-	 * @param parents  If has parents, pointer to parent element indexes. Not to be freed */
+	  * @param parents  If has parents, pointer to parent element indexes. Not to be freed */
 	int getElementParents(DsLabelIndex elementIndex, const DsLabelIndex *&parents) const
 	{
 		if (elementIndex >= 0)
@@ -1176,6 +1250,22 @@ public:
 		return 0;
 	}
 
+	bool elementHasParentInGroup(DsLabelIndex elementIndex, const DsLabelsGroup& parentGroup) const
+	{
+		const DsLabelIndex *parents;
+		const int parentCount = this->getElementParents(elementIndex, parents);
+		for (int p = 0; p < parentCount; ++p)
+			if (parentGroup.hasIndex(parents[p]))
+				return true;
+		return false;
+	}
+
+	bool elementHasNodeInGroup(DsLabelIndex elementIndex, const DsLabelsGroup& nodeLabelsGroup) const;
+
+	bool addElementNodesToGroup(DsLabelIndex elementIndex, DsLabelsGroup& nodeLabelsGroup);
+
+	bool removeElementNodesFromGroup(DsLabelIndex elementIndex, DsLabelsGroup& nodeLabelsGroup);
+
 	/** @return  Number of parent elements. */
 	inline int getElementParentsCount(DsLabelIndex elementIndex) const
 	{
@@ -1188,7 +1278,7 @@ public:
 	}
 
 	// GRC restore implementation from descendant up
-	bool isElementAncestor(DsLabelIndex elementIndex, FE_mesh *descendantMesh, DsLabelIndex descendantIndex);
+	bool isElementAncestor(DsLabelIndex elementIndex, const FE_mesh *descendantMesh, DsLabelIndex descendantIndex);
 
 	/** return true if element or parent has exactly 1 parent element */
 	bool isElementExterior(DsLabelIndex elementIndex);
@@ -1258,6 +1348,7 @@ inline int cmzn_element::getDimension() const
 	display_message(ERROR_MESSAGE, "Element getDimension.  Invalid element");
 	return 0;
 }
+
 inline FE_element_shape *cmzn_element::getElementShape() const
 {
 	if (this->mesh)

@@ -1110,7 +1110,7 @@ public:
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->containsObject(element);
-		return FE_element_get_FE_mesh(element) == this->fe_mesh;
+		return element->getMesh() == this->fe_mesh;
 	}
 
 	cmzn_element_id createElement(int identifier,
@@ -1916,79 +1916,11 @@ int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
 	return element->setIdentifier(identifier);
 }
 
-#if 0 // GRC
-/**
- * Gets the scale factors for a scale factor set in an element.
- *
- * @param element  The element to query.
- * @param scale_factor_set  The mesh scale factor set to get values for.
- * @param valuesCount  The size of the values array to receive scale factors,
- * which is the maximum number requested.
- * @param values  The array to receive the scale factors.
- * @return  The number of scale factors stored for the scale factor set in
- * element. Can be more or less than the number requested. Returns 0 on any
- * other error including bad arguments.
- */
-int cmzn_element_get_scale_factors(cmzn_element_id element,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
-	double *values)
-{
-	if (element && scale_factor_set &&
-		((0 == valuesCount) || ((0 < valuesCount) && values)))
-	{
-		FE_value *scaleFactors = 0;
-		int numberOfScaleFactors = get_FE_element_scale_factors_address(element, scale_factor_set, &scaleFactors);
-		if (0 < numberOfScaleFactors)
-		{
-			for (int i = 0; i < numberOfScaleFactors; ++i)
-			{
-				values[i] = static_cast<double>(scaleFactors[i]);
-			}
-		}
-		return numberOfScaleFactors;
-	}
-	return 0;
-}
-
-/**
- * Sets the scale factors for a scale factor set in an element. The number of
- * scale factors is arbitrary for a scale factor set in each element, but once
- * set it cannot be changed; it is settable only from the element template.
- * Each element field component has a single scale factor set from which it
- * gets scale factors.
- *
- * @param element  The element to modify.
- * @param scale_factor_set  The mesh scale factor set to set values for.
- * @param valuesCount  The number of scale factors to set. This must equal the
- * number of scale factors stored for the scale factor set in element.
- * @param values  The array of scale factors to set.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-int cmzn_element_set_scale_factors(cmzn_element_id element,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
-	const double *values)
-{
-	if (element && scale_factor_set &&
-		((0 == valuesCount) || ((0 < valuesCount) && values)))
-	{
-		FE_value *scaleFactors = 0;
-		int numberOfScaleFactors = get_FE_element_scale_factors_address(element, scale_factor_set, &scaleFactors);
-		if (numberOfScaleFactors == valuesCount)
-		{
-			for (int i = 0; i < numberOfScaleFactors; ++i)
-			{
-				scaleFactors[i] = static_cast<FE_value>(values[i]);
-			}
-			return CMZN_OK;
-		}
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-#endif // GRC
-
 int cmzn_element_get_dimension(cmzn_element_id element)
 {
-	return get_FE_element_dimension(element);
+	if (element)
+		return element->getDimension();
+	return 0;
 }
 
 int cmzn_element_get_identifier(struct cmzn_element *element)
@@ -1998,7 +1930,7 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
-	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	FE_mesh *fe_mesh = element->getMesh();
 	if (fe_mesh)
 		return new cmzn_mesh(fe_mesh);
 	return 0;
@@ -2010,7 +1942,7 @@ enum cmzn_element_shape_type cmzn_element_get_shape_type(
 	cmzn_element_shape_type shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		if (fe_mesh)
 			shape_type = fe_mesh->getElementShapeType(get_FE_element_index(element));
 	}
@@ -2194,6 +2126,8 @@ cmzn_meshchanges::cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *me
 	changeLog(cmzn::Access(eventIn->getFeRegionChanges()->getElementChangeLog(meshIn->getDimension()))),
 	access_count(1)
 {
+	// optimial time to do this:
+	eventIn->getFeRegionChanges()->propagateToDimension(meshIn->getDimension());
 }
 
 cmzn_meshchanges::~cmzn_meshchanges()
@@ -2226,18 +2160,10 @@ int cmzn_meshchanges::deaccess(cmzn_meshchanges* &meshchanges)
 // Note: internal and external flags have same numerical values
 cmzn_element_change_flags cmzn_meshchanges::getElementChangeFlags(cmzn_element *element)
 {
-	cmzn_element_change_flags change = CMZN_ELEMENT_CHANGE_FLAG_NONE;
-	if (element)
-	{
-		if (this->changeLog->isIndexChange(get_FE_element_index(element)))
-			change = this->changeLog->getChangeSummary();
-		else if (this->changeLog->getChangeSummary() & CMZN_ELEMENT_CHANGE_FLAG_FIELD)
-		{
-			if (this->event->getFeRegionChanges()->elementOrParentChanged(element))
-				change |= CMZN_ELEMENT_CHANGE_FLAG_FIELD;
-		}
-	}
-	return change;
+	// relies on FE_region_changes::propagateToDimension call in constructor
+	if (element && this->changeLog->isIndexChange(element->getIndex()))
+		return this->changeLog->getChangeSummary();
+	return CMZN_ELEMENT_CHANGE_FLAG_NONE;
 }
 
 cmzn_meshchanges_id cmzn_meshchanges_access(

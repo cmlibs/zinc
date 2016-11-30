@@ -17,6 +17,7 @@
 #define __FIELD_LOCATION_HPP__
 
 #include "computed_field/computed_field.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "general/value.h"
 
 struct cmzn_field;
@@ -82,7 +83,7 @@ public:
 			struct FE_element *top_level_element_in = NULL, int number_of_derivatives_in = 0) :
 		Field_location(time_in, number_of_derivatives_in),
 		element(element_in ? ACCESS(FE_element)(element_in) : 0),
-		dimension(element_in ? get_FE_element_dimension(element_in) : 0),
+		dimension(element_in ? element_in->getDimension() : 0),
 		top_level_element(top_level_element_in ? ACCESS(FE_element)(top_level_element_in) : 0)
 	{
 		if (xi_in)

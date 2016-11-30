@@ -14,9 +14,11 @@
 
 #include <cstdio>
 #include <cmath>
+#include <vector>
 #include "opencmiss/zinc/zincconfigure.h"
 #include "finite_element/finite_element_basis.h"
 #include "general/debug.h"
+#include "general/geometry.h"
 #ifndef HAVE_HEAPSORT
 #	include "general/heapsort.h"
 #else
@@ -4089,3 +4091,152 @@ Returns true if the standard basis function is a monomial.
 
 	return (return_code);
 } /* standard_basis_function_is_monomial */
+
+inline int FE_basis_type_to_number_of_nodes(enum FE_basis_type basis_type)
+{
+	switch (basis_type)
+	{
+	case LINEAR_LAGRANGE:
+	case CUBIC_HERMITE:
+	case LAGRANGE_HERMITE:
+	case HERMITE_LAGRANGE:
+		return 2;
+		break;
+	case QUADRATIC_LAGRANGE:
+		return 3;
+		break;
+	case CUBIC_LAGRANGE:
+		return 4;
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
+	enum FE_basis_modify_theta_mode mode, FE_value *values)
+{
+	if ((!basis) || (!values))
+	{
+		display_message(ERROR_MESSAGE, "FE_basis_modify_theta_in_xi1.  Invalid argument(s)");
+		return false;
+	}
+	const int basis_dimension = *basis->type;
+	if (!((1 == basis_dimension)
+		|| ((2 == basis_dimension) && (NO_RELATION == basis->type[2]))
+		|| ((3 == basis_dimension) && (NO_RELATION == basis->type[2])
+			&& (NO_RELATION == basis->type[3]) && (NO_RELATION == basis->type[5]))))
+	{
+		display_message(ERROR_MESSAGE, "FE_basis_modify_theta_in_xi1.  Non tensor product bases are not supported");
+		return false;
+	}
+
+	const int number_of_nodes_in_xi1 = FE_basis_type_to_number_of_nodes(
+		static_cast<FE_basis_type>(basis->type[1]));
+	const int number_of_nodes_in_xi2 = (basis_dimension < 2) ? 1 : FE_basis_type_to_number_of_nodes(
+		static_cast<FE_basis_type>((2 == basis_dimension) ? basis->type[3] : basis->type[4]));
+	const int number_of_nodes_in_xi3 = (basis_dimension < 3) ? 1 : FE_basis_type_to_number_of_nodes(
+		static_cast<FE_basis_type>(basis->type[6]));
+
+	// check whether one of the xi1 * +/-{xi2|xi3} planes has all zero values,
+	// indicating it is on the apex, and to copy theta values from next row of
+	// nodes to interpolate correctly.
+	// This is a hack; versions or general maps should give the proper value.
+
+	bool onAxisXi2_0 = (1 < number_of_nodes_in_xi2) ? true : false;
+	bool onAxisXi2_1 = onAxisXi2_0;
+	bool onAxisXi3_0 = (1 < number_of_nodes_in_xi3) ? true : false;
+	bool onAxisXi3_1 = onAxisXi3_0;
+	int valueIndex = 0;
+	int *nodeValueIndexes = new int[number_of_nodes_in_xi1*number_of_nodes_in_xi2*number_of_nodes_in_xi3];
+	for (int k = 0; k < number_of_nodes_in_xi3; ++k)
+		for (int j = 0; j < number_of_nodes_in_xi2; ++j)
+			for (int i = 0; i < number_of_nodes_in_xi1; ++i)
+			{
+				nodeValueIndexes[(k*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i] = valueIndex;
+				const bool zeroValue = (values[valueIndex] == 0.0);
+				if (j == 0)
+					onAxisXi2_0 = onAxisXi2_0 && zeroValue;
+				else if (j == (number_of_nodes_in_xi2 - 1))
+					onAxisXi2_1 = onAxisXi2_1 && zeroValue;
+				if (k == 0)
+					onAxisXi3_0 = onAxisXi3_0 && zeroValue;
+				else if (k == (number_of_nodes_in_xi3 - 1))
+					onAxisXi3_1 = onAxisXi3_1 && zeroValue;
+				++valueIndex;
+				// increment until we have the next non-derivative value
+				while ((valueIndex < basis->number_of_basis_functions) && (basis->parameterDerivatives[valueIndex]))
+					++valueIndex;
+			}
+
+	if (onAxisXi3_0) // most common case in our models, so handle first
+	{
+		for (int j = 0; j < number_of_nodes_in_xi2; ++j)
+			for (int i = 0; i < number_of_nodes_in_xi1; ++i)
+				values[nodeValueIndexes[j*number_of_nodes_in_xi1 + i]] =
+					values[nodeValueIndexes[(number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i]];
+	}
+	else if (onAxisXi3_1)
+	{
+		for (int j = 0; j < number_of_nodes_in_xi2; ++j)
+			for (int i = 0; i < number_of_nodes_in_xi1; ++i)
+				values[nodeValueIndexes[((number_of_nodes_in_xi3 - 1)*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i]] =
+					values[nodeValueIndexes[((number_of_nodes_in_xi3 - 2)*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i]];
+	}
+	else if (onAxisXi2_0)
+	{
+		for (int k = 0; k < number_of_nodes_in_xi3; ++k)
+			for (int i = 0; i < number_of_nodes_in_xi1; ++i)
+				values[nodeValueIndexes[k*number_of_nodes_in_xi2*number_of_nodes_in_xi1 + i]] =
+					values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + 1)*number_of_nodes_in_xi1 + i]];
+	}
+	else if (onAxisXi2_1)
+	{
+		for (int k = 0; k < number_of_nodes_in_xi3; ++k)
+			for (int i = 0; i < number_of_nodes_in_xi1; ++i)
+				values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + number_of_nodes_in_xi2 - 1)*number_of_nodes_in_xi1 + i]] =
+					values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + number_of_nodes_in_xi2 - 2)*number_of_nodes_in_xi1 + i]];
+	}
+
+	// apply modify functions for consecutive nodes increasing in xi1 (around theta)
+	const double TWO_PI = 2.0*PI;
+	for (int k = 0; k < number_of_nodes_in_xi3; ++k)
+		for (int j = 0; j < number_of_nodes_in_xi2; ++j)
+			for (int i = 1; i < number_of_nodes_in_xi1; ++i)
+			{
+				FE_value *thisThetaAddress = &values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i]];
+				const FE_value lastTheta = values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i - 1]];
+				switch (mode)
+				{
+				case FE_BASIS_MODIFY_THETA_MODE_CLOSEST_IN_XI1:
+					if (lastTheta < (*thisThetaAddress - PI))
+						*thisThetaAddress -= TWO_PI;
+					else if (lastTheta > (*thisThetaAddress + PI))
+						*thisThetaAddress += TWO_PI;
+					break;
+				case FE_BASIS_MODIFY_THETA_MODE_DECREASING_IN_XI1:
+					if (lastTheta <= *thisThetaAddress)
+						*thisThetaAddress -= TWO_PI;
+					break;
+				case FE_BASIS_MODIFY_THETA_MODE_INCREASING_IN_XI1:
+					if (lastTheta >= *thisThetaAddress)
+						*thisThetaAddress += TWO_PI;
+					break;
+				case FE_BASIS_MODIFY_THETA_MODE_NON_DECREASING_IN_XI1:
+					if (lastTheta > *thisThetaAddress)
+						*thisThetaAddress += TWO_PI;
+					break;
+				case FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1:
+					if (lastTheta < *thisThetaAddress)
+						*thisThetaAddress -= TWO_PI;
+					break;
+				case FE_BASIS_MODIFY_THETA_MODE_INVALID:
+					break;
+				}
+			}
+
+	delete nodeValueIndexes;
+	return true;
+}
+
