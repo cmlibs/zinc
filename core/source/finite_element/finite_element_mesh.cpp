@@ -873,11 +873,41 @@ bool FE_mesh_field_template::mergeWithEFTIndexMap(const FE_mesh_field_template &
 	return true;
 }
 
-/** @return  True if any element of any component uses a non-linear basis in any direction */
+/** @return  True if any element of any component uses a non-linear basis in
+  * any direction, chiefly used to control application of tessellation
+  * refinement.
+  * GRC Note:
+  * This can be expensive; it could be made more efficient if the template
+  * stored the count of elements using each EFT. However, rather than doing
+  * this it would be better to make graphics query non-linearity per-element
+  * and per xi direction and use tessellation refinements independently for
+  * each. */
 bool FE_mesh_field_template::usesNonLinearBasis() const
 {
-	// GRC cache EFTs in use to make this efficient
-	//	GRC TODO!
+	std::vector<EFTIndexType> nonLinearEFTIndexes;
+	const int eftIndexCount = this->getMesh()->getElementfieldtemplateDataCount();
+	for (int i = 0; i < eftIndexCount; ++i)
+	{
+		FE_mesh_element_field_template_data *meshEFTData = this->getMesh()->getElementfieldtemplateData(i);
+		if (meshEFTData && FE_basis_is_non_linear(meshEFTData->getElementfieldtemplate()->getBasis()))
+			nonLinearEFTIndexes.push_back(static_cast<EFTIndexType>(i));
+	}
+	const int eftIndexesSize = static_cast<int>(nonLinearEFTIndexes.size());
+	if (eftIndexesSize == 0)
+		return false;
+	const EFTIndexType *eftIndexes = nonLinearEFTIndexes.data();
+	const DsLabelIndex elementIndexStart = this->getElementIndexStart();
+	const DsLabelIndex elementIndexLimit = this->getElementIndexLimit();
+	for (DsLabelIndex elementIndex = elementIndexStart; elementIndex < elementIndexLimit; ++elementIndex)
+	{
+		const EFTIndexType eftIndex = this->eftDataMap.getValue(elementIndex);
+		if (eftIndex >= 0)
+		{
+			for (int i = 0; i < eftIndexesSize; ++i)
+				if (eftIndexes[i] == eftIndex)
+					return true;
+		}
+	}
 	return false;
 }
 

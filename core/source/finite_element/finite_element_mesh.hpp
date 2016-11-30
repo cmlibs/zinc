@@ -1011,15 +1011,21 @@ public:
 		return this->elementFieldTemplateData[eftIndex]->getElementfieldtemplate();
 	}
 
+	/** @return  Number of element field template data. */
+	int getElementfieldtemplateDataCount() const
+	{
+		return this->elementFieldTemplateDataCount;
+	}
+
 	/** @param eftIndex  Index of EFT in this mesh. Not checked.
-	  * @return  Non-accessed mesh element field template data. */
+	  * @return  Non-accessed mesh element field template data, or 0 if none. */
 	const FE_mesh_element_field_template_data *getElementfieldtemplateData(int eftIndex) const
 	{
 		return this->elementFieldTemplateData[eftIndex];
 	}
 
 	/** @param eftIndex  Index of EFT in this mesh. Not checked.
-	  * @return  Non-accessed mesh element field template data. */
+	  * @return  Non-accessed mesh element field template data, or 0 if none. */
 	FE_mesh_element_field_template_data *getElementfieldtemplateData(int eftIndex)
 	{
 		return this->elementFieldTemplateData[eftIndex];
