@@ -80,7 +80,7 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * field cache passed to this function.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to get parameters for.
+ * @param finite_element_field  The finite element field to get parameters for.
  * @param cache  Store of location to get values and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to get parameters for, from 1 to the
@@ -93,7 +93,7 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_out  Array of real values to be set from the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_finite_element_get_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -106,7 +106,7 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * field cache passed to this function.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to set parameters for.
+ * @param finite_element_field  The finite element field to set parameters for.
  * @param cache  Store of location to assign at and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to set parameters for, from 1 to the
@@ -119,7 +119,7 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_in  Array of real values to be assigned to the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
