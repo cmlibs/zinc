@@ -697,4 +697,8 @@ bool cmzn_graphics_point_attribute_is_time_dependent(cmzn_graphics_id graphics);
 
 bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics);
 
+bool cmzn_graphics_isoscalar_field_is_time_dependent(cmzn_graphics_id graphics);
+
+bool cmzn_graphics_subgroup_field_is_time_dependent(cmzn_graphics_id graphics);
+
 #endif

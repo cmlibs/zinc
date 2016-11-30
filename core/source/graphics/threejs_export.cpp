@@ -65,6 +65,8 @@ int rgb_to_hex(float r, float g, float b)
 
 Threejs_export::~Threejs_export()
 {
+	if (groupName)
+		DEALLOCATE(groupName);
 	DEALLOCATE(filename);
 }
 
@@ -953,14 +955,11 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 	if (object->primitive_lists)
 		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
 	cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
-	const int number_of_glyphs =
-		cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
 	unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 	char temp_string[50];
 	if (number_of_vertices > 0)
 	{
-		Triple temp_point, temp_axis1, temp_axis2, temp_axis3;
 		unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 		GLfloat *position_buffer = 0, *colour_buffer = 0, *axis1_buffer = 0,
@@ -988,7 +987,6 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 		Graphics_object_create_colour_buffer_from_data(object,
 			&colour_buffer,
 			&colour_values_per_vertex, &colour_vertex_count);
-		int numberOfVerticesOutput = 0;
 		GLfloat *position = position_buffer,
 			*axis1 = axis1_buffer, *axis2 = axis2_buffer,
 			*axis3 = axis3_buffer, *scale = scale_buffer,
@@ -1003,22 +1001,13 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 				{
 					if (time_step != 0)
 						morphVerticesExported = true;
-					for (int j = 0; j < number_of_glyphs; j++)
+					for (int k = 0; k < position_values_per_vertex; k++)
 					{
-						/* pre-calculate transformation and put the transformation on
-						 * the appropriate time step. */
-						resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/j,
-							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-							position, axis1, axis2, axis3, scale,
-							temp_point, temp_axis1, temp_axis2, temp_axis3);
-						for (int k = 0; k < 3; k++)
-						{
-							positions_json[temp_string].append(temp_point[k]);
-							axis1_json[temp_string].append(temp_axis1[k]);
-							axis2_json[temp_string].append(temp_axis2[k]);
-							axis3_json[temp_string].append(temp_axis3[k]);
-						}
-						numberOfVerticesOutput++;
+						positions_json[temp_string].append(position[k]);
+						axis1_json[temp_string].append(axis1[k]);
+						axis2_json[temp_string].append(axis2[k]);
+						axis3_json[temp_string].append(axis3[k]);
+						scale_json[temp_string].append(scale[k]);
 					}
 					position += position_values_per_vertex;
 					axis1 += axis1_values_per_vertex;
@@ -1046,8 +1035,23 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 				metadata["scale_factors"].append(glyph_set->scale_factors[i]);
 				metadata["offset"].append(glyph_set->offset[i]);
 			}
-			metadata["number_of_vertices"] = numberOfVerticesOutput;
+			metadata["number_of_vertices"] = number_of_vertices;
 			metadata["number_of_time_steps"] = number_of_time_steps;
+			switch (glyph_repeat_mode)
+			{
+				case CMZN_GLYPH_REPEAT_MODE_MIRROR:
+					metadata["repeat_mode"] = "MIRROR";
+					break;
+				case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+					metadata["repeat_mode"] = "AXES_2D";
+					break;
+				case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
+					metadata["repeat_mode"] = "AXES_3D";
+					break;
+				default:
+					metadata["repeat_mode"] = "NONE";
+					break;
+			}
 		}
 		metadata["MorphColours"] = morphColoursExported;
 		metadata["MorphVertices"] = morphVerticesExported;
@@ -1105,6 +1109,7 @@ std::string *Threejs_export_glyph::getGlyphTransformationExportString()
 	root["axis1"] = axis1_json;
 	root["axis2"] = axis2_json;
 	root["axis3"] = axis3_json;
+	root["scale"] = scale_json;
 	if (color_json.size() > 0)
 		root["colors"] = color_json;
 	root["GlyphGeometriesURL"] = glyphGeometriesURLName;
