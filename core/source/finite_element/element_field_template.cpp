@@ -70,7 +70,8 @@ namespace {
 } // anonymous namespace
 
 FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *basisIn) :
-	mesh(meshIn->access()),
+	mesh(meshIn),
+	dimension(meshIn->getDimension()),
 	basis(ACCESS(FE_basis)(basisIn)),
 	numberOfFunctions(FE_basis_get_number_of_functions(basisIn)),
 	locked(false),
@@ -95,10 +96,13 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	access_count(1)
 {
 	this->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE);
+	// FE_mesh maintains a list of these to clear mesh pointer when mesh is destroyed
+	this->mesh->addElementfieldtemplate(this);
 }
 
 FE_element_field_template::FE_element_field_template(const FE_element_field_template &source) :
-	mesh(source.mesh->access()),
+	mesh(source.mesh),
+	dimension(source.dimension),
 	basis(ACCESS(FE_basis)(source.basis)),
 	numberOfFunctions(source.numberOfFunctions),
 	locked(false),
@@ -117,15 +121,18 @@ FE_element_field_template::FE_element_field_template(const FE_element_field_temp
 	termScaleFactorCounts(copy_array(source.termScaleFactorCounts, source.totalTermCount)),
 	termLocalScaleFactorIndexesOffsets(copy_array(source.termLocalScaleFactorIndexesOffsets, source.totalTermCount)),
 	totalLocalScaleFactorIndexes(source.totalLocalScaleFactorIndexes),
-	legacyGridNumberInXi(copy_array(source.legacyGridNumberInXi, source.mesh->getDimension())),
+	legacyGridNumberInXi(copy_array(source.legacyGridNumberInXi, source.dimension)),
 	legacyModifyThetaMode(source.legacyModifyThetaMode),
 	access_count(1)
 {
+	if (this->mesh) // may already be orphaned
+		this->mesh->addElementfieldtemplate(this);
 }
 
 FE_element_field_template::~FE_element_field_template()
 {
-	FE_mesh::deaccess(this->mesh);
+	if (this->mesh)
+		this->mesh->removeElementfieldtemplate(this);
 	DEACCESS(FE_basis)(&(this->basis));
 	delete[] this->termCounts;
 	delete[] this->termOffsets;
@@ -272,7 +279,7 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 		{
 			if ((this->legacyGridNumberInXi) && (source.legacyGridNumberInXi))
 			{
-				for (int i = 0; i < this->mesh->getDimension(); ++i)
+				for (int i = 0; i < this->dimension; ++i)
 				{
 					if (this->legacyGridNumberInXi[i] != source.legacyGridNumberInXi[i])
 						return false;
@@ -303,8 +310,7 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 	if (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD)
 	{
 		// can only be constant basis
-		const int dimension = this->mesh->getDimension();
-		for (int i = 0; i < dimension; ++i)
+		for (int i = 0; i < this->dimension; ++i)
 		{
 			FE_basis_type basisType = FE_BASIS_TYPE_INVALID;
 			FE_basis_get_xi_basis_type(this->basis, i, &basisType);
@@ -371,7 +377,7 @@ int FE_element_field_template::setLegacyGridNumberInXi(const int *numberInXiIn)
 		this->legacyGridNumberInXi = 0;
 		return CMZN_OK;
 	}
-	for (int i = 0; i < this->mesh->getDimension(); ++i)
+	for (int i = 0; i < this->dimension; ++i)
 	{
 		FE_basis_type basisType;
 		if (!(FE_basis_get_xi_basis_type(this->basis, i, &basisType)
@@ -389,11 +395,11 @@ int FE_element_field_template::setLegacyGridNumberInXi(const int *numberInXiIn)
 	}
 	if (!this->legacyGridNumberInXi)
 	{
-		this->legacyGridNumberInXi = new int[this->mesh->getDimension()];
+		this->legacyGridNumberInXi = new int[this->dimension];
 		if (!this->legacyGridNumberInXi)
 			return CMZN_ERROR_MEMORY;
 	}
-	for (int i = 0; i < this->mesh->getDimension(); ++i)
+	for (int i = 0; i < this->dimension; ++i)
 		this->legacyGridNumberInXi[i] = numberInXiIn[i];
 	return CMZN_OK;
 }
@@ -415,7 +421,7 @@ int FE_element_field_template::getNumberOfElementDOFs() const
 		{
 			// only linear grid supported, and for line shapes
 			int count = 1;
-			for (int i = 0; i < this->mesh->getDimension(); ++i)
+			for (int i = 0; i < this->dimension; ++i)
 				count *= (this->legacyGridNumberInXi[i] + 1);
 			return count;
 		}

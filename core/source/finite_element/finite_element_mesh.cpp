@@ -962,12 +962,17 @@ FE_mesh::~FE_mesh()
 		this->faceMesh->setParentMesh(0);
 	cmzn::Deaccess(this->changeLog);
 
-	// remove pointers to this FE_mesh as destroying
+	// detach objects holding non-accessed pointers to this mesh
 	cmzn_elementiterator *elementIterator = this->activeElementIterators;
 	while (elementIterator)
 	{
-		elementIterator->invalidate();
+		elementIterator->detachFromMesh();
 		elementIterator = elementIterator->nextIterator;
+	}
+	for (std::set<FE_element_field_template *>::iterator iter = this->allElementfieldtemplates.begin();
+		iter != this->allElementfieldtemplates.end(); ++iter)
+	{
+		(*iter)->detachFromMesh();
 	}
 
 	this->clear();
@@ -995,6 +1000,36 @@ void FE_mesh::detach_from_FE_region()
 	this->parentMesh = 0;
 	this->faceMesh = 0;
 	this->nodeset = 0;
+}
+
+/** Called by FE_element_field_template constructor to maintain list of EFTs so
+  * their mesh pointers can be cleared when mesh is destroyed.
+  * @param eft  The element field template to add. Must be for this mesh.
+  * @return  Result OK on success, any other error on failure. */
+int FE_mesh::addElementfieldtemplate(FE_element_field_template *eft)
+{
+	if ((!eft) || (eft->getMesh() != this))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::addElementfieldtemplate.  Invalid EFT");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	this->allElementfieldtemplates.insert(eft);
+	return CMZN_OK;
+}
+
+/** Called by FE_element_field_template destructor to remove mesh's list of EFTs.
+  * @param eft  The element field template to remove. Must be from this mesh.
+  * @return  Result OK on success, any other error on failure. */
+int FE_mesh::removeElementfieldtemplate(FE_element_field_template *eft)
+{
+	std::set<FE_element_field_template *>::iterator iter = this->allElementfieldtemplates.find(eft);
+	if (iter == this->allElementfieldtemplates.end())
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::removeElementfieldtemplate.  EFT not in mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	this->allElementfieldtemplates.erase(iter);
+	return CMZN_OK;
 }
 
 /**

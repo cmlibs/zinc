@@ -19,8 +19,9 @@
 #include "finite_element/finite_element.h"
 #include "general/block_array.hpp"
 #include "general/list.h"
-#include <vector>
 #include <list>
+#include <set>
+#include <vector>
 
 class FE_mesh;
 
@@ -882,6 +883,10 @@ private:
 	// map element index -> element object (accessed)
 	block_array<DsLabelIndex, cmzn_element*> fe_elements;
 
+	// maintain list of EFTs for this mesh, whether merged in elementFieldTemplateData
+	// or externally held, so can clear their mesh pointer on mesh destruction
+	std::set<FE_element_field_template *> allElementfieldtemplates;
+
 	// array of element field templates with common element mapping data
 	// mesh field templates store indexes into this array
 	int elementFieldTemplateDataCount;
@@ -997,6 +1002,10 @@ public:
 	}
 
 	void detach_from_FE_region();
+
+	int addElementfieldtemplate(FE_element_field_template *eft);
+
+	int removeElementfieldtemplate(FE_element_field_template *eft);
 
 	/** @param eftIndex  Index from 0 to number in mesh - 1. Not checked.
 	  * @return  Non-accessed element field template. */
@@ -1391,7 +1400,7 @@ private:
 		cmzn::Deaccess(this->iter);
 	}
 
-	void invalidate()
+	void detachFromMesh()
 	{
 		// sufficient to clear fe_mesh as only called from fe_mesh destructor
 		this->fe_mesh = 0;

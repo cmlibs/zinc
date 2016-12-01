@@ -40,7 +40,8 @@ class FE_element_field_template
 
 private:
 
-	FE_mesh *mesh; // accessed
+	FE_mesh *mesh; // not accessed; mesh maintains EFT list to clear this when destroyed. Must check non-zero before use
+	const int dimension; // cached from mesh, basis
 	FE_basis *basis; // accessed
 	const int numberOfFunctions; // number of basis functions, cached from basis
 
@@ -117,6 +118,12 @@ private:
 	bool checkNodeParameterLegacyIndexes(std::vector<int> &legacyDOFIndexes,
 		std::vector<const FE_node_field_component*> &nodeFieldComponents);
 
+	/** Called by ~FE_mesh */
+	void detachFromMesh()
+	{
+		this->mesh = 0;
+	}
+
 public:
 
 	static FE_element_field_template *create(FE_mesh *meshIn, FE_basis *basisIn);
@@ -180,7 +187,7 @@ public:
 	  * should be the first setting changed. */
 	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn);
 
-	/** @return  Non-accessed pointer to the mesh for this template. */
+	/** @return  Non-accessed pointer to the mesh for this template, or NULL if mesh destroyed. */
 	FE_mesh *getMesh() const
 	{
 		return this->mesh;
