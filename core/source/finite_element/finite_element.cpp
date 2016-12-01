@@ -17626,24 +17626,22 @@ int get_FE_element_discretization(struct FE_element *element,
 		{
 			/* get the discretization requested for top-level element, from native
 				 discretization field if not NULL and is element based in element */
-			if (native_discretization_field&&
-				FE_element_field_is_grid_based(*top_level_element,
-					native_discretization_field))
+			if (native_discretization_field)
 			{
 				const int topDimension = (*top_level_element)->getMesh()->getDimension();
 				const FE_mesh_field_data *meshFieldData = native_discretization_field->meshFieldData[topDimension - 1];
-				// use first grid-based field component
-				for (int c = 0; c < native_discretization_field->number_of_components; ++c)
+				if (meshFieldData)
 				{
-					const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
-					const FE_element_field_template *eft = mft->getElementfieldtemplate((*top_level_element)->getIndex());
-					if (eft->getNumberOfElementDOFs() > 0)
+					// use first grid-based field component
+					for (int c = 0; c < native_discretization_field->number_of_components; ++c)
 					{
-						const int *numberInXi = eft->getLegacyGridNumberInXi();
-						if (numberInXi) // only if legacy grid; other element-based do not multiply
+						const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+						const FE_element_field_template *eft = mft->getElementfieldtemplate((*top_level_element)->getIndex());
+						const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+						if (gridNumberInXi) // only if legacy grid; other element-based do not multiply
 						{
 							for (int d = 0; d < topDimension; ++d)
-								top_level_number_in_xi[d] *= numberInXi[d];
+								top_level_number_in_xi[d] *= gridNumberInXi[d];
 							break;
 						}
 					}

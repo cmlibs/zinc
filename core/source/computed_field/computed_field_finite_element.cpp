@@ -23,6 +23,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
@@ -946,108 +947,115 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
 	if (element_xi_location)
 	{
-		enum Value_type value_type;
-		FE_value *grid_values;
-		int element_dimension, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-			indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset;
-
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
 
-		element_dimension = element->getDimension();
-		if (FE_element_field_is_grid_based(element,fe_field))
-		{
-			FE_element_shape *element_shape = get_FE_element_shape(element);
-			int return_code=1;
-			for (int k = 0 ; (k < field->number_of_components) && return_code ; k++)
-			{
-				/* ignore non-grid-based components */
-				if (get_FE_element_field_component_grid_map_number_in_xi(element,
-						fe_field, /*component_number*/k, grid_map_number_in_xi))
-				{
-					if (FE_element_shape_get_indices_for_xi_location_in_cell_corners(
-						element_shape, grid_map_number_in_xi, xi, indices))
-					{
-						offset = indices[element_dimension - 1];
-						for (int i = element_dimension - 2 ; i >= 0 ; i--)
-						{
-							offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
-						}
-						value_type=get_FE_field_value_type(fe_field);
-						switch (value_type)
-						{
-							case FE_VALUE_VALUE:
-							{
-								if (get_FE_element_field_component_grid_FE_value_values(element,
-										fe_field, k, &grid_values))
-								{
-									grid_values[offset] = valueCache.values[k];
-									if (!set_FE_element_field_component_grid_FE_value_values(
-											 element, fe_field, k, grid_values))
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_finite_element::assign.  "
-											"Unable to set finite element grid FE_value values");
-										return_code=0;
-									}
-									DEALLOCATE(grid_values);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_finite_element::assign.  "
-										"Unable to get old grid FE_value values");
-									return_code=0;
-								}
-							} break;
-							case INT_VALUE:
-							{
-								result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
-								if (get_FE_element_field_component_grid_int_values(element,
-										fe_field, k, &grid_int_values))
-								{
-									grid_int_values[offset] = (int)valueCache.values[k];
-									if (!set_FE_element_field_component_grid_int_values(
-											 element, fe_field, k, grid_int_values))
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_finite_element::assign.  "
-											"Unable to set finite element grid int values");
-										return_code=0;
-									}
-									DEALLOCATE(grid_int_values);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_finite_element::assign.  "
-										"Unable to get old grid int values");
-									return_code=0;
-								}
-							} break;
-							default:
-							{
-								return_code=0;
-							} break;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_finite_element::assign.  "
-							"Element locations do not coincide with grid");
-						return_code = 0;
-					}
-				}
-			}
-			if (!return_code)
-			{
-				result = FIELD_ASSIGNMENT_RESULT_FAIL;
-			}
-		}
-		else if (FE_element_field_is_standard_node_based(element, fe_field))
+		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(this->fe_field, element->getMesh());
+		if (!meshFieldData) // field not defined on any elements of mesh
 		{
 			result = FIELD_ASSIGNMENT_RESULT_FAIL;
+		}
+		else
+		{
+			const DsLabelIndex elementIndex = element->getIndex();
+			FE_element_shape *element_shape = element->getElementShape();
+			const int componentCount = this->field->number_of_components;
+			bool elementFieldChange = false;
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				const FE_element_field_template *eft = mft->getElementfieldtemplate(elementIndex);
+				if (!eft) // field not defined on element
+				{
+					result = FIELD_ASSIGNMENT_RESULT_FAIL;
+					break;
+				}
+				if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+					continue;  // ignore non-element-based components
+				const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
+				const int *gridNumberInXi;
+				if ((1 == numberOfElementDOFs) || (gridNumberInXi = eft->getLegacyGridNumberInXi()))
+				{
+					// Ensuring the constant case is implemented for triangles etc. and no legacy grid
+					int offset = 0;
+					if (numberOfElementDOFs > 1)
+					{
+						int indices[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+						const int dimension = element->getMesh()->getDimension();
+						if (!FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+							element_shape, gridNumberInXi, xi, indices))
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_finite_element::assign.  Element locations do not coincide with grid");
+							result = FIELD_ASSIGNMENT_RESULT_FAIL;
+							break;
+						}
+						else
+						{
+							offset = indices[dimension - 1];
+							for (int i = dimension - 2; i >= 0; i--)
+								offset = offset*(gridNumberInXi[i] + 1) + indices[i];
+						}
+					}
+					switch (value_type)
+					{
+					case FE_VALUE_VALUE:
+					{
+						FE_value *values = static_cast<FE_mesh_field_data::Component<FE_value> *>(meshFieldData->getComponentBase(c))
+							->getElementValues(elementIndex, numberOfElementDOFs);
+						if (!values)
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_finite_element::assign.   Unable to get grid FE_value values");
+							result = FIELD_ASSIGNMENT_RESULT_FAIL;
+						}
+						else
+						{
+							values[offset] = valueCache.values[c];
+							elementFieldChange = true;
+						}
+					} break;
+					case INT_VALUE:
+					{
+						int *values = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(c))
+							->getElementValues(elementIndex, numberOfElementDOFs);
+						if (!values)
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_finite_element::assign.   Unable to get grid int values");
+							result = FIELD_ASSIGNMENT_RESULT_FAIL;
+						}
+						else
+						{
+							values[offset] = static_cast<int>(valueCache.values[c]);
+							result = FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET; // GRC: don't know why partial for integer?
+							elementFieldChange = true;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_finite_element::assign.   Unsupported value type");
+						result = FIELD_ASSIGNMENT_RESULT_FAIL;
+					} break;
+					}
+					if (result == FIELD_ASSIGNMENT_RESULT_FAIL)
+						break;
+				}
+				else
+				{
+					// not implemented for non-constant non-grid case
+					result = FIELD_ASSIGNMENT_RESULT_FAIL;
+					break;
+				}
+			}
+			if (elementFieldChange)
+			{
+				// change notification
+				element->getMesh()->get_FE_region()->FE_field_change(this->fe_field,
+					CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+				element->getMesh()->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_RELATED); // includes update
+			}
 		}
 	}
 	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
@@ -1148,50 +1156,50 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }
 
+/**
+ * If the field is grid-based in element, get the number of linear grid cells
+ * each xi-direction of element. Note that this is one less than the number of
+ * grid points in each direction.
+ * @param element  The element to get native grid discretization in.
+ * @param number_in_xi  Array to receive returned numbers. Caller must ensure
+ * this is no smaller than the dimension of the element.
+ * @return  1 on success, 0 with no error message if the field not grid-based.
+ */
 int Computed_field_finite_element::get_native_discretization_in_element(
 	struct FE_element *element,int *number_in_xi)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the <field> is grid-based in <element>, returns in
-<number_in_xi> the numbers of finite difference cells in each xi-direction of
-<element>. Note that this number is one less than the number of grid points in
-each direction. <number_in_xi> should be allocated with at least as much space
-as the number of dimensions in <element>, but is assumed to have no more than
-MAXIMUM_ELEMENT_XI_DIMENSIONS so that
-int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
-Returns 0 with no errors if the field is not grid-based.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_get_native_discretization_in_element);
-	if (field&&element&&number_in_xi&&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= element->getDimension()))
+	if (this->field && element && element->getMesh() && number_in_xi)
 	{
-		if (FE_element_field_is_grid_based(element,fe_field))
+		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(this->fe_field, element->getMesh());
+		if (!meshFieldData)
+			return 0; // invalid element or not defined in any element of mesh
+		const int componentCount = this->field->number_of_components;
+		// use first grid-based field component, if any
+		for (int c = 0; c < componentCount; ++c)
 		{
-			/* use only first component */
-			return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
-				fe_field, /*component_number*/0, number_in_xi);
-		}
-		else
-		{
-			return_code=0;
+			const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+			const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+			if (eft)
+			{
+				const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+				if (gridNumberInXi) // only if legacy grid; other element-based do not multiply
+				{
+					const int dimension = element->getMesh()->getDimension();
+					for (int d = 0; d < dimension; ++d)
+						number_in_xi[d] = gridNumberInXi[d];
+					return 1;
+				}
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_native_discretization_in_element.  "
+			"Computed_field_finite_element::get_native_discretization_in_element.  "
 			"Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_native_discretization_in_element */
+	return 0;
+}
 
 int Computed_field_finite_element::list()
 /*******************************************************************************

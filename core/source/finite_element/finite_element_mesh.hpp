@@ -634,6 +634,17 @@ public:
 			return this->elementVectorDOFs.getValue(elementIndex);
 		}
 
+		/** @param elementIndex  The element to get values for.
+		  * @param valuesCount  The number of values expected. Used to distinguish scalar/vector storage.
+		  * @return  Address of values, or 0 if none. Note can return address of a scalar when it doesn't
+		  * exist. */
+		ValueType *getElementValues(DsLabelIndex elementIndex, int valuesCount)
+		{
+			if (valuesCount == 1)
+				return this->elementScalarDOFs.getAddress(elementIndex); // can be false positive
+			return this->elementVectorDOFs.getValue(elementIndex);
+		}
+
 		/** @param elementIndex  The element to set values for.
 		  * @param valuesCount  Size of values array; must be >= 1.
 		  * @param values  Array of values to set. Must be non-null.
