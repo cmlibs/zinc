@@ -82,7 +82,6 @@ SET( COMPUTED_FIELD_SRCS
 	source/minimise/optimisation.cpp
 	source/computed_field/computed_field_alias.cpp
 	source/computed_field/computed_field_compose.cpp
-	source/computed_field/computed_field_curve.cpp
 	source/computed_field/computed_field_deformation.cpp
 	source/computed_field/computed_field_image.cpp
 	source/computed_field/computed_field_integration.cpp
@@ -100,7 +99,6 @@ SET( COMPUTED_FIELD_HDRS
 	source/minimise/optimisation.hpp
 	source/computed_field/computed_field_alias.h
 	source/computed_field/computed_field_compose.h
-	source/computed_field/computed_field_curve.h
 	source/computed_field/computed_field_deformation.h
 	source/computed_field/computed_field_external.h
 	source/computed_field/computed_field_image.h
