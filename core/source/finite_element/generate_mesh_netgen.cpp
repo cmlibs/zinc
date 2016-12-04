@@ -29,7 +29,6 @@ the volume mesh, CMGUI will visualize them to the user.
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
-#include "finite_element/finite_element_helper.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "graphics/triangle_mesh.hpp"
