@@ -17,6 +17,8 @@
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "datastore/labelschangelog.hpp"
 
+struct FE_basis;
+class FE_mesh;
 struct FE_region;
 
 /***************************************************************************//**

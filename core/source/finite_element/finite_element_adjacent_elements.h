@@ -19,26 +19,49 @@ indexed_multi_range.
 #include "opencmiss/zinc/element.h"
 #include "general/indexed_multi_range.h"
 
-int adjacent_FE_element_from_nodes(struct FE_element *element,
-	int node_index, int *number_of_adjacent_elements, 
-	struct FE_element ***adjacent_elements, 
-	struct LIST(Index_multi_range) *node_element_list,
-	cmzn_mesh_id mesh);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
+class FE_mesh_field_template;
 
-DESCRIPTION :
-For a 1D top level element this routine will return the list of 
-<adjacent_elements> not including <element> which share the node indicated by
-<node_index>.  <adjacent_elements> is ALLOCATED to the 
-correct size and should be DEALLOCATED when calls to this function are finished.
-Note elements in adjacent_elements array are not accessed.
-==============================================================================*/
+class AdjacentElements1d
+{
+	FE_mesh *mesh;
+	FE_nodeset *nodeset;
+	std::vector<const FE_mesh_field_template *> mfts;
+	struct LIST(Index_multi_range) *node_element_list;
 
-/***************************************************************************//**
- * Creates a list indexed by node identifying elements which refer to each node.
- * @param mesh  Mesh to which elements must belong.
- */
-struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh);
+	AdjacentElements1d(cmzn_mesh_id meshIn, cmzn_field_id fieldIn);
+
+	DsLabelIndex getElementNodeIndexOnFace(struct FE_element *element, int face_index);
+
+public:
+
+	static AdjacentElements1d *create(cmzn_mesh_id meshIn, cmzn_field_id fieldIn)
+	{
+		auto adjacentElements = new AdjacentElements1d(meshIn, fieldIn);
+		if (adjacentElements->node_element_list)
+			return adjacentElements;
+		delete adjacentElements;
+		return 0;
+	}
+
+	~AdjacentElements1d();
+
+	const FE_mesh *getMesh() const
+	{
+		return this->mesh;
+	}
+
+	void addMFT(const FE_mesh_field_template *mft);
+
+	/** For a 1D top level element this routine will return the list of 
+	  * <adjacent_elements> not including <element> which share the node indicated by
+	  * <node_index>.  <adjacent_elements> is ALLOCATED to the 
+	  * correct size and should be DEALLOCATED when calls to this function are finished.
+	  * Note elements in adjacent_elements array are not accessed.
+	  * @param face_index  0 for xi=0, 1 for xi=1. */
+	int getAdjacentElements(struct FE_element *element,
+		int face_index, int *number_of_adjacent_elements,
+		struct FE_element ***adjacent_elements);
+
+};
 
 #endif /* !defined (FINITE_ELEMENT_ADJACENT_ELEMENTS_H) */

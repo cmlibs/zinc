@@ -349,7 +349,7 @@ private:
 		Computed_field_element_integration_mapping_fifo **last_to_be_checked,
 		Computed_field *integrand,
 		int magnitude_coordinates, Computed_field *coordinate_field,
-		LIST(Index_multi_range) **node_element_list,
+		AdjacentElements1d **adjacentElements1d,
 		LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
 		ZnReal time_step,
 		LIST(Computed_field_node_integration_mapping) *node_mapping);
@@ -491,7 +491,7 @@ int Computed_field_integration::add_neighbours(cmzn_fieldcache& workingCache,
 	Computed_field_element_integration_mapping_fifo **last_to_be_checked,
 	Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field,
-	LIST(Index_multi_range) **node_element_list,
+	AdjacentElements1d **adjacentElements1d,
 	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
 	ZnReal time_step,
 	LIST(Computed_field_node_integration_mapping) *node_mapping)
@@ -541,15 +541,14 @@ time is supplied in the workingCache.
 		{
 			if (element_dimension == 1)
 			{
-				if(!(*node_element_list))
+				// if we have 1D elements then we use the nodes to get to the
+				// adjacent elements; normally use the faces
+				if (!(*adjacentElements1d))
 				{
-					/* If we have 1D elements then we use the nodes to get to the
-						adjacent elements, normally use the faces */
-					*node_element_list = create_node_element_list(mesh);
+					*adjacentElements1d = AdjacentElements1d::create(mesh, coordinate_field);
 				}
-				if (!(adjacent_FE_element_from_nodes(mapping_item->element, i,
-					&number_of_neighbour_elements, &neighbour_elements, *node_element_list,
-					mesh)))
+				if (!(*adjacentElements1d && (*adjacentElements1d)->getAdjacentElements(mapping_item->element, i,
+					&number_of_neighbour_elements, &neighbour_elements)))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -767,7 +766,6 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 	Computed_field_element_integration_mapping *mapping_item;
 	Computed_field_element_integration_mapping_fifo *fifo_node,
 		*first_to_be_checked, *last_to_be_checked;
-	LIST(Index_multi_range) *node_element_list;
 
 	if (field && (integrand = field->source_fields[0])
 		&& (coordinate_field = field->source_fields[1]))
@@ -779,7 +777,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		return_code = CMZN_OK;
 		first_to_be_checked=last_to_be_checked=
 			(Computed_field_element_integration_mapping_fifo *)NULL;
-		node_element_list=(LIST(Index_multi_range) *)NULL;
+		AdjacentElements1d *adjacentElements1d = 0;
 		if ((texture_mapping = CREATE_LIST(Computed_field_element_integration_mapping)())
 			&& (node_mapping = CREATE_LIST(Computed_field_node_integration_mapping)()))
 		{
@@ -812,7 +810,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 						first_to_be_checked->mapping_item, texture_mapping,
 						&last_to_be_checked, integrand,
 						magnitude_coordinates, coordinate_field,
-						&node_element_list,
+						&adjacentElements1d,
 						(LIST(Computed_field_element_integration_mapping) *)NULL,
 						0.0, node_mapping);
 
@@ -858,10 +856,6 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
 			}
-			if (node_element_list)
-			{
-				DESTROY_LIST(Index_multi_range)(&node_element_list);
-			}
 		}
 		else
 		{
@@ -870,6 +864,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 				"Unable to create mapping list.");
 			return_code=CMZN_ERROR_GENERAL;
 		}
+		delete adjacentElements1d;
 		cmzn_fieldcache_destroy(&field_cache);
 		cmzn_fieldmodule_destroy(&field_module);
 	}
