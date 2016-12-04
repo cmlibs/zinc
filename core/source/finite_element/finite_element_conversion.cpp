@@ -40,6 +40,70 @@ Module types
 ------------
 */
 
+const int HERMITE_2D_NUMBER_OF_NODES = 4;
+const int BICUBIC_NUMBER_OF_NODES = 16;
+const int TRILINEAR_NUMBER_OF_NODES = 8;
+const int TRIQUADRATIC_NUMBER_OF_NODES = 27;
+const int TRICUBIC_NUMBER_OF_NODES = 64;
+const int MAX_NUMBER_OF_NODES = 64;
+
+const FE_value_triple destination_xi_bicubic_hermite[HERMITE_2D_NUMBER_OF_NODES] =
+{
+	{ 0.0, 0.0, 0.0 },{ 1.0, 0.0, 0.0 },{ 0.0, 1.0, 0.0 },{ 1.0, 1.0, 0.0 }
+};
+
+const FE_value_triple destination_xi_bicubic[BICUBIC_NUMBER_OF_NODES] =
+{
+	{ 0.0, 0.0    , 0.0 },{ 1.0/3.0, 0.0    , 0.0 },{ 2.0/3.0, 0.0    , 0.0 },{ 1.0, 0.0    , 0.0 },
+	{ 0.0, 1.0/3.0, 0.0 },{ 1.0/3.0, 1.0/3.0, 0.0 },{ 2.0/3.0, 1.0/3.0, 0.0 },{ 1.0, 1.0/3.0, 0.0 },
+	{ 0.0, 2.0/3.0, 0.0 },{ 1.0/3.0, 2.0/3.0, 0.0 },{ 2.0/3.0, 2.0/3.0, 0.0 },{ 1.0, 2.0/3.0, 0.0 },
+	{ 0.0, 1.0    , 0.0 },{ 1.0/3.0, 1.0    , 0.0 },{ 2.0/3.0, 1.0    , 0.0 },{ 1.0, 1.0    , 0.0 },
+};
+
+const FE_value_triple destination_xi_trilinear[TRILINEAR_NUMBER_OF_NODES] =
+{
+	{ 0.0, 0.0, 0.0 },{ 1.0, 0.0, 0.0 },{ 0.0, 1.0, 0.0 },{ 1.0, 1.0, 0.0 },
+	{ 0.0, 0.0, 1.0 },{ 1.0, 0.0, 1.0 },{ 0.0, 1.0, 1.0 },{ 1.0, 1.0, 1.0 }
+};
+
+const FE_value_triple destination_xi_triquadratic[TRIQUADRATIC_NUMBER_OF_NODES] =
+{
+	{ 0.0, 0.0, 0.0 },{ 0.5, 0.0, 0.0 },{ 1.0, 0.0, 0.0 },
+	{ 0.0, 0.5, 0.0 },{ 0.5, 0.5, 0.0 },{ 1.0, 0.5, 0.0 },
+	{ 0.0, 1.0, 0.0 },{ 0.5, 1.0, 0.0 },{ 1.0, 1.0, 0.0 },
+
+	{ 0.0, 0.0, 0.5 },{ 0.5, 0.0, 0.5 },{ 1.0, 0.0, 0.5 },
+	{ 0.0, 0.5, 0.5 },{ 0.5, 0.5, 0.5 },{ 1.0, 0.5, 0.5 },
+	{ 0.0, 1.0, 0.5 },{ 0.5, 1.0, 0.5 },{ 1.0, 1.0, 0.5 },
+
+	{ 0.0, 0.0, 1.0 },{ 0.5, 0.0, 1.0 },{ 1.0, 0.0, 1.0 },
+	{ 0.0, 0.5, 1.0 },{ 0.5, 0.5, 1.0 },{ 1.0, 0.5, 1.0 },
+	{ 0.0, 1.0, 1.0 },{ 0.5, 1.0, 1.0 },{ 1.0, 1.0, 1.0 },
+};
+
+const FE_value_triple destination_xi_tricubic[TRICUBIC_NUMBER_OF_NODES] =
+{
+	{ 0.0, 0.0    , 0.0     },{ 1.0/3.0, 0.0    , 0.0     },{ 2.0/3.0, 0.0    , 0.0     },{ 1.0, 0.0    , 0.0     },
+	{ 0.0, 1.0/3.0, 0.0     },{ 1.0/3.0, 1.0/3.0, 0.0     },{ 2.0/3.0, 1.0/3.0, 0.0     },{ 1.0, 1.0/3.0, 0.0     },
+	{ 0.0, 2.0/3.0, 0.0     },{ 1.0/3.0, 2.0/3.0, 0.0     },{ 2.0/3.0, 2.0/3.0, 0.0     },{ 1.0, 2.0/3.0, 0.0     },
+	{ 0.0, 1.0    , 0.0     },{ 1.0/3.0, 1.0    , 0.0     },{ 2.0/3.0, 1.0    , 0.0     },{ 1.0, 1.0    , 0.0     },
+
+	{ 0.0, 0.0    , 1.0/3.0 },{ 1.0/3.0, 0.0    , 1.0/3.0 },{ 2.0/3.0, 0.0    , 1.0/3.0 },{ 1.0, 0.0    , 1.0/3.0 },
+	{ 0.0, 1.0/3.0, 1.0/3.0 },{ 1.0/3.0, 1.0/3.0, 1.0/3.0 },{ 2.0/3.0, 1.0/3.0, 1.0/3.0 },{ 1.0, 1.0/3.0, 1.0/3.0 },
+	{ 0.0, 2.0/3.0, 1.0/3.0 },{ 1.0/3.0, 2.0/3.0, 1.0/3.0 },{ 2.0/3.0, 2.0/3.0, 1.0/3.0 },{ 1.0, 2.0/3.0, 1.0/3.0 },
+	{ 0.0, 1.0    , 1.0/3.0 },{ 1.0/3.0, 1.0    , 1.0/3.0 },{ 2.0/3.0, 1.0    , 1.0/3.0 },{ 1.0, 1.0    , 1.0/3.0 },
+
+	{ 0.0, 0.0    , 2.0/3.0 },{ 1.0/3.0, 0.0    , 2.0/3.0 },{ 2.0/3.0, 0.0    , 2.0/3.0 },{ 1.0, 0.0    , 2.0/3.0 },
+	{ 0.0, 1.0/3.0, 2.0/3.0 },{ 1.0/3.0, 1.0/3.0, 2.0/3.0 },{ 2.0/3.0, 1.0/3.0, 2.0/3.0 },{ 1.0, 1.0/3.0, 2.0/3.0 },
+	{ 0.0, 2.0/3.0, 2.0/3.0 },{ 1.0/3.0, 2.0/3.0, 2.0/3.0 },{ 2.0/3.0, 2.0/3.0, 2.0/3.0 },{ 1.0, 2.0/3.0, 2.0/3.0 },
+	{ 0.0, 1.0    , 2.0/3.0 },{ 1.0/3.0, 1.0    , 2.0/3.0 },{ 2.0/3.0, 1.0    , 2.0/3.0 },{ 1.0, 1.0    , 2.0/3.0 },
+
+	{ 0.0, 0.0    , 1.0     },{ 1.0/3.0, 0.0    , 1.0     },{ 2.0/3.0, 0.0    , 1.0     },{ 1.0, 0.0    , 1.0     },
+	{ 0.0, 1.0/3.0, 1.0     },{ 1.0/3.0, 1.0/3.0, 1.0     },{ 2.0/3.0, 1.0/3.0, 1.0     },{ 1.0, 1.0/3.0, 1.0     },
+	{ 0.0, 2.0/3.0, 1.0     },{ 1.0/3.0, 2.0/3.0, 1.0     },{ 2.0/3.0, 2.0/3.0, 1.0     },{ 1.0, 2.0/3.0, 1.0     },
+	{ 0.0, 1.0    , 1.0     },{ 1.0/3.0, 1.0    , 1.0     },{ 2.0/3.0, 1.0    , 1.0     },{ 1.0, 1.0    , 1.0     },
+};
+
 struct Convert_finite_elements_data
 {
 	enum Convert_finite_elements_mode mode;
@@ -66,16 +130,16 @@ struct Convert_finite_elements_data
 	FE_value *temporary_values;
 	int subelement_count;
 	FE_value delta_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-
-	int node_number; /* Do not to search from beginning for a valid node number each time */
-	int element_number; /* Do not to search from beginning for a valid element number each time */
+	int number_of_local_nodes;
+	const FE_value_triple *destination_xi;
 
 	Convert_finite_elements_data(cmzn_region_id source_regionIn,
 			Convert_finite_elements_mode modeIn,
 			Element_refinement refinementIn, FE_value toleranceIn,
 			cmzn_region_id destination_regionIn) :
 		mode(modeIn),
-		mode_dimension((CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT == this->mode) ? 2 : 3),
+		mode_dimension(((CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT == this->mode)
+			|| (CONVERT_TO_FINITE_ELEMENTS_BICUBIC == this->mode)) ? 2 : 3),
 		source_region(cmzn_region_access(source_regionIn)),
 		source_fieldmodule(cmzn_region_get_fieldmodule(source_region)),
 		source_mesh(cmzn_fieldmodule_find_mesh_by_dimension(source_fieldmodule, this->mode_dimension)),
@@ -97,13 +161,39 @@ struct Convert_finite_elements_data
 		maximum_number_of_components(0),
 		temporary_values((FE_value *)NULL),
 		subelement_count(1),
-		node_number(1),
-		element_number(1)
+		number_of_local_nodes(0),
+		destination_xi(0)
 	{
 		for (int i = 0; i < this->mode_dimension; i++)
 		{
 			this->subelement_count *= this->refinement.count[i];
 			delta_xi[i] = 1.0 / (FE_value)(this->refinement.count[i]);
+		}
+
+		switch (this->mode)
+		{
+		case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
+			this->number_of_local_nodes = HERMITE_2D_NUMBER_OF_NODES;
+			this->destination_xi = destination_xi_bicubic_hermite;
+			break;
+		case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
+			this->number_of_local_nodes = BICUBIC_NUMBER_OF_NODES;
+			this->destination_xi = destination_xi_bicubic;
+			break;
+		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
+			this->number_of_local_nodes = TRILINEAR_NUMBER_OF_NODES;
+			this->destination_xi = destination_xi_trilinear;
+			break;
+		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+			this->number_of_local_nodes = TRIQUADRATIC_NUMBER_OF_NODES;
+			this->destination_xi = destination_xi_triquadratic;
+			break;
+		case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
+			this->number_of_local_nodes = TRICUBIC_NUMBER_OF_NODES;
+			this->destination_xi = destination_xi_tricubic;
+			break;
+		case CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED:
+			break;
 		}
 		cmzn_fieldmodule_begin_change(this->destination_fieldmodule);
 	}
@@ -254,10 +344,6 @@ int Convert_finite_elements_data::setFields(int sourceFieldsCount, cmzn_field_id
 int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 	int subelement_number)
 {
-	const int HERMITE_2D_NUMBER_OF_NODES = 4;
-	const int TRILINEAR_NUMBER_OF_NODES = 8;
-	const int TRIQUADRATIC_NUMBER_OF_NODES = 27;
-	const int MAX_NUMBER_OF_NODES = 27;
 	FE_value base_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values, *derivatives,
 		*nodal_values, source_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
@@ -298,7 +384,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 				values = this->temporary_values;
 				derivatives = this->temporary_values + number_of_components;
 				nodal_values = this->temporary_values + number_of_values;
-				for (int n = 0; n < HERMITE_2D_NUMBER_OF_NODES; ++n)
+				for (int n = 0; n < this->number_of_local_nodes; ++n)
 				{
 					for (int d = 0; d < mode_dimension; d++)
 					{
@@ -344,33 +430,11 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 				return 0;
 			}
 		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
 		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
 		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+		case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
 		{
-			FE_value_triple destination_xi_trilinear[TRILINEAR_NUMBER_OF_NODES] =
-			{
-				{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 1.0, 0.0},
-				{0.0, 0.0, 1.0}, {1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}, {1.0, 1.0, 1.0}
-			};
-			FE_value_triple destination_xi_triquadratic[TRIQUADRATIC_NUMBER_OF_NODES] =
-			{
-				{0.0, 0.0, 0.0}, {0.5, 0.0, 0.0}, {1.0, 0.0, 0.0},
-				{0.0, 0.5, 0.0}, {0.5, 0.5, 0.0}, {1.0, 0.5, 0.0},
-				{0.0, 1.0, 0.0}, {0.5, 1.0, 0.0}, {1.0, 1.0, 0.0},
-
-				{0.0, 0.0, 0.5}, {0.5, 0.0, 0.5}, {1.0, 0.0, 0.5},
-				{0.0, 0.5, 0.5}, {0.5, 0.5, 0.5}, {1.0, 0.5, 0.5},
-				{0.0, 1.0, 0.5}, {0.5, 1.0, 0.5}, {1.0, 1.0, 0.5},
-
-				{0.0, 0.0, 1.0}, {0.5, 0.0, 1.0}, {1.0, 0.0, 1.0},
-				{0.0, 0.5, 1.0}, {0.5, 0.5, 1.0}, {1.0, 0.5, 1.0},
-				{0.0, 1.0, 1.0}, {0.5, 1.0, 1.0}, {1.0, 1.0, 1.0},
-			};
-			FE_value_triple *destination_xi = (mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
-				destination_xi_trilinear : destination_xi_triquadratic;
-			const int number_of_local_nodes =
-				(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
-				TRILINEAR_NUMBER_OF_NODES : TRIQUADRATIC_NUMBER_OF_NODES;
 			for (int f = 0 ; f < number_of_fields ; ++f)
 			{
 				cmzn_field_id source_field = this->source_fields[f];
@@ -378,7 +442,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 				const int number_of_components = cmzn_field_get_number_of_components(source_field);
 				const int number_of_values = number_of_components;
 				values = temporary_values;
-				for (int n = 0; n < number_of_local_nodes; ++n)
+				for (int n = 0; n < this->number_of_local_nodes; ++n)
 				{
 					for (int d = 0; d < mode_dimension; d++)
 					{
@@ -490,19 +554,25 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 	{
 		case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
 		{
-
 			enumerator_string = "convert_hermite_2D_product_elements";
+		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
+		{
+			enumerator_string = "convert_bicubic";
 		} break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
 		{
-
 			enumerator_string = "convert_trilinear";
 		} break;
 		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
 		{
 			enumerator_string = "convert_triquadratic";
 		} break;
-		default:
+		case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
+		{
+			enumerator_string = "convert_tricubic";
+		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED:
 		{
 			enumerator_string = (const char *)NULL;
 		} break;
@@ -534,6 +604,10 @@ int finite_element_conversion(cmzn_region_id source_region,
 		return 0;
 
 	/* Set up data */
+	const int nodeIndexesCount = data.number_of_local_nodes;
+	int nodeIndexes[MAX_NUMBER_OF_NODES];
+	for (int i = 0; i < nodeIndexesCount; ++i)
+		nodeIndexes[i] = i + 1;
 	switch (mode)
 	{
 		case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
@@ -572,8 +646,6 @@ int finite_element_conversion(cmzn_region_id source_region,
 			}
 			cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(data.destination_fieldmodule, 2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
 			bool success = true;
-			const int nodeIndexesCount = 4;
-			const int nodeIndexes[] = { 1, 2, 3, 4 };
 			for (int f = 0; f < data.number_of_fields; ++f)
 			{
 				cmzn_field_id destination_field = cmzn_field_finite_element_base_cast(data.destination_fields[f]);
@@ -589,8 +661,10 @@ int finite_element_conversion(cmzn_region_id source_region,
 			if (!success)
 				return 0;
 		} break;
+		case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
 		case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
 		case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+		case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
 		{
 			ALLOCATE(data.temporary_values, FE_value, /*dofs*/2*data.maximum_number_of_components);
 			if (!data.temporary_values)
@@ -612,14 +686,14 @@ int finite_element_conversion(cmzn_region_id source_region,
 					return 0;
 				}
 			}
-			const cmzn_elementbasis_function_type basis_function_type = (mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ?
-				CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE : CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE;
-			cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(data.destination_fieldmodule, 2, basis_function_type);
+			const cmzn_elementbasis_function_type basis_function_type =
+				(mode == CONVERT_TO_FINITE_ELEMENTS_BICUBIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE :
+				(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE :
+				(mode == CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE :
+				(mode == CONVERT_TO_FINITE_ELEMENTS_TRICUBIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE :
+				CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
+			cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(data.destination_fieldmodule, data.mode_dimension, basis_function_type);
 			bool success = true;
-			const int nodeIndexesCount = (mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ? 8 : 27;
-			int nodeIndexes[27];
-			for (int i = 0; i < nodeIndexesCount; ++i)
-				nodeIndexes[i] = i + 1;
 			for (int f = 0; f < data.number_of_fields; ++f)
 			{
 				cmzn_field_id destination_field = cmzn_field_finite_element_base_cast(data.destination_fields[f]);
