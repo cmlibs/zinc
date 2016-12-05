@@ -377,16 +377,6 @@ Defines a field at a node (does not assign values).
  */
 int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field);
 
-int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
-	int number_of_derivatives, enum FE_nodal_value_type *derivative_value_types);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Defines <field> at <node> using the same <number_of_derivatives>
-and <nodal_value_types> for each component, and only 1 version.
-==============================================================================*/
-
 int for_FE_field_at_node(struct FE_field *field,
 	FE_node_field_iterator_function *iterator,void *user_data,
 	struct FE_node *node);
