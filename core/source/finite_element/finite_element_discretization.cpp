@@ -868,7 +868,7 @@ Otherwise the routine returns 0.
 {
 	enum FE_element_shape_category element_shape_category;
 	int i, line_direction, linked_xi_directions[2],
-		number_of_polygon_sides, return_code;
+		number_of_polygon_sides, return_code = 1;
 
 	const int element_dimension = get_FE_element_shape_dimension(element_shape);
 	if ((0 < element_dimension) && number_in_xi && xi && indices)

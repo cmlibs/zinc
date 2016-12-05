@@ -17963,7 +17963,9 @@ bool FE_element_field_is_grid_based(struct FE_element *element,
 	{
 		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
 		const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
-		if ((eft) && (eft->getNumberOfElementDOFs() > 0))
+		if (!eft)
+			return false;
+		if ((eft->getNumberOfElementDOFs() > 0) && (0 != eft->getLegacyGridNumberInXi()))
 			return true;
 	}
 	return false;

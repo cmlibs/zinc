@@ -2705,8 +2705,6 @@ int cmzn_sceneviewermodule_get_default_background_colour_rgb(
 	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
-
 	if (sceneviewermodule && valuesOut3)
 	{
 		valuesOut3[0] = sceneviewermodule->background_colour.red;

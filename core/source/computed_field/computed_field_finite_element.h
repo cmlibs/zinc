@@ -141,16 +141,13 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 ==============================================================================*/
 
+/**
+ * Returns true if field is a 1 component integer finite element field which is
+ * defined grid-based in element.
+ * Used for choosing field suitable for identifying grid points.
+ */
 int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
-==============================================================================*/
+	cmzn_field_id field, void *element_void);
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
 	void *dummy_void);

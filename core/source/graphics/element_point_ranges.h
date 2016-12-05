@@ -292,20 +292,17 @@ DESCRIPTION :
 Toggles the <element_point_ranges> in <element_point_ranges_list>.
 ==============================================================================*/
 
+/**
+ * If grid_field is a single component integer grid-based field in element,
+ * creates and returns an Element_point_ranges containing all the grid points
+ * at which the value of grid_field is in the ranges.
+ * No Element_point_ranges object is returned without error if:
+ * - grid_field is not grid-based in element.
+ * - No grid points in element have grid_field value in the given ranges.
+ */
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges);
-/*******************************************************************************
-LAST MODIFIED : 18 May 2000
-
-DESCRIPTION :
-If <grid_field> is a single component grid-based field in <element>, creates and
-returns an Element_point_ranges containing all the grid points at which the
-value of <grid_field> is in the <ranges>.
-No Element_point_ranges object is returned without error if:
-- <grid_field> is not grid-based in <element>.
-- No grid points in <element> have <grid_field> value in the given <ranges>.
-==============================================================================*/
 
 int FE_element_grid_to_Element_point_ranges_list(struct FE_element *element,
 	void *grid_to_list_data_void);
@@ -324,30 +321,25 @@ struct FE_element_grid_to_Element_point_ranges_list_data.
 Uses only top level elements.
 ==============================================================================*/
 
+/**
+ * If grid_fe_field is grid-based integer at same resolution as
+ * element_point_ranges, adds the values for this field for points in the
+ * ranges to the multi_range.
+ * If field and element_point_ranges not identically grid-based, clear
+ * all_points_native flag.
+ * @param grid_to_multi_range_data_void  Element_point_ranges_grid_to_multi_range_data.
+ */
 int Element_point_ranges_grid_to_multi_range(
 	struct Element_point_ranges *element_point_ranges,
 	void *grid_to_multi_range_data_void);
-/*******************************************************************************
-LAST MODIFIED : 16 June 2000
 
-DESCRIPTION :
-Last parameter is a struct Element_point_ranges_grid_to_multi_range_data.
-If <grid_fe_field> is grid-based as in <element_point_ranges>, adds the values
-for this field for points in the ranges to the <multi_range>.
-If field and element_point_ranges not identically grid-based, clear
-<all_points_native> flag.
-==============================================================================*/
-
+/**
+ * If grid_fe_field is grid-based integer in element, adds all values for
+ * this field in element to the multi_range.
+ * @param grid_to_multi_range_data_void  FE_element_grid_to_multi_range_data.
+ */
 int FE_element_grid_to_multi_range(struct FE_element *element,
 	void *grid_to_multi_range_data_void);
-/*******************************************************************************
-LAST MODIFIED : 21 September 2000
-
-DESCRIPTION :
-Last parameter is a struct FE_element_grid_to_multi_range_data.
-If <grid_fe_field> is grid-based as in <element>, adds all values for this field
-in <element> to the <multi_range>.
-==============================================================================*/
 
 int Element_point_ranges_set_grid_values(
 	struct Element_point_ranges *element_point_ranges,

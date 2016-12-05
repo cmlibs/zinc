@@ -561,7 +561,7 @@ public:
 
 		FE_mesh_field_template *meshFieldTemplate; // accessed
 
-	protected:
+	public:
 
 		ComponentBase(FE_mesh_field_template *meshFieldTemplateIn) :
 			meshFieldTemplate(meshFieldTemplateIn->access())
@@ -576,7 +576,13 @@ public:
 		virtual void clearElementData(DsLabelIndex elementIndex) = 0;
 
 		/** @return  Non-accessed field template */
-		FE_mesh_field_template *getMeshfieldtemplate() const
+		const FE_mesh_field_template *getMeshfieldtemplate() const
+		{
+			return this->meshFieldTemplate;
+		}
+
+		/** @return  Non-accessed field template */
+		FE_mesh_field_template *getMeshfieldtemplate()
 		{
 			return this->meshFieldTemplate;
 		}

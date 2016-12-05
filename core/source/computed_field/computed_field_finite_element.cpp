@@ -4442,45 +4442,25 @@ Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 } /* Computed_field_is_scalar_integer */
 
 int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
-==============================================================================*/
+	cmzn_field_id field, void *element_void)
 {
-	Computed_field_finite_element* core;
-	int return_code;
 	struct FE_element *element;
-
-	ENTER(Computed_field_is_scalar_integer_grid_in_element);
-	if (field&&(element=(struct FE_element *)element_void))
+	if (field && (element = (struct FE_element *)element_void))
 	{
-		if ((1==field->number_of_components)&&
-			(core=dynamic_cast<Computed_field_finite_element*>(field->core)))
-		{
-			return_code = (INT_VALUE==get_FE_field_value_type(core->fe_field))&&
-				Computed_field_is_defined_in_element(field,element)&&
-				FE_element_field_is_grid_based(element,core->fe_field);
-		}
-		else
-		{
-			return_code = 0;
-		}
+		Computed_field_finite_element* core;
+		if ((1 == field->number_of_components)
+			&& (core = dynamic_cast<Computed_field_finite_element*>(field->core))
+			&& (INT_VALUE == get_FE_field_value_type(core->fe_field))
+			&& FE_element_field_is_grid_based(element, core->fe_field))
+			return 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_scalar_integer_grid_in_element.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_scalar_integer_grid_in_element */
+	return 0;
+}
 
 struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *field, struct FE_node *node)
