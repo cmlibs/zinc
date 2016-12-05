@@ -17,6 +17,8 @@
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/export_cm_files.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -114,41 +116,47 @@ struct FE_element_field_add_basis_data
 static int FE_element_field_add_basis_to_list(
 	struct FE_element *element, FE_element_field_add_basis_data *data)
 {
-	int basis_type_array[4], dimension, i, return_code, xi1, xi2;
-	struct FE_basis *face_basis, *fe_basis;
+	int return_code;
 	if (element && data)
 	{
+		int basis_type_array[4], dimension, xi1, xi2;
+		struct FE_basis *face_basis, *fe_basis;
 		return_code = 1;
-		if (FE_element_field_is_standard_node_based(element, data->field))
+		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, element->getMesh());
+		if (!meshFieldData)
 		{
-			for (i = 0 ; return_code && (i < data->number_of_components) ; i++)
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_add_basis_to_list.  Field not defined on mesh");
+			return 0;
+		}
+		for (int i = 0 ; return_code && (i < data->number_of_components) ; i++)
+		{
+			FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(i);
+			FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+			if (!eft)
+				return 1; // not defined on element
+			fe_basis = eft->getBasis();
+			if (!IS_OBJECT_IN_LIST(FE_basis)(fe_basis, data->basis_types))
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field,
-					/*component_number*/i, &fe_basis);
-				if (!IS_OBJECT_IN_LIST(FE_basis)(fe_basis, data->basis_types))
+				return_code = ADD_OBJECT_TO_LIST(FE_basis)(fe_basis, data->basis_types);
+				FE_basis_get_dimension(fe_basis, &dimension);
+				if (dimension == 3)
 				{
-					return_code = ADD_OBJECT_TO_LIST(FE_basis)(fe_basis,
-						data->basis_types);
-
-					FE_basis_get_dimension(fe_basis, &dimension);
-					if (dimension == 3)
+					/* Add the face bases into the list */
+					basis_type_array[0] = /*dimension*/2;
+					basis_type_array[2] = /*off diagonal*/NO_RELATION;
+					for (xi1 = 0 ; xi1 < dimension ; xi1++)
 					{
-						/* Add the face bases into the list */
-						basis_type_array[0] = /*dimension*/2;
-						basis_type_array[2] = /*off diagonal*/NO_RELATION;
-						for (xi1 = 0 ; xi1 < dimension ; xi1++)
+						FE_basis_get_xi_basis_type(fe_basis, xi1, reinterpret_cast<FE_basis_type *>(&basis_type_array[1]));
+						for (xi2 = xi1 + 1 ; xi2 < dimension ; xi2++)
 						{
-							FE_basis_get_xi_basis_type(fe_basis, xi1, reinterpret_cast<FE_basis_type *>(&basis_type_array[1]));
-							for (xi2 = xi1 + 1 ; xi2 < dimension ; xi2++)
+							FE_basis_get_xi_basis_type(fe_basis, xi2,  reinterpret_cast<FE_basis_type *>(&basis_type_array[3]));
+							face_basis = make_FE_basis(basis_type_array,
+								FE_region_get_basis_manager(data->fe_region));
+							if (!IS_OBJECT_IN_LIST(FE_basis)(face_basis, data->basis_types))
 							{
-								FE_basis_get_xi_basis_type(fe_basis, xi2,  reinterpret_cast<FE_basis_type *>(&basis_type_array[3]));
-								face_basis = make_FE_basis(basis_type_array,
-									FE_region_get_basis_manager(data->fe_region));
-								if (!IS_OBJECT_IN_LIST(FE_basis)(face_basis, data->basis_types))
-								{
-									return_code = ADD_OBJECT_TO_LIST(FE_basis)(face_basis,
-										data->basis_types);
-								}
+								return_code = ADD_OBJECT_TO_LIST(FE_basis)(face_basis,
+									data->basis_types);
 							}
 						}
 					}
@@ -923,23 +931,9 @@ struct FE_element_write_cm_check_element_values_data
 static int FE_element_write_cm_check_element_values(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
-	int return_code;
-	if (element && data)
-	{
-		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field,element) &&
-			FE_element_field_is_standard_node_based(element, data->field))
-		{
-			data->number_of_elements++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_write_cm_check_element_values.  Missing element_field");
-		return_code = 0;
-	}
-	return (return_code);
+	if (data && (FE_field_is_defined_in_element(data->field, element)))
+		++(data->number_of_elements);
+	return 1;
 }
 
 /**
@@ -948,133 +942,160 @@ static int FE_element_write_cm_check_element_values(
 static int write_cm_FE_element(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
-	int basis_dimension, basis_number, dimension,
-		first_basis, i, j, k,
-		node_index, *node_number_array, number_of_element_field_nodes,
-		number_of_nodal_values, occurrences, return_code, version, *versions_array;
-	struct FE_basis *fe_basis;
-	struct FE_element_field_component *component;
-	struct FE_node *node;
-	struct Standard_node_to_element_map *standard_node_map;
-
+	int return_code;
 	if (element && data)
 	{
 		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field, element) &&
-			FE_element_field_is_standard_node_based(element, data->field))
+		FE_mesh *mesh = element->getMesh();
+		FE_nodeset *nodeset = mesh->getNodeset();
+		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, mesh);
+		const int componentCount = get_FE_field_number_of_components(data->field);
+		if (!meshFieldData)
 		{
-			int element_identifier = get_FE_element_identifier(element);
+			display_message(ERROR_MESSAGE, "write_cm_FE_element.  Field not defined on mesh");
+			return 0;
+		}
+		if (FE_field_is_defined_in_element_not_inherited(data->field, element))
+		{
+			FE_basis *fe_basis;
+			int element_identifier = element->getIdentifier();
 			fprintf(data->ipelem_file, " Element number [    1]:     %d\n",
 				element_identifier);
-			dimension = get_FE_element_dimension(element);
+			const int dimension = element->getDimension();
 
 			fprintf(data->ipelem_file, " The number of geometric Xj-coordinates is [3]: %d\n",
 				data->number_of_components);
-			for (i = 0 ; i < data->number_of_components ; i++)
+			for (int c = 0 ; c < data->number_of_components ; c++)
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field,
-					/*component_number*/i, &fe_basis);
-
-				basis_number = 0;
+				FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+				fe_basis = eft->getBasis();
+				int basis_number = 0;
 				while ((data->basis_array[basis_number] != fe_basis) && (basis_number < data->number_of_bases))
 				{
 					basis_number++;
 				}
 				fprintf(data->ipelem_file, " The basis function type for geometric variable %d is [1]:  %d\n",
-					i + 1, basis_number + 1);
+					c + 1, basis_number + 1);
 			}
-			first_basis = 1;
-			for (i = 0 ; i < data->number_of_bases ; i++)
+			int basis_dimension;
+			bool first_basis = true;
+			for (int b = 0 ; b < data->number_of_bases ; b++)
 			{
-				FE_basis_get_dimension(data->basis_array[i], &basis_dimension);
+				FE_basis_get_dimension(data->basis_array[b], &basis_dimension);
 				if (dimension == basis_dimension)
 				{
-					/* Use the first component as it has a basis, could try and match to the
+					/* Use the first component as it has a basis, could try and match
 						which component actually used this basis above */
-					if (get_FE_element_field_component(element, data->field, /*component*/0, &component))
-					{
-						FE_element_field_component_get_number_of_nodes(component,
-							&number_of_element_field_nodes);
 
+					const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(0);
+					const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+					const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft);
+					const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(element->getIndex());
+					fe_basis = eft->getBasis();
+					const int number_of_basis_nodes = FE_basis_get_number_of_nodes(fe_basis);
+					if (0 < number_of_basis_nodes)
+					{
 						if (first_basis)
 						{
 							fprintf(data->ipelem_file, " Enter the %d global numbers for basis %d:",
-								number_of_element_field_nodes, i + 1);
+								number_of_basis_nodes, b + 1);
 						}
 						else
 						{
 							fprintf(data->ipelem_file, " Enter the %d numbers for basis %d [prev]:",
-								number_of_element_field_nodes, i + 1);
+								number_of_basis_nodes, b + 1);
 						}
-						ALLOCATE(versions_array, int, number_of_element_field_nodes);
-						ALLOCATE(node_number_array, int, number_of_element_field_nodes);
-						for (j = 0 ; j < number_of_element_field_nodes ; j++)
+						int *node_number_array, *number_of_versions_array, *versions_array;
+						ALLOCATE(number_of_versions_array, int, number_of_basis_nodes);
+						ALLOCATE(node_number_array, int, number_of_basis_nodes);
+						ALLOCATE(versions_array, int, number_of_basis_nodes);
+						bool warnGeneralLinearMap = false;
+						bool warnMixedVersions = false;
+						for (int j = 0 ; j < number_of_basis_nodes; j++)
 						{
-							FE_element_field_component_get_standard_node_map(
-								component, j, &standard_node_map);
-							Standard_node_to_element_map_get_node_index(
-								standard_node_map, &node_index);
-							Standard_node_to_element_map_get_number_of_nodal_values(
-								standard_node_map, &number_of_nodal_values);
-
-							get_FE_element_node(element, node_index, &node);
-							node_number_array[j] = get_FE_node_identifier(node);
-							versions_array[j] = get_FE_node_field_component_number_of_versions(node,
-								data->field, /*component*/0);
+							const int number_of_nodal_values = FE_basis_get_number_of_functions_per_node(fe_basis, j);
+							int localNodeIndex = -1;
+							int version = -1;
+							for (int v = 0; v < number_of_nodal_values; ++v)
+							{
+								const int functionNumber = FE_basis_get_function_number_from_node_function(fe_basis, j, v);
+								const int termCount = eft->getFunctionNumberOfTerms(functionNumber);
+								if (termCount > 1)
+									warnGeneralLinearMap = true;
+								for (int t = 0; t < termCount; ++t)
+								{
+									if (localNodeIndex == -1)
+										localNodeIndex = eft->getTermLocalNodeIndex(functionNumber, t);
+									else if (eft->getTermLocalNodeIndex(functionNumber, t) != localNodeIndex)
+										warnGeneralLinearMap = true;
+									if (version == -1)
+										version = eft->getTermNodeVersion(functionNumber, t);
+									else if (eft->getTermNodeVersion(functionNumber, t) != version)
+										warnMixedVersions = true;
+								}
+							}
+							FE_node *node;
+							if (nodeIndexes && (localNodeIndex >= 0))
+							{
+								node_number_array[j] = nodeset->getNodeIdentifier(nodeIndexes[localNodeIndex]);
+								node = nodeset->getNode(nodeIndexes[localNodeIndex]);
+							}
+							else
+							{
+								node_number_array[j] = -1;
+								node = 0;
+							}
+							if (node)
+								number_of_versions_array[j] = get_FE_node_field_component_number_of_versions(node,
+									data->field, /*component*/0);
+							else
+								number_of_versions_array[j] = 0;
+							versions_array[j] = version;
 
 							fprintf(data->ipelem_file, " %d", node_number_array[j]);
+						}
+						if (warnGeneralLinearMap)
+						{
+							display_message(WARNING_MESSAGE,
+								"Element %d field %s uses a general linear map which is not supported in ipelem format; using first term only.",
+								cmzn_element_get_identifier(element), get_FE_field_name(data->field));
+						}
+						if (warnMixedVersions)
+						{
+							display_message(WARNING_MESSAGE,
+								"Element %d field %s gets mixed versions from nodes which is not supported in ipelem format; using first value found.",
+								cmzn_element_get_identifier(element), get_FE_field_name(data->field));
 						}
 						fprintf(data->ipelem_file, "\n");
 						if (first_basis)
 						{
-							for (j = 0 ; j < number_of_element_field_nodes ; j++)
+							for (int j = 0 ; j < number_of_basis_nodes ; j++)
 							{
-								if (1 < versions_array[j])
+								if (1 < number_of_versions_array[j])
 								{
-									FE_element_field_component_get_standard_node_map(
-										component, j, &standard_node_map);
-									Standard_node_to_element_map_get_node_index(
-										standard_node_map, &node_index);
-									Standard_node_to_element_map_get_number_of_nodal_values(
-										standard_node_map, &number_of_nodal_values);
-									get_FE_element_node(element, node_index, &node);
-
-									// Get the nodal_value_index of the first value and use that to specify version
-									// cannot support mixes or mismatches anyway, so warn if different versions found
-									version = Standard_node_to_element_map_get_nodal_version(standard_node_map, 0);
-									for (int v = 1; v < number_of_nodal_values; ++v)
-									{
-										int tempVersion = Standard_node_to_element_map_get_nodal_version(standard_node_map, v);
-										if (tempVersion != version)
-										{
-											display_message(WARNING_MESSAGE,
-												"Element %d field %s gets mixed versions from node %d which is not supported in ipelem format; using first value found.",
-												cmzn_element_get_identifier(element), get_FE_field_name(data->field), cmzn_node_get_identifier(node));
-											break;
-										}
-									}
-
-									occurrences = 1;
-									for (k = j - 1 ; k >= 0 ; k--)
+									int occurrences = 1; // need occurrence number if repeated nodes
+									for (int k = j - 1; 0 <= k; --k)
 									{
 										if (node_number_array[k] == node_number_array[j])
 											++occurrences;
 									}
 									/* Required to specify version to use for each different coordinate,
 										just specify the same versions for now. */
-									for (k = 0 ; k < 3 ; k++)
+									for (int c = 0; c < componentCount; ++c)
 									{
 										fprintf(data->ipelem_file,
 											" The version number for occurrence  %d of node %5d"
 											", njj=%d is [ 1]: %d\n", occurrences, node_number_array[j],
-											k + 1, version + 1);
+											c + 1, versions_array[j] + 1);
 									}
 								}
 							}
-							first_basis = 0;
+							first_basis = false;
 						}
-						DEALLOCATE(versions_array);
+						DEALLOCATE(number_of_versions_array);
 						DEALLOCATE(node_number_array);
+						DEALLOCATE(versions_array);
 					}
 				}
 			}

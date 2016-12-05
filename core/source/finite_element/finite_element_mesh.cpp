@@ -1435,7 +1435,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 							// if we change it here, must change it for the above case of modifying existing mft
 						}
 						if (new_mft != mft)
-							meshFieldData2->setComponentMeshFieldTemplate(c2, new_mft);
+							meshFieldData2->setComponentMeshfieldtemplate(c2, new_mft);
 						elementFieldData2->setCacheComponentMeshFieldTemplate(c2, 0);
 					}
 				c2 = 0;
@@ -3066,7 +3066,7 @@ int FE_mesh::merge(const FE_mesh &source)
 		}
 		if (finalMFT != fieldComponentData.targetMFT)
 		{
-			targetMeshFieldData->setComponentMeshFieldTemplate(fieldComponentData.componentNumber, finalMFT);
+			targetMeshFieldData->setComponentMeshfieldtemplate(fieldComponentData.componentNumber, finalMFT);
 			FE_mesh_field_template::deaccess(finalMFT); // created or accessed above
 		}
 		if (!return_code)

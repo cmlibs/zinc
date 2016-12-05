@@ -582,7 +582,7 @@ public:
 		}
 
 		/** @param fieldTemplateIn  Field template: not checked; must be valid for mesh */
-		void setMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplateIn)
+		void setMeshfieldtemplate(FE_mesh_field_template *meshFieldTemplateIn)
 		{
 			meshFieldTemplateIn->access();
 			FE_mesh_field_template::deaccess(this->meshFieldTemplate);
@@ -771,9 +771,9 @@ public:
 	}
 
 	/** @param componentNumber  From 0 to componentCount, not checked */
-	void setComponentMeshFieldTemplate(int componentNumber, FE_mesh_field_template *meshFieldTemplate)
+	void setComponentMeshfieldtemplate(int componentNumber, FE_mesh_field_template *meshFieldTemplate)
 	{
-		this->components[componentNumber]->setMeshFieldTemplate(meshFieldTemplate);
+		this->components[componentNumber]->setMeshfieldtemplate(meshFieldTemplate);
 	}
 
 	bool isDefinedOnElements()
@@ -1047,7 +1047,16 @@ public:
 
 	/** @param eft  Element field template from this mesh.
 	  * @return  Non-accessed mesh element field template data. */
-	FE_mesh_element_field_template_data *getElementfieldtemplateData(FE_element_field_template *eft)
+	const FE_mesh_element_field_template_data *getElementfieldtemplateData(const FE_element_field_template *eft) const
+	{
+		if (eft && (eft->getMesh() == this) && (eft->isMergedInMesh()))
+			return this->elementFieldTemplateData[eft->getIndexInMesh()];
+		return 0;
+	}
+
+	/** @param eft  Element field template from this mesh.
+	  * @return  Non-accessed mesh element field template data. */
+	FE_mesh_element_field_template_data *getElementfieldtemplateData(const FE_element_field_template *eft)
 	{
 		if (eft && (eft->getMesh() == this) && (eft->isMergedInMesh()))
 			return this->elementFieldTemplateData[eft->getIndexInMesh()];
