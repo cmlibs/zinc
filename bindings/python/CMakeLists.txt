@@ -14,7 +14,11 @@ include(${SWIG_USE_FILE})
 set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION})
 # Force the finding of the python library always incase the desired PYTHON_VERSION has changed.
 unset(PYTHONLIBS_FOUND CACHE)
+# I hate this masking of variables
 unset(PYTHON_LIBRARY CACHE)
+unset(PYTHON_LIBRARY)
+unset(PYTHON_DEBUG_LIBRARY CACHE)
+unset(PYTHON_DEBUG_LIBRARY)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHONINTERP_FOUND CACHE)
 unset(PYTHON_EXECUTABLE CACHE)
