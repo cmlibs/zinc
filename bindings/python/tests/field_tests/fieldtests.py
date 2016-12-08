@@ -22,10 +22,10 @@ def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
 
-    tests.addTests(fieldmodulenotifiertests.suite())
     tests.addTests(sceneviewerprojectionfieldtests.suite())
     tests.addTests(vectoroperatortests.suite())
     tests.addTests(compositetests.suite())
+    tests.addTests(fieldmodulenotifiertests.suite())
     
     return tests
 
