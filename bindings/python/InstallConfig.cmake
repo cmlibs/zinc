@@ -1,5 +1,5 @@
 # Install step for virtual environment (if given)
-if (PYTHON_BINDINGS_USE_VIRTUALENV AND EXISTS "${INSTALL_TO_VIRTUALENV}")
+if (ZINC_USE_VIRTUALENV AND EXISTS "${INSTALL_TO_VIRTUALENV}")
     # The binary directories for the python environments are different on windows (for what reason exactly?)
     # So we need different subpaths
     set(VENV_BINDIR bin)
@@ -11,6 +11,10 @@ if (PYTHON_BINDINGS_USE_VIRTUALENV AND EXISTS "${INSTALL_TO_VIRTUALENV}")
     if (HAVE_MULTICONFIG_ENV)
         set(VENV_BINDIR $<LOWER_CASE:$<CONFIG>>/${VENV_BINDIR})
     endif()
+
+    # Virtual environment creation target.
+    include(OCPythonBindings)
+
     # We need a native path to pass to the pip program
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>" NATIVE_CMAKE_CURRENT_BINARY_DIR)
     # This target takes care to install the python package generated in the build tree to the specified virtual
@@ -46,5 +50,6 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/open
 )
 install(FILES "${BASE_PYTHON_PACKAGE_DIR}/README.txt"
     DESTINATION python/$<CONFIG> 
-    COMPONENT PythonBindings)
+    COMPONENT PythonBindings
+)
 

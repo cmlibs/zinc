@@ -4,6 +4,23 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+find_program(VIRTUALENV_EXEC virtualenv)
+mark_as_advanced(VIRTUALENV_EXEC)
+
+# Bindings options
+set(OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX "${OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
+if (OCL_VIRTUALENV_INSTALL_PREFIX)
+    set(OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX "${OCL_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
+endif ()
+set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment.")
+if (OCL_USE_VIRTUALENV)
+    set(ZINC_USE_VIRTUALENV ${OCL_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
+endif ()
+if (NOT ${VIRTUALENV_EXEC})
+    set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
+    message(STATUS "The program virtualenv was not found disabling it's use.")
+endif ()
+
 # Create Python bindings for the Zinc library.
 
 set(PYTHON_VERSION "" CACHE STRING "Identify your preferred version of Python to locate. [2.6, 2.7, 3.0, 3.3, ...]")
