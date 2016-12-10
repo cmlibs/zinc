@@ -19,4 +19,3 @@ endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/configure/version.cpp.cmake
 	${ZINC_VERSION_STAGING_SRC} @ONLY)
-message("Configuring staging cpp file.")
