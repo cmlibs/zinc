@@ -198,7 +198,7 @@ endforeach()
 #################################
 # Create tarball
 set(PYPI_SOURCE_TARGZ "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${PYPI_PACKAGE_NAME}-${PYPI_SOURCE_TARGZ_VERSION}.tar.gz")
-add_custom_target(python-bindings-tarball
+add_custom_target(python_bindings_tarball
     COMMAND ${CMAKE_COMMAND} -E tar czf ${PYPI_SOURCE_TARGZ} -- $<CONFIG>/opencmiss setup.py ${ADDITIONAL_PACKAGE_FILES}
 )
 
@@ -206,4 +206,4 @@ include(${CMAKE_CURRENT_LIST_DIR}/InstallConfig.cmake)
 
 if (BUILD_TESTS)
     add_subdirectory(tests)
-endif()
+endif ()
