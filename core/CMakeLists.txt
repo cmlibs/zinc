@@ -67,13 +67,14 @@ set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
 set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 configure_file(${PROJECT_SOURCE_DIR}/cmake/configure_version_cpp_file.in.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
-add_custom_command(OUTPUT ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/always_run
+add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
     COMMAND "${CMAKE_COMMAND}" -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
 )
 add_custom_target(generate_version_cpp_file
-    DEPENDS ${ZINC_VERSION_SRC}
+    DEPENDS ${ZINC_VERSION_STAGING_SRC}
 )
+set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
 
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 
