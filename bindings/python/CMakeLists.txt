@@ -8,10 +8,13 @@ find_program(VIRTUALENV_EXEC virtualenv)
 mark_as_advanced(VIRTUALENV_EXEC)
 
 # Bindings options
-set(OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX "${OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
-if (OCL_VIRTUALENV_INSTALL_PREFIX)
-    set(OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX "${OCL_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
+set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
+if (DEFINED ZN_VIRTUALENV_INSTALL_PREFIX)
+    set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZN_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
 endif ()
+# Variable used in common script.
+set(OPENCMISS_LIBRARIES_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}")
+
 set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment.")
 if (DEFINED ZN_USE_VIRTUALENV)
     set(ZINC_USE_VIRTUALENV ${ZN_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
