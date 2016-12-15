@@ -65,10 +65,15 @@ include(source/cmake/zinc_lib_source_files.cmake)
 # Generate the version.cpp / version.h files
 set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
 set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+if (OPENCMISS_HAVE_MULTICONFIG_ENV)
+    set(CONFIGURE_BUILD_TYPE $<CONFIG>)
+else ()
+    set(CONFIGURE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+endif ()
 configure_file(${PROJECT_SOURCE_DIR}/cmake/configure_version_cpp_file.in.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
+    ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake @ONLY)
 add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
-    COMMAND "${CMAKE_COMMAND}" -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
+    COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
     COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
 )
