@@ -34,9 +34,7 @@ if(ZINC_BUILD_BINDINGS)
     option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
 endif()
 
-if (MSVC)
-    set(HAVE_MULTICONFIG_ENV YES)
-endif()
+include(OCMultiConfigEnvironment)
 
 # Optional libraries
 option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)

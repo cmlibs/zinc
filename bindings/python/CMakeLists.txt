@@ -19,7 +19,7 @@ set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment."
 if (DEFINED ZN_USE_VIRTUALENV)
     set(ZINC_USE_VIRTUALENV ${ZN_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
 endif ()
-if (NOT ${VIRTUALENV_EXEC})
+if (NOT EXISTS "${VIRTUALENV_EXEC}")
     set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
     message(STATUS "The program virtualenv was not found disabling it's use.")
 endif ()
@@ -46,8 +46,8 @@ unset(PYTHONLIBS_VERSION_STRING)
 find_package(PythonInterp QUIET)
 find_package(PythonLibs QUIET)
 
-string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 1 PYTHONLIBS_MAJOR_VERSION)
-if(${PYTHONLIBS_MAJOR_VERSION} STREQUAL "3")
+three_part_version_to_vars(${PYTHONLIBS_VERSION_STRING} PYTHONLIBS_MAJOR_VERSION PYTHONLIBS_MINOR_VERSION PYTHONLIBS_PATCH_VERSION)
+if("${PYTHONLIBS_MAJOR_VERSION}" STREQUAL "3")
     set(PYTHONLIBS_SWIG_FLAGS -py3)
 endif()
 
@@ -128,6 +128,7 @@ endforeach()
 add_custom_target(collect_python_binding_files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/opencmiss/zinc
 )
+add_dependencies(collect_python_binding_files ${SWIG_MODULE_TARGETS})
 
 set(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 if(WIN32)
@@ -193,7 +194,6 @@ foreach(_file ${ADDITIONAL_PACKAGE_FILES})
         INPUT "${CMAKE_CURRENT_BINARY_DIR}/${_file}"
     )
 endforeach()
-
 
 #################################
 # Create tarball
