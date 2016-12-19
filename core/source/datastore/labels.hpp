@@ -175,7 +175,7 @@ public:
 	 * Get first label index in set or DS_LABEL_INDEX_INVALID if none.
 	 * Currently returns index with the lowest identifier in set
 	 */
-	DsLabelIndex getFirstIndex();
+	DsLabelIndex getFirstIndex() const;
 
 	/**
 	 * Create new iterator initially pointing before first label.
@@ -190,11 +190,12 @@ public:
 
 	void invalidateLabelIteratorsWithCondition(bool_array<DsLabelIndex> *condition); // used from DsLabelsGroup
 
-	int getIdentifierRanges(DsLabelIdentifierRanges& ranges);
+	int getIdentifierRanges(DsLabelIdentifierRanges& ranges) const;
 
 	void list_storage_details() const;
 };
 
+typedef cmzn::RefHandle<const DsLabels> HCDsLabels;
 typedef cmzn::RefHandle<DsLabels> HDsLabels;
 
 /**

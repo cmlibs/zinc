@@ -14,7 +14,7 @@
 #include "datastore/mapindexing.hpp"
 
 DsMapIndexing::DsMapIndexing(DsMapBase& mapBaseIn,
-	int labelsArraySizeIn, DsLabels **labelsArrayIn) :
+	int labelsArraySizeIn, const DsLabels **labelsArrayIn) :
 		mapBase(cmzn::Access(&mapBaseIn)), // GRC circular reference?
 		labelsArraySize(labelsArraySizeIn),
 		indexing(new Indexing[labelsArraySize])
@@ -30,7 +30,7 @@ DsMapIndexing::~DsMapIndexing()
 }
 
 DsMapIndexing *DsMapIndexing::create(DsMapBase& mapBaseIn,
-	int labelsArraySizeIn, DsLabels **labelsArrayIn)
+	int labelsArraySizeIn, const DsLabels **labelsArrayIn)
 {
 	if ((labelsArraySizeIn < 0) ||
 		((labelsArraySizeIn > 0) && (0 == labelsArrayIn)))

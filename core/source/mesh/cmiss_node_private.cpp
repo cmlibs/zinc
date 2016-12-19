@@ -649,16 +649,14 @@ public:
 
 	FE_region *getFeRegion() const { return fe_nodeset->get_FE_region(); }
 
+	/** @return  Allocated name */
 	char *getName()
 	{
-		char *name = 0;
 		if (group)
-			name = cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
-		else if (this->fe_nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
-			name = duplicate_string("datapoints");
+			return cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
 		else
-			name = duplicate_string("nodes");
-		return name;
+			return duplicate_string(this->fe_nodeset->getName());
+		return 0;
 	}
 
 	cmzn_nodeset_id getMaster()

@@ -26,14 +26,14 @@ protected:
 	std::string name; // optional
 	bool dense;
 	int labelsArraySize;
-	DsLabels **labelsArray;
+	const DsLabels **labelsArray;
 
-	DsMapBase(int labelsArraySizeIn, DsLabels **labelsArrayIn);
+	DsMapBase(int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 	DsMapBase(const DsMapBase&); // not implemented
 	virtual ~DsMapBase();
 	DsMapBase& operator=(const DsMapBase&); // not implemented
 
-	static bool checkLabelsArrays(int labelsArraySizeIn, DsLabels **labelsArrayIn);
+	static bool checkLabelsArrays(int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 
 public:
 	DsMapIndexing *createIndexing();
@@ -57,14 +57,14 @@ public:
 	 * @param labelsNumber  Index from 0 to labelsArraySize-1
 	 * @return  Accessed pointer to DsLabels or 0 if invalid number or error
 	 */
-	DsLabels* getLabels(int labelsNumber) const
+	const DsLabels* getLabels(int labelsNumber) const
 	{
 		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
 			return cmzn::Access(this->labelsArray[labelsNumber]);
 		return 0;
 	}
 
-	int getLabelsIndex(DsLabels& labels)
+	int getLabelsIndex(const DsLabels& labels)
 	{
 		for (int i = 0; i < this->labelsArraySize; ++i)
 		{
@@ -91,7 +91,7 @@ class DsMap : public DsMapBase
 	// for non-dense, flag indexed as for values which is true if value exists, false if not
 	bool_array<DsMapAddressType> value_exists;
 
-	DsMap(int labelsArraySizeIn, DsLabels **labelsArrayIn);
+	DsMap(int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 	virtual ~DsMap();
 	DsMapAddressType getMaxDenseSize() const;
 	bool setNotDense();
@@ -106,7 +106,7 @@ class DsMap : public DsMapBase
 
 public:
 
-	static DsMap<ValueType> *create(int labelsArraySizeIn, DsLabels **labelsArrayIn);
+	static DsMap<ValueType> *create(int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 	static DsMap<ValueType> *create(std::vector<HDsLabels>& labelsVector);
 
 	DsMap<ValueType> *clone() const;
@@ -126,7 +126,7 @@ public:
 	 * earlier/outer dense & complete index is considered sparse if followed by
 	 * any sparse index.
 	 */
-	void getSparsity(std::vector<HDsLabels>& sparseLabelsArray, std::vector<HDsLabels>& denseLabelsArray);
+	void getSparsity(std::vector<HCDsLabels>& sparseLabelsArray, std::vector<HCDsLabels>& denseLabelsArray);
 
 	/**
 	 * Calls DsMapIndexing::incrementSparseIterators until
@@ -152,7 +152,7 @@ typedef cmzn::RefHandle< DsMap< int > > HDsMapInt;
 typedef cmzn::RefHandle< DsMap< double > > HDsMapDouble;
 
 template <typename ValueType>
-DsMap<ValueType>::DsMap(int labelsArraySizeIn, DsLabels **labelsArrayIn) :
+DsMap<ValueType>::DsMap(int labelsArraySizeIn, const DsLabels **labelsArrayIn) :
 	DsMapBase(labelsArraySizeIn, labelsArrayIn),
 	indexSizes(new DsLabelIndex[labelsArraySizeIn]),
 	offsets(new DsMapAddressType[labelsArraySizeIn])
@@ -388,7 +388,7 @@ inline int DsMap<ValueType>::validIndexCount(DsMapIndexing& indexing, DsMapAddre
 }
 
 template <typename ValueType>
-DsMap<ValueType> *DsMap<ValueType>::create(int labelsArraySizeIn, DsLabels **labelsArrayIn)
+DsMap<ValueType> *DsMap<ValueType>::create(int labelsArraySizeIn, const DsLabels **labelsArrayIn)
 {
 	if (!DsMapBase::checkLabelsArrays(labelsArraySizeIn, labelsArrayIn))
 		return 0;
@@ -399,7 +399,7 @@ template <typename ValueType>
 DsMap<ValueType> *DsMap<ValueType>::create(std::vector<HDsLabels>& labelsVector)
 {
 	int labelsArraySize = static_cast<int>(labelsVector.size());
-	DsLabels **labelsArray = new DsLabels*[labelsArraySize];
+	const DsLabels **labelsArray = new const DsLabels*[labelsArraySize];
 	if (!labelsArray)
 		return 0;
 	for (int i = 0; i < labelsArraySize; ++i)
@@ -737,7 +737,7 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 }
 
 template <typename ValueType>
-void DsMap<ValueType>::getSparsity(std::vector<HDsLabels>& sparseLabelsArray, std::vector<HDsLabels>& denseLabelsArray)
+void DsMap<ValueType>::getSparsity(std::vector<HCDsLabels>& sparseLabelsArray, std::vector<HCDsLabels>& denseLabelsArray)
 {
 	sparseLabelsArray.clear();
 	denseLabelsArray.clear();
@@ -756,7 +756,7 @@ void DsMap<ValueType>::getSparsity(std::vector<HDsLabels>& sparseLabelsArray, st
 	bool remainingLabelsDense = false;
 	for (int labelsNumber = 0; labelsNumber < this->labelsArraySize; ++labelsNumber)
 	{
-		HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
+		HCDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
 		if ((labelsNumber > lastIncompleteLabelsNumber) && (this->dense || remainingLabelsDense ||
 			this->value_exists.isBanded(this->offsets[labelsNumber]*this->indexSizes[labelsNumber], numberOfBands)))
 		{

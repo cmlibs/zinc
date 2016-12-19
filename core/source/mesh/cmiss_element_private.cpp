@@ -1219,31 +1219,15 @@ public:
 		return this->fe_mesh->create_scale_factor_set();
 	}
 
+	/** @return  Allocated name */
 	char *getName()
 	{
 		char *name = 0;
 		if (group)
-		{
-			name = cmzn_field_get_name(cmzn_field_element_group_base_cast(group));
-		}
+			return cmzn_field_get_name(cmzn_field_element_group_base_cast(group));
 		else
-		{
-			switch (this->fe_mesh->getDimension())
-			{
-			case 1:
-				name = duplicate_string("mesh1d");
-				break;
-			case 2:
-				name = duplicate_string("mesh2d");
-				break;
-			case 3:
-				name = duplicate_string("mesh3d");
-				break;
-			default:
-				break;
-			}
-		}
-		return name;
+			return duplicate_string(this->fe_mesh->getName());
+		return 0;
 	}
 
 	cmzn_mesh_id getMaster()

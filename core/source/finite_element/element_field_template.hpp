@@ -317,6 +317,9 @@ public:
 	  * scale factors from different fields */
 	int setElementScaleFactorVersion(int localIndex, int version);
 
+	/** @return  The number of scale factors multiplying term */
+	int getTermScalingCount(int functionNumber, int term) const;
+
 	/** @param startIndex  Set to 1 to offset to external indexes which start at 1
 	  * @return  The actual number of scaling indexes for term, or -1 on error. */
 	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex = 0);

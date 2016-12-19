@@ -47,7 +47,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 	{
 
 	public:
-		DsLabels *labels;
+		const DsLabels *labels;
 		// only zero or one of following set; zero means use all labels
 		DsLabelIterator *iterator;
 		DsLabelsGroup *labelsGroup;
@@ -81,7 +81,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 		}
 
 		/* second stage of construction */
-		void setLabels(DsLabels *labelsIn)
+		void setLabels(const DsLabels *labelsIn)
 		{
 			this->labels = labelsIn;
 		}
@@ -245,10 +245,10 @@ private:
 	Indexing *indexing;
 
 	DsMapIndexing(DsMapBase& mapBaseIn,
-		int labelsArraySizeIn, DsLabels **labelsArrayIn);
+		int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 	
 	static DsMapIndexing *create(DsMapBase& mapBaseIn,
-		int labelsArraySizeIn, DsLabels **labelsArrayIn);
+		int labelsArraySizeIn, const DsLabels **labelsArrayIn);
 
 	/** get internal Indexing object for supplied DsLabels */
 	Indexing *getIndexingForLabels(const DsLabels *labelsIn)
@@ -271,7 +271,7 @@ public:
 		return (mapBaseIn == this->mapBase);
 	}
 
-	int hasLabelsArray(int labelsArraySizeIn, DsLabels **labelsArrayIn)
+	int hasLabelsArray(int labelsArraySizeIn, const DsLabels **labelsArrayIn)
 	{
 		if (labelsArraySizeIn != labelsArraySize)
 			return 0;
@@ -294,7 +294,7 @@ public:
 		return count;
 	}
 
-	int setAllLabels(DsLabels &labels)
+	int setAllLabels(const DsLabels &labels)
 	{
 		Indexing *indexing = getIndexingForLabels(&labels);
 		if (!indexing)
@@ -312,7 +312,7 @@ public:
 		return 1;
 	}
 
-	int setEntryIndex(DsLabels& labels, DsLabelIndex indexIn)
+	int setEntryIndex(const DsLabels& labels, DsLabelIndex indexIn)
 	{
 		Indexing *indexing = getIndexingForLabels(&labels);
 		if (!indexing)
@@ -321,7 +321,7 @@ public:
 		return 1;
 	}
 
-	int setEntryIdentifier(DsLabels& labels, DsLabelIdentifier identifierIn)
+	int setEntryIdentifier(const DsLabels& labels, DsLabelIdentifier identifierIn)
 	{
 		Indexing *indexing = getIndexingForLabels(&labels);
 		if (!indexing)
@@ -360,7 +360,7 @@ public:
 	 * @param labelsNumber  Index from 0 to labelsArraySize-1
 	 * @return  Accessed pointer to DsLabels or 0 if invalid number or error
 	 */
-	DsLabels* getLabels(int labelsNumber) const
+	const DsLabels* getLabels(int labelsNumber) const
 	{
 		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
 			return cmzn::Access(this->indexing[labelsNumber].labels);

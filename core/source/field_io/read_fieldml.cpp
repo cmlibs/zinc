@@ -1922,7 +1922,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 					int nodeVersion = components[ic]->getConstantNodeVersion();
 					const int basisNodeCount = cmzn_elementbasis_get_number_of_nodes(components[ic]->elementBasis);
 					// should be a more convenient way to get the basis dof labels
-					DsLabels *dofLabels = 0;
+					const DsLabels *dofLabels = 0;
 					if (nodeDerivativesMap)
 						dofLabels = nodeDerivativesMap->getLabels(0);
 					else if (nodeVersionsMap)

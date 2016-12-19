@@ -433,6 +433,10 @@ public:
 
 	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
 
+	bool localToGlobalNodesIsDense() const;
+
+	int getElementLocalToGlobalNodeMapCount() const;
+
 	bool mergeElementVaryingData(const FE_mesh_element_field_template_data& source);
 };
 
@@ -517,7 +521,7 @@ public:
 		return this->access_count;
 	}
 
-	inline EFTIndexType FE_mesh_field_template::getElementEFTIndex(DsLabelIndex elementIndex) const
+	inline EFTIndexType getElementEFTIndex(DsLabelIndex elementIndex) const
 	{
 		return this->eftDataMap.getValue(elementIndex);
 	}
@@ -543,6 +547,8 @@ public:
 		const std::vector<EFTIndexType> &sourceEFTIndexMap);
 
 	bool usesNonLinearBasis() const;
+
+	int getElementsDefinedCount() const;
 
 };
 
@@ -887,14 +893,15 @@ public:
 private:
 
 	FE_region *fe_region; // not accessed
-	int dimension;
+	const int dimension;
 
 	DsLabels labels; // element identifiers
 
 	// element shape and face/parent mappings
-	unsigned int elementShapeFacesCount;
+	int elementShapeFacesCount;
 	ElementShapeFaces **elementShapeFacesArray;
-	block_array<DsLabelIndex, unsigned char> elementShapeMap; // map element index -> shape faces index, if not all elements have same shape
+	typedef unsigned char ElementShapeMapIndexType;
+	block_array<DsLabelIndex, ElementShapeMapIndexType> elementShapeMap; // map element index -> shape faces index, if not all elements have same shape
 	block_array<DsLabelIndex,DsLabelIndex*> parents; // map to number of parents followed by parent element indexes in order
 
 	// map element index -> element object (accessed)
@@ -951,35 +958,31 @@ private:
 
 	int removeElementPrivate(DsLabelIndex elementIndex);
 
-	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex)
+	/** @param  elementIndex  Valid element index >= 0. Not checked.
+	  * @return  Index of ElementShapeFaces for element in mesh, starting at 0.
+	  * Note this returns 0 where there are no shapes. */
+	inline int getElementShapeFacesIndexPrivate(DsLabelIndex elementIndex) const
 	{
-		if (elementIndex >= 0)
-		{
-			if (this->elementShapeFacesCount > 1)
-			{
-				unsigned char shapeIndex;
-				if (this->elementShapeMap.getValue(elementIndex, shapeIndex))
-					return this->elementShapeFacesArray[static_cast<unsigned int>(shapeIndex)];
-			}
-			else if (this->elementShapeFacesArray)
-				return this->elementShapeFacesArray[0];
-		}
+		if (this->elementShapeFacesCount > 1)
+			return static_cast<int>(this->elementShapeMap.getValue(elementIndex));
 		return 0;
 	}
 
+	/** @param  elementIndex  Valid element index >= 0. Not checked. */
 	inline const ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex) const
 	{
-		if (elementIndex >= 0)
-		{
-			if (this->elementShapeFacesCount > 1)
-			{
-				unsigned char shapeIndex;
-				if (this->elementShapeMap.getValue(elementIndex, shapeIndex))
-					return this->elementShapeFacesArray[static_cast<unsigned int>(shapeIndex)];
-			}
-			else if (this->elementShapeFacesArray)
-				return this->elementShapeFacesArray[0];
-		}
+		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
+		if (this->elementShapeFacesArray)
+			return this->elementShapeFacesArray[elementShapeFacesIndex];
+		return 0;
+	}
+
+	/** @param  elementIndex  Valid element index >= 0. Not checked. */
+	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex)
+	{
+		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
+		if (this->elementShapeFacesArray)
+			return this->elementShapeFacesArray[elementShapeFacesIndex];
 		return 0;
 	}
 
@@ -1137,6 +1140,13 @@ public:
 		return this->nodeset;
 	}
 
+	const char *getName() const;
+
+	const DsLabels& getLabels() const
+	{
+		return this->labels;
+	}
+
 	void clear();
 
 	/** @return Accessed changes */
@@ -1147,23 +1157,41 @@ public:
 	{
 		return this->changeLog;
 	}
+	int getElementShapeFacesCount() const
+	{
+		return this->elementShapeFacesCount;
+	}
+
+	inline int getElementShapeFacesIndex(DsLabelIndex elementIndex) const
+	{
+		if (elementIndex >= 0)
+			return this->getElementShapeFacesIndexPrivate(elementIndex);
+		return -1;
+	}
+
+	cmzn_element_shape_type getElementShapeTypeAtIndex(int index) const
+	{
+		if ((index < 0) || (index >= this->elementShapeFacesCount))
+			return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
+		return this->elementShapeFacesArray[index]->getShapeType();
+	}
 
 	inline const ElementShapeFaces *getElementShapeFacesConst(DsLabelIndex elementIndex) const
 	{
 		return const_cast<FE_mesh*>(this)->getElementShapeFaces(elementIndex);
 	}
 
-	FE_element_shape *getElementShape(DsLabelIndex elementIndex)
+	FE_element_shape *getElementShape(DsLabelIndex elementIndex) const
 	{
-		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+		const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
 			return elementShapeFaces->getShape();
 		return 0;
 	}
 
-	cmzn_element_shape_type getElementShapeType(DsLabelIndex elementIndex)
+	cmzn_element_shape_type getElementShapeType(DsLabelIndex elementIndex) const
 	{
-		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+		const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
 			return elementShapeFaces->getShapeType();
 		return CMZN_ELEMENT_SHAPE_TYPE_INVALID;

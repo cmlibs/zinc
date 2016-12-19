@@ -585,6 +585,39 @@ bool FE_mesh_element_field_template_data::setElementLocalNodes(
 	return true;
 }
 
+/** @return  True if local to global nodes stored for all elements of mesh */
+bool FE_mesh_element_field_template_data::localToGlobalNodesIsDense() const
+{
+	const FE_mesh *mesh = this->eft->getMesh();
+	const DsLabelIndex elementIndexLimit = mesh->getLabelsIndexSize();
+	for (DsLabelIndex elementIndex = 0; elementIndex < elementIndexLimit; ++elementIndex)
+	{
+		if (mesh->getElementIdentifier(elementIndex) >= 0)
+		{
+			if (this->localToGlobalNodes.getArray(elementIndex) == 0)
+				return false;
+		}
+	}
+	return true;
+}
+
+/** @return  Number of elements with a local to global node map */
+int FE_mesh_element_field_template_data::getElementLocalToGlobalNodeMapCount() const
+{
+	int count = 0;
+	const FE_mesh *mesh = this->eft->getMesh();
+	const DsLabelIndex elementIndexLimit = mesh->getLabelsIndexSize();
+	for (DsLabelIndex elementIndex = 0; elementIndex < elementIndexLimit; ++elementIndex)
+	{
+		if (mesh->getElementIdentifier(elementIndex) >= 0)
+		{
+			if (this->localToGlobalNodes.getArray(elementIndex) != 0)
+				++count;
+		}
+	}
+	return count;
+}
+
 /** Merges local-to-global node map, scale factors from source, finding target
   * elements and nodes by identifier.
   * Used only by FE_mesh::merge to merge data from another region.
@@ -911,6 +944,21 @@ bool FE_mesh_field_template::usesNonLinearBasis() const
 	return false;
 }
 
+/** @return  Number of elements mft is defined on */
+int FE_mesh_field_template::getElementsDefinedCount() const
+{
+	int count = 0;
+	const FE_mesh *mesh = this->getMesh();
+	const DsLabelIndex elementIndexLimit = this->getElementIndexLimit();
+	for (DsLabelIndex elementIndex = this->getElementIndexStart(); elementIndex < elementIndexLimit; ++elementIndex)
+	{
+		if ((mesh->getElementIdentifier(elementIndex) >= 0) 
+			&& (this->eftDataMap.getValue(elementIndex) >= 0))
+			++count;
+	}
+	return count;
+}
+
 DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementIndex, int faceNumber)
 {
 	// could remove following test if good arguments guaranteed
@@ -951,6 +999,8 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	access_count(1)
 {
 	this->createChangeLog();
+	std::string name(this->getName());
+	this->labels.setName(name + ".elements");
 }
 
 FE_mesh::~FE_mesh()
@@ -1196,6 +1246,28 @@ void FE_mesh::clearElementFieldData()
 	}
 }
 
+/** @return  Name of mesh, not to be freed. Currently restricted to
+  * "mesh1d", "mesh2d" or "mesh3d", based on dimension. */
+const char *FE_nodeset::getName() const
+{
+	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_NODES)
+		return "nodes";
+	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
+		return "datapoints";
+	return 0;
+}
+
+const char *FE_mesh::getName() const
+{
+	if (1 == this->dimension)
+		return "mesh1d";
+	if (2 == this->dimension)
+		return "mesh2d";
+	if (3 == this->dimension)
+		return "mesh3d";
+	return 0;
+}
+
 // Only to be called by ~FE_mesh, FE_region_clear, or when all elements already removed
 // to reclaim memory in labels and mapped arrays
 void FE_mesh::clear()
@@ -1227,7 +1299,7 @@ void FE_mesh::clear()
 	}
 	this->fe_elements.clear();
 
-	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
+	for (int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
 	this->elementShapeFacesCount = 0;
@@ -1277,7 +1349,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 		if (this->faceMesh)
 			this->clearElementFaces(elementIndex);
 	}
-	unsigned int shapeIndex = 0;
+	int shapeIndex = 0;
 	while ((shapeIndex < this->elementShapeFacesCount) &&
 			(this->elementShapeFacesArray[shapeIndex]->getShape() != element_shape))
 		++shapeIndex;
@@ -1301,7 +1373,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 			delete newElementShapeFaces;
 			return 0;
 		}
-		for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
+		for (int i = 0; i < this->elementShapeFacesCount; ++i)
 			tempElementShapeFaces[i] = this->elementShapeFacesArray[i];
 		tempElementShapeFaces[shapeIndex] = newElementShapeFaces;
 		delete[] this->elementShapeFacesArray;

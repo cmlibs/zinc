@@ -156,6 +156,14 @@ public:
 	void setFieldDomainType(cmzn_field_domain_type domainTypeIn)
 	{
 		this->domainType = domainTypeIn;
+		this->labels.setName(this->getName());
+	}
+
+	const char *getName() const;
+
+	const DsLabels& getLabels() const
+	{
+		return this->labels;
 	}
 
 	void clear();

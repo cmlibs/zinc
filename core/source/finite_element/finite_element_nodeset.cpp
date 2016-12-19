@@ -443,6 +443,17 @@ void FE_nodeset::decrementElementUsageCount(DsLabelIndex nodeIndex)
 	}
 }
 
+/** @return  Name of nodeset, not to be freed. Currently restricted to
+  * "nodes" or "datapoints". */
+const char *FE_nodeset::getName() const
+{
+	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_NODES)
+		return "nodes";
+	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
+		return "datapoints";
+	return 0;
+}
+
 // Only to be called by FE_region_clear, or when all nodeset already removed
 // to reclaim memory in labels and mapped arrays
 void FE_nodeset::clear()

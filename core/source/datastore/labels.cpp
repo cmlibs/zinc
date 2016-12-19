@@ -270,7 +270,7 @@ int DsLabels::setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier)
 	return return_code;
 }
 
-DsLabelIndex DsLabels::getFirstIndex()
+DsLabelIndex DsLabels::getFirstIndex() const
 {
 	if (0 == this->labelsCount)
 		return DS_LABEL_INDEX_INVALID;
@@ -347,7 +347,7 @@ void DsLabels::invalidateLabelIteratorsWithCondition(bool_array<DsLabelIndex> *c
 	}
 }
 
-int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
+int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges) const
 {
 	ranges.clear();
 	DsLabelIterator *iterator = this->createLabelIterator();

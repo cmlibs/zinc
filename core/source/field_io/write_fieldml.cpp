@@ -24,12 +24,15 @@
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "datastore/labels.hpp"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/write_fieldml.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"
@@ -41,24 +44,360 @@
 
 namespace {
 
+	class FE_mesh_element_shape_type_parameter_generator
+	{
+		const FE_mesh *mesh;
+		const FmlObjectHandle fmlElementsArgument;
+		DsLabelIterator *elementLabelIterator;
+		DsLabelIndex elementIndex;
+		const int recordIndexSize = 1; // never used as always dense
+		const int recordSize = 1;
+		const int elementIdentifier = -1; // never used as always dense
+		int value; // store in member so can return values address
+		int offset; // offset incremented for each record
+
+	public:
+
+		FE_mesh_element_shape_type_parameter_generator(const FE_mesh *meshIn, FmlObjectHandle fmlElementsArgumentIn) :
+			mesh(meshIn),
+			fmlElementsArgument(fmlElementsArgumentIn),
+			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
+			elementIndex(DS_LABEL_INDEX_INVALID),
+			offset(-1)
+		{
+		}
+
+		~FE_mesh_element_shape_type_parameter_generator()
+		{
+			cmzn::Deaccess(this->elementLabelIterator);
+		}
+
+		bool isDense() const
+		{
+			return true;
+		}
+
+		const FmlObjectHandle *getDenseArguments(int &count) const
+		{
+			count = 1;
+			return &fmlElementsArgument;
+		}
+
+		const FmlObjectHandle *getSparseArguments(int &count) const
+		{
+			count = 0;
+			return 0;
+		}
+
+		int getRecordCount() const
+		{
+			return this->mesh->getSize();
+		}
+
+		const int *getRecordIndexSizes() const
+		{
+			return &this->recordIndexSize;
+		}
+
+		const int *getRecordSizes() const
+		{
+			return &this->recordSize;
+		}
+
+		/** Advance to next record or first if starting.
+		  * @return  True if there is a record, false if not */
+		bool nextRecord()
+		{
+			this->elementIndex = elementLabelIterator->nextIndex();
+			if (this->elementIndex < 0)
+			{
+				display_message(ERROR_MESSAGE, "FieldML Writer:  Iterated beyond last element for shape type");
+				return false;
+			}
+			++this->offset;
+			this->value = this->mesh->getElementShapeFacesIndex(this->elementIndex) + 1;
+			return true;
+		}
+
+		const int *getRecordIndexes() const
+		{
+			return &this->elementIdentifier;
+		}
+
+		const int *getRecordValues() const
+		{
+			return &this->value;
+		}
+
+		const int *getRecordOffsets() const
+		{
+			return &this->offset;
+		}
+	};
+
+	class FE_mesh_local_to_global_nodes_parameter_generator
+	{
+		const FE_mesh_element_field_template_data *meshEFTData;
+		const FmlObjectHandle fmlElementsArgument;
+		const FmlObjectHandle fmlEftNodesArgument;
+		FmlObjectHandle fmlDenseArguments[2]; // only used to return values when dense
+		const FE_element_field_template *eft;
+		const FE_mesh *mesh;
+		const bool isMapDense;
+		const int recordCount;
+		DsLabelIterator *elementLabelIterator;
+		const int recordIndexSize = 1;
+		const int recordSize;
+		int elementIdentifier;
+		const int *values;
+		mutable int offset; // offset incremented for each record
+
+	public:
+
+		FE_mesh_local_to_global_nodes_parameter_generator(const FE_mesh_element_field_template_data *meshEFTDataIn,
+				FmlObjectHandle fmlElementsArgumentIn, FmlObjectHandle fmlEftNodesArgumentIn) :
+			meshEFTData(meshEFTDataIn),
+			fmlElementsArgument(fmlElementsArgumentIn),
+			fmlEftNodesArgument(fmlEftNodesArgumentIn),
+			eft(this->meshEFTData->getElementfieldtemplate()),
+			mesh(this->eft->getMesh()),
+			isMapDense(meshEFTData->localToGlobalNodesIsDense()),
+			recordCount(meshEFTData->getElementLocalToGlobalNodeMapCount()),
+			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
+			recordSize(this->eft->getNumberOfLocalNodes()),
+			offset(-1)
+		{
+			this->fmlDenseArguments[0] = this->fmlElementsArgument;
+			this->fmlDenseArguments[1] = this->fmlEftNodesArgument;
+		}
+
+		~FE_mesh_local_to_global_nodes_parameter_generator()
+		{
+			cmzn::Deaccess(this->elementLabelIterator);
+		}
+
+		bool isDense() const
+		{
+			return this->isMapDense;
+		}
+
+		const FmlObjectHandle *getDenseArguments(int &count) const
+		{
+			if (this->isMapDense)
+			{
+				count = 2;
+				return this->fmlDenseArguments;
+			}
+			count = 1;
+			return &this->fmlEftNodesArgument;
+		}
+
+		const FmlObjectHandle *getSparseArguments(int &count) const
+		{
+			if (this->isMapDense)
+			{
+				count = 0;
+				return 0;
+			}
+			count = 1;
+			return &this->fmlElementsArgument;
+		}
+
+		int getRecordCount() const
+		{
+			return this->recordCount;
+		}
+
+		const int *getRecordIndexSizes() const
+		{
+			return &this->recordIndexSize;
+		}
+
+		const int *getRecordSizes() const
+		{
+			return &this->recordSize;
+		}
+
+		/** Advance to next record or first if starting.
+		  * @return  True if there is a record, false if not */
+		bool nextRecord()
+		{
+			DsLabelIndex elementIndex;
+			do
+			{
+				elementIndex = elementLabelIterator->nextIndex();
+				if (elementIndex < 0)
+				{
+					display_message(ERROR_MESSAGE, "FieldML Writer:  Iterated beyond last element for local to global node map");
+					return false;
+				}
+				this->values = this->meshEFTData->getElementNodeIndexes(elementIndex);
+			} while (this->values == 0);
+			if (!this->isMapDense)
+				this->elementIdentifier = this->mesh->getElementIdentifier(elementIndex);
+			++this->offset;
+			return true;
+		}
+
+		const int *getRecordIndexes() const
+		{
+			return &this->elementIdentifier;
+		}
+
+		const int *getRecordValues() const
+		{
+			return this->values;
+		}
+
+		const int *getRecordOffsets() const
+		{
+			return &this->offset;
+		}
+	};
+
+	class FE_mft_eft_map_parameter_generator
+	{
+		const FE_mesh_field_template *mft;
+		const FE_mesh *mesh;
+		const FmlObjectHandle fmlElementsArgument;
+		const bool isMapDense; // passed in since pre-determined in FieldML Writer code
+		const std::vector<int> outputEftIndexes;
+		std::vector<bool> eftsUsed; // remember which efts are used, by output index - 1
+		const int recordCount;
+		DsLabelIterator *elementLabelIterator;
+		const int recordIndexSize = 1;
+		const int recordSize = 1;
+		int elementIdentifier;
+		int value; // store in member so can return values address
+		mutable int offset; // offset incremented for each record
+
+	public:
+
+		FE_mft_eft_map_parameter_generator(const FE_mesh_field_template *mftIn,
+			FmlObjectHandle fmlElementsArgumentIn, bool isMapDenseIn, int outputEftCount, const std::vector<int> outputEftIndexesIn) :
+			mft(mftIn),
+			mesh(this->mft->getMesh()),
+			fmlElementsArgument(fmlElementsArgumentIn),
+			isMapDense(isMapDenseIn),
+			outputEftIndexes(outputEftIndexesIn),
+			eftsUsed(outputEftCount, false),
+			recordCount(mft->getElementsDefinedCount()),
+			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
+			offset(-1)
+		{
+		}
+
+		~FE_mft_eft_map_parameter_generator()
+		{
+			cmzn::Deaccess(this->elementLabelIterator);
+		}
+
+		bool isDense() const
+		{
+			return this->isMapDense;
+		}
+
+		const FmlObjectHandle *getDenseArguments(int &count) const
+		{
+			if (this->isMapDense)
+			{
+				count = 1;
+				return &this->fmlElementsArgument;
+			}
+			count = 0;
+			return 0;
+		}
+
+		const FmlObjectHandle *getSparseArguments(int &count) const
+		{
+			if (this->isMapDense)
+			{
+				count = 0;
+				return 0;
+			}
+			count = 1;
+			return &this->fmlElementsArgument;
+		}
+
+		int getRecordCount() const
+		{
+			return this->recordCount;
+		}
+
+		const int *getRecordIndexSizes() const
+		{
+			return &this->recordIndexSize;
+		}
+
+		const int *getRecordSizes() const
+		{
+			return &this->recordSize;
+		}
+
+		/** Advance to next record or first if starting.
+		* @return  True if there is a record, false if not */
+		bool nextRecord()
+		{
+			DsLabelIndex elementIndex;
+			FE_mesh_field_template::EFTIndexType eftIndex;
+			do
+			{
+				elementIndex = elementLabelIterator->nextIndex();
+				if (elementIndex < 0)
+				{
+					display_message(ERROR_MESSAGE, "FieldML Writer:  Iterated beyond last element for mesh field template eft map");
+					return false;
+				}
+				eftIndex = static_cast<int>(this->mft->getElementEFTIndex(elementIndex));
+			} while (eftIndex < 0);
+			this->value = this->outputEftIndexes[eftIndex];
+			this->eftsUsed[this->value] = true;
+			if (!this->isMapDense)
+				this->elementIdentifier = this->mesh->getElementIdentifier(elementIndex);
+			++this->offset;
+			return true;
+		}
+
+		const int *getRecordIndexes() const
+		{
+			return &this->elementIdentifier;
+		}
+
+		const int *getRecordValues() const
+		{
+			return &this->value;
+		}
+
+		const int *getRecordOffsets() const
+		{
+			return &this->offset;
+		}
+
+		bool isEftIndexUsed(int outputEftIndexes) const
+		{
+			return this->eftsUsed[outputEftIndexes];
+		}
+	};
+
+
 struct MeshNodeConnectivity : public cmzn::RefCounted
 {
-	HDsLabels elementLabels;
-	HDsLabels localNodeLabels;
+	HCDsLabels elementLabels;
+	HCDsLabels localNodeLabels;
 	HDsMapInt localToGlobalNode;
 	HDsMapIndexing localToGlobalNodeIndexing;
 	FmlObjectHandle fmlMeshNodeConnectivity;
 	bool checkConsistency;
 	int tmpNodeIdentifiers[64]; // maximum from tricubic Lagrange basis
 
-	MeshNodeConnectivity(DsLabels& elementLabelsIn, DsLabels& localNodeLabelsIn) :
+	MeshNodeConnectivity(const DsLabels& elementLabelsIn, const DsLabels& localNodeLabelsIn) :
 		RefCounted(),
 		fmlMeshNodeConnectivity(FML_INVALID_OBJECT_HANDLE),
 		checkConsistency(false)
 	{
 		cmzn::SetImpl(this->elementLabels, cmzn::Access(&elementLabelsIn));
 		cmzn::SetImpl(this->localNodeLabels, cmzn::Access(&localNodeLabelsIn));
-		DsLabels *labelsArray[2] = { &elementLabelsIn, &localNodeLabelsIn };
+		const DsLabels *labelsArray[2] = { &elementLabelsIn, &localNodeLabelsIn };
 		cmzn::SetImpl(this->localToGlobalNode, DsMap<int>::create(2, labelsArray));
 		cmzn::SetImpl(this->localToGlobalNodeIndexing, this->localToGlobalNode->createIndexing());
 	}
@@ -168,7 +507,7 @@ typedef cmzn::RefHandle<ElementFieldComponentTemplate> HElementFieldComponentTem
 struct FieldComponentTemplate : public cmzn::RefCounted
 {
 	std::vector<ElementFieldComponentTemplate*> elementTemplates;
-	HDsLabels elementLabels;
+	HCDsLabels elementLabels;
 	HDsMapInt elementTemplateMap;
 	HDsMapIndexing mapIndexing;
 	std::string name;
@@ -183,7 +522,7 @@ private:
 	FieldComponentTemplate& operator=(const FieldComponentTemplate&); // not implemented
 
 public:
-	FieldComponentTemplate(DsLabels* elementLabelsIn) :
+	FieldComponentTemplate(const DsLabels* elementLabelsIn) :
 		RefCounted(),
 		elementLabels(cmzn::Access(elementLabelsIn)),
 		elementTemplateMap(DsMap<int>::create(1, &elementLabelsIn)),
@@ -285,45 +624,49 @@ struct OutputFieldData
 
 class FieldMLWriter
 {
-	cmzn_region *region;
-	cmzn_fieldmodule_id fieldmodule;
+	const char *derivativeNames[8] = { "value" "d_ds1", "d_ds2", "d2_ds1ds2", "d_ds3", "d2_ds1ds3", "d2_ds2ds3", "d3_ds1ds2ds3" };
+	cmzn_region *region; // accessed
+	FE_region *fe_region; // not accessed
 	const char *location;
 	const char *filename;
 	char *regionName;
 	FmlSessionHandle fmlSession;
 	bool verbose;
 	int libraryImportSourceIndex;
-	std::map<cmzn_field_domain_type,HDsLabels> nodesetLabels;
 	std::map<cmzn_field_domain_type,FmlObjectHandle> fmlNodesTypes;
 	std::map<cmzn_field_domain_type,FmlObjectHandle> fmlNodesParametersArguments;
 	HDsLabels nodeDerivatives;
-	FmlObjectHandle fmlNodeDerivativesType, fmlNodeDerivativesDefault;
+	FmlObjectHandle fmlNodeDerivativesType, fmlNodeDerivativesArgument;
+	std::vector<FmlObjectHandle> fmlNodeDerivativeConstants;
 	HDsLabels nodeVersions;
-	FmlObjectHandle fmlNodeVersionsType, fmlNodeVersionsDefault;
-	std::vector<HDsLabels> meshLabels; // indexed by dimension
+	FmlObjectHandle fmlNodeVersionsType, fmlNodeVersionsArgument;
+	std::vector<FmlObjectHandle> fmlNodeVersionConstants;
+	FmlObjectHandle fmlZeroEvaluator;
 	std::vector<FmlObjectHandle> fmlMeshElementsType;
 	std::vector<HDsLabels> hermiteNodeValueLabels;
 	std::vector<FmlObjectHandle> fmlHermiteNodeValueLabels;
 	std::map<FmlObjectHandle,FmlObjectHandle> typeArgument;
 	std::map<FE_basis*,FieldMLBasisData> outputBasisMap;
 	std::map<FieldMLBasisData*,HMeshNodeConnectivity> basisConnectivityMap;
+#if 0 // GRC
 	// later: multimap
 	std::map<FE_element_field_component*,HElementFieldComponentTemplate> elementTemplates;
+#endif
 
 public:
 	FieldMLWriter(struct cmzn_region *region, const char *locationIn, const char *filenameIn) :
 		region(cmzn_region_access(region)),
-		fieldmodule(cmzn_region_get_fieldmodule(region)),
+		fe_region(cmzn_region_get_FE_region(this->region)),
 		location(locationIn),
 		filename(filenameIn),
 		fmlSession(Fieldml_Create(location, /*regionName*/"/")),
 		verbose(false),
 		libraryImportSourceIndex(-1),
 		fmlNodeDerivativesType(FML_INVALID_OBJECT_HANDLE),
-		fmlNodeDerivativesDefault(FML_INVALID_OBJECT_HANDLE),
+		fmlNodeDerivativesArgument(FML_INVALID_OBJECT_HANDLE),
 		fmlNodeVersionsType(FML_INVALID_OBJECT_HANDLE),
-		fmlNodeVersionsDefault(FML_INVALID_OBJECT_HANDLE),
-		meshLabels(MAXIMUM_ELEMENT_XI_DIMENSIONS + 1),
+		fmlNodeVersionsArgument(FML_INVALID_OBJECT_HANDLE),
+		fmlZeroEvaluator(FML_INVALID_OBJECT_HANDLE),
 		fmlMeshElementsType(MAXIMUM_ELEMENT_XI_DIMENSIONS + 1),
 		hermiteNodeValueLabels(MAXIMUM_ELEMENT_XI_DIMENSIONS + 1),
 		fmlHermiteNodeValueLabels(MAXIMUM_ELEMENT_XI_DIMENSIONS + 1)
@@ -339,7 +682,6 @@ public:
 	~FieldMLWriter()
 	{
 		Fieldml_Destroy(fmlSession);
-		cmzn_fieldmodule_destroy(&fieldmodule);
 		cmzn_region_destroy(&region);
 	}
 
@@ -359,20 +701,39 @@ private:
 	FmlObjectHandle libraryImport(const char *remoteName);
 	FmlObjectHandle getArgumentForType(FmlObjectHandle fmlType);
 	FieldMLBasisData *getOutputBasisData(FE_basis *feBasis);
-	int defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, DsLabels& labels);
+	int defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, const DsLabels& labels);
+	template <typename VALUETYPE, class PARAMETERGENERATOR>
+	FmlObjectHandle writeDenseParameters(const std::string& name,
+		FmlObjectHandle fmlValueType, PARAMETERGENERATOR& parameterGenerator) const;
+	template <typename VALUETYPE, class PARAMETERGENERATOR>
+	FmlObjectHandle writeSparseParameters(const std::string& name,
+		FmlObjectHandle fmlValueType, PARAMETERGENERATOR& parameterGenerator) const;
 	template <typename VALUETYPE> FmlObjectHandle defineParametersFromMap(
 		DsMap<VALUETYPE>& parameterMap, FmlObjectHandle fmlValueType);
 	int getNodeConnectivityForBasisData(FieldMLBasisData& basisData,
 		DsLabels& elementLabels, MeshNodeConnectivity*& nodeConnectivity);
+#if 0 // GRC
 	int getElementFieldComponentTemplate(FE_element_field_component *feComponent,
 		DsLabels& elementLabels, ElementFieldComponentTemplate*& elementTemplate);
+#endif
 	FmlObjectHandle writeMeshNodeConnectivity(MeshNodeConnectivity& nodeConnectivity,
 		std::string& meshName, const char *uniqueSuffix);
 	FmlObjectHandle writeElementFieldComponentTemplate(ElementFieldComponentTemplate& elementTemplate,
 		int meshDimension, std::string& meshName, int& nextElementTemplateNumber);
+
+	FmlObjectHandle getZeroEvaluator();
+	FmlObjectHandle writeElementfieldtemplate(const FE_element_field_template *eft, const std::string& name,
+		FmlObjectHandle& fmlEftNodesArgument, FmlObjectHandle& fmlEftNodeParametersArgument,
+		FmlObjectHandle& fmlEftScaleFactorIndexesArgument, FmlObjectHandle& fmlEftScaleFactorsArgument);
+	FmlObjectHandle writeMeshElementEvaluator(const FE_mesh *mesh, const FE_mesh_element_field_template_data *meshEFTData, const std::string& eftName);
+	FmlObjectHandle writeMeshfieldtemplate(const FE_mesh *mesh, const FE_mesh_field_template *mft,
+		const std::string name, bool isDense, int mftEftCount, FmlObjectHandle fmlEftIndexes,
+		int outputEftCount, const std::vector<int> outputEftIndexes,
+		const std::vector<FmlObjectHandle> fmlMeshElementEvaluators);
 	FmlObjectHandle writeFieldTemplate(FieldComponentTemplate& fieldTemplate,
 		int meshDimension, std::string& meshName, int& nextFieldTemplateNumber, int& nextElementTemplateNumber);
-	FmlObjectHandle writeMeshField(std::string& meshName, OutputFieldData& outputField);
+	FmlObjectHandle writeMeshField(const FE_mesh *mesh, FE_field *field,
+		const std::map<const FE_mesh_field_template *, FmlObjectHandle> fmlMftsMap);
 
 };
 
@@ -513,7 +874,7 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 				++dofCount;
 			}
 		}
-		DsLabels *hermiteDofLabels = cmzn::GetImpl(newBasisData.parametersLabels);
+		const DsLabels *hermiteDofLabels = cmzn::GetImpl(newBasisData.parametersLabels);
 		HDsMapInt hermiteDofLocalNodeMap(DsMap<int>::create(1, &hermiteDofLabels));
 		HDsMapIndexing hermiteDofLocalNodeMapIndexing(hermiteDofLocalNodeMap->createIndexing());
 		hermiteDofLocalNodeMap->setName(basisParametersTypeName + ".localnode");
@@ -544,7 +905,7 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 	return 0;
 }
 
-int FieldMLWriter::defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, DsLabels& labels)
+int FieldMLWriter::defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, const DsLabels& labels)
 {
 	if (fmlEnsembleType == FML_INVALID_OBJECT_HANDLE)
 		return CMZN_ERROR_GENERAL;
@@ -652,12 +1013,216 @@ template <>	inline const char *FieldML_valueFormat(const int *)
 	return " %d";
 }
 
+/** Write parameters in dense format, where parameters exist for all
+  * permutations of all indexes. Currently only writes to inline text format.
+  * @param name  The name of the parameter evaluator to return. Other
+  * FieldML objects use this as a base name and append extra text.
+  * @param denseIndexCount  Size of fmlDenseIndexArguments, equals rank of array.
+  * @param fmlDenseIndexArguments  Array of dense argument evaluator handles.
+  * Must be predefined ensemble value type.
+  * @param parameterGenerator  Object implementing dense parameter generator interface.
+  * @return  Handle to parameters object. */
+template <typename VALUETYPE, class PARAMETERGENERATOR>
+FmlObjectHandle FieldMLWriter::writeDenseParameters(const std::string& name,
+	FmlObjectHandle fmlValueType, PARAMETERGENERATOR& parameterGenerator) const
+{
+	int denseIndexCount;
+	const FmlObjectHandle *fmlDenseIndexArguments = parameterGenerator.getDenseArguments(denseIndexCount);
+
+	std::string dataResourceName(name + ".data.resource");
+	FmlObjectHandle fmlDataResource = Fieldml_CreateInlineDataResource(this->fmlSession, dataResourceName.c_str());
+	std::string dataSourceName(name + ".data.source");
+	FmlObjectHandle fmlDataSource = Fieldml_CreateArrayDataSource(this->fmlSession, dataSourceName.c_str(),
+		fmlDataResource, /*location*/"1", /*rank*/denseIndexCount);
+	std::vector<int> sizes(denseIndexCount);
+	std::vector<int> offsets(denseIndexCount);
+	for (int d = 0; d < denseIndexCount; ++d)
+	{
+		FmlObjectHandle fmlEnsembleType = Fieldml_GetValueType(this->fmlSession, fmlDenseIndexArguments[d]);
+		sizes[d] = Fieldml_GetMemberCount(this->fmlSession, fmlEnsembleType);
+		offsets[d] = 0.0;
+	}
+	Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, sizes.data());
+	Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, sizes.data());
+	FmlWriterHandle fmlArrayWriter = Fieldml_OpenArrayWriter(this->fmlSession,
+		fmlDataSource, fmlValueType, /*append*/false, sizes.data(), /*rank*/denseIndexCount);
+	if (fmlArrayWriter == FML_INVALID_OBJECT_HANDLE)
+		return FML_INVALID_OBJECT_HANDLE;
+
+	bool failed = false;
+	for (int r = parameterGenerator.getRecordCount(); r < 0; --r)
+	{
+		if (!parameterGenerator.nextRecord())
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name);
+			failed = true;
+			break;
+		}
+		FmlIoErrorNumber fmlIoError = FieldML_WriteSlab(fmlArrayWriter,
+			parameterGenerator.getRecordOffsets(),
+			parameterGenerator.getRecordSizes(),
+			parameterGenerator.getRecordValues());
+		if (FML_IOERR_NO_ERROR != fmlIoError)
+		{
+			failed = true;
+			break;
+		}
+	}
+	Fieldml_CloseWriter(fmlArrayWriter);
+	if (failed)
+		return FML_INVALID_OBJECT_HANDLE;
+
+	FmlErrorNumber fmlError;
+	FmlObjectHandle fmlParameters = FML_INVALID_OBJECT_HANDLE;
+	fmlParameters = Fieldml_CreateParameterEvaluator(this->fmlSession, name.c_str(), fmlValueType);
+	fmlError = Fieldml_SetParameterDataDescription(this->fmlSession, fmlParameters, FML_DATA_DESCRIPTION_DENSE_ARRAY);
+	if (FML_OK != fmlError)
+		return FML_INVALID_OBJECT_HANDLE;
+	fmlError = Fieldml_SetDataSource(this->fmlSession, fmlParameters, fmlDataSource);
+	if (FML_OK != fmlError)
+		return FML_INVALID_OBJECT_HANDLE;
+	for (int d = 0; d < denseIndexCount; ++d)
+	{
+		fmlError = Fieldml_AddDenseIndexEvaluator(this->fmlSession, fmlParameters,
+			fmlDenseIndexArguments[d], /*orderHandle*/FML_INVALID_OBJECT_HANDLE);
+		if (FML_OK != fmlError)
+			return FML_INVALID_OBJECT_HANDLE;
+	}
+	return fmlParameters;
+}
+
+/** Write parameters in sparse format, where sparse indexes are written
+  * 1:1 with the dense parameters they label, and which have a parameter for
+  * all permutations of the dense indexes. Currently writes to inline text
+  * format with indexes followed by dense parameters.
+  * @param name  The name of the parameter evaluator to return. Other
+  * FieldML objects use this as a base name and append extra text.
+  * @param sparseIndexCount  Size of fmlDenseIndexArguments
+  * @param fmlSparseIndexArguments  Array of sparse argument evaluator handles.
+  * Must be predefined ensemble value type.
+  * @param denseIndexCount  Size of fmlDenseIndexArguments
+  * @param fmlDenseIndexArguments  Array of dense argument evaluator handles.
+  * Must be predefined ensemble value type.
+  * @return  Handle to parameters object.
+  */
+template <typename VALUETYPE, class PARAMETERGENERATOR>
+FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
+	FmlObjectHandle fmlValueType, PARAMETERGENERATOR& parameterGenerator) const
+{
+	int sparseIndexCount;
+	const FmlObjectHandle *fmlSparseIndexArguments = parameterGenerator.getSparseArguments(sparseIndexCount);
+	int denseIndexCount;
+	const FmlObjectHandle *fmlDenseIndexArguments = parameterGenerator.getDenseArguments(denseIndexCount);
+	std::string dataResourceName(name + ".data.resource");
+	FmlObjectHandle fmlDataResource = Fieldml_CreateInlineDataResource(this->fmlSession, dataResourceName.c_str());
+	// when writing to a text bulk data format we want the sparse labels to
+	// precede the dense data under those labels (so kept together). This can only
+	// be done if both are rank 2. Must confirm than the FieldML API can accept a
+	// rank 2 data source for sparse data with more than 1 dense indexes.
+	// This requires the second size to match product of dense index sizes.
+	// Later: With HDF5 we need separate integer key and real data arrays.
+	std::string keyDataSourceName(name + ".key.data.source");
+	FmlObjectHandle fmlKeyDataSource = Fieldml_CreateArrayDataSource(this->fmlSession, keyDataSourceName.c_str(),
+		fmlDataResource, /*location*/"1", /*rank*/2);
+	std::string dataSourceName(name + ".data.source");
+	FmlObjectHandle fmlDataSource = Fieldml_CreateArrayDataSource(this->fmlSession, dataSourceName.c_str(),
+		fmlDataResource, /*location*/"1", /*rank*/2);
+	if ((fmlKeyDataSource == FML_INVALID_OBJECT_HANDLE) || (fmlDataSource == FML_INVALID_OBJECT_HANDLE))
+		return FML_INVALID_OBJECT_HANDLE;
+
+	const int *recordSizes = parameterGenerator.getRecordSizes();
+	int denseSize = 1;
+	for (int i = 0; i < denseIndexCount; ++i)
+		denseSize *= recordSizes[i];
+
+	const int recordCount = parameterGenerator.getRecordCount();
+
+	const int rawSizes[2] = { recordCount, sparseIndexCount + denseSize };
+	const int keySizes[2] = { recordCount, sparseIndexCount };
+	const int keyOffsets[2] = { 0, 0 };
+	const int sizes[2] = { recordCount, denseSize };
+	const int offsets[2] = { 0, sparseIndexCount };
+	Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlKeyDataSource, const_cast<int*>(rawSizes));
+	Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlKeyDataSource, const_cast<int*>(keySizes));
+	Fieldml_SetArrayDataSourceOffsets(this->fmlSession, fmlKeyDataSource, const_cast<int*>(keyOffsets));
+	Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, const_cast<int*>(rawSizes));
+	Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, const_cast<int*>(sizes));
+	Fieldml_SetArrayDataSourceOffsets(this->fmlSession, fmlDataSource, const_cast<int*>(offsets));
+
+	std::ostringstream stringStream;
+	stringStream << "\n";
+	// Future: configurable numerical format for reals
+	const VALUETYPE *values = 0;
+	const char *valueFormat = FieldML_valueFormat(values);
+	char tmpValueString[50];
+	const int *indexes;
+	bool failed = false;
+	for (int r = 0; r < recordCount; ++r)
+	{
+		if (!parameterGenerator.nextRecord())
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name);
+			failed = true;
+			break;
+		}
+		indexes = parameterGenerator.getRecordIndexes();
+		for (int s = 0; s < sparseIndexCount; ++s)
+			stringStream << " " << indexes[s];
+		values = parameterGenerator.getRecordValues();
+		for (int d = 0; d < denseSize; ++d)
+		{
+			sprintf(tmpValueString, valueFormat, values[d]);
+			stringStream << tmpValueString;
+		}
+		stringStream << "\n";
+	}
+	if (failed)
+		return FML_INVALID_OBJECT_HANDLE;
+	// following call copies all the data so expensive; best solution is to not use inline data,
+	// but could implement own memory stream, or do so within the FieldML API
+	std::string sstring = stringStream.str();
+	int sstringSize = static_cast<int>(sstring.size());
+	FmlErrorNumber fmlError;
+	if (FML_OK != (fmlError = Fieldml_SetInlineData(this->fmlSession, fmlDataResource, sstring.c_str(), sstringSize)))
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set inline data for parameters %s", name);
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	FmlObjectHandle fmlParameters = FML_INVALID_OBJECT_HANDLE;
+	fmlParameters = Fieldml_CreateParameterEvaluator(this->fmlSession, name.c_str(), fmlValueType);
+	if ((FML_OK != (fmlError = Fieldml_SetParameterDataDescription(this->fmlSession, fmlParameters, FML_DATA_DESCRIPTION_DOK_ARRAY)))
+		|| (FML_OK != (fmlError = Fieldml_SetKeyDataSource(this->fmlSession, fmlParameters, fmlKeyDataSource)))
+		|| (FML_OK != (fmlError = Fieldml_SetDataSource(this->fmlSession, fmlParameters, fmlDataSource))))
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set attributes for parameters %s", name);
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	for (int s = 0; s < sparseIndexCount; ++s)
+	{
+		if (FML_OK != (fmlError = Fieldml_AddSparseIndexEvaluator(this->fmlSession, fmlParameters, fmlSparseIndexArguments[s])))
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set sparse index for parameters %s", name);
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+	}
+	for (int d = 0; d < denseIndexCount; ++d)
+	{
+		if (FML_OK != (fmlError = Fieldml_AddDenseIndexEvaluator(this->fmlSession, fmlParameters,
+			fmlDenseIndexArguments[d], /*orderHandle*/FML_INVALID_OBJECT_HANDLE)))
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set dense index for parameters %s", name);
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+	}
+	return fmlParameters;
+}
+
 template <typename VALUETYPE> FmlObjectHandle FieldMLWriter::defineParametersFromMap(
 	DsMap<VALUETYPE>& parameterMap, FmlObjectHandle fmlValueType)
 {
 	std::string name = parameterMap.getName();
-	std::vector<HDsLabels> sparseLabelsArray;
-	std::vector<HDsLabels> denseLabelsArray;
+	std::vector<HCDsLabels> sparseLabelsArray;
+	std::vector<HCDsLabels> denseLabelsArray;
 	parameterMap.getSparsity(sparseLabelsArray, denseLabelsArray);
 	std::string dataResourceName(name + ".data.resource");
 	FmlObjectHandle fmlDataResource = Fieldml_CreateInlineDataResource(this->fmlSession, dataResourceName.c_str());
@@ -851,165 +1416,122 @@ template <typename VALUETYPE> FmlObjectHandle FieldMLWriter::defineParametersFro
 
 int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 {
-	int return_code = CMZN_OK;
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, meshDimension);
-	char *name = cmzn_mesh_get_name(mesh);
+	FE_mesh *mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, meshDimension);
+	const DsLabels& elementLabels = mesh->getLabels();
+	if ((elementLabels.getSize() == 0) && (!writeIfEmpty))
+		return CMZN_OK;
 	FmlErrorNumber fmlError;
-	int meshSize = cmzn_mesh_get_size(mesh);
-	if (writeIfEmpty || (0 < meshSize))
+	int *shapeIds = 0;
+	FmlObjectHandle fmlMeshType = Fieldml_CreateMeshType(this->fmlSession, mesh->getName());
+	const char *meshChartName = "xi";
+	FmlObjectHandle fmlMeshChartType = Fieldml_CreateMeshChartType(this->fmlSession, fmlMeshType, meshChartName);
+	FmlObjectHandle fmlMeshChartComponentsType = FML_INVALID_OBJECT_HANDLE;
+	if (fmlMeshChartType == FML_INVALID_OBJECT_HANDLE)
+		return CMZN_ERROR_GENERAL;
+	else
 	{
-		int *shapeIds = 0;
-		FmlObjectHandle fmlMeshType = Fieldml_CreateMeshType(this->fmlSession, name);
-		const char *meshChartName = "xi";
-		FmlObjectHandle fmlMeshChartType = Fieldml_CreateMeshChartType(this->fmlSession, fmlMeshType, meshChartName);
-		FmlObjectHandle fmlMeshChartComponentsType = FML_INVALID_OBJECT_HANDLE;
-		if (fmlMeshChartType == FML_INVALID_OBJECT_HANDLE)
-			return_code = CMZN_ERROR_GENERAL;
-		else
-		{
-			// since chart.1d in the FieldML library has a component ensemble with 1 member,
-			// we are required to do the same for meshes to bind with it.
-			// Hence following is not conditional on: if (meshDimension > 1)
-			const char *chartComponentsName = "mesh3d.xi.components";
-			fmlMeshChartComponentsType = Fieldml_CreateContinuousTypeComponents(
-				this->fmlSession, fmlMeshChartType, chartComponentsName, meshDimension);
-			fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlMeshChartComponentsType,
-				1, meshDimension, /*stride*/1);
-			if (fmlMeshChartComponentsType == FML_INVALID_OBJECT_HANDLE)
-				return_code = CMZN_ERROR_GENERAL;
-		}
-		const char *meshElementsName = "elements";
-		FmlObjectHandle fmlMeshElementsType = Fieldml_CreateMeshElementsType(this->fmlSession, fmlMeshType, meshElementsName);
-
-		cmzn_element_shape_type lastShapeType = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-		int lastShapeId = 0;
-		std::vector<cmzn_element_shape_type> shapeTypes;
-		HDsLabels elementLabels(new DsLabels());
-		shapeIds = new int[meshSize];
-		elementLabels->setName(std::string(name) + "." + meshElementsName);
-		cmzn_element_id element = 0;
-		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
-		int eIndex = 0;
-		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-		{
-			if (DS_LABEL_INDEX_INVALID == elementLabels->createLabel(cmzn_element_get_identifier(element)))
-			{
-				return_code = CMZN_ERROR_MEMORY;
-				break;
-			}
-			cmzn_element_shape_type shapeType = cmzn_element_get_shape_type(element);
-			if (shapeType != lastShapeType)
-			{
-				const int shapeTypesSize = static_cast<int>(shapeTypes.size());
-				for (int i = 0; i < shapeTypesSize; ++i)
-					if (shapeTypes[i] == shapeType)
-					{
-						lastShapeType = shapeType;
-						lastShapeId = i + 1;
-					}
-				if (shapeType != lastShapeType)
-				{
-					shapeTypes.push_back(shapeType);
-					lastShapeType = shapeType;
-					lastShapeId = static_cast<int>(shapeTypes.size());
-				}
-			}
-			shapeIds[eIndex] = lastShapeId;
-			++eIndex;
-		}
-		cmzn_elementiterator_destroy(&iter);
-		this->meshLabels[meshDimension] = elementLabels;
-		this->fmlMeshElementsType[meshDimension] = fmlMeshElementsType;
-		if (CMZN_OK == return_code)
-			return_code = this->defineEnsembleFromLabels(fmlMeshElementsType, *elementLabels);			
-		if (CMZN_OK == return_code)
-		{
-			// ensure we have argument for mesh type and can find argument for elements and xi type
-			// since it uses a special naming pattern e.g. mesh3d.argument.elements/xi
-			this->getArgumentForType(fmlMeshType);
-
-			std::string meshElementsArgumentName(name);
-			meshElementsArgumentName += ".argument.";
-			meshElementsArgumentName += meshElementsName;
-			FmlObjectHandle fmlMeshElementsArgument = Fieldml_GetObjectByName(this->fmlSession, meshElementsArgumentName.c_str());
-			if (fmlMeshElementsArgument == FML_INVALID_OBJECT_HANDLE)
-				return_code = CMZN_ERROR_GENERAL;
-			else
-				this->typeArgument[fmlMeshElementsType] = fmlMeshElementsArgument;
-			std::string meshChartArgumentName(name);
-			meshChartArgumentName += ".argument.";
-			meshChartArgumentName += meshChartName;
-			FmlObjectHandle fmlMeshChartArgument = Fieldml_GetObjectByName(this->fmlSession, meshChartArgumentName.c_str());
-			if (fmlMeshChartArgument == FML_INVALID_OBJECT_HANDLE)
-				return_code = CMZN_ERROR_GENERAL;
-			else
-				this->typeArgument[fmlMeshChartType] = fmlMeshChartArgument;
-
-			// set up shape evaluator, single fixed or indirectly mapped
-			if (1 == shapeTypes.size())
-			{
-				const char *shapeName = getFieldmlNameFromElementShape(shapeTypes[0]);
-				FmlObjectHandle fmlMeshShapeEvaluator = this->libraryImport(shapeName);
-				fmlError = Fieldml_SetMeshShapes(this->fmlSession, fmlMeshType, fmlMeshShapeEvaluator);
-				if (fmlError != FML_OK)
-					return_code = CMZN_ERROR_GENERAL;
-			}
-			else
-			{
-				HDsLabels meshShapeLabels(new DsLabels());
-				std::string meshShapeIdsName(name);
-				meshShapeIdsName += ".shapeids";
-				meshShapeLabels->setName(meshShapeIdsName);
-				if (CMZN_OK != meshShapeLabels->addLabelsRange(1, static_cast<int>(shapeTypes.size())))
-					return_code = CMZN_ERROR_MEMORY;
-				FmlObjectHandle fmlMeshShapeIdsType = Fieldml_CreateEnsembleType(this->fmlSession, meshShapeIdsName.c_str());
-				if (CMZN_OK == return_code)
-					return_code = this->defineEnsembleFromLabels(fmlMeshShapeIdsType, *meshShapeLabels);
-				DsLabels *tmpElementLabels = cmzn::GetImpl(elementLabels);
-				HDsMapInt meshShapeMap(DsMap<int>::create(1, &tmpElementLabels));
-				std::string meshShapeMapName(name);
-				meshShapeMapName += ".shapeids.map";
-				meshShapeMap->setName(meshShapeMapName);
-				HDsMapIndexing meshShapeIndexing(meshShapeMap->createIndexing());
-				if (!meshShapeMap->setValues(*meshShapeIndexing, meshSize, shapeIds))
-					return_code = CMZN_ERROR_MEMORY;
-				FmlObjectHandle fmlMeshShapeIdsParameters = this->defineParametersFromMap<int>(*meshShapeMap, fmlMeshShapeIdsType);
-				if (fmlMeshShapeIdsParameters == FML_INVALID_OBJECT_HANDLE)
-					return_code = CMZN_ERROR_GENERAL;
-				else
-				{
-					std::string meshShapeEvaluatorName(name);
-					meshShapeEvaluatorName += ".shape";
-					FmlObjectHandle fmlBooleanType = this->libraryImport("boolean");
-					FmlObjectHandle fmlMeshShapeEvaluator = Fieldml_CreatePiecewiseEvaluator(this->fmlSession,
-						meshShapeEvaluatorName.c_str(), fmlBooleanType);
-					FmlObjectHandle fmlMeshShapeIdsArgument = this->getArgumentForType(fmlMeshShapeIdsType);
-					fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMeshShapeEvaluator, /*index*/1, fmlMeshShapeIdsArgument);
-					if (FML_OK != fmlError)
-						return_code = CMZN_ERROR_GENERAL;
-					const int shapeTypesSize = static_cast<int>(shapeTypes.size());
-					for (int i = 0; i < shapeTypesSize; ++i)
-					{
-						const char *shapeName = getFieldmlNameFromElementShape(shapeTypes[i]);
-						FmlObjectHandle fmlShapeEvaluator = this->libraryImport(shapeName);
-						fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlMeshShapeEvaluator, i + 1, fmlShapeEvaluator);
-						if (FML_OK != fmlError)
-							return_code = CMZN_ERROR_GENERAL;
-					}
-					fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshShapeEvaluator, fmlMeshShapeIdsArgument, fmlMeshShapeIdsParameters);
-					if (FML_OK != fmlError)
-						return_code = CMZN_ERROR_GENERAL;
-					fmlError = Fieldml_SetMeshShapes(this->fmlSession, fmlMeshType, fmlMeshShapeEvaluator);
-					if (fmlError != FML_OK)
-						return_code = CMZN_ERROR_GENERAL;
-				}
-			}
-		}
-		delete[] shapeIds;
+		// since chart.1d in the FieldML library has a component ensemble with 1 member,
+		// we are required to do the same for meshes to bind with it.
+		// Hence following is not conditional on: if (meshDimension > 1)
+		const char *chartComponentsName = "mesh3d.xi.components";
+		fmlMeshChartComponentsType = Fieldml_CreateContinuousTypeComponents(
+			this->fmlSession, fmlMeshChartType, chartComponentsName, meshDimension);
+		fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlMeshChartComponentsType,
+			1, meshDimension, /*stride*/1);
+		if (fmlMeshChartComponentsType == FML_INVALID_OBJECT_HANDLE)
+			return CMZN_ERROR_GENERAL;
 	}
-	cmzn_deallocate(name);
-	cmzn_mesh_destroy(&mesh);
-	return return_code;
+	const char *elementsName = "elements";
+	FmlObjectHandle fmlElementsType = Fieldml_CreateMeshElementsType(this->fmlSession, fmlMeshType, elementsName);
+	int result = this->defineEnsembleFromLabels(fmlElementsType, elementLabels);
+	if (result != CMZN_OK)
+		return result;
+	this->fmlMeshElementsType[meshDimension] = fmlElementsType;
+
+	// ensure we have argument for mesh type and can find argument for elements and xi type
+	// since it uses a special naming pattern e.g. mesh3d.argument.elements|xi
+	this->getArgumentForType(fmlMeshType);
+
+	std::string elementsArgumentName(mesh->getName());
+	elementsArgumentName += ".argument.";
+	elementsArgumentName += elementsName;
+	FmlObjectHandle fmlElementsArgument = Fieldml_GetObjectByName(this->fmlSession, elementsArgumentName.c_str());
+	if (fmlElementsArgument == FML_INVALID_OBJECT_HANDLE)
+		return CMZN_ERROR_GENERAL;
+	this->typeArgument[fmlElementsType] = fmlElementsArgument;
+
+	std::string meshChartArgumentName(mesh->getName());
+	meshChartArgumentName += ".argument.";
+	meshChartArgumentName += meshChartName;
+	FmlObjectHandle fmlMeshChartArgument = Fieldml_GetObjectByName(this->fmlSession, meshChartArgumentName.c_str());
+	if (fmlMeshChartArgument == FML_INVALID_OBJECT_HANDLE)
+		return CMZN_ERROR_GENERAL;
+	this->typeArgument[fmlMeshChartType] = fmlMeshChartArgument;
+
+	// set up shape evaluator, single fixed or indirectly mapped
+	const int shapeCount = mesh->getElementShapeFacesCount();
+	// GRC: doesn't handle 0 elements, 0 shapes
+	FmlObjectHandle fmlMeshShapeEvaluator;
+	if (1 == shapeCount)
+	{
+		// direct use of single library shape evaluator
+		cmzn_element_shape_type elementShapeType = mesh->getElementShapeTypeAtIndex(0);
+		const char *elementShapeName = getFieldmlNameFromElementShape(elementShapeType);
+		fmlMeshShapeEvaluator = this->libraryImport(elementShapeName);
+	}
+	else
+	{
+		// indirect map to multiple shapes evaluators
+		// 1. define shape ID ensemble type for all shapes in use
+		std::string meshShapeIdsName(mesh->getName());
+		meshShapeIdsName += ".shapeids";
+		FmlObjectHandle fmlMeshShapeIdsType = Fieldml_CreateEnsembleType(this->fmlSession, meshShapeIdsName.c_str());
+		fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlMeshShapeIdsType, 1, shapeCount, /*stride*/1);
+		if (FML_OK != fmlError)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create mesh shape ID type");
+			return CMZN_ERROR_GENERAL;
+		}
+		// 2. define a parameter evaluator giving map from element to shape ID
+		std::string meshShapeIdsMapName(mesh->getName());
+		meshShapeIdsMapName += ".shapemap";
+		FE_mesh_element_shape_type_parameter_generator shapeIdsParameterGenerator(mesh, fmlElementsArgument);
+		FmlObjectHandle fmlMeshShapeIdsMap = this->writeDenseParameters<int>(meshShapeIdsMapName, fmlMeshShapeIdsType, shapeIdsParameterGenerator);
+		if (fmlMeshShapeIdsMap == FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create mesh element to shape ID map");
+			return CMZN_ERROR_GENERAL;
+		}
+		// 3. define piecewise evaluator mapping shape ID to library shape evaluator
+		std::string meshShapeEvaluatorName(mesh->getName());
+		meshShapeEvaluatorName += ".shape";
+		FmlObjectHandle fmlBooleanType = this->libraryImport("boolean");
+		FmlObjectHandle fmlMeshShapeEvaluator = Fieldml_CreatePiecewiseEvaluator(this->fmlSession,
+			meshShapeEvaluatorName.c_str(), fmlBooleanType);
+		FmlObjectHandle fmlMeshShapeIdsArgument = this->getArgumentForType(fmlMeshShapeIdsType);
+		fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMeshShapeEvaluator, /*index*/1, fmlMeshShapeIdsArgument);
+		if (FML_OK != fmlError)
+			return CMZN_ERROR_GENERAL;
+		for (int i = 0; i < shapeCount; ++i)
+		{
+			cmzn_element_shape_type elementShapeType = mesh->getElementShapeTypeAtIndex(i);
+			const char *elementShapeName = getFieldmlNameFromElementShape(elementShapeType);
+			FmlObjectHandle fmlElementShapeEvaluator = this->libraryImport(elementShapeName);
+			fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlMeshShapeEvaluator, i + 1, fmlElementShapeEvaluator);
+			if (FML_OK != fmlError)
+				return CMZN_ERROR_GENERAL;
+		}
+		fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshShapeEvaluator, fmlMeshShapeIdsArgument, fmlMeshShapeIdsMap);
+		if (FML_OK != fmlError)
+			return CMZN_ERROR_GENERAL;
+	}
+	fmlError = Fieldml_SetMeshShapes(this->fmlSession, fmlMeshType, fmlMeshShapeEvaluator);
+	if (fmlError != FML_OK)
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set mesh element shape evaluator");
+		return CMZN_ERROR_GENERAL;
+	}
+	return CMZN_OK;
 }
 
 int FieldMLWriter::getHighestMeshDimension() const
@@ -1022,53 +1544,49 @@ int FieldMLWriter::getHighestMeshDimension() const
 // specified minimum.
 int FieldMLWriter::setMinimumNodeVersions(int minimumNodeVersions)
 {
-	int maximumNodeVersions = this->nodeVersions->getSize();
-	if (minimumNodeVersions > maximumNodeVersions)
+	int currentMaximumNodeVersions = this->nodeVersions->getSize();
+	if (minimumNodeVersions > currentMaximumNodeVersions)
 	{
-		int result = this->nodeVersions->addLabelsRange(1, minimumNodeVersions);
+		int result = this->nodeVersions->addLabelsRange(currentMaximumNodeVersions + 1, minimumNodeVersions);
 		if (result != CMZN_OK)
 			return result;
 		FmlErrorNumber fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession,
 			this->fmlNodeVersionsType, 1, minimumNodeVersions, /*stride*/1);
 		if (fmlError != FML_OK)
 			return CMZN_ERROR_GENERAL;
+		// need a constant evaluator to address each version
+		char idString[30];
+		char nodeVersionConstantName[30];
+		for (int v = currentMaximumNodeVersions; v < minimumNodeVersions; ++v)
+		{
+			sprintf(idString, "%d", v + 1);
+			sprintf(nodeVersionConstantName, "node_versions.%d", v + 1);
+			FmlObjectHandle fmlNodeVersionConstant = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeVersionConstantName, idString, this->fmlNodeVersionsType);
+			if (fmlNodeVersionConstant == FML_INVALID_OBJECT_HANDLE)
+			{
+				display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create node version constants");
+				return CMZN_ERROR_GENERAL;
+			}
+			this->fmlNodeVersionConstants.push_back(fmlNodeVersionConstant);
+		}
 	}
 	return CMZN_OK;
 }
 
 int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfEmpty)
 {
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
-		this->fieldmodule, domainType);
-	const int nodesetSize = cmzn_nodeset_get_size(nodeset);
-	char *tmpName = cmzn_nodeset_get_name(nodeset);
-	std::string nodesetName(tmpName);
-	cmzn_deallocate(tmpName);
-	tmpName = 0;
-	HDsLabels nodesLabels(new DsLabels());
-	nodesLabels->setName(nodesetName);
-	cmzn_node_id node = 0;
-	cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
-	{
-		nodesLabels->createLabel(cmzn_node_get_identifier(node));
-	}
-	cmzn_nodeiterator_destroy(&iter);
-	cmzn_nodeset_destroy(&nodeset);
-	if ((nodesetSize == 0) && (!writeIfEmpty))
+	const FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, domainType);
+	const DsLabels& nodeLabels = nodeset->getLabels();
+	if ((nodeLabels.getSize() == 0) && (!writeIfEmpty))
 		return CMZN_OK;
-	if (nodesLabels->getSize() != nodesetSize)
-		return CMZN_ERROR_MEMORY;
-	FmlObjectHandle fmlNodesType = Fieldml_CreateEnsembleType(this->fmlSession, nodesetName.c_str());
-	int return_code = this->defineEnsembleFromLabels(fmlNodesType, *nodesLabels);
+	FmlObjectHandle fmlNodesType = Fieldml_CreateEnsembleType(this->fmlSession, nodeset->getName());
+	int return_code = this->defineEnsembleFromLabels(fmlNodesType, nodeLabels);
 	if (CMZN_OK != return_code)
 		return return_code;
 	this->fmlNodesTypes[domainType] = fmlNodesType;
-	this->nodesetLabels[domainType] = nodesLabels;
 	if (!this->nodeDerivatives)
 	{
 		std::string nodeDerivativesTypeName("node_derivatives");
-		std::string nodeDerivativesDefaultName = nodeDerivativesTypeName + ".default";
 		cmzn::SetImpl(this->nodeDerivatives, new DsLabels());
 		this->nodeDerivatives->setName(nodeDerivativesTypeName);
 		this->nodeDerivatives->addLabelsRange(1, 8);
@@ -1076,11 +1594,21 @@ int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfE
 		return_code = this->defineEnsembleFromLabels(this->fmlNodeDerivativesType, *this->nodeDerivatives);
 		if (CMZN_OK != return_code)
 			return return_code;
-		this->fmlNodeDerivativesDefault = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeDerivativesDefaultName.c_str(), "1", this->fmlNodeDerivativesType);
-		if (FML_INVALID_OBJECT_HANDLE == this->fmlNodeDerivativesDefault)
-			return CMZN_ERROR_GENERAL;
+		// need a constant evaluator to address each derivative use descriptive names: value d_ds1 etc.
+		char idString[30];
+		for (int d = 0; d < 8; ++d)
+		{
+			sprintf(idString, "%d", d + 1);
+			std::string nodeDerivativeConstantName = nodeDerivativesTypeName + "." + derivativeNames[d];
+			FmlObjectHandle fmlNodeDerivativeConstant = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeDerivativeConstantName.c_str(), idString, this->fmlNodeDerivativesType);
+			if (fmlNodeDerivativeConstant == FML_INVALID_OBJECT_HANDLE)
+			{
+				display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create node derivative constants");
+				return CMZN_ERROR_GENERAL;
+			}
+			this->fmlNodeDerivativeConstants.push_back(fmlNodeDerivativeConstant);
+		}
 		std::string nodeVersionsTypeName("node_versions");
-		std::string nodeVersionsDefaultName = nodeVersionsTypeName + ".default";
 		cmzn::SetImpl(this->nodeVersions, new DsLabels());
 		this->nodeVersions->setName(nodeVersionsTypeName);
 		this->fmlNodeVersionsType = Fieldml_CreateEnsembleType(this->fmlSession, nodeVersionsTypeName.c_str());
@@ -1089,24 +1617,22 @@ int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfE
 		return_code = this->setMinimumNodeVersions(1);
 		if (CMZN_OK != return_code)
 			return return_code;
-		this->fmlNodeVersionsDefault = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeVersionsDefaultName.c_str(), "1", this->fmlNodeVersionsType);
-		if (FML_INVALID_OBJECT_HANDLE == this->fmlNodeVersionsDefault)
-			return CMZN_ERROR_GENERAL;
 	}
+	std::string nodesetName(nodeset->getName()); // GRC
 	std::string nodesParametersArgumentName = nodesetName + ".parameters";
 	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
 	FmlObjectHandle fmlNodesArgument = this->getArgumentForType(fmlNodesType);
-	FmlObjectHandle fmlNodeDerivativesArgument = this->getArgumentForType(this->fmlNodeDerivativesType);
-	FmlObjectHandle fmlNodeVersionsArgument = this->getArgumentForType(this->fmlNodeVersionsType);
+	this->fmlNodeDerivativesArgument = this->getArgumentForType(this->fmlNodeDerivativesType);
+	this->fmlNodeVersionsArgument = this->getArgumentForType(this->fmlNodeVersionsType);
 	FmlObjectHandle fmlNodesParametersArgument = Fieldml_CreateArgumentEvaluator(
 		this->fmlSession, nodesParametersArgumentName.c_str(), fmlRealType);
 	FmlErrorNumber fmlError = Fieldml_AddArgument(this->fmlSession, fmlNodesParametersArgument, fmlNodesArgument);
 	if (FML_OK != fmlError)
 		return_code = CMZN_ERROR_GENERAL;
-	fmlError = Fieldml_AddArgument(this->fmlSession, fmlNodesParametersArgument, fmlNodeDerivativesArgument);
+	fmlError = Fieldml_AddArgument(this->fmlSession, fmlNodesParametersArgument, this->fmlNodeDerivativesArgument);
 	if (FML_OK != fmlError)
 		return_code = CMZN_ERROR_GENERAL;
-	fmlError = Fieldml_AddArgument(this->fmlSession, fmlNodesParametersArgument, fmlNodeVersionsArgument);
+	fmlError = Fieldml_AddArgument(this->fmlSession, fmlNodesParametersArgument, this->fmlNodeVersionsArgument);
 	if (FML_OK != fmlError)
 		return_code = CMZN_ERROR_GENERAL;
 	this->fmlNodesParametersArguments[domainType] = fmlNodesParametersArgument;
@@ -1123,6 +1649,7 @@ int FieldMLWriter::writeNodesets()
 	return return_code;
 }
 
+#if 0 // GRC
 // Future: don't need node connectivity for per-element constant
 // @param meshConnectivity  Non-accessed return value.
 int FieldMLWriter::getNodeConnectivityForBasisData(FieldMLBasisData& basisData,
@@ -1385,7 +1912,7 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 	}
 
 	FmlObjectHandle fmlNodeVersionsArgument = this->getArgumentForType(this->fmlNodeVersionsType);
-	FmlObjectHandle fmlNodeVersionsEvaluator = this->fmlNodeVersionsDefault;
+	FmlObjectHandle fmlNodeVersionsEvaluator = this->fmlNodeVersionConstants[0];
 	if (0 < elementTemplate.feNodalVersions.size())
 	{
 		// custom versions map
@@ -1532,19 +2059,369 @@ FmlObjectHandle FieldMLWriter::writeFieldTemplate(FieldComponentTemplate& fieldT
 	}
 	return fieldTemplate.fmlFieldTemplateEvaluator;
 }
+#endif // GRC
 
-FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& outputField)
+FmlObjectHandle FieldMLWriter::getZeroEvaluator()
+{
+	if (this->fmlZeroEvaluator != FML_INVALID_OBJECT_HANDLE)
+		return this->fmlZeroEvaluator;
+	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
+	this->fmlZeroEvaluator = Fieldml_CreateConstantEvaluator(this->fmlSession, "zero", "0", fmlRealType);
+	if (this->fmlZeroEvaluator == FML_INVALID_OBJECT_HANDLE)
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create zero evaluator");
+	return this->fmlZeroEvaluator;
+}
+
+FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_template *eft, const std::string& name,
+	FmlObjectHandle& fmlEftNodesArgument, FmlObjectHandle& fmlEftNodeParametersArgument,
+	FmlObjectHandle& fmlEftScaleFactorIndexesArgument, FmlObjectHandle& fmlEftScaleFactorsArgument)
+{
+	if (!(eft && eft->getMesh()))
+		return FML_INVALID_OBJECT_HANDLE;
+
+	// GRC this can be vastly simplified; FieldMLBasisData is largely redundant now
+	FieldMLBasisData *basisData = this->getOutputBasisData(eft->getBasis());
+	if (!basisData)
+		return FML_INVALID_OBJECT_HANDLE;
+
+	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	{
+		display_message(INFORMATION_MESSAGE, "FieldML Writer:  Only node-based element field templates are implemented");
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	FmlErrorNumber fmlError;
+
+	// set up eft local nodes and scale factors
+	const int nodeCount = eft->getNumberOfLocalNodes();
+	std::string eftNodesName = name + ".nodes";
+	FmlObjectHandle fmlEftNodes = Fieldml_CreateEnsembleType(this->fmlSession, eftNodesName.c_str());
+	fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEftNodes, 1, nodeCount, /*stride*/1);
+	if (FML_OK != fmlError)
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT nodes");
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	fmlEftNodesArgument = this->getArgumentForType(fmlEftNodes);
+
+	// create EFT node parameters argument = real(local node, node derivatives, node versions)
+	// to which the mesh element evaluator will later bind the global node parameters argument and
+	// simultaneously bind the local to global node map
+	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
+	std::string eftNodeParametersArgumentName = name + ".nodeparameters.argument";
+	fmlEftNodeParametersArgument = Fieldml_CreateArgumentEvaluator(this->fmlSession, eftNodeParametersArgumentName.c_str(), fmlRealType);
+	if ((FML_OK != (fmlError = Fieldml_AddArgument(this->fmlSession, fmlEftNodeParametersArgument, fmlEftNodesArgument)))
+		|| (FML_OK != (fmlError = Fieldml_AddArgument(this->fmlSession, fmlEftNodeParametersArgument, this->fmlNodeDerivativesArgument)))
+		|| (FML_OK != (fmlError = Fieldml_AddArgument(this->fmlSession, fmlEftNodeParametersArgument, this->fmlNodeVersionsArgument))))
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT node parameters argument");
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+
+	// need a constant evaluator to address each local node (eventually could be avoided by having a BindConstant feature)
+	std::vector<FmlObjectHandle> fmlEftNodeIndexConstants(nodeCount, FML_INVALID_OBJECT_HANDLE);
+	char idString[50];
+	for (int n = 0; n < nodeCount; ++n)
+	{
+		sprintf(idString, "%d", n + 1);
+		std::string eftNodeIndexConstantName = name + ".nodes." + idString;
+		fmlEftNodeIndexConstants[n] = Fieldml_CreateConstantEvaluator(this->fmlSession, eftNodeIndexConstantName.c_str(), idString, fmlEftNodes);
+		if (fmlEftNodeIndexConstants[n] == FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT node index constants");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+	}
+
+	FmlObjectHandle fmlEftScaleFactorIndexes = FML_INVALID_OBJECT_HANDLE;
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	if (scaleFactorCount > 0)
+	{
+		std::string eftScaleFactorIndexesName = name + ".scalefactorindexes";
+		fmlEftScaleFactorIndexes = Fieldml_CreateEnsembleType(this->fmlSession, eftScaleFactorIndexesName.c_str());
+		fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEftScaleFactorIndexes, 1, scaleFactorCount, /*stride*/1);
+		if (FML_OK != fmlError)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT scale factor indexes");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+		fmlEftScaleFactorIndexesArgument = this->getArgumentForType(fmlEftScaleFactorIndexes);
+
+		// need a constant evaluator to address each scale factor index (eventually could be avoided by having a BindConstant feature)
+		std::vector<FmlObjectHandle> fmlEftScaleFactorIndexConstants(scaleFactorCount, FML_INVALID_OBJECT_HANDLE);
+		for (int s = 0; s < scaleFactorCount; ++s)
+		{
+			sprintf(idString, "%d", s + 1);
+			std::string eftScaleFactorIndexConstantName = name + ".scalefactorsindexes." + idString;
+			fmlEftScaleFactorIndexConstants[s] = Fieldml_CreateConstantEvaluator(this->fmlSession, eftScaleFactorIndexConstantName.c_str(), idString, fmlEftScaleFactorIndexes);
+			if (fmlEftScaleFactorIndexConstants[s] == FML_INVALID_OBJECT_HANDLE)
+			{
+				display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT scale factor index constants");
+				return FML_INVALID_OBJECT_HANDLE;
+			}
+		}
+
+		// argument: scale factors = real(scale factor indexes)
+		std::string eftScaleFactorsArgumentName = name + ".scalefactors.argument";
+		fmlEftScaleFactorsArgument = Fieldml_CreateArgumentEvaluator(this->fmlSession, eftScaleFactorsArgumentName.c_str(), fmlRealType);
+		if (FML_OK != (fmlError = Fieldml_AddArgument(this->fmlSession, fmlEftScaleFactorsArgument, fmlEftScaleFactorIndexesArgument)))
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create EFT scale factors argument");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+	}
+
+	// get evaluators for each parameter for the eft's basis
+	const int functionCount = eft->getNumberOfFunctions();
+	std::vector<FmlObjectHandle> fmlParameterComponents(functionCount, FML_INVALID_OBJECT_HANDLE);
+	for (int f = 0; f < functionCount; ++f)
+	{
+		const int termCount = eft->getFunctionNumberOfTerms(f);
+		if (0 == termCount)
+		{
+			fmlParameterComponents[f] = this->getZeroEvaluator();
+		}
+		else
+		{
+			if (termCount > 1)
+				display_message(INFORMATION_MESSAGE, "FieldML Writer:  General linear map not yet implemented; writing first term only"); // GRC TODO
+			for (int t = 0; t < 1/*termCount*/; ++t) // GRC limited to 1 for now
+			{
+				const int scalingCount = eft->getTermScalingCount(f, t);
+				if (scalingCount > 0)
+					display_message(WARNING_MESSAGE, "FieldML Writer:  Scaling not yet implemented; omitting"); // GRC TODO
+				const int localNodeIndex = eft->getTermLocalNodeIndex(f, t);
+				const int derivativeIndex = eft->getTermNodeValueLabel(f, t) - 1;
+				if ((derivativeIndex < 0) || (derivativeIndex > 7))
+				{
+					display_message(WARNING_MESSAGE, "FieldML Writer:  Derivative out of range");
+					return FML_INVALID_OBJECT_HANDLE;
+				}
+				const int versionIndex = eft->getTermNodeVersion(f, t);
+				sprintf(idString, ".nodeparameters.node%d.%s.v%d", localNodeIndex + 1, derivativeNames[derivativeIndex], versionIndex + 1);
+				std::string nodeParameterName = name + idString;
+				FmlObjectHandle fmlNodeParameter = Fieldml_GetObjectByName(this->fmlSession, nodeParameterName.c_str());
+				if (fmlNodeParameter == FML_INVALID_OBJECT_HANDLE)
+				{
+					fmlNodeParameter = Fieldml_CreateReferenceEvaluator(this->fmlSession, nodeParameterName.c_str(),
+						fmlEftNodeParametersArgument, fmlRealType);
+					if (fmlNodeParameter == FML_INVALID_OBJECT_HANDLE)
+						return FML_INVALID_OBJECT_HANDLE;
+					if (CMZN_OK != this->setMinimumNodeVersions(versionIndex + 1))
+						return FML_INVALID_OBJECT_HANDLE;
+					if ((FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, fmlEftNodesArgument, fmlEftNodeIndexConstants[localNodeIndex]))
+						|| (FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, this->fmlNodeDerivativesArgument, this->fmlNodeDerivativeConstants[derivativeIndex]))
+						|| (FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, this->fmlNodeVersionsArgument, this->fmlNodeVersionConstants[derivativeIndex])))
+					{
+						display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to get eft node parameter evaluator");
+						return FML_INVALID_OBJECT_HANDLE;
+					}
+				}
+				fmlParameterComponents[f] = fmlNodeParameter;
+			}
+		}
+		if (fmlParameterComponents[f] == FML_INVALID_OBJECT_HANDLE)
+			return FML_INVALID_OBJECT_HANDLE;
+	}
+
+	std::string eftParametersName = name + ".parameters";
+	FmlObjectHandle fmlEftParameters = Fieldml_CreateAggregateEvaluator(this->fmlSession, eftParametersName.c_str(), basisData->fmlBasisParametersType);
+	if (fmlEftParameters == FML_INVALID_OBJECT_HANDLE)
+		return FML_INVALID_OBJECT_HANDLE;
+	if (FML_OK != (fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlEftParameters, /*index*/1,
+		this->getArgumentForType(basisData->fmlBasisParametersComponentType))))
+		return FML_INVALID_OBJECT_HANDLE;
+	for (int f = 0; f < functionCount; ++f)
+	{
+		if (FML_OK != (fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlEftParameters, /*element*/f + 1, fmlParameterComponents[f])))
+			return FML_INVALID_OBJECT_HANDLE;
+	}
+
+	// Note the EFT keeps the basis evaluator's chart.nd argument; mesh element evaluator must bind mesh chart
+	FmlObjectHandle fmlEft = Fieldml_CreateReferenceEvaluator(this->fmlSession, name.c_str(), basisData->fmlBasisEvaluator, fmlRealType);
+	if (fmlEft == FML_INVALID_OBJECT_HANDLE)
+		return FML_INVALID_OBJECT_HANDLE;
+	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlEft,
+			this->getArgumentForType(basisData->fmlBasisParametersType), fmlEftParameters)))
+		return FML_INVALID_OBJECT_HANDLE;
+
+	return fmlEft;
+}
+
+FmlObjectHandle FieldMLWriter::writeMeshElementEvaluator(const FE_mesh *mesh,
+	const FE_mesh_element_field_template_data *meshEFTData, const std::string& eftName)
+{
+	if (!(mesh && meshEFTData))
+		return FML_INVALID_OBJECT_HANDLE;
+
+	FE_element_field_template *eft = meshEFTData->getElementfieldtemplate();
+
+	FmlObjectHandle fmlEftNodesArgument, fmlEftNodeParametersArgument,
+		fmlEftScaleFactorIndexesArgument, fmlEftScaleFactorsArgument;
+
+	FmlObjectHandle fmlEft = this->writeElementfieldtemplate(eft, eftName,
+		fmlEftNodesArgument, fmlEftNodeParametersArgument,
+		fmlEftScaleFactorIndexesArgument, fmlEftScaleFactorsArgument);
+	if (fmlEft == FML_INVALID_OBJECT_HANDLE)
+		return FML_INVALID_OBJECT_HANDLE;
+
+	FmlObjectHandle fmlEftLocalToGlobalNodes = FML_INVALID_OBJECT_HANDLE;
+	const int nodeCount = eft->getNumberOfLocalNodes();
+	if (nodeCount > 0)
+	{
+		// write local-to-global node map
+		FmlObjectHandle fmlElementsType = this->fmlMeshElementsType[mesh->getDimension()];
+		FmlObjectHandle fmlElementsArgument = this->getArgumentForType(fmlElementsType);
+		std::string eftLocalToGlobalNodesName = eftName + ".localtoglobalnodes";
+		FE_mesh_local_to_global_nodes_parameter_generator localToGlobalNodesParameterGenerator(meshEFTData, fmlElementsArgument, fmlEftNodesArgument);
+		FmlObjectHandle fmlNodesType = this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES];
+		if (localToGlobalNodesParameterGenerator.isDense())
+			fmlEftLocalToGlobalNodes = this->writeDenseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
+		else
+			fmlEftLocalToGlobalNodes = this->writeSparseParameters<int>(eftLocalToGlobalNodesName, fmlNodesType, localToGlobalNodesParameterGenerator);
+		if (fmlEftLocalToGlobalNodes == FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to create element local to global nodes map");
+			return CMZN_ERROR_GENERAL;
+		}
+	}
+
+	FmlObjectHandle fmlEftScaleFactors = FML_INVALID_OBJECT_HANDLE;
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	if (scaleFactorCount > 0)
+	{
+		// write scale factors
+		display_message(WARNING_MESSAGE, "FieldML Writer:  Scale factor output is not yet implemented, omitting"); // GRC TODO
+	}
+
+	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
+	std::string meshElementEvaluatorName = eftName + ".evaluator";
+	FmlObjectHandle fmlMeshElementEvaluator = Fieldml_CreateReferenceEvaluator(this->fmlSession, meshElementEvaluatorName.c_str(), fmlEft, fmlRealType);
+	if (fmlMeshElementEvaluator == FML_INVALID_OBJECT_HANDLE)
+	{
+		display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to create mesh element evaluator");
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	// must bind mesh chart to generic chart used by EFT
+	FmlErrorNumber fmlError;
+	const int meshDimension = mesh->getDimension();
+	FmlObjectHandle fmlChartArgument =
+		(3 == meshDimension) ? this->libraryImport("chart.3d.argument") :
+		(2 == meshDimension) ? this->libraryImport("chart.2d.argument") :
+		this->libraryImport("chart.1d.argument");
+	FmlObjectHandle fmlMeshType = Fieldml_GetObjectByName(this->fmlSession, eft->getMesh()->getName());
+	FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(this->fmlSession, fmlMeshType);
+	FmlObjectHandle fmlMeshChartArgument = getArgumentForType(fmlMeshChartType);
+	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlEft, fmlChartArgument, fmlMeshChartArgument)))
+	{
+		display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind mesh chart to generic chart");
+		return FML_INVALID_OBJECT_HANDLE;
+	}
+	if (nodeCount > 0)
+	{
+		if ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
+				fmlEftNodeParametersArgument, this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES])))
+			|| ((FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator,
+				this->getArgumentForType(this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES]), fmlEftLocalToGlobalNodes)))))
+		{
+			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind global node parameters and/or local-to-global nodes map for mesh element evaluator");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE, "FieldML Writer:  Only implemented for node-based mesh element evaluator");
+		return FML_INVALID_OBJECT_HANDLE;
+		// GRC future: bind scale factors
+	}
+	return fmlMeshElementEvaluator;
+}
+
+FmlObjectHandle FieldMLWriter::writeMeshfieldtemplate(const FE_mesh *mesh, const FE_mesh_field_template *mft,
+	const std::string name, bool isDense, int mftEftCount, FmlObjectHandle fmlEftIndexes,
+	int outputEftCount, const std::vector<int> outputEftIndexes,
+	const std::vector<FmlObjectHandle> fmlMeshElementEvaluators)
+{
+	FmlObjectHandle fmlMft = FML_INVALID_OBJECT_HANDLE;
+	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
+	FmlObjectHandle fmlMeshElementsArgument = this->getArgumentForType(this->fmlMeshElementsType[mesh->getDimension()]);
+	FmlErrorNumber fmlError;
+	if (isDense && (mftEftCount <= 1))
+	{
+		// simple case of single element evaluator for all elements in mesh is written more succinctly
+		fmlMft = Fieldml_CreatePiecewiseEvaluator(this->fmlSession, name.c_str(), fmlRealType);
+		if (FML_OK != (fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMft, /*index*/1, fmlMeshElementsArgument)))
+		{
+			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to set simple mesh field template index evaluator");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+		if (mftEftCount == 1)
+		{
+			DsLabelIndex firstElementIndex = mesh->getLabels().getFirstIndex();
+			const int eftIndex = mft->getElementEFTIndex(firstElementIndex);
+			if (FML_OK != (fmlError = Fieldml_SetDefaultEvaluator(this->fmlSession, fmlMft,
+				fmlMeshElementEvaluators[outputEftIndexes[eftIndex]])))
+			{
+				display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to set simple mesh field template default evaluator");
+				return FML_INVALID_OBJECT_HANDLE;
+			}
+		}
+	}
+	else
+	{
+		// use indirect element to eft index map
+		// future: can add third case for single EFT defined over part of mesh
+		std::string mftEvaluatorMapName = name + ".eftmap";
+		FE_mft_eft_map_parameter_generator mftEftMapParameterGenerator(mft, fmlMeshElementsArgument, isDense, outputEftCount, outputEftIndexes);
+		FmlObjectHandle fmlMftEftIndexMap;
+		if (mftEftMapParameterGenerator.isDense())
+			fmlMftEftIndexMap = this->writeDenseParameters<int>(mftEvaluatorMapName.c_str(), fmlEftIndexes, mftEftMapParameterGenerator);
+		else
+			fmlMftEftIndexMap = this->writeSparseParameters<int>(mftEvaluatorMapName.c_str(), fmlEftIndexes, mftEftMapParameterGenerator);
+		if (fmlMftEftIndexMap == FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to write element field template map for mesh field template");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+		FmlObjectHandle fmlEftIndexesArgument = this->getArgumentForType(fmlEftIndexes);
+		fmlMft = Fieldml_CreatePiecewiseEvaluator(this->fmlSession, name.c_str(), fmlRealType);
+		if (FML_OK != (fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMft, /*index*/1, fmlEftIndexesArgument)))
+		{
+			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to set mesh field template indirect index evaluator");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+		if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMft, fmlEftIndexesArgument, fmlMftEftIndexMap)))
+		{
+			display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind mesh field template indirect eft index map");
+			return FML_INVALID_OBJECT_HANDLE;
+		}
+		for (int e = 0; e < outputEftCount; ++e)
+		{
+			if (mftEftMapParameterGenerator.isEftIndexUsed(e))
+			{
+				if (FML_OK != (fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlMft, static_cast<FmlEnsembleValue>(e + 1), fmlMeshElementEvaluators[e])))
+				{
+					display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to set mesh field template evaluator");
+					return FML_INVALID_OBJECT_HANDLE;
+				}
+			}
+		}
+	}
+	return fmlMft;
+}
+
+FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *field,
+	const std::map<const FE_mesh_field_template *, FmlObjectHandle> fmlMftsMap)
 {
 	// get value type
 	FmlObjectHandle fmlValueType = FML_INVALID_OBJECT_HANDLE;
 	FmlObjectHandle fmlComponentsType = FML_INVALID_OBJECT_HANDLE;
 	FmlObjectHandle fmlComponentsArgument = FML_INVALID_OBJECT_HANDLE;
-	const bool isCoordinate = cmzn_field_is_type_coordinate(outputField.field);
-	cmzn_field_coordinate_system_type coordinateSystemType = cmzn_field_get_coordinate_system_type(outputField.field);
+	const bool isCoordinate = get_FE_field_CM_field_type(field) == CM_COORDINATE_FIELD;
+	const int componentCount = get_FE_field_number_of_components(field);
+
+	struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(field);
 	std::string componentsTypeName;
-	const int componentCount = outputField.componentCount;
-	if (isCoordinate && (componentCount <= 3) &&
-		(CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN == coordinateSystemType))
+	if (isCoordinate && (componentCount <= 3) && (RECTANGULAR_CARTESIAN == coordinate_system->type))
 	{
 		if (1 == componentCount)
 			fmlValueType = this->libraryImport("coordinates.rc.1d");
@@ -1569,14 +2446,13 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	}
 	else
 	{
-		if (isCoordinate && (CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN != coordinateSystemType))
+		if (isCoordinate && (RECTANGULAR_CARTESIAN != coordinate_system->type))
 		{
-			char *coordinateSystemName = cmzn_field_coordinate_system_type_enum_to_string(coordinateSystemType);
 			display_message(WARNING_MESSAGE, "FieldMLWriter: Field %s written without %s coordinate system attribute(s)",
-				outputField.name.c_str(), coordinateSystemName);
-			cmzn_deallocate(coordinateSystemName);
+				get_FE_field_name(field), ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system->type));
 		}
-		std::string fieldDomainName = outputField.name + ".domain";
+		std::string fieldDomainName(get_FE_field_name(field));
+		fieldDomainName += ".domain";
 		fmlValueType = Fieldml_CreateContinuousType(this->fmlSession, fieldDomainName.c_str());
 		if (1 < componentCount)
 		{
@@ -1591,15 +2467,16 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		return FML_INVALID_OBJECT_HANDLE;
 
 	// write nodal parameters
-	DsLabels *labelsArray[4];
+	const DsLabels *labelsArray[4];
 	int labelsArraySize = 0;
-	HDsLabels nodesLabels = this->nodesetLabels[CMZN_FIELD_DOMAIN_TYPE_NODES];
-	labelsArray[labelsArraySize++] = cmzn::GetImpl(nodesLabels);
+	const FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	const DsLabels& nodeLabels = nodeset->getLabels();
+	labelsArray[labelsArraySize++] = &nodeLabels;
 	HDsLabels derivativesLabels;
 	HDsLabels versionsLabels;
 	int highestNodeDerivative = 0;
 	int highestNodeVersion = 0;
-	FE_field_get_highest_node_derivative_and_version(outputField.feField, highestNodeDerivative, highestNodeVersion);
+	FE_field_get_highest_node_derivative_and_version(field, highestNodeDerivative, highestNodeVersion);
 	if (highestNodeDerivative > 1)
 	{
 		derivativesLabels = this->nodeDerivatives;
@@ -1625,11 +2502,10 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	HDsMapDouble nodesFieldParametersMap(DsMap<double>::create(labelsArraySize, labelsArray));
 	// Future: for efficiency, resize map for highest versions and derivatives before using
 	std::string nodesFieldParametersMapName("nodes.");
-	nodesFieldParametersMapName += outputField.name;
+	nodesFieldParametersMapName += get_FE_field_name(field);
 	nodesFieldParametersMap->setName(nodesFieldParametersMapName);
 	HDsMapIndexing nodesFieldParametersMapIndexing(nodesFieldParametersMap->createIndexing());
-	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	HDsLabelIterator nodesLabelsIterator(nodesLabels->createLabelIterator());
+	HDsLabelIterator nodesLabelsIterator(nodeLabels.createLabelIterator());
 	int return_code = CMZN_OK;
 	double *homogeneousValues = new double[componentCount];
 	int *componentParameterCounts = new int[componentCount];
@@ -1645,16 +2521,15 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	cmzn_node *lastNode = 0;
 	cmzn_node *node;
 	bool isHomogeneous;
-	FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
 	while (nodesLabelsIterator->increment())
 	{
-		node = feNodeset->findNodeByIdentifier(nodesLabelsIterator->getIdentifier());
+		node = nodeset->findNodeByIdentifier(nodesLabelsIterator->getIdentifier());
 		if (!node)
 		{
 			return_code = CMZN_ERROR_GENERAL;
 			break;
 		}
-		int result = FE_field_get_node_parameter_labels(outputField.feField, node, /*time*/0.0, lastNode,
+		int result = FE_field_get_node_parameter_labels(field, node, /*time*/0.0, lastNode,
 			componentParameterCounts, componentDerivatives, componentVersions, isHomogeneous);
 		if (result == CMZN_ERROR_NOT_FOUND)
 			continue;
@@ -1666,7 +2541,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		lastNode = node;
 		int parametersCount = 0;
 		FE_value *parameters = 0;
-		if (!get_FE_nodal_field_FE_value_values(outputField.feField, node, &parametersCount, /*time*/0.0, &parameters))
+		if (!get_FE_nodal_field_FE_value_values(field, node, &parametersCount, /*time*/0.0, &parameters))
 		{
 			return_code = CMZN_ERROR_GENERAL;
 			break;
@@ -1731,10 +2606,9 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	delete[] componentDerivatives;
 	delete[] componentVersions;
 
-	cmzn_nodeset_destroy(&nodeset);
 	if (CMZN_OK != return_code)
 	{
-		display_message(ERROR_MESSAGE, "FieldMLWriter: Can't get nodal parameters for field %s", outputField.name.c_str());
+		display_message(ERROR_MESSAGE, "FieldMLWriter: Can't get nodal parameters for field %s", get_FE_field_name(field));
 		return FML_INVALID_OBJECT_HANDLE;
 	}
 	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
@@ -1744,22 +2618,22 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 
 	FmlObjectHandle fmlField = FML_INVALID_OBJECT_HANDLE;
 	FmlErrorNumber fmlError;
+	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, mesh);
+	const FE_mesh_field_template *mft1 = meshFieldData->getComponentMeshfieldtemplate(0);
 	if (1 == componentCount)
 	{
-		FieldComponentTemplate& fieldTemplate = *(outputField.componentTemplates[0]);
-		fmlField = Fieldml_CreateReferenceEvaluator(this->fmlSession, outputField.name.c_str(), fieldTemplate.fmlFieldTemplateEvaluator, fmlValueType);
+		fmlField = Fieldml_CreateReferenceEvaluator(this->fmlSession, get_FE_field_name(field), fmlMftsMap.at(mft1), fmlValueType);
 	}
 	else
 	{
-		fmlField = Fieldml_CreateAggregateEvaluator(this->fmlSession, outputField.name.c_str(), fmlValueType);
+		fmlField = Fieldml_CreateAggregateEvaluator(this->fmlSession, get_FE_field_name(field), fmlValueType);
 		fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlField, 1, fmlComponentsArgument);
 		if (FML_OK != fmlError)
 			return FML_INVALID_OBJECT_HANDLE;
 		bool defaultEvaluator = true;
 		for (int c = 1; c < componentCount; ++c)
 		{
-			if (outputField.componentTemplates[c - 1]->fmlFieldTemplateEvaluator !=
-				outputField.componentTemplates[c]->fmlFieldTemplateEvaluator)
+			if (meshFieldData->getComponentMeshfieldtemplate(c) != mft1)
 			{
 				defaultEvaluator = false;
 				break;
@@ -1767,67 +2641,202 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		}
 		if (defaultEvaluator)
 		{
-			fmlError = Fieldml_SetDefaultEvaluator(this->fmlSession, fmlField,
-				outputField.componentTemplates[0]->fmlFieldTemplateEvaluator);
-			if (FML_OK != fmlError)
+			if (FML_OK != (fmlError = Fieldml_SetDefaultEvaluator(this->fmlSession, fmlField, fmlMftsMap.at(mft1))))
+			{
+				display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set default evaluator for field %s", get_FE_field_name(field));
 				return FML_INVALID_OBJECT_HANDLE;
+			}
 		}
 		else
 		{
 			for (int c = 0; c < componentCount; ++c)
 			{
-				fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlField, static_cast<FmlEnsembleValue>(c + 1),
-					outputField.componentTemplates[c]->fmlFieldTemplateEvaluator);
-				if (FML_OK != fmlError)
+				const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				if (FML_OK != (fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlField, static_cast<FmlEnsembleValue>(c + 1), fmlMftsMap.at(mft))))
+				{
+					display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set component mesh field template for field %s", get_FE_field_name(field));
 					return FML_INVALID_OBJECT_HANDLE;
+				}
 			}
 		}
 	}
-	fmlError = Fieldml_SetBind(this->fmlSession, fmlField,
-		this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES], fmlNodesFieldParameters);
-	if (FML_OK != fmlError)
+	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlField,
+		this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES], fmlNodesFieldParameters)))
+	{
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to bind node parameters for field %s", get_FE_field_name(field));
 		return FML_INVALID_OBJECT_HANDLE;
+	}
+	// future: bind scale factors
 	return fmlField;
 }
 
 int FieldMLWriter::writeMeshFields(int meshDimension)
 {
-	int return_code = CMZN_OK;
-	std::vector<OutputFieldData> outputFields;
-	cmzn_fielditerator_id fieldIter = cmzn_fieldmodule_create_fielditerator(this->fieldmodule);
-	if (!fieldIter)
-		return_code = CMZN_ERROR_MEMORY;
-	cmzn_field_id field;
-	while (0 != (field = cmzn_fielditerator_next_non_access(fieldIter)))
+	FE_mesh *mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, meshDimension);
+	// get list of finite element fields to write, in default order
+	std::vector<FE_field *> fields;
+	// get list of mesh field templates to write, in order of field, component
+	std::vector<const FE_mesh_field_template *> mfts;
+	cmzn_fielditerator_id cfieldIter = this->fe_region->create_fielditerator();
+	if (!cfieldIter)
+		return CMZN_ERROR_MEMORY;
+	cmzn_field_id cfield;
+	while (0 != (cfield = cmzn_fielditerator_next_non_access(cfieldIter)))
 	{
-		FE_field *feField = 0;
-		if (Computed_field_get_type_finite_element(field, &feField) && feField)
+		FE_field *field = 0;
+		if (Computed_field_get_type_finite_element(cfield, &field) && field)
 		{
-			cmzn_field_finite_element_id field_finite_element = cmzn_field_cast_finite_element(field);
-			if (field_finite_element)
+			if ((get_FE_field_FE_field_type(field) == GENERAL_FE_FIELD)
+				&& (get_FE_field_value_type(field) == FE_VALUE_VALUE))
 			{
-				OutputFieldData thisFieldData(field, feField);
-				outputFields.push_back(thisFieldData);
+				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, mesh);
+				if (meshFieldData) // i.e. is field defined on mesh
+				{
+					fields.push_back(field);
+					const int componentCount = get_FE_field_number_of_components(field);
+					for (int c = 0; c < componentCount; ++c)
+					{
+						const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+						size_t m;
+						for (m = 0; m < mfts.size(); ++m)
+						{
+							if (mfts[m] == mft)
+								break;
+						}
+						if (m == mfts.size())
+							mfts.push_back(mft);
+					}
+				}
 			}
 			else
-			{
 				display_message(WARNING_MESSAGE, "FieldMLWriter: Cannot write finite element field %s"
-					" because it is not real-valued with standard interpolation.", get_FE_field_name(feField));
-			}
-			cmzn_field_finite_element_destroy(&field_finite_element);
+					" because it is not real-valued with standard interpolation.", get_FE_field_name(field));
 		}
 	}
-	cmzn_fielditerator_destroy(&fieldIter);
-	const int outputFieldsCount = static_cast<int>(outputFields.size());
+	cmzn_fielditerator_destroy(&cfieldIter);
 
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, meshDimension);
-	char *tmp = cmzn_mesh_get_name(mesh);
-	std::string meshName(tmp);
-	cmzn_deallocate(tmp);
-	if (!((mesh) && (this->meshLabels[meshDimension])))
-		return_code = CMZN_ERROR_ARGUMENT;
-	DsLabels& elementLabels = *(this->meshLabels[meshDimension]);
-	cmzn_elementiterator_id elemIter = cmzn_mesh_create_elementiterator(mesh);
+	std::string meshName(mesh->getName());
+	const DsLabels& elementLabels = mesh->getLabels();
+
+	// get list of element field templates to write, in order of mfts, element:
+	std::vector<const FE_element_field_template *> efts;
+	// determine whether mft maps all elements of mesh; can use dense map or no map if 1 EFT
+	std::vector<bool> mftIsDense(mfts.size(), false);
+	// get number of EFTs each MFT uses; can optimise output if 1
+	std::vector<int> mftEftCounts(mfts.size(), 0);
+	// get map from internal EFT index to output index + 1
+	std::vector<int> outputEftIndexes(mesh->getElementfieldtemplateDataCount(), 0);
+	auto eftCount = efts.size();
+	for (size_t m = 0; m < mfts.size(); ++m)
+	{
+		const FE_mesh_field_template *mft = mfts[m];
+		std::vector<bool> eftsUsed(eftCount, false);
+		DsLabelIterator *iter = elementLabels.createLabelIterator();
+		DsLabelIndex elementIndex;
+		bool isDense = true;
+		const FE_element_field_template *lastEFT = 0;
+		while (DS_LABEL_IDENTIFIER_INVALID != (elementIndex = iter->nextIndex()))
+		{
+			const FE_element_field_template *eft = mft->getElementfieldtemplate(elementIndex);
+			if (eft)
+			{
+				if (eft != lastEFT)
+				{
+					size_t e;
+					for (e = 0; e < eftCount; ++e)
+					{
+						if (efts[e] == eft)
+						{
+							eftsUsed[e] = true;
+							break;
+						}
+					}
+					if (e == eftCount)
+					{
+						efts.push_back(eft);
+						eftsUsed.push_back(true);
+						eftCount = efts.size();
+						outputEftIndexes[eft->getIndexInMesh()] = static_cast<int>(eftCount);
+					}
+					lastEFT = eft;
+				}
+			}
+			else
+				isDense = false;
+		}
+		mftIsDense[m] = isDense;
+		for (size_t e = 0; e < eftCount; ++e)
+		{
+			if (eftsUsed[e])
+				++(mftEftCounts[m]);
+		}
+		cmzn::Deaccess(iter);
+	}
+
+	// Create set of indexes for EFTs, so MFTs can map to them
+	FmlObjectHandle fmlEftIndexes = FML_INVALID_OBJECT_HANDLE;
+	FmlErrorNumber fmlError;
+	if (efts.size() > 0)
+	{
+		std::string eftIndexName = meshName + ".eftIndexes";
+		fmlEftIndexes = Fieldml_CreateEnsembleType(this->fmlSession, eftIndexName.c_str());
+		if (FML_OK != (fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlEftIndexes, 1, static_cast<int>(efts.size()), 1)))
+		{
+			display_message(ERROR_MESSAGE, "FieldMLWriter:  Failed to create mesh EFT indexes ensemble");
+			return CMZN_ERROR_MEMORY;
+		}
+		this->getArgumentForType(fmlEftIndexes);
+	}
+
+	// write element field templates and associated local-to-global maps
+	std::vector<FmlObjectHandle> fmlMeshElementEvaluators(efts.size(), FML_INVALID_OBJECT_HANDLE);
+	char idString[30];
+	const int eftsSize = static_cast<int>(efts.size());
+	for (int e = 0; e < eftsSize; ++e)
+	{
+		sprintf(idString, ".eft%d", e + 1);
+		FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(efts[e]);
+		fmlMeshElementEvaluators[e] = this->writeMeshElementEvaluator(mesh, meshEFTData, meshName + idString);
+		if (FML_INVALID_OBJECT_HANDLE == fmlMeshElementEvaluators[e])
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh element field template data");
+			return CMZN_ERROR_GENERAL;
+		}
+	}
+
+	// write mesh field templates
+	std::map<const FE_mesh_field_template *, FmlObjectHandle> fmlMftsMap;
+	const int mftsSize = static_cast<int>(mfts.size());
+	for (int m = 0; m < mftsSize; ++m)
+	{
+		sprintf(idString, ".fieldtemplate%d", m + 1);
+		FmlObjectHandle fmlMft = this->writeMeshfieldtemplate(mesh, mfts[m], meshName + idString,
+			mftIsDense[m], mftEftCounts[m], fmlEftIndexes,
+			static_cast<int>(efts.size()), outputEftIndexes, fmlMeshElementEvaluators);
+		if (FML_INVALID_OBJECT_HANDLE == fmlMft)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field template");
+			return CMZN_ERROR_GENERAL;
+		}
+		fmlMftsMap[mfts[m]] = fmlMft;
+	}
+
+	// write fields
+	for (size_t f = 0; f < fields.size(); ++f)
+	{
+		FmlObjectHandle fmlField = this->writeMeshField(mesh, fields[f], fmlMftsMap);
+		if (FML_INVALID_OBJECT_HANDLE == fmlField)
+		{
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to write mesh field");
+			return CMZN_ERROR_GENERAL;
+		}
+	}
+	return CMZN_OK;
+#if 0 // GRC
+
+	int return_code = CMZN_OK;
+
+	cmzn_elementiterator_id elemIter = mesh->createElementiterator();
 	if (!elemIter)
 		return_code = CMZN_ERROR_MEMORY;
 
@@ -2048,6 +3057,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 			return_code = CMZN_ERROR_GENERAL;
 	}
 	return return_code;
+#endif // GRC
 }
 
 int FieldMLWriter::writeFile(const char *pathandfilename)

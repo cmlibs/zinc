@@ -1266,14 +1266,14 @@ public:
 		return invalid_object;
 	}
 
-	inline object_type get_first_object()
+	inline object_type get_first_object() const
 	{
 		if (index)
 			return index->getFirstObject();
 		return invalid_object;
 	}
 
-	inline object_type get_last_object()
+	inline object_type get_last_object() const
 	{
 		if (index)
 			return index->getLastObject();

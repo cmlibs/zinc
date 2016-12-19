@@ -635,6 +635,16 @@ int FE_element_field_template::setElementScaleFactorVersion(int localIndex, int 
 	return CMZN_OK;
 }
 
+int FE_element_field_template::getTermScalingCount(int functionNumber, int term) const
+{
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (0 == this->numberOfLocalScaleFactors)
+		|| (!this->validTerm(functionNumber, term)))
+		return 0;
+	const int termOffset = this->termOffsets[functionNumber] + term;
+	return this->termScaleFactorCounts[termOffset];
+}
+
 int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex)
 {
 	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
