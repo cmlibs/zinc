@@ -13,6 +13,8 @@ ELSE()
 	SET( ZINC_C_INLINE "static inline" )
 ENDIF()
 
+set(FILES_FOR_CLEANING)
+
 set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincconfigure.h )
 set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincsharedobject.h )
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
@@ -20,6 +22,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincconfigure.h.cma
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
 	${ZINC_SHARED_OBJECT_HDR} )
 set( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
+list(APPEND FILES_FOR_CLEANING ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} ${CMAKE_CURRENT_BINARY_DIR}/source)
 
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from
@@ -81,7 +84,7 @@ add_custom_target(generate_version_cpp_file
     DEPENDS ${ZINC_VERSION_STAGING_SRC}
 )
 set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
-
+list(APPEND FILES_FOR_CLEANING ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 
 #print_list_duplications( ZINC_LIB_SRCS )
@@ -138,6 +141,8 @@ if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
 		OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d.${Zinc_VERSION} )
 endif()
 
+# Additional clean files
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_FOR_CLEANING}")
 # Install rules for Zinc
 install(TARGETS
     ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}
