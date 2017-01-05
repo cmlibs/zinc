@@ -645,7 +645,22 @@ int FE_element_field_template::getTermScalingCount(int functionNumber, int term)
 	return this->termScaleFactorCounts[termOffset];
 }
 
-int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex)
+int FE_element_field_template::getTermScaleFactorIndex(int functionNumber, int term, int termScaleFactorIndex) const
+{
+	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (0 == this->numberOfLocalScaleFactors)
+		|| (!this->validTerm(functionNumber, term))
+		|| (termScaleFactorIndex < 0))
+		return -1;
+	const int termOffset = this->termOffsets[functionNumber] + term;
+	const int termScaleFactorCount = this->termScaleFactorCounts[termOffset];
+	if (termScaleFactorIndex >= termScaleFactorCount)
+		return -1;
+	const int termLocalScaleFactorIndexesOffset = this->termLocalScaleFactorIndexesOffsets[termOffset];
+	return this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + termScaleFactorIndex];
+}
+
+int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex) const
 {
 	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
@@ -653,12 +668,12 @@ int FE_element_field_template::getTermScaling(int functionNumber, int term, int 
 		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexes)))
 		return -1;
 	const int termOffset = this->termOffsets[functionNumber] + term;
-	const int scaleFactorCount = this->termScaleFactorCounts[termOffset];
+	const int termScaleFactorCount = this->termScaleFactorCounts[termOffset];
 	const int termLocalScaleFactorIndexesOffset = this->termLocalScaleFactorIndexesOffsets[termOffset];
-	const int copyCount = (indexesCount < scaleFactorCount) ? indexesCount : scaleFactorCount;
+	const int copyCount = (indexesCount < termScaleFactorCount) ? indexesCount : termScaleFactorCount;
 	for (int i = 0; i < copyCount; ++i)
 		indexes[i] = this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] + startIndex;
-	return scaleFactorCount;
+	return termScaleFactorCount;
 }
 
 int FE_element_field_template::setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex)

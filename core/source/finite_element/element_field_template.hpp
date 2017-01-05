@@ -320,9 +320,13 @@ public:
 	/** @return  The number of scale factors multiplying term */
 	int getTermScalingCount(int functionNumber, int term) const;
 
+	/** @param termScaleFactorIndex  From 0 to term scaling count.
+	  * @return  Index of scale factor, or -1 on error. */
+	int getTermScaleFactorIndex(int functionNumber, int term, int termScaleFactorIndex) const;
+
 	/** @param startIndex  Set to 1 to offset to external indexes which start at 1
 	  * @return  The actual number of scaling indexes for term, or -1 on error. */
-	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex = 0);
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex = 0) const;
 
 	/** Set scaling of the function term by the product of scale factors at the
 	  * given local scale factor indexes. Only valid in node mapping mode.
@@ -540,7 +544,7 @@ public:
 		return this->impl->setElementScaleFactorVersion(localIndex - 1, version - 1);
 	}
 
-	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes)
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const
 	{
 		return this->impl->getTermScaling(functionNumber - 1, term - 1, indexesCount, indexes, /*startIndex*/1);
 	}
