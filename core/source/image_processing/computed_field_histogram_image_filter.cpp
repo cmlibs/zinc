@@ -23,7 +23,7 @@ Wraps itk::Statistics::ScalarImageToHistogramGenerator
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkScalarImageToHistogramGenerator.h"
-#include "itkImageToHistogramGenerator.h"
+#include "itkImageToHistogramFilter.h"
 
 using namespace CMZN;
 
@@ -58,16 +58,22 @@ public:
 			delete [] histogramMinimum;
 	};
 
-	template <class ImageType, class HistogramGeneratorType >
+	template <class ImageType, class HistogramFilterType >
 	int update_histogram(cmzn_fieldcache& cache,
-		typename HistogramGeneratorType::Pointer filter, 
-		const typename HistogramGeneratorType::HistogramType *&outputHistogram,
-		ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2);
+		typename HistogramFilterType::Pointer filter,
+		const typename HistogramFilterType::HistogramType *&outputHistogram,
+		ImageType *dummytemplarg1, HistogramFilterType *dummytemplarg2);
 
-	template <class ImageType, class HistogramGeneratorType >
+	template <class ImageType, class HistogramFilterType >
+	int update_histogram_scalar(cmzn_fieldcache& cache,
+		typename HistogramFilterType::Pointer filter,
+		const typename HistogramFilterType::HistogramType *&outputHistogram,
+		ImageType *dummytemplarg1, HistogramFilterType *dummytemplarg2);
+
+	template <class ImageType, class HistogramFilterType >
 	int evaluate_histogram(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
-		const typename HistogramGeneratorType::HistogramType *outputHistogram,
-		ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2);
+		const typename HistogramFilterType::HistogramType *outputHistogram,
+		ImageType *dummytemplarg, HistogramFilterType *dummytemplarg2);
 
 	double getMaginalScale()
 	{
@@ -248,12 +254,12 @@ inline Computed_field_histogram_image_filter *
 		reinterpret_cast<Computed_field*>(imagefilter_histogram)->core));
 }
 
-template <class ImageType, class HistogramGeneratorType >
-int Computed_field_histogram_image_filter::update_histogram(
+template <class ImageType, class HistogramFilterType >
+int Computed_field_histogram_image_filter::update_histogram_scalar(
 	cmzn_fieldcache& cache,
-	typename HistogramGeneratorType::Pointer filter, 
-	const typename HistogramGeneratorType::HistogramType *&outputHistogram,
-	ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2)
+	typename HistogramFilterType::Pointer filter,
+	const typename HistogramFilterType::HistogramType *&outputHistogram,
+	ImageType *dummytemplarg1, HistogramFilterType *dummytemplarg2)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -278,6 +284,53 @@ Evaluate the templated version of this filter
 			filter->Compute();
 
 			outputHistogram = filter->GetOutput();
+
+		} catch ( itk::ExceptionObject & err )
+		{
+			display_message(ERROR_MESSAGE,
+				"ExceptionObject caught!");
+			display_message(ERROR_MESSAGE,
+				(char *)err.GetDescription());
+		}
+
+		if (outputHistogram)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+template <class ImageType, class HistogramFilterType >
+int Computed_field_histogram_image_filter::update_histogram(
+	cmzn_fieldcache& cache,
+	typename HistogramFilterType::Pointer filter,
+	const typename HistogramFilterType::HistogramType *&outputHistogram,
+	ImageType *dummytemplarg1, HistogramFilterType *dummytemplarg2)
+/*******************************************************************************
+LAST MODIFIED : 25 March 2008
+
+DESCRIPTION :
+Evaluate the templated version of this filter
+==============================================================================*/
+{
+	USE_PARAMETER(dummytemplarg2);
+	typename ImageType::Pointer inputImage;
+
+	if (create_input_image(cache, inputImage, dummytemplarg1))
+	{
+		try
+		{
+			filter->SetInput( inputImage );
+
+			//Histogram generators are not pipeline objects so
+			//we have to explicitly update the input image
+
+			inputImage->Update();
+
+			filter->Update();
+
+			outputHistogram = filter->GetOutput();
 			
 		} catch ( itk::ExceptionObject & err )
 		{
@@ -295,11 +348,11 @@ Evaluate the templated version of this filter
 	return 0;
 }
 	
-template <class ImageType, class HistogramGeneratorType >
+template <class ImageType, class HistogramFilterType >
 int Computed_field_histogram_image_filter::evaluate_histogram(
 	cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
-	const typename HistogramGeneratorType::HistogramType *outputHistogram,
-	ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2)
+	const typename HistogramFilterType::HistogramType *outputHistogram,
+	ImageType *dummytemplarg, HistogramFilterType *dummytemplarg2)
 {
 	USE_PARAMETER(dummytemplarg);
 	USE_PARAMETER(dummytemplarg2);
@@ -547,7 +600,7 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_histogram_image_filter::get_command_string */
 
-template < class ImageType, class HistogramGeneratorType >
+template < class ImageType, class HistogramFilterType >
 class Computed_field_histogram_image_filter_Functor :
 	public computed_field_image_filter_Functor
 /*******************************************************************************
@@ -561,9 +614,9 @@ It is instantiated for each of the chosen ImageTypes.
 protected:
 	Computed_field_histogram_image_filter *histogram_image_filter;
 
-	const typename HistogramGeneratorType::HistogramType * histogram;
+	const typename HistogramFilterType::HistogramType * histogram;
 
-	typename HistogramGeneratorType::Pointer filter;
+	typename HistogramFilterType::Pointer filter;
 
 public:
 
@@ -592,7 +645,7 @@ location.
 				return_code = histogram_image_filter->evaluate_histogram
 					(cache, valueCache, histogram,
 					 static_cast<ImageType*>(NULL),
-					 static_cast<HistogramGeneratorType*>(NULL));
+					 static_cast<HistogramFilterType*>(NULL));
 			}
 		}
 		else
@@ -600,7 +653,7 @@ location.
 			return_code = histogram_image_filter->evaluate_histogram
 				(cache, valueCache, histogram,
 					static_cast<ImageType*>(NULL),
-					static_cast<HistogramGeneratorType*>(NULL));
+					static_cast<HistogramFilterType*>(NULL));
 		}
 		return(return_code);
 	}
@@ -645,9 +698,9 @@ and generate the outputImage.
 	{
 		int return_code;
 
-		typedef itk::Statistics::ScalarImageToHistogramGenerator< ImageType > HistogramGeneratorType;
+		typedef itk::Statistics::ScalarImageToHistogramGenerator< ImageType > HistogramFilterType;
 
-		this->filter = HistogramGeneratorType::New();
+		this->filter = HistogramFilterType::New();
 
 		this->filter->SetNumberOfBins( this->histogram_image_filter->numberOfBins[0] );
 		this->filter->SetMarginalScale( this->histogram_image_filter->marginalScale );
@@ -656,47 +709,20 @@ and generate the outputImage.
 		if (this->histogram_image_filter->histogramMaximum)
 			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum[0] );
 		
-		return_code = this->histogram_image_filter->update_histogram
+		return_code = this->histogram_image_filter->update_histogram_scalar
 			(cache, this->filter, this->histogram,
 			static_cast<ImageType*>(NULL),
-			static_cast<HistogramGeneratorType*>(NULL));
+			static_cast<HistogramFilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */
 
 }; /* template < class ImageType > class Computed_field_histogram_image_filter_Functor */
 
-template < class SizeType >
-inline void setBinSizes( SizeType& binSizes, int* numberOfBins );
-
-template < >
-inline void setBinSizes( itk::Size< 2 >& binSizes, int* numberOfBins )
-{
-	binSizes[0] = numberOfBins[0];
-	binSizes[1] = numberOfBins[1];
-}
-
-template < >
-inline void setBinSizes( itk::Size< 3 >& binSizes, int* numberOfBins )
-{
-	binSizes[0] = numberOfBins[0];
-	binSizes[1] = numberOfBins[1];
-	binSizes[2] = numberOfBins[2];
-}
-
-template < >
-inline void setBinSizes( itk::Size< 4 >& binSizes, int* numberOfBins )
-{
-	binSizes[0] = numberOfBins[0];
-	binSizes[1] = numberOfBins[1];
-	binSizes[2] = numberOfBins[2];
-	binSizes[3] = numberOfBins[3];
-}
-
 template < class ImageType >
 class Computed_field_histogram_nonscalar_image_filter_Functor :
 	public Computed_field_histogram_image_filter_Functor< ImageType,
-		itk::Statistics::ImageToHistogramGenerator< ImageType > >
+		itk::Statistics::ImageToHistogramFilter< ImageType > >
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -709,7 +735,7 @@ public:
 	Computed_field_histogram_nonscalar_image_filter_Functor(
 		Computed_field_histogram_image_filter *histogram_image_filter) :
 	Computed_field_histogram_image_filter_Functor<ImageType,
-		itk::Statistics::ImageToHistogramGenerator< ImageType > >
+		itk::Statistics::ImageToHistogramFilter< ImageType > >
 	   (histogram_image_filter)
 	{
 	}
@@ -725,25 +751,40 @@ and generate the outputImage.
 	{
 		int return_code;
 
-		typedef itk::Statistics::ImageToHistogramGenerator< ImageType > HistogramGeneratorType;
+		typedef itk::Statistics::ImageToHistogramFilter< ImageType > HistogramFilterType;
 
-		this->filter = HistogramGeneratorType::New();
+		this->filter = HistogramFilterType::New();
 
-		typename HistogramGeneratorType::SizeType binSizes;
-		setBinSizes(binSizes, this->histogram_image_filter->numberOfBins);
-
-		this->filter->SetNumberOfBins( binSizes );
+		typename HistogramFilterType::HistogramSizeType binSizes;
+		int size = binSizes.GetSize();
+		for (int i = 0; i < size; i++)
+			binSizes[0] = this->histogram_image_filter->numberOfBins[0];
+		this->filter->SetHistogramSize( binSizes );
 		this->filter->SetMarginalScale(
 			this->histogram_image_filter->marginalScale );
 		if (this->histogram_image_filter->histogramMinimum)
-			this->filter->SetHistogramMin( this->histogram_image_filter->histogramMinimum );
+		{
+			typename HistogramFilterType::HistogramMeasurementVectorType lowerBound(this->histogram_image_filter->sourceNumberOfComponents);
+			for (int i = 0; i < this->histogram_image_filter->sourceNumberOfComponents; i++)
+			{
+				lowerBound[i] = this->histogram_image_filter->histogramMinimum[i];
+			}
+			this->filter->SetHistogramBinMinimum(lowerBound);
+		}
 		if (this->histogram_image_filter->histogramMaximum)
-			this->filter->SetHistogramMax( this->histogram_image_filter->histogramMaximum );
+		{
+			typename HistogramFilterType::HistogramMeasurementVectorType upperBound(this->histogram_image_filter->sourceNumberOfComponents);
+			for (int i = 0; i < this->histogram_image_filter->sourceNumberOfComponents; i++)
+			{
+				upperBound[i] = this->histogram_image_filter->histogramMaximum[i];
+			}
+			this->filter->SetHistogramBinMaximum( upperBound );
+		}
 
 		return_code = this->histogram_image_filter->update_histogram
 			(cache, this->filter, this->histogram,
 			static_cast<ImageType*>(NULL),
-			static_cast<HistogramGeneratorType*>(NULL));		
+			static_cast<HistogramFilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

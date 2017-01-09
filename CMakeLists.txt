@@ -169,7 +169,8 @@ endif()
 
 if(ZINC_USE_ITK )
     find_package(ITK ${ITK_VERSION} CONFIG REQUIRED)
-    list(APPEND DEPENDENT_LIBS itk)
+    list(APPEND DEPENDENT_LIBS  ${ITK_LIBRARIES})
+    include_directories(${ITK_INCLUDE_DIRS})
 endif()
 
 #if(ZINC_USE_OCE )
@@ -366,3 +367,6 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 	message(STATUS "=====================================================")
 	message(STATUS "")
 endif()
+
+
+
