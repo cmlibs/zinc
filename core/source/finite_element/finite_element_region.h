@@ -282,21 +282,6 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 	struct FE_region *fe_region, const char *name, enum Value_type value_type,
 	int number_of_components);
 
-/***************************************************************************//**
- * Returns an FE_field with the given <name> merged into <fe_region> and with
- * the given properties. If a field of the given <name> already exists, checks
- * that it has the same properties -- if not an error is reported. If no field
- * of that name exists, one is created and FE_region_merge_FE_field called for
- * it. Hence, this function may result in change messages being sent, so use
- * begin/end change if several calls are to be made.
- */
-struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field, int number_of_indexed_values,
-	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
-	enum Value_type value_type, int number_of_components, char **component_names,
-	int number_of_times, enum Value_type time_value_type);
-
 /**
  * Checks <fe_field> is compatible with <fe_region> and any existing FE_field
  * using the same identifier, then merges it into <fe_region>.

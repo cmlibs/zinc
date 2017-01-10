@@ -1448,30 +1448,16 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_field,name,const char *);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_field);
 
+/**
+ * Copies the field definition from source to destination, except for name,
+ * mesh field data and node definition. Assumes source field has been
+ * proven compatible with destination including that source indexer field has
+ * already been merged.
+ * If source and destination fields belong to different FE_regions, substitute
+ * local indexer_field and element_xi_host_mesh if appropriate.
+ */
 int FE_field_copy_without_identifier(struct FE_field *destination,
 	struct FE_field *source);
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
-
-DESCRIPTION :
-Copies the contents but not the name identifier of <source> to <destination>.
-???RC Change to macro so identifier member can vary?
-?COPY_WITHOUT_IDENTIFIER object_type,identifier
-==============================================================================*/
-
-int FE_field_matches_description(struct FE_field *field, const char *name,
-	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
-	int number_of_indexed_values,enum CM_field_type cm_field_type,
-	struct Coordinate_system *coordinate_system,enum Value_type value_type,
-	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type);
-/*******************************************************************************
-LAST MODIFIED : 31 August 2001
-
-DESCRIPTION :
-Returns true if <field> has exactly the same <name>, <field_info>... etc. as
-those given in the parameters.
-==============================================================================*/
 
 /**
  * Returns true if <field1> and <field2> have the same fundamental definition,
@@ -1806,27 +1792,26 @@ it was. Should only call this function for unmanaged fields.
 ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 =========================================================================*/
 
-/***************************************************************************//**
+/**
  * If the FE_field has value_type ELEMENT_XI_VALUE, this returns the
- * element dimension the field values are restricted to, or 0 if unrestricted.
+ * host mesh the embedded locations are within, or 0 if not yet set (legacy
+ * input only).
  *
  * @param field  The field to query.
- * @return  Mesh dimension from 1 to MAXIMUM_ELEMENT_XI_DIMENSIONS or 0 for any
- * dimension or invalid field type.
+ * @return  Host mesh (not accessed) or 0 if none.
  */
-int FE_field_get_element_xi_mesh_dimension(struct FE_field *field);
+const FE_mesh *FE_field_get_element_xi_host_mesh(struct FE_field *field);
 
-/***************************************************************************//**
- * If the FE_field has value_type ELEMENT_XI_VALUE, this restricts the
- * element locations that can be stored to mesh of the supplied dimension.
+/**
+ * If the FE_field has value_type ELEMENT_XI_VALUE, sets the host mesh the
+ * embedded locations are within.
  *
  * @param field  The field to modify.
- * @param mesh_dimension  A fixed mesh dimension from 1 to
- * MAXIMUM_ELEMENT_XI_DIMENSIONS or 0 for any dimension.
- * @return  1 on success, 0 on failure.
+ * @param hostMesh  The host mesh to set.
+ * @return  Standard result code.
  */
-int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
-	int mesh_dimension);
+int FE_field_set_element_xi_host_mesh(struct FE_field *field,
+	const FE_mesh *hostMesh);
 
 /**
  * Return the highest derivative and version numbers used to label any node

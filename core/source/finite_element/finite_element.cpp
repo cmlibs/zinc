@@ -114,8 +114,8 @@ the point and the Xi coordinates of the point within the element.
 	int number_of_values;
 	/* the type of the values returned by the field */
 	enum Value_type value_type;
-	/* for value_type== ELEMENT_XI_VALUE, fixed mesh dimension, or 0 for any */
-	int element_xi_mesh_dimension;
+	/* for value_type== ELEMENT_XI_VALUE, host mesh, or 0 if not determined from legacy input */
+	const FE_mesh *element_xi_host_mesh;
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
 	Value_storage *values_storage;
@@ -5983,7 +5983,7 @@ FE_region.
 			field->number_of_values = 0;
 			field->values_storage = (Value_storage *)NULL;
 			field->value_type = UNKNOWN_VALUE;
-			field->element_xi_mesh_dimension = 0;
+			field->element_xi_host_mesh = 0;
 			field->number_of_times = 0;
 			field->time_value_type = UNKNOWN_VALUE;
 			field->times = (Value_storage *)NULL;
@@ -6021,8 +6021,7 @@ DESCRIPTION :
 Frees the memory for the field and sets <*field_address> to NULL.
 ==============================================================================*/
 {
-	char **component_name;
-	int i,return_code;
+	int return_code;
 	struct FE_field *field;
 
 	ENTER(DESTROY(FE_field));
@@ -6030,6 +6029,7 @@ Frees the memory for the field and sets <*field_address> to NULL.
 	{
 		if (0==field->access_count)
 		{
+			FE_mesh::deaccess(field->element_xi_host_mesh);
 			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 				delete field->meshFieldData[d];
 
@@ -6049,16 +6049,14 @@ Frees the memory for the field and sets <*field_address> to NULL.
 				DEALLOCATE(field->values_storage);
 			}
 
-			/* free the component names */
-			if (NULL != (component_name=field->component_names))
+			// free component names
+			if (field->component_names)
 			{
-				for (i=field->number_of_components;i>0;i--)
-				{
-					DEALLOCATE(*component_name);
-					component_name++;
-				}
+				for (int c = 0; c < field->number_of_components; ++c)
+					DEALLOCATE(field->component_names[c]);
 				DEALLOCATE(field->component_names);
 			}
+
 			DEALLOCATE(*field_address);
 			return_code=1;
 		}
@@ -6170,260 +6168,231 @@ DECLARE_CHANGE_LOG_FUNCTIONS(FE_field)
 
 int FE_field_copy_without_identifier(struct FE_field *destination,
 	struct FE_field *source)
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
-
-DESCRIPTION :
-Copies the contents but not the name identifier of <source> to <destination>.
-Function prototype should be in finite_element_private.h, so not public.
-???RC Change to macro so identifier member can vary?
-?COPY_WITHOUT_IDENTIFIER object_type,identifier
-==============================================================================*/
 {
-	char **component_names;
-	int i, return_code;
-	Value_storage *times, *values_storage;
-
-	ENTER(FE_field_copy_without_identifier);
-	if (destination && source)
+	if (!(destination && destination->info && destination->info->fe_region
+		&& source && source->info && source->info->fe_region))
 	{
-		return_code=1;
-		component_names=(char **)NULL;
-		values_storage=(Value_storage *)NULL;
-		times=(Value_storage *)NULL;
-		if (source->component_names)
+		display_message(ERROR_MESSAGE,
+			"FE_field_copy_without_identifier.  Invalid argument(s)");
+		return 0;
+	}
+	int return_code = 1;
+	const bool externalMerge = destination->info->fe_region != source->info->fe_region;
+	char **component_names=(char **)NULL;
+	if (source->component_names)
+	{
+		ALLOCATE(component_names, char *, source->number_of_components);
+		if (!component_names)
+			return false;
+		for (int c = 0; c < source->number_of_components; ++c)
 		{
-			if (ALLOCATE(component_names,char *,source->number_of_components))
+			if (source->component_names[c])
 			{
-				for (i=0;i<source->number_of_components;i++)
+				component_names[c] = duplicate_string(source->component_names[c]);
+				if (!component_names[c])
 				{
-					component_names[i]=(char *)NULL;
-				}
-				/* copy the old names, clear any new ones */
-				for (i=0;i<(source->number_of_components)&&return_code;i++)
-				{
-					if (source->component_names[i])
-					{
-						if (ALLOCATE(component_names[i],char,
-							strlen(source->component_names[i])+1))
-						{
-							strcpy(component_names[i],source->component_names[i]);
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
+					for (int c2 = 0; c2 < c; ++c)
+						DEALLOCATE(component_names[c2]);
+					DEALLOCATE(component_names);
+					return_code = 0;
+					break;
 				}
 			}
 			else
 			{
-				return_code=0;
+				component_names[c] = 0;
 			}
 		}
-		if (0<source->number_of_values)
+	}
+	Value_storage *values_storage = 0;
+	Value_storage *times = 0;
+	if (0<source->number_of_values)
+	{
+		if (!((values_storage=make_value_storage_array(source->value_type,
+			(struct FE_time_sequence *)NULL,source->number_of_values))&&
+			copy_value_storage_array(values_storage,source->value_type,
+				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
+				source->number_of_values,source->values_storage, /*optimised_merge*/0)))
 		{
-			if (!((values_storage=make_value_storage_array(source->value_type,
-				(struct FE_time_sequence *)NULL,source->number_of_values))&&
-				copy_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_values,source->values_storage, /*optimised_merge*/0)))
+			return_code=0;
+		}
+	}
+	if (0<source->number_of_times)
+	{
+		if (!((times=make_value_storage_array(source->time_value_type,
+			(struct FE_time_sequence *)NULL,source->number_of_times))&&
+			copy_value_storage_array(times,source->time_value_type,
+				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
+				source->number_of_times,source->times, /*optimised_merge*/0)))
+		{
+			return_code=0;
+		}
+	}
+	FE_field *indexer_field = 0;
+	if (INDEXED_FE_FIELD == source->fe_field_type)
+	{
+		if (!source->indexer_field)
+			return_code = 0;
+		else
+		{
+			if (externalMerge)
 			{
-				return_code=0;
+				indexer_field = FE_region_get_FE_field_from_name(destination->info->fe_region, source->indexer_field->name);
+				if (!indexer_field)
+					return_code = 0;
+			}
+			else
+			{
+				indexer_field = source->indexer_field;
 			}
 		}
-		if (0<source->number_of_times)
+	}
+	const FE_mesh *element_xi_host_mesh = 0;
+	if (ELEMENT_XI_VALUE == source->value_type)
+	{
+		if (!source->element_xi_host_mesh)
 		{
-			if (!((times=make_value_storage_array(source->time_value_type,
-				(struct FE_time_sequence *)NULL,source->number_of_times))&&
-				copy_value_storage_array(times,source->time_value_type,
-					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_times,source->times, /*optimised_merge*/0)))
-			{
-				return_code=0;
-			}
+			display_message(ERROR_MESSAGE,
+				"FE_field_copy_without_identifier.  Source element:xi valued field %s does not have a host mesh", source->name);
+			return_code = 0;
 		}
-		if (return_code)
+		else if (externalMerge)
 		{
-			REACCESS(FE_field_info)(&(destination->info), source->info);
-			if (destination->cm_field_type != source->cm_field_type)
+			// find equivalent host mesh in destination FE_region
+			// to be fixed in future when arbitrary meshes are allowed:
+			element_xi_host_mesh = FE_region_find_FE_mesh_by_dimension(destination->info->fe_region, source->element_xi_host_mesh->getDimension());
+			if (strcmp(element_xi_host_mesh->getName(), source->element_xi_host_mesh->getName()) != 0)
 			{
-				display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
-					source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
-					ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
-				destination->cm_field_type = source->cm_field_type;
+				display_message(ERROR_MESSAGE,
+					"FE_field_copy_without_identifier.  Cannot find destination host mesh named %s for merging 'element:xi' valued field %s. Needs to be implemented.",
+					source->element_xi_host_mesh->getName(), source->name);
+				return_code = 0;
 			}
-			destination->fe_field_type=source->fe_field_type;
-			REACCESS(FE_field)(&(destination->indexer_field),
-				source->indexer_field);
-			destination->number_of_indexed_values=
-				source->number_of_indexed_values;
-			if (destination->component_names)
-			{
-				for (i = 0; i < destination->number_of_components; i++)
-				{
-					if (destination->component_names[i])
-					{
-						DEALLOCATE(destination->component_names[i]);
-					}
-				}
-				DEALLOCATE(destination->component_names);
-			}
-			destination->number_of_components=source->number_of_components;
-			destination->component_names=component_names;
-			COPY(Coordinate_system)(&(destination->coordinate_system),
-				&(source->coordinate_system));
-			destination->value_type=source->value_type;
-			destination->time_value_type=source->time_value_type;
-			/* replace old values_storage with new */
-			if (0<destination->number_of_values)
-			{
-				free_value_storage_array(destination->values_storage,
-					destination->value_type,(struct FE_time_sequence *)NULL,
-					destination->number_of_values);
-				DEALLOCATE(destination->values_storage);
-			}
-			destination->number_of_values=source->number_of_values;
-			destination->values_storage=values_storage;
-			/* replace old times with new */
-			if (0<destination->number_of_times)
-			{
-				free_value_storage_array(destination->times,
-					destination->time_value_type,(struct FE_time_sequence *)NULL,
-					destination->number_of_times);
-				DEALLOCATE(destination->times);
-			}
-			destination->number_of_times=source->number_of_times;
-			destination->times=times;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_field_copy_without_identifier.  "
-				"Could not copy dynamic contents");
+			element_xi_host_mesh = source->element_xi_host_mesh;
 		}
-		if (!return_code)
+	}
+	if (return_code)
+	{
+		REACCESS(FE_field_info)(&(destination->info), source->info);
+		if (destination->cm_field_type != source->cm_field_type)
 		{
-			if (component_names)
-			{
-				for (i=0;i<source->number_of_components;i++)
-				{
-					if (component_names[i])
-					{
-						DEALLOCATE(component_names[i]);
-					}
-				}
-				DEALLOCATE(component_names);
-			}
-			if (values_storage)
-			{
-				free_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_sequence *)NULL,source->number_of_values);
-				DEALLOCATE(values_storage);
-			}
-			if (times)
-			{
-				free_value_storage_array(times,source->time_value_type,
-					(struct FE_time_sequence *)NULL,source->number_of_times);
-				DEALLOCATE(times);
-			}
+			display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
+				source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
+				ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
+			destination->cm_field_type = source->cm_field_type;
 		}
+		destination->fe_field_type=source->fe_field_type;
+		REACCESS(FE_field)(&(destination->indexer_field), indexer_field);
+		destination->number_of_indexed_values=
+			source->number_of_indexed_values;
+		if (destination->component_names)
+		{
+			for (int i = 0; i < destination->number_of_components; i++)
+			{
+				if (destination->component_names[i])
+				{
+					DEALLOCATE(destination->component_names[i]);
+				}
+			}
+			DEALLOCATE(destination->component_names);
+		}
+		destination->number_of_components=source->number_of_components;
+		destination->component_names=component_names;
+		COPY(Coordinate_system)(&(destination->coordinate_system),
+			&(source->coordinate_system));
+		destination->value_type=source->value_type;
+		if (element_xi_host_mesh)
+			element_xi_host_mesh->access();
+		if (destination->element_xi_host_mesh)
+			FE_mesh::deaccess(destination->element_xi_host_mesh);
+		destination->element_xi_host_mesh = element_xi_host_mesh;
+		destination->time_value_type=source->time_value_type;
+		/* replace old values_storage with new */
+		if (0<destination->number_of_values)
+		{
+			free_value_storage_array(destination->values_storage,
+				destination->value_type,(struct FE_time_sequence *)NULL,
+				destination->number_of_values);
+			DEALLOCATE(destination->values_storage);
+		}
+		destination->number_of_values=source->number_of_values;
+		destination->values_storage=values_storage;
+		/* replace old times with new */
+		if (0<destination->number_of_times)
+		{
+			free_value_storage_array(destination->times,
+				destination->time_value_type,(struct FE_time_sequence *)NULL,
+				destination->number_of_times);
+			DEALLOCATE(destination->times);
+		}
+		destination->number_of_times=source->number_of_times;
+		destination->times=times;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_copy_without_identifier.  Invalid argument(s)");
-		return_code=0;
+			"FE_field_copy_without_identifier.  Invalid source field or could not copy dynamic contents");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_copy_without_identifier */
-
-int FE_field_matches_description(struct FE_field *field, const char *name,
-	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
-	int number_of_indexed_values,enum CM_field_type cm_field_type,
-	struct Coordinate_system *coordinate_system,enum Value_type value_type,
-	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type)
-/*******************************************************************************
-LAST MODIFIED : 31 August 2001
-
-DESCRIPTION :
-Returns true if <field> has exactly the same <name>, <field_info>... etc. as
-those given in the parameters.
-==============================================================================*/
-{
-	char *component_name,*field_component_name;
-	int i,return_code;
-
-	ENTER(FE_field_matches_description);
-	/* does not match until proven so */
-	return_code=0;
-	if (field&&name&&coordinate_system&&(0<=number_of_times))
+	if (!return_code)
 	{
-		if (field->name&&(0==strcmp(field->name,name))&&
-			(fe_field_type==field->fe_field_type)&&
-			((INDEXED_FE_FIELD != fe_field_type)||
-				((indexer_field==field->indexer_field)&&
-					(number_of_indexed_values==field->number_of_indexed_values)))&&
-			(cm_field_type==field->cm_field_type)&&
-			Coordinate_systems_match(&(field->coordinate_system),coordinate_system)&&
-			(value_type == field->value_type)&&
-			(number_of_components==field->number_of_components)&&
-			(number_of_times==field->number_of_times)&&
-			(time_value_type == field->time_value_type))
+		if (component_names)
 		{
-			/* matches until disproven */
-			return_code=1;
-			/* check the component names match */
-			i=number_of_components;
-			while ((i>0)&&return_code)
+			for (int i=0;i<source->number_of_components;i++)
 			{
-				i--;
-				if ((field_component_name=
-					get_automatic_component_name(field->component_names,i))&&
-					(component_name=get_automatic_component_name(component_names,i)))
+				if (component_names[i])
 				{
-					if (strcmp(component_name,field_component_name))
-					{
-						return_code=0;
-					}
-					DEALLOCATE(component_name);
+					DEALLOCATE(component_names[i]);
 				}
-				else
-				{
-					return_code=0;
-				}
-				DEALLOCATE(field_component_name);
 			}
+			DEALLOCATE(component_names);
+		}
+		if (values_storage)
+		{
+			free_value_storage_array(values_storage,source->value_type,
+				(struct FE_time_sequence *)NULL,source->number_of_values);
+			DEALLOCATE(values_storage);
+		}
+		if (times)
+		{
+			free_value_storage_array(times,source->time_value_type,
+				(struct FE_time_sequence *)NULL,source->number_of_times);
+			DEALLOCATE(times);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_matches_description.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_field_matches_description */
+}
 
 bool FE_fields_match_fundamental(struct FE_field *field1,
 	struct FE_field *field2)
 {
-	if (field1 && field2)
+	if (!(field1 && field2))
 	{
-		return
-			(field1->value_type == field2->value_type) &&
-			(field1->fe_field_type == field2->fe_field_type) &&
-			(field1->number_of_components == field2->number_of_components) &&
-			(0 != Coordinate_systems_match(&(field1->coordinate_system),
-				&(field2->coordinate_system)));
+		display_message(ERROR_MESSAGE,
+			"FE_fields_match_fundamental.  Missing field(s)");
+		return false;
 	}
-	display_message(ERROR_MESSAGE,
-		"FE_fields_match_fundamental.  Missing field(s)");
-	return false;
+	if (!((field1->value_type == field2->value_type)
+		&& (field1->fe_field_type == field2->fe_field_type)
+		&& (field1->number_of_components == field2->number_of_components)
+		&& (0 != Coordinate_systems_match(&(field1->coordinate_system),
+			&(field2->coordinate_system)))))
+		return false;
+	if (ELEMENT_XI_VALUE == field1->value_type)
+	{
+		if (!field1->element_xi_host_mesh)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_fields_match_fundamental.  Source element xi field %s does not have a host mesh", field1->name);
+			return false;
+		}
+		// This will need to be improved once multiple meshes or meshes from different regions are allowed:
+		if (field1->element_xi_host_mesh->getDimension() != field2->element_xi_host_mesh->getDimension())
+			return false;
+	}
+	return true;
 }
 
 bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
@@ -7668,39 +7637,29 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 	return (return_code);
 }/* set_FE_field_value_type */
 
-int FE_field_get_element_xi_mesh_dimension(struct FE_field *field)
+const FE_mesh *FE_field_get_element_xi_host_mesh(struct FE_field *field)
 {
-	int element_xi_mesh_dimension;
-	if (field && (field->value_type == ELEMENT_XI_VALUE))
-	{
-		element_xi_mesh_dimension = field->element_xi_mesh_dimension;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_value_type.  Invalid argument(s)");
-		element_xi_mesh_dimension = 0;
-	}
-	return element_xi_mesh_dimension;
+	if (field)
+		return field->element_xi_host_mesh;
+	return 0;
 }
 
-int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
-	int mesh_dimension)
+int FE_field_set_element_xi_host_mesh(struct FE_field *field,
+	const FE_mesh *hostMesh)
 {
-	int return_code;
-	if (field && (field->value_type == ELEMENT_XI_VALUE) &&
-		(0 <= mesh_dimension) && (mesh_dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (!((field) && (field->value_type == ELEMENT_XI_VALUE) && (hostMesh)
+		&& (hostMesh->get_FE_region() == field->info->fe_region))) // Current limitation of same region can be removed later
 	{
-		field->element_xi_mesh_dimension = mesh_dimension;
-		return_code = 1;
+		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	if (field->element_xi_host_mesh)
 	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_value_type.  Invalid argument(s)");
-		return_code = 0;
+		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Host mesh is already set");
+		return CMZN_ERROR_ALREADY_EXISTS;
 	}
-	return return_code;
+	field->element_xi_host_mesh = hostMesh->access();
+	return CMZN_OK;
 }
 
 struct FE_node_field_info_get_highest_node_derivative_and_version_data
@@ -10892,52 +10851,47 @@ int set_FE_nodal_element_xi_value(struct FE_node *node,
 {
 	int return_code = 0;
 	int dimension = 0;
-	if (node && field && (field->value_type == ELEMENT_XI_VALUE) &&
+	// now require host mesh to be set; legacy inputs must ensure set with first element
+	if (node && field && (field->value_type == ELEMENT_XI_VALUE) && (field->element_xi_host_mesh) &&
 		(0 <= component_number) && (component_number < field->number_of_components) &&
 		(0 <= version) && ((!element) || ((0 < (dimension = element->getDimension())) && xi)))
 	{
-		// GRC maintain fixed dimension here:
-		if ((!element) || (0 == field->element_xi_mesh_dimension) ||
-			(dimension == field->element_xi_mesh_dimension))
+		if (element && (!field->element_xi_host_mesh->containsElement(element)))
 		{
-			Value_storage *values_storage = 0;
-			FE_time_sequence *time_sequence = 0;
-			/* get the values storage */
-			if (find_FE_nodal_values_storage_dest(node,field,component_number,
-				version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  %d-D element %d is not from host mest %s for field %s ",
+				dimension, element->getIdentifier(), field->element_xi_host_mesh->getName(), field->name);
+			return 0;
+		}
+		Value_storage *values_storage = 0;
+		FE_time_sequence *time_sequence = 0;
+		/* get the values storage */
+		if (find_FE_nodal_values_storage_dest(node,field,component_number,
+			version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+		{
+			/* copy in the element_xi_value */
+			REACCESS(FE_element)((struct FE_element **)values_storage, element);
+			values_storage += sizeof(struct FE_element *);
+			for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
 			{
-				/* copy in the element_xi_value */
-				REACCESS(FE_element)((struct FE_element **)values_storage, element);
-				values_storage += sizeof(struct FE_element *);
-				for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+				if (i < dimension)
 				{
-					if (i < dimension)
-					{
-						*((FE_value *)values_storage) = xi[i];
-					}
-					else
-					{
-						/* set spare xi values to 0 */
-						*((FE_value *)values_storage) = 0.0;
-					}
-					values_storage += sizeof(FE_value);
+					*((FE_value *)values_storage) = xi[i];
 				}
-				/* avoid notifying changes to non-managed nodes */
-				if (node->fields->fe_nodeset->containsNode(node))
-					node->fields->fe_nodeset->nodeFieldChange(node, field);
-				return_code=1;
+				else
+				{
+					/* set spare xi values to 0 */
+					*((FE_value *)values_storage) = 0.0;
+				}
+				values_storage += sizeof(FE_value);
 			}
-			else
-			{
-				return_code=0;
-			}
+			/* avoid notifying changes to non-managed nodes */
+			if (node->fields->fe_nodeset->containsNode(node))
+				node->fields->fe_nodeset->nodeFieldChange(node, field);
+			return_code=1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
-				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
-				field->name, field->element_xi_mesh_dimension, dimension, element->getIdentifier());
-			return_code = 0;
+			return_code=0;
 		}
 	}
 	else

@@ -390,11 +390,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
  * coordinate chart.
  *
  * @param fieldmodule  Region field module which will own new field.
- * @param mesh  The mesh for which locations are stored.
+ * @param host_mesh  The host mesh for which locations are stored. Currently
+ * limited to a mesh from the same region. Note that if a mesh group is passed,
+ * the master mesh is used.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
-	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id mesh);
+	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id host_mesh);
 
 /**
  * If the field is stored_mesh_location type, return type-specific handle to it.

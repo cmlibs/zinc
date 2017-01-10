@@ -484,103 +484,6 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 	return (fe_field);
 }
 
-struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field, int number_of_indexed_values,
-	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
-	enum Value_type value_type, int number_of_components, char **component_names,
-	int number_of_times, enum Value_type time_value_type)
-{
-	char *component_name;
-	int i;
-	struct FE_field *fe_field;
-
-	ENTER(FE_region_get_FE_field_with_properties);
-	fe_field = (struct FE_field *)NULL;
-	if (fe_region && name && coordinate_system && (0 < number_of_components))
-	{
-		/* search the FE_region for a field of that name */
-		fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
-			fe_region->fe_field_list);
-		if (fe_field)
-		{
-			/* make sure the field matches in every way */
-			if (!FE_field_matches_description(fe_field, name, fe_field_type,
-				indexer_field, number_of_indexed_values, cm_field_type,
-				coordinate_system, value_type, number_of_components, component_names,
-				number_of_times, time_value_type))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_get_FE_field_with_properties.  "
-					"Inconsistent with field of same name in region");
-				fe_field = (struct FE_field *)NULL;
-			}
-		}
-		else
-		{
-			fe_field = CREATE(FE_field)(name, fe_region);
-			if (fe_field &&
-				set_FE_field_value_type(fe_field, value_type) &&
-				set_FE_field_number_of_components(fe_field, number_of_components) &&
-				((CONSTANT_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_constant(fe_field)) &&
-				((GENERAL_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_general(fe_field)) &&
-				((INDEXED_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_indexed(fe_field,
-						indexer_field,number_of_indexed_values)) &&
-				set_FE_field_CM_field_type(fe_field, cm_field_type) &&
-				set_FE_field_coordinate_system(fe_field, coordinate_system) &&
-				set_FE_field_time_value_type(fe_field, time_value_type) &&
-				set_FE_field_number_of_times(fe_field, number_of_times))
-			{
-				if (component_names)
-				{
-					for (i = 0; (i < number_of_components) && fe_field; i++)
-					{
-						component_name = component_names[i];
-						if (component_name)
-						{
-							if (!set_FE_field_component_name(fe_field, i, component_name))
-							{
-								DESTROY(FE_field)(&fe_field);
-								fe_field = (struct FE_field *)NULL;
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				DESTROY(FE_field)(&fe_field);
-				fe_field = (struct FE_field *)NULL;
-			}
-			if (fe_field)
-			{
-				if (!FE_region_merge_FE_field(fe_region, fe_field))
-				{
-					DESTROY(FE_field)(&fe_field);
-					fe_field = (struct FE_field *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_get_FE_field_with_properties.  "
-					"Could not create new field");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_get_FE_field_with_properties.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (fe_field);
-}
-
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field)
 {
@@ -1262,75 +1165,49 @@ struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region)
 }
 
 /**
- * FE_field iterator version of FE_region_merge_FE_field.
- * Assumed to be called from FE_region_merge since transfers ownership of new
- * field so source region is consumed / made unusable in the process. 
+ * Finds or creates a new field in FE_region matching the supplied one,
+ * converting all indexer fields and host meshes.
+ * FE_field iterator assumed to be called from FE_region_merge, and
+ * assumes that FE_region_can_merge has passed.
  */
-static int FE_field_merge_into_FE_region(struct FE_field *fe_field,
+static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 	void *fe_region_void)
 {
-	int return_code = 1;
 	FE_region *fe_region = reinterpret_cast<struct FE_region *>(fe_region_void);
-	if (fe_field && fe_region)
+	if (!(sourceField && fe_region))
 	{
-		FE_field *indexer_fe_field = 0;
-		/* if the field is indexed, the indexer field needs to be merged first,
-			 and the merged indexer field substituted */
-		if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(fe_field))
-		{
-			int number_of_indexed_values;
-			if (get_FE_field_type_indexed(fe_field,
-				&indexer_fe_field, &number_of_indexed_values))
-			{
-				char *indexer_fe_field_name;
-				if (GET_NAME(FE_field)(indexer_fe_field, &indexer_fe_field_name))
-				{
-					if (FE_field_merge_into_FE_region(indexer_fe_field, fe_region_void))
-					{
-						/* get the merged indexer field */
-						if (!(indexer_fe_field = FE_region_get_FE_field_from_name(fe_region,
-							indexer_fe_field_name)))
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-					DEALLOCATE(indexer_fe_field_name);
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* change fe_field to belong to <fe_region>;
-				 substitute the indexer field if required */
-			if (!(FE_field_set_FE_field_info(fe_field,
-				FE_region_get_FE_field_info(fe_region)) &&
-				((!indexer_fe_field) ||
-					FE_field_set_indexer_field(fe_field, indexer_fe_field)) &&
-				FE_region_merge_FE_field(fe_region, fe_field)))
-			{
-				return_code = 0;
-			}
-		}
+		display_message(ERROR_MESSAGE, "FE_field_merge_into_FE_region.  Invalid argument(s)");
+		return 0;
 	}
-	else
+	// if target field exists, assume it has passed FE_region_can_merge
+	const char *fieldName = get_FE_field_name(sourceField);
+	FE_field *targetField = FE_region_get_FE_field_from_name(fe_region, fieldName);
+	if (targetField)
+		return 1;
+
+	FE_field_type feFieldType = get_FE_field_FE_field_type(sourceField);
+	Value_type valueType = get_FE_field_value_type(sourceField);
+	if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(sourceField))
+	{
+		// must merge indexer field first
+		FE_field *indexerField;
+		int number_of_indexed_values = 0;
+		if (!(get_FE_field_type_indexed(sourceField, &indexerField, &number_of_indexed_values)
+			&& FE_field_merge_into_FE_region(indexerField, fe_region_void)))
+			return 0;
+	}
+	targetField = CREATE(FE_field)(fieldName, fe_region);
+	if (!(FE_field_copy_without_identifier(targetField, sourceField) &&
+		ADD_OBJECT_TO_LIST(FE_field)(targetField, fe_region->fe_field_list)))
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_merge_into_FE_region.  Invalid argument(s)");
-		return_code = 0;
+			"FE_field_merge_into_FE_region.  Failed to create field %s for target region", fieldName);
+		DESTROY(FE_field)(&targetField);
+		return 0;
 	}
-	return (return_code);
+	fe_region->FE_field_change(targetField, CHANGE_LOG_OBJECT_ADDED(FE_field));
+	fe_region->update();
+	return 1;
 }
 
 bool FE_region_can_merge(struct FE_region *target_fe_region,
