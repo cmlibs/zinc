@@ -143,7 +143,7 @@ public:
 		nodeChange(get_FE_node_index(node), DS_LABEL_CHANGE_TYPE_REMOVE, node);
 	}
 
-	FE_region *get_FE_region()
+	FE_region *get_FE_region() const
 	{
 		return this->fe_region;
 	}

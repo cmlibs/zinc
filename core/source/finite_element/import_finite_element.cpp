@@ -8,7 +8,6 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <cmath>
 #include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
@@ -24,1596 +23,1740 @@
 #include "general/mystring.h"
 #include "general/message.h"
 
+#include <cmath>
 #include <ctype.h>
+#include <map>
+#include <string>
+#include <vector>
 
 /*
 Module types
 ------------
 */
 
-/*
-Module functions
-----------------
-*/
+namespace {
 
-static int read_element_xi_value(struct IO_stream *input_file,
-	struct cmzn_region *root_region, struct cmzn_region *current_region,
-	struct FE_element **element_address, FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 27 May 2003
-
-DESCRIPTION :
-Reads an element:xi position in from the <input_file> in the format:
-[REGION_PATH] E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION
-xi1 xi2... xiDIMENSION
-The REGION_PATH is the path relative to the <root_region>, using forward slashes
-for separators, to the cmiss_region containing the fe_region the element is in.
-Omitting the region path is equivalent to having a "/" and means the fe_region
-is in the root_region itself. The REGION_PATH must end in
-<xi> should have space for up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values.
-==============================================================================*/
+class KeyValueMap
 {
-	char *location;
-	int dimension, k, return_code;
-	struct cmzn_region *region;
-	struct FE_element *element;
-	struct FE_region *fe_region;
+	// pairs of key and value
+	std::vector<const char *> strings;
+	std::vector<int> stringsUsed;
 
-	ENTER(read_element_xi_value);
-	if (input_file && root_region && element_address && xi)
+public:
+	~KeyValueMap()
 	{
-		return_code = 1;
-		/* determine the region path, element type and element number. First read
-			 two strings and determine if the second is a number, in which case the
-			 region path is omitted */
-		region = (struct cmzn_region *)NULL;
+		for (auto iter = this->strings.begin(); iter != this->strings.end(); ++iter)
+			DEALLOCATE(*iter);
+	}
+
+	/** Adds key value pair to map, if key does not exist already.
+	  * On success, takes ownership of strings passed ing.
+	  * @return  True if succeeded, false if key exists already */
+	bool addKeyValue(const char *key, const char *value)
+	{
+		if ((!key) || (!value) || getKeyValue(key))
+			return false;
+		const size_t count = this->strings.size();
+		this->strings.resize(count + 2);
+		this->strings[count] = key;
+		this->strings[count + 1] = value;
+		this->stringsUsed.push_back(0);
+		return true;
+	}
+
+	/** @return  Value for key, or 0 if none. Do not deallocate. */
+	const char *getKeyValue(const char *key)
+	{
+		const size_t count = this->strings.size() / 2;
+		for (size_t i = 0; i < count; ++i)
+			if (0 == strcmp(key, this->strings[i*2]))
+			{
+				this->stringsUsed[i] = 1;
+				return this->strings[i*2 + 1];
+			}
+		return 0;
+	}
+
+	bool hasUnusedKeyValues() const
+	{
+		const size_t count = this->strings.size() / 2;
+		for (int i = 0; i < count; ++i)
+			if (!this->stringsUsed[i])
+				return true;
+		return false;
+	}
+
+	void reportUnusedKeyValues(const char *prefix) const
+	{
+		const size_t count = this->strings.size() / 2;
+		for (int i = 0; i < count; ++i)
+			if (!this->stringsUsed[i])
+			{
+				display_message(WARNING_MESSAGE, "%sIgnoring unrecognised key value pair (invalid or from newer version): %s=%s",
+					prefix, this->strings[i*2], this->strings[i*2 + 1]);
+			}
+	}
+};
+
+
+class NodeDerivativesVersions
+{
+	std::vector<FE_nodal_value_type> derivatives;
+	std::vector<int> versionCounts;
+	// mapping from derivative index to Zinc internal storage index, with value first
+	std::vector<int> derivativeOffsets;
+
+public:
+
+	/** For exVersion < 2 only. Call once after all derivatives added with 1
+	* version each) to set same number of versions for all derivatives.
+	* Remember than in the old format parameters are nested by derivatives within versions.
+	* Note the first derivative must have been value!
+	* @return  True on success, false if first derivative is not value, if
+	* more than one version already specified for derivatives or versionCount < 1 */
+	bool setLegacyAllDerivativesVersionCount(int versionCount)
+	{
+		if ((this->derivatives.size() < 1)
+			|| (this->derivatives[0] != FE_NODAL_VALUE)
+			|| (versionCount < 1)
+			|| (this->getMaximumVersionCount() > 1))
+			return false;
+		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
+			*iter = versionCount;
+		return true;
+	}
+
+	/** @return  True if added, false if invalid derivative, versionCount < 1 or derivative already used */
+	bool addDerivative(FE_nodal_value_type derivative, int versionCount)
+	{
+		if ((derivative < FE_NODAL_VALUE)
+			|| (derivative > FE_NODAL_D3_DS1DS2DS3)
+			|| (versionCount < 1)
+			|| (getDerivativeVersionCount(derivative) > 0))
+			return false;
+		this->derivatives.push_back(derivative);
+		this->versionCounts.push_back(versionCount);
+		return true;
+	}
+
+	int getDerivativeVersionCount(FE_nodal_value_type derivative)
+	{
+		const size_t derivativesCount = this->derivatives.size();
+		for (size_t d = 0; d < derivativesCount; ++d)
+			if (this->derivatives[d] == derivative)
+				return this->versionCounts[d];
+		return 0;
+	}
+
+	int getMaximumVersionCount() const
+	{
+		int maximumVersionCount = 0;
+		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
+			if (*iter > maximumVersionCount)
+				maximumVersionCount = *iter;
+		return maximumVersionCount;
+	}
+
+	/** @return  The number of derivatives/value types. */
+	int getDerivativeTypeCount() const
+	{
+		return static_cast<int>(this->derivatives.size());
+	}
+
+	FE_nodal_value_type getDerivativeTypeAndVersionCountAtIndex(int index, int& versionCount) const
+	{
+		versionCount = this->versionCounts[index];
+		return this->derivatives[index];
+	}
+
+	/** @return  The sum of versionCounts for all derivative types. */
+	int getValueCount() const
+	{
+		int valueCount = 0;
+		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
+			valueCount += *iter;
+		return valueCount;
+	}
+
+	/** Call after fully set up to calculate legacy internal offsets for storing derivatives, with value first */
+	void calculateDerivativeOffsets()
+	{
+		const size_t derivativesCount = this->derivatives.size();
+		this->derivativeOffsets.resize(derivativesCount);
+		int offset = 0;
+		for (size_t d = 0; d < derivativesCount; ++d)
+			if (this->derivatives[d] == FE_NODAL_VALUE)
+			{
+				this->derivativeOffsets[d] = 0;
+				++offset;
+				break;
+			}
+		for (size_t d = 0; d < derivativesCount; ++d)
+			if (this->derivatives[d] != FE_NODAL_VALUE)
+			{
+				this->derivativeOffsets[d] = offset;
+				++offset;
+			}
+	}
+
+	int getDerivativeOffsetAtIndex(int index) const
+	{
+		return this->derivativeOffsets[index];
+	}
+};
+
+}
+
+class EXReader
+{
+	int exVersion;
+	IO_stream *input_file;
+	FE_import_time_index *timeIndex;
+	FE_region *fe_region;
+	FE_mesh *mesh;
+	FE_nodeset *nodeset;
+	// cache of latest node and element field header
+	FE_node_template *node_template;
+	FE_element_template *element_template;
+	std::map<FE_field *, std::vector<NodeDerivativesVersions> > nodeFieldComponentDerivativeVersions;
+	FE_field_order_info *field_order_info;
+	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
+
+public:
+	/** @param timeIndexIn  Optional, specifies time to define field at. */
+	EXReader(IO_stream *input_fileIn, FE_import_time_index *timeIndexIn) :
+		exVersion(1),
+		input_file(input_fileIn),
+		timeIndex(timeIndexIn),
+		fe_region(0),
+		mesh(0),
+		nodeset(0),
+		node_template(0),
+		element_template(0),
+		field_order_info(0),
+		fileLocation(0)
+	{
+	}
+
+	~EXReader()
+	{
+		this->clearHeaderCache();
+		if (this->fileLocation)
+			DEALLOCATE(this->fileLocation);
+	}
+
+	void clearHeaderCache()
+	{
+		cmzn::Deaccess(this->node_template);
+		cmzn::Deaccess(this->element_template);
+		nodeFieldComponentDerivativeVersions.clear();
+		if (this->field_order_info)
+			DESTROY(FE_field_order_info)(&this->field_order_info);
+	}
+
+	/** Switch to writing elements from mesh */
+	void setMesh(FE_mesh *meshIn)
+	{
+		this->mesh = meshIn;
+		this->fe_region = this->mesh->get_FE_region();
+		this->nodeset = 0;
+		this->clearHeaderCache();
+	}
+
+	/** Switch to writing nodes from nodeset */
+	void setNodeset(FE_nodeset *nodesetIn)
+	{
+		this->mesh = 0;
+		this->nodeset = nodesetIn;
+		this->fe_region = this->nodeset->get_FE_region();
+		this->clearHeaderCache();
+	}
+
+	bool readFieldValues();
+	bool readNodeHeader();
+	cmzn_node *readNode();
+
+private:
+	const char *getFileLocation()
+	{
+		if (this->fileLocation)
+			DEALLOCATE(this->fileLocation);
+		this->fileLocation = IO_stream_get_location_string(this->input_file);
+		return this->fileLocation;
+	}
+
+	int readNextNonSpaceChar()
+	{
+		int next_char;
+		do
+		{
+			next_char = IO_stream_getc(this->input_file);
+		} while (next_char == ' ');
+		return next_char;
+	}
+
+#if 0 // GRC
+	int getEXVersion(int exVersionIn) const
+	{
+		return this->exVersion;
+	}
+
+	void setEXVersion(int exVersionIn)
+	{
+		this->exVersion = exVersionIn;
+	}
+#endif
+	bool readKeyValueMap(KeyValueMap& keyValueMap);
+	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
+	char *readString();
+	FE_field *readField();
+	bool readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions);
+	bool readNodeHeaderField();
+};
+
+/**
+ * Read any text matching key=value, separated by commas to the end of the line.
+ * Keys may contain any characters including spaces, but leading and trailing
+ * whitespace is trimmed. This must be followed by '=' then a string read by
+ * EXReader::readString.
+ * @param keyValueMap  The key value map structure to fill. Expected to be empty.
+ * @return  True on success, false on failure.
+ */
+bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap)
+{
+	char *key;
+	while (true)
+	{
+		if (!IO_stream_read_string(this->input_file, "[^=\n\r]", &key))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read key=value key.  %s", this->getFileLocation());
+			return false;
+		}
+		trim_string_in_place(key);
+		int next_char = IO_stream_getc(this->input_file);
+		if ((next_char != (int)'=') || (strlen(key) == 0))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing key=value pair.  %s", this->getFileLocation());
+			DEALLOCATE(key);
+			return false;
+		}
+		// note string value can be on next line
+		char *value = this->readString();
+		if (!value)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing value for key=value pair.  %s", this->getFileLocation());
+			DEALLOCATE(key);
+			return false;
+		}
+		if (!keyValueMap.addKeyValue(key, value))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Duplicate key in key=value list.  %s", this->getFileLocation());
+			DEALLOCATE(key);
+			DEALLOCATE(value);
+			return false;
+		}
+		next_char = this->readNextNonSpaceChar();
+		if (next_char != (int)',')
+			break;
+	}
+	return true;
+}
+
+/**
+ * Reads an element:xi location from the stream. From version 2 the format is:
+ * ELEMENT_NUMBER xi1 xi2... xiDIMENSION
+ * and the host mesh must have been specified in the field header.
+ * The format for earlier versions is:
+ * [REGION_PATH] E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
+ * The optional region path is in fact ignored; only a mesh from the current
+ * region can be used as the host and this determined from the first element
+ * if not specified in the header.
+ * @param element  On successful return, and non-accessed element or 0 if none.
+ * @param xi   Must have enough space for the dimension of the host mesh, or
+ * up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values in the earlier format.
+ */
+bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi)
+{
+	if (!(field && xi))
+	{
+		display_message(ERROR_MESSAGE, "EXReader::readElementXiValue.  Invalid argument(s)");
+		return false;
+	}
+	// const_cast is dirty, but mesh is constant as far as field is concerned,
+	// however this function can create blank elements in mesh
+	FE_mesh *hostMesh = const_cast<FE_mesh*>(FE_field_get_element_xi_host_mesh(field));
+	DsLabelIdentifier elementIdentifier;
+	if (this->exVersion >= 2)
+	{
+		if (1 != IO_stream_scan(this->input_file, " %d", &elementIdentifier))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing element number in element:xi value.  %s", this->getFileLocation());
+			return false;
+		}
+	}
+	else
+	{
+		bool success = true;
+		// determine the region path, element type and element number. First read
+		// two strings and determine if the second is a number, in which case the
+		// region path is omitted
+		cmzn_region *region = 0;
 		char *whitespace_string = 0;
 		char *first_string = 0;
 		char *separator_string = 0;
 		char *second_string = 0;
-		int identifier;
-		IO_stream_read_string(input_file, "[ \n\r\t]", &whitespace_string);
-		if (IO_stream_read_string(input_file, "[^ \n\r\t]", &first_string) &&
-			IO_stream_read_string(input_file, "[ \n\r\t]", &separator_string) &&
-			IO_stream_read_string(input_file, "[^ \n\r\t]", &second_string))
+		IO_stream_read_string(this->input_file, "[ \n\r\t]", &whitespace_string);
+		if (IO_stream_read_string(this->input_file, "[^ \n\r\t]", &first_string) &&
+			IO_stream_read_string(this->input_file, "[ \n\r\t]", &separator_string) &&
+			IO_stream_read_string(this->input_file, "[^ \n\r\t]", &second_string))
 		{
 			char *element_type_string = 0;
-			/* first determine the element_number, which is in the second_string
-				 if the region path has been omitted, otherwise next in the file */
-			if (1 == sscanf(second_string, " %d", &identifier))
+			// first determine the element_number, which is in the second_string
+			// if the region path has been omitted, otherwise next in the file
+			if (1 == sscanf(second_string, " %d", &elementIdentifier))
 			{
 				// Note default changed from root_region to current_region
-				region = current_region;
+				region = FE_region_get_cmzn_region(this->fe_region);
 				element_type_string = first_string;
 			}
-			else if (1 == IO_stream_scan(input_file, " %d", &identifier))
+			else if (1 == IO_stream_scan(this->input_file, " %d", &elementIdentifier))
 			{
-				if (cmzn_region_get_region_from_path_deprecated(root_region, first_string,
-					&region) && region)
-				{
-					element_type_string = second_string;
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Invalid region path %s in element:xi value.  %s",
-						first_string, location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
+				display_message(WARNING_MESSAGE, "EX Reader.  Ignoring region path in legacy element:xi field %s values", get_FE_field_name(field));
+				element_type_string = second_string;
 			}
 			else
 			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"Missing element number in element:xi value.  %s",
-					location);
-				DEALLOCATE(location);
-				return_code = 0;
+				display_message(ERROR_MESSAGE, "EX Reader.  Missing element number in legacy element:xi value.  %s", this->getFileLocation());
+				success = false;
 			}
-			/* determine the element_type. Redundant since elements stored by dimension */
 			if (element_type_string)
 			{
-				if (fuzzy_string_compare(element_type_string, "element"))
+				// element type is redundant since sufficient to read dimension which follows element number
+				if (!(fuzzy_string_compare(element_type_string, "element")
+					|| fuzzy_string_compare(element_type_string, "face")
+					|| fuzzy_string_compare(element_type_string, "line")))
 				{
-				}
-				else if (fuzzy_string_compare(element_type_string, "face"))
-				{
-				}
-				else if (fuzzy_string_compare(element_type_string, "line"))
-				{
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Unknown element type %s for element_xi value.  %s",
-						element_type_string, location);
-					DEALLOCATE(location);
-					return_code = 0;
+					display_message(ERROR_MESSAGE, "Unknown legacy element type %s for element_xi value.  %s",
+						element_type_string, this->getFileLocation());
+					success = false;
 				}
 			}
 		}
 		else
 		{
-			location = IO_stream_get_location_string(input_file);
+			char *location = IO_stream_get_location_string(this->input_file);
 			display_message(ERROR_MESSAGE,
-				"Missing region path, element type or number in element:xi value.  "
-				"%s", location);
-			DEALLOCATE(location)
-			return_code = 0;
+				"Missing legacy region path, element type or number in element:xi value.  %s", this->getFileLocation());
+			DEALLOCATE(location);
+			success = false;
 		}
 		DEALLOCATE(second_string);
 		DEALLOCATE(separator_string);
 		DEALLOCATE(first_string);
 		DEALLOCATE(whitespace_string);
-		if (return_code)
+		if (!success)
+			return false;
+		int dimension;
+		if ((1 != IO_stream_scan(this->input_file, " %d", &dimension)) || (dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{
-			if (NULL != (fe_region = cmzn_region_get_FE_region(region)))
-			{
-				element = (struct FE_element *)NULL;
-				if ((1 == IO_stream_scan(input_file, " %d", &dimension)) && (0 < dimension))
-				{
-					/* get existing element and check it has the dimension, or create
-						 a dummy element with unspecified shape and the dimension */
-					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
-					if (fe_mesh && (NULL != (element = fe_mesh->get_or_create_FE_element_with_identifier(
-						identifier, static_cast<FE_element_shape *>(0)))))
-					{
-						*element_address = element;
-						DEACCESS(FE_element)(&element);
-						/* now read the xi position */
-						for (k = 0; (k < dimension) && return_code; k++)
-						{
-							if (1 == IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &(xi[k])))
-							{
-								if (!finite(xi[k]))
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Infinity or NAN xi coordinates read from file.  %s",
-										location);
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Missing %d xi value(s).  %s",
-									dimension - k, location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE, "read_element_xi_value.  "
-							"Could not get or create element.  %s",
-							location);
-						DEALLOCATE(location);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE, "Error reading dimension.  %s",
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"cmzn region does not contain a finite element region.  %s", location);
-				DEALLOCATE(location);
-				return_code = 0;
-			}
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid or missing element dimension in legacy element:xi value.  %s", this->getFileLocation());
+			return false;
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_element_xi_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_element_xi_value */
-
-static int read_string_value(struct IO_stream *input_file, char **string_address)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2002
-
-DESCRIPTION :
-Returns an allocated string with the next contiguous block (length>0) of
-characters from input_file not containing whitespace (space, formfeed, newline,
-carriage return, tab, vertical tab). If the string begins with EITHER a single
-or double quote, ' or ", then the string must end in the same quote mark
-followed by whitespace or EOF.
-Special characters including the quote marks, $ and backslash must be preceded
-by the escape/backslash character in the input file.
-==============================================================================*/
-{
-	char *location, *the_string;
-	int allocated_length, length, quote_mark, reading_token, return_code = 0,
-		this_char;
-
-	ENTER(read_string_value);
-	if (input_file && string_address)
-	{
-		the_string = (char *)NULL;
-		allocated_length = 0; /* including space for \0 at end */
-		length = 0;
-		/* pass over leading white space */
-		while (isspace(this_char = IO_stream_getc(input_file))) {}
-		/* determine if string is in quotes and which quote_mark is in use */
-		if (((int)'\'' == this_char) || ((int)'\"' == this_char))
+		if (hostMesh)
 		{
-			quote_mark = this_char;
-			this_char = IO_stream_getc(input_file);
+			if (dimension != hostMesh->getDimension())
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Element dimension does not match host mesh; "
+					"beware element:xi fields are now limited to storing locations in one mesh, set from first element in legacy EX format.  %s",
+					this->getFileLocation());
+				return false;
+			}
 		}
 		else
 		{
-			quote_mark = 0;
+			// host mesh is set from first element
+			hostMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
+			if (!FE_field_set_element_xi_host_mesh(field, hostMesh))
+				return false;
 		}
-		reading_token = 1;
-		/* read token until [quote_mark+]EOF/whitespace */
-		while (reading_token)
-		{
-			if (EOF == this_char)
-			{
-				if (quote_mark)
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"End of file before end quote mark.  %s",
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-				if (!the_string)
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Missing string in input file.  %s",
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-				reading_token = 0;
-			}
-			else if (!quote_mark && isspace(this_char))
-			{
-				reading_token = 0;
-			}
-			else if (quote_mark && ((int)'\\' == this_char))
-			{
-				this_char = IO_stream_getc(input_file);
-				if (!(((int)'\\' == this_char) ||
-					((int)'\"' == this_char) ||
-					((int)'\'' == this_char) ||
-					((int)'$' == this_char)))
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Invalid escape sequence: \\%c.  %s", this_char,
-						location);
-					DEALLOCATE(the_string);
-					DEALLOCATE(location);
-					reading_token = 0;
-					return_code = 0;
-				}
-			}
-			else if (quote_mark && (quote_mark == this_char))
-			{
-				this_char = IO_stream_getc(input_file);
-				if ((EOF == this_char) || isspace(this_char))
-				{
-					if (!the_string)
-					{
-						/* for empty string "" or '' */
-						if (ALLOCATE(the_string, char, 1))
-						{
-							*string_address = the_string;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_string_value.  Not enough memory");
-							return_code = 0;
-						}
-					}
-					reading_token = 0;
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Must have white space after end quote.  %s",
-						location);
-					DEALLOCATE(location);
-					DEALLOCATE(the_string);
-					reading_token = 0;
-					return_code = 0;
-				}
-			}
-			if (reading_token)
-			{
-				length++;
-				/* is the current string big enough (including \0 at end)? */
-				if (allocated_length < length + 1)
-				{
-					allocated_length += 25;
-					if (REALLOCATE(*string_address, the_string, char, allocated_length))
-					{
-						the_string = *string_address;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_string_value.  Not enough memory");
-						DEALLOCATE(the_string);
-						reading_token = 0;
-						return_code = 0;
-					}
-				}
-				if (the_string)
-				{
-					the_string[length - 1] = (char)this_char;
-				}
-				this_char = IO_stream_getc(input_file);
-			}
-		}
-		if (the_string)
-		{
-			the_string[length] = '\0';
-			return_code = 1;
-		}
-		*string_address = the_string;
+	}
+	if (!hostMesh)
+	{
+		display_message(ERROR_MESSAGE, "EXReader::readElementXiValue.  Missing host mesh");
+		return false;
+	}
+	if (elementIdentifier < 0)
+	{
+		element = 0;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"read_string_value.  Invalid argument(s)");
-		return_code = 0;
+		element = hostMesh->get_or_create_FE_element_with_identifier(elementIdentifier, static_cast<FE_element_shape *>(0));
+		if (!element)
+		{
+			display_message(ERROR_MESSAGE, "EXReader::readElementXiValue.  Failed to get or create element.  %s", this->getFileLocation());
+			return false;
+		}
+		// must remove access count
+		cmzn_element *tmpElement = element;
+		cmzn_element::deaccess(tmpElement);
 	}
-	LEAVE;
+	for (int d = 0; d < hostMesh->getDimension(); ++d)
+	{
+		if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(xi[d])))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing xi value(s).  %s", this->getFileLocation());
+			return false;
+		}
+		if (!finite(xi[d]))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN xi coordinates read from file.  %s", this->getFileLocation());
+			return false;
+		}
+	}
+	return true;
+}
 
-	return (return_code);
-} /* read_string_value */
-
-static struct FE_field *read_FE_field(struct IO_stream *input_file,
-	struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 2 May 2003
-
-DESCRIPTION :
-Reads a field from its descriptor in <input_file>. Note that the same format is
-used for node and element field headers. The field is returned.
-The returned field will be "of" <fe_region>, but not in it. This means it has
-access to information such as FE_time that is private to <fe_region> and can be
-simply merged into it using FE_region_merge_FE_field.
-This approach is used because component names are set later and differently
-for node and element fields.
-==============================================================================*/
+/** 
+ * Read a string from the stream after skipping initial whitespace.
+ * Works in two modes:
+ * 1. If the first non whitespace character is a single or double quote, reads
+ * characters until the final matching quote; quotes may be in the string
+ * if preceded by the escape character \ (backslash), and a backslash itself
+ * must be escaped. For historic compatibility with make_valid_token, '\$' is
+ * read as '$' (a perl hangover from Cmgui). Can extend over multiple lines.
+ * 2. Non-quoted string is read until any of the following characters:
+ * whitespace ',' ';' '=' '\0' EOF.
+ * @see make_valid_token
+ * @return  Allocated string or 0 if failed. */
+char *EXReader::readString()
 {
-	char *field_name, *location, *next_block;
+	char *theString = 0;
+	char *whitespaceString = 0;
+	IO_stream_read_string(this->input_file, "[ \n\r\t]", &whitespaceString);
+	DEALLOCATE(whitespaceString);
+	char *quoteString = 0;
+	IO_stream_read_string(this->input_file, "[\"\']", &quoteString);
+	if (!quoteString)
+		return 0;
+	const size_t quoteStringLength = strlen(quoteString);
+	if (0 == quoteStringLength)
+	{
+		if (!(IO_stream_read_string(this->input_file, "[^ ,;=\n\r\t]", &theString) && (theString)))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read unquoted string.  %s", this->getFileLocation());
+		}
+		else if (strlen(theString) == 0)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing string.  %s", this->getFileLocation());
+			DEALLOCATE(theString);
+		}
+	}
+	else
+	{
+		const char quoteChar = quoteString[0];
+		if (quoteStringLength > 1)
+		{
+			if ((quoteString[1] != quoteChar) || (quoteStringLength > 2))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Invalid quoted string.  %s", this->getFileLocation());
+			}
+			else // empty quoted string "" or ''
+			{
+				theString = duplicate_string("");
+			}
+		}
+		else // quoted string
+		{
+			const char *format = (quoteChar == '"') ? "[^\"]" : "[^']";
+			size_t length = 0;
+			while (true)
+			{
+				char *block = 0;
+				if (!(IO_stream_read_string(this->input_file, format, &block) && (block)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read part of quoted string.  %s", this->getFileLocation());
+					if (theString)
+						DEALLOCATE(theString);
+					break;
+				}
+				int blockLength = static_cast<int>(strlen(block));
+				if (blockLength > 0)
+				{
+					// process escaped characters
+					char *dest = block;
+					for (int i = 0; i < blockLength; ++i)
+					{
+						if (block[i] == '\\')
+						{
+							++i;
+							if (i < blockLength)
+							{
+								if (block[i] == 'n')
+									*dest = '\n';
+								else if (block[i] == 't')
+									*dest = '\t';
+								else if (block[i] == 'r')
+									*dest = '\r';
+								else
+									*dest = block[i];
+							}
+							else
+							{
+								// last character is escape, so must be escaping quote_char, or end of file
+								const int this_char = IO_stream_getc(this->input_file);
+								if (this_char == (int)quoteChar)
+								{
+									*dest = quoteChar;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
+									DEALLOCATE(block);
+									break;
+								}
+							}
+						}
+						else
+						{
+							*dest = block[i];
+						}
+						++dest;
+					}
+					if (!block)
+					{
+						if (theString)
+							DEALLOCATE(theString);
+						break;
+					}
+					*dest = '\0';
+					char *tmp;
+					REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
+					if (tmp)
+					{
+						theString = tmp;
+						strcat(theString, block);
+					}
+					else
+					{
+						if (theString)
+							DEALLOCATE(theString);
+					}
+				}
+				DEALLOCATE(block);
+				if (theString == 0)
+					break;
+				length = strlen(theString);
+				if ((blockLength == 0) || (theString[length - 1] != quoteChar))
+					break;
+			}
+			if (theString)
+			{
+				// now get the end quote
+				DEALLOCATE(quoteString);
+				IO_stream_read_string(this->input_file, "[\"\']", &quoteString);
+				if ((!quoteString) || (1 != strlen(quoteString)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Missing or multiple end quotes on string.  %s", this->getFileLocation());
+					DEALLOCATE(theString);
+					return 0;
+				}
+			}
+		}
+	}
+	DEALLOCATE(quoteString);
+	return theString;
+}
+
+/**
+ * Reads a field from its description in stream. Note that the same format is
+ * used for node and element field headers.
+ * The returned field will be "of" <fe_region>, but not in it. This means it has
+ * access to information such as FE_time that is private to <fe_region> and can be
+ * simply merged into it using FE_region_merge_FE_field.
+ * This approach is used because component names are set later and differently
+ * for node and element fields.
+ * @return  Accessed and unmerged field, or 0 if failed.
+ */
+FE_field *EXReader::readField()
+{
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type = UNKNOWN_FE_FIELD;
 	enum Value_type value_type = UNKNOWN_VALUE;
 	FE_value focus;
-	int element_xi_mesh_dimension = 0;
-	int number_of_components, number_of_indexed_values, return_code;
+	const FE_mesh *elementXiHostMesh = 0;
+	int number_of_components, number_of_indexed_values;
 	struct Coordinate_system coordinate_system;
-	struct FE_field *field, *indexer_field = NULL, *temp_indexer_field;
-
-	ENTER(read_FE_field);
-	field = (struct FE_field *)NULL;
-	if (input_file && fe_region)
+	FE_field *field = 0;
+	FE_field *indexer_field = 0;
+	int return_code = 1;
+	char *field_name = 0;
+	/* read the field information */
+	IO_stream_scan(this->input_file, " %*d) ");
+	/* read the field name */
+	if (return_code)
 	{
-		return_code = 1;
-		field_name = (char *)NULL;
-		/* read the field information */
-		IO_stream_scan(input_file, " %*d) ");
-		/* read the field name */
-		if (return_code)
+		if (IO_stream_read_string(this->input_file, "[^,]", &field_name))
 		{
-			if (IO_stream_read_string(input_file, "[^,]", &field_name))
+			IO_stream_scan(this->input_file, ", ");
+			/* remove trailing blanks off field name */
+			size_t i = strlen(field_name);
+			while ((0 < i) && (isspace(field_name[i - 1])))
+				--i;
+			field_name[i] = '\0';
+			if (0 == i)
 			{
-				IO_stream_scan(input_file, ", ");
-				/* remove trailing blanks off field name */
-				size_t i = strlen(field_name);
-				while ((0 < i) && (isspace(field_name[i - 1])))
-					--i;
-				field_name[i] = '\0';
-				if (0 == i)
+				display_message(ERROR_MESSAGE, "EX Reader.  No field name.  %s", this->getFileLocation());
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing field name.  %s", this->getFileLocation());
+			return_code = 0;
+		}
+	}
+	char *next_block = 0;
+	if (return_code)
+	{
+		/* next string required for CM_field_type, below */
+		if (!IO_stream_read_string(this->input_file, "[^,]", &next_block))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s missing CM field type.  %s", field_name, this->getFileLocation());
+			return_code = 0;
+		}
+		IO_stream_scan(this->input_file, ", ");
+	}
+	/* read the CM_field_type */
+	if (return_code)
+	{
+		if (!STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s has unknown CM field type '%s'.  %s",
+				field_name, next_block, this->getFileLocation());
+			return_code = 0;
+		}
+		DEALLOCATE(next_block);
+	}
+	/* read the FE_field_information */
+	if (return_code)
+	{
+		/* next string required for value_type, below */
+		if (!IO_stream_read_string(this->input_file, "[^,]", &next_block))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s missing value type information.  %s", field_name, this->getFileLocation());
+			return_code = 0;
+		}
+		IO_stream_scan(this->input_file, ", ");
+	}
+	/* read the optional modifier: constant|indexed */
+	if (return_code)
+	{
+		if (fuzzy_string_compare_same_length(next_block, "constant"))
+		{
+			fe_field_type = CONSTANT_FE_FIELD;
+		}
+		else if (fuzzy_string_compare_same_length(next_block, "indexed"))
+		{
+			fe_field_type = INDEXED_FE_FIELD;
+			DEALLOCATE(next_block);
+			if ((EOF != IO_stream_scan(this->input_file, " Index_field = ")) &&
+				IO_stream_read_string(this->input_file, "[^,]", &next_block))
+			{
+				FE_field *indexer_field = FE_region_get_FE_field_from_name(fe_region, next_block);
+				if (!indexer_field)
 				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE, "No field name.  %s",
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
+					/* create and merge an appropriate indexer field */
+					FE_field *temp_indexer_field = CREATE(FE_field)(next_block, fe_region);
+					ACCESS(FE_field)(temp_indexer_field);
+					if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
+						set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
+						(indexer_field = FE_region_merge_FE_field(fe_region,
+							temp_indexer_field))))
+					{
+						return_code = 0;
+					}
+					DEACCESS(FE_field)(&temp_indexer_field);
+				}
+				if (return_code)
+				{
+					if (!((1 == IO_stream_scan(this->input_file, ", #Values=%d",
+						&number_of_indexed_values)) && (0 < number_of_indexed_values)))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Field %s missing number of indexed values.  %s",
+							field_name, this->getFileLocation());
+						return_code = 0;
+					}
 				}
 			}
 			else
 			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE, "Missing field name.  %s",
-					location);
-				DEALLOCATE(location);
-				return_code = 0;
-			}
-		}
-		next_block = (char *)NULL;
-		if (return_code)
-		{
-			/* next string required for CM_field_type, below */
-			if (!IO_stream_read_string(input_file, "[^,]", &next_block))
-			{
-				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing CM field type.  %s", field_name,
-					location);
-				DEALLOCATE(location);
+					"EX Reader.  Field %s missing indexing information.  %s", field_name,
+					this->getFileLocation());
 				return_code = 0;
 			}
-			IO_stream_scan(input_file, ", ");
+			IO_stream_scan(this->input_file, ", ");
 		}
-		/* read the CM_field_type */
-		if (return_code && next_block)
+		else
 		{
-			if (!STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"Field '%s' has unknown CM field type '%s'.  %s", field_name,
-					next_block, location);
-				DEALLOCATE(location);
-				return_code = 0;
-			}
+			fe_field_type = GENERAL_FE_FIELD;
 		}
-		if (next_block)
+		if (GENERAL_FE_FIELD != fe_field_type)
 		{
 			DEALLOCATE(next_block);
-			next_block = (char *)NULL;
-		}
-		/* read the FE_field_information */
-		if (return_code)
-		{
-			/* next string required for value_type, below */
-			if (!IO_stream_read_string(input_file, "[^,]", &next_block))
+			if (return_code)
 			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"Field '%s' missing field/value type.  %s", field_name,
-					location);
-				DEALLOCATE(location);
-				return_code = 0;
-			}
-			IO_stream_scan(input_file, ", ");
-		}
-		/* read the optional modifier: constant|indexed */
-		if (return_code && next_block)
-		{
-			if (fuzzy_string_compare_same_length(next_block, "constant"))
-			{
-				fe_field_type = CONSTANT_FE_FIELD;
-			}
-			else if (fuzzy_string_compare_same_length(next_block, "indexed"))
-			{
-				fe_field_type = INDEXED_FE_FIELD;
-				DEALLOCATE(next_block);
-				if ((EOF != IO_stream_scan(input_file, " Index_field = ")) &&
-					IO_stream_read_string(input_file, "[^,]", &next_block))
-				{
-					if (!(indexer_field =
-						FE_region_get_FE_field_from_name(fe_region, next_block)))
-					{
-						/* create and merge an appropriate indexer field */
-						temp_indexer_field = CREATE(FE_field)(next_block, fe_region);
-						ACCESS(FE_field)(temp_indexer_field);
-						if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
-							set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
-							(indexer_field = FE_region_merge_FE_field(fe_region,
-								temp_indexer_field))))
-						{
-							return_code = 0;
-						}
-						DEACCESS(FE_field)(&temp_indexer_field);
-					}
-					if (return_code)
-					{
-						if (!((1 == IO_stream_scan(input_file, ", #Values=%d",
-							&number_of_indexed_values)) && (0 < number_of_indexed_values)))
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Field '%s' missing number of indexed values.  %s",
-								field_name, location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Field '%s' missing indexing information.  %s", field_name,
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-				IO_stream_scan(input_file, ", ");
-			}
-			else
-			{
-				fe_field_type = GENERAL_FE_FIELD;
-			}
-			if (GENERAL_FE_FIELD != fe_field_type)
-			{
-				DEALLOCATE(next_block);
-				if (return_code)
-				{
-					/* next string required for coordinate system or value_type */
-					return_code = IO_stream_read_string(input_file, "[^,]", &next_block);
-					IO_stream_scan(input_file, ", ");
-				}
+				/* next string required for coordinate system or value_type */
+				return_code = IO_stream_read_string(this->input_file, "[^,]", &next_block);
+				IO_stream_scan(this->input_file, ", ");
 			}
 		}
-		else
+	}
+	/* read the coordinate system (optional) */
+	coordinate_system.type = NOT_APPLICABLE;
+	if (return_code)
+	{
+		if (fuzzy_string_compare_same_length(next_block,
+			"rectangular cartesian"))
 		{
-			if (next_block)
+			coordinate_system.type = RECTANGULAR_CARTESIAN;
+		}
+		else if (fuzzy_string_compare_same_length(next_block,
+			"cylindrical polar"))
+		{
+			coordinate_system.type = CYLINDRICAL_POLAR;
+		}
+		else if (fuzzy_string_compare_same_length(next_block,
+			"spherical polar"))
+		{
+			coordinate_system.type = SPHERICAL_POLAR;
+		}
+		else if (fuzzy_string_compare_same_length(next_block,
+			"prolate spheroidal"))
+		{
+			coordinate_system.type = PROLATE_SPHEROIDAL;
+			IO_stream_scan(this->input_file, " focus=");
+			if ((1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &focus)) ||
+				(!finite(focus)))
 			{
-				DEALLOCATE(next_block);
+				focus = 1.0;
+			}
+			coordinate_system.parameters.focus = focus;
+			IO_stream_scan(this->input_file, " ,");
+		}
+		else if (fuzzy_string_compare_same_length(next_block,
+			"oblate spheroidal"))
+		{
+			coordinate_system.type = OBLATE_SPHEROIDAL;
+			IO_stream_scan(this->input_file," focus=");
+			if ((1 != IO_stream_scan(this->input_file,FE_VALUE_INPUT_STRING, &focus)) ||
+				(!finite(focus)))
+			{
+				focus = 1.0;
+			}
+			coordinate_system.parameters.focus = focus;
+			IO_stream_scan(this->input_file, " ,");
+		}
+		else if (fuzzy_string_compare_same_length(next_block,
+			"fibre"))
+		{
+			coordinate_system.type = FIBRE;
+			value_type = FE_VALUE_VALUE;
+		}
+		if (NOT_APPLICABLE != coordinate_system.type)
+		{
+			DEALLOCATE(next_block);
+			if (return_code)
+			{
+				/* next string required for value_type, below */
+				return_code = IO_stream_read_string(this->input_file, "[^,\n\r]", &next_block);
+				IO_stream_scan(this->input_file, ", ");
 			}
 		}
-		/* read the coordinate system (optional) */
-		coordinate_system.type = NOT_APPLICABLE;
-		if (return_code && next_block)
+	}
+	/* read the value_type */
+	if (return_code)
+	{
+		value_type = Value_type_from_string(next_block);
+		if (UNKNOWN_VALUE == value_type)
 		{
-			if (fuzzy_string_compare_same_length(next_block,
-				"rectangular cartesian"))
+			// before version 2 you could have coordinate system and not value type (real assumed). Now must have value type
+			if ((this->exVersion < 2) && (coordinate_system.type != NOT_APPLICABLE))
 			{
-				coordinate_system.type = RECTANGULAR_CARTESIAN;
-			}
-			else if (fuzzy_string_compare_same_length(next_block,
-				"cylindrical polar"))
-			{
-				coordinate_system.type = CYLINDRICAL_POLAR;
-			}
-			else if (fuzzy_string_compare_same_length(next_block,
-				"spherical polar"))
-			{
-				coordinate_system.type = SPHERICAL_POLAR;
-			}
-			else if (fuzzy_string_compare_same_length(next_block,
-				"prolate spheroidal"))
-			{
-				coordinate_system.type = PROLATE_SPHEROIDAL;
-				IO_stream_scan(input_file, " focus=");
-				if ((1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &focus)) ||
-					(!finite(focus)))
-				{
-					focus = 1.0;
-				}
-				coordinate_system.parameters.focus = focus;
-				IO_stream_scan(input_file, " ,");
-			}
-			else if (fuzzy_string_compare_same_length(next_block,
-				"oblate spheroidal"))
-			{
-				coordinate_system.type = OBLATE_SPHEROIDAL;
-				IO_stream_scan(input_file," focus=");
-				if ((1 != IO_stream_scan(input_file,FE_VALUE_INPUT_STRING, &focus)) ||
-					(!finite(focus)))
-				{
-					focus = 1.0;
-				}
-				coordinate_system.parameters.focus = focus;
-				IO_stream_scan(input_file, " ,");
-			}
-			else if (fuzzy_string_compare_same_length(next_block,
-				"fibre"))
-			{
-				coordinate_system.type = FIBRE;
+				/* for backwards compatibility default to FE_VALUE_VALUE if
+					coordinate system specified */
 				value_type = FE_VALUE_VALUE;
 			}
-			if (NOT_APPLICABLE != coordinate_system.type)
-			{
-				DEALLOCATE(next_block);
-				if (return_code)
-				{
-					/* next string required for value_type, below */
-					return_code = IO_stream_read_string(input_file, "[^,\n\r]", &next_block);
-					IO_stream_scan(input_file, ", ");
-				}
-			}
-		}
-		else
-		{
-			if (next_block)
-			{
-				DEALLOCATE(next_block);
-			}
-		}
-		/* read the value_type */
-		if (return_code && next_block)
-		{
-			value_type = Value_type_from_string(next_block);
-			if (UNKNOWN_VALUE == value_type)
-			{
-				if (coordinate_system.type != NOT_APPLICABLE)
-				{
-					/* for backwards compatibility default to FE_VALUE_VALUE if
-						coordinate system specified */
-					value_type = FE_VALUE_VALUE;
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Field '%s' has unknown value_type %s.  %s", field_name,
-						next_block, location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
 			else
 			{
-				DEALLOCATE(next_block);
-				/* next string required for value_type, below */
-				return_code = IO_stream_read_string(input_file,"[^,\n\r]", &next_block);
+				display_message(ERROR_MESSAGE, "EX Reader.  Field %s has unknown value_type %s.  %s", field_name, next_block, this->getFileLocation());
+				return_code = 0;
 			}
 		}
 		else
 		{
-			if (next_block)
-			{
-				DEALLOCATE(next_block);
-			}
+			DEALLOCATE(next_block);
+			/* next string required for #Components, below */
+			return_code = IO_stream_read_string(this->input_file,"[^,\n\r]", &next_block);
 		}
-		if (return_code && next_block)
+	}
+	// #Components=N is mandatory
+	if (return_code)
+	{
+		if (!((next_block)
+			&& (1 == sscanf(next_block, " #Components=%d", &number_of_components))
+			&& (0 < number_of_components)))
 		{
-			if (!((1 == sscanf(next_block, " #Components=%d", &number_of_components))
-				&& (0 < number_of_components)))
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s missing #Components.  %s", field_name, this->getFileLocation());
+			return_code = 0;
+		}
+	}
+	if (next_block)
+		DEALLOCATE(next_block);
+	if (return_code)
+	{
+		int next_char = this->readNextNonSpaceChar();
+		if ((next_char == (int)',')
+			|| ((next_char == (int)';') && (this->exVersion < 2) && (ELEMENT_XI_VALUE == value_type)))
+		{
+			// read arbitrary comma separated key=value pairs for all additional options (including future)
+			KeyValueMap keyValueMap;
+			if (!this->readKeyValueMap(keyValueMap))
 			{
-				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing #Components.  %s", field_name,
-					location);
-				DEALLOCATE(location);
+					"EX Reader.  Failed to read additional key=value parameters for field %s.  %s",
+					field_name, this->getFileLocation());
 				return_code = 0;
 			}
 			if (return_code && (ELEMENT_XI_VALUE == value_type))
 			{
-				char *mesh_dimension_loc = strstr(next_block, "mesh dimension");
-				if (mesh_dimension_loc)
+				// before EX version 2, optional: mesh dimension=N (if not specified, determine from first embedded element location in old format)
+				// from EX version 2, require: host mesh=name, host mesh dimension=N
+				const char *dimensionString = keyValueMap.getKeyValue((this->exVersion < 2) ? "mesh dimension" : "host_mesh_dimension");
+				if (dimensionString)
 				{
-					if ((1 != sscanf(mesh_dimension_loc, "mesh dimension=%d", &element_xi_mesh_dimension)) ||
-						((0 >= element_xi_mesh_dimension) ||
-							(element_xi_mesh_dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS)))
+					const int dimension = atoi(dimensionString);
+					elementXiHostMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
+					if (!elementXiHostMesh)
 					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Field '%s' of element_xi value has invalid mesh dimension.  %s",
-							field_name, location);
-						DEALLOCATE(location);
+						display_message(ERROR_MESSAGE, "EX Reader.  Invalid host mesh dimension %d for element:xi valued field %s.  %s",
+							dimension, field_name, this->getFileLocation());
 						return_code = 0;
 					}
 				}
-			}
-		}
-		if (next_block)
-		{
-			DEALLOCATE(next_block);
-		}
-		if (return_code)
-		{
-			/* create the field */
-			field = CREATE(FE_field)(field_name, fe_region);
-			if (!set_FE_field_value_type(field, value_type))
-			{
-				return_code = 0;
-			}
-			if (0 != element_xi_mesh_dimension)
-			{
-				if (!FE_field_set_element_xi_mesh_dimension(field, element_xi_mesh_dimension))
+				else if (this->exVersion >= 2)
 				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Missing 'host mesh dimension=N' for element:xi valued field %s.  %s",
+						field_name, this->getFileLocation());
 					return_code = 0;
 				}
-			}
-			if (!set_FE_field_number_of_components(field, number_of_components))
-			{
-				return_code = 0;
-			}
-			if (!(((CONSTANT_FE_FIELD != fe_field_type) ||
-				set_FE_field_type_constant(field)) &&
-				((GENERAL_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_general(field)) &&
-				((INDEXED_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_indexed(field, indexer_field,
-						number_of_indexed_values))))
-			{
-				return_code = 0;
-			}
-			if (!set_FE_field_CM_field_type(field, cm_field_type))
-			{
-				return_code = 0;
-			}
-			if (!((set_FE_field_coordinate_system(field, &coordinate_system))))
-			{
-				return_code = 0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_field.  Could not create field '%s'", field_name);
-				if (field)
+				if (this->exVersion >= 2)
 				{
-					DESTROY(FE_field)(&field);
-					field = (struct FE_field *)NULL;
-				}
-			}
-		}
-		DEALLOCATE(field_name);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "read_FE_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (field);
-} /* read_FE_field */
-
-static int read_FE_field_values(struct IO_stream *input_file,
-	struct FE_region *fe_region, struct cmzn_region *root_region,
-	struct cmzn_region *current_region,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Reads in from <input_file> the values for the constant and indexed fields in
-the <field_order_info>.
-==============================================================================*/
-{
-	char *location, *rest_of_line;
-	enum Value_type value_type;
-	int i, k, number_of_fields, number_of_values, return_code;
-	struct FE_field *field;
-
-	ENTER(read_FE_field_values);
-	return_code = 0;
-	if (input_file && fe_region && root_region && field_order_info)
-	{
-		rest_of_line = (char *)NULL;
-		IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
-		return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
-		DEALLOCATE(rest_of_line);
-		if (return_code)
-		{
-			return_code = 1;
-			number_of_fields =
-				get_FE_field_order_info_number_of_fields(field_order_info);
-			for (i = 0; (i < number_of_fields) && return_code; i++)
-			{
-				if (NULL != (field = get_FE_field_order_info_field(field_order_info, i)))
-				{
-					number_of_values = get_FE_field_number_of_values(field);
-					if (0 < number_of_values)
+					const char *hostMeshName = keyValueMap.getKeyValue("host mesh");
+					if (!hostMeshName)
 					{
-						value_type = get_FE_field_value_type(field);
-						switch (value_type)
-						{
-							case ELEMENT_XI_VALUE:
-							{
-								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-								struct FE_element *element;
-
-								for (k = 0; (k < number_of_values) && return_code; k++)
-								{
-									if (!(read_element_xi_value(input_file, root_region,
-										current_region, &element, xi) &&
-										set_FE_field_element_xi_value(field, k, element, xi)))
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Error reading field element_xi value.  %s",
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-							} break;
-							case FE_VALUE_VALUE:
-							{
-								FE_value value;
-
-								for (k = 0;(k < number_of_values) && return_code; k++)
-								{
-									if (!((1 == IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &value))
-										&& finite(value) &&
-										set_FE_field_FE_value_value(field, k, value)))
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Error reading field FE_value.  %s",
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-							} break;
-							case INT_VALUE:
-							{
-								int value;
-
-								for (k = 0; (k < number_of_values) && return_code; k++)
-								{
-									if (!((1 == IO_stream_scan(input_file, "%d", &value)) &&
-										set_FE_field_int_value(field, k, value)))
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Error reading field int.  %s",
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-							} break;
-							case STRING_VALUE:
-							{
-								char *the_string;
-
-								for (k = 0; (k < number_of_values) && return_code; k++)
-								{
-									if (read_string_value(input_file, &the_string))
-									{
-										if (!set_FE_field_string_value(field, k, the_string))
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"read_FE_field_values.  Error setting string.  %s", location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-										DEALLOCATE(the_string);
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Error reading field string.  %s",
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-							} break;
-							default:
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Unsupported field value_type %s.  %s",
-									Value_type_string(value_type), location);
-								DEALLOCATE(location);
-								return_code = 0;
-							} break;
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			location = IO_stream_get_location_string(input_file);
-			display_message(ERROR_MESSAGE,
-				"Invalid field 'Values:'.  %s", location);
-			DEALLOCATE(location);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_FE_field_values.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_field_values */
-
-static int read_FE_node_field(struct IO_stream *input_file,
-	FE_nodeset *fe_nodeset, FE_node_template *node_template,
-	struct FE_import_time_index *time_index, struct FE_field **field_address)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Reads a node field from an <input_file>, adding it to the fields defined at
-<node>. <field> is returned.
-==============================================================================*/
-{
-	char *component_name, *location, *rest_of_line;
-	enum FE_field_type fe_field_type;
-	int component_number, number_of_components,
-		number_of_derivatives, number_of_versions, return_code, temp_int;
-	struct FE_field *field, *merged_fe_field;
-	struct FE_node_field_creator *node_field_creator;
-	struct FE_time_sequence *fe_time_sequence;
-
-	ENTER(read_FE_node_field);
-	return_code = 0;
-	if (field_address)
-	{
-		*field_address = (struct FE_field *)NULL;
-	}
-	if (input_file && fe_nodeset && node_template && field_address)
-	{
-		if (NULL != (field = read_FE_field(input_file, fe_nodeset->get_FE_region())))
-		{
-			ACCESS(FE_field)(field);
-			merged_fe_field = (struct FE_field *)NULL;
-			number_of_components = get_FE_field_number_of_components(field);
-			fe_field_type = get_FE_field_FE_field_type(field);
-			return_code = 1;
-			/* allocate memory for the components */
-			component_name = (char *)NULL;
-			node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
-			/* read the components */
-			component_number = 0;
-			while (return_code && (component_number < number_of_components))
-			{
-				IO_stream_scan(input_file, " ");
-				/* read the component name */
-				if (component_name)
-				{
-					DEALLOCATE(component_name);
-					component_name = (char *)NULL;
-				}
-				if (IO_stream_read_string(input_file, "[^.]", &component_name))
-				{
-					/* strip trailing blanks from component name */
-					size_t i = strlen(component_name);
-					while ((0 < i) && (isspace(component_name[i - 1])))
-						--i;
-					component_name[i] = '\0';
-					return_code = (0 < i) && set_FE_field_component_name(field,
-						component_number, component_name);
-				}
-				if (return_code)
-				{
-					/* component name is sufficient for non-GENERAL_FE_FIELD */
-					if (GENERAL_FE_FIELD == fe_field_type)
-					{
-						/* ignore value index */
-						if ((2 == IO_stream_scan(input_file,
-							".  Value index=%d, #Derivatives=%d", &temp_int,
-							&number_of_derivatives)) && (0 <= number_of_derivatives))
-						{
-							/* first number which is the value, is automatically included */
-							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-							{
-								char *derivative_type_name = rest_of_line;
-								/* skip leading spaces */
-								while (' ' == *derivative_type_name)
-									++derivative_type_name;
-								if (0 < number_of_derivatives)
-								{
-									/* derivative names, in brackets () must follow */
-									const char *closing_bracket_location = strchr(derivative_type_name, ')');
-									if (('(' != *derivative_type_name) || !closing_bracket_location)
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "Derivative types missing or invalid for field component %s.%s .  %s",
-											get_FE_field_name(field), component_name, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-									else
-									{
-										++derivative_type_name;
-										/* skip leading spaces */
-										while (' ' == *derivative_type_name)
-											++derivative_type_name;
-										while (derivative_type_name != closing_bracket_location)
-										{
-											const char *nodal_value_type_string = derivative_type_name;
-											while ((',' != *derivative_type_name) &&
-												(' ' != *derivative_type_name) &&
-												(')' != *derivative_type_name))
-											{
-												++derivative_type_name;
-											}
-											*derivative_type_name = '\0';
-											if (derivative_type_name != closing_bracket_location)
-											{
-												++derivative_type_name;
-												while ((',' == *derivative_type_name) || (' ' == *derivative_type_name))
-													++derivative_type_name;
-											}
-											enum FE_nodal_value_type derivative_type;
-											if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(nodal_value_type_string, &derivative_type))
-											{
-												location = IO_stream_get_location_string(input_file);
-												display_message(ERROR_MESSAGE, "Unknown derivative type '%s' for field component %s.%s .  %s",
-													nodal_value_type_string, get_FE_field_name(field), component_name, location);
-												DEALLOCATE(location);
-												return_code = 0;
-												break;
-											}
-											else
-											{
-												int result = FE_node_field_creator_define_derivative(
-													node_field_creator, component_number, derivative_type);
-												if (result != CMZN_OK)
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE, "Failed to set derivative type '%s' for field component %s.%s %s.  %s",
-														nodal_value_type_string, get_FE_field_name(field), component_name,
-														(CMZN_ERROR_ALREADY_EXISTS == result) ? "as already defined" : "", location);
-													DEALLOCATE(location);
-													return_code = 0;
-													break;
-												}
-											}
-										}
-										int count = FE_node_field_creator_get_number_of_derivatives(node_field_creator, component_number);
-										if (count != number_of_derivatives)
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE, "Missing derivative type(s) for field component %s.%s .  %s",
-												get_FE_field_name(field), component_name, location);
-											DEALLOCATE(location);
-											return_code = 0;
-											break;
-										}
-									}
-									++derivative_type_name;
-								}
-								/* read in the number of versions (if present) */
-								if (return_code && (1 == sscanf(derivative_type_name, ", #Versions=%d", &number_of_versions)))
-								{
-									int result = FE_node_field_creator_define_versions(node_field_creator,
-										component_number, number_of_versions);
-									if (CMZN_OK != result)
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "Invalid #Versions for field component %s.%s .  %s",
-											get_FE_field_name(field), component_name, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-								DEALLOCATE(rest_of_line);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_FE_node_field.  Could not read rest_of_line");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						/* non GENERAL_FE_FIELD */
-						/* check there is nothing on remainder of line */
-						if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-						{
-							if (!fuzzy_string_compare(rest_of_line, "."))
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Unexpected text on field '%s' component '%s'"
-									".  %s: %s", get_FE_field_name(field), component_name,
-									location, rest_of_line);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-							DEALLOCATE(rest_of_line);
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Unexpected end of field '%s' component '%s'.  %s",
-								get_FE_field_name(field), component_name,
-								location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					}
-					component_number++;
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"Error establishing component name.  Line",
-						location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				/* first try to retrieve matching field from fe_region */
-				if (!(merged_fe_field = FE_region_merge_FE_field(fe_nodeset->get_FE_region(), field)))
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-						"Could not merge field '%s' into finite element region.  %s",
-						get_FE_field_name(field), location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				/* define merged_fe_field at the node */
-				if (time_index)
-				{
-					if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
-						fe_nodeset->get_FE_region(), 1, &(time_index->time))))
-					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_node_field.  Could not get time version");
+						display_message(ERROR_MESSAGE, "EX Reader.  Missing 'host mesh=~' for element:xi valued field %s'.  %s",
+							field_name, this->getFileLocation());
 						return_code = 0;
 					}
-				}
-				else
-				{
-					fe_time_sequence = (struct FE_time_sequence *)NULL;
-				}
-				if (return_code)
-				{
-					if (define_FE_field_at_node(node_template->get_template_node(), merged_fe_field, fe_time_sequence,
-						node_field_creator))
+					else if ((elementXiHostMesh) && (0 != strcmp(hostMeshName, elementXiHostMesh->getName())))
 					{
-						*field_address = merged_fe_field;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_node_field.  Could not define field at node");
+						display_message(ERROR_MESSAGE, "EX Reader.  Cannot find host mesh %s specified for element:xi valued field %s.  %s",
+							hostMeshName, field_name, this->getFileLocation());
 						return_code = 0;
 					}
 				}
 			}
-			DESTROY(FE_node_field_creator)(&node_field_creator);
-			if (component_name)
+			if (keyValueMap.hasUnusedKeyValues())
 			{
-				DEALLOCATE(component_name);
+				std::string prefix("EX Reader.  Field ");
+				prefix += field_name;
+				prefix += " header: ";
+				keyValueMap.reportUnusedKeyValues(prefix.c_str());
 			}
-			DEACCESS(FE_field)(&field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_node_field.  Could not read field");
 		}
 	}
-	else
+	if (return_code)
 	{
-		display_message(ERROR_MESSAGE,
-			"read_FE_node_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_node_field */
-
-static FE_node_template *read_FE_node_field_info(struct IO_stream *input_file,
-	FE_nodeset *fe_nodeset, struct FE_field_order_info **field_order_info,
-	struct FE_import_time_index *time_index)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Creates a node template with the field information read from <input_file>.
-Creates, fills in and returns field_order_info.
-<*field_order_info> is reallocated here so should be either NULL or returned
-from a previous call to this function.
-==============================================================================*/
-{
-	char *location;
-	int number_of_fields,return_code,i;
-	struct FE_field *field;
-
-	ENTER(read_FE_node_field_info);
-	FE_node_template *node_template = 0;
-	if (input_file && fe_nodeset && field_order_info)
-	{
-		if (*field_order_info)
+		/* create the field */
+		field = CREATE(FE_field)(field_name, fe_region);
+		ACCESS(FE_field)(field);
+		if (!set_FE_field_value_type(field, value_type))
 		{
-			DESTROY(FE_field_order_info)(field_order_info);
-			*field_order_info = (struct FE_field_order_info *)NULL;
-		}
-		/* create node template to store node field information in */
-		node_template = fe_nodeset->create_FE_node_template();
-		if (node_template)
-		{
-			return_code = 1;
-			if ((1 == IO_stream_scan(input_file, "Fields=%d", &number_of_fields)) &&
-				(0 <= number_of_fields))
-			{
-				*field_order_info = CREATE(FE_field_order_info)();
-				/* read in the node fields */
-				for (i = 0; (i < number_of_fields) && return_code; i++)
-				{
-					field = (struct FE_field *)NULL;
-					if (read_FE_node_field(input_file, fe_nodeset, node_template, time_index,
-						&field))
-					{
-						if (!add_FE_field_order_info_field(*field_order_info, field))
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_node_field_info.  Could not add field to list");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_node_field_info.  Could not read node field");
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"Error reading number of fields from file.  %s",
-					location);
-				DEALLOCATE(location);
-				return_code = 0;
-			}
-			if (!return_code)
-				cmzn::Deaccess(node_template);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_node_field_info.  Could not create node");
 			return_code = 0;
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_FE_node_field_info.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (node_template);
-} /* read_FE_node_field_info */
-
-/**
- * Reads in a node from an <input_file>.
- * If a node of that identifier already exists, it is returned but
- * parsed data is put into the node_template and the existingNode flag
- * is set which indicates that the caller must merge the element template.
- * @param group  Optional group to put node into.
- * @return  On success, ACCESSed node, otherwise 0.
- */
-static struct FE_node *read_FE_node(struct IO_stream *input_file,
-	FE_node_template *node_template, FE_nodeset *fe_nodeset,
-	cmzn_region_id root_region, cmzn_region_id region,
-	struct FE_field_order_info *field_order_info,
-	struct FE_import_time_index *time_index,
-	bool& existingNode)
-{
-	char *location;
-	enum Value_type value_type;
-	int i, j, k, length, node_number, number_of_components, number_of_fields,
-		number_of_values, return_code;
-	struct FE_field *field;
-
-	ENTER(read_FE_node);
-	existingNode = false;
-	FE_node *return_node = (struct FE_node *)NULL;
-	if (input_file && node_template && fe_nodeset && region &&
-		field_order_info)
-	{
-		if (1 == IO_stream_scan(input_file, "ode :%d", &node_number))
+		if (elementXiHostMesh)
 		{
-			return_code = 1;
-			return_node = fe_nodeset->findNodeByIdentifier(node_number);
-			if (return_node)
+			if (!FE_field_set_element_xi_host_mesh(field, elementXiHostMesh))
 			{
-				ACCESS(FE_node)(return_node);
-				existingNode = true;
+				return_code = 0;
 			}
-			else
+		}
+		if (!set_FE_field_number_of_components(field, number_of_components))
+		{
+			return_code = 0;
+		}
+		if (!(((CONSTANT_FE_FIELD != fe_field_type) ||
+			set_FE_field_type_constant(field)) &&
+			((GENERAL_FE_FIELD != fe_field_type) ||
+				set_FE_field_type_general(field)) &&
+			((INDEXED_FE_FIELD != fe_field_type) ||
+				set_FE_field_type_indexed(field, indexer_field,
+					number_of_indexed_values))))
+		{
+			return_code = 0;
+		}
+		if (!set_FE_field_CM_field_type(field, cm_field_type))
+		{
+			return_code = 0;
+		}
+		if (!((set_FE_field_coordinate_system(field, &coordinate_system))))
+		{
+			return_code = 0;
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"EXReader::readField.  Could not create field '%s'", field_name);
+			DEACCESS(FE_field)(&field);
+		}
+	}
+	DEALLOCATE(field_name);
+	return (field);
+}
+
+/** Reads the values for constant and indexed fields from stream */
+bool EXReader::readFieldValues()
+{
+	if (!((node_template || element_template) && this->field_order_info))
+		return false;
+	char *rest_of_line = 0;
+	IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line);
+	int return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
+	DEALLOCATE(rest_of_line);
+	if (!return_code)
+	{
+		display_message(ERROR_MESSAGE, "Invalid token where 'Values:' expected.  %s", this->getFileLocation());
+		return false;
+	}
+	bool result = true;
+	const int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+	for (int f = 0; (f < number_of_fields) && return_code; f++)
+	{
+		FE_field *field = get_FE_field_order_info_field(field_order_info, f);
+		if (field)
+		{
+			const int number_of_values = get_FE_field_number_of_values(field);
+			if (0 < number_of_values)
 			{
-				return_node = fe_nodeset->create_FE_node(node_number, node_template);
-				if (!return_node)
+				Value_type value_type = get_FE_field_value_type(field);
+				switch (value_type)
 				{
-					display_message(ERROR_MESSAGE, "read_FE_node.  Could not create node");
-					return_code = 0;
-				}
-			}
-			if (return_node)
-			{
-				// fill template node if already existed, otherwise new node
-				FE_node *node = existingNode ? node_template->get_template_node() : return_node;
-				number_of_fields =
-					get_FE_field_order_info_number_of_fields(field_order_info);
-				for (i = 0; (i < number_of_fields) && return_code; i++)
-				{
-					if (NULL != (field = get_FE_field_order_info_field(field_order_info, i)))
+					case ELEMENT_XI_VALUE:
 					{
-						/* only GENERAL_FE_FIELD can store values at nodes */
-						if (GENERAL_FE_FIELD == get_FE_field_FE_field_type(field))
+						FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+						struct FE_element *element;
+
+						for (int k = 0; (k < number_of_values) && return_code; k++)
 						{
-							number_of_components = get_FE_field_number_of_components(field);
-							number_of_values = 0;
-							for (j = 0; j < number_of_components; j++)
+							if (!(this->readElementXiValue(field, element, xi)
+								&& set_FE_field_element_xi_value(field, k, element, xi)))
 							{
-								number_of_values +=
-									get_FE_node_field_component_number_of_versions(node,field,j)*
-									(1+get_FE_node_field_component_number_of_derivatives(node,
-									field, j));
+								display_message(ERROR_MESSAGE,
+									"Error reading field element_xi value.  %s", this->getFileLocation());
+								result = false;
 							}
-							value_type = get_FE_field_value_type(field);
-							if (0 < number_of_values)
+						}
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						FE_value value;
+
+						for (int k = 0;(k < number_of_values) && return_code; k++)
+						{
+							if (!((1 == IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &value))
+								&& finite(value)
+								&& set_FE_field_FE_value_value(field, k, value)))
 							{
-								switch (value_type)
+								display_message(ERROR_MESSAGE, "Error reading field FE_value.  %s", this->getFileLocation());
+								result = false;
+							}
+						}
+					} break;
+					case INT_VALUE:
+					{
+						int value;
+
+						for (int k = 0; (k < number_of_values) && return_code; k++)
+						{
+							if (!((1 == IO_stream_scan(this->input_file, "%d", &value)) &&
+								set_FE_field_int_value(field, k, value)))
+							{
+								display_message(ERROR_MESSAGE, "Error reading field int.  %s", this->getFileLocation());
+								result = false;
+							}
+						}
+					} break;
+					case STRING_VALUE:
+					{
+						char *the_string;
+
+						for (int k = 0; (k < number_of_values) && return_code; k++)
+						{
+							the_string = this->readString();
+							if (the_string)
+							{
+								if (!set_FE_field_string_value(field, k, the_string))
 								{
-									case ELEMENT_XI_VALUE:
-									{
-										FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-										struct FE_element *element;
-
-										if (number_of_values == number_of_components)
-										{
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (!(read_element_xi_value(input_file, root_region, region,
-													&element, xi) && set_FE_nodal_element_xi_value(node,
-														field, /*component_number*/k, /*version*/0,
-														FE_NODAL_VALUE, element, xi)))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE, "read_FE_node.  "
-														"Error getting element_xi value for field '%s'",
-														get_FE_field_name(field), location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"Derivatives/versions not supported for element_xi"
-												".  %s", location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									} break;
-									case FE_VALUE_VALUE:
-									{
-										FE_value *values;
-
-										if (ALLOCATE(values, FE_value, number_of_values))
-										{
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
-													&(values[k])))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading nodal value from file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-												if (!finite(values[k]))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Infinity or NAN read from node file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											if (return_code)
-											{
-												return_code = set_FE_nodal_field_FE_value_values(field, node,
-													values, &length, (time_index) ? time_index->time : 0.0);
-												if (return_code)
-												{
-													if (length != number_of_values)
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"node %d field '%s' took %d values from %d"
-															" expected.  %s", node_number,
-															get_FE_field_name(field), length,
-															number_of_values, location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
-												}
-											}
-											DEALLOCATE(values);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,"read_FE_node.  "
-												"Insufficient memory for FE_value_values");
-											return_code = 0;
-										}
-									} break;
-									case INT_VALUE:
-									{
-										int *values;
-
-										if (ALLOCATE(values,int,number_of_values))
-										{
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading nodal value from file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											if (return_code)
-											{
-												return_code = set_FE_nodal_field_int_values(field,
-													node, values, &length);
-												if (return_code)
-												{
-													if (length != number_of_values)
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"node %d field '%s' took %d values from %d"
-															" expected.  %s", node_number,
-															get_FE_field_name(field), length,
-															number_of_values, location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
-												}
-											}
-											DEALLOCATE(values);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"read_FE_node.  Insufficient memory for int_values");
-											return_code = 0;
-										}
-									} break;
-									case STRING_VALUE:
-									{
-										char *the_string;
-
-										if (number_of_values == number_of_components)
-										{
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (read_string_value(input_file, &the_string))
-												{
-													if (!set_FE_nodal_string_value(node, field,
-														/*component_number*/k, /*version*/0, FE_NODAL_VALUE,
-														the_string))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,"read_FE_node.  "
-															"Error setting string value for field '%s'",
-															get_FE_field_name(field), location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
-													DEALLOCATE(the_string);
-												}
-												else
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading string value for field '%s'."
-														"  %s", get_FE_field_name(field),
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"Derivatives/versions not supported for string."
-												"  %s", location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									} break;
-									default:
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,"Unsupported value_type %s."
-											"  %s",Value_type_string(value_type),
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									} break;
+									display_message(ERROR_MESSAGE,
+										"read_FE_field_values.  Error setting string.  %s", this->getFileLocation());
+									result = false;
 								}
+								DEALLOCATE(the_string);
 							}
 							else
 							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"No nodal values for field '%s'.  %s",
-									get_FE_field_name(field),	location);
-								DEALLOCATE(location);
-								return_code = 0;
+								display_message(ERROR_MESSAGE, "Error reading field string.  %s", this->getFileLocation());
+								result = false;
 							}
 						}
-					}
-					else
+					} break;
+					default:
 					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE, "Invalid field #%d.  %s",
-							i + 1, location);
-						DEALLOCATE(location);
-						return_code = 0;
+						display_message(ERROR_MESSAGE, "Unsupported field value_type %s.  %s",
+							Value_type_string(value_type), this->getFileLocation());
+						result = false;
+					} break;
+				}
+			}
+		}
+	}
+	return result;
+}
+
+/**
+ * Add derivatives (followed in brackets by number of versions if > 1) e.g.:
+ * (value,d/ds1(2),d/ds2,d2/ds1ds2)
+ * @return  True on success, false if not read correctly.
+ */
+bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions)
+{
+	int next_char = this->readNextNonSpaceChar();
+	if (next_char != (int)'(')
+		return false;
+	while (true)
+	{
+		char *derivative_type_name = 0;
+		if (!IO_stream_read_string(this->input_file, "[^,)\n\r]", &derivative_type_name))
+			return false;
+		trim_string_in_place(derivative_type_name);
+		enum FE_nodal_value_type derivative_type;
+		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &derivative_type))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
+			DEALLOCATE(derivative_type_name);
+			return false;
+		}
+		DEALLOCATE(derivative_type_name);
+		int versionCount = 0;
+		if (1 == IO_stream_scan(this->input_file, "(%d)", &versionCount))
+		{
+			if (versionCount < 2)
+				display_message(ERROR_MESSAGE, "EX Reader.  Derivative version count must be > 1 if specified");
+			return false;
+		}
+		else
+			versionCount = 1;
+		if (!nodeDerivativesVersions.addDerivative(derivative_type, versionCount))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid derivative, number of versions or repeated derivative");
+			return false;
+		}
+		next_char = this->readNextNonSpaceChar();
+		if (next_char == (int)')')
+			break; // finished
+		else if (next_char != (int)',')
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Reads a node field from stream, defining it on the node template and adding
+ * it to the fields in the field_order_info.
+ */
+bool EXReader::readNodeHeaderField()
+{
+	if (!(this->nodeset && this->node_template && this->field_order_info))
+		return false;
+	// first read non-merged field declaration without node-specific data
+	FE_field *field = this->readField();
+	if (!field)
+		return false;
+	bool result = true;
+	const int number_of_components = get_FE_field_number_of_components(field);
+	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
+	struct FE_node_field_creator *node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
+	/* read the components */
+	int component_number = 0;
+	char *component_name = 0;
+	{
+		// add node field component derivatives versions storage
+		std::vector<NodeDerivativesVersions> dummy(number_of_components);
+		this->nodeFieldComponentDerivativeVersions[field] = dummy;
+	}
+	for (int component_number = 0; component_number < number_of_components; ++component_number)
+	{
+		IO_stream_scan(this->input_file, " ");
+		/* read the component name */
+		if (component_name)
+			DEALLOCATE(component_name);
+		if (IO_stream_read_string(this->input_file, "[^.]", &component_name))
+		{
+			trim_string_in_place(component_name);
+			if ((strlen(component_name) == 0)
+				|| (!set_FE_field_component_name(field, component_number, component_name)))
+				result = false;
+		}
+		else
+			result = false;
+		if (!result)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Error getting component name for field %s.  %s",
+				get_FE_field_name(field), this->getFileLocation());
+			break;
+		}
+		/* component name is sufficient for non-GENERAL_FE_FIELD */
+		if (GENERAL_FE_FIELD == fe_field_type)
+		{
+			NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[component_number];
+			if (this->exVersion < 2)
+			{
+				// legacy EX format had same number of versions for all derivatives and 'value' derivative was compulsory (and first)
+				// Note that all values and derivatives for a given version are consecutive in the legacy format, i.e. derivative cycles fastest
+				int number_of_derivatives, number_of_versions, temp_int;
+				/* ignore value index */
+				if (!((2 == IO_stream_scan(this->input_file, ".  Value index=%d, #Derivatives=%d", &temp_int, &number_of_derivatives))
+					&& (0 <= number_of_derivatives)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
+						get_FE_field_name(field), component_name, this->getFileLocation());
+					result = false;
+					break;
+				}
+				// legacy EX format required value derivative, and it had to be first
+				if (!nodeDerivativesVersions.addDerivative(FE_NODAL_VALUE, 1))
+				{
+					result = false;
+					break;
+				}
+				if (0 < number_of_derivatives)
+				{
+					if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
+							get_FE_field_name(field), component_name, this->getFileLocation());
+						result = false;
+						break;
+					}
+					if (nodeDerivativesVersions.getMaximumVersionCount() != 1)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
+							get_FE_field_name(field), component_name, this->getFileLocation());
+						result = false;
+						break;
+					}
+					if (nodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
+							get_FE_field_name(field), component_name, this->getFileLocation());
+						result = false;
+						break;
 					}
 				}
-				if (!return_code)
-					DEACCESS(FE_node)(&return_node);
+				// read in the optional number of versions, applied to value and all derivatives
+				if (1 == IO_stream_scan(this->input_file, ", #Versions=%d", &number_of_versions))
+				{
+					if (!nodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
+							get_FE_field_name(field), component_name, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
 			}
 			else
 			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"read_FE_node.  Could not create node.  %s",
-					location);
-				DEALLOCATE(location);
+				// EX Version 2+: supports variable number of versions per derivative. parameters
+				// Note that parameters for versions of a given derivative are consecutive in the new format i.e. version cycles within derivative
+				int valuesCount = 0;
+				if (!((1 == IO_stream_scan(this->input_file, ". #Values=%d", &valuesCount))
+					&& (0 <= valuesCount)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read node field %s component %s #Values.  %s",
+						get_FE_field_name(field), component_name, this->getFileLocation());
+					result = false;
+					break;
+				}
+				// follow with derivative names and versions, even if empty ()
+				if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
+						get_FE_field_name(field), component_name, this->getFileLocation());
+					result = false;
+					break;
+				}
+				if (nodeDerivativesVersions.getValueCount() != valuesCount)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
+						get_FE_field_name(field), component_name, this->getFileLocation());
+					result = false;
+					break;
+				}
 			}
+			nodeDerivativesVersions.calculateDerivativeOffsets();
+			// Zinc cannot yet handle per-derivative versions nor having no value parameters, so define in the old way
+			const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+			int versionCount;
+			for (int d = 0; d < derivativeTypeCount; ++d)
+			{
+				FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+				if (derivativeType != FE_NODAL_VALUE) // value is currently always already set as the first entry
+				{
+					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
+							ENUMERATOR_STRING(FE_nodal_value_type)(derivativeType), get_FE_field_name(field), component_name, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+			}
+			if (!result)
+				break;
+			const int maximumVersionCount = nodeDerivativesVersions.getMaximumVersionCount();
+			// version count can be 0 in field, but must have at least 1 value version
+			if (maximumVersionCount > 1)
+			{
+				if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, component_number, maximumVersionCount))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of versions for field %s component %s.  %s",
+						get_FE_field_name(field), component_name, this->getFileLocation());
+					result = false;
+					break;
+				}
+			}
+		}
+		if (this->exVersion >= 2)
+		{
+			int next_char = this->readNextNonSpaceChar();
+			if (next_char == (int)',')
+			{
+				// read and warn about any unused key=value data
+				KeyValueMap keyValueMap;
+				if (this->readKeyValueMap(keyValueMap) && keyValueMap.hasUnusedKeyValues())
+				{
+					std::string prefix("EX Reader.  Node field ");
+					prefix += get_FE_field_name(field);
+					prefix += " component ";
+					prefix += component_name;
+					prefix += ": ";
+					keyValueMap.reportUnusedKeyValues(prefix.c_str());
+				}
+			}
+		}
+	}
+	if (result)
+	{
+		// merge into FE_region, which may return an existing matching field
+		FE_field *mergedField = FE_region_merge_FE_field(this->fe_region, field);
+		if (mergedField)
+		{
+			ACCESS(FE_field)(mergedField);
+			DEACCESS(FE_field)(&field);
+			field = mergedField;
+			mergedField = 0;
 		}
 		else
 		{
-			location = IO_stream_get_location_string(input_file);
-			display_message(ERROR_MESSAGE,
-				"read_FE_node.  Error reading node number from file.  %s", location);
-			DEALLOCATE(location);
-
+			display_message(ERROR_MESSAGE, "EX Reader.  Could not merge field %s into region.  %s",
+				get_FE_field_name(field), this->getFileLocation());
+			result = false;
 		}
+	}
+	if (result)
+	{
+		// define merged_fe_field at the node
+		struct FE_time_sequence *fe_time_sequence = 0;
+		if (this->timeIndex)
+		{
+			if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
+				this->fe_region, 1, &(this->timeIndex->time))))
+			{
+				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not get time sequence");
+				result = false;
+			}
+		}
+		if (result)
+		{
+			if (define_FE_field_at_node(node_template->get_template_node(), field, fe_time_sequence,
+				node_field_creator))
+			{
+				if (!add_FE_field_order_info_field(this->field_order_info, field))
+				{
+					display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not add field to list");
+					result = false;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not define field at node");
+				result = false;
+			}
+		}
+	}
+	DESTROY(FE_node_field_creator)(&node_field_creator);
+	if (component_name)
+		DEALLOCATE(component_name);
+	DEACCESS(FE_field)(&field);
+	return result;
+}
+
+/**
+ * Creates a node template with the field information read from stream.
+ * Creates and fills field_order_info to give order of fields.
+ * Creates and fills nodeFieldComponentDerivativeVersions to store
+ * new format with variable versions per derivative.
+ */
+bool EXReader::readNodeHeader()
+{
+	if (!this->nodeset)
+		return false;
+	this->clearHeaderCache();
+	this->field_order_info = CREATE(FE_field_order_info)();
+	if (!this->field_order_info)
+		return false;
+	this->node_template = this->nodeset->create_FE_node_template();
+	if (!this->node_template)
+		return false;
+	int fieldCount = 0;
+	if ((1 != IO_stream_scan(this->input_file, "Fields=%d", &fieldCount)) || (fieldCount < 0))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading number of fields from file.  %s", this->getFileLocation());
+		return false;
+	}
+	for (int f = 0; f < fieldCount; ++f)
+	{
+		if (!this->readNodeHeaderField())
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Could not read node field header");
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Reads a node from stream, adding or merging into current nodeset.
+ * If a node of that identifier already exists, parsed data is put into the
+ * node_template and merged into the existing node.
+ * If there is no existing node of that identifier a new node is read and merged
+ * directly.
+ * @return  On success, ACCESSed node, otherwise 0.
+ */
+cmzn_node *EXReader::readNode()
+{
+	if (!((this->nodeset) && (this->node_template) && (this->field_order_info)))
+	{
+		display_message(ERROR_MESSAGE, "EXReader::readNode.  Invalid argument(s)");
+		return 0;
+	}
+	DsLabelIdentifier nodeIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	if (1 != IO_stream_scan(this->input_file, "ode :%d", &nodeIdentifier))
+	{
+		display_message(ERROR_MESSAGE,
+			"EX Reader.  Error reading node number from file.  %s", this->getFileLocation());
+		return 0;
+	}
+	cmzn_node *returnNode = this->nodeset->findNodeByIdentifier(nodeIdentifier);
+	const bool existingNode = (returnNode != 0);
+	if (returnNode)
+	{
+		ACCESS(FE_node)(returnNode);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "read_FE_node.  Invalid argument(s)");
+		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->node_template);
+		if (!returnNode)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Could not create node with number %d.  %s", nodeIdentifier, this->getFileLocation());
+			return 0;
+		}
 	}
-	LEAVE;
-
-	return (return_node);
-} /* read_FE_node */
+	bool result = true;
+	// fill template node if node with identifier already exists (and merge below), otherwise new node
+	FE_node *node = existingNode ? node_template->get_template_node() : returnNode;
+	const int fieldCount = get_FE_field_order_info_number_of_fields(field_order_info);
+	for (int f = 0; (f < fieldCount) && result; ++f)
+	{
+		FE_field *field = get_FE_field_order_info_field(field_order_info, f);
+		// only GENERAL_FE_FIELD can store values at nodes
+		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
+			continue;
+		const int componentCount = get_FE_field_number_of_components(field);
+		int number_of_values = 0;
+		for (int c = 0; c < componentCount; ++c)
+		{
+			number_of_values += get_FE_node_field_component_number_of_versions(node, field, c)*
+				(1 + get_FE_node_field_component_number_of_derivatives(node, field, c));
+		}
+		if (number_of_values <= 0)
+		{
+			display_message(ERROR_MESSAGE, "No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
+			result = false;
+			break;
+		}
+		const Value_type value_type = get_FE_field_value_type(field);
+		switch (value_type)
+		{
+		case ELEMENT_XI_VALUE:
+		{
+			cmzn_element *element;
+			FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			if (number_of_values == componentCount)
+			{
+				for (int k = 0; k < number_of_values; ++k)
+				{
+					if (!(this->readElementXiValue(field, element, xi)
+						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, /*version*/0,
+							FE_NODAL_VALUE, element, xi)))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for element_xi valued field %s at node %d.  %s",
+					get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+				result = false;
+			}
+		} break;
+		case FE_VALUE_VALUE:
+		{
+			FE_value *values;
+			if (ALLOCATE(values, FE_value, number_of_values))
+			{
+				if (this->exVersion < 2)
+				{
+					// before EX version 2, derivatives were nested within versions, hence need separate code to read
+					for (int k = 0; k < number_of_values; ++k)
+					{
+						if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+				}
+				else
+				{
+					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
+					// initialise values to 0.0 to clear versions that are not read
+					for (int k = 0; k < number_of_values; ++k)
+						values[k] = 0.0;
+					FE_value *componentValues = values;
+					for (int c = 0; (c < componentCount) && result; ++c)
+					{
+						NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[c];
+						const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
+						{
+							int versionCount;
+							FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int derivativeOffset = nodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
+							for (int v = 0; v < versionCount; ++v)
+							{
+								if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING,
+									componentValues + derivativeTypeCount*v + derivativeOffset))
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+									result = false;
+									break;
+								}
+							}
+						}
+						componentValues += derivativeTypeCount*nodeDerivativesVersions.getMaximumVersionCount();
+					}
+				}
+				if (result)
+				{
+					for (int k = 0; k < number_of_values; ++k)
+					{
+						if (!finite(values[k]))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+				}
+				if (result)
+				{
+					int length;
+					if (!set_FE_nodal_field_FE_value_values(field, node, values, &length, (this->timeIndex) ? this->timeIndex->time : 0.0))
+					{
+						result = false;
+					}
+					else if (length != number_of_values)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
+							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
+						result = false;
+					}
+				}
+				DEALLOCATE(values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"EXReader::readNode.  Insufficient memory for FE_value_values");
+				result = false;
+			}
+		} break;
+		case INT_VALUE:
+		{
+			int *values;
+			if (ALLOCATE(values, int, number_of_values))
+			{
+				if (this->exVersion < 2)
+				{
+					// before EX version 2, derivatives were nested within versions, hence need separate code to read
+					for (int k = 0; k < number_of_values; ++k)
+					{
+						if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+				}
+				else
+				{
+					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
+					// initialise values to 0.0 to clear versions that are not read
+					for (int k = 0; k < number_of_values; ++k)
+						values[k] = 0.0;
+					int *componentValues = values;
+					for (int c = 0; (c < componentCount) && result; ++c)
+					{
+						NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[c];
+						const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
+						{
+							int versionCount;
+							FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int derivativeOffset = nodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
+							for (int v = 0; v < versionCount; ++v)
+							{
+								if (1 != IO_stream_scan(this->input_file, "%d",
+									componentValues + derivativeTypeCount*v + derivativeOffset))
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+									result = false;
+									break;
+								}
+							}
+						}
+						componentValues += derivativeTypeCount*nodeDerivativesVersions.getMaximumVersionCount();
+					}
+				}
+				if (result)
+				{
+					int length;
+					// time is not supported by int. Add in future?
+					if (!set_FE_nodal_field_int_values(field, node, values, &length))
+					{
+						result = false;
+					}
+					else if (length != number_of_values)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
+							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
+						result = false;
+					}
+				}
+				DEALLOCATE(values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EXReader::readNode.  Insufficient memory for int values");
+				result = false;
+			}
+		} break;
+		case STRING_VALUE:
+		{
+			if (number_of_values == componentCount)
+			{
+				for (int k = 0; k < number_of_values; ++k)
+				{
+					char *theString = this->readString();
+					if (theString)
+					{
+						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, /*version*/0, FE_NODAL_VALUE, theString))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+						DEALLOCATE(theString);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Error reading string value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Derivatives/versions not supported for string valued field %s at node %d.  %s",
+					get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+				result = false;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Unsupported value_type %s for node %d.  %s",
+				Value_type_string(value_type), nodeIdentifier, this->getFileLocation());
+			result = false;
+		} break;
+		}
+	}
+	if (result && existingNode && (CMZN_OK != this->nodeset->merge_FE_node_template(node, this->node_template)))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
+			nodeIdentifier, this->getFileLocation());
+		result = false;
+	}
+	if (!result)
+		DEACCESS(FE_node)(&returnNode);
+	return returnNode;
+}
 
 static int read_FE_element_shape(struct IO_stream *input_file,
 	struct FE_element_shape **element_shape_address, struct FE_region *fe_region)
@@ -3448,6 +3591,8 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 	return_code = 0;
 	if (root_region && input_file)
 	{
+		EXReader exReader(input_file, time_index);
+
 		int use_data_meta_flag = use_data;
 		cmzn_region_begin_hierarchical_change(root_region);
 		/* region is the same as read_region if reading into a true region,
@@ -3771,8 +3916,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							else
 							{
 								/* read new node field information and field_order_info */
-								if (NULL == (node_template = read_FE_node_field_info(input_file,
-									fe_nodeset, &field_order_info, time_index)))
+								if (!exReader.readNodeHeader())
 								{
 									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
@@ -3799,24 +3943,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							/* ensure we have node field information */
 							if (node_template)
 							{
-								bool existingNode = false;
-								FE_node *node = read_FE_node(input_file, node_template, fe_nodeset,
-									root_region, region, field_order_info, time_index, existingNode);
+								cmzn_node *node = exReader.readNode();
 								if (node)
 								{
-									if (existingNode)
-									{
-										int result = fe_nodeset->merge_FE_node_template(node, node_template);
-										if (result != CMZN_OK)
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"read_exregion_file.  Failed to merge into existing node.  %s",
-												location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									}
 									if (group && (!nodeset_group))
 									{
 										cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
@@ -3876,6 +4005,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								{
 									if (existingElement)
 									{
+										// GRC this has changed considerably: use external API
 										int result = fe_mesh->merge_FE_element_template(element, element_template);
 										if (result != CMZN_OK)
 										{
@@ -3940,26 +4070,10 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					} break;
 					case 'V': /* Values */
 					{
-						/* read in field values */
-						if ((node_template || element_template) && field_order_info)
-						{
-							if (!read_FE_field_values(input_file, fe_region, root_region,
-								region, field_order_info))
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"read_exregion_file.  Error reading field values.  %s",
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						else
+						if (!exReader.readFieldValues())
 						{
 							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"read_exregion_file.  Unexpected V[alues] token in file.  %s",
-								location);
+							display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading field values.  %s", location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}

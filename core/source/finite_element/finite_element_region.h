@@ -288,7 +288,7 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
  * If no FE_field of the same identifier exists in FE_region, <fe_field> is added
  * to <fe_region> and returned by this function, otherwise changes are merged into
  * the existing FE_field and it is returned.
- * A NULL value is returned on any error.
+ * @return  Non-accessed field or 0 if error.
  */
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field);

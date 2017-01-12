@@ -217,7 +217,7 @@ public:
 		field_order_info(field_order_infoIn),
 		mesh(0),
 		nodeset(0),
-		fe_region(this->mesh->get_FE_region()),
+		fe_region(0),
 		time(timeIn),
 		writeGroupOnly(false),
 		headerElement(0),
@@ -255,6 +255,7 @@ public:
 	void setMesh(const FE_mesh *meshIn)
 	{
 		this->mesh = meshIn;
+		this->fe_region = this->mesh->get_FE_region();
 		this->nodeset = 0;
 		this->clearHeaderCache();
 	}
@@ -264,6 +265,7 @@ public:
 	{
 		this->mesh = 0;
 		this->nodeset = nodesetIn;
+		this->fe_region = this->nodeset->get_FE_region();
 		this->clearHeaderCache();
 	}
 
@@ -274,6 +276,15 @@ public:
 
 	bool writeElementExt(cmzn_element *element);
 	bool writeNodeExt(cmzn_node *node);
+
+	/** Output name, automatically quoting if contains special characters */
+	void writeSafeName(const char *name) const
+	{
+		char *safeName = duplicate_string(name);
+		make_valid_token(&safeName);
+		(*this->output_file) << safeName;
+		DEALLOCATE(safeName);
+	}
 
 private:
 	bool writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex elementIndex, const FE_value *xi);
@@ -444,7 +455,10 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 			display_message(ERROR_MESSAGE, "EXWriter::writeFieldHeader.  Missing host mesh for element xi field");
 			return false;
 		}
-		(*this->output_file) << ", host mesh=" << hostMesh->getName() << ", host mesh dimension=" << hostMesh->getDimension();
+		char *hostMeshName = duplicate_string(hostMesh->getName());
+		make_valid_token(&hostMeshName);
+		(*this->output_file) << ", host mesh=" << hostMeshName << ", host mesh dimension=" << hostMesh->getDimension();
+		DEALLOCATE(hostMeshName);
 	}
 	(*this->output_file) << "\n";
 	return true;
@@ -1789,7 +1803,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				}
 				if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 				{
-					(*output_file) << "!#nodeset nodes\n";
+					(*output_file) << "!#nodeset ";
+					exWriter.writeSafeName(feNodeset->getName());
 					(*output_file) << "Shape. Dimension=0\n";
 					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;
@@ -1828,11 +1843,19 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						if (mesh)
 						{
 							FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
-							(*output_file) << "!#mesh " << feMesh->getName() << ", dimension=" << feMesh->getDimension();
+							(*output_file) << "!#mesh ";
+							exWriter.writeSafeName(feMesh->getName());
+							(*output_file) << ", dimension=" << feMesh->getDimension();
 							if (feMesh->getFaceMesh())
-								(*output_file) << ", face mesh=" << feMesh->getFaceMesh()->getName();
+							{
+								(*output_file) << ", face mesh=";
+								exWriter.writeSafeName(feMesh->getFaceMesh()->getName());
+							}
 							if (feMesh->getNodeset())
-								(*output_file) << ", nodeset=" << feMesh->getNodeset()->getName();
+							{
+								(*output_file) << ", nodeset=";
+								exWriter.writeSafeName(feMesh->getNodeset()->getName());
+							}
 							(*output_file) << "\n";
 							exWriter.setMesh(feMesh);
 							cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
@@ -1866,7 +1889,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				}
 				if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 				{
-					(*output_file) << "!#nodeset datapoints\n";
+					(*output_file) << "!#nodeset ";
+					exWriter.writeSafeName(feNodeset->getName());
 					(*output_file) << "Shape. Dimension=0\n";
 					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;

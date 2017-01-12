@@ -48,14 +48,14 @@ char *remove_before_last(char *string, char search);
 char *remove_after_first(char *string, char search);
 char *remove_after_last(char *string, char search);
 
-char *trim_string(char *string);
-/*******************************************************************************
-LAST MODIFIED : 12 June 1990
+/** Removes leading and trailing white space from stringIn. */
+void trim_string_in_place(char *stringIn);
 
-DESCRIPTION :
-Returns a copy of the <string> with the leading and trailing white space
-removed.  NB Memory is allocated by this function for the copy.
-==============================================================================*/
+/**
+ * Returns a copy of the stringIn with the leading and trailing white space
+ * removed.  NB Memory is allocated by this function for the copy.
+ */
+char *trim_string(const char *stringIn);
 
 char *upcase(char *string);
 
@@ -163,21 +163,19 @@ Same as fuzzy_string_compare except that the two reduced strings must be the
 same length.
 ==============================================================================*/
 
+/**
+ * If the string pointed to by <token_address> contains any special characters
+ * such that, if parsed, it would not be read in its entirety as a single token,
+ * this function reallocates and redefines the string so that it is surrounded
+ * by quotes. Any quotes in the original string are escaped by preceding with
+ * a backslash \, and each backslash is written as "\\".
+ * Special characters include token separators (whitespace|,|;|=), comment
+ * characters (!/#) and the quote marks themselves ("|').
+ * NOTE: the string pointed to by <token_address> must be non-static and allowed
+ * to be reallocated.
+ * @see extract_token().
+ */
 int make_valid_token(char **token_address);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1998
-
-DESCRIPTION :
-If the string pointed to by <token_address> contains any special characters such
-that, if parsed, it would not be read in its entirety as a single token, this
-function reallocates and redefines the string so that it is surrounded by
-quotes. Any quotes in the original string are put back in pairs so they are read
-as one quote when parsed, as explained in function extract_token().
-Special characters include token separators (whitespace/,/;/=), comment
-characters (!/#) and the quote marks themselves ("/').
-NOTE: the string pointed to by <token_address> must be non-static and allowed
-to be reallocated.
-==============================================================================*/
 
 /**
  * @param formatString  C-style printf format string for floating point output.
