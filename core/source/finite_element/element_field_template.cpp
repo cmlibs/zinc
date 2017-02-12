@@ -407,7 +407,8 @@ int FE_element_field_template::setLegacyGridNumberInXi(const int *numberInXiIn)
 int FE_element_field_template::setLegacyModifyThetaMode(FE_basis_modify_theta_mode modifyThetaModeIn)
 {
 	if (this->locked
-		|| (this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE))
+		|| ((modifyThetaModeIn != FE_BASIS_MODIFY_THETA_MODE_INVALID) &&
+			(this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)))
 		return CMZN_ERROR_ARGUMENT;
 	this->legacyModifyThetaMode = modifyThetaModeIn;
 	return CMZN_OK;

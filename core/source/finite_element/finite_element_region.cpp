@@ -1150,6 +1150,27 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	return 0;
 }
 
+struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
+	struct FE_region *fe_region, int dimension)
+{
+	if ((!fe_region) || (dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+		return 0;
+	int basisType[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	basisType[0] = dimension;
+	int *type = basisType + 1;
+	for (int d = 0; d < dimension; ++d)
+	{
+		*type = FE_BASIS_CONSTANT;
+		++type;
+		for (int i = d + 1; d < dimension; ++i)
+		{
+			*type = NO_RELATION;
+			++type;
+		}
+	}
+	return make_FE_basis(basisType, fe_region->bases_and_shapes->getBasisManager());
+}
+
 void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
 	struct cmzn_region *cmiss_region)
 {

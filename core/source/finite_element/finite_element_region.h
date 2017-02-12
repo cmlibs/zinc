@@ -450,9 +450,18 @@ struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
 
 /**
  * Finds or creates a struct FE_basis in <fe_region> with the given basis_type.
+ * @return  Non-accessed basis.
  */
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	struct FE_region *fe_region, int *basis_type);
+
+/**
+ * Finds or creates a struct FE_basis in <fe_region> for constant interpolation
+ * of the given dimension.
+ * @return  Non-accessed basis.
+ */
+struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
+	struct FE_region *fe_region, int dimension);
 
 /**
  * Sets the owning cmiss_region for this fe_region. Can also clear it.

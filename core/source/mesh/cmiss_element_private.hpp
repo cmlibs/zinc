@@ -16,10 +16,147 @@
 #include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "datastore/labelschangelog.hpp"
+#include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_mesh.hpp"
 
 struct FE_basis;
 class FE_mesh;
 struct FE_region;
+
+class LegacyElementFieldData;
+
+/** External element template object handling legacy node mappings */
+struct cmzn_elementtemplate
+{
+private:
+	FE_element_template *fe_element_template; // internal implementation
+	int legacyNodesCount;
+	cmzn_node **legacyNodes;
+	std::vector<LegacyElementFieldData*> legacyFieldDataList;
+#if 0 // GRC
+	typedef std::map<cmzn_mesh_scale_factor_set*, int> ScaleFactorSetIntMap;
+	ScaleFactorSetIntMap scale_factor_set_sizes;
+#endif // GRC
+	int access_count;
+
+	cmzn_elementtemplate(FE_mesh *fe_mesh_in);
+
+	~cmzn_elementtemplate();
+
+	inline void beginChange()
+	{
+		FE_region_begin_change(this->getMesh()->get_FE_region());
+	}
+
+	inline void endChange()
+	{
+		FE_region_end_change(this->getMesh()->get_FE_region());
+	}
+
+	void clearLegacyNodes();
+
+	void clearLegacyElementFieldData(FE_field *fe_field);
+
+	LegacyElementFieldData *getLegacyElementFieldData(FE_field *fe_field);
+
+	LegacyElementFieldData *getOrCreateLegacyElementFieldData(FE_field *fe_field);
+
+	int setLegacyNodesInElement(cmzn_element *element);
+
+public:
+
+	static cmzn_elementtemplate *create(FE_mesh *fe_mesh_in)
+	{
+		if (fe_mesh_in)
+			return new cmzn_elementtemplate(fe_mesh_in);
+		return 0;
+	}
+
+	cmzn_elementtemplate_id access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(cmzn_elementtemplate_id &element_template)
+	{
+		if (!element_template)
+			return CMZN_ERROR_ARGUMENT;
+		--(element_template->access_count);
+		if (element_template->access_count <= 0)
+			delete element_template;
+		element_template = 0;
+		return CMZN_OK;
+	}
+
+	int setElementShape(FE_element_shape *elementShape)
+	{
+		return this->fe_element_template->setElementShape(elementShape);
+	}
+
+	cmzn_element_shape_type getShapeType() const
+	{
+		return FE_element_shape_get_simple_type(this->fe_element_template->getElementShape());
+	}
+
+	int setElementShapeType(cmzn_element_shape_type shapeTypeIn);
+
+	FE_mesh *getMesh() const
+	{
+		return this->fe_element_template->getMesh();
+	}
+
+	int getNumberOfNodes() const
+	{
+		return legacyNodesCount;
+	}
+
+	int setNumberOfNodes(int legacyNodesCountIn);
+
+	int defineField(cmzn_field_id field, int componentNumber, cmzn_elementfieldtemplate *eft);
+
+	int defineFieldSimpleNodal(cmzn_field_id field,
+		int componentNumber, cmzn_elementbasis_id elementbasis, int nodeIndexesCount,
+		const int *nodeIndexes);
+
+	int defineFieldElementConstant(cmzn_field_id field, int componentNumber);
+
+	/** @param componentNumber  -1 for all components, or positive for single component
+	  * \note DEPRECATED; only expected to work with defineFieldSimpleNodal */
+	int setMapNodeValueLabel(cmzn_field_id field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, cmzn_node_value_label nodeValueLabel);
+
+	/** @param componentNumber  -1 for all components, or positive for single component
+	  * \note DEPRECATED; only expected to work with defineFieldSimpleNodal */
+	int setMapNodeVersion(cmzn_field_id field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, int versionNumber);
+
+	bool validate() const
+	{
+		return this->fe_element_template->validate();
+	}
+
+	/** @param local_node_index  Index from 1 to legacy nodes count.
+	  * @return  Non-accessed node, or 0 if invalid index or no node at index. */
+	cmzn_node_id getNode(int local_node_index);
+
+	/** @param local_node_index  Index from 1 to legacy nodes count. */
+	int setNode(int local_node_index, cmzn_node_id node);
+
+	int removeField(cmzn_field_id field);
+
+	int undefineField(cmzn_field_id field);
+
+	cmzn_element *createElement(int identifier);
+
+	int mergeIntoElement(cmzn_element *element);
+
+	FE_element_template *get_FE_element_template()
+	{
+		return this->fe_element_template;
+	}
+
+};
 
 /***************************************************************************//**
  * Ensures all faces of the supplied element are in this mesh_group.

@@ -685,8 +685,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		{
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
 		{
-			// GRC: split into grid based and element based?
-			(*this->output_file) << ", grid based.\n";
+			(*this->output_file) << ", grid based.\n"; // GRC split to have separate "element based"
 			const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
 			const int unitGridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
 			if (!gridNumberInXi)
@@ -709,7 +708,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		}
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
 		{
-			(*this->output_file) << ", standard node based.";
+			(*this->output_file) << ", standard node based."; // GRC change to "node based"
 			// previously the scale factor set was identified by the basis, now it is explicitly named
 			if (eft->getNumberOfLocalScaleFactors() > 0)
 			{
