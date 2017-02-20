@@ -37,6 +37,63 @@ Module types
 
 namespace {
 
+/** @return  True if zero terminated string s contains at least one contiguous digits
+  * optionally padded with any number of leading and/or trailing spaces. */
+bool isIntegerString(const char *s)
+{
+	const char *c = s;
+	while (*c == ' ')
+		++c;
+	if (!isdigit(*c))
+		return false;
+	do
+	{
+		++c;
+	} while (isdigit(*c));
+	while (*c == ' ')
+		++c;
+	return (*c == '\0');
+}
+
+/** Return the next token in the string, skipping initial spaces and
+  * ending in white space or specified separator characters.
+  * @param s  String to parse. Modified by this function to put null character
+  * at end of token. On conclusion, s is advanced past the token, and any
+  * spaces plus 0 or 1 separation character.
+  * @param sepchars  String containing any separator characters in
+  * addition to white space which token stops at.
+  * @param nextchar  On return contains the next non-space character after
+  * the tokencharacter that was substituted
+  * with null character.
+  * @return  Pointer to next token in s, or null if zero length. Not to be
+  * deallocated. */
+const char *nexttoken(char*& s, const char *sepchars, char &nextchar)
+{
+	while (*s = ' ')
+		++s;
+	const char *token = s;
+	char *e = s;
+	while (!(isspace(*e) || (0 != strchr(sepchars, *e))))
+		++e;
+	nextchar = *e;
+	*e = '\0';
+	// advance s beyond end of token
+	s = e;
+	if (nextchar != '\0')
+		++s;
+	if (nextchar == ' ')
+	{
+		while (*s = ' ')
+			++s;
+		if (0 != strchr(sepchars, *s))
+		{
+			nextchar = *s;
+			++s;
+		}
+	}
+	return token;
+}
+
 class KeyValueMap
 {
 	// pairs of key and value
@@ -210,6 +267,18 @@ public:
 
 class EXReader
 {
+	class ScaleFactorSetData
+	{
+	public:
+		int scaleFactorCount;
+		int scaleFactorOffset;
+		ScaleFactorSetData(int scaleFactorCountIn, int scaleFactorOffsetIn) :
+			scaleFactorCount(scaleFactorCountIn),
+			scaleFactorOffset(scaleFactorOffsetIn)
+		{
+		}
+	};
+
 	int exVersion;
 	IO_stream *input_file;
 	FE_import_time_index *timeIndex;
@@ -222,7 +291,7 @@ class EXReader
 	cmzn_elementtemplate *elementtemplate;
 	std::map<FE_field *, std::vector<NodeDerivativesVersions> > nodeFieldComponentDerivativeVersions;
 	std::vector<FE_field *> headerFields; // order of fields in header
-	std::map<std::string, int> scaleFactorSets;
+	std::map<std::string, ScaleFactorSetData> scaleFactorSets;
 	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
 
 public:
@@ -1237,7 +1306,7 @@ bool EXReader::readNodeHeaderField()
 	struct FE_node_field_creator *node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
 	/* read the components */
 	int component_number = 0;
-	char *component_name = 0;
+	char *componentName = 0;
 	{
 		// add node field component derivatives versions storage
 		std::vector<NodeDerivativesVersions> dummy(number_of_components);
@@ -1247,13 +1316,13 @@ bool EXReader::readNodeHeaderField()
 	{
 		IO_stream_scan(this->input_file, " ");
 		/* read the component name */
-		if (component_name)
-			DEALLOCATE(component_name);
-		if (IO_stream_read_string(this->input_file, "[^.]", &component_name))
+		if (componentName)
+			DEALLOCATE(componentName);
+		if (IO_stream_read_string(this->input_file, "[^.]", &componentName))
 		{
-			trim_string_in_place(component_name);
-			if ((strlen(component_name) == 0)
-				|| (!set_FE_field_component_name(field, component_number, component_name)))
+			trim_string_in_place(componentName);
+			if ((strlen(componentName) == 0)
+				|| (!set_FE_field_component_name(field, component_number, componentName)))
 				result = false;
 		}
 		else
@@ -1278,7 +1347,7 @@ bool EXReader::readNodeHeaderField()
 					&& (0 <= number_of_derivatives)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
-						get_FE_field_name(field), component_name, this->getFileLocation());
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -1293,21 +1362,21 @@ bool EXReader::readNodeHeaderField()
 					if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
-							get_FE_field_name(field), component_name, this->getFileLocation());
+							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
 					if (nodeDerivativesVersions.getMaximumVersionCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
-							get_FE_field_name(field), component_name, this->getFileLocation());
+							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
 					if (nodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
-							get_FE_field_name(field), component_name, this->getFileLocation());
+							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
@@ -1318,7 +1387,7 @@ bool EXReader::readNodeHeaderField()
 					if (!nodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
-							get_FE_field_name(field), component_name, this->getFileLocation());
+							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
@@ -1333,7 +1402,7 @@ bool EXReader::readNodeHeaderField()
 					&& (0 <= valuesCount)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read node field %s component %s #Values.  %s",
-						get_FE_field_name(field), component_name, this->getFileLocation());
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -1341,14 +1410,14 @@ bool EXReader::readNodeHeaderField()
 				if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
-						get_FE_field_name(field), component_name, this->getFileLocation());
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
 				if (nodeDerivativesVersions.getValueCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
-						get_FE_field_name(field), component_name, this->getFileLocation());
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -1365,7 +1434,7 @@ bool EXReader::readNodeHeaderField()
 					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
-							ENUMERATOR_STRING(FE_nodal_value_type)(derivativeType), get_FE_field_name(field), component_name, this->getFileLocation());
+							ENUMERATOR_STRING(FE_nodal_value_type)(derivativeType), get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
@@ -1380,7 +1449,7 @@ bool EXReader::readNodeHeaderField()
 				if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, component_number, maximumVersionCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of versions for field %s component %s.  %s",
-						get_FE_field_name(field), component_name, this->getFileLocation());
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -1398,7 +1467,7 @@ bool EXReader::readNodeHeaderField()
 					std::string prefix("EX Reader.  Node field ");
 					prefix += get_FE_field_name(field);
 					prefix += " component ";
-					prefix += component_name;
+					prefix += componentName;
 					prefix += ": ";
 					keyValueMap.reportUnusedKeyValues(prefix.c_str());
 				}
@@ -1407,7 +1476,7 @@ bool EXReader::readNodeHeaderField()
 	}
 	if (result)
 	{
-		// merge into FE_region, which may return an existing matching field
+		// merge field into FE_region, which may return an existing matching field
 		FE_field *mergedField = FE_region_merge_FE_field(this->fe_region, field);
 		if (mergedField)
 		{
@@ -1425,14 +1494,15 @@ bool EXReader::readNodeHeaderField()
 	}
 	if (result)
 	{
-		// define merged field at the node
+		// define field at the node
 		struct FE_time_sequence *fe_time_sequence = 0;
 		if (this->timeIndex)
 		{
 			if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
 				this->fe_region, 1, &(this->timeIndex->time))))
 			{
-				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not get time sequence");
+				display_message(ERROR_MESSAGE, "EXReader.  Could not get time sequence for field %s at node.  %s",
+					get_FE_field_name(field), this->getFileLocation()); 
 				result = false;
 			}
 		}
@@ -1445,14 +1515,15 @@ bool EXReader::readNodeHeaderField()
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not define field at node");
+				display_message(ERROR_MESSAGE, "EX Reader.  Could not define field %s at node.  %s",
+					get_FE_field_name(field), this->getFileLocation());
 				result = false;
 			}
 		}
 	}
 	DESTROY(FE_node_field_creator)(&node_field_creator);
-	if (component_name)
-		DEALLOCATE(component_name);
+	if (componentName)
+		DEALLOCATE(componentName);
 	DEACCESS(FE_field)(&field);
 	return result;
 }
@@ -2237,38 +2308,43 @@ bool EXReader::readElementHeaderField()
 	FE_field *field = this->readField();
 	if (!field)
 		return false;
-	const int number_of_components = get_FE_field_number_of_components(field);
+	const int componentCount = get_FE_field_number_of_components(field);
 	const enum FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	bool result = true;
-	char *component_name = 0;
-	std::vector<cmzn_elementfieldtemplate *> componentEFTs(number_of_components, 0);
-	for (int component_number = 0; component_number < number_of_components; ++component_number)
+	int resultCode;
+	char *componentName = 0;
+
+	std::vector<cmzn_elementfieldtemplate *> componentEFTs(componentCount, 0);
+	std::vector< std::vector<int> > componentPackedNodeIndexes(componentCount);
+	
+	for (int c = 0; c < componentCount; ++c)
 	{
 		IO_stream_scan(this->input_file, " ");
-		/* read the component name */
-		if (component_name)
-			DEALLOCATE(component_name);
-		if (IO_stream_read_string(this->input_file, "[^.]", &component_name))
+		// read the component name
+		if (componentName)
+			DEALLOCATE(componentName);
+		if (IO_stream_read_string(this->input_file, "[^.]", &componentName))
 		{
-			trim_string_in_place(component_name);
-			if ((strlen(component_name) == 0)
-				|| (!set_FE_field_component_name(field, component_number, component_name)))
+			trim_string_in_place(componentName);
+			if ((strlen(componentName) == 0)
+				|| (!set_FE_field_component_name(field, c, componentName)))
 				result = false;
 		}
 		else
 			result = false;
 		if (!result)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Error getting component name for field %s.  %s",
+			display_message(ERROR_MESSAGE, "EX Reader.  Error reading component name for field %s.  %s",
 				get_FE_field_name(field), this->getFileLocation());
 			break;
 		}
 		IO_stream_scan(input_file, ". ");
 		FE_basis *basis = 0;
+		const int dimension = this->mesh->getDimension();
 		if (GENERAL_FE_FIELD == fe_field_type)
 			basis = this->readBasis();
 		else
-			basis = FE_region_get_constant_FE_basis_of_dimension(this->fe_region, this->mesh->getDimension());
+			basis = FE_region_get_constant_FE_basis_of_dimension(this->fe_region, dimension);
 		cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(this->mesh, basis);
 		if (!eft)
 		{
@@ -2277,14 +2353,17 @@ bool EXReader::readElementHeaderField()
 			result = false;
 			break;
 		}
-		componentEFTs[component_number] = eft;
-		if (GENERAL_FE_FIELD == fe_field_type)
+		componentEFTs[c] = eft;
+		if (GENERAL_FE_FIELD != fe_field_type)
 		{
-			cmzn_element_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID;
-			FE_basis_modify_theta_mode thetaModifyMode = FE_BASIS_MODIFY_THETA_MODE_INVALID;
-			bool elementGridBased = false;
+			/* component name is sufficient for non-GENERAL_FE_FIELD */
+			eft->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD);
+		}
+		else
+		{
 			IO_stream_scan(input_file, ", ");
 			// read the basis modify theta mode name
+			FE_basis_modify_theta_mode thetaModifyMode = FE_BASIS_MODIFY_THETA_MODE_INVALID;
 			char *modify_function_name = 0;
 			if (!IO_stream_read_string(input_file, "[^,]", &modify_function_name))
 			{
@@ -2326,7 +2405,9 @@ bool EXReader::readElementHeaderField()
 				break;
 
 			IO_stream_scan(input_file, ", ");
-			/* read the global to element map type */
+			// read the global to element map type
+			cmzn_element_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID;
+			bool elementGridBased = false;
 			char *global_to_element_map_string = 0;
 			if (!IO_stream_read_string(input_file, "[^.]", &global_to_element_map_string))
 			{
@@ -2335,21 +2416,19 @@ bool EXReader::readElementHeaderField()
 				break;
 			}
 			IO_stream_scan(input_file, ".");
-			/* determine the global to element map type */
 			if ((0 == strcmp("standard node based", global_to_element_map_string))
 				|| (0 == strcmp("node based", global_to_element_map_string)))
 			{
 				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE;
 			}
+			else if (0 == strcmp("element based", global_to_element_map_string))
+			{
+				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT;
+			}
 			else if (0 == strcmp("grid based", global_to_element_map_string))
 			{
 				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT;
 				elementGridBased = true;
-			}
-			else if (0 == strcmp("element based", global_to_element_map_string))
-			{
-				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT;
-				elementGridBased = false;
 			}
 			else if (0 == strcmp("field based", global_to_element_map_string))
 			{
@@ -2364,7 +2443,7 @@ bool EXReader::readElementHeaderField()
 			DEALLOCATE(global_to_element_map_string);
 			if (!result)
 				break;
-			if (!eft->setElementParameterMappingMode(elementParameterMappingMode))
+			if (CMZN_OK != eft->setElementParameterMappingMode(elementParameterMappingMode))
 			{
 				display_message(WARNING_MESSAGE, "EX Reader.  Can't use element parameter mapping mode with chosen basis.  %s",
 					this->getFileLocation());
@@ -2376,22 +2455,47 @@ bool EXReader::readElementHeaderField()
 				display_message(WARNING_MESSAGE, "EX Reader.  Can't use theta modify function with chosen element parameter mapping mode.  %s",
 					this->getFileLocation());
 			}
+			// optionally read additional key=value data
+			KeyValueMap keyValueMap;
 			const char *scaleFactorSetName = 0; // prior to EX version 2, used the basis description as the scale factor name
-			if (this->exVersion >= 2)
+			int gridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			if ((this->exVersion >= 2) || elementGridBased)
 			{
-				// read additional key=value data
-				KeyValueMap keyValueMap;
 				int next_char = this->readNextNonSpaceChar();
 				if (!isspace(next_char))
 					this->readKeyValueMap(keyValueMap);
 				if (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode)
+				{
 					scaleFactorSetName = keyValueMap.getKeyValue("scale factor set");
+				}
+				else if (elementGridBased)
+				{
+					/* read number of divisions in each xi direction */
+					for (int d = 0; d < dimension; ++d)
+					{
+						char xiToken[20];
+						sprintf(xiToken, "#xi%d", d + 1);
+						const char *gridNumberInXiString = keyValueMap.getKeyValue(xiToken);
+						if (gridNumberInXiString && isIntegerString(gridNumberInXiString))
+						{
+							gridNumberInXi[d] = atoi(gridNumberInXiString);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE, "EX Reader.  Missing or invalid %s=NUMBER for grid based component.  %s",
+								xiToken, this->getFileLocation());
+							result = false;
+						}
+					}
+					if (!result)
+						break;
+				}
 				if (keyValueMap.hasUnusedKeyValues())
 				{
 					std::string prefix("EX Reader.  Element field ");
 					prefix += get_FE_field_name(field);
 					prefix += " component ";
-					prefix += component_name;
+					prefix += componentName;
 					prefix += ": ";
 					keyValueMap.reportUnusedKeyValues(prefix.c_str());
 				}
@@ -2400,49 +2504,47 @@ bool EXReader::readElementHeaderField()
 			{
 			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
 			{
-				/* node to element map: includes standard and general */
-				int nodeCount;
+				// node to element map: includes standard and general
+				int nodeCount = 0;
 				if (1 != IO_stream_scan(input_file, "#Nodes=%d", &nodeCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading component number of nodes.  %s", this->getFileLocation());
 					result = false;
 					break;
 				}
-				// see note about revising nodeCount below
-				if (!eft->setNumberOfLocalNodes(nodeCount))
+				// In EX Version 2+ this is the number of nodes in the EFT; prior to that it was the
+				// number of node mapping lines corresponding to the preferred number of nodes for
+				// the basis, which is reduced below.
+				// Local nodes are initially indexes in order of first reference, so
+				// 2 6 3 3 1 means 4 unique local node indexes 1 2 3 4 for nodes 2 6 3 1
+				// Later we reorder to numerical order in element, i.e. 1 2 3 6
+				// This requires remapping the indexes used to 2 4 3 3 1
+				if (CMZN_OK != eft->setNumberOfLocalNodes(nodeCount))
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of nodes.  %s", this->getFileLocation());
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element field template number of nodes.  %s", this->getFileLocation());
 					result = false;
 					break;
 				}
-				int packedNodeOffset = 0;
 				if (this->exVersion >= 2)
 				{
-					// read additional key=value data
+					// if a comma is next read additional key=value data
 					KeyValueMap keyValueMap;
 					int next_char = this->readNextNonSpaceChar();
 					if (next_char == (int)',')
 						this->readKeyValueMap(keyValueMap);
-					const char *tmpString = keyValueMap.getKeyValue("offset");
-					if ((!tmpString)
-						|| ((packedNodeOffset = atoi(tmpString)) < 0))
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Expected positive ', offset=#' for EX Version 2.  %s", this->getFileLocation());
-						result = false;
-						break;
-					}
 					if (keyValueMap.hasUnusedKeyValues())
 					{
 						std::string prefix("EX Reader.  Element field");
 						prefix += get_FE_field_name(field);
 						prefix += " component ";
-						prefix += component_name;
+						prefix += componentName;
 						prefix += ": ";
 						keyValueMap.reportUnusedKeyValues(prefix.c_str());
 					}
 				}
 
 				int scaleFactorCount = 0;
+				int scaleFactorOffset = 0;
 				if (scaleFactorSetName) // EX Version 2+ only; none if not scaling
 				{
 					auto iter = this->scaleFactorSets.find(scaleFactorSetName);
@@ -2452,340 +2554,426 @@ bool EXReader::readElementHeaderField()
 						result = false;
 						break;
 					}
-					scaleFactorCount = iter->second;
+					scaleFactorCount = iter->second.scaleFactorCount;
+					scaleFactorOffset = iter->second.scaleFactorOffset;
 				}
 				else if (this->exVersion < 2)
 				{
 					// basis name was used as identifier for scale factor set prior to EX Version 2
 					char *basisDescription = FE_basis_get_description_string(basis);
 					if (!basisDescription)
-						return false;
-					auto iter = this->scaleFactorSets.find(scaleFactorSetName);
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to get basis description.  %s", this->getFileLocation());
+						result = false;
+						break;
+					}
+					auto iter = this->scaleFactorSets.find(basisDescription);
 					if (iter != this->scaleFactorSets.end())
-						scaleFactorCount = iter->second;
+					{
+						scaleFactorCount = iter->second.scaleFactorCount;
+						scaleFactorOffset = iter->second.scaleFactorOffset;
+					}
 					DEALLOCATE(basisDescription);
 				}
-				if (!eft->setNumberOfLocalScaleFactors(scaleFactorCount))
+				if (CMZN_OK != eft->setNumberOfLocalScaleFactors(scaleFactorCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of scale factors.  %s", this->getFileLocation());
 					result = false;
 					break;
 				}
-
-				// the node count set earlier may be greater than the number to set for EX Version < 2.
-				// the old version specified the basis number of nodes. Need to find actual number used and set again
-				// In EX Version 2 node indexes are relative to EFT; in version < 2 they are relative to element template
-				// so need to get number and sequence to convert to EFT
+				// following stores element node indexes in order referenced by EFT (until sorted later)
 				std::vector<int> packedNodeIndexes;
-				// for EX Version < 2, remove scale factors if none are used (unscaled remains true)
-				bool unscaled = (this->exVersion < 2);
-				int i = 0;
-				while (i < eft->getNumberOfFunctions())
+				int fn = 1;
+				const int functionCount = eft->getNumberOfFunctions();
+				while (fn < functionCount)
 				{
-					// read zero or more local node indexes summing terms, e.g. ".", "1.". "1+2."
-					char *nodeIndexTermsString = 0;
-					if (!IO_stream_read_string(input_file, "[^.]", &nodeIndexTermsString))
+					// read one or more local node indexes summing terms e.g. "0." (special = zero terms), "1.", "1+2.", "3+1+3."
+					char *nodeIndexString = 0;
+					int termCount = 0;
+					// following stores node indexes for termCount terms as indexes in packedNodeIndexes + 1
+					std::vector<int> termNodeIndexes;
+					while (true)
+					{
+						if (!IO_stream_read_string(input_file, "[^.+]", &nodeIndexString))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Failed to read local node index expression.  %s", this->getFileLocation());
+							result = false;
+							break;
+						}
+						const int next_char = this->readNextNonSpaceChar();
+						const int nodeIndex = atoi(nodeIndexString);
+						if ((!isIntegerString(nodeIndexString))
+							|| (nodeIndex < 0)
+							|| (nodeIndex > this->elementtemplate->getNumberOfNodes())
+							|| ((nodeIndex == 0) && (termCount > 0)))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Node index %s invalid or out of range.  %s", nodeIndexString, this->getFileLocation());
+							result = false;
+							break;
+						}
+						if (0 == nodeIndex)
+						{
+							if (next_char != (int)'.')
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Node index 0 (zero terms) must be on its own ('0.').  %s", this->getFileLocation());
+								result = false;
+							}
+							break;
+						}
+						++termCount;
+						const int packedCount = static_cast<int>(packedNodeIndexes.size());
+						int packedIndex = 0;
+						for (; packedIndex < packedCount; ++packedIndex)
+						{
+							if (packedNodeIndexes[packedIndex] == nodeIndex)
+								break;
+						}
+						if (packedIndex == packedCount)
+						{
+							if (packedCount == nodeCount)
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Too many nodes referenced, expected %d.  %s",
+									nodeCount, this->getFileLocation());
+								result = false;
+								break;
+							}
+							packedNodeIndexes.push_back(nodeIndex);
+						}
+						termNodeIndexes.push_back(packedIndex + 1);
+						DEALLOCATE(nodeIndexString);
+						if (next_char == (int)'.')
+							break;
+					}
+					if (nodeIndexString)
+						DEALLOCATE(nodeIndexString);
+					if (!result)
+						break;
+					if ((this->exVersion < 2) && (termCount != 1))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  EX Version < 2 supports exactly 1 term per function; this has %d.  %s",
+							termCount, this->getFileLocation());
+						result = false;
+						break;
+					}
+					int valueCount = 0;
+					if ((1 != IO_stream_scan(input_file, " #Values=%d", &valueCount)) || (valueCount < 1))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Values.  %s", this->getFileLocation());
+						result = false;
+						break;
+					}
+					if ((fn + valueCount) > functionCount)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  #Values would exceed number of basis functions.  %s", this->getFileLocation());
+						result = false;
+						break;
+					}
+
+					char *dofMappingTypeString = 0;
+					// old EX files use indices into nodal values
+					// new EX files use value labels e.g. value d/ds1(2) zero, now compulsory in EX version 2+
+					if (!IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
 					{
 						result = false;
 						break;
 					}
-					std::vector<std::string> stringVector;
-					// GRC up to here
-					//if (!this->)
-					//	char *blah = IO_stream_read_string(this->input_file, " this->readString();
-				}
-				if (!result)
-					break;
-				for (i = 0; (i < number_of_nodes) && return_code; ++i)
-				{
-					if (2 != IO_stream_scan(input_file, "%d .  #Values=%d",
-						&node_index, &number_of_values))
-					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Invalid read of node index and #Values.  %s", location);
-						DEALLOCATE(location);
-						return_code = 0;
-						break;
-					}
-					char *dofMappingTypeString = 0;
-					// old EX files use indices into nodal values
-					// new EX files use value labels e.g. value d/ds1(2) zero
-					bool readValueIndices = false;
-					if (IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
-					{
-						if (1 == sscanf(dofMappingTypeString, " Value indice%1[s] ", test_string))
-							readValueIndices = true;
-						else if (1 != sscanf(dofMappingTypeString, " Value label%1[s] ", test_string))
-							return_code = 0;
-					}
-					else
-						return_code = 0;
+					char test_string[5];
+					const bool readValueIndices = (1 == sscanf(dofMappingTypeString, " Value indice%1[s] ", test_string));
+					if ((!readValueIndices) && (1 != sscanf(dofMappingTypeString, " Value label%1[s] ", test_string)))
+						result = false;
 					DEALLOCATE(dofMappingTypeString);
-					if (!return_code)
+					if (!result)
 					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Missing \" Value indices: \" or \" Value labels: \" token in file.  %s", location);
-						DEALLOCATE(location);
-						return_code = 0;
-						break;
-					}
-					if (readValueIndices)
-						standard_node_map = Standard_node_to_element_map_create_legacy(node_index - 1, number_of_values);
-					else
-						standard_node_map = Standard_node_to_element_map_create(node_index - 1, number_of_values);
-					if (!standard_node_map)
-					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Failed to create standard node to element map from file.  %s", location);
-						DEALLOCATE(location);
-						return_code = 0;
+						display_message(ERROR_MESSAGE, "Missing \"Value indices:\" or \"Value labels:\" token.  %s", this->getFileLocation());
 						break;
 					}
 					IO_stream_scan(input_file, ": ");
+					const int termLimit = (termCount) > 0 ? termCount : 1;
 					if (readValueIndices)
 					{
-						for (j = 0; j < number_of_values; ++j)
+						if (this->exVersion >= 2)
 						{
-							if (!((1 == IO_stream_scan(input_file, "%d", &index)) &&
-								Standard_node_to_element_map_set_nodal_value_index(
-									standard_node_map, j, index - 1)))
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Error reading nodal value index from file.  %s", location);
-								DEALLOCATE(location);
-								return_code = 0;
-								break;
-							}
-						}
-					}
-					else // read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2
-					{
-						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "Missing node value labels.  %s", location);
-							DEALLOCATE(location);
-							return_code = 0;
+							display_message(ERROR_MESSAGE, "EX Reader.  Must use Value labels, not Value indices in EX version 2+.  %s", this->getFileLocation());
+							result = false;
 							break;
 						}
-						char *label = rest_of_line;
-						j = 0;
-						for (j = 0; j < number_of_values; ++j)
+						for (int v = 0; v < valueCount; ++v)
 						{
-							while (isspace(*label))
-								++label;
-							if ('\0' == *label)
+							int nodeValueIndex = 0;
+							if (1 != IO_stream_scan(input_file, "%d", &nodeValueIndex))
 							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE, "Only %d out of %d value labels found.  %s",
-									j, number_of_values, location);
-								DEALLOCATE(location);
-								return_code = 0;
+								display_message(ERROR_MESSAGE, "EX Reader.  Error reading nodal value index.  %s", this->getFileLocation());
+								result = false;
 								break;
 							}
-							const char *valueTypeString = label;
-							bool readVersion = false;
-							while (('\0' != *label) && (!isspace(*label)))
+							if (nodeValueIndex == 0)
+								resultCode = eft->setFunctionNumberOfTerms(fn + v, 0);
+							else
+								resultCode = eft->setTermNodeParameterLegacyIndex(fn + v, /*term*/1, termNodeIndexes[0], nodeValueIndex);
+							if (resultCode != CMZN_OK)
 							{
-								if ('(' == *label)
-								{
-									readVersion = true;
-									break;
-								}
-								++label;
-							}
-							if ('\0' != *label)
-							{
-								*label = '\0';
-								++label;
-							}
-							enum FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
-							if (!(STRING_TO_ENUMERATOR(FE_nodal_value_type)(valueTypeString, &valueType) &&
-								(FE_NODAL_UNKNOWN != valueType) &&
-								Standard_node_to_element_map_set_nodal_value_type(standard_node_map, j, valueType)))
-							{
-								// the special 'zero' label means parameter=0
-								// stored as default FE_NODAL_UNKNOWN type, so no need to set
-								if (0 != strcmp(valueTypeString, "zero"))
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE, "Invalid nodal value label '%s'.  %s",
-										valueTypeString, location);
-									DEALLOCATE(location);
-									return_code = 0;
-									break;
-								}
-							}
-							if (readVersion)
-							{
-								const char *versionString = label;
-								while (('\0' != *label) && (')' != *label))
-								{
-									++label;
-								}
-								if (')' == *label)
-								{
-									*label = '\0';
-									++label;
-									int version = 0;
-									if ((1 != sscanf(versionString, "%d", &version)) ||
-										!Standard_node_to_element_map_set_nodal_version(standard_node_map, j, version))
-									{
-										return_code = 0;
-									}
-								}
-								else
-									return_code = 0;
-								if (!return_code)
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE, "Invalid version number or format.  %s", location);
-									DEALLOCATE(location);
-									return_code = 0;
-									break;
-								}
+								display_message(ERROR_MESSAGE, "EX Reader.  Failed to set legacy node DOF index.  %s", this->getFileLocation());
+								result = false;
+								break;
 							}
 						}
-						if (return_code)
+						if (!result)
+							break;
+					}
+					else
+					{
+						char *rest_of_line = 0;
+						// read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2 zero d/ds1(2)+d/ds2(3) etc.
+						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 						{
-							// check for unexpected additional text
-							while ('\0' != *label)
+							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
+							result = false;
+							break;
+						}
+						char *s = rest_of_line;
+						char nextchar;
+						const char *token;
+						for (int v = 0; v < valueCount; ++v)
+						{
+							resultCode = eft->setFunctionNumberOfTerms(fn + v, termCount);
+							if (resultCode != CMZN_OK)
 							{
-								if (!isspace(*label))
+								display_message(ERROR_MESSAGE, "EX Reader.  Failed to set function %d number of terms to %d.  %s",
+									fn + v, termCount, this->getFileLocation());
+								result = false;
+								break;
+							}
+							for (int t = 1; t <= termLimit; ++t)
+							{
+								token = nexttoken(s, "(+", nextchar);
+								if ((termCount <= 1) && (0 == strcmp(token, "zero")))
 								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE, "Unexpected text '%s' after labels.  %s",
-										label, location);
-									DEALLOCATE(location);
-									return_code = 0;
+									if (!(isspace(nextchar) || (nextchar == '\0')))
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Invalid character '%c' after value label 'zero'.  %s", nextchar, this->getFileLocation());
+										result = false;
+										break;
+									}
+									if (termCount == 1)
+									{
+										// prior to EX version 2, could have 'zero' value with a single node
+										resultCode = eft->setFunctionNumberOfTerms(fn + v, 0);
+									}
+								}
+								else if (termCount == 0)
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  Require value label 'zero' when there are no terms.  %s", this->getFileLocation());
+									result = false;
 									break;
 								}
-								++label;
+								else
+								{
+									enum FE_nodal_value_type nodalValueType = FE_NODAL_UNKNOWN;
+									if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(token, &nodalValueType))
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Invalid node value label '%s'.  %s", token, this->getFileLocation());
+										result = false;
+										break;
+									}
+									int version = 1;
+									if (nextchar == '(')
+									{
+										const char *versionToken = nexttoken(s, ")", nextchar);
+										version = atoi(versionToken);
+										if ((!isIntegerString(versionToken)) || (nextchar != ')') || (version < 1))
+										{
+											display_message(ERROR_MESSAGE, "EX Reader.  Invalid version number specification.  %s", this->getFileLocation());
+											result = false;
+											break;
+										}
+										// look for possible + after version
+										while (*s == ' ')
+											++s;
+										nextchar = *s;
+										if (nextchar == '+')
+											++s;
+									}
+									resultCode = eft->setTermNodeParameter(fn + v, t, termNodeIndexes[t - 1],
+										FE_nodal_value_type_to_cmzn_node_value_label(nodalValueType), version);
+									if (resultCode != CMZN_OK)
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Failed to set function %d node parameter term %d.  %s",
+											fn + v, t, this->getFileLocation());
+										result = false;
+										break;
+									}
+								}
+								if (t < termCount)
+								{
+									if (nextchar != '+')
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Require '+' followed by additional term(s).  %s", this->getFileLocation());
+										result = false;
+										break;
+									}
+								}
+								else if (nextchar == '+')
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  Too many terms, unexpected character '%c'.  %s", nextchar, this->getFileLocation());
+									result = false;
+									break;
+								}
+							}
+							if (!result)
+								break;
+						}
+						if (result)
+						{
+							token = nexttoken(s, "", nextchar);
+							if (0 != strlen(token))
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%s' after labels.  %s", token, this->getFileLocation());
+								result = false;
 							}
 						}
 						DEALLOCATE(rest_of_line);
+						if (!result)
+							break;
 					}
-					if (return_code)
+					// read the scale factor indices, but only if using scaling in EX Version 2+
+					if ((scaleFactorCount > 0) || (this->exVersion < 2))
 					{
-						/* read the scale factor indices */
-						/* Use a %1[:] so that a successful read will return 1 */
 						if (1 != IO_stream_scan(input_file, " Scale factor indices%1[:] ", test_string))
 						{
-							display_message(WARNING_MESSAGE,
-								"Truncated read of required \" Scale factor indices: \" token in element file.");
+							display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Scale factor indices:\" token.  %s", this->getFileLocation());
+							result = false;
+							break;
 						}
-						for (j = 0; (j < number_of_values) &&
-							return_code; j++)
+						char *rest_of_line = 0;
+						// read scale factor index expressions e.g. 0 (for unscaled) 60 1*2 3*4+1*2*3 etc.
+						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 						{
-							if ((1 == IO_stream_scan(input_file, "%d", &index)) &&
-								Standard_node_to_element_map_set_scale_factor_index(
-									standard_node_map, j, index - 1))
+							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
+							result = false;
+							break;
+						}
+						// set following to true if scale factors are actually used
+						bool usingScaleFactors = false;
+						char *s = rest_of_line;
+						char nextchar;
+						const char *token;
+						for (int v = 0; v < valueCount; ++v)
+						{
+							for (int t = 1; t <= termLimit; ++t)
 							{
-								if (noScaleFactors && (index > 0))
+								std::vector<int> scaleFactorIndexes;
+								// each term in sum is scaled by product of positive scale factor indexes e.g. 2*3+4, or 0 for unscaled
+								int sfCount = 0;
+								while (true)
 								{
-									noScaleFactors = false;
-									char *scale_factor_set_name = FE_basis_get_description_string(basis);
-									cmzn_mesh_scale_factor_set *scale_factor_set =
-										fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
-									if (!scale_factor_set)
+									token = nexttoken(s, "*+", nextchar);
+									const int scaleFactorIndex = atoi(token);
+									if (!(isIntegerString(token)
+										&& (((sfCount == 0) && (scaleFactorIndex == 0))
+											|| ((scaleFactorIndex > scaleFactorOffset) && (scaleFactorIndex <= scaleFactorOffset + scaleFactorCount)))))
 									{
-										scale_factor_set = fe_mesh->create_scale_factor_set();
-										scale_factor_set->setName(scale_factor_set_name);
+										display_message(ERROR_MESSAGE, "EX Reader.  Invalid scale factor index '%s' for scale factor set.  %s", token, this->getFileLocation());
+										result = false;
+										break;
 									}
-									FE_element_field_component_set_scale_factor_set(
-										components[component_number], scale_factor_set);
-									cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-									DEALLOCATE(scale_factor_set_name);
+									if (scaleFactorIndex == 0)
+									{
+										if (nextchar == '*')
+										{
+											display_message(ERROR_MESSAGE, "EX Reader.  Scale factor index 0 (no scaling) cannot be used in product with other scale factors.  %s", this->getFileLocation());
+											result = false;
+										}
+										break;
+									}
+									scaleFactorIndexes.push_back(scaleFactorIndex - scaleFactorOffset);
+									++sfCount;
+									if (nextchar != '*')
+										break;
+								}
+								if (!result)
+									break;
+								if (t < termCount)
+								{
+									if (nextchar != '+')
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Require '+' followed by additional term(s).  %s", this->getFileLocation());
+										result = false;
+										break;
+									}
+								}
+								else if (nextchar == '+')
+								{
+									display_message(ERROR_MESSAGE, "EX Reader.  Too many terms, unexpected character '%c'.  %s", nextchar, this->getFileLocation());
+									result = false;
+									break;
+								}
+								if (sfCount > 0)
+								{
+									if ((sfCount > 1) && (this->exVersion < 2))
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Cannot use product of scale factors with EX Version < 2.  %s",
+											this->getFileLocation());
+										result = false;
+										break;
+									}
+									usingScaleFactors = true;
+									resultCode = eft->setTermScaling(fn + v, t, sfCount, scaleFactorIndexes.data());
+									if (resultCode != CMZN_OK)
+									{
+										display_message(ERROR_MESSAGE, "EX Reader.  Failed to set function %d term %d scaling.  %s",
+											fn + v, t, this->getFileLocation());
+										result = false;
+										break;
+									}
 								}
 							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Error reading scale factor index from "
-									"file.  %s",
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
+							if (!result)
+								break;
 						}
-						if (return_code)
+						if (!result)
+							break;
+						if ((!usingScaleFactors) && (this->exVersion < 2))
 						{
-							if (!FE_element_field_component_set_standard_node_map(
-								components[component_number],
-								/*node_number*/i, standard_node_map))
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"read_FE_element_field.  Error setting "
-									"standard_node_to_element_map");
-								Standard_node_to_element_map_destroy(&standard_node_map);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
+							// for EX Version < 2, remove scale factors if none are used
+							scaleFactorCount = 0;
+							scaleFactorOffset = 0;
+							eft->setNumberOfLocalScaleFactors(0);
 						}
 					}
+					const int packedCount = static_cast<int>(packedNodeIndexes.size());
+					if ((packedCount < nodeCount) && (this->exVersion < 2))
+					{
+						resultCode = eft->setNumberOfLocalNodes(packedCount);
+						if (resultCode != CMZN_OK)
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Failed to reset element field template number of nodes to %d.  %s",
+								packedCount, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+					resultCode = eft->sortNodeIndexes(packedNodeIndexes);
+					if (resultCode != CMZN_OK)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to sort element field template node indexes.  %s", this->getFileLocation());
+						result = false;
+						break;
+					}
+					componentPackedNodeIndexes[c].swap(packedNodeIndexes);
+					fn += valueCount;
 				}
 			} break;
 			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
 			{
-				//!!!GRC handle elementGridBased
-				/* element grid based */
-				if (NULL != (components[component_number] =
-					CREATE(FE_element_field_component)(
-						ELEMENT_GRID_MAP, 1, basis, modify)))
+				if (elementGridBased)
 				{
-					/* read number of divisions in each xi direction */
-					i = 0;
-					while (return_code && (i < dimension))
+					resultCode = eft->setLegacyGridNumberInXi(gridNumberInXi);
+					if (resultCode != CMZN_OK)
 					{
-						if ((2 == IO_stream_scan(input_file, "#xi%d = %d", &j,
-							&number_in_xi)) && (j == i + 1))
-						{
-							if (FE_element_field_component_set_grid_map_number_in_xi(
-								components[component_number], i, number_in_xi))
-							{
-								IO_stream_scan(input_file, " , ");
-								i++;
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Grid basis must be constant for #xi=0, or linear for #xi>0.  %s",
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Error reading #xi%d.  %s", i + 1,
-								location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
+						display_message(ERROR_MESSAGE, "EX Reader.  Invalid grid number in xi for field %s at element.  %s",
+							get_FE_field_name(field), this->getFileLocation());
+						result = false;
 					}
-					if (return_code)
-					{
-						FE_element_field_component_set_grid_map_value_index(
-							components[component_number], 0);
-					}
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"read_FE_element_field.  "
-						"Error creating component from file");
-					DEALLOCATE(location);
-					return_code = 0;
 				}
 			} break;
 			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:
@@ -2800,15 +2988,12 @@ bool EXReader::readElementHeaderField()
 			if (!result)
 				break;
 		}
-		else
-		{
-			/* component name is sufficient for non-GENERAL_FE_FIELD */
-			eft->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD);
-		}
 	}
+	if (componentName)
+		DEALLOCATE(componentName);
 	if (result)
 	{
-		// merge into FE_region, which may return an existing matching field
+		// merge field into FE_region, which may return an existing matching field
 		FE_field *mergedField = FE_region_merge_FE_field(this->fe_region, field);
 		if (mergedField)
 		{
@@ -2824,674 +3009,56 @@ bool EXReader::readElementHeaderField()
 			result = false;
 		}
 	}
-
-	// GRC Node header field start
 	if (result)
 	{
-		// define merged field in the element template
-		struct FE_time_sequence *fe_time_sequence = 0;
-		if (this->timeIndex)
+		bool homogeneous = true;
+		for (int c = 1; c < componentCount; ++c)
 		{
-			if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
-				this->fe_region, 1, &(this->timeIndex->time))))
+			if (!(componentEFTs[c]->matches(*(componentEFTs[c - 1]))
+				&& (componentPackedNodeIndexes[c] == componentPackedNodeIndexes[c - 1])))
 			{
-				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not get time sequence");
-				result = false;
+				homogeneous = false;
+				break;
 			}
 		}
-		if (result)
+		if (homogeneous)
 		{
-			if (define_FE_field_at_node(node_template->get_template_node(), field, fe_time_sequence,
-				node_field_creator))
+			resultCode = this->elementtemplate->defineField(field, /*all components*/-1, componentEFTs[0]);
+			if ((componentPackedNodeIndexes[0].size() > 0) && (resultCode == CMZN_OK))
 			{
-				this->headerFields.push_back(field);
+				resultCode = this->elementtemplate->addLegacyNodeIndexes(field, /*all components*/-1,
+					static_cast<int>(componentPackedNodeIndexes[0].size()), componentPackedNodeIndexes[0].data());
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "EXReader::readNodeHeaderField.  Could not define field at node");
-				result = false;
-			}
-		}
-	}
-	for (int c = 0; c < number_of_components; ++c)
-		cmzn_elementfieldtemplate::deaccess(componentEFTs[c]);
-	if (component_name)
-		DEALLOCATE(component_name);
-	DEACCESS(FE_field)(&field);
-	return result;
-	// GRC Node header field end
-
-
-
-
-	char *component_name, *global_to_element_map_string, *location,
-		*rest_of_line, test_string[5];
-	enum FE_field_type fe_field_type;
-	int component_number, dimension, i, index, j,
-		node_index, number_of_components, number_of_nodes, number_of_values,
-		number_in_xi, return_code;
-	struct FE_basis *basis;
-	struct FE_field *field, *merged_fe_field;
-	struct FE_element_field_component **component, **components;
-	struct Standard_node_to_element_map *standard_node_map;
-
-	ENTER(read_FE_element_field);
-	return_code = 0;
-	if (field_address)
-	{
-		*field_address = (struct FE_field *)NULL;
-	}
-	FE_mesh *fe_mesh = 0;
-	FE_element *element = element_template ? element_template->get_template_element() : 0;
-	if (input_file && fe_region && element && field_address &&
-		(0 < (dimension = get_FE_element_dimension(element))) &&
-		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
-	{
-		if (NULL != (field = read_FE_field(input_file, fe_region)))
-		{
-			ACCESS(FE_field)(field);
-			merged_fe_field = (struct FE_field *)NULL;
-			number_of_components = get_FE_field_number_of_components(field);
-			fe_field_type = get_FE_field_FE_field_type(field);
-			return_code = 1;
-			/* allocate memory for the components */
-			component_name = (char *)NULL;
-			if (ALLOCATE(components, struct FE_element_field_component *,
-				number_of_components))
-			{
-				for (i = 0;i < number_of_components; i++)
-				{
-					components[i] = (struct FE_element_field_component *)NULL;
-				}
-			}
-			if (components)
-			{
-				/* read the components */
-				component_number = 0;
-				number_of_values = 0;
-				component = components;
-				while (return_code && (component_number < number_of_components))
-				{
-					IO_stream_scan(input_file, " ");
-					/* read the component name */
-					if (component_name)
-					{
-						DEALLOCATE(component_name);
-						component_name = (char *)NULL;
-					}
-					if (IO_stream_read_string(input_file, "[^.]", &component_name))
-					{
-						/* strip trailing blanks from component name */
-						size_t i = strlen(component_name);
-						while ((0 < i) && (isspace(component_name[i - 1])))
-							--i;
-						component_name[i] = '\0';
-						return_code = (0 < i) && set_FE_field_component_name(field,
-							component_number, component_name);
-					}
-					if (return_code)
-					{
-						/* component name is sufficient for non-GENERAL_FE_FIELD */
-						if (GENERAL_FE_FIELD == fe_field_type)
-						{
-							IO_stream_scan(input_file, ". ");
-							/* read the basis */
-							basis = this->readBasis();
-							if (basis)
-							{
-								IO_stream_scan(input_file, ", ");
-								/* read the modify function name */
-								if (IO_stream_read_string(input_file, "[^,]", &modify_function_name))
-								{
-									/* determine the modify function */
-									if (0 == strcmp("no modify", modify_function_name))
-									{
-										modify = (FE_element_field_component_modify)NULL;
-									}
-									else if (0 == strcmp("increasing in xi1",
-										modify_function_name))
-									{
-										modify = theta_increasing_in_xi1;
-									}
-									else if (0 == strcmp("decreasing in xi1",
-										modify_function_name))
-									{
-										modify = theta_decreasing_in_xi1;
-									}
-									else if (0 == strcmp("non-increasing in xi1",
-										modify_function_name))
-									{
-										modify = theta_non_increasing_in_xi1;
-									}
-									else if (0 == strcmp("non-decreasing in xi1",
-										modify_function_name))
-									{
-										modify = theta_non_decreasing_in_xi1;
-									}
-									else if (0 == strcmp("closest in xi1",
-										modify_function_name))
-									{
-										modify = theta_closest_in_xi1;
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Invalid modify function from file.  %s",
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-									if (return_code)
-									{
-										IO_stream_scan(input_file, ", ");
-										/* read the global to element map type */
-										if (IO_stream_read_string(input_file, "[^.]",
-											&global_to_element_map_string))
-										{
-											IO_stream_scan(input_file, ". ");
-											/* determine the global to element map type */
-											if (0 == strcmp("standard node based",
-												global_to_element_map_string))
-											{
-												/* standard node to element map */
-												/* read the number of nodes */
-												if ((1 == IO_stream_scan(input_file, "#Nodes=%d",
-													&number_of_nodes)) && (0 < number_of_nodes))
-												{
-													if (NULL != (components[component_number] =
-														CREATE(FE_element_field_component)(
-															STANDARD_NODE_TO_ELEMENT_MAP,
-															number_of_nodes, basis, modify)))
-													{
-														// set scale factor set only if there are scale factors in use
-														bool noScaleFactors = true;
-														for (i = 0; (i < number_of_nodes) && return_code; ++i)
-														{
-															if (2 != IO_stream_scan(input_file, "%d .  #Values=%d",
-																&node_index, &number_of_values))
-															{
-																location = IO_stream_get_location_string(input_file);
-																display_message(ERROR_MESSAGE,
-																	"Invalid read of node index and #Values.  %s", location);
-																DEALLOCATE(location);
-																return_code = 0;
-																break;
-															}
-															char *dofMappingTypeString = 0;
-															// old EX files use indices into nodal values
-															// new EX files use value labels e.g. value d/ds1(2) zero
-															bool readValueIndices = false;
-															if (IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
-															{
-																if (1 == sscanf(dofMappingTypeString, " Value indice%1[s] ", test_string))
-																	readValueIndices = true;
-																else if (1 != sscanf(dofMappingTypeString, " Value label%1[s] ", test_string))
-																	return_code = 0;
-															}
-															else
-																return_code = 0;
-															DEALLOCATE(dofMappingTypeString);
-															if (!return_code)
-															{
-																location = IO_stream_get_location_string(input_file);
-																display_message(ERROR_MESSAGE,
-																	"Missing \" Value indices: \" or \" Value labels: \" token in file.  %s", location);
-																DEALLOCATE(location);
-																return_code = 0;
-																break;
-															}
-															if (readValueIndices)
-																standard_node_map = Standard_node_to_element_map_create_legacy(node_index - 1, number_of_values);
-															else
-																standard_node_map = Standard_node_to_element_map_create(node_index - 1, number_of_values);
-															if (!standard_node_map)
-															{
-																location = IO_stream_get_location_string(input_file);
-																display_message(ERROR_MESSAGE,
-																	"Failed to create standard node to element map from file.  %s", location);
-																DEALLOCATE(location);
-																return_code = 0;
-																break;
-															}
-															IO_stream_scan(input_file, ": ");
-															if (readValueIndices)
-															{
-																for (j = 0; j < number_of_values; ++j)
-																{
-																	if (!((1 == IO_stream_scan(input_file, "%d", &index)) &&
-																		Standard_node_to_element_map_set_nodal_value_index(
-																			standard_node_map, j, index - 1)))
-																	{
-																		location = IO_stream_get_location_string(input_file);
-																		display_message(ERROR_MESSAGE,
-																			"Error reading nodal value index from file.  %s", location);
-																		DEALLOCATE(location);
-																		return_code = 0;
-																		break;
-																	}
-																}
-															}
-															else // read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2
-															{
-																if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-																{
-																	location = IO_stream_get_location_string(input_file);
-																	display_message(ERROR_MESSAGE, "Missing node value labels.  %s", location);
-																	DEALLOCATE(location);
-																	return_code = 0;
-																	break;
-																}
-																char *label = rest_of_line;
-																j = 0;
-																for (j = 0; j < number_of_values; ++j)
-																{
-																	while (isspace(*label))
-																		++label;
-																	if ('\0' == *label)
-																	{
-																		location = IO_stream_get_location_string(input_file);
-																		display_message(ERROR_MESSAGE, "Only %d out of %d value labels found.  %s",
-																			j, number_of_values, location);
-																		DEALLOCATE(location);
-																		return_code = 0;
-																		break;
-																	}
-																	const char *valueTypeString = label;
-																	bool readVersion = false;
-																	while (('\0' != *label) && (!isspace(*label)))
-																	{
-																		if ('(' == *label)
-																		{
-																			readVersion = true;
-																			break;
-																		}
-																		++label;
-																	}
-																	if ('\0' != *label)
-																	{
-																		*label = '\0';
-																		++label;
-																	}
-																	enum FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
-																	if (!(STRING_TO_ENUMERATOR(FE_nodal_value_type)(valueTypeString, &valueType) &&
-																		(FE_NODAL_UNKNOWN != valueType) &&
-																		Standard_node_to_element_map_set_nodal_value_type(standard_node_map, j, valueType)))
-																	{
-																		// the special 'zero' label means parameter=0
-																		// stored as default FE_NODAL_UNKNOWN type, so no need to set
-																		if (0 != strcmp(valueTypeString, "zero"))
-																		{
-																			location = IO_stream_get_location_string(input_file);
-																			display_message(ERROR_MESSAGE, "Invalid nodal value label '%s'.  %s",
-																				valueTypeString, location);
-																			DEALLOCATE(location);
-																			return_code = 0;
-																			break;
-																		}
-																	}
-																	if (readVersion)
-																	{
-																		const char *versionString = label;
-																		while (('\0' != *label) && (')' != *label))
-																		{
-																			++label;
-																		}
-																		if (')' == *label)
-																		{
-																			*label = '\0';
-																			++label;
-																			int version = 0;
-																			if ((1 != sscanf(versionString, "%d", &version)) ||
-																				!Standard_node_to_element_map_set_nodal_version(standard_node_map, j, version))
-																			{
-																				return_code = 0;
-																			}
-																		}
-																		else
-																			return_code = 0;
-																		if (!return_code)
-																		{
-																			location = IO_stream_get_location_string(input_file);
-																			display_message(ERROR_MESSAGE, "Invalid version number or format.  %s", location);
-																			DEALLOCATE(location);
-																			return_code = 0;
-																			break;
-																		}
-																	}
-																}
-																if (return_code)
-																{
-																	// check for unexpected additional text
-																	while ('\0' != *label)
-																	{
-																		if (!isspace(*label))
-																		{
-																			location = IO_stream_get_location_string(input_file);
-																			display_message(ERROR_MESSAGE, "Unexpected text '%s' after labels.  %s",
-																				label, location);
-																			DEALLOCATE(location);
-																			return_code = 0;
-																			break;
-																		}
-																		++label;
-																	}
-																}
-																DEALLOCATE(rest_of_line);
-															}
-															if (return_code)
-															{
-																/* read the scale factor indices */
-																/* Use a %1[:] so that a successful read will return 1 */
-																if (1 != IO_stream_scan(input_file," Scale factor indices%1[:] ", test_string))
-																{
-																	display_message(WARNING_MESSAGE,
-																		"Truncated read of required \" Scale factor indices: \" token in element file.");
-																}
-																for (j = 0; (j < number_of_values) &&
-																	return_code; j++)
-																{
-																	if ((1 == IO_stream_scan(input_file, "%d", &index)) &&
-																		Standard_node_to_element_map_set_scale_factor_index(
-																			standard_node_map, j, index - 1))
-																	{
-																		if (noScaleFactors && (index > 0))
-																		{
-																			noScaleFactors = false;
-																			char *scale_factor_set_name = FE_basis_get_description_string(basis);
-																			cmzn_mesh_scale_factor_set *scale_factor_set =
-																				fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
-																			if (!scale_factor_set)
-																			{
-																				scale_factor_set = fe_mesh->create_scale_factor_set();
-																				scale_factor_set->setName(scale_factor_set_name);
-																			}
-																			FE_element_field_component_set_scale_factor_set(
-																				components[component_number], scale_factor_set);
-																			cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-																			DEALLOCATE(scale_factor_set_name);
-																		}
-																	}
-																	else
-																	{
-																		location = IO_stream_get_location_string(input_file);
-																		display_message(ERROR_MESSAGE,
-																			"Error reading scale factor index from "
-																			"file.  %s",
-																			location);
-																		DEALLOCATE(location);
-																		return_code = 0;
-																	}
-																}
-																if (return_code)
-																{
-																	if (!FE_element_field_component_set_standard_node_map(
-																		components[component_number],
-																		/*node_number*/i, standard_node_map))
-																	{
-																		location = IO_stream_get_location_string(input_file);
-																		display_message(ERROR_MESSAGE,
-																			"read_FE_element_field.  Error setting "
-																			"standard_node_to_element_map");
-																		Standard_node_to_element_map_destroy(&standard_node_map);
-																		DEALLOCATE(location);
-																		return_code = 0;
-																	}
-																}
-															}
-														}
-													}
-													else
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"read_FE_element_field.  "
-															"Error creating component from file %s", location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
-												}
-												else
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading component number of nodes from file."
-														"  %s", location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											else if (0 == strcmp("general map based",
-												global_to_element_map_string))
-											{
-												/* GENERAL_ELEMENT_MAP */
-												// GRC: implement
-												location = IO_stream_get_location_string(input_file);
-												display_message(ERROR_MESSAGE,
-													"Invalid global to element map type from file.  "
-													"%s", location);
-												DEALLOCATE(location);
-												return_code = 0;
-											}
-											else if (0 == strcmp("grid based",
-												global_to_element_map_string))
-											{
-												/* element grid based */
-												if (NULL != (components[component_number] =
-													CREATE(FE_element_field_component)(
-														ELEMENT_GRID_MAP, 1, basis, modify)))
-												{
-													/* read number of divisions in each xi direction */
-													i = 0;
-													while (return_code && (i < dimension))
-													{
-														if ((2 == IO_stream_scan(input_file, "#xi%d = %d", &j,
-															&number_in_xi)) && (j == i + 1))
-														{
-															if (FE_element_field_component_set_grid_map_number_in_xi(
-																components[component_number], i, number_in_xi))
-															{
-																IO_stream_scan(input_file, " , ");
-																i++;
-															}
-															else
-															{
-																location = IO_stream_get_location_string(input_file);
-																display_message(ERROR_MESSAGE,
-																	"Grid basis must be constant for #xi=0, or linear for #xi>0.  %s",
-																	location);
-																DEALLOCATE(location);
-																return_code = 0;
-															}
-														}
-														else
-														{
-															location = IO_stream_get_location_string(input_file);
-															display_message(ERROR_MESSAGE,
-																"Error reading #xi%d.  %s", i + 1,
-																location);
-															DEALLOCATE(location);
-															return_code = 0;
-														}
-													}
-													if (return_code)
-													{
-														FE_element_field_component_set_grid_map_value_index(
-															components[component_number], 0);
-													}
-												}
-												else
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"read_FE_element_field.  "
-														"Error creating component from file");
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											else
-											{
-												location = IO_stream_get_location_string(input_file);
-												display_message(ERROR_MESSAGE,
-													"Invalid global to element map type from file.  "
-													"%s", location);
-												DEALLOCATE(location);
-												return_code = 0;
-											}
-											DEALLOCATE(global_to_element_map_string);
-										}
-										else
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"Error reading global to element map type from file.  "
-												"%s", location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-										DEALLOCATE(modify_function_name);
-									}
-								}
-								else
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Error reading modify function name from file.  %s",
-										location);
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"read_FE_element_field.  Invalid basis from file");
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						else
-						{
-							/* non GENERAL_FE_FIELD */
-							/* check there is nothing on remainder of line */
-							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-							{
-								if (fuzzy_string_compare(rest_of_line, "."))
-								{
-									/* components are all NULL */
-									return_code = 1;
-								}
-								else
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Unexpected text on field '%s' component '%s' line %d: %s",
-										get_FE_field_name(field), component_name,
-										location, rest_of_line);
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-								DEALLOCATE(rest_of_line);
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Unexpected end of field '%s' component '%s' line %d",
-									get_FE_field_name(field), component_name,
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						component_number++;
-						component++;
-					}
-					else
-					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Error reading component name from file.  %s",
-							location);
-						DEALLOCATE(location);
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"read_FE_element_field.  Could not allocate component information");
-				DEALLOCATE(location);
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				/* first try to retrieve matching field from fe_region */
-				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,"read_FE_element_field.  "
-						"Could not merge field '%s' into finite element region.  %s",
-						get_FE_field_name(field), location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				/* define merged_fe_field in element */
-				if (define_FE_field_at_element(element, merged_fe_field, components))
-				{
-					*field_address = merged_fe_field;
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"read_FE_element_field.  Could not define field at element");
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-			}
-			if (component_name)
-			{
-				DEALLOCATE(component_name);
-			}
-			if (components)
-			{
-				for (i = 0; i < number_of_components; i++)
-				{
-					DESTROY(FE_element_field_component)(&(components[i]));
-				}
-				DEALLOCATE(components);
-			}
-			DEACCESS(FE_field)(&field);
 		}
 		else
 		{
-			location = IO_stream_get_location_string(input_file);
-			display_message(ERROR_MESSAGE,
-				"read_FE_element_field.  Could not read field");
-			DEALLOCATE(location);
+			for (int c = 0; c < componentCount; ++c)
+			{
+				resultCode = this->elementtemplate->defineField(field, c + 1, componentEFTs[c]);
+				if ((componentPackedNodeIndexes[c].size() > 0) && (resultCode == CMZN_OK))
+				{
+					resultCode = this->elementtemplate->addLegacyNodeIndexes(field, c + 1,
+						static_cast<int>(componentPackedNodeIndexes[c].size()), componentPackedNodeIndexes[c].data());
+				}
+				if (resultCode != CMZN_OK)
+					break;
+			}
+		}
+		if (resultCode == CMZN_OK)
+		{
+			this->headerFields.push_back(field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Could not define field %s at element.  %s",
+				get_FE_field_name(field), this->getFileLocation());
+			result = false;
 		}
 	}
-	else
-	{
-		location = IO_stream_get_location_string(input_file);
-		display_message(ERROR_MESSAGE,
-			"read_FE_element_field.  Invalid argument(s)");
-		DEALLOCATE(location);
-	}
-	LEAVE;
-
-	this->headerFields.push_back(field);
-
-
-	return (return_code);
+	for (int c = 0; c < componentCount; ++c)
+		cmzn_elementfieldtemplate::deaccess(componentEFTs[c]);
+	DEACCESS(FE_field)(&field);
+	return result;
 }
 
 /**
@@ -3522,6 +3089,7 @@ bool EXReader::readElementHeader()
 			"EX Reader.  Error reading #Scale factor sets.  %s", this->getFileLocation());
 		return false;
 	}
+	int scaleFactorOffset = 0; // accumulate offset of scale factors for set in element
 	for (int s = 0; s < scaleFactorSetCount; ++s)
 	{
 		char *tmpName = this->readString();
@@ -3551,10 +3119,10 @@ bool EXReader::readElementHeader()
 			return false;
 		}
 		const int scaleFactorCount = atoi(scaleFactorCountString);
-		if (scaleFactorCount < 0)
+		if (scaleFactorCount <= 0)
 		{
 			display_message(ERROR_MESSAGE,
-				"EX Reader.  Negative #Scale factors.  %s", this->getFileLocation());
+				"EX Reader.  Must have positive #Scale factors.  %s", this->getFileLocation());
 			return false;
 		}
 		if (keyValueMap.hasUnusedKeyValues())
@@ -3570,7 +3138,9 @@ bool EXReader::readElementHeader()
 			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", scaleFactorSetName.c_str(), this->getFileLocation());
 			return false;
 		}
-		this->scaleFactorSets[scaleFactorSetName] = scaleFactorCount;
+		ScaleFactorSetData sfData(scaleFactorCount, scaleFactorOffset);
+		this->scaleFactorSets[scaleFactorSetName] = sfData;
+		scaleFactorOffset += scaleFactorCount;
 	}
 
 	// read in the node information. This is the number of nodes in the template, indexed from element fields

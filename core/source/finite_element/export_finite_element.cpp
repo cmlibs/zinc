@@ -709,6 +709,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
 		{
 			(*this->output_file) << ", standard node based."; // GRC change to "node based"
+			int scaleFactorOffset = 0;
 			// previously the scale factor set was identified by the basis, now it is explicitly named
 			if (eft->getNumberOfLocalScaleFactors() > 0)
 			{
@@ -718,6 +719,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 					++scaleFactorSetIndex;
 					if (*eftIter == eft)
 						break;
+					scaleFactorOffset += (*eftIter)->getNumberOfLocalScaleFactors();
 				}
 				(*this->output_file) << " scale factor set=scaling" << scaleFactorSetIndex;
 			}
@@ -725,11 +727,12 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 
 			const int nodeCount = eft->getNumberOfLocalNodes();
 			const int packedNodeOffset = this->headerElementNodePacking->getEftNodeOffset(eft);
-			(*this->output_file) << "   #Nodes=" << nodeCount << ", offset=" << packedNodeOffset << "\n";
+			(*this->output_file) << "   #Nodes=" << nodeCount << "\n";
 			// previously there was an entry for each basis node with the parameters extracted from it
 			// now there is a separate entry for each block of parameters mapped from
 			// the same nodes with the same number of terms
-			// New: local node indexes are for the EFT, not the packed list output for each element
+			// Note local node numbers are for the element starting at packedNodeOffset, and
+			// reader is expected to respect order in element when converting to EFT indexes
 			const int functionCount = eft->getNumberOfFunctions();
 			int f = 0;
 			while (f < functionCount)
@@ -751,11 +754,19 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 						break;
 					++valueCount;
 				}
-				for (int t = 0; t < termCount; ++t)
+				if (0 == termCount)
 				{
-					if (t > 0)
-						(*this->output_file) << "+";
-					(*this->output_file) << eft->getTermLocalNodeIndex(f, t) + 1;
+					// Use node index 0 if no terms
+					(*this->output_file) << "0";
+				}
+				else
+				{
+					for (int t = 0; t < termCount; ++t)
+					{
+						if (t > 0)
+							(*this->output_file) << "+";
+						(*this->output_file) << eft->getTermLocalNodeIndex(f, t) + 1 + packedNodeOffset;
+					}
 				}
 				(*this->output_file) << ". #Values=" << valueCount << "\n";
 				// nodal value labels(versions) e.g. d/ds1(2), or the special zero for no terms
@@ -785,8 +796,9 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 						}
 					}
 				}
-				// New: scale factors only output if there is any scaling for this EFT
-				// Also, indexes are for the EFT, not the full list output for each element
+				// New: scale factor indexes only output if there is any scaling for this EFT
+				// For compatibility with old EX Versions, output scale factor indexes are relative
+				// to the whole element template, not per EFT, so must have the appropriate offset added.
 				if (eft->getNumberOfLocalScaleFactors() > 0)
 				{
 					(*this->output_file) << "     Scale factor indices:";
@@ -815,7 +827,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 										if (s > 0)
 											(*this->output_file) << "*";
 										const int scaleFactorIndex = eft->getTermScaleFactorIndex(f, t, s);
-										(*this->output_file) << scaleFactorIndex + 1;
+										(*this->output_file) << scaleFactorOffset + scaleFactorIndex + 1;
 									}
 								}
 							}

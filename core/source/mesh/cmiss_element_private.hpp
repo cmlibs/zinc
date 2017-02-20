@@ -108,12 +108,19 @@ public:
 
 	int getNumberOfNodes() const
 	{
-		return legacyNodesCount;
+		return this->legacyNodesCount;
 	}
 
 	int setNumberOfNodes(int legacyNodesCountIn);
 
+	int defineField(FE_field *field, int componentNumber, cmzn_elementfieldtemplate *eft);
+
 	int defineField(cmzn_field_id field, int componentNumber, cmzn_elementfieldtemplate *eft);
+
+	/** Append legacy node indexes giving index in element template of node for each EFT local node.
+	  * @param componentNumber  -1 for all components, or positive for single component. */
+	int addLegacyNodeIndexes(FE_field *field, int componentNumber, int nodeIndexesCount,
+		const int *nodeIndexes);
 
 	int defineFieldSimpleNodal(cmzn_field_id field,
 		int componentNumber, cmzn_elementbasis_id elementbasis, int nodeIndexesCount,

@@ -48,7 +48,7 @@ private:
 	bool locked; // set once in use by mesh/field or element template, so not modifiable
 	int indexInMesh; // if in use by mesh, the index (>=0) of its FE_mesh_element_field_template_data in mesh. Otherwise -1
 
-	cmzn_element_parameter_mapping_mode mappingMode; // NODE|ELEMENT|CONSTANT
+	cmzn_element_parameter_mapping_mode mappingMode; // ELEMENT|FIELD|NODE
 
 	// for each basis function: number of terms summed to give parameter;
 	// currently only supported for node mapping mode; all others have 1 term:
@@ -186,6 +186,9 @@ public:
 	  * For other mapping modes, resets to one term per basis function with no scaling hence
 	  * should be the first setting changed. */
 	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn);
+
+	/** @return  Highest local node index used in EFT, or -1 if not node-based. */
+	int getHighestLocalNodeIndex() const;
 
 	/** @return  Non-accessed pointer to the mesh for this template, or NULL if mesh destroyed. */
 	FE_mesh *getMesh() const
@@ -334,6 +337,15 @@ public:
 	  * @param startIndex  Set to 1 to offset from external indexes which start at 1 */
 	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex = 0);
 
+	/** Remap local node indexes to map extNodeIndexes when sorted from lowest to highest.
+	  * @param extNodeIndexes  Array of unique, non-negative indexes for current EFT local indexes.
+	  * Must be large enough for number of local nodes in use. On successful return this array is
+	  * sorted from lowest to highest to match EFT internal reference order.
+	  * e.g. if extNodeIndexes are 2 6 3 1, they are sorted to 1 2 3 6, and internal indexes
+	  * 0 1 2 3 are remapped to 1 3 2 0, respectively.
+	  * @return  Result OK on success, any other value on failure. */
+	int sortNodeIndexes(std::vector<int>& extNodeIndexes);
+
 	int getTotalTermCount() const
 	{
 		return this->totalTermCount;
@@ -405,6 +417,12 @@ public:
 			delete eft;
 		eft = 0;
 		return CMZN_OK;
+	}
+
+	/** @return  True if Returns true if this template and source are identically defined */
+	bool matches(const cmzn_elementfieldtemplate &source) const
+	{
+		return this->impl->matches(*(source.impl));
 	}
 
 	FE_basis *getBasis() const
@@ -553,6 +571,12 @@ public:
 	{
 		this->copyOnWrite();
 		return this->impl->setTermScaling(functionNumber - 1, term - 1, indexesCount, indexes, /*startIndex*/1);
+	}
+
+	int sortNodeIndexes(std::vector<int>& extNodeIndexes)
+	{
+		this->copyOnWrite();
+		return this->sortNodeIndexes(extNodeIndexes);
 	}
 
 	/** @return  True if validated and locked, otherwise false. */

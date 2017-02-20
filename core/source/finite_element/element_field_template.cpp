@@ -16,6 +16,8 @@
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
+
+#include <algorithm>
 #include <cstring>
 
 namespace {
@@ -356,6 +358,20 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 		}
 	}
 	return CMZN_OK;
+}
+
+int FE_element_field_template::getHighestLocalNodeIndex() const
+{
+	int highestNodeIndex = -1;
+	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	{
+		for (int tt = 0; tt < this->totalTermCount; ++tt)
+		{
+			if (this->localNodeIndexes[tt] > highestNodeIndex)
+				highestNodeIndex = this->localNodeIndexes[tt];
+		}
+	}
+	return highestNodeIndex;
 }
 
 /** Set legacy grid field number in xi, for repeated linear cells, or constant.
@@ -706,6 +722,35 @@ int FE_element_field_template::setTermScaling(int functionNumber, int term, int 
 	}
 	for (int i = 0; i < indexesCount; ++i)
 		this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] = indexes[i] - startIndex;
+	return CMZN_OK;
+}
+
+int FE_element_field_template::sortNodeIndexes(std::vector<int>& extNodeIndexes)
+{
+	const int extNodeIndexCount = static_cast<int>(extNodeIndexes.size());
+	if (this->locked
+		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (extNodeIndexCount > this->numberOfLocalNodes))
+		return CMZN_ERROR_ARGUMENT;
+	int lastExtNodeIndex = -1;
+	int newNodeIndex = 0;
+	for (int tt = 0; tt < this->totalTermCount; ++tt)
+	{
+		const int nodeIndex = this->localNodeIndexes[tt];
+		if ((nodeIndex < 0) || (nodeIndex >= extNodeIndexCount))
+			return CMZN_ERROR_ARGUMENT;
+		const int extNodeIndex = extNodeIndexes[nodeIndex];
+		if (extNodeIndex != lastExtNodeIndex)
+		{
+			newNodeIndex = 0;
+			for (int e = 0; e < extNodeIndexCount; ++e)
+				if (extNodeIndexes[e] < extNodeIndex)
+					++newNodeIndex;
+			lastExtNodeIndex = extNodeIndex;
+		}
+		this->localNodeIndexes[tt] = newNodeIndex;
+	}
+	std::sort(extNodeIndexes.begin(), extNodeIndexes.end());
 	return CMZN_OK;
 }
 

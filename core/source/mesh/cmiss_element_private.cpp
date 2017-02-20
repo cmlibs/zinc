@@ -581,14 +581,22 @@ int cmzn_elementtemplate::setNumberOfNodes(int legacyNodesCountIn)
 	return CMZN_OK;
 }
 
-int cmzn_elementtemplate::defineField(cmzn_field_id field, int componentNumber, cmzn_elementfieldtemplate *eft)
+int cmzn_elementtemplate::defineField(FE_field *field, int componentNumber, cmzn_elementfieldtemplate *eft)
 {
-	if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= cmzn_field_get_number_of_components(field))))
+	if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= get_FE_field_number_of_components(field))))
 		&& (eft)))
 	{
 		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
+	int return_code = this->fe_element_template->defineField(field, componentNumber - 1, eft);
+	if (CMZN_OK != return_code)
+		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Failed");
+	return return_code;
+}
+
+int cmzn_elementtemplate::defineField(cmzn_field_id field, int componentNumber, cmzn_elementfieldtemplate *eft)
+{
 	FE_field *fe_field = 0;
 	Computed_field_get_type_finite_element(field, &fe_field);
 	if (!fe_field)
@@ -597,10 +605,64 @@ int cmzn_elementtemplate::defineField(cmzn_field_id field, int componentNumber, 
 			"Elementtemplate defineField.  Can only define a finite element type field on elements");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	int return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
-	if (CMZN_OK != return_code)
-		display_message(ERROR_MESSAGE, "Elementtemplate defineField.  Failed");
-	return return_code;
+	return this->defineField(fe_field, componentNumber, eft);
+}
+
+int cmzn_elementtemplate::addLegacyNodeIndexes(FE_field *field, int componentNumber, int nodeIndexesCount,
+	const int *nodeIndexes)
+{
+	const int componentCount = get_FE_field_number_of_components(field);
+	if (!((field) && ((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber <= componentCount)))
+		&& ((0 == nodeIndexesCount) || (nodeIndexes))))
+	{
+		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const FE_element_field_template *eft = this->fe_element_template->getElementfieldtemplate(field, (componentNumber > 0) ? componentNumber - 1 : 0);
+	if (!eft)
+	{
+		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  Field %s component is not defined", get_FE_field_name(field));
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	{
+		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  "
+			"Field %s component is not using node-based parameter map", get_FE_field_name(field));
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (componentNumber < 0)
+	{
+		// check homogeneous
+		for (int c = 1; c < componentCount; ++c)
+		{
+			if (this->fe_element_template->getElementfieldtemplate(field, c) != eft)
+			{
+				display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  "
+					"Field %s must use same element template for all components to use component -1", get_FE_field_name(field));
+				return CMZN_ERROR_ARGUMENT;
+			}
+		}
+	}
+	int highestNodeIndex = eft->getHighestLocalNodeIndex();
+	if (highestNodeIndex > (nodeIndexesCount - 1))
+	{
+		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  "
+			"Node index map does not cover all local nodes in component template for field %s", get_FE_field_name(field));
+		return CMZN_ERROR_ARGUMENT;
+	}
+	for (int i = 0; i < nodeIndexesCount; i++)
+	{
+		if ((nodeIndexes[i] < 1) || (nodeIndexes[i] > this->legacyNodesCount))
+		{
+			display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  Local node index out of range 1 to number in element (%d)",
+				this->legacyNodesCount);
+			return CMZN_ERROR_ARGUMENT;
+		}
+	}
+	LegacyElementFieldData *legacyFieldData = getOrCreateLegacyElementFieldData(field);
+	if (!legacyFieldData)
+		return CMZN_ERROR_GENERAL;
+	return legacyFieldData->setNodeMap(componentNumber - 1, nodeIndexesCount, nodeIndexes);
 }
 
 int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
@@ -626,23 +688,9 @@ int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
 	if (nodeIndexesCount != expected_basis_number_of_nodes)
 	{
 		display_message(ERROR_MESSAGE,
-			"Elementtemplate defineFieldSimpleNodal.  %d nodes supplied but %d expected for basis",
+			"Elementtemplate defineFieldSimpleNodal.  %d node indexes supplied but %d expected for basis",
 			nodeIndexesCount, expected_basis_number_of_nodes);
 		return_code = CMZN_ERROR_ARGUMENT;
-	}
-	else
-	{
-		for (int i = 0; i < nodeIndexesCount; i++)
-		{
-			if ((nodeIndexes[i] < 1) || (nodeIndexes[i] > this->legacyNodesCount))
-			{
-				display_message(ERROR_MESSAGE,
-					"Elementtemplate defineFieldSimpleNodal.  "
-					"Local node index out of range 1 to number in element(%d)", this->legacyNodesCount);
-				return_code = CMZN_ERROR_ARGUMENT;
-				break;
-			}
-		}
 	}
 	cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 	FE_field *fe_field = 0;
@@ -671,15 +719,9 @@ int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
 		{
 			return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
 			if (CMZN_OK == return_code)
-			{
-				LegacyElementFieldData *legacyFieldData = getOrCreateLegacyElementFieldData(fe_field);
-				if (!legacyFieldData)
-					return_code = CMZN_ERROR_GENERAL;
-				else
-					return_code = legacyFieldData->setNodeMap(componentNumber - 1, nodeIndexesCount, nodeIndexes);
-				if (CMZN_OK != return_code)
-					display_message(ERROR_MESSAGE, "Elementtemplate defineFieldSimpleNodal.  Failed");
-			}
+				return_code = this->addLegacyNodeIndexes(fe_field, componentNumber, nodeIndexesCount, nodeIndexes);
+			if (CMZN_OK != return_code)
+				display_message(ERROR_MESSAGE, "Elementtemplate defineFieldSimpleNodal.  Failed");
 		}
 		else
 		{
