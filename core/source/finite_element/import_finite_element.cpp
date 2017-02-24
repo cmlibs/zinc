@@ -267,31 +267,63 @@ public:
 
 class EXReader
 {
-	class ScaleFactorSetData
+	class ScaleFactorSet
 	{
 	public:
+		std::string name;
 		int scaleFactorCount;
 		int scaleFactorOffset;
-		ScaleFactorSetData(int scaleFactorCountIn, int scaleFactorOffsetIn) :
+		std::map<std::string, std::vector<int>> fieldComponents; // field name and components using this scale factor set
+		std::vector<FE_element_field_template *> efts; // EFTs using this scale factor set, converted from field components above
+
+		ScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn) :
+			name(nameIn),
 			scaleFactorCount(scaleFactorCountIn),
 			scaleFactorOffset(scaleFactorOffsetIn)
 		{
+		}
+
+		void addFieldComponent(const std::string& nameIn, int componentNumberIn)
+		{
+			auto iter = this->fieldComponents.find(nameIn);
+			if (iter == this->fieldComponents.end())
+			{
+				std::vector<int> tmp(1);
+				tmp.push_back(componentNumberIn);
+				this->fieldComponents[nameIn] = tmp;
+			}
+			else
+			{
+				iter->second.push_back(componentNumberIn);
+			}
+		}
+
+		/** Add eft to list to assign these scale factors to, but avoid repeating */
+		void addEFT(FE_element_field_template *eft)
+		{
+			const size_t count = efts.size();
+			for (size_t i = 0; i < count; ++i)
+				if (efts[i] == eft)
+					return;
+			this->efts.push_back(eft);
 		}
 	};
 
 	int exVersion;
 	IO_stream *input_file;
+	bool useData;  // True if reading datapoints by default, otherwise nodes
 	FE_import_time_index *timeIndex;
 	FE_region *fe_region;
 	FE_mesh *mesh;
 	FE_nodeset *nodeset;
-	// cache of latest node and element field header
+	// cache of latest node and element field header:
 	FE_element_shape* elementShape;
 	FE_node_template *node_template;
 	cmzn_elementtemplate *elementtemplate;
 	std::map<FE_field *, std::vector<NodeDerivativesVersions> > nodeFieldComponentDerivativeVersions;
-	std::vector<FE_field *> headerFields; // order of fields in header
-	std::map<std::string, ScaleFactorSetData> scaleFactorSets;
+	std::vector<FE_field *> headerFields;  // order of fields in header
+	bool hasElementValues;  // set to true if any element field has element field values
+	std::vector<ScaleFactorSet *> scaleFactorSets;
 	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
 
 public:
@@ -306,6 +338,7 @@ public:
 		elementShape(0),
 		node_template(0),
 		elementtemplate(0),
+		hasElementValues(false),
 		fileLocation(0)
 	{
 	}
@@ -317,12 +350,25 @@ public:
 			DEALLOCATE(this->fileLocation);
 	}
 
+	cmzn_region *getRegion() const
+	{
+		if (this->fe_region)
+			return FE_region_get_cmzn_region(this->fe_region);
+		return 0;
+	}
+
 	bool setRegion(cmzn_region *regionIn)
 	{
 		if (!regionIn)
 			return false;
 		this->fe_region = cmzn_region_get_FE_region(regionIn);
-		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES));
+		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
+			this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
+	}
+
+	void setUseDataMetaFlag(bool useDataIn)
+	{
+		this->useData = useDataIn;
 	}
 
 	FE_nodeset *getNodeset() const
@@ -335,7 +381,7 @@ public:
 	{
 		if ((!nodesetIn) || (nodesetIn->get_FE_region() != this->fe_region))
 		{
-			display_message(ERROR_MESSAGE, "EXReader::setNodeset.  Invalid nodeset for region");
+			display_message(ERROR_MESSAGE, "EXReader::setNodeset.  Invalid nodeset for region.  %s", this->getFileLocation());
 			return false;
 		}
 		this->mesh = 0;
@@ -343,7 +389,12 @@ public:
 		this->clearHeaderCache();
 		// set default blank node template for nodeset:
 		this->node_template = this->nodeset->create_FE_node_template();
-		return (0 != this->node_template);
+		if (0 == this->node_template)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
+			return false;
+		}
+		return true;
 	}
 
 	FE_mesh *getMesh() const
@@ -365,32 +416,6 @@ public:
 		return true;
 	}
 
-	bool readFieldValues();
-	bool readNodeHeader();
-	cmzn_node *readNode();
-	bool readElementShape();
-	bool readElementHeader();
-
-	const char *getFileLocation()
-	{
-		if (this->fileLocation)
-			DEALLOCATE(this->fileLocation);
-		this->fileLocation = IO_stream_get_location_string(this->input_file);
-		return this->fileLocation;
-	}
-
-private:
-
-	void clearHeaderCache()
-	{
-		cmzn::Deaccess(this->node_template);
-		nodeFieldComponentDerivativeVersions.clear();
-		cmzn::Deaccess(this->elementShape);
-		cmzn_elementtemplate::deaccess(this->elementtemplate);
-		this->scaleFactorSets.clear();
-		this->headerFields.clear();
-	}
-
 	int readNextNonSpaceChar()
 	{
 		int next_char;
@@ -401,27 +426,123 @@ private:
 		return next_char;
 	}
 
-#if 0 // GRC
-	int getEXVersion(int exVersionIn) const
+	const char *getFileLocation()
 	{
-		return this->exVersion;
+		if (this->fileLocation)
+			DEALLOCATE(this->fileLocation);
+		this->fileLocation = IO_stream_get_location_string(this->input_file);
+		return this->fileLocation;
 	}
 
-	void setEXVersion(int exVersionIn)
+	bool readEXVersion();
+	bool readCommentOrDirective();
+	bool readNodeHeader();
+	cmzn_node *readNode();
+	bool readElementShape();
+	bool readElementHeader();
+	bool readElementIdentifier(DsLabelIdentifier &elementIdentifier);
+	bool readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber);
+	cmzn_element *readElement();
+
+private:
+
+	void clearHeaderCache()
 	{
-		this->exVersion = exVersionIn;
+		cmzn::Deaccess(this->node_template);
+		nodeFieldComponentDerivativeVersions.clear();
+		if (this->elementShape)
+			DEACCESS(FE_element_shape)(&(this->elementShape));
+		cmzn_elementtemplate::deaccess(this->elementtemplate);
+		const size_t sfCount = this->scaleFactorSets.size();
+		for (size_t s = 0; s < sfCount; ++s)
+			delete this->scaleFactorSets[s];
+		this->scaleFactorSets.clear();
+		this->headerFields.clear();
+		this->hasElementValues = false;
 	}
-#endif
+
+	/*** @return  Pointer to scale factor set with name and details, or 0 if failed */
+	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn)
+	{
+		if ((!nameIn) || (scaleFactorCountIn < 1) || (scaleFactorOffsetIn < 0))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
+			return 0;
+		}
+		if (0 != this->findScaleFactorSet(nameIn))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", nameIn, this->getFileLocation());
+			return false;
+		}
+		ScaleFactorSet *sfSet = new ScaleFactorSet(nameIn, scaleFactorCountIn, scaleFactorOffsetIn);
+		if (sfSet)
+			this->scaleFactorSets.push_back(sfSet);
+		return sfSet;
+	}
+
+	/*** @return  Pointer to scale factor set with name, or 0 if not found */
+	ScaleFactorSet *findScaleFactorSet(const char *nameIn)
+	{
+		if (!nameIn)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
+			return 0;
+		}
+		const size_t sfCount = this->scaleFactorSets.size();
+		for (size_t s = 0; s < sfCount; ++s)
+		{
+			if (0 == this->scaleFactorSets[s]->name.compare(nameIn))
+				return this->scaleFactorSets[s];
+		}
+		return 0;
+	}
+
 	bool readKeyValueMap(KeyValueMap& keyValueMap);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	char *readString();
 	FE_field *readField();
+	bool readFieldValues();
 	bool readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
 	struct FE_basis *readBasis();
 	bool readElementHeaderField();
 };
+
+/** @return  True if next char is testChar (and read the character) or false if
+  * node (and do not read the character) */
+bool EXReader::readEXVersion()
+{
+	if (this->exVersion > 1)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  EX Version has already been specified.  %s", this->getFileLocation());
+		return false;
+	}
+	if (this->fe_region)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  EX Version number must be first token.  %s", this->getFileLocation());
+		return false;
+	}
+	int versionNumber;
+	if (1 != IO_stream_scan(this->input_file, " Version :%d", &versionNumber)) // "EX" has been read before getting here
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading EX Version: number.  %s", this->getFileLocation());
+		return false;
+	}
+	if (versionNumber < 2)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  EX Version number must be >= 2 (it is not specified for version 1).  %s", this->getFileLocation());
+		return false;
+	}
+	if (versionNumber > 2)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  This library cannot read EX Version %d, only version 2 may be specified.  %s",
+			versionNumber, this->getFileLocation());
+		return false;
+	}
+	this->exVersion = versionNumber;
+	return true;
+}
 
 /**
  * Read any text matching key=value, separated by commas to the end of the line.
@@ -553,10 +674,8 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 		}
 		else
 		{
-			char *location = IO_stream_get_location_string(this->input_file);
 			display_message(ERROR_MESSAGE,
 				"Missing legacy region path, element type or number in element:xi value.  %s", this->getFileLocation());
-			DEALLOCATE(location);
 			success = false;
 		}
 		DEALLOCATE(second_string);
@@ -619,7 +738,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 		}
 		if (!finite(xi[d]))
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN xi coordinates read from file.  %s", this->getFileLocation());
+			display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN xi coordinates read.  %s", this->getFileLocation());
 			return false;
 		}
 	}
@@ -775,6 +894,118 @@ char *EXReader::readString()
 	}
 	DEALLOCATE(quoteString);
 	return theString;
+}
+
+/**
+ * Read a comment or one of the following directives (assume all started with !):
+ * #nodeset NAME[, key=value]
+ * #mesh NAME, dimension=#[, face mesh=NAME][, nodeset=NAME][, key=value]
+ * where square brackets enclose optional or dimension-dependent data.
+ * Unused additional comma separated key=value pairs are warned about.
+ * Comment lines are ignored.
+ * @return  True on success, false if error in directive.
+ */
+bool EXReader::readCommentOrDirective()
+{
+	char test_string[5];
+	const bool hasDirectiveChar = this->readNextNonSpaceChar() == (int)'#';
+	const bool nodesetDirective = hasDirectiveChar && (1 == IO_stream_scan(this->input_file, "nodese%1[t] ", test_string));
+	const bool meshDirective = hasDirectiveChar && (!nodesetDirective) && (1 == IO_stream_scan(this->input_file, "mes%1[h] ", test_string));
+	if (!(nodesetDirective || meshDirective))
+	{
+		// comment: ignore
+		char *rest_of_line;
+		IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
+		DEALLOCATE(rest_of_line);
+		return true;
+	}
+	if (!this->fe_region)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group must be set before %s directive.  %s",
+			nodesetDirective ? "nodeset" : "mesh", this->getFileLocation());
+		return false;
+	}
+	char *name = this->readString();
+	if (!name)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing or invalid %s name.  %s",
+			nodesetDirective ? "nodeset" : "mesh", this->getFileLocation());
+		return false;
+	}
+	std::string domainName(name);
+	DEALLOCATE(name);
+	KeyValueMap keyValueMap;
+	int next_char = this->readNextNonSpaceChar();
+	if (next_char == (int)',')
+	{
+		if (!this->readKeyValueMap(keyValueMap))
+			return false;
+	}
+	if (nodesetDirective)
+	{
+		cmzn_field_domain_type domainType = this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
+		if (0 == domainName.compare("nodes"))
+			domainType = CMZN_FIELD_DOMAIN_TYPE_NODES;
+		else if (0 == domainName.compare("datapoints"))
+			domainType = CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS;
+		else
+			display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary nodeset name '%s' in directive, assuming default %s.  %s",
+				domainName, this->useData ? "datapoints" : "nodes", this->getFileLocation());
+		FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, domainType);
+		if (!this->setNodeset(nodeset))
+			return false;
+	}
+	else if (meshDirective)
+	{
+		const char *dimensionString = keyValueMap.getKeyValue("dimension");
+		const int dimension = (dimensionString) ? atoi(dimensionString) : 0;
+		if ((dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing or invalid dimension in mesh directive.  %s", this->getFileLocation());
+			return false;
+		}
+		FE_mesh *mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
+		if (!this->setMesh(mesh))
+			return false;
+		// currently mesh, nodeset and face mesh names are read but can't be arbitrary so read and warn if not followed
+		if (0 != domainName.compare(this->mesh->getName()))
+		{
+			display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary mesh name '%s' in directive, assuming %s (matching dimension).  %s",
+				domainName, this->mesh->getName(), this->getFileLocation());
+		}
+		const char *faceMeshName = keyValueMap.getKeyValue("face mesh");
+		if (faceMeshName)
+		{
+			FE_mesh *faceMesh = this->mesh->getFaceMesh();
+			if (faceMesh)
+			{
+				if (0 != strcmp(faceMesh->getName(), faceMeshName))
+					display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary face mesh name '%s' in directive, assuming default %s.  %s",
+						domainName, faceMesh->getName(), this->getFileLocation());
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Mesh of chosen dimension has no face mesh.  %s", this->mesh->getName(), this->getFileLocation());
+				return false;
+			}
+		}
+		const char *nodesetName = keyValueMap.getKeyValue("nodeset");
+		if (nodesetName)
+		{
+			if (this->nodeset)
+			{
+				if (0 != strcmp(this->nodeset->getName(), nodesetName))
+					display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary nodeset name '%s' in directive, assuming default %s.  %s",
+						domainName, this->nodeset->getName(), this->getFileLocation());
+			}
+		}
+	}
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		std::string prefix(nodesetDirective ? "EX Reader.  nodeset directive: " : "EX Reader.  mesh directive: ");
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	return true;
 }
 
 /**
@@ -1135,21 +1366,16 @@ FE_field *EXReader::readField()
 	return (field);
 }
 
-/** Reads the values for constant and indexed fields from stream */
+/** If any constant or indexed fields are in header, reads token "Values:"
+  * followed by their values from the stream */
 bool EXReader::readFieldValues()
 {
-	if (!((node_template || elementtemplate)))
-		return false;
-	char *rest_of_line = 0;
-	IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line);
-	int return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
-	DEALLOCATE(rest_of_line);
-	if (!return_code)
+	if (!((this->node_template || this->elementtemplate)))
 	{
-		display_message(ERROR_MESSAGE, "Invalid token where 'Values:' expected.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EXReader::readFieldValues.  Invalid argument(s).  %s", this->getFileLocation());
 		return false;
 	}
-	bool result = true;
+	bool first = true; // flag to consume "Values:" token with first field requiring values
 	const size_t fieldCount = this->headerFields.size();
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
@@ -1157,6 +1383,16 @@ bool EXReader::readFieldValues()
 		const int number_of_values = get_FE_field_number_of_values(field);
 		if (0 < number_of_values)
 		{
+			if (first)
+			{
+				char test_string[5];
+				if (1 != IO_stream_scan(input_file, " Values %1[:] ", test_string))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Values:\" token required for constant fields.  %s", this->getFileLocation());
+					return false;
+				}
+				first = false;
+			}
 			Value_type value_type = get_FE_field_value_type(field);
 			switch (value_type)
 			{
@@ -1164,81 +1400,68 @@ bool EXReader::readFieldValues()
 				{
 					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 					struct FE_element *element;
-
-					for (int k = 0; (k < number_of_values) && return_code; k++)
+					for (int k = 0; k < number_of_values; ++k)
 					{
 						if (!(this->readElementXiValue(field, element, xi)
 							&& set_FE_field_element_xi_value(field, k, element, xi)))
 						{
-							display_message(ERROR_MESSAGE,
-								"Error reading field element_xi value.  %s", this->getFileLocation());
-							result = false;
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading field element_xi value.  %s", this->getFileLocation());
+							return false;
 						}
 					}
 				} break;
 				case FE_VALUE_VALUE:
 				{
 					FE_value value;
-
-					for (int k = 0;(k < number_of_values) && return_code; k++)
+					for (int k = 0; k < number_of_values; ++k)
 					{
 						if (!((1 == IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &value))
 							&& finite(value)
 							&& set_FE_field_FE_value_value(field, k, value)))
 						{
-							display_message(ERROR_MESSAGE, "Error reading field FE_value.  %s", this->getFileLocation());
-							result = false;
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real field value.  %s", this->getFileLocation());
+							return false;
 						}
 					}
 				} break;
 				case INT_VALUE:
 				{
 					int value;
-
-					for (int k = 0; (k < number_of_values) && return_code; k++)
+					for (int k = 0; k < number_of_values; ++k)
 					{
 						if (!((1 == IO_stream_scan(this->input_file, "%d", &value)) &&
 							set_FE_field_int_value(field, k, value)))
 						{
-							display_message(ERROR_MESSAGE, "Error reading field int.  %s", this->getFileLocation());
-							result = false;
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading integer field value.  %s", this->getFileLocation());
+							return false;
 						}
 					}
 				} break;
 				case STRING_VALUE:
 				{
 					char *the_string;
-
-					for (int k = 0; (k < number_of_values) && return_code; k++)
+					for (int k = 0; k < number_of_values; ++k)
 					{
 						the_string = this->readString();
-						if (the_string)
+						const bool success = (the_string) && (set_FE_field_string_value(field, k, the_string));
+						DEALLOCATE(the_string);
+						if (!success)
 						{
-							if (!set_FE_field_string_value(field, k, the_string))
-							{
-								display_message(ERROR_MESSAGE,
-									"read_FE_field_values.  Error setting string.  %s", this->getFileLocation());
-								result = false;
-							}
-							DEALLOCATE(the_string);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Error reading field string.  %s", this->getFileLocation());
-							result = false;
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading string field value.  %s", this->getFileLocation());
+							return false;
 						}
 					}
 				} break;
 				default:
 				{
-					display_message(ERROR_MESSAGE, "Unsupported field value_type %s.  %s",
+					display_message(ERROR_MESSAGE, "EX Reader.  Unsupported field value_type %s.  %s",
 						Value_type_string(value_type), this->getFileLocation());
-					result = false;
+					return false;
 				} break;
 			}
 		}
 	}
-	return result;
+	return true;
 }
 
 /**
@@ -1501,7 +1724,7 @@ bool EXReader::readNodeHeaderField()
 			if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
 				this->fe_region, 1, &(this->timeIndex->time))))
 			{
-				display_message(ERROR_MESSAGE, "EXReader.  Could not get time sequence for field %s at node.  %s",
+				display_message(ERROR_MESSAGE, "EX Reader.  Could not get time sequence for field %s at node.  %s",
 					get_FE_field_name(field), this->getFileLocation()); 
 				result = false;
 			}
@@ -1536,16 +1759,22 @@ bool EXReader::readNodeHeaderField()
  */
 bool EXReader::readNodeHeader()
 {
-	if (!this->nodeset)
+	if ((this->mesh) || !(this->nodeset))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Nodeset not set.  %s", this->getFileLocation());
 		return false;
+	}
 	this->clearHeaderCache();
 	this->node_template = this->nodeset->create_FE_node_template();
 	if (!this->node_template)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create node template.  %s", this->getFileLocation());
 		return false;
+	}
 	int fieldCount = 0;
 	if ((1 != IO_stream_scan(this->input_file, "Fields=%d", &fieldCount)) || (fieldCount < 0))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Error reading number of fields from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading number of fields.  %s", this->getFileLocation());
 		return false;
 	}
 	for (int f = 0; f < fieldCount; ++f)
@@ -1556,6 +1785,8 @@ bool EXReader::readNodeHeader()
 			return false;
 		}
 	}
+	if (!this->readFieldValues())
+		return false;
 	return true;
 }
 
@@ -1569,16 +1800,20 @@ bool EXReader::readNodeHeader()
  */
 cmzn_node *EXReader::readNode()
 {
+	if (!this->fe_region)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Node token.  %s", this->getFileLocation());
+		return 0;
+	}
 	if (!((this->nodeset) && (this->node_template)))
 	{
-		display_message(ERROR_MESSAGE, "EXReader::readNode.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set or no node template found.  %s", this->getFileLocation());
 		return 0;
 	}
 	DsLabelIdentifier nodeIdentifier = DS_LABEL_IDENTIFIER_INVALID;
 	if (1 != IO_stream_scan(this->input_file, "ode :%d", &nodeIdentifier))
 	{
-		display_message(ERROR_MESSAGE,
-			"EX Reader.  Error reading node number from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading Node token or node number.  %s", this->getFileLocation());
 		return 0;
 	}
 	cmzn_node *returnNode = this->nodeset->findNodeByIdentifier(nodeIdentifier);
@@ -1898,7 +2133,7 @@ bool EXReader::readElementShape()
 {
 	if (!this->fe_region)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Shape token in file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Shape token.  %s", this->getFileLocation());
 		return false;
 	}
 	this->clearHeaderCache();
@@ -1906,7 +2141,7 @@ bool EXReader::readElementShape()
 	if ((1 != IO_stream_scan(input_file, "hape. Dimension=%d", &dimension))
 		|| (dimension < 0) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element shape dimension from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element shape dimension.  %s", this->getFileLocation());
 		return false;
 	}
 	if (this->exVersion < 2)
@@ -1915,7 +2150,8 @@ bool EXReader::readElementShape()
 		{
 			// always set nodeset to reset node template
 			this->setNodeset((this->nodeset) ? this->nodeset :
-				FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES));
+				FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
+					this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
 		}
 		else
 		{
@@ -1961,7 +2197,7 @@ bool EXReader::readElementShape()
 	if ((!IO_stream_read_string(input_file, "[^\n\r]", &shape_description_string))
 		|| (!shape_description_string))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Error reading shape description from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading shape description.  %s", this->getFileLocation());
 		DEALLOCATE(type);
 		return false;
 	}
@@ -2269,7 +2505,7 @@ struct FE_basis *EXReader::readBasis()
 	char *basis_description_string;
 	if (!IO_stream_read_string(input_file, "[^,]", &basis_description_string))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Error reading basis description from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading basis description.  %s", this->getFileLocation());
 		return 0;
 	}
 	char *start_basis_name = basis_description_string;
@@ -2411,7 +2647,7 @@ bool EXReader::readElementHeaderField()
 			char *global_to_element_map_string = 0;
 			if (!IO_stream_read_string(input_file, "[^.]", &global_to_element_map_string))
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Error reading global to element map type from file.  %s", this->getFileLocation());
+				display_message(ERROR_MESSAGE, "EX Reader.  Error reading global to element map type.  %s", this->getFileLocation());
 				result = false;
 				break;
 			}
@@ -2545,17 +2781,16 @@ bool EXReader::readElementHeaderField()
 
 				int scaleFactorCount = 0;
 				int scaleFactorOffset = 0;
+				ScaleFactorSet *sfSet = 0;
 				if (scaleFactorSetName) // EX Version 2+ only; none if not scaling
 				{
-					auto iter = this->scaleFactorSets.find(scaleFactorSetName);
-					if (iter == this->scaleFactorSets.end())
+					sfSet = this->findScaleFactorSet(scaleFactorSetName);
+					if (!sfSet)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Could not find scale factor set %s.  %s", scaleFactorSetName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					scaleFactorCount = iter->second.scaleFactorCount;
-					scaleFactorOffset = iter->second.scaleFactorOffset;
 				}
 				else if (this->exVersion < 2)
 				{
@@ -2567,13 +2802,14 @@ bool EXReader::readElementHeaderField()
 						result = false;
 						break;
 					}
-					auto iter = this->scaleFactorSets.find(basisDescription);
-					if (iter != this->scaleFactorSets.end())
-					{
-						scaleFactorCount = iter->second.scaleFactorCount;
-						scaleFactorOffset = iter->second.scaleFactorOffset;
-					}
+					sfSet = this->findScaleFactorSet(basisDescription);
 					DEALLOCATE(basisDescription);
+				}
+				if (sfSet)
+				{
+					sfSet->addFieldComponent(get_FE_field_name(field), c);
+					scaleFactorCount = sfSet->scaleFactorCount;
+					scaleFactorOffset = sfSet->scaleFactorOffset;
 				}
 				if (CMZN_OK != eft->setNumberOfLocalScaleFactors(scaleFactorCount))
 				{
@@ -2965,6 +3201,7 @@ bool EXReader::readElementHeaderField()
 			} break;
 			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
 			{
+				this->hasElementValues = true;
 				if (elementGridBased)
 				{
 					resultCode = eft->setLegacyGridNumberInXi(gridNumberInXi);
@@ -3075,10 +3312,16 @@ bool EXReader::readElementHeaderField()
 bool EXReader::readElementHeader()
 {
 	if (!(this->mesh && this->elementShape))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  No mesh or element shape set.  %s", this->getFileLocation());
 		return false;
+	}
 	this->clearHeaderCache();
 	if (!this->createElementtemplate())
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element template.  %s", this->getFileLocation());
 		return false;
+	}
 
 	// read in the scale factor set information
 	int scaleFactorSetCount;
@@ -3132,14 +3375,8 @@ bool EXReader::readElementHeader()
 			prefix += ": ";
 			keyValueMap.reportUnusedKeyValues(prefix.c_str());
 		}
-		auto iter = this->scaleFactorSets.find(scaleFactorSetName);
-		if (iter != this->scaleFactorSets.end())
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", scaleFactorSetName.c_str(), this->getFileLocation());
+		if (0 == this->createScaleFactorSet(scaleFactorSetName.c_str(), scaleFactorCount, scaleFactorOffset))
 			return false;
-		}
-		ScaleFactorSetData sfData(scaleFactorCount, scaleFactorOffset);
-		this->scaleFactorSets[scaleFactorSetName] = sfData;
 		scaleFactorOffset += scaleFactorCount;
 	}
 
@@ -3160,448 +3397,401 @@ bool EXReader::readElementHeader()
 	int fieldCount = 0;
 	if ((1 != IO_stream_scan(this->input_file, "#Fields=%d", &fieldCount)) || (fieldCount < 0))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Error reading number of fields from file.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading number of fields.  %s", this->getFileLocation());
 		return false;
 	}
 	for (int f = 0; f < fieldCount; ++f)
 	{
 		if (!this->readElementHeaderField())
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Could not read element field header");
+			display_message(ERROR_MESSAGE, "EX Reader.  Could not read element field header.  %s", this->getFileLocation());
+			return false;
+		}
+	}
+	if (!this->readFieldValues())
+		return false;
+	if (!this->elementtemplate->validate())
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element field header failed validation.  %s", this->getFileLocation());
+		return false;
+	}
+
+#if 0
+	GRC up to here. 
+	// for all scale factor sets, convert field (as name) and components to EFTs in use
+	const size_t sfSetCount = this->scaleFactorSets.size();
+	for (int s = 0; s < sfSetCount; ++s)
+	{
+		ScaleFactorSet *sfSet = this->scaleFactorSets[s];
+		for (auto fc = sfSet->fieldComponents.begin(); fc != sfSet->fieldComponents.end(); ++fc)
+		{
+			FE_field *field = FE_region_get_FE_field_from_name(this->fe_region, fc->first.c_str());
+			if (!field)
+			{
+				!!!
+			}
+
+		}
+	}
+
+	// work out which EFTs are using which scale factor set, and report error if any EFT is using more than one
+	FE_element_template *elementtemplateInt = this->elementtemplate->get_FE_element_template();
+	for (int f = 0; f < fieldCount; ++f)
+	{
+		FE_field *field = this->headerFields[f];
+		const int componentCount = get_FE_field_number_of_components(field);
+		for (int c = 0; c < componentCount; ++c)
+		{
+			FE_element_field_template *eft = elementtemplateInt->getElementfieldtemplate(field, c);
+			if (!eft)
+			{
+				display_message(ERROR_MESSAGE, "EXReader::readElementHeader.  Missing element field template.  %s", this->getFileLocation());
+				return false;
+			}
+			if (eft->getNumberOfLocalScaleFactors() > 0)
+	}
+#endif
+	return true;
+}
+
+/** Read element identifier.
+  * In EX Version < 2 this was a triple ELEMENT_NUMBER FACE_NUMBER LINE_NUMBER, where the
+  * first non-zero value is used, if not zero.
+  * From EX Version 2+ this is a simple integer.
+  * @param elementIdentifier  The return identifier. Up to caller to handle negative numbers.
+  * @return  True on success, false if failed. */
+bool EXReader::readElementIdentifier(DsLabelIdentifier &elementIdentifier)
+{
+	if (this->exVersion < 2)
+	{
+		// legacy format: triple of ELEMENT_NUMBER FACE_NUMBER LINE_NUMBER
+		DsLabelIdentifier element_num, face_num, line_num;
+		if (3 != IO_stream_scan(input_file, " %d %d %d", &element_num, &face_num, &line_num))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Error reading legacy element identifier.  %s", this->getFileLocation());
+			return false;
+		}
+		if (element_num)
+			elementIdentifier = element_num;
+		else if (face_num)
+			elementIdentifier = face_num;
+		else /* line_num */
+			elementIdentifier = line_num;
+	}
+	else
+	{
+		if (1 != IO_stream_scan(this->input_file, " %d", &elementIdentifier))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Error reading element identifier.  %s", this->getFileLocation());
 			return false;
 		}
 	}
 	return true;
 }
 
+/** If field component has element values, read them.
+  * @return  True on success, false on failure. */
+bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber)
+{
+	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+	const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
+	const FE_element_field_template *eft = mft->getElementfieldtemplate(elementIndex);
+	const int valueCount = eft->getNumberOfElementDOFs();
+	if (0 == valueCount)
+		return true;
+	FE_mesh_field_data::ComponentBase *componentBase = meshFieldData->getComponentBase(componentNumber);
+	Value_type valueType = get_FE_field_value_type(field);
+
+	switch (valueType)
+	{
+	case FE_VALUE_VALUE:
+	{
+		auto component = static_cast<FE_mesh_field_data::Component<FE_value>*>(componentBase);
+		FE_value *values = component->getOrCreateElementValues(elementIndex, valueCount);
+		if (!values)
+		{
+			display_message(ERROR_MESSAGE, "EXReader::readElementFieldComponentValues.  Failed to allocate values.  %s", this->getFileLocation());
+			return false;
+		}
+		for (int v = 0; v < valueCount; ++v)
+		{
+			if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &(values[v])))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid FE_value value.  %s", this->getFileLocation());
+				return false;
+			}
+			if (!finite(values[v]))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN element value read for element.  %s", this->getFileLocation());
+				return false;
+			}
+		}
+	} break;
+	case INT_VALUE:
+	{
+		auto component = static_cast<FE_mesh_field_data::Component<int>*>(componentBase);
+		int *values = component->getOrCreateElementValues(elementIndex, valueCount);
+		if (!values)
+		{
+			display_message(ERROR_MESSAGE, "EXReader::readElementFieldComponentValues.  Failed to allocate values.  %s", this->getFileLocation());
+			return false;
+		}
+		for (int v = 0; v < valueCount; ++v)
+		{
+			if (1 != IO_stream_scan(input_file, "%d", &(values[v])))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid int value.  %s", this->getFileLocation());
+				return false;
+			}
+		}
+	} break;
+	default:
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Unsupported element field value type %s.  %s", Value_type_string(valueType), this->getFileLocation());
+		return false;
+	} break;
+	}
+	return true;
+}
+
 /**
- * Returns an element from the element data in the input file.
- * If the element of that identifier already exists, it is returned but
- * parsed data is put into the element_template and the existingElement flag
- * is set which indicates that the caller must merge the element template.
- * If the element is newly created the new data is already in it.
- * This behaviour is interim while face/node/scale factor information is
- * moved from element objects into the mesh.
+ * Reads element from stream, adding or merging into current mesh.
  * Format:
- * Element: # # #
+ * Element: # (EX Version < 2 uses triple # # #  # # #  # # # ...)
  * Faces:
- * # # #
- * # # #
- * ...
+ * # # # ... (EX Version < 2 uses triples # # #  # # #  # # # ...)
  * Values:
  * # # # ...
  * Nodes:
  * # # # ...
  * Scale factors:
  * # # # ...
- * If the element_template has nodes, values or scale factors, those
+ *
+ * If the element template has nodes, values or scale factors, those
  * sections are mandatory. Faces are optional.
+ * Note element and face identifiers are triples in EX Version < 2.
  * @return  On success, ACCESSed element, otherwise 0.
  */
-static struct FE_element *read_FE_element(struct IO_stream *input_file,
-	FE_element_template *element_template, FE_mesh *fe_mesh,
-	FE_nodeset *fe_nodeset, struct FE_field_order_info *field_order_info,
-	bool& existingElement)
+cmzn_element *EXReader::readElement()
 {
-	char *location, test_string[5];
+	char test_string[5];
+	if (1 != IO_stream_scan(input_file, " ement %1[:] ", test_string)) // "El" has already been read
+	{
+		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
+		return 0;
+	}
+	if (!this->fe_region)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Element: token.  %s", this->getFileLocation());
+		return 0;
+	}
+	if (!((this->mesh) && (this->elementtemplate)))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Can't read element as no mesh set or no element template defined.  %s", this->getFileLocation());
+		return 0;
+	}
+	DsLabelIdentifier elementIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	if (!this->readElementIdentifier(elementIdentifier))
+		return 0;
+	if (elementIdentifier < 0)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Negative element identifier is not permitted.  %s", this->getFileLocation());
+		return 0;
+	}
+
+	// Note following calls mergeIntoElementEX and createElementEX variants
+	// which do not set legacy nodes, since they haven't been read yet!
+	cmzn_element *element = this->mesh->findElementByIdentifier(elementIdentifier);
+	if (element)
+	{
+		// existing element may have no shape if automatically created for element:xi location
+		// in this case merge will set its shape, otherwise it's an error if existing shape is changed
+		const FE_element_shape *elementShape = element->getElementShape();
+		if ((elementShape) && (this->elementtemplate->getElementShape() != elementShape))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Element %d redefined with different shape.  %s", elementIdentifier, this->getFileLocation());
+			return 0;
+		}
+		if (CMZN_OK != this->elementtemplate->mergeIntoElementEX(element))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge element fields.  %s", this->getFileLocation());
+			return 0;
+		}
+		element->access();
+	}
+	else
+	{
+		element = this->elementtemplate->createElementEX(elementIdentifier);
+		if (!element)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element.  %s", this->getFileLocation());
+			return 0;
+		}
+	}
+
+	// Faces: (optional)
+	if (1 == IO_stream_scan(input_file, " Faces %1[:]", test_string))
+	{
+		FE_mesh::ElementShapeFaces *elementShapeFaces = this->mesh->getElementShapeFaces(element->getIndex());
+		const int faceCount = elementShapeFaces->getFaceCount();
+		FE_mesh *faceMesh = this->mesh->getFaceMesh();
+		if ((!faceMesh) && (0 < faceCount))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to find face mesh.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+		const FE_element_shape *elementShape = elementShapeFaces->getElementShape();
+		DsLabelIndex *faces = elementShapeFaces->getOrCreateElementFaces(element->getIndex());
+		if (!faces)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to allocate space for faces.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+		DsLabelIdentifier faceIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+		for (int i = 0; i < faceCount; ++i)
+		{
+			if (!this->readElementIdentifier(faceIdentifier))
+			{
+				cmzn_element::deaccess(element);
+				return 0;
+			}
+			if (faceIdentifier == -1)
+				continue; // denotes no face
+			if ((this->exVersion < 2) && (faceIdentifier == 0))
+				continue; // denoted no face in legacy versions
+			DsLabelIndex faceIndex = faceMesh->findIndexByIdentifier(faceIdentifier);
+			if (faceIndex < 0)
+			{
+				if (faceIdentifier < 0)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Negative face identifier is not permitted.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				// create a face of the expected shape
+				FE_element_shape *faceShape = get_FE_element_shape_of_face(elementShape, i, this->fe_region);
+				cmzn_element *face = faceMesh->get_or_create_FE_element_with_identifier(faceIdentifier, faceShape);
+				if (!face)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to create face.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				faceIndex = face->getIndex();
+				cmzn_element::deaccess(face);
+			}
+			faces[i] = faceIndex;
+		}
+	}
+
+	// Values: element field values if any element-based field components
+	const size_t fieldCount = this->headerFields.size();
+	if (this->hasElementValues)
+	{
+		if (1 != IO_stream_scan(input_file, " Values %1[:] ", test_string))
+		{
+			display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of required \" Values :\" token in element.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+		for (size_t f = 0; f < fieldCount; ++f)
+		{
+			FE_field *field = this->headerFields[f];
+			// only GENERAL_FE_FIELD can store values at elements
+			if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
+				continue;
+			const int componentCount = get_FE_field_number_of_components(field);
+			for (int c = 0; c < componentCount; ++c)
+			{
+				if (!this->readElementFieldComponentValues(element->getIndex(), field, c))
+				{
+					display_message(WARNING_MESSAGE, "EX Reader.  Failed to read element values.  %s.", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+			}
+		}
+	}
+
+	// Nodes: if present in element template
+	const int nodeCount = this->elementtemplate->getNumberOfNodes();
+	if (nodeCount > 0)
+	{
+		if (1 != IO_stream_scan(input_file, " Nodes %1[:]", test_string))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Nodes:\" token in element.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+		for (int n = 0; n < nodeCount; ++n)
+		{
+			DsLabelIdentifier nodeIdentifier;
+			if (1 != IO_stream_scan(input_file, "%d", &nodeIdentifier))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Error reading node identifier.  %s", this->getFileLocation());
+				cmzn_element::deaccess(element);
+				return 0;
+			}
+			cmzn_node *node = this->nodeset->get_or_create_FE_node_with_identifier(nodeIdentifier);
+			if (!node)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to get or create node with identifier %d.  %s", nodeIdentifier, this->getFileLocation());
+				cmzn_element::deaccess(element);
+				return 0;
+			}
+			const int resultCode = this->elementtemplate->setNode(n + 1, node);
+			cmzn_node_destroy(&node);
+			if (CMZN_OK != resultCode)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element local node %d.  %s", n + 1, this->getFileLocation());
+				cmzn_element::deaccess(element);
+				return 0;
+			}
+		}
+		if (CMZN_OK != this->elementtemplate->setLegacyNodesInElement(element))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element nodes.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+	}
+#if 0
+	// Scale factors: if any in header
+	this->scaleFactorSets;
+	GRC up to here
+	// for all scale factor sets, convert field (as name) and components to EFTs in use
+	const size_t sfSetCount = this->scaleFactorSets.size();
+	for (int s = 0; s < sfSetCount; ++s)
+	{
+		ScaleFactorSet *sfSet = this->scaleFactorSets[s];
+		for (auto fc = sfSet->fieldComponents.begin(); fc != sfSet->fieldComponents.end(); ++fc)
+		{
+			FE_field *field = FE_region_get_FE_field_from_name(this->fe_region, fc->first.c_str());
+			if (!field)
+			{
+				!!!
+			}
+
+		}
+	}
+
+
+
 	enum Value_type value_type;
 	FE_value scale_factor;
 	int face_token_length, i, j, k, node_number, number_of_components,
 		number_of_faces, number_of_fields, number_of_nodes, number_of_scale_factors,
-		number_of_values, return_code, element_num, face_num, line_num;
+		number_of_values, return_code;
 	struct FE_field *field;
 	struct FE_node *node;
 
 	ENTER(read_FE_element);
 	existingElement = false;
 	FE_element *return_element = (struct FE_element *)NULL;
-	if (input_file && element_template && fe_mesh && field_order_info)
-	{
-		/* read the element identifier */
-		int element_identifier = -1;
-		if (3 == IO_stream_scan(input_file, "lement :%d %d %d",
-			&element_num, &face_num, &line_num))
-		{
-			if (element_num)
-				element_identifier = element_num;
-			else if (face_num)
-				element_identifier = face_num;
-			else /* line_num */
-				element_identifier = line_num;
-			return_code = 1;
-		}
-		else
-		{
-			location = IO_stream_get_location_string(input_file);
-			display_message(ERROR_MESSAGE,
-				"Error reading element identifier from file.  %s",
-				location);
-			DEALLOCATE(location);
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			return_element = fe_mesh->findElementByIdentifier(element_identifier);
-			if (return_element)
-			{
-				DsLabelIndex index = get_FE_element_index(return_element);
-				FE_element_shape *element_shape = fe_mesh->getElementShape(index);
-				if (element_shape)
-				{
-					if (element_shape != element_template->get_element_shape())
-					{
-						if (FE_element_shape_is_unspecified(element_shape))
-						{
-							if (!fe_mesh->setElementShape(index, element_template->get_element_shape()))
-							{
-								display_message(ERROR_MESSAGE, "read_FE_element.  Could not set element shape for %d-D element %d",
-									fe_mesh->getDimension(), element_identifier);
-								return_element = 0;
-							}
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "read_FE_element.  Inconsistent shape for %d-D element %d. %s",
-								fe_mesh->getDimension(), element_identifier, location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					}
-					if (return_element)
-					{
-						existingElement = true;
-						ACCESS(FE_element)(return_element);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "read_FE_element.  Missing element shape for %d-D element %d",
-						fe_mesh->getDimension(), element_identifier);
-					return_element = 0;
-				}
-			}
-			else
-			{
-				return_element = fe_mesh->create_FE_element(element_identifier, element_template);
-				if (!return_element)
-				{
-					display_message(ERROR_MESSAGE, "read_FE_element.  Could not create element");
-					return_code = 0;
-				}
-			}
-			if (return_element)
-			{
-				FE_element *element;
-				FE_element_shape *element_shape;
-				if (existingElement)
-				{
-					element = element_template->get_template_element();
-					element_shape = element_template->get_element_shape();
-				}
-				else
-				{
-					element = return_element;
-					element_shape = get_FE_element_shape(element);
-				}
-				number_of_faces = FE_element_shape_get_number_of_faces(element_shape);
-				if (element_shape)
-				{
-					/* if face_token_length > 0, then faces being read */
-					face_token_length = 0;
-					IO_stream_scan(input_file, " Faces:%n", &face_token_length);
-					if (0 < face_token_length)
-					{
-						FE_mesh *face_mesh = fe_mesh->getFaceMesh();
-						if ((!face_mesh) && (0 < number_of_faces))
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "read_FE_element.  Faces token without face mesh of dimension %d.  %s",
-								fe_mesh->getDimension() - 1, location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-						int face_identifier;
-						FE_element *face_element;
-						for (i = 0; (i < number_of_faces) && return_code; i++)
-						{
-							/* file input */
-							if (3 == IO_stream_scan(input_file, "%d %d %d",
-								&element_num, &face_num, &line_num))
-							{
-								if (element_num)
-									face_identifier = element_num;
-								else if (face_num)
-									face_identifier = face_num;
-								else /* line_num */
-									face_identifier = line_num;
-								return_code =1;
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Error reading face identifier from file.  %s",
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-							if (return_code)
-							{
-								/* face number of 0 means no face. GRC problem since 0 is legal identifier */
-								if (0 != face_identifier)
-								{
-									face_element = face_mesh->findElementByIdentifier(face_identifier);
-									if (!face_element)
-									{
-										// create a face of the expected shape
-										FE_element_shape *face_shape = get_FE_element_shape_of_face(element_shape, i, fe_mesh->get_FE_region());
-										face_element = face_mesh->get_or_create_FE_element_with_identifier(face_identifier, face_shape);
-									}
-									face_element = face_mesh->findElementByIdentifier(face_identifier);
-									if (face_element)
-									{
-										// faces go directly in return element; template does not hold them
-										if (CMZN_OK != fe_mesh->setElementFace(
-											get_FE_element_index(return_element), i, get_FE_element_index(face_element)))
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,"read_FE_element.  "
-												"Could not set face %d of %d-D element %d.  %s", i + 1, fe_mesh->getDimension(),
-												element_identifier, location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "read_FE_element.  Could not find %d-D face element %d.  %s",
-											face_mesh->getDimension(), face_identifier, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					location = IO_stream_get_location_string(input_file);
-					display_message(ERROR_MESSAGE,
-						"read_FE_element.  Could not get shape and number of faces of %d-D element %d.  %s",
-						fe_mesh->getDimension(), element_identifier, location);
-					DEALLOCATE(location);
-					return_code = 0;
-				}
-				/* check whether element has any grid values */
-				if (return_code && FE_element_has_values_storage(element))
-				{
-					/* read the values */
-					/* Use a %1[:] so that a successful read will return 1 */
-					if (1 != IO_stream_scan(input_file," Values %1[:] ", test_string))
-					{
-						display_message(WARNING_MESSAGE,
-							"Truncated read of required \" Values :\" token in element file.");
-					}
-					number_of_fields =
-						get_FE_field_order_info_number_of_fields(field_order_info);
-					for (i = 0; (i < number_of_fields) && return_code; i++)
-					{
-						if ((field = get_FE_field_order_info_field(field_order_info, i)))
-						{
-							number_of_components = get_FE_field_number_of_components(field);
-							int allocated_number_of_values = 0;
-							value_type = get_FE_field_value_type(field);
-							switch (value_type)
-							{
-								case FE_VALUE_VALUE:
-								{
-									FE_value *values = NULL;
-									for (j = 0; (j < number_of_components) && return_code; j++)
-									{
-										number_of_values = get_FE_element_field_component_number_of_grid_values(element, field, j);
-										if (0 < number_of_values)
-										{
-											if (number_of_values > allocated_number_of_values)
-											{
-												FE_value *temp_values;
-												if (REALLOCATE(temp_values, values, FE_value, number_of_values))
-												{
-													values = temp_values;
-													allocated_number_of_values = number_of_values;
-												}
-												else
-												{
-													return_code = 0;
-												}
-											}
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
-													&(values[k])))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading grid FE_value value from file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-												if (!finite(values[k]))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Infinity or NAN element value read from element file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											if (return_code)
-											{
-												if (!set_FE_element_field_component_grid_FE_value_values(
-													element, field, /*component_number*/j, values))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"read_FE_element.  Could not set grid FE_value values");
-													DEALLOCATE(location);
-												}
-											}
-										}
-									}
-									DEALLOCATE(values);
-								} break;
-								case INT_VALUE:
-								{
-									int *values = NULL;
-									for (j = 0; (j < number_of_components) && return_code; j++)
-									{
-										number_of_values = get_FE_element_field_component_number_of_grid_values(element, field, j);
-										if (0 < number_of_values)
-										{
-											if (number_of_values > allocated_number_of_values)
-											{
-												int *temp_values;
-												if (REALLOCATE(temp_values, values, int, number_of_values))
-												{
-													values = temp_values;
-													allocated_number_of_values = number_of_values;
-												}
-												else
-												{
-													return_code = 0;
-												}
-											}
-											for (k = 0; (k < number_of_values) && return_code; k++)
-											{
-												if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Error reading grid int value from file.  %s",
-														location);
-													DEALLOCATE(location);
-													return_code = 0;
-												}
-											}
-											if (return_code)
-											{
-												if (!set_FE_element_field_component_grid_int_values(
-													element, field, /*component_number*/j, values))
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"read_FE_element.  Could not set grid int values");
-													DEALLOCATE(location);
-												}
-											}
-										}
-									}
-									DEALLOCATE(values);
-								} break;
-								default:
-								{
-									/* no element values for other types */
-								} break;
-							}
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "Invalid field #%d.  %s",
-								i + 1, location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					}
-				}
-				if (return_code)
-				{
-					if (get_FE_element_number_of_nodes(element, &number_of_nodes))
-					{
-						if (0 < number_of_nodes)
-						{
-							/* read the nodes */
-							/* Use a %1[:] so that a successful read will return 1 */
-							if (1 != IO_stream_scan(input_file," Nodes%1[:]", test_string))
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(WARNING_MESSAGE,
-									"Truncated read of required \" Nodes:\" token in element file.  %s", location);
-								DEALLOCATE(location);
-							}
-							for (i = 0; (i < number_of_nodes) && return_code; i++)
-							{
-								if (1 == IO_stream_scan(input_file, "%d", &node_number))
-								{
-									/* get or create node with node_number */
-									if (NULL != (node = fe_nodeset->get_or_create_FE_node_with_identifier(node_number)))
-									{
-										if (!set_FE_element_node(element, i, node))
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"read_FE_element.  Could not set node");
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"read_FE_element.  Could not get or create node");
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-								else
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Error reading node number from file.  %s",
-										location);
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-							}
-						}
-					}
-					else
-					{
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"read_FE_element.  Could not get number of nodes for %d-D element %d",
-							fe_mesh->getDimension(), element_identifier);
-						DEALLOCATE(location);
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
+
+	FE_element *element;
 					if (get_FE_element_number_of_scale_factors(element,
 						&number_of_scale_factors))
 					{
@@ -3610,10 +3800,11 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 							/*???RC scale_factors array in element_info should be private */
 							/* read the scale factors */
 							/* Use a %1[:] so that a successful read will return 1 */
-							if (1 != IO_stream_scan(input_file," Scale factors%1[:]", test_string))
+							if (1 != IO_stream_scan(input_file," Scale factors %1[:]", test_string))
 							{
-								display_message(WARNING_MESSAGE,
+								display_message(ERROR_MESSAGE,
 									"Truncated read of required \" Scale factors:\" token in element file.");
+								return_code = 0;
 							}
 							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
 							{
@@ -3624,31 +3815,23 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 									{
 										if (!set_FE_element_scale_factor(element, i, scale_factor))
 										{
-											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
-												"Error setting scale factor.  %s",
-												location);
-											DEALLOCATE(location);
+												"Error setting scale factor.  %s", this->getFileLocation());
 											return_code = 0;
 										}
 									}
 									else
 									{
-										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
 											"Infinity or NAN scale factor read from element file.  "
-											"%s", location);
-										DEALLOCATE(location);
+											"%s", this->getFileLocation());
 										return_code = 0;
 									}
 								}
 								else
 								{
-									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading scale factor from file.  %s",
-										location);
-									DEALLOCATE(location);
+										"Error reading scale factor.  %s", this->getFileLocation());
 									return_code = 0;
 								}
 							}
@@ -3656,29 +3839,85 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 					}
 					else
 					{
-						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE, "read_FE_element.  "
-							"Could not get number of scale factors for %d-D element %d",
-							fe_mesh->getDimension(), element_identifier);
-						DEALLOCATE(location);
+							"Could not get number of scale factors for %d-D element %d.  %s",
+							fe_mesh->getDimension(), element_identifier, this->getFileLocation());
 						return_code = 0;
 					}
 				}
 				if (!return_code)
 					DEACCESS(FE_element)(&return_element);
 			}
+
+
+	if (fe_region)
+	{
+		/* ensure we have element field information */
+		if (element_template)
+		{
+			bool existingElement = false;
+			FE_element *element = read_FE_element(input_file, element_template,
+				fe_mesh, fe_nodeset, field_order_info, existingElement);
+			if (element)
+			{
+				if (existingElement)
+				{
+					// GRC this has changed considerably: use external API
+					int result = fe_mesh->merge_FE_element_template(element, element_template);
+					if (result != CMZN_OK)
+					{
+						display_message(ERROR_MESSAGE,
+							"read_exregion_file.  Failed to merge into existing element.  %s", this->getFileLocation());
+						return_code = 0;
+					}
+				}
+				if (group && (!mesh_group))
+				{
+					cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+					cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
+						fe_mesh->getDimension());
+					cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+					if (!element_group)
+					{
+						element_group = cmzn_field_group_create_field_element_group(group, mesh);
+					}
+					mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+					cmzn_field_element_group_destroy(&element_group);
+					cmzn_mesh_destroy(&mesh);
+					cmzn_fieldmodule_destroy(&field_module);
+				}
+				if (mesh_group)
+				{
+					cmzn_mesh_group_add_element(mesh_group, element);
+				}
+				DEACCESS(FE_element)(&element);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"read_exregion_file.  Error reading element.  %s", this->getFileLocation());
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "read_exregion_file_private.  "
+				"No current element field info for element.  %s", this->getFileLocation());
+			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_FE_element.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"Region/Group not set before Element token.  %s", this->getFileLocation());
+		return_code = 0;
 	}
-	LEAVE;
 
-	return (return_element);
-} /* read_FE_element */
+#endif
+	return element;
+}
 
-/***************************************************************************//**
+/**
  * Reads region, group, field, node and element field data in EX format into
  * the supplied region.
  *
@@ -3707,451 +3946,279 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index,
 	int use_data)
 {
-	char first_character_in_token, *location,
-		*temp_string, test_string[5];
-	int input_result, return_code;
-
-	ENTER(read_exregion_file);
-	return_code = 0;
-	if (root_region && input_file)
+	if (!(root_region && input_file))
 	{
-		EXReader exReader(input_file, time_index);
+		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
+		return 0;
+	}
 
-		int use_data_meta_flag = use_data;
-		cmzn_region_begin_hierarchical_change(root_region);
-		/* region is the same as read_region if reading into a true region,
-		 * otherwise it is the parent region of read_region group */
-		cmzn_region_id region = cmzn_region_access(root_region);
-		exReader.setRegion(region);
-		cmzn_field_group_id group = 0;
-		cmzn_nodeset_group_id nodeset_group = 0;
-		cmzn_mesh_group_id mesh_group = 0;
-		input_result = 1;
-		return_code = 1;
-		while (return_code && (1 == input_result))
+	EXReader exReader(input_file, time_index);
+	exReader.setUseDataMetaFlag(use_data != 1);
+	cmzn_region_begin_hierarchical_change(root_region);
+	cmzn_field_group_id group = 0;
+	cmzn_nodeset_group_id nodeset_group = 0;
+	cmzn_mesh_group_id mesh_group = 0;
+	char first_character_in_token, test_string[5];
+	int return_code = 1;
+	while (return_code)
+	{
+		/* get first character in next token */
+		IO_stream_scan(input_file, " ");
+		int input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
+		if (1 != input_result)
+			break;
+
+		switch (first_character_in_token)
 		{
-			/* get first character in next token */
-			IO_stream_scan(input_file, " ");
-			/*???DB.  On the alphas input_result is 0 at the end of file when the
-				IO_stream_scans are combined " %c" ? */
-			input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
-			if (1 == input_result)
+			case 'R': /* Region : </path> */
+			case 'G': /* Group name : <name> */
 			{
-				switch (first_character_in_token)
+				cmzn_field_group_destroy(&group);
+				cmzn_nodeset_group_destroy(&nodeset_group);
+				cmzn_mesh_group_destroy(&mesh_group);
+				/* Use a %1[:] so that a successful read will return 1 */
+				int valid_token = 0;
+				if ('R' == first_character_in_token)
 				{
-					case 'R': /* Region : </path> */
-					case 'G': /* Group name : <name> */
+					valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
+				}
+				else
+				{
+					valid_token = IO_stream_scan(input_file,"roup name %1[:]", test_string);
+				}
+				if (1 != valid_token)
+				{
+					display_message(ERROR_MESSAGE,
+						"EX Reader.  Truncated \'Region :\' or \'Group name :\' token in EX file.  %s", exReader.getFileLocation());
+					return_code = 0;
+				}
+				char *rest_of_line = (char *)NULL;
+				char *region_path = (char *)NULL;
+				if (return_code)
+				{
+					/* read the region path */
+					if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 					{
-						use_data_meta_flag = use_data;
-						if (group)
+						region_path = rest_of_line;
+						/* trim leading and trailing white space */
+						while ((' ' == *region_path) || ('\t' == *region_path))
 						{
-							cmzn_field_group_destroy(&group);
+							region_path++;
 						}
-						fe_region = (struct FE_region *)NULL;
-						fe_mesh = 0;
-						fe_nodeset = 0;
-						/* Use a %1[:] so that a successful read will return 1 */
-						int valid_token = 0;
-						if ('R' == first_character_in_token)
+						char *last_character = region_path+(strlen(region_path)-1);
+						while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
 						{
-							valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
+							last_character--;
+						}
+						*(last_character + 1)='\0';
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"EX Reader.  Error reading region path or group name.  %s", exReader.getFileLocation());
+						return_code = 0;
+					}
+				}
+				/* get or create region with path, or group with name */
+				if (return_code)
+				{
+					if ('R' == first_character_in_token)
+					{
+						if (region_path && (CMZN_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
+						{
+							/* region is the same as read_region if reading into a true region,
+							* otherwise it is the parent region of read_region group */
+							cmzn_region *region = cmzn_region_find_subregion_at_path(root_region, region_path);
+							if (!region)
+								region = cmzn_region_create_subregion(root_region, region_path);
+							if (!exReader.setRegion(region))
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Could not create or set region \'%s\'.  %s", region_path, exReader.getFileLocation());
+								return_code = 0;
+							}
+							cmzn_region_destroy(&region);
 						}
 						else
 						{
-							valid_token = IO_stream_scan(input_file,"roup name %1[:]", test_string);
-						}
-						if (1 != valid_token)
-						{
-							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Truncated \'Region :\' or \'Group name :\' token in EX file.  %s", location);
-							DEALLOCATE(location);
+								"Missing \'%c\' at start of region path \'%s\'.  %s",
+								CMZN_REGION_PATH_SEPARATOR_CHAR, region_path, exReader.getFileLocation());
 							return_code = 0;
 						}
-						char *rest_of_line = (char *)NULL;
-						char *region_path = (char *)NULL;
-						if (return_code)
+					}
+					else
+					{
+						cmzn_region *region = exReader.getRegion();
+						if (0 == exReader.getRegion())
 						{
-							/* read the region path */
-							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+							region = root_region;
+							if (!exReader.setRegion(region))
 							{
-								region_path = rest_of_line;
-								/* trim leading and trailing white space */
-								while ((' ' == *region_path) || ('\t' == *region_path))
-								{
-									region_path++;
-								}
-								char *last_character = region_path+(strlen(region_path)-1);
-								while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
-								{
-									last_character--;
-								}
-								*(last_character + 1)='\0';
-								return_code = 1;
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Error reading region path or group name from file.  %s", location);
-								DEALLOCATE(location);
+								display_message(ERROR_MESSAGE, "EX Reader.  Could not set root region.  %s", exReader.getFileLocation());
 								return_code = 0;
 							}
 						}
-						/* get or create region with path, or group with name */
 						if (return_code)
 						{
-							if ('R' == first_character_in_token)
+							cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+							cmzn_field_id group_field = cmzn_fieldmodule_find_field_by_name(field_module, region_path);
+							if (group_field)
 							{
-								cmzn_region_destroy(&region);
-								if (region_path && (CMZN_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
+								group = cmzn_field_cast_group(group_field);
+								if (!group)
 								{
-									region = cmzn_region_find_subregion_at_path(root_region, region_path);
-									if (!region)
-									{
-										region = cmzn_region_create_subregion(root_region, region_path);
-									}
-									if (!region)
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Could not create region \'%s\'.  %s", region_path, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-								else
-								{
-									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Missing \'%c\' at start of region path \'%s\'.  %s",
-										CMZN_REGION_PATH_SEPARATOR_CHAR, region_path, location);
-									DEALLOCATE(location);
+										"EX Reader.  Could not create group \'%s\' as name in use by other field.  %s",
+										region_path, exReader.getFileLocation());
 									return_code = 0;
 								}
 							}
 							else
 							{
-								cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-								cmzn_field_id group_field = cmzn_fieldmodule_find_field_by_name(field_module, region_path);
-								if (group_field)
+								group_field = cmzn_fieldmodule_create_field_group(field_module);
+								cmzn_field_set_managed(group_field, true);
+								if (cmzn_field_set_name(group_field, region_path))
 								{
 									group = cmzn_field_cast_group(group_field);
-									if (!group)
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Could not create group \'%s\' as name in use.  %s", region_path, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-								else
-								{
-									group_field = cmzn_fieldmodule_create_field_group(field_module);
-									cmzn_field_set_managed(group_field, true);
-									if (cmzn_field_set_name(group_field, region_path))
-									{
-										group = cmzn_field_cast_group(group_field);
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Could not create group \'%s\'.  %s", region_path, location);
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
-								cmzn_field_destroy(&group_field);
-								cmzn_fieldmodule_destroy(&field_module);
-							}
-						}
-						region_path = (char *)NULL;
-						DEALLOCATE(rest_of_line);
-
-						cmzn::Deaccess(node_template);
-						cmzn::Deaccess(element_template);
-						/* default to reading nodes after region / group token */
-						if (element_shape)
-						{
-							DEACCESS(FE_element_shape)(&element_shape);
-						}
-						if (field_order_info)
-						{
-							DESTROY(FE_field_order_info)(&field_order_info);
-						}
-						if (region)
-						{
-							fe_region = cmzn_region_get_FE_region(region);
-							fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
-								use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
-							node_template = fe_nodeset->create_FE_node_template();
-							field_order_info = CREATE(FE_field_order_info)();
-						}
-						cmzn_nodeset_group_destroy(&nodeset_group);
-					} break;
-					case 'S': /* Shape */
-					{
-						if (!exReader.readElementShape())
-							return_code = 0;
-						// GRC! if (element_shape)
-						// 	use_data_meta_flag = 0;
-						cmzn_mesh_group_destroy(&mesh_group);
-					} break;
-					case '!': /* !# directive, otherwise ! Comment ignored to end of line */
-					{
-						char *comment = NULL;
-						// directive !#nodeset nodes|datapoints
-						// sets which nodeset to read nodes into
-						if (1 == IO_stream_scan(input_file,"#nodese%1[t] ",test_string))
-						{
-							char *nodesetName = 0;
-							if (IO_stream_read_string(input_file, "[^,\n\r]", &nodesetName))
-							{
-								// remove trailing whitespace off name
-								size_t i = strlen(nodesetName);
-								while ((0 < i) && (isspace(nodesetName[i - 1])))
-									--i;
-								nodesetName[i] = '\0';
-								if (0 == strcmp("datapoints", nodesetName))
-									use_data_meta_flag = 1;
-								else if (0 == strcmp("nodes", nodesetName))
-									use_data_meta_flag = 0;
-								else
-								{
-									display_message(WARNING_MESSAGE, "Unrecognised nodeset name '%s', assuming %s",
-										nodesetName, use_data ? "datapoints" : "nodes");
-									use_data_meta_flag = use_data;
-								}
-								DEALLOCATE(nodesetName);
-								if (region)
-								{
-									fe_region = cmzn_region_get_FE_region(region);
-									fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
-										use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
-									cmzn::Deaccess(node_template);
-									node_template = fe_nodeset->create_FE_node_template();
-									if (field_order_info)
-										DESTROY(FE_field_order_info)(&field_order_info);
-									field_order_info = CREATE(FE_field_order_info)();
-									cmzn_nodeset_group_destroy(&nodeset_group);
-								}
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE, "Error reading nodeset name at location %s", location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						// ignore to end of line for comment AND directive, in case we extend directive
-						IO_stream_read_string(input_file, "[^\n\r]", &comment);
-						DEALLOCATE(comment);
-					} break;
-					case '#': /* #Scale factor sets, #Nodes, or #Fields */
-					{
-						if (exReader.getMesh())
-						{
-							if (!exReader.readElementHeader())
-								return_code = 0;
-						}
-						else if (exReader.getNodeset())
-						{
-							if (!exReader.readNodeHeader())
-								return_code = 0;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Region/Group not set before field header tokens in file.  %s", exReader.getFileLocation());
-							return_code = 0;
-						}
-					} break;
-					case 'N': /* Node */
-					{
-						if (fe_region)
-						{
-							/* ensure we have node field information */
-							if (node_template)
-							{
-								cmzn_node *node = exReader.readNode();
-								if (node)
-								{
-									if (group && (!nodeset_group))
-									{
-										cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-										cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
-											use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
-										cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-										if (!node_group)
-										{
-											node_group = cmzn_field_group_create_field_node_group(group, nodeset);
-										}
-										nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
-										cmzn_field_node_group_destroy(&node_group);
-										cmzn_nodeset_destroy(&nodeset);
-										cmzn_fieldmodule_destroy(&field_module);
-									}
-									if (nodeset_group)
-									{
-										cmzn_nodeset_group_add_node(nodeset_group, node);
-									}
-									DEACCESS(FE_node)(&node);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"read_exregion_file.  Error reading node");
+										"EX Reader.  Could not create group \'%s\'.  %s", region_path, exReader.getFileLocation());
 									return_code = 0;
 								}
 							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_exregion_file.  No current node field info for node");
-								return_code = 0;
-							}
+							cmzn_field_destroy(&group_field);
+							cmzn_fieldmodule_destroy(&field_module);
 						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Region/Group not set before Node token in file.  %s",
-								location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					} break;
-					case 'E': /* Element */
-					{
-						if (fe_region)
-						{
-							/* ensure we have element field information */
-							if (element_template)
-							{
-								bool existingElement = false;
-								FE_element *element = read_FE_element(input_file, element_template,
-									fe_mesh, fe_nodeset, field_order_info, existingElement);
-								if (element)
-								{
-									if (existingElement)
-									{
-										// GRC this has changed considerably: use external API
-										int result = fe_mesh->merge_FE_element_template(element, element_template);
-										if (result != CMZN_OK)
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,
-												"read_exregion_file.  Failed to merge into existing element.  %s",
-												location);
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									}
-									if (group && (!mesh_group))
-									{
-										cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-										cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
-											fe_mesh->getDimension());
-										cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-										if (!element_group)
-										{
-											element_group = cmzn_field_group_create_field_element_group(group, mesh);
-										}
-										mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-										cmzn_field_element_group_destroy(&element_group);
-										cmzn_mesh_destroy(&mesh);
-										cmzn_fieldmodule_destroy(&field_module);
-									}
-									if (mesh_group)
-									{
-										cmzn_mesh_group_add_element(mesh_group, element);
-									}
-									DEACCESS(FE_element)(&element);
-								}
-								else
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"read_exregion_file.  Error reading element.  %s",
-										location);
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,"read_exregion_file_private.  "
-									"No current element field info for element.  %s",
-									location);
-								DEALLOCATE(location);
-								return_code = 0;
-							}
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Region/Group not set before Element token in file.  %s",
-								location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					} break;
-					case 'V': /* Values */
-					{
-						if (!exReader.readFieldValues())
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading field values.  %s", location);
-							DEALLOCATE(location);
-							return_code = 0;
-						}
-					} break;
-					default:
-					{
-						temp_string = (char *)NULL;
-						IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
-						location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Invalid text \'%c%s\' in EX node/element file.  %s",
-							first_character_in_token, temp_string ? temp_string : "", location);
-						DEALLOCATE(temp_string);
-						DEALLOCATE(location);
+					}
+				}
+				DEALLOCATE(rest_of_line);
+			} break;
+			case 'S': /* Shape */
+			{
+				if (!exReader.readElementShape())
+					return_code = 0;
+				cmzn_mesh_group_destroy(&mesh_group); // since could be a different dimension
+			} break;
+			case '!': /* !# directive, otherwise ! Comment ignored to end of line */
+			{
+				if (!exReader.readCommentOrDirective())
+					return_code = 0;
+			} break;
+			case '#': /* #Scale factor sets, #Nodes, or #Fields */
+			{
+				if (exReader.getMesh())
+				{
+					if (!exReader.readElementHeader())
 						return_code = 0;
-					} break;
-				} /* switch (first_character_in_token) */
-			} /* if (1 == input_result) */
-		} /* while (return_code && (1 == input_result)) */
-		cmzn_nodeset_group_destroy(&nodeset_group);
-		cmzn_mesh_group_destroy(&mesh_group);
-		cmzn_field_group_destroy(&group);
-		cmzn::Deaccess(node_template);
-		cmzn::Deaccess(element_template);
-		if (element_shape)
-		{
-			DEACCESS(FE_element_shape)(&element_shape);
-		}
-		if (field_order_info)
-		{
-			DESTROY(FE_field_order_info)(&field_order_info);
-		}
-		DEACCESS(cmzn_region)(&region);
-		cmzn_region_end_hierarchical_change(root_region);
+				}
+				else if (exReader.getNodeset())
+				{
+					if (!exReader.readNodeHeader())
+						return_code = 0;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Region/Group not set before field header.  %s", exReader.getFileLocation());
+					return_code = 0;
+				}
+			} break;
+			case 'N': /* Node */
+			{
+				cmzn_node *node = exReader.readNode();
+				if (node)
+				{
+					if (group && (!nodeset_group))
+					{
+						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(exReader.getRegion());
+						cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
+							exReader.getNodeset()->getFieldDomainType());
+						cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+						if (!node_group)
+							node_group = cmzn_field_group_create_field_node_group(group, nodeset);
+						nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
+						cmzn_field_node_group_destroy(&node_group);
+						cmzn_nodeset_destroy(&nodeset);
+						cmzn_fieldmodule_destroy(&field_module);
+					}
+					if (nodeset_group)
+						cmzn_nodeset_group_add_node(nodeset_group, node);
+					DEACCESS(FE_node)(&node);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading node");
+					return_code = 0;
+				}
+			} break;
+			case 'E': /* Element or EX Version */
+			{
+				const int next_char = exReader.readNextNonSpaceChar();
+				if (next_char == (int)'l')
+				{
+					cmzn_element *element = exReader.readElement();
+					if (element)
+					{
+						if (group && (!mesh_group))
+						{
+							cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(exReader.getRegion());
+							cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, exReader.getMesh()->getDimension());
+							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+							if (!element_group)
+								element_group = cmzn_field_group_create_field_element_group(group, mesh);
+							mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+							cmzn_field_element_group_destroy(&element_group);
+							cmzn_mesh_destroy(&mesh);
+							cmzn_fieldmodule_destroy(&field_module);
+						}
+						if (mesh_group)
+							cmzn_mesh_group_add_element(mesh_group, element);
+						cmzn_element::deaccess(element);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
+						return_code = 0;
+					}
+				}
+				else if (next_char == (int)'X')
+				{
+					if (!exReader.readEXVersion())
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					char *temp_string = 0;
+					IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
+					display_message(ERROR_MESSAGE,
+						"Invalid token \'%c%s\' in EX node/element file.  %s",
+						first_character_in_token, temp_string ? temp_string : "", exReader.getFileLocation());
+					DEALLOCATE(temp_string);
+					return_code = 0;
+				}
+			} break;
+			default:
+			{
+				char *temp_string = 0;
+				IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
+				display_message(ERROR_MESSAGE,
+					"Invalid token \'%c%s\' in EX node/element file.  %s",
+					first_character_in_token, temp_string ? temp_string : "", exReader.getFileLocation());
+				DEALLOCATE(temp_string);
+				return_code = 0;
+			} break;
+		} /* switch (first_character_in_token) */
 	}
-	else
-	{
-		location = IO_stream_get_location_string(input_file);
-		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
-		DEALLOCATE(location);
-		return_code = 0;
-	}
-	LEAVE;
-
+	cmzn_nodeset_group_destroy(&nodeset_group);
+	cmzn_mesh_group_destroy(&mesh_group);
+	cmzn_field_group_destroy(&group);
+	cmzn_region_end_hierarchical_change(root_region);
 	return (return_code);
-} /* read_exregion_file */
+}
 
 /*
 Global functions

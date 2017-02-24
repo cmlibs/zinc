@@ -1183,7 +1183,7 @@ struct FE_element_shape *FE_element_shape_create_simple_type(
 /**
  * Returns the number of faces of the element shape.
  */
-int FE_element_shape_get_number_of_faces(FE_element_shape *element_shape);
+int FE_element_shape_get_number_of_faces(const FE_element_shape *element_shape);
 
 /***************************************************************************//**
  * Returns a cmzn_element_shape_type describing the shape if possible.
@@ -1220,7 +1220,7 @@ Returns true if the <element_shape> has only LINE_SHAPE in each dimension.
 ==============================================================================*/
 
 struct FE_element_shape *get_FE_element_shape_of_face(
-	struct FE_element_shape *shape,int face_number, struct FE_region *fe_region);
+	const FE_element_shape *shape,int face_number, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 7 July 2003
 

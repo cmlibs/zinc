@@ -657,28 +657,44 @@ public:
 			return this->elementVectorDOFs.getValue(elementIndex);
 		}
 
+		/** @param elementIndex  The element to get or create values for.
+		  * @param valuesCount  The number of values required to store >= 1.
+		  * @return  Pointer to values array or 0 if failed. Not to be deallocated! */
+		ValueType *getOrCreateElementValues(DsLabelIndex elementIndex, int valuesCount)
+		{
+			if (valuesCount == 1)
+				return this->elementScalarDOFs.getOrCreateAddress(elementIndex);
+			if (valuesCount <= 0)
+				return 0;
+			ValueType **existingValuesAddress = this->elementVectorDOFs.getAddress(elementIndex);
+			ValueType *values = (existingValuesAddress) ? *existingValuesAddress : 0;
+			if (!values)
+			{
+				values = new ValueType[valuesCount];
+				if (!values)
+					return 0;
+				if (existingValuesAddress)
+				{
+					*existingValuesAddress = values;
+				}
+				else if (!this->elementVectorDOFs.setValue(elementIndex, values))
+				{
+					delete values;
+					return 0;
+				}
+			}
+			return values;
+		}
+
 		/** @param elementIndex  The element to set values for.
 		  * @param valuesCount  Size of values array; must be >= 1.
 		  * @param values  Array of values to set. Must be non-null.
 		  * @return  True on success, false on failure. */
 		bool setElementValues(DsLabelIndex elementIndex, int valuesCount, const ValueType *values)
 		{
-			if (valuesCount == 1)
-				return this->elementScalarDOFs.setValue(elementIndex, *values);
-			ValueType **existingValuesAddress = this->elementVectorDOFs.getAddress(elementIndex);
-			ValueType *targetValues;
-			if (existingValuesAddress)
-				targetValues = *existingValuesAddress;
+			ValueType *targetValues = this->getOrCreateElementValues(elementIndex, valuesCount);
 			if (!targetValues)
-			{
-				targetValues = new ValueType[valuesCount];
-				if (!targetValues)
-					return false;
-				if (existingValuesAddress)
-					*existingValuesAddress = targetValues;
-				else if (!this->elementVectorDOFs.setValue(elementIndex, targetValues))
-					return false;
-			}
+				return false;
 			memcpy(targetValues, values, valuesCount*sizeof(ValueType));
 			return true;
 		}
@@ -832,12 +848,12 @@ public:
 			DEACCESS(FE_element_shape)(&this->shape);
 		}
 
-		FE_element_shape *getShape() const
+		FE_element_shape *getElementShape() const
 		{
 			return this->shape;
 		}
 
-		cmzn_element_shape_type getShapeType() const
+		cmzn_element_shape_type getElementShapeType() const
 		{
 			return this->shape_type;
 		}
@@ -965,24 +981,6 @@ private:
 	{
 		if (this->elementShapeFacesCount > 1)
 			return static_cast<int>(this->elementShapeMap.getValue(elementIndex));
-		return 0;
-	}
-
-	/** @param  elementIndex  Valid element index >= 0. Not checked. */
-	inline const ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex) const
-	{
-		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
-		if (this->elementShapeFacesArray)
-			return this->elementShapeFacesArray[elementShapeFacesIndex];
-		return 0;
-	}
-
-	/** @param  elementIndex  Valid element index >= 0. Not checked. */
-	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex)
-	{
-		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
-		if (this->elementShapeFacesArray)
-			return this->elementShapeFacesArray[elementShapeFacesIndex];
 		return 0;
 	}
 
@@ -1174,6 +1172,7 @@ public:
 	{
 		return this->changeLog;
 	}
+
 	int getElementShapeFacesCount() const
 	{
 		return this->elementShapeFacesCount;
@@ -1190,7 +1189,26 @@ public:
 	{
 		if ((index < 0) || (index >= this->elementShapeFacesCount))
 			return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-		return this->elementShapeFacesArray[index]->getShapeType();
+		return this->elementShapeFacesArray[index]->getElementShapeType();
+	}
+
+	/** @param  elementIndex  Valid element index >= 0. Not checked. */
+	inline const ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex) const
+	{
+		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
+		if (this->elementShapeFacesArray)
+			return this->elementShapeFacesArray[elementShapeFacesIndex];
+		return 0;
+	}
+
+	/** Use with care. Only made public for use with EXReader.
+	  * @param  elementIndex  Valid element index >= 0. Not checked. */
+	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex)
+	{
+		const int elementShapeFacesIndex = this->getElementShapeFacesIndexPrivate(elementIndex);
+		if (this->elementShapeFacesArray)
+			return this->elementShapeFacesArray[elementShapeFacesIndex];
+		return 0;
 	}
 
 	inline const ElementShapeFaces *getElementShapeFacesConst(DsLabelIndex elementIndex) const
@@ -1202,7 +1220,7 @@ public:
 	{
 		const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
-			return elementShapeFaces->getShape();
+			return elementShapeFaces->getElementShape();
 		return 0;
 	}
 
@@ -1210,7 +1228,7 @@ public:
 	{
 		const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
-			return elementShapeFaces->getShapeType();
+			return elementShapeFaces->getElementShapeType();
 		return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	}
 

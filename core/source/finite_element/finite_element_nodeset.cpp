@@ -478,7 +478,7 @@ void FE_nodeset::clear()
 	this->labels.clear();
 }
 
-int FE_nodeset::change_FE_node_identifier(struct FE_node *node, int new_identifier)
+int FE_nodeset::change_FE_node_identifier(struct FE_node *node, DsLabelIdentifier new_identifier)
 {
 	if ((FE_node_get_FE_nodeset(node) == this) && (new_identifier >= 0))
 	{
@@ -534,7 +534,7 @@ FE_node_template *FE_nodeset::create_FE_node_template()
  * with FE_region_begin/end_change.
  * @return  Accessed node, or 0 on error.
  */
-FE_node *FE_nodeset::get_or_create_FE_node_with_identifier(int identifier)
+FE_node *FE_nodeset::get_or_create_FE_node_with_identifier(DsLabelIdentifier identifier)
 {
 	struct FE_node *node = 0;
 	if (-1 <= identifier)
@@ -570,7 +570,7 @@ FE_node *FE_nodeset::get_or_create_FE_node_with_identifier(int identifier)
 * used by an existing node.
 * @return  Accessed node, or 0 on error.
 */
-FE_node *FE_nodeset::create_FE_node(int identifier, FE_node_template *node_template)
+FE_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_template *node_template)
 {
 	struct FE_node *new_node = 0;
 	if ((-1 <= identifier) && node_template)

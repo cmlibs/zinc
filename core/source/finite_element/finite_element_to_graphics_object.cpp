@@ -1698,7 +1698,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 	const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(elementIndex);
 	if (!elementShapeFaces)
 		return 0;
-	FE_element_shape *element_shape = elementShapeFaces->getShape();
+	FE_element_shape *element_shape = elementShapeFaces->getElementShape();
 	int return_code = 0;
 	if (element_shape && (2 == get_FE_element_shape_dimension(element_shape)) && shape_type_address)
 	{

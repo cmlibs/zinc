@@ -1248,15 +1248,6 @@ void FE_mesh::clearElementFieldData()
 
 /** @return  Name of mesh, not to be freed. Currently restricted to
   * "mesh1d", "mesh2d" or "mesh3d", based on dimension. */
-const char *FE_nodeset::getName() const
-{
-	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_NODES)
-		return "nodes";
-	if (this->domainType == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
-		return "datapoints";
-	return 0;
-}
-
 const char *FE_mesh::getName() const
 {
 	if (1 == this->dimension)
@@ -1341,7 +1332,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 	ElementShapeFaces *currentElementShapeFaces = this->getElementShapeFaces(elementIndex);
 	if (currentElementShapeFaces)
 	{
-		if (currentElementShapeFaces->getShape() == element_shape)
+		if (currentElementShapeFaces->getElementShape() == element_shape)
 			return currentElementShapeFaces;
 		// should check usage/efficiency for multiple changes, ensure element_shape is not degenerate.
 		if (this->parentMesh)
@@ -1351,7 +1342,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 	}
 	int shapeIndex = 0;
 	while ((shapeIndex < this->elementShapeFacesCount) &&
-			(this->elementShapeFacesArray[shapeIndex]->getShape() != element_shape))
+			(this->elementShapeFacesArray[shapeIndex]->getElementShape() != element_shape))
 		++shapeIndex;
 	if (shapeIndex == this->elementShapeFacesCount)
 	{
@@ -2782,7 +2773,7 @@ bool FE_mesh::canMerge(const FE_mesh &source) const
 				result = false;
 				break;
 			}
-			if (sourceElementShapeFaces->getShape() != targetElementShapeFaces->getShape())
+			if (sourceElementShapeFaces->getElementShape() != targetElementShapeFaces->getElementShape())
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Denying merge of %d-D element %d since it is different shape",
 					this->dimension, identifier);
@@ -2944,7 +2935,7 @@ int FE_mesh::merge(const FE_mesh &source)
 				return_code = 0;
 				break;
 			}
-			if (!this->setElementShape(targetElementIndex, sourceElementShapeFaces->getShape()))
+			if (!this->setElementShape(targetElementIndex, sourceElementShapeFaces->getElementShape()))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to set shape for %d-D mesh element %d",
 					this->dimension, identifier);

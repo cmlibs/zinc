@@ -299,7 +299,7 @@ private:
 	bool writeElementHeaderField(cmzn_element *element, int fieldIndex, FE_field *field);
 	ElementNodePacking *createElementNodePacking(cmzn_element *element);
 	bool writeElementHeader(cmzn_element *element);
-	bool writeElementFieldValues(cmzn_element *element, FE_field *field, int componentNumber);
+	bool writeElementFieldComponentValues(cmzn_element *element, FE_field *field, int componentNumber);
 	bool writeElement(cmzn_element *element);
 
 	bool nodeIsToBeWritten(cmzn_node *node);
@@ -997,7 +997,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 	return true;
 }
 
-bool EXWriter::writeElementFieldValues(cmzn_element *element,
+bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 	FE_field *field, int componentNumber)
 {
 	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
@@ -1019,7 +1019,7 @@ bool EXWriter::writeElementFieldValues(cmzn_element *element,
 		const FE_value *values = component->getElementValues(element->getIndex(), valueCount);
 		if (!values)
 		{
-			display_message(ERROR_MESSAGE, "EXWriter::writeElementFieldValues.  Missing real values");
+			display_message(ERROR_MESSAGE, "EXWriter::writeElementFieldComponentValues.  Missing real values");
 			return false;
 		}
 		char tmpString[100];
@@ -1041,7 +1041,7 @@ bool EXWriter::writeElementFieldValues(cmzn_element *element,
 		const int *values = component->getElementValues(element->getIndex(), valueCount);
 		if (!values)
 		{
-			display_message(ERROR_MESSAGE, "EXWriter::writeElementFieldValues.  Missing int values");
+			display_message(ERROR_MESSAGE, "EXWriter::writeElementFieldComponentValues.  Missing int values");
 			return false;
 		}
 		for (int v = 0; v < valueCount; ++v)
@@ -1058,7 +1058,7 @@ bool EXWriter::writeElementFieldValues(cmzn_element *element,
 	default:
 	{
 		display_message(ERROR_MESSAGE,
-			"write_FE_element_field_values.  Unsupported value type %s", Value_type_string(valueType));
+			"EXWriter::writeElementFieldComponentValues.  Unsupported value type %s", Value_type_string(valueType));
 		return false;
 	} break;
 	}
@@ -1110,10 +1110,10 @@ bool EXWriter::writeElement(cmzn_element *element)
 			(*this->output_file) << " Faces:\n";
 			for (int i = 0; i < faceCount; ++i)
 			{
-				// now writing -1 if face not defined, since 0 is a valid identifier
-				DsLabelIdentifier elementIdentifier = (faceIndexes[i] >= 0) ?
-					faceMesh->getElementIdentifier(faceIndexes[i]) : -1;
-				(*this->output_file) << " " << elementIdentifier;
+				if (faceIndexes[i] >= 0)
+					(*this->output_file) << " " << faceMesh->getElementIdentifier(faceIndexes[i]);
+				else
+					(*this->output_file) << " -1"; // face not set; can't use 0 as it is a valid identifier
 			}
 			(*this->output_file) << "\n";
 		}
@@ -1139,7 +1139,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 					(*this->output_file) << " Values :\n";
 					firstElementBasedField = false;
 				}
-				if (!this->writeElementFieldValues(element, field, c))
+				if (!this->writeElementFieldComponentValues(element, field, c))
 					return false;
 			}
 		}

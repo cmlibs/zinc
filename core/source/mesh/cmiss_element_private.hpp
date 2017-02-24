@@ -61,9 +61,9 @@ private:
 
 	LegacyElementFieldData *getOrCreateLegacyElementFieldData(FE_field *fe_field);
 
-	int setLegacyNodesInElement(cmzn_element *element);
-
 public:
+
+	int setLegacyNodesInElement(cmzn_element *element);
 
 	static cmzn_elementtemplate *create(FE_mesh *fe_mesh_in)
 	{
@@ -87,6 +87,12 @@ public:
 			delete element_template;
 		element_template = 0;
 		return CMZN_OK;
+	}
+
+	/** @return  Non-accessed shape */
+	FE_element_shape *getElementShape() const
+	{
+		return this->fe_element_template->getElementShape();
 	}
 
 	int setElementShape(FE_element_shape *elementShape)
@@ -156,7 +162,21 @@ public:
 
 	cmzn_element *createElement(int identifier);
 
+	/** Variant for EX reader which assumes template has already been validated,
+	  * does not set legacy nodes and does not cache changes as assumed on */
+	cmzn_element *cmzn_elementtemplate::createElementEX(int identifier)
+	{
+		return this->getMesh()->create_FE_element(identifier, this->fe_element_template);
+	}
+
 	int mergeIntoElement(cmzn_element *element);
+
+	/** Variant for EX reader which assumes template has already been validated,
+	  * does not set legacy nodes and does not cache changes as assumed on */
+	int mergeIntoElementEX(cmzn_element *element)
+	{
+		return this->getMesh()->merge_FE_element_template(element, this->fe_element_template);
+	}
 
 	FE_element_template *get_FE_element_template()
 	{

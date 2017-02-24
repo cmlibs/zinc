@@ -251,15 +251,15 @@ public:
 
 	DsLabelsGroup *createLabelsGroup();
 
-	int change_FE_node_identifier(struct FE_node *node, int new_identifier);
+	int change_FE_node_identifier(struct FE_node *node, DsLabelIdentifier new_identifier);
 
 	FE_node_template *create_FE_node_template(FE_node *node);
 
 	FE_node_template *create_FE_node_template();
 
-	FE_node *get_or_create_FE_node_with_identifier(int identifier);
+	FE_node *get_or_create_FE_node_with_identifier(DsLabelIdentifier identifier);
 
-	FE_node *create_FE_node(int identifier, FE_node_template *node_template);
+	FE_node *create_FE_node(DsLabelIdentifier identifier, FE_node_template *node_template);
 
 	int merge_FE_node_template(struct FE_node *destination, FE_node_template *fe_node_template);
 

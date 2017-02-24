@@ -436,7 +436,8 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 	FE_mesh *mesh = this->getMesh();
 	bool localNodeChange = false;
 	std::vector<DsLabelIndex> workingNodeIndexes(this->legacyNodesCount, DS_LABEL_INDEX_INVALID);
-	for (size_t f = this->legacyFieldDataList.size() - 1; 0 <= f; --f)
+	const size_t fieldCount = this->legacyFieldDataList.size();
+	for (size_t f = 0; f < fieldCount; ++f)
 	{
 		LegacyElementFieldData *legacyData = this->legacyFieldDataList[f];
 		FE_field *field = legacyData->getField();

@@ -576,7 +576,7 @@ public:
 	int sortNodeIndexes(std::vector<int>& extNodeIndexes)
 	{
 		this->copyOnWrite();
-		return this->sortNodeIndexes(extNodeIndexes);
+		return this->impl->sortNodeIndexes(extNodeIndexes);
 	}
 
 	/** @return  True if validated and locked, otherwise false. */
