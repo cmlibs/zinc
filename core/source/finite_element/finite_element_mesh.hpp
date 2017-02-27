@@ -415,21 +415,28 @@ public:
 		return (this->localNodeCount > 0) || (this->localScaleFactorCount > 0);
 	}
 
-	/** @return  Pointer to array of global node indexes for element, or 0 if none. NOT to be freed.
+	/** @return  Pointer to array of scale factors for element, or 0 if failed. NOT to be freed.
+	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
+	FE_value *getOrCreateElementScaleFactors(DsLabelIndex elementIndex);
+
+	/** @return  Pointer to array of scale factors for element, or 0 if none. NOT to be freed.
 	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
 	const FE_value *getElementScaleFactors(DsLabelIndex elementIndex) const
 	{
 		return this->localScaleFactors.getValue(elementIndex);
 	}
 
-	/** @return  Pointer to array of global node indexes for element, or 0 if none. NOT to be freed.
+	/** @return  Pointer to array of scale factors for element, or 0 if none. NOT to be freed.
 	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
 	FE_value *getElementScaleFactors(DsLabelIndex elementIndex)
 	{
 		return this->localScaleFactors.getValue(elementIndex);
 	}
 
-	bool setScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
+	/** @param elementIndex  The element to set scale factors for.
+	  * @param values  Array of scale factors to set. Required to have correct number for EFT.
+	  * @return  True on success, false on failure. */
+	bool setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
 
 	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
 

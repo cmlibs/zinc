@@ -522,25 +522,28 @@ DsLabelIndex FE_mesh_element_field_template_data::getElementIndexStart() const
 	return this->meshfieldtemplateUsageCount.getIndexStart();
 }
 
-/** @param elementIndex  The element to set scale factors for.
-  * @param values  Array of scale factors to set. Required to have correct number for EFT.
-  * @return  True on success, false on failure. */
-bool FE_mesh_element_field_template_data::setScaleFactors(DsLabelIndex elementIndex, const FE_value *values)
+FE_value *FE_mesh_element_field_template_data::getOrCreateElementScaleFactors(DsLabelIndex elementIndex)
 {
 	FE_value **existingValuesAddress = this->localScaleFactors.getAddress(elementIndex);
-	FE_value *targetValues;
-	if (existingValuesAddress)
-		targetValues = *existingValuesAddress;
-	if (!targetValues)
+	FE_value *values = (existingValuesAddress) ? *existingValuesAddress : 0;
+	if (!values)
 	{
-		targetValues = new FE_value[this->localScaleFactorCount];
-		if (!targetValues)
-			return false;
+		values = new FE_value[this->localScaleFactorCount];
+		if (!values)
+			return 0;
 		if (existingValuesAddress)
-			*existingValuesAddress = targetValues;
-		else if (!this->localScaleFactors.setValue(elementIndex, targetValues))
-			return false;
+			*existingValuesAddress = values;
+		else if (!this->localScaleFactors.setValue(elementIndex, values))
+			return 0;
 	}
+	return values;
+}
+
+bool FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values)
+{
+	FE_value *targetValues = this->getOrCreateElementScaleFactors(elementIndex);
+	if (!targetValues)
+		return false;
 	memcpy(targetValues, values, this->localScaleFactorCount*sizeof(FE_value));
 	return true;
 }
@@ -708,7 +711,7 @@ bool FE_mesh_element_field_template_data::mergeElementVaryingData(const FE_mesh_
 					"Missing source local scale factors for element %d", elementIdentifier);
 				return false;
 			}
-			if (!this->setScaleFactors(targetElementIndex, sourceScaleFactors))
+			if (!this->setElementScaleFactors(targetElementIndex, sourceScaleFactors))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
 					"Failed to set scale factors");

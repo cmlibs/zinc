@@ -273,8 +273,8 @@ class EXReader
 		std::string name;
 		int scaleFactorCount;
 		int scaleFactorOffset;
-		std::map<std::string, std::vector<int>> fieldComponents; // field name and components using this scale factor set
-		std::vector<FE_element_field_template *> efts; // EFTs using this scale factor set, converted from field components above
+		std::vector< std::pair<std::string, std::vector<int> > > fieldComponents;  // field name and components using this scale factor set, in order added
+		std::vector<FE_element_field_template *> efts;  // EFTs using this scale factor set, converted from field components above
 
 		ScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn) :
 			name(nameIn),
@@ -283,19 +283,22 @@ class EXReader
 		{
 		}
 
-		void addFieldComponent(const std::string& nameIn, int componentNumberIn)
+		/** Add field (as name) and component to list using this scale factor set */
+		void addFieldComponent(const char *nameIn, int componentNumberIn)
 		{
-			auto iter = this->fieldComponents.find(nameIn);
-			if (iter == this->fieldComponents.end())
+			const size_t fieldCount = fieldComponents.size();
+			for (size_t f = 0; f < fieldCount; ++f)
 			{
-				std::vector<int> tmp(1);
-				tmp.push_back(componentNumberIn);
-				this->fieldComponents[nameIn] = tmp;
+				std::string &thisName = fieldComponents[f].first;
+				if (0 == thisName.compare(nameIn))
+				{
+					fieldComponents[f].second.push_back(componentNumberIn);
+					return;
+				}
 			}
-			else
-			{
-				iter->second.push_back(componentNumberIn);
-			}
+			std::vector<int> tmpInts(1, componentNumberIn);
+			std::pair<std::string, std::vector<int> > thisPair(nameIn, tmpInts);
+			this->fieldComponents.push_back(thisPair);
 		}
 
 		/** Add eft to list to assign these scale factors to, but avoid repeating */
@@ -2544,6 +2547,19 @@ bool EXReader::readElementHeaderField()
 	FE_field *field = this->readField();
 	if (!field)
 		return false;
+	// check field of this name isn't already in header
+	const size_t fieldCount = this->headerFields.size();
+	for (size_t f = 0; f < fieldCount; ++f)
+	{
+		FE_field *tmpField = this->headerFields[f];
+		if (0 == strcmp(get_FE_field_name(tmpField), get_FE_field_name(field)))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s appears more than once in header.  %s",
+				get_FE_field_name(field), this->getFileLocation());
+			DEACCESS(FE_field)(&field);
+			return false;
+		}
+	}
 	const int componentCount = get_FE_field_number_of_components(field);
 	const enum FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	bool result = true;
@@ -3416,41 +3432,50 @@ bool EXReader::readElementHeader()
 		return false;
 	}
 
-#if 0
-	GRC up to here. 
-	// for all scale factor sets, convert field (as name) and components to EFTs in use
+	// for all scale factor sets, convert [named] field components using them to EFTs
+	// warn if same EFT is using different scale factor sets (force use of first one)
 	const size_t sfSetCount = this->scaleFactorSets.size();
-	for (int s = 0; s < sfSetCount; ++s)
+	std::map<FE_element_field_template*, ScaleFactorSet*> eftSfMap;
+	for (size_t s = 0; s < sfSetCount; ++s)
 	{
 		ScaleFactorSet *sfSet = this->scaleFactorSets[s];
-		for (auto fc = sfSet->fieldComponents.begin(); fc != sfSet->fieldComponents.end(); ++fc)
+		for (auto fieldIter = sfSet->fieldComponents.begin(); fieldIter != sfSet->fieldComponents.end(); ++fieldIter)
 		{
-			FE_field *field = FE_region_get_FE_field_from_name(this->fe_region, fc->first.c_str());
-			if (!field)
+			const std::string &fieldName = fieldIter->first;
+			FE_field *field = FE_region_get_FE_field_from_name(this->fe_region, fieldName.c_str());
+			const std::vector<int> &componentNumbers = fieldIter->second;
+			const size_t limit = componentNumbers.size();
+			for (size_t i = 0; i < limit; ++i)
 			{
-				!!!
+				FE_element_field_template *eft = this->elementtemplate->get_FE_element_template()->getElementfieldtemplate(field, componentNumbers[i]);
+				if (!eft)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Couldn't find element field template for field %s to assign scale factors to.  %s",
+						fieldName.c_str(), this->getFileLocation());
+					return false;
+				}
+				auto eftSfIter = eftSfMap.find(eft);
+				if (eftSfIter == eftSfMap.end())
+				{
+					sfSet->addEFT(eft);
+				}
+				else
+				{
+					if (eftSfIter->second != sfSet)
+					{
+						display_message(WARNING_MESSAGE, "EX Reader.  Field %s component %d has a different scale factor set "
+							"to other identical element field templates. Forcing use of scale factor set %s.  %s",
+							fieldName.c_str(), componentNumbers[i] + 1, eftSfIter->second->name.c_str(), this->getFileLocation());
+					}
+				}
 			}
-
+		}
+		if (sfSet->efts.size() == 0)
+		{
+			display_message(WARNING_MESSAGE, "EX Reader.  Scale factor set %s is not used by any element field components.  %s",
+				sfSet->name.c_str(), this->getFileLocation());
 		}
 	}
-
-	// work out which EFTs are using which scale factor set, and report error if any EFT is using more than one
-	FE_element_template *elementtemplateInt = this->elementtemplate->get_FE_element_template();
-	for (int f = 0; f < fieldCount; ++f)
-	{
-		FE_field *field = this->headerFields[f];
-		const int componentCount = get_FE_field_number_of_components(field);
-		for (int c = 0; c < componentCount; ++c)
-		{
-			FE_element_field_template *eft = elementtemplateInt->getElementfieldtemplate(field, c);
-			if (!eft)
-			{
-				display_message(ERROR_MESSAGE, "EXReader::readElementHeader.  Missing element field template.  %s", this->getFileLocation());
-				return false;
-			}
-			if (eft->getNumberOfLocalScaleFactors() > 0)
-	}
-#endif
 	return true;
 }
 
@@ -3715,7 +3740,7 @@ cmzn_element *EXReader::readElement()
 		}
 	}
 
-	// Nodes: if present in element template
+	// Nodes: if any in element header
 	const int nodeCount = this->elementtemplate->getNumberOfNodes();
 	if (nodeCount > 0)
 	{
@@ -3757,163 +3782,65 @@ cmzn_element *EXReader::readElement()
 			return 0;
 		}
 	}
-#if 0
-	// Scale factors: if any in header
-	this->scaleFactorSets;
-	GRC up to here
-	// for all scale factor sets, convert field (as name) and components to EFTs in use
+
+	// Scale factors: if any scale factor sets in element header
 	const size_t sfSetCount = this->scaleFactorSets.size();
-	for (int s = 0; s < sfSetCount; ++s)
+	if (sfSetCount > 0)
 	{
-		ScaleFactorSet *sfSet = this->scaleFactorSets[s];
-		for (auto fc = sfSet->fieldComponents.begin(); fc != sfSet->fieldComponents.end(); ++fc)
+		if (1 != IO_stream_scan(input_file, " Scale factors %1[:]", test_string))
 		{
-			FE_field *field = FE_region_get_FE_field_from_name(this->fe_region, fc->first.c_str());
-			if (!field)
+			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Scale factors:\" token in element.  %s", this->getFileLocation());
+			cmzn_element::deaccess(element);
+			return 0;
+		}
+		for (size_t ss = 0; ss < sfSetCount; ++ss)
+		{
+			ScaleFactorSet *sfSet = this->scaleFactorSets[ss];
+			for (auto eftIter = sfSet->efts.begin(); eftIter != sfSet->efts.end(); ++eftIter)
 			{
-				!!!
+				FE_element_field_template *eft = *eftIter;
+				const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+				// sanity check
+				if (scaleFactorCount != sfSet->scaleFactorCount)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Element field template expects %d scale factors; there are %d in scale factor set.  %s",
+						scaleFactorCount, sfSet->scaleFactorCount, this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+				if (!meshEftData)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Missing mesh element field template data.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				FE_value *scaleFactors = meshEftData->getOrCreateElementScaleFactors(element->getIndex());
+				if (!scaleFactors)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to allocate space for scale factors.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				for (int sf = 0; sf < scaleFactorCount; ++sf)
+				{
+					if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
+						cmzn_element::deaccess(element);
+						return 0;
+					}
+					if (!finite(scaleFactors[sf]))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN scale factor.  %s", this->getFileLocation());
+						cmzn_element::deaccess(element);
+						return 0;
+					}
+				}
 			}
-
 		}
 	}
 
-
-
-	enum Value_type value_type;
-	FE_value scale_factor;
-	int face_token_length, i, j, k, node_number, number_of_components,
-		number_of_faces, number_of_fields, number_of_nodes, number_of_scale_factors,
-		number_of_values, return_code;
-	struct FE_field *field;
-	struct FE_node *node;
-
-	ENTER(read_FE_element);
-	existingElement = false;
-	FE_element *return_element = (struct FE_element *)NULL;
-
-	FE_element *element;
-					if (get_FE_element_number_of_scale_factors(element,
-						&number_of_scale_factors))
-					{
-						if (0 < number_of_scale_factors)
-						{
-							/*???RC scale_factors array in element_info should be private */
-							/* read the scale factors */
-							/* Use a %1[:] so that a successful read will return 1 */
-							if (1 != IO_stream_scan(input_file," Scale factors %1[:]", test_string))
-							{
-								display_message(ERROR_MESSAGE,
-									"Truncated read of required \" Scale factors:\" token in element file.");
-								return_code = 0;
-							}
-							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
-							{
-								if (1 == IO_stream_scan(input_file,FE_VALUE_INPUT_STRING,
-									&scale_factor))
-								{
-									if (finite(scale_factor))
-									{
-										if (!set_FE_element_scale_factor(element, i, scale_factor))
-										{
-											display_message(ERROR_MESSAGE,
-												"Error setting scale factor.  %s", this->getFileLocation());
-											return_code = 0;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Infinity or NAN scale factor read from element file.  "
-											"%s", this->getFileLocation());
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Error reading scale factor.  %s", this->getFileLocation());
-									return_code = 0;
-								}
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "read_FE_element.  "
-							"Could not get number of scale factors for %d-D element %d.  %s",
-							fe_mesh->getDimension(), element_identifier, this->getFileLocation());
-						return_code = 0;
-					}
-				}
-				if (!return_code)
-					DEACCESS(FE_element)(&return_element);
-			}
-
-
-	if (fe_region)
-	{
-		/* ensure we have element field information */
-		if (element_template)
-		{
-			bool existingElement = false;
-			FE_element *element = read_FE_element(input_file, element_template,
-				fe_mesh, fe_nodeset, field_order_info, existingElement);
-			if (element)
-			{
-				if (existingElement)
-				{
-					// GRC this has changed considerably: use external API
-					int result = fe_mesh->merge_FE_element_template(element, element_template);
-					if (result != CMZN_OK)
-					{
-						display_message(ERROR_MESSAGE,
-							"read_exregion_file.  Failed to merge into existing element.  %s", this->getFileLocation());
-						return_code = 0;
-					}
-				}
-				if (group && (!mesh_group))
-				{
-					cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-					cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
-						fe_mesh->getDimension());
-					cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-					if (!element_group)
-					{
-						element_group = cmzn_field_group_create_field_element_group(group, mesh);
-					}
-					mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-					cmzn_field_element_group_destroy(&element_group);
-					cmzn_mesh_destroy(&mesh);
-					cmzn_fieldmodule_destroy(&field_module);
-				}
-				if (mesh_group)
-				{
-					cmzn_mesh_group_add_element(mesh_group, element);
-				}
-				DEACCESS(FE_element)(&element);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_exregion_file.  Error reading element.  %s", this->getFileLocation());
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "read_exregion_file_private.  "
-				"No current element field info for element.  %s", this->getFileLocation());
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Region/Group not set before Element token.  %s", this->getFileLocation());
-		return_code = 0;
-	}
-
-#endif
 	return element;
 }
 
