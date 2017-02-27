@@ -1872,7 +1872,7 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 	{
 		Iso_mesh& mesh = *(mesh_iter->second);
 		const Iso_triangle_list& triangle_list = mesh.triangle_list;
-		const int number_of_triangles = triangle_list.size();
+		const size_t number_of_triangles = triangle_list.size();
 		if (0 < number_of_triangles)
 		{
 			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin();

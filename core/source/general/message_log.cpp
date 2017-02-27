@@ -66,7 +66,7 @@ void MessageLog::addEntry(cmzn_logger_message_type type, const char *message)
 
 int MessageLog::getNumberOfMessages()
 {
-	return logs_deque.size();
+	return static_cast<int>(logs_deque.size());
 }
 
 enum cmzn_logger_message_type MessageLog::getMessageTypeAtIndex(int index)
@@ -107,7 +107,7 @@ int MessageLog::setMaximumNumberOfMessages(int number)
 		maximum_entries = number;
 		if (logs_deque.size() > (unsigned int)maximum_entries)
 		{
-			int differences = logs_deque.size() - maximum_entries;
+			const size_t differences = logs_deque.size() - maximum_entries;
 			logs_deque.erase(logs_deque.begin(), logs_deque.begin() + differences);
 		}
 		return CMZN_OK;

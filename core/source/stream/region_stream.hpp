@@ -92,7 +92,7 @@ public:
 			*fieldNames = 0;
 			if (!strings_vectors.empty())
 			{
-				int size = strings_vectors.size();
+				const size_t size = strings_vectors.size();
 				char **names_array = *fieldNames;
 				ALLOCATE(names_array, char *, size);
 				std::vector<std::string>::iterator pos;
@@ -104,7 +104,7 @@ public:
 					location++;
 				}
 				*fieldNames = names_array;
-				return strings_vectors.size();
+				return static_cast<int>(strings_vectors.size());
 			}
 		}
 		return 0;
@@ -377,7 +377,7 @@ public:
 			*fieldNames = 0;
 			if (!strings_vectors.empty())
 			{
-				int size = strings_vectors.size();
+				const size_t size = strings_vectors.size();
 				char **names_array = *fieldNames;
 				ALLOCATE(names_array, char *, size);
 				std::vector<std::string>::iterator pos;
@@ -389,7 +389,7 @@ public:
 					location++;
 				}
 				*fieldNames = names_array;
-				return strings_vectors.size();
+				return static_cast<int>(strings_vectors.size());
 			}
 		}
 		return 0;

@@ -33,10 +33,10 @@ public:
 	int output_allocation_size;
 
 	Computed_field_format_output(int number_of_components, char* format_string_in) :
-		Computed_field_core()
+		Computed_field_core(),
+		format_string(duplicate_string(format_string_in)),
+		output_allocation_size(number_of_components*30 + static_cast<int>(strlen(format_string_in)))
 	{
-		format_string = duplicate_string(format_string_in);
-		output_allocation_size = number_of_components * 30 + strlen(format_string_in);
 	}
 
 	~Computed_field_format_output()
@@ -220,7 +220,7 @@ struct Computed_field *Computed_field_create_format_output(
 				number_of_format_specifiers++;
 				remaining_string++;
 				/* Ignore modifiers */
-				int specifiers = strspn(remaining_string, "0123456789.hlL -+#");
+				const size_t specifiers = strspn(remaining_string, "0123456789.hlL -+#");
 				remaining_string += specifiers;
 				/* Fail if we don't get the expected format codes */
 				if (0 != strcspn(remaining_string, "eEfgG"))
