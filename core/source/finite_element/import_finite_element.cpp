@@ -42,7 +42,7 @@ namespace {
 bool isIntegerString(const char *s)
 {
 	const char *c = s;
-	while (*c == ' ')
+	while ('  ' == *c)
 		++c;
 	if (!isdigit(*c))
 		return false;
@@ -50,9 +50,9 @@ bool isIntegerString(const char *s)
 	{
 		++c;
 	} while (isdigit(*c));
-	while (*c == ' ')
+	while (' ' == *c)
 		++c;
-	return (*c == '\0');
+	return ('\0' == *c);
 }
 
 /** Return the next token in the string, skipping initial spaces and
@@ -69,7 +69,7 @@ bool isIntegerString(const char *s)
   * deallocated. */
 const char *nexttoken(char*& s, const char *sepchars, char &nextchar)
 {
-	while (*s = ' ')
+	while (' ' == *s)
 		++s;
 	const char *token = s;
 	char *e = s;
@@ -79,11 +79,11 @@ const char *nexttoken(char*& s, const char *sepchars, char &nextchar)
 	*e = '\0';
 	// advance s beyond end of token
 	s = e;
-	if (nextchar != '\0')
+	if ('\0' != nextchar)
 		++s;
-	if (nextchar == ' ')
+	if (' ' == nextchar)
 	{
-		while (*s = ' ')
+		while (' ' == *s)
 			++s;
 		if (0 != strchr(sepchars, *s))
 		{
@@ -334,6 +334,7 @@ public:
 	EXReader(IO_stream *input_fileIn, FE_import_time_index *timeIndexIn) :
 		exVersion(1),
 		input_file(input_fileIn),
+		useData(false),
 		timeIndex(timeIndexIn),
 		fe_region(0),
 		mesh(0),
@@ -449,11 +450,11 @@ public:
 
 private:
 
-	void clearHeaderCache()
+	void clearHeaderCache(bool clearElementShape = true)
 	{
 		cmzn::Deaccess(this->node_template);
 		nodeFieldComponentDerivativeVersions.clear();
-		if (this->elementShape)
+		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
 		const size_t sfCount = this->scaleFactorSets.size();
@@ -500,6 +501,7 @@ private:
 		return 0;
 	}
 
+	bool readBlankToEndOfLine();
 	bool readKeyValueMap(KeyValueMap& keyValueMap);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	char *readString();
@@ -511,6 +513,33 @@ private:
 	struct FE_basis *readBasis();
 	bool readElementHeaderField();
 };
+
+/** Read text to end of line.
+  * @return  True if rest of line contains only spaces or tabs, false if unexpected text. */
+bool EXReader::readBlankToEndOfLine()
+{
+	char *rest_of_line;
+	if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read rest of line.  %s", this->getFileLocation());
+		return false;
+	}
+	bool result = true;
+	const char *c = rest_of_line;
+	while (*c != '\0')
+	{
+		if ((*c != ' ') && (*c != '\t'))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%s' on line.  %s", rest_of_line, this->getFileLocation());
+			result = false;
+			break;
+		}
+	}
+	DEALLOCATE(rest_of_line);
+	// skip end of line characters and following white space
+	IO_stream_scan(this->input_file, " ");
+	return result;
+}
 
 /** @return  True if next char is testChar (and read the character) or false if
   * node (and do not read the character) */
@@ -2758,7 +2787,7 @@ bool EXReader::readElementHeaderField()
 			{
 				// node to element map: includes standard and general
 				int nodeCount = 0;
-				if (1 != IO_stream_scan(input_file, "#Nodes=%d", &nodeCount))
+				if (1 != IO_stream_scan(input_file, " #Nodes=%d", &nodeCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading component number of nodes.  %s", this->getFileLocation());
 					result = false;
@@ -2837,7 +2866,7 @@ bool EXReader::readElementHeaderField()
 				std::vector<int> packedNodeIndexes;
 				int fn = 1;
 				const int functionCount = eft->getNumberOfFunctions();
-				while (fn < functionCount)
+				while (fn <= functionCount)
 				{
 					// read one or more local node indexes summing terms e.g. "0." (special = zero terms), "1.", "1+2.", "3+1+3."
 					char *nodeIndexString = 0;
@@ -2846,6 +2875,7 @@ bool EXReader::readElementHeaderField()
 					std::vector<int> termNodeIndexes;
 					while (true)
 					{
+						IO_stream_scan(this->input_file, " ");
 						if (!IO_stream_read_string(input_file, "[^.+]", &nodeIndexString))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Failed to read local node index expression.  %s", this->getFileLocation());
@@ -2914,7 +2944,7 @@ bool EXReader::readElementHeaderField()
 						result = false;
 						break;
 					}
-					if ((fn + valueCount) > functionCount)
+					if ((fn + valueCount - 1) > functionCount)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  #Values would exceed number of basis functions.  %s", this->getFileLocation());
 						result = false;
@@ -3153,9 +3183,9 @@ bool EXReader::readElementHeaderField()
 										break;
 									}
 								}
-								else if (nextchar == '+')
+								else if (!(isspace(nextchar) || ((int)'\0' == nextchar)))
 								{
-									display_message(ERROR_MESSAGE, "EX Reader.  Too many terms, unexpected character '%c'.  %s", nextchar, this->getFileLocation());
+									display_message(ERROR_MESSAGE, "EX Reader.  Unexpected character '%c'.  %s", nextchar, this->getFileLocation());
 									result = false;
 									break;
 								}
@@ -3192,28 +3222,30 @@ bool EXReader::readElementHeaderField()
 							eft->setNumberOfLocalScaleFactors(0);
 						}
 					}
-					const int packedCount = static_cast<int>(packedNodeIndexes.size());
-					if ((packedCount < nodeCount) && (this->exVersion < 2))
-					{
-						resultCode = eft->setNumberOfLocalNodes(packedCount);
-						if (resultCode != CMZN_OK)
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Failed to reset element field template number of nodes to %d.  %s",
-								packedCount, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-					resultCode = eft->sortNodeIndexes(packedNodeIndexes);
+					fn += valueCount;
+				}
+				if (!result)
+					break;
+				const int packedCount = static_cast<int>(packedNodeIndexes.size());
+				if ((packedCount < nodeCount) && (this->exVersion < 2))
+				{
+					resultCode = eft->setNumberOfLocalNodes(packedCount);
 					if (resultCode != CMZN_OK)
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Failed to sort element field template node indexes.  %s", this->getFileLocation());
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to reset element field template number of nodes to %d.  %s",
+							packedCount, this->getFileLocation());
 						result = false;
 						break;
 					}
-					componentPackedNodeIndexes[c].swap(packedNodeIndexes);
-					fn += valueCount;
 				}
+				resultCode = eft->sortNodeIndexes(packedNodeIndexes);
+				if (resultCode != CMZN_OK)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to sort element field template node indexes.  %s", this->getFileLocation());
+					result = false;
+					break;
+				}
+				componentPackedNodeIndexes[c].swap(packedNodeIndexes);
 			} break;
 			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
 			{
@@ -3332,7 +3364,7 @@ bool EXReader::readElementHeader()
 		display_message(ERROR_MESSAGE, "EX Reader.  No mesh or element shape set.  %s", this->getFileLocation());
 		return false;
 	}
-	this->clearHeaderCache();
+	this->clearHeaderCache(/*clearElementShape*/false);
 	if (!this->createElementtemplate())
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element template.  %s", this->getFileLocation());
@@ -3880,7 +3912,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 	}
 
 	EXReader exReader(input_file, time_index);
-	exReader.setUseDataMetaFlag(use_data != 1);
+	exReader.setUseDataMetaFlag(use_data != 0);
 	cmzn_region_begin_hierarchical_change(root_region);
 	cmzn_field_group_id group = 0;
 	cmzn_nodeset_group_id nodeset_group = 0;

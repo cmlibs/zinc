@@ -148,7 +148,7 @@ public:
 
 		bool isUndefine() const
 		{
-			return (0 != this->efts);
+			return (0 == this->efts);
 		}
 
 		/** Mark field to be undefined */
@@ -475,13 +475,7 @@ private:
 	{
 	}
 
-	FE_mesh_field_template(const FE_mesh_field_template &source) :
-		mesh(source.mesh),
-		eftDataMap(source.eftDataMap),
-		mapSize(source.mapSize),
-		access_count(1)
-	{
-	}
+	FE_mesh_field_template(const FE_mesh_field_template &source);
 
 	~FE_mesh_field_template();
 
@@ -545,7 +539,17 @@ public:
 
 	bool setElementfieldtemplateIndex(DsLabelIndex elementIndex, EFTIndexType eftIndex);
 
-	bool setElementfieldtemplate(DsLabelIndex elementIndex, FE_element_field_template *eftIn);
+	/**
+	 * Variant taking EFT object. Handles field usage counts.
+	 * @param elementIndex  Not checked; assume valid
+	 * @param eftIn  Pre-merged element field template for this template's mesh, or 0 to clear.
+	 * @return  True on success, false on failure.
+	 */
+	bool setElementfieldtemplate(DsLabelIndex elementIndex, FE_element_field_template *eftIn)
+	{
+		return this->setElementfieldtemplateIndex(elementIndex,
+			(eftIn) ? eftIn->getIndexInMesh() : ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
+	}
 
 	bool matchesWithEFTIndexMap(const FE_mesh_field_template &source,
 		const std::vector<EFTIndexType> &sourceEFTIndexMap, bool superset) const;

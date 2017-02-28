@@ -6276,7 +6276,9 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 	}
 	if (return_code)
 	{
-		REACCESS(FE_field_info)(&(destination->info), source->info);
+		// don't want to change info if merging to external region. In all other cases should be same info anyway
+		if (!externalMerge)
+			REACCESS(FE_field_info)(&(destination->info), source->info);
 		if (destination->cm_field_type != source->cm_field_type)
 		{
 			display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",

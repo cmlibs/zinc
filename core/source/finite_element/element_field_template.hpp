@@ -128,11 +128,14 @@ public:
 
 	static FE_element_field_template *create(FE_mesh *meshIn, FE_basis *basisIn);
 
-	/** create an unlocked copy of the template for modification (copy-on-write) */
-	FE_element_field_template *cloneForModify()
-	{
-		return new FE_element_field_template(*this);
-	}
+	/** Create an unlocked copy of the template for editing.
+	  * @return  New element field template with access count 1, or 0 if failed. */
+	FE_element_field_template *cloneForModify() const;
+
+	/** Create a copy of the template for merging into a new mesh, keeping locked status.
+	* @param newMesh  New mesh to clone for. Must be same dimension as this eft's mesh.
+	* @return  New element field template with access count 1, or 0 if failed. */
+	FE_element_field_template *cloneForNewMesh(FE_mesh *newMesh) const;
 
 	FE_element_field_template *access()
 	{

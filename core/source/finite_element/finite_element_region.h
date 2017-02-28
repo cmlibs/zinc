@@ -41,9 +41,9 @@ class FE_region_changes
 {
 	struct FE_region *fe_region; // accessed
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	// following are set once field changes propagated to given dimension so not redone
-	bool propagatedToDimension[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
+	bool propagatedToDimension[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	DsLabelsChangeLog *nodeChangeLogs[2]; // nodes and datapoints
 	int access_count;
 

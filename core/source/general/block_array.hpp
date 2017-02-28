@@ -111,9 +111,10 @@ public:
 	void clear()
 	{
 		for (IndexType i = 0; i < this->blockCount; ++i)
-			delete[] blocks[i];
-		delete[] blocks;
-		blockCount = 0;
+			delete[] this->blocks[i];
+		delete[] this->blocks;
+		this->blocks = 0;
+		this->blockCount = 0;
 	}
 
 	/** @param  blockIndex  From 0 to block count - 1. Not checked. */

@@ -378,7 +378,8 @@ cmzn_elementtemplate::~cmzn_elementtemplate()
 		cmzn_mesh_scale_factor_set::deaccess(temp);
 	}
 #endif // GRC
-	for (size_t i = this->legacyFieldDataList.size() - 1; 0 <= i; --i)
+	const size_t legacyFieldDataCount = this->legacyFieldDataList.size();
+	for (size_t i = 0; i < legacyFieldDataCount; ++i)
 		delete this->legacyFieldDataList[i];
 	this->clearLegacyNodes();
 	cmzn::Deaccess(this->fe_element_template);
@@ -411,7 +412,8 @@ void cmzn_elementtemplate::clearLegacyElementFieldData(FE_field *fe_field)
 
 LegacyElementFieldData *cmzn_elementtemplate::getLegacyElementFieldData(FE_field *fe_field)
 {
-	for (size_t i = this->legacyFieldDataList.size() - 1; 0 <= i; --i)
+	const size_t fieldDataCount = this->legacyFieldDataList.size();
+	for (size_t i = 0; i < fieldDataCount; ++i)
 		if (this->legacyFieldDataList[i]->getField() == fe_field)
 			return this->legacyFieldDataList[i];
 	return 0;
@@ -475,7 +477,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 					workingNodeIndexes.reserve(nodeIndexesCount);
 				for (int n = 0; n < nodeIndexesCount; ++n)
 				{
-					cmzn_node *node = this->legacyNodes[nodeIndexes[n]];
+					cmzn_node *node = this->legacyNodes[nodeIndexes[n] - 1];
 					workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
 				}
 				if (!eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data(), localNodeChange))

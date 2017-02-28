@@ -87,7 +87,9 @@ void FE_nodeset::createChangeLog()
 
 DsLabelsChangeLog *FE_nodeset::extractChangeLog()
 {
+	// take access count of changelog when extracting
 	DsLabelsChangeLog *returnChangeLog = this->changeLog;
+	this->changeLog = 0;
 	this->createChangeLog();
 	return returnChangeLog;
 }

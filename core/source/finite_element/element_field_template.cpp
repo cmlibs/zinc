@@ -107,7 +107,8 @@ FE_element_field_template::FE_element_field_template(const FE_element_field_temp
 	dimension(source.dimension),
 	basis(ACCESS(FE_basis)(source.basis)),
 	numberOfFunctions(source.numberOfFunctions),
-	locked(false),
+	locked(source.locked),
+	indexInMesh(-1),
 	mappingMode(source.mappingMode),
 	termCounts(copy_array(source.termCounts, source.numberOfFunctions)),
 	totalTermCount(source.totalTermCount),
@@ -252,6 +253,47 @@ FE_element_field_template *FE_element_field_template::create(FE_mesh *meshIn, FE
 		return new FE_element_field_template(meshIn, basisIn);
 	display_message(ERROR_MESSAGE, "FE_element_field_template::create  Invalid argument(s)");
 	return 0;
+}
+
+FE_element_field_template *FE_element_field_template::cloneForModify() const
+{
+	FE_element_field_template *eft = new FE_element_field_template(*this);
+	if (!eft)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_template::cloneForModify.  Failed");
+		return 0;
+	}
+	eft->locked = false;
+	return eft;
+}
+
+FE_element_field_template *FE_element_field_template::cloneForNewMesh(FE_mesh *newMesh) const
+{
+	if (!this->mesh)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_template::cloneForNewMesh.  No current mesh");
+		return 0;
+	}
+	if ((!newMesh) || (newMesh->getDimension() != this->mesh->getDimension()))
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_template::cloneForNewMesh.  Invalid new mesh");
+		return 0;
+	}
+	FE_element_field_template *eft = new FE_element_field_template(*this);
+	if (!eft)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_template::cloneForNewMesh.  Failed");
+		return 0;
+	}
+	// switch ownership to newMesh
+	this->mesh->removeElementfieldtemplate(eft);
+	eft->mesh = newMesh;
+	if (CMZN_OK != newMesh->addElementfieldtemplate(eft))
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_template::cloneForNewMesh.  Failed to add to mesh EFT list");
+		return 0;
+	}
+	return eft;
 }
 
 bool FE_element_field_template::matches(const FE_element_field_template &source) const
