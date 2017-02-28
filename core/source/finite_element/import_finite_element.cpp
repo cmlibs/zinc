@@ -2516,8 +2516,15 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EXReader::readElementShape.  Error creating shape");
 		return false;
 	}
+	// create and validate a blank, no-field element template
 	if (!this->createElementtemplate())
 		return false;
+	if (!this->elementtemplate->validate())
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Default element field header failed validation when created for new shape.  %s",
+			this->getFileLocation());
+		return false;
+	}
 	return true;
 }
 

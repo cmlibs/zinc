@@ -14909,9 +14909,9 @@ int calculate_FE_element_field_values(cmzn_element *element,
 		return 0;
 	}
 	FE_value coordinate_transformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	cmzn_element *field_element = field->getOrInheritOnElement(element,
+	cmzn_element *fieldElement = field->getOrInheritOnElement(element,
 		/*inherit_face_number*/-1, topLevelElement, coordinate_transformation);
-	if (!field_element)
+	if (!fieldElement)
 	{
 		display_message(ERROR_MESSAGE,
 			"calculate_FE_element_field_values.  Field %s not defined on %d-D element %d",
@@ -14932,8 +14932,8 @@ int calculate_FE_element_field_values(cmzn_element *element,
 	}
 
 	int return_code = 1;
-	const int element_dimension = element->getDimension();
-	const int field_element_dimension = field_element->getDimension();
+	const int elementDimension = element->getDimension();
+	const int fieldElementDimension = fieldElement->getDimension();
 	const int number_of_components = field->number_of_components;
 	switch (field->fe_field_type)
 	{
@@ -14942,13 +14942,12 @@ int calculate_FE_element_field_values(cmzn_element *element,
 			/* constant fields do not use the values except to remember the
 					element and field they are for */
 			element_field_values->field=ACCESS(FE_field)(field);
-			element_field_values->element=ACCESS(FE_element)(element);
-			/* store field_element since we are now able to suggest through the
+			element_field_values->element = element->access();
+			/* store fieldElement since we are now able to suggest through the
 					topLevelElement clue which one we get. Must compare element
-					and field_element to ensure field values are still valid for
+					and fieldElement to ensure field values are still valid for
 					a given line or face. */
-			element_field_values->field_element=
-				ACCESS(FE_element)(field_element);
+			element_field_values->field_element = fieldElement->access();
 			element_field_values->component_number_in_xi=(int **)NULL;
 			/* derivatives will be calculated in calculate_FE_element_field */
 			/*???DB.  Assuming linear */
@@ -15013,12 +15012,12 @@ int calculate_FE_element_field_values(cmzn_element *element,
 				element_field_values->component_number_in_xi = component_number_in_xi;
 				element_field_values->field = field->access();
 				element_field_values->element = element->access();
-				element_field_values->field_element = field_element->access();
+				element_field_values->field_element = fieldElement->access();
 				element_field_values->time_dependent =
 					FE_field_has_multiple_times(element_field_values->field);
 				element_field_values->time = time;
 				element_field_values->derivatives_calculated=calculate_derivatives;
-				if (field_element_dimension > element_dimension)
+				if (fieldElementDimension > elementDimension)
 				{
 					element_field_values->destroy_standard_basis_arguments=1;
 				}
@@ -15041,22 +15040,28 @@ int calculate_FE_element_field_values(cmzn_element *element,
 				element_field_values->component_standard_basis_function_arguments=
 					standard_basis_arguments_address;
 				/* maximum_number_of_values starts off big enough for linear grid with derivatives */
-				grid_maximum_number_of_values=element_dimension+1;
-				for (i=element_dimension;i>0;i--)
+				grid_maximum_number_of_values=elementDimension+1;
+				for (i=elementDimension;i>0;i--)
 				{
 					grid_maximum_number_of_values *= 2;
 				}
 				maximum_number_of_values = grid_maximum_number_of_values;
 
-				const FE_mesh_field_data *meshFieldData = field->meshFieldData[field_element_dimension - 1];
+				const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
 				FE_basis *previous_basis = 0;
 				return_code=1;
 				number_of_grid_based_components = 0;
 				int **component_grid_offset_in_xi = 0;
-				const DsLabelIndex elementIndex = element->getIndex();
+				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 				for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
 				{
-					const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(elementIndex);
+					const FE_element_field_template *componentEFT =
+						meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
+					if (!componentEFT)
+					{
+						return_code = 0;
+						break;
+					}
 					if (componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
 					{
 						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
@@ -15110,13 +15115,13 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							{
 								auto component = static_cast<FE_mesh_field_data::Component<FE_value>*>(componentBase);
 								element_field_values->component_grid_values_storage[component_number] =
-									reinterpret_cast<const Value_storage*>(component->getElementValues(elementIndex, valuesCount));
+									reinterpret_cast<const Value_storage*>(component->getElementValues(fieldElementIndex, valuesCount));
 							} break;
 						case INT_VALUE:
 							{
 								auto component = static_cast<FE_mesh_field_data::Component<int>*>(componentBase);
 								element_field_values->component_grid_values_storage[component_number] =
-									reinterpret_cast<const Value_storage*>(component->getElementValues(elementIndex, valuesCount));
+									reinterpret_cast<const Value_storage*>(component->getElementValues(fieldElementIndex, valuesCount));
 							} break;
 						default:
 							{
@@ -15125,14 +15130,14 @@ int calculate_FE_element_field_values(cmzn_element *element,
 								return_code = 0;
 							} break;
 						}
-						ALLOCATE(component_number_in_xi[component_number], int, element_dimension);
-						ALLOCATE(component_grid_offset_in_xi[component_number], int, element_dimension);
+						ALLOCATE(component_number_in_xi[component_number], int, elementDimension);
+						ALLOCATE(component_grid_offset_in_xi[component_number], int, elementDimension);
 						if ((NULL != component_number_in_xi[component_number]) &&
 							(NULL != component_grid_offset_in_xi[component_number]))
 						{
 							element_field_values->component_base_grid_offset[component_number] = 0;
-							if (!calculate_grid_field_offsets(element_dimension,
-								field_element_dimension, top_level_component_number_in_xi,
+							if (!calculate_grid_field_offsets(elementDimension,
+								fieldElementDimension, top_level_component_number_in_xi,
 								coordinate_transformation, component_number_in_xi[component_number],
 								&(element_field_values->component_base_grid_offset[component_number]),
 								component_grid_offset_in_xi[component_number]))
@@ -15159,9 +15164,9 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							return_code = 0;
 							break;
 						}
-						/* calculate element values for the element field component */
+						// calculate element values for component on the fieldElement
 						if (0 < (*number_of_values_address = global_to_element_map_values(field, component_number,
-							componentEFT, element, time, nodeset, *values_address)))
+							componentEFT, fieldElement, time, nodeset, *values_address)))
 						{
 							if (previous_basis == componentEFT->getBasis())
 							{
@@ -15179,11 +15184,11 @@ int calculate_FE_element_field_values(cmzn_element *element,
 									blending_matrix=NULL;
 								}
 								*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
-								if (field_element_dimension > element_dimension)
+								if (fieldElementDimension > elementDimension)
 								{
 									return_code=calculate_standard_basis_transformation(
 										previous_basis,coordinate_transformation,
-										element_dimension,standard_basis_arguments_address,
+										elementDimension,standard_basis_arguments_address,
 										&number_of_inherited_values,standard_basis_address,
 										&blending_matrix);
 								}
@@ -15197,13 +15202,13 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							}
 							if (return_code)
 							{
-								if (field_element == element)
+								if (fieldElement == element)
 								{
 									/* values already correct regardless of basis, but must make space for derivatives if needed */
 									if (calculate_derivatives)
 									{
 										if (REALLOCATE(inherited_values,*values_address,FE_value,
-											(element_dimension+1)*(*number_of_values_address)))
+											(elementDimension+1)*(*number_of_values_address)))
 										{
 											*values_address=inherited_values;
 										}
@@ -15218,13 +15223,13 @@ int calculate_FE_element_field_values(cmzn_element *element,
 								else if ((monomial_basis_functions== *standard_basis_address)||
 									(polygon_basis_functions== *standard_basis_address))
 								{
-									/* project the field_element values onto the lower-dimension element
+									/* project the fieldElement values onto the lower-dimension element
 											using the affine transformation */
 									/* allocate memory for the element values */
 									if (calculate_derivatives)
 									{
 										ALLOCATE(inherited_values,FE_value,
-											(element_dimension+1)*number_of_inherited_values);
+											(elementDimension+1)*number_of_inherited_values);
 									}
 									else
 									{
@@ -15282,7 +15287,7 @@ int calculate_FE_element_field_values(cmzn_element *element,
 											derivative_value=value+number_of_values;
 											orders= *standard_basis_arguments_address;
 											offset=1;
-											for (i=element_dimension;i>0;i--)
+											for (i=elementDimension;i>0;i--)
 											{
 												orders++;
 												order= *orders;
@@ -15313,7 +15318,7 @@ int calculate_FE_element_field_values(cmzn_element *element,
 											derivative_value=value+number_of_values;
 											orders= *standard_basis_arguments_address;
 											offset=1;
-											for (i=element_dimension;i>0;i--)
+											for (i=elementDimension;i>0;i--)
 											{
 												orders++;
 												order= *orders;
@@ -15326,8 +15331,8 @@ int calculate_FE_element_field_values(cmzn_element *element,
 														/* calculate derivatives with respect to
 															both polygon coordinates */
 														order /= 2;
-														polygon_offset=order%element_dimension;
-														order /= element_dimension;
+														polygon_offset=order%elementDimension;
+														order /= elementDimension;
 														number_of_polygon_verticies=
 															(-orders[polygon_offset])/2;
 														/* first polygon coordinate is
@@ -15485,14 +15490,14 @@ must have already been calculated.  Currently only implemented for monomials.
 ==============================================================================*/
 {
 	FE_value *derivative_value, *value;
-	int element_dimension, i, j, k, number_of_values, offset, order,
+	int elementDimension, i, j, k, number_of_values, offset, order,
 		*orders, power, return_code;
 
 	ENTER(FE_element_field_values_differentiate);
 	if (element_field_values && element_field_values->derivatives_calculated)
 	{
 		return_code = 1;
-		element_dimension = element_field_values->element->getDimension();
+		elementDimension = element_field_values->element->getDimension();
 		for (k = 0 ; k < element_field_values->number_of_components ; k++)
 		{
 			if (monomial_basis_functions==
@@ -15518,7 +15523,7 @@ must have already been calculated.  Currently only implemented for monomials.
 				orders= element_field_values->component_standard_basis_function_arguments[k];
 				offset = 1;
 
-				for (i=element_dimension;i>0;i--)
+				for (i=elementDimension;i>0;i--)
 				{
 					orders++;
 					order= *orders;
@@ -15875,9 +15880,9 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	// and calculate the affine transformation from the element xi coordinates
 	// to the xi coordinates for the field element */
 	FE_value coordinate_transformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	cmzn_element *field_element = field->getOrInheritOnElement(element,
+	cmzn_element *fieldElement = field->getOrInheritOnElement(element,
 		face_number, top_level_element, coordinate_transformation);
-	if (!field_element)
+	if (!fieldElement)
 	{
 		if (field)
 		{
@@ -15911,21 +15916,21 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	int add, i, *inherited_basis_arguments, j, k,
 		number_of_inherited_values, number_of_blended_values;
 
-	const FE_mesh_field_data *meshFieldData = field->meshFieldData[field_element->getDimension() - 1];
+	const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElement->getDimension() - 1];
 	int number_of_element_field_nodes = 0;
 	struct FE_node **element_field_nodes_array = 0;
-	int element_dimension = element->getDimension();
+	int elementDimension = element->getDimension();
 	if (face_number >= 0)
-		--element_dimension;
+		--elementDimension;
 	const int number_of_components = field->number_of_components;
 	struct FE_basis *previous_basis = 0;
 	int previous_number_of_element_values = -1;
 	DsLabelIndex *element_value, *element_values = 0;
 	DsLabelIndex *previous_element_values = 0;
-	const DsLabelIndex elementIndex = element->getIndex();
+	const DsLabelIndex fieldElementIndex = element->getIndex();
 	for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
 	{
-		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(elementIndex);
+		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
 		if (componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
 		{
 			const int number_of_element_values = global_to_element_map_nodes(field, component_number,
@@ -15955,7 +15960,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 				previous_basis=basis;
 				Standard_basis_function *standard_basis_function;
 				if (calculate_standard_basis_transformation(basis,
-					coordinate_transformation,element_dimension,
+					coordinate_transformation,elementDimension,
 					&inherited_basis_arguments,&number_of_inherited_values,
 					&standard_basis_function,&blending_matrix))
 				{

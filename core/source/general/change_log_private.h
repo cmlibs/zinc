@@ -518,19 +518,16 @@ Unchanged objects are returned as OBJECT_UNCHANGED. \
 ============================================================================*/ \
 { \
 	int return_code; \
-	struct CHANGE_LOG_ENTRY(object_type) *entry; \
 \
 	ENTER(CHANGE_LOG_QUERY(object_type)); \
 	if (change_log && object && change_address) \
 	{ \
-		int change = CHANGE_LOG_OBJECT_UNCHANGED(object_type); \
-		entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
-			the_object)(object, change_log->entry_list); \
-		if (NULL != entry) \
+		int change = change_log->all_change; \
+		struct CHANGE_LOG_ENTRY(object_type) *entry = \
+			FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type),the_object)(object, change_log->entry_list); \
+		if ((entry) && ((entry->change == CHANGE_LOG_OBJECT_ADDED(object_type)) \
+			|| (entry->change == CHANGE_LOG_OBJECT_REMOVED(object_type)))) \
 			change = entry->change; \
-		if ((entry->change != CHANGE_LOG_OBJECT_ADDED(object_type)) \
-			&& (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type))) \
-			change |= change_log->all_change; \
 		*change_address = change; \
 		return_code = 1; \
 	} \

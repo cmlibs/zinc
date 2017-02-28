@@ -1315,7 +1315,7 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 		newShape = (elementShape != this->headerElement->getElementShape());
 		if (newShape)
 		{
-			newFieldHeader = this->elementHasFieldsToWrite(element);
+			newFieldHeader = this->elementHasFieldsToWrite(element); // reader must assume a blank, no-field template
 		}
 		else
 		{
