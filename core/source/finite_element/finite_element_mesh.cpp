@@ -1170,7 +1170,7 @@ FE_mesh_field_template *FE_mesh::getOrCreateBlankMeshFieldTemplate()
 	for (std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin(); iter != this->meshFieldTemplates.end(); ++iter)
 	{
 		if ((*iter)->isBlank())
-			return *iter;
+			return (*iter)->access();
 	}
 	return this->createBlankMeshFieldTemplate();
 }
@@ -1179,7 +1179,7 @@ FE_mesh_field_template *FE_mesh::getOrCreateBlankMeshFieldTemplate()
 void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 {
 	for (std::list<FE_mesh_field_template*>::iterator iter = this->meshFieldTemplates.begin();
-		iter != this->meshFieldTemplates.begin(); ++iter)
+		iter != this->meshFieldTemplates.end(); ++iter)
 	{
 		if (*iter == meshFieldTemplate)
 		{
@@ -1195,7 +1195,7 @@ void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 bool FE_mesh::equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const
 {
 	for (std::list<FE_mesh_field_template*>::const_iterator iter = this->meshFieldTemplates.begin();
-		iter != this->meshFieldTemplates.begin(); ++iter)
+		iter != this->meshFieldTemplates.end(); ++iter)
 	{
 		if ((*iter)->getElementEFTIndex(elementIndex1) != (*iter)->getElementEFTIndex(elementIndex1))
 			return false;
@@ -1470,7 +1470,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 			if (eft_mft_match_count < mft->access_count)
 			{
 				// only some fields using mesh field template changing eft, hence clone, modify and set in fields
-				FE_mesh_field_template *new_mft = this->cloneMeshFieldTemplate(mft);
+				new_mft = this->cloneMeshFieldTemplate(mft);
 				if (!new_mft)
 				{
 					display_message(ERROR_MESSAGE, "Mesh mergeFieldsFromElementTemplate.  Failed to clone field template");
@@ -1780,12 +1780,11 @@ cmzn_element *FE_mesh::createElementObject(DsLabelIdentifier identifier)
  */
 cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *elementTemplate)
 {
-	cmzn_element *element = 0;
 	if ((-1 <= identifier) && (elementTemplate) && elementTemplate->isValidated())
 	{
 		if (elementTemplate->mesh == this)
 		{
-			element = this->createElementObject(identifier);
+			cmzn_element *element = this->createElementObject(identifier);
 			if (element)
 			{
 				const DsLabelIndex elementIndex = element->getIndex();
@@ -1794,6 +1793,7 @@ cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *el
 				{
 					element->access();
 					this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_ADD);
+					return element;
 				}
 				else
 				{
@@ -1821,7 +1821,7 @@ cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *el
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Invalid arguments");
 	}
-	return (element);
+	return 0;
 }
 
 /**

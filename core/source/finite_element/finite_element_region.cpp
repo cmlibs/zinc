@@ -1218,6 +1218,8 @@ static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 			return 0;
 	}
 	targetField = CREATE(FE_field)(fieldName, fe_region);
+	// don't want to be warned about this changing, so set here:
+	set_FE_field_CM_field_type(targetField, get_FE_field_CM_field_type(sourceField));
 	if (!(FE_field_copy_without_identifier(targetField, sourceField) &&
 		ADD_OBJECT_TO_LIST(FE_field)(targetField, fe_region->fe_field_list)))
 	{

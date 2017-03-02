@@ -15898,7 +15898,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 		}
 		return 0;
 	}
-	const FE_mesh *mesh = element->getMesh();
+	const FE_mesh *mesh = fieldElement->getMesh();
 	if (!mesh)
 	{
 		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Invalid element");
@@ -15916,25 +15916,26 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	int add, i, *inherited_basis_arguments, j, k,
 		number_of_inherited_values, number_of_blended_values;
 
-	const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElement->getDimension() - 1];
 	int number_of_element_field_nodes = 0;
 	struct FE_node **element_field_nodes_array = 0;
 	int elementDimension = element->getDimension();
 	if (face_number >= 0)
 		--elementDimension;
+	const int fieldElementDimension = fieldElement->getDimension();
+	const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
 	const int number_of_components = field->number_of_components;
 	struct FE_basis *previous_basis = 0;
 	int previous_number_of_element_values = -1;
 	DsLabelIndex *element_value, *element_values = 0;
 	DsLabelIndex *previous_element_values = 0;
-	const DsLabelIndex fieldElementIndex = element->getIndex();
+	const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 	for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
 	{
 		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
 		if (componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
 		{
 			const int number_of_element_values = global_to_element_map_nodes(field, component_number,
-				componentEFT, element, element_values);
+				componentEFT, fieldElement, element_values);
 			if (0 == number_of_element_values)
 			{
 				display_message(ERROR_MESSAGE,

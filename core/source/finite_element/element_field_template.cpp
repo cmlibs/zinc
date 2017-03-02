@@ -333,13 +333,15 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 				|| ((!this->legacyGridNumberInXi) && (source.legacyGridNumberInXi)))
 				return false;
 		}
-		if ((0 != this->numberOfLocalScaleFactors)
-			&& ((this->totalLocalScaleFactorIndexes == source.totalLocalScaleFactorIndexes)
+		if (0 < this->numberOfLocalScaleFactors)
+		{
+			if ((this->totalLocalScaleFactorIndexes != source.totalLocalScaleFactorIndexes)
 				|| (0 != memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_element_scale_factor_type)))
 				|| (0 != memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
 				|| (0 != memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
-				|| (0 != memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int)))))
-			return false;
+				|| (0 != memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int))))
+				return false;
+		}
 	}
 	return true;
 }

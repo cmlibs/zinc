@@ -489,14 +489,14 @@ public:
 		return this;
 	}
 
-	static int deaccess(FE_mesh_field_template* &ft)
+	static int deaccess(FE_mesh_field_template* &mft)
 	{
-		if (!ft)
+		if (!mft)
 			return CMZN_ERROR_ARGUMENT;
-		--(ft->access_count);
-		if (ft->access_count <= 0)
-			delete ft;
-		ft = 0;
+		--(mft->access_count);
+		if (mft->access_count <= 0)
+			delete mft;
+		mft = 0;
 		return CMZN_OK;
 	}
 
