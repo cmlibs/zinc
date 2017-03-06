@@ -854,9 +854,9 @@ struct FE_nodeset::Merge_FE_node_external_data
 	   Note these are ACCESSed */
 	struct FE_node_field_info **matching_node_field_info;
 	int number_of_matching_node_field_info;
-	/* array of element_xi fields that may be defined on node prior to its being
-	   merged; these require substitution of global element pointers */
-	std::vector<FE_field *> embedded_fields;
+	// arrays of embedded element_xi fields in target region, merged from those in source
+	// this is used to substitute global elements
+	std::vector<FE_field *> targetEmbeddedFields;
 
 	Merge_FE_node_external_data(FE_nodeset &sourceIn, FE_region *target_fe_region_in) :
 		source(sourceIn),
@@ -876,13 +876,12 @@ struct FE_nodeset::Merge_FE_node_external_data
 		}
 	}
 
-	bool addEmbeddedField(struct FE_field *sourceField)
+	bool addEmbeddedField(struct FE_field *sourceEmbeddedField)
 	{
-		/* must be mapped to a global field */
-		FE_field *targetField = FE_region_merge_FE_field(this->target_fe_region, sourceField);
-		if (!targetField)
+		FE_field *targetEmbeddedField = FE_region_get_FE_field_from_name(this->target_fe_region, get_FE_field_name(sourceEmbeddedField));
+		if (!targetEmbeddedField)
 			return false;
-		this->embedded_fields.push_back(targetField);
+		this->targetEmbeddedFields.push_back(targetEmbeddedField);
 		return true;
 	}
 
@@ -1013,77 +1012,60 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 			FE_node_set_FE_node_field_info(node, node_field_info);
 			return_code = 1;
 			/* substitute global elements etc. in embedded fields */
-			for (int i = 0; i < data.embedded_fields.size(); i++)
+			const size_t embeddedFieldCount = data.targetEmbeddedFields.size();
+			for (size_t f = 0; f < embeddedFieldCount; ++f)
 			{
-				FE_field *field = data.embedded_fields[i];
-				if (FE_field_is_defined_at_node(field, node))
+				// note after substituting node field info, we use the targetEmbeddedField
+				FE_field *targetEmbeddedField = data.targetEmbeddedFields[f];
+				if (FE_field_is_defined_at_node(targetEmbeddedField, node))
 				{
-					const int number_of_components = get_FE_field_number_of_components(field);
-					for (int component_number = 0; component_number < number_of_components;
-						component_number++)
+					const int number_of_components = get_FE_field_number_of_components(targetEmbeddedField);
+					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
+					cmzn_element *sourceElement;
+					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+					if (get_FE_nodal_element_xi_value(node, targetEmbeddedField, /*component_number*/0, /*version_number*/0,
+						FE_NODAL_VALUE, &sourceElement, xi))
 					{
-						const int number_of_versions =
-							get_FE_node_field_component_number_of_versions(node, field, component_number);
-						const int number_of_derivatives =
-							get_FE_node_field_component_number_of_derivatives(node, field, component_number);
-						FE_nodal_value_type *nodal_value_types =
-							get_FE_node_field_component_nodal_value_types(node, field, component_number);
-						if (nodal_value_types)
+						if (sourceElement)
 						{
-							for (int version_number = 0; version_number < number_of_versions;
-								version_number++)
+							FE_mesh *targetHostMesh = const_cast<FE_mesh*>(FE_field_get_element_xi_host_mesh(targetEmbeddedField));
+							const DsLabelIdentifier elementIdentifier = sourceElement->getIdentifier();
+							cmzn_element *targetElement = targetHostMesh->findElementByIdentifier(elementIdentifier);
+							if (targetElement)
 							{
-								for (int value_number = 0; value_number <= number_of_derivatives;
-									value_number++)
+								targetElement->access();
+							}
+							else
+							{
+								FE_element_shape *elementShape = sourceElement->getElementShape();
+								if (elementShape) // should be guaranteed by FE_mesh::canMerge()
 								{
-									FE_element *element;
-									FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-									if (get_FE_nodal_element_xi_value(node, field, component_number, version_number,
-										nodal_value_types[value_number], &element, xi))
-									{
-										if (element)
-										{
-											// find or create equivalent element in mesh for this fe_region
-											int dimension = cmzn_element_get_dimension(element);
-											FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
-											if (fe_mesh)
-											{
-												FE_element_shape *element_shape = get_FE_element_shape(element);
-												FE_element *global_element = fe_mesh->get_or_create_FE_element_with_identifier(
-													cmzn_element_get_identifier(element), element_shape);
-												if (global_element)
-												{
-													if (!set_FE_nodal_element_xi_value(node, field,
-														component_number, version_number,
-														nodal_value_types[value_number], global_element, xi))
-													{
-														return_code = 0;
-													}
-													DEACCESS(FE_element)(&global_element);
-												}
-												else
-												{
-													return_code = 0;
-												}
-											}
-											else
-											{
-												return_code = 0;
-											}
-										}
-									}
-									else
-									{
-										return_code = 0;
-									}
+									targetElement = targetHostMesh->get_or_create_FE_element_with_identifier(
+										elementIdentifier, elementShape);
 								}
 							}
-							DEALLOCATE(nodal_value_types);
+							if (targetElement)
+							{
+								if (!set_FE_nodal_element_xi_value(node, targetEmbeddedField,
+									/*component_number*/0, /*version_number*/0, FE_NODAL_VALUE, targetElement, xi))
+								{
+									return_code = 0;
+								}
+								cmzn_element::deaccess(targetElement);
+							}
+							else
+							{
+								return_code = 0;
+							}
 						}
 						else
 						{
 							return_code = 0;
 						}
+					}
+					else
+					{
+						return_code = 0;
 					}
 				}
 			}

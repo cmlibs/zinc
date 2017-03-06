@@ -108,11 +108,11 @@ public:
 	}
 
 	/** Adds key value pair to map, if key does not exist already.
-	  * On success, takes ownership of strings passed ing.
+	  * On success, takes ownership of strings passed in.
 	  * @return  True if succeeded, false if key exists already */
 	bool addKeyValue(const char *key, const char *value)
 	{
-		if ((!key) || (!value) || getKeyValue(key))
+		if ((!key) || (!value) || (this->getKeyIndex(key) >= 0))
 			return false;
 		const size_t count = this->strings.size();
 		this->strings.resize(count + 2);
@@ -125,14 +125,11 @@ public:
 	/** @return  Value for key, or 0 if none. Do not deallocate. */
 	const char *getKeyValue(const char *key)
 	{
-		const size_t count = this->strings.size() / 2;
-		for (size_t i = 0; i < count; ++i)
-			if (0 == strcmp(key, this->strings[i*2]))
-			{
-				this->stringsUsed[i] = 1;
-				return this->strings[i*2 + 1];
-			}
-		return 0;
+		int index = this->getKeyIndex(key);
+		if (index < 0)
+			return 0;
+		this->stringsUsed[index] = 1;
+		return this->strings[index*2 + 1];
 	}
 
 	bool hasUnusedKeyValues() const
@@ -154,6 +151,19 @@ public:
 					prefix, this->strings[i*2], this->strings[i*2 + 1]);
 			}
 	}
+
+private:
+
+	/** @return  Index of key, or -1 if not present */
+	int getKeyIndex(const char *key)
+	{
+		const int count = static_cast<int>(this->strings.size()/2);
+		for (int i = 0; i < count; ++i)
+			if (0 == strcmp(key, this->strings[i*2]))
+				return i;
+		return -1;
+	}
+
 };
 
 
@@ -502,7 +512,7 @@ private:
 	}
 
 	bool readBlankToEndOfLine();
-	bool readKeyValueMap(KeyValueMap& keyValueMap);
+	bool readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator = 0);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	char *readString();
 	FE_field *readField();
@@ -577,28 +587,65 @@ bool EXReader::readEXVersion()
 }
 
 /**
- * Read any text matching key=value, separated by commas to the end of the line.
+ * Reads to the end of the line extracting any comma-separated key=value pairs.
+ * End of line characters and subsequent whitespace are consumed.
+ * It's an error if any other text is present.
  * Keys may contain any characters including spaces, but leading and trailing
  * whitespace is trimmed. This must be followed by '=' then a string read by
  * EXReader::readString.
  * @param keyValueMap  The key value map structure to fill. Expected to be empty.
+ * @param initialSeparator  Optional initial separator required before key value pairs.
+ * If present, a key=value pair must follow (as when there is a , after a pair). If
+ * not present, the rest of the line may be blank only.
  * @return  True on success, false on failure.
  */
-bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap)
+bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator)
 {
-	char *key;
+	int separator = initialSeparator;
+	int next_char;
 	while (true)
 	{
+		if (0 != separator)
+		{
+			next_char = this->readNextNonSpaceChar();
+			if (next_char != separator)
+			{
+				if (((int)'\n' == next_char) || ((int)'\r' == next_char))
+				{
+					IO_stream_scan(this->input_file, " ");
+					return true;
+				}
+				char *rest_of_line;
+				IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
+				display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%c%s' where only '%c key=value[, key=value[, ...]]' allowed.  %s",
+					(char)next_char, rest_of_line, (char)separator, this->getFileLocation());
+				DEALLOCATE(rest_of_line);
+				return false;
+			}
+		}
+		char *key;
 		if (!IO_stream_read_string(this->input_file, "[^=\n\r]", &key))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read key=value key.  %s", this->getFileLocation());
 			return false;
 		}
 		trim_string_in_place(key);
-		int next_char = IO_stream_getc(this->input_file);
-		if ((next_char != (int)'=') || (strlen(key) == 0))
+		next_char = IO_stream_getc(this->input_file);
+		if ((int)'=' != next_char)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Missing key=value pair.  %s", this->getFileLocation());
+			if ((0 == separator) && (strlen(key) == 0))
+			{
+				IO_stream_scan(this->input_file, " ");
+				return true;
+			}
+			display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%s' where only 'key=value[, key=value[, ...]]' allowed.  %s",
+				key, this->getFileLocation());
+			DEALLOCATE(key);
+			return false;
+		}
+		if (strlen(key) == 0)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid key=value key '%s'.  %s", key, this->getFileLocation());
 			DEALLOCATE(key);
 			return false;
 		}
@@ -617,10 +664,10 @@ bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap)
 			DEALLOCATE(value);
 			return false;
 		}
-		next_char = this->readNextNonSpaceChar();
-		if (next_char != (int)',')
-			break;
+		separator = (int)',';
 	}
+	// consume end of line and subsequent whitespace characters
+	IO_stream_scan(this->input_file, " ");
 	return true;
 }
 
@@ -967,12 +1014,8 @@ bool EXReader::readCommentOrDirective()
 	std::string domainName(name);
 	DEALLOCATE(name);
 	KeyValueMap keyValueMap;
-	int next_char = this->readNextNonSpaceChar();
-	if (next_char == (int)',')
-	{
-		if (!this->readKeyValueMap(keyValueMap))
-			return false;
-	}
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
+		return false;
 	if (nodesetDirective)
 	{
 		cmzn_field_domain_type domainType = this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
@@ -1288,20 +1331,19 @@ FE_field *EXReader::readField()
 		DEALLOCATE(next_block);
 	if (return_code)
 	{
-		int next_char = this->readNextNonSpaceChar();
-		if ((next_char == (int)',')
-			|| ((next_char == (int)';') && (this->exVersion < 2) && (ELEMENT_XI_VALUE == value_type)))
+		// read arbitrary comma separated key=value pairs for all additional options (including future)
+		// must be preceded by initialSeparator
+		KeyValueMap keyValueMap;
+		const int initialSeparator = ((this->exVersion < 2) && (ELEMENT_XI_VALUE == value_type)) ? (int)';' : ',';
+		if (!this->readKeyValueMap(keyValueMap, initialSeparator))
 		{
-			// read arbitrary comma separated key=value pairs for all additional options (including future)
-			KeyValueMap keyValueMap;
-			if (!this->readKeyValueMap(keyValueMap))
-			{
-				display_message(ERROR_MESSAGE,
-					"EX Reader.  Failed to read additional key=value parameters for field %s.  %s",
-					field_name, this->getFileLocation());
-				return_code = 0;
-			}
-			if (return_code && (ELEMENT_XI_VALUE == value_type))
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read additional key=value parameters for field %s.  %s",
+				field_name, this->getFileLocation());
+			return_code = 0;
+		}
+		else
+		{
+			if (ELEMENT_XI_VALUE == value_type)
 			{
 				// before EX version 2, optional: mesh dimension=N (if not specified, determine from first embedded element location in old format)
 				// from EX version 2, require: host mesh=name, host mesh dimension=N
@@ -1598,7 +1640,7 @@ bool EXReader::readNodeHeaderField()
 				// Note that all values and derivatives for a given version are consecutive in the legacy format, i.e. derivative cycles fastest
 				int number_of_derivatives, number_of_versions, temp_int;
 				/* ignore value index */
-				if (!((2 == IO_stream_scan(this->input_file, ".  Value index=%d, #Derivatives=%d", &temp_int, &number_of_derivatives))
+				if (!((2 == IO_stream_scan(this->input_file, ".  Value index=%d, #Derivatives=%d ", &temp_int, &number_of_derivatives))
 					&& (0 <= number_of_derivatives)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
@@ -1712,20 +1754,21 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (this->exVersion >= 2)
 		{
-			int next_char = this->readNextNonSpaceChar();
-			if (next_char == (int)',')
+			// read and warn about any unused key=value data, which must be preceded by ,
+			KeyValueMap keyValueMap;
+			if (!this->readKeyValueMap(keyValueMap, (int)','))
 			{
-				// read and warn about any unused key=value data
-				KeyValueMap keyValueMap;
-				if (this->readKeyValueMap(keyValueMap) && keyValueMap.hasUnusedKeyValues())
-				{
-					std::string prefix("EX Reader.  Node field ");
-					prefix += get_FE_field_name(field);
-					prefix += " component ";
-					prefix += componentName;
-					prefix += ": ";
-					keyValueMap.reportUnusedKeyValues(prefix.c_str());
-				}
+				result = false;
+				break;
+			}
+			if (keyValueMap.hasUnusedKeyValues())
+			{
+				std::string prefix("EX Reader.  Node field ");
+				prefix += get_FE_field_name(field);
+				prefix += " component ";
+				prefix += componentName;
+				prefix += ": ";
+				keyValueMap.reportUnusedKeyValues(prefix.c_str());
 			}
 		}
 	}
@@ -2115,11 +2158,14 @@ cmzn_node *EXReader::readNode()
 		} break;
 		}
 	}
-	if (result && existingNode && (CMZN_OK != this->nodeset->merge_FE_node_template(node, this->node_template)))
+	if (result && existingNode && (fieldCount > 0)) // nothing to merge if no fields
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
-			nodeIdentifier, this->getFileLocation());
-		result = false;
+		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->node_template))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
+				nodeIdentifier, this->getFileLocation());
+			result = false;
+		}
 	}
 	if (!result)
 		DEACCESS(FE_node)(&returnNode);
@@ -2509,13 +2555,14 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EX Reader.  Invalid shape description.  %s", this->getFileLocation());
 		return false;
 	}
-	this->elementShape = CREATE(FE_element_shape)(dimension, type, this->fe_region);
+	this->elementShape = CREATE(FE_element_shape)(dimension, type, this->fe_region); // not accessed!
 	DEALLOCATE(type);
 	if (!this->elementShape)
 	{
 		display_message(ERROR_MESSAGE, "EXReader::readElementShape.  Error creating shape");
 		return false;
 	}
+	ACCESS(FE_element_shape)(this->elementShape);
 	// create and validate a blank, no-field element template
 	if (!this->createElementtemplate())
 		return false;
@@ -2746,37 +2793,16 @@ bool EXReader::readElementHeaderField()
 			// optionally read additional key=value data
 			KeyValueMap keyValueMap;
 			const char *scaleFactorSetName = 0; // prior to EX version 2, used the basis description as the scale factor name
-			int gridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 			if ((this->exVersion >= 2) || elementGridBased)
 			{
-				int next_char = this->readNextNonSpaceChar();
-				if (!isspace(next_char))
-					this->readKeyValueMap(keyValueMap);
+				if (!this->readKeyValueMap(keyValueMap))
+				{
+					result = false;
+					break;
+				}
 				if (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode)
 				{
 					scaleFactorSetName = keyValueMap.getKeyValue("scale factor set");
-				}
-				else if (elementGridBased)
-				{
-					/* read number of divisions in each xi direction */
-					for (int d = 0; d < dimension; ++d)
-					{
-						char xiToken[20];
-						sprintf(xiToken, "#xi%d", d + 1);
-						const char *gridNumberInXiString = keyValueMap.getKeyValue(xiToken);
-						if (gridNumberInXiString && isIntegerString(gridNumberInXiString))
-						{
-							gridNumberInXi[d] = atoi(gridNumberInXiString);
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE, "EX Reader.  Missing or invalid %s=NUMBER for grid based component.  %s",
-								xiToken, this->getFileLocation());
-							result = false;
-						}
-					}
-					if (!result)
-						break;
 				}
 				if (keyValueMap.hasUnusedKeyValues())
 				{
@@ -2817,9 +2843,11 @@ bool EXReader::readElementHeaderField()
 				{
 					// if a comma is next read additional key=value data
 					KeyValueMap keyValueMap;
-					int next_char = this->readNextNonSpaceChar();
-					if (next_char == (int)',')
-						this->readKeyValueMap(keyValueMap);
+					if (!this->readKeyValueMap(keyValueMap, (int)','))
+					{
+						result = false;
+						break;
+					}
 					if (keyValueMap.hasUnusedKeyValues())
 					{
 						std::string prefix("EX Reader.  Element field");
@@ -3259,6 +3287,42 @@ bool EXReader::readElementHeaderField()
 				this->hasElementValues = true;
 				if (elementGridBased)
 				{
+					KeyValueMap keyValueMap;
+					if (!this->readKeyValueMap(keyValueMap))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to read grid based #xi for each dimension.  %s", this->getFileLocation());
+						result = false;
+						break;
+					}
+					int gridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+					// read number of divisions in each xi direction -- on next line
+					for (int d = 0; d < dimension; ++d)
+					{
+						char xiToken[20];
+						sprintf(xiToken, "#xi%d", d + 1);
+						const char *gridNumberInXiString = keyValueMap.getKeyValue(xiToken);
+						if (gridNumberInXiString && isIntegerString(gridNumberInXiString))
+						{
+							gridNumberInXi[d] = atoi(gridNumberInXiString);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE, "EX Reader.  Missing or invalid %s=NUMBER for grid based component.  %s",
+								xiToken, this->getFileLocation());
+							result = false;
+						}
+					}
+					if (!result)
+						break;
+					if (keyValueMap.hasUnusedKeyValues())
+					{
+						std::string prefix("EX Reader.  Element field ");
+						prefix += get_FE_field_name(field);
+						prefix += " grid based component ";
+						prefix += componentName;
+						prefix += ": ";
+						keyValueMap.reportUnusedKeyValues(prefix.c_str());
+					}
 					resultCode = eft->setLegacyGridNumberInXi(gridNumberInXi);
 					if (resultCode != CMZN_OK)
 					{
@@ -3400,20 +3464,12 @@ bool EXReader::readElementHeader()
 		std::string scaleFactorSetName(tmpName);
 		DEALLOCATE(tmpName);
 		KeyValueMap keyValueMap;
-		int next_char = this->readNextNonSpaceChar();
-		if (next_char != (int)',')
-		{
-			display_message(ERROR_MESSAGE,
-				"EX Reader.  Require comma after scale factor set name.  %s", this->getFileLocation());
-			return false;
-		}
-		if (!this->readKeyValueMap(keyValueMap))
+		if (!this->readKeyValueMap(keyValueMap, (int)','))
 			return false;
 		const char *scaleFactorCountString = keyValueMap.getKeyValue("#Scale factors");
 		if (!scaleFactorCountString)
 		{
-			display_message(ERROR_MESSAGE,
-				"EX Reader.  Missing #Scale factors.  %s", this->getFileLocation());
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing #Scale factors.  %s", this->getFileLocation());
 			return false;
 		}
 		const int scaleFactorCount = atoi(scaleFactorCountString);

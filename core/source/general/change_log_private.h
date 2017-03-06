@@ -356,18 +356,10 @@ Tells the <change_log> that <object> has undergone the <change>. \
 	struct CHANGE_LOG_ENTRY(object_type) *entry; \
 \
 	ENTER(CHANGE_LOG_OBJECT_CHANGE(object_type)); \
-	if (change_log && object) \
+	if (change_log && object && (change != CHANGE_LOG_OBJECT_UNCHANGED(object_type))) \
 	{ \
 		return_code = 1; \
 		change_log->change_summary |= change; \
-		/* if this change includes ADD, and REMOVE has been set, must set \
-			 IDENTIFIER_CHANGED and NOT_IDENTIFIER_CHANGED in change_summary */ \
-		if ((change & CHANGE_LOG_OBJECT_ADDED(object_type)) && \
-			(change_log->change_summary & CHANGE_LOG_OBJECT_REMOVED(object_type))) \
-		{ \
-			change_log->change_summary |= \
-				CHANGE_LOG_OBJECT_CHANGED(object_type); \
-		} \
 		entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
 			the_object)(object, change_log->entry_list); \
 		if (NULL != entry) \
@@ -388,7 +380,7 @@ Tells the <change_log> that <object> has undergone the <change>. \
 				} break; \
 				case CHANGE_LOG_OBJECT_REMOVED(object_type): \
 				{ \
-					if (entry->change == CHANGE_LOG_OBJECT_ADDED(object_type)) \
+					if (0 != (entry->change & CHANGE_LOG_OBJECT_ADDED(object_type))) \
 					{ \
 						/* if just been added, no change needs to be noted */ \
 						REMOVE_OBJECT_FROM_LIST(CHANGE_LOG_ENTRY(object_type))(entry, \
@@ -400,23 +392,16 @@ Tells the <change_log> that <object> has undergone the <change>. \
 						entry->change = CHANGE_LOG_OBJECT_REMOVED(object_type); \
 					} \
 				} break; \
-				case CHANGE_LOG_OBJECT_UNCHANGED(object_type): \
-				{ \
-					/* don't want this to be called with UNCHANGED so that case is \
-							handled here too */ \
-					display_message(ERROR_MESSAGE, \
-						"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-						").  Invalid change type"); \
-					return_code = 0; \
-				} break; \
 				default: /* all other bit combinations */ \
 				{ \
-					/* no change if object added or removed */ \
-					if ((entry->change != CHANGE_LOG_OBJECT_ADDED(object_type)) \
-						&& (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type))) \
+					/* no change if object removed */ \
+					if (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type)) \
 					{ \
-						/* bitwise OR */ \
-						entry->change |= change; \
+						/* if added, only related changes can be merged in */ \
+						if (0 != (entry->change & CHANGE_LOG_OBJECT_ADDED(object_type))) \
+							entry->change |= (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type)); \
+						else \
+							entry->change |= change; \
 					} \
 				} break; \
 			} \
@@ -424,40 +409,29 @@ Tells the <change_log> that <object> has undergone the <change>. \
 		else \
 		{ \
 			/* create a new CHANGE_LOG_ENTRY */ \
-			if (change == CHANGE_LOG_OBJECT_UNCHANGED(object_type)) \
+			/* note CREATE CHANGE_LOG_ENTRY incorporated in this function */ \
+			if (ALLOCATE(entry, struct CHANGE_LOG_ENTRY(object_type), 1)) \
 			{ \
-				/* cannot create an entry marked as OBJECT_UNCHANGED */ \
-				display_message(ERROR_MESSAGE, \
-					"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-					").  Cannot note OBJECT_UNCHANGED"); \
-				return_code = 0; \
-			} \
-			else \
-			{ \
-				/* note CREATE CHANGE_LOG_ENTRY incorporated in this function */ \
-				if (ALLOCATE(entry, struct CHANGE_LOG_ENTRY(object_type), 1)) \
-				{ \
-					/* objects ACCESSed internally to ensure not destroyed */ \
-					entry->the_object = ACCESS(object_type)(object); \
-					entry->change = change; \
-					entry->access_count = 0; \
-					if (!ADD_OBJECT_TO_LIST(CHANGE_LOG_ENTRY(object_type))(entry, \
-						change_log->entry_list)) \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-							").  Could not add change entry to list"); \
-						DESTROY(CHANGE_LOG_ENTRY(object_type))(&entry); \
-						return_code = 0; \
-					} \
-				} \
-				else \
+				/* objects ACCESSed internally to ensure not destroyed */ \
+				entry->the_object = ACCESS(object_type)(object); \
+				entry->change = change; \
+				entry->access_count = 0; \
+				if (!ADD_OBJECT_TO_LIST(CHANGE_LOG_ENTRY(object_type))(entry, \
+					change_log->entry_list)) \
 				{ \
 					display_message(ERROR_MESSAGE, \
 						"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-						").  Could not add create change entry"); \
+						").  Could not add change entry to list"); \
+					DESTROY(CHANGE_LOG_ENTRY(object_type))(&entry); \
 					return_code = 0; \
 				} \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
+					").  Could not add create change entry"); \
+				return_code = 0; \
 			} \
 		} \
 	} \
@@ -525,9 +499,18 @@ Unchanged objects are returned as OBJECT_UNCHANGED. \
 		int change = change_log->all_change; \
 		struct CHANGE_LOG_ENTRY(object_type) *entry = \
 			FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type),the_object)(object, change_log->entry_list); \
-		if ((entry) && ((entry->change == CHANGE_LOG_OBJECT_ADDED(object_type)) \
-			|| (entry->change == CHANGE_LOG_OBJECT_REMOVED(object_type)))) \
+		if (0 != entry) \
+		{ \
 			change = entry->change; \
+			/* removed is always on its own */ \
+			if (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type)) \
+			{ \
+				if (0 != (entry->change & CHANGE_LOG_OBJECT_ADDED(object_type))) \
+					change |= (change_log->all_change & CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type)); \
+				else \
+					change |= change_log->all_change; \
+			} \
+		} \
 		*change_address = change; \
 		return_code = 1; \
 	} \

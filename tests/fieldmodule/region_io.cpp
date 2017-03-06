@@ -465,19 +465,18 @@ TEST(region_stream_gzip_input, invalid_args)
 {
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
-
 	std::ifstream exnodeFile(TestResources::getLocation(TestResources::HEART_EXNODE_GZ), std::ifstream::binary);
 	std::ifstream exelemFile(TestResources::getLocation(TestResources::HEART_EXELEM_GZ), std::ifstream::binary);
 	if (exnodeFile.is_open() && exelemFile.is_open())
 	{
 		exnodeFile.seekg (0, exnodeFile.end);
-		int exnodeSize = exnodeFile.tellg();
+		const int exnodeSize = static_cast<int>(exnodeFile.tellg());
 		char *memblock_exnode = new char [exnodeSize];
 		exnodeFile.seekg (0, exnodeFile.beg);
 		exnodeFile.read (memblock_exnode, exnodeSize);
 		exnodeFile.close();
 		exelemFile.seekg (0, exelemFile.end);
-		int exelemSize = exelemFile.tellg();
+		const int exelemSize = static_cast<int>(exelemFile.tellg());
 		char * memblock_exelem = new char [exelemSize];
 		exelemFile.seekg (0, exelemFile.beg);
 		exelemFile.read (memblock_exelem, exelemSize);
@@ -503,10 +502,6 @@ TEST(region_stream_gzip_input, invalid_args)
 		if (memblock_exelem)
 			delete[] memblock_exelem;
 	}
-
-
-
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
-
 }

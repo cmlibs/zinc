@@ -359,7 +359,7 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
  */
 bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 {
-	(*this->output_file) << " " << fieldIndex << ") " << get_FE_field_name(field);
+	(*this->output_file) << fieldIndex << ") " << get_FE_field_name(field);
 	(*this->output_file) << ", " << ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(field));
 	/* optional constant/indexed, Index_field=~, #Values=# */
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
@@ -437,14 +437,11 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 			"EXWriter::writeFieldHeader.  Missing field coordinate system");
 	}
 
+	// In EX Versions < 2, value type was optional if coordinate system output for field
+	// Since reader always handled it if present or not, now write it always
 	Value_type valueType = get_FE_field_value_type(field);
-	/* for backwards compatibility with old file formats, if there is a valid
-			coordinate system only write value_type if it is not FE_VALUE_VALUE */
-	if ((FE_VALUE_VALUE != valueType) || (!coordinate_system) ||
-		(NOT_APPLICABLE == coordinate_system->type))
-	{
-		(*this->output_file) << ", " << Value_type_string(valueType);
-	}
+	(*this->output_file) << ", " << Value_type_string(valueType);
+
 	const int componentCount = get_FE_field_number_of_components(field);
 	(*this->output_file) << ", #Components=" << componentCount;
 	if (ELEMENT_XI_VALUE == valueType)
@@ -960,7 +957,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 		}
 	}
 
-	(*this->output_file) << " #Scale factor sets=" << this->headerScalingEfts.size() << "\n";
+	(*this->output_file) << "#Scale factor sets=" << this->headerScalingEfts.size() << "\n";
 	int scaleFactorSetIndex = 0;
 	for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
 	{
@@ -968,8 +965,8 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 		(*this->output_file) << "  ";
 		(*this->output_file) << "scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors() << "\n";
 	}
-	(*this->output_file) << " #Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
-	(*this->output_file) << " #Fields=" << this->headerFields.size() << "\n";
+	(*this->output_file) << "#Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
+	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";
 	int fieldIndex = 0;
 	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
 	{
@@ -1355,7 +1352,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 		char *componentName = get_FE_field_component_name(field, c);
 		if (componentName)
 		{
-			(*this->output_file) << " " << componentName << ". ";
+			(*this->output_file) << " " << componentName << ".";
 			DEALLOCATE(componentName);
 		}
 		else
@@ -1389,6 +1386,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 				(*this->output_file) << "(" << versionCount << ")";
 		}
 		DEALLOCATE(nodalValueTypes);
+		(*this->output_file) << ")\n";
 	}
 	return true;
 }
@@ -1436,14 +1434,15 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 		if (get_FE_nodal_field_FE_value_values(field, node, &valueCount, this->time, &values))
 		{
 			char tmpString[100];
+			const FE_value *tmpValues = values;
 			for (int c = 0; c < componentCount; ++c)
 			{
 				// note versions are now within derivatives, and in future will vary by derivative
 				const int derivativeCount = get_FE_node_field_component_number_of_derivatives(node, field, c) + 1;
 				const int versionCount = get_FE_node_field_component_number_of_versions(node, field, c);
-				const FE_value *componentValues = values;
-				values += derivativeCount*versionCount;
-				for (int d = 0; d <= derivativeCount; ++d)
+				const FE_value *componentValues = tmpValues;
+				tmpValues += derivativeCount*versionCount;
+				for (int d = 0; d < derivativeCount; ++d)
 				{
 					for (int v = 0; v < versionCount; ++v)
 					{
@@ -1462,14 +1461,15 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 		int valueCount;
 		if (get_FE_nodal_field_int_values(field, node, &valueCount, this->time, &values))
 		{
+			const int *tmpValues = values;
 			for (int c = 0; c < componentCount; ++c)
 			{
 				// note versions are now within derivatives, and in future will vary by derivative
 				const int derivativeCount = get_FE_node_field_component_number_of_derivatives(node, field, c) + 1;
 				const int versionCount = get_FE_node_field_component_number_of_versions(node, field, c);
-				const int *componentValues = values;
-				values += derivativeCount*versionCount;
-				for (int d = 0; d <= derivativeCount; ++d)
+				const int *componentValues = tmpValues;
+				tmpValues += derivativeCount*versionCount;
+				for (int d = 0; d < derivativeCount; ++d)
 					for (int v = 0; v < versionCount; ++v)
 						(*this->output_file) << " " << componentValues[d*versionCount + v];
 			}
@@ -1665,7 +1665,7 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 		}
 	}
 
-	(*this->output_file) << " #Fields=" << this->headerFields.size() << "\n";
+	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";
 	int fieldIndex = 0;
 	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
 	{
@@ -1816,7 +1816,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				{
 					(*output_file) << "!#nodeset ";
 					exWriter.writeSafeName(feNodeset->getName());
-					(*output_file) << "Shape. Dimension=0\n";
+					(*output_file) << "\nShape. Dimension=0\n";
 					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;
 					while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
@@ -1902,7 +1902,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				{
 					(*output_file) << "!#nodeset ";
 					exWriter.writeSafeName(feNodeset->getName());
-					(*output_file) << "Shape. Dimension=0\n";
+					(*output_file) << "\nShape. Dimension=0\n";
 					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;
 					while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
