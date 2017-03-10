@@ -2307,7 +2307,7 @@ Scene_viewer_render_scene_in_viewport to access this function.
 
 			if (incrementalBuild.isMoreWorkToDo())
 				// request another redraw to build some more graphics
-				cmzn_scene_changed(scene_viewer->scene);
+				scene_viewer->scene->setChanged();
 		}
 		scene_viewer->frame_count++;
 	}
@@ -2705,8 +2705,6 @@ int cmzn_sceneviewermodule_get_default_background_colour_rgb(
 	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
-
 	if (sceneviewermodule && valuesOut3)
 	{
 		valuesOut3[0] = sceneviewermodule->background_colour.red;
@@ -4461,9 +4459,8 @@ int cmzn_sceneviewer_transform_coordinates(
 {
 	if (!((sceneviewer) &&(sceneviewer->scene) && (valuesIn3) && (valuesOut3)))
 		return CMZN_ERROR_ARGUMENT;
-	gtMatrix *localToWorldTransformation = 0;
-	if (local_scene)
-		localToWorldTransformation = cmzn_scene_get_total_transformation(local_scene, sceneviewer->scene);
+	gtMatrix *localToWorldTransformation =
+		cmzn_scene_get_total_transformation(local_scene ? local_scene : sceneviewer->scene, sceneviewer->scene);
 	double transformationMatrix16[16];
 	int result = sceneviewer->getTransformationMatrix(in_coordinate_system, out_coordinate_system,
 		localToWorldTransformation, transformationMatrix16);
@@ -7452,9 +7449,7 @@ int cmzn_sceneviewer_set_scenefilter(cmzn_sceneviewer_id scene_viewer,
 		{
 			REACCESS(cmzn_scenefilter)(&scene_viewer->filter, filter);
 			if (scene_viewer->scene)
-			{
-				cmzn_scene_changed(scene_viewer->scene);
-			}
+				scene_viewer->scene->setChanged();
 		}
 		return CMZN_OK;
 	}
@@ -7477,9 +7472,7 @@ int cmzn_sceneviewer_scenefilter_change(struct Scene_viewer *scene_viewer,	void 
 		{
 			/* calling scene changed as changing filter may require new graphics to be rebuild*/
 			if (scene_viewer->scene)
-			{
-				cmzn_scene_changed(scene_viewer->scene);
-			}
+				scene_viewer->scene->setChanged();
 		}
 	}
 	else

@@ -23,9 +23,11 @@
 #include <opencmiss/zinc/spectrum.h>
 
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldimage.hpp>
+#include <opencmiss/zinc/fieldtime.hpp>
 #include <opencmiss/zinc/streamimage.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include <opencmiss/zinc/graphics.hpp>
@@ -894,3 +896,160 @@ TEST(ZincScene, issue_3954_adding_child_region_destroys_its_scene)
 	EXPECT_EQ(s2, s2b);
 	EXPECT_EQ(1, s2b.getNumberOfGraphics());
 }
+
+class Scenenotification : public Sceneviewercallback
+{
+	Sceneviewer sceneviewer;
+	Sceneviewernotifier sceneviewernotifier;
+	int notifiedCount;
+
+	virtual void operator()(const Sceneviewerevent &sceneviewerevent)
+	{
+		const Sceneviewerevent::ChangeFlags changeFlags = sceneviewerevent.getChangeFlags();
+		EXPECT_EQ(Sceneviewerevent::CHANGE_FLAG_REPAINT_REQUIRED, changeFlags);
+		++notifiedCount;
+	}
+
+public:
+	Scenenotification(Context &context, const Scene &scene) :
+		sceneviewer(context.getSceneviewermodule().createSceneviewer(Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT)),
+		sceneviewernotifier(this->sceneviewer.createSceneviewernotifier()),
+		notifiedCount(0)
+	{
+		this->sceneviewernotifier.setCallback(*this);
+	}
+
+	int getNotifiedCount()
+	{
+		int result = this->notifiedCount;
+		this->notifiedCount = 0;
+		return result;
+	}
+};
+
+TEST(ZincScene, transformation)
+{
+	ZincTestSetupCpp zinc;
+	Scenenotification scenenotification(zinc.context, zinc.scene);
+
+	const double tolerance = 1.0E-12;
+	const double identity4x4[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+	double matrix[16];
+	int result;
+
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(identity4x4[c], matrix[c], tolerance);
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+
+	const double newMatrix1[16] = { 1, 2, 3, 0.1, 4, 5, 6, 0.2, 7, 8, 9, 0.3, -0.01, -0.02, -0.03, 1.0 };
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationMatrix(16, newMatrix1));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(newMatrix1[c], matrix[c], tolerance);
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+
+	// test invalid arguments
+	Scene noScene; // invalid/null Scene
+	EXPECT_EQ(0, result = noScene.getTransformationMatrix(16, matrix));
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(0, matrix));
+	EXPECT_EQ(0, result = zinc.scene.getTransformationMatrix(16, 0));
+
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, result = noScene.setTransformationMatrix(16, newMatrix1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, result = zinc.scene.setTransformationMatrix(15, newMatrix1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, result = zinc.scene.setTransformationMatrix(16, 0));
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+
+	// reset before trying transformation field
+	EXPECT_EQ(RESULT_OK, zinc.scene.clearTransformation());
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+
+	FieldConstant matrixField = zinc.fm.createFieldConstant(16, newMatrix1);
+	EXPECT_TRUE(matrixField.isValid());
+	Field tmp;
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_FALSE(tmp.isValid());
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(matrixField));
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_EQ(matrixField, tmp);
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(newMatrix1[c], matrix[c], tolerance);
+
+	// test clearing transformation field
+	Field noField;
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(noField));
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_FALSE(tmp.isValid());
+	// restore field for following tests
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(matrixField));
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+
+	// prepare for time varying tests
+	Timekeeper timekeeper = zinc.context.getTimekeepermodule().getDefaultTimekeeper();
+	EXPECT_EQ(RESULT_OK, timekeeper.setMinimumTime(0.0));
+	EXPECT_EQ(RESULT_OK, timekeeper.setMaximumTime(1.0));
+	EXPECT_NEAR(0.0, timekeeper.getMinimumTime(), tolerance);
+	EXPECT_NEAR(1.0, timekeeper.getMaximumTime(), tolerance);
+	EXPECT_EQ(RESULT_OK, timekeeper.setTime(1.0));
+	EXPECT_NEAR(1.0, timekeeper.getTime(), tolerance);
+	EXPECT_EQ(RESULT_OK, timekeeper.setTime(0.0));
+	EXPECT_NEAR(0.0, timekeeper.getTime(), tolerance);
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+
+	// test setting transformation field values causes notification
+	const double newMatrix2[16] = { 2, 3, 1, 0.2, 5, 6, 4, 0.3, 8, 9, 7, 0.1, -0.02, -0.03, -0.01, 1.0 };
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	matrixField.assignReal(fieldcache, 16, newMatrix2);
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(newMatrix2[c], matrix[c], tolerance);
+
+	// test setting constant transformation matrix clears transformation field
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationMatrix(16, newMatrix1));
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(newMatrix1[c], matrix[c], tolerance);
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_FALSE(tmp.isValid());
+
+	// restore field for following tests
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(matrixField));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+
+	// test setting time does not notify with non-time-varying field
+	EXPECT_EQ(RESULT_OK, timekeeper.setTime(0.5));
+	EXPECT_NEAR(0.5, timekeeper.getTime(), tolerance);
+	EXPECT_EQ(0, scenenotification.getNotifiedCount());
+
+	// test notification for time-varying field
+	Field timeValue = zinc.fm.createFieldTimeValue(timekeeper);
+	EXPECT_TRUE(timeValue.isValid());
+	Field scaledMatrixField = timeValue*matrixField;
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(scaledMatrixField));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_EQ(scaledMatrixField, tmp);
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(0.5*newMatrix2[c], matrix[c], tolerance);
+	timekeeper.setTime(0.75);
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(16, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(0.75*newMatrix2[c], matrix[c], tolerance);
+}
+

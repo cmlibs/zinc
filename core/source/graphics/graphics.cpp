@@ -116,10 +116,8 @@ static int cmzn_graphics_changed(struct cmzn_graphics *graphics,
 			break;
 		}
 		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
-		if (return_code)
-		{
-			cmzn_scene_changed(graphics->scene);
-		}
+		if (return_code && (graphics->scene))
+			graphics->scene->setChanged();
 	}
 	else
 	{
@@ -4669,7 +4667,7 @@ int cmzn_graphics_time_change(
 int cmzn_graphics_update_time_behaviour(
 	struct cmzn_graphics *graphics, void *update_time_behaviour_void)
 {
-	int return_code, time_dependent;
+	int return_code;
 	struct cmzn_graphics_update_time_behaviour_data *data;
 
 	ENTER(cmzn_graphics_update_time_behaviour);
@@ -4678,75 +4676,33 @@ int cmzn_graphics_update_time_behaviour(
 		update_time_behaviour_void))
 	{
 		return_code = 1;
-		time_dependent = 0;
-		if (graphics->glyph && graphics->glyph->isTimeVarying())
-		{
+		int time_dependent = 0;
+		if ((graphics->glyph) && graphics->glyph->isTimeVarying())
 			time_dependent = 1;
-		}
-		if (graphics->coordinate_field)
-		{
-			if (Computed_field_has_multiple_times(graphics->coordinate_field))
-			{
-				time_dependent = 1;
-			}
-		}
-		else
-		{
-			if (data->default_coordinate_depends_on_time)
-			{
-				time_dependent = 1;
-			}
-		}
-		if (graphics->texture_coordinate_field && Computed_field_has_multiple_times(
-			graphics->texture_coordinate_field))
-		{
+		else if (((graphics->coordinate_field) && Computed_field_has_multiple_times(graphics->coordinate_field))
+			|| ((!graphics->coordinate_field) && (data->default_coordinate_depends_on_time)))
 			time_dependent = 1;
-		}
-		if (graphics->line_orientation_scale_field && Computed_field_has_multiple_times(
-			graphics->line_orientation_scale_field))
-		{
+		else if ((graphics->texture_coordinate_field) && Computed_field_has_multiple_times(graphics->texture_coordinate_field))
 			time_dependent = 1;
-		}
-		if (graphics->isoscalar_field && Computed_field_has_multiple_times(
-			graphics->isoscalar_field))
-		{
+		else if ((graphics->line_orientation_scale_field) && Computed_field_has_multiple_times(graphics->line_orientation_scale_field))
 			time_dependent = 1;
-		}
-		if (cmzn_graphics_point_attribute_is_time_dependent(graphics))
-		{
+		else if ((graphics->isoscalar_field) && Computed_field_has_multiple_times(graphics->isoscalar_field))
 			time_dependent = 1;
-		}
-		if (graphics->label_field &&
-			Computed_field_has_multiple_times(graphics->label_field))
-		{
+		else if (cmzn_graphics_point_attribute_is_time_dependent(graphics))
 			time_dependent = 1;
-		}
-		if (graphics->label_density_field &&
-			Computed_field_has_multiple_times(graphics->label_density_field))
-		{
+		else if ((graphics->label_field) && Computed_field_has_multiple_times(graphics->label_field))
 			time_dependent = 1;
-		}
-		if (graphics->subgroup_field &&
-			Computed_field_has_multiple_times(graphics->subgroup_field))
-		{
+		else if ((graphics->label_density_field) && Computed_field_has_multiple_times(graphics->label_density_field))
 			time_dependent = 1;
-		}
-		if (graphics->stream_vector_field &&
-			Computed_field_has_multiple_times(graphics->stream_vector_field))
-		{
+		else if ((graphics->subgroup_field) && Computed_field_has_multiple_times(graphics->subgroup_field))
 			time_dependent = 1;
-		}
-		if (cmzn_graphics_data_is_time_dependent(graphics))
-		{
+		else if ((graphics->stream_vector_field) && Computed_field_has_multiple_times(graphics->stream_vector_field))
 			time_dependent = 1;
-		}
-		/* Or any field that is pointed to has multiple times...... */
-
+		else if (cmzn_graphics_data_is_time_dependent(graphics))
+			time_dependent = 1;
 		graphics->time_dependent = time_dependent;
 		if (time_dependent)
-		{
 			data->time_dependent = time_dependent;
-		}
 	}
 	else
 	{

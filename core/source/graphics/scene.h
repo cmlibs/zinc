@@ -54,11 +54,12 @@ struct cmzn_scene
 	/* level of cache in effect */
 	int cache;
 	int changed; /**< true if scene has changed and haven't updated clients */
-	gtMatrix *transformation;
 	bool visibility_flag;
-	/* transformation field for time dependent transformation */
-	struct Computed_field *transformation_field;
-	int transformation_time_callback_flag;
+	// transformation data
+	bool transformationActive;
+	bool transformationMatrixColumnMajor; // default false = indexes across rows fastest; true = OpenGL-style column major
+	double transformationMatrix[16];
+	cmzn_field *transformationField;
 	struct cmzn_graphics_module *graphics_module;
 	cmzn_timenotifier_id time_notifier;
 	/* callback list for transformation changes */
@@ -79,8 +80,24 @@ private:
 private:
 	cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
 
+	void transformationChange();
+
+	void updateTimeBehaviour();
+
+	int getTransformationMatrixRowMajor(int valuesCount, double *valuesOut);
+
 public:
 	~cmzn_scene(); // to call from DESTROY(cmzn_scene)
+
+	/** Deaccess any fields used by scene and its graphics. */
+	void detachFields();
+
+	/** Remove references to external objects and callbacks from them.
+	  * This function is called when:
+	  * - owning region is being destroyed
+	  * - scene is being removed from graphics module
+	  * - context is being destroyed */
+	void detachFromOwner();
 
 	static cmzn_scene *create(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
 
@@ -114,10 +131,76 @@ public:
 	 * Call if definition of fields changed. */
 	void refreshFieldWrappers();
 
+	/** Evaluate transformation matrix from field at current time
+	  * @return  Result OK on success, any other value on failure */
+	int evaluateTransformationMatrixFromField();
+
 	bool isEditorCopy() const
 	{
 		return this->editorCopy;
 	}
+
+	/** @return  Handle to timekeeper for scene, or 0 if failed */
+	cmzn_timekeeper *getTimekeeper();
+
+	void clearTransformation();
+
+	bool isTransformationActive() const
+	{
+		return this->transformationActive;
+	}
+
+	bool isTransformationMatrixColumnMajor() const
+	{
+		return this->transformationMatrixColumnMajor;
+	}
+
+	void setTransformationMatrixColumnMajor(bool columnMajor);
+
+	/** @return  Non-accessed transformation field or NULL if none */
+	cmzn_field *getTransformationField() const
+	{
+		return this->transformationField;
+	}
+
+	int setTransformationField(cmzn_field *transformationFieldIn);
+
+	int getTransformationMatrix(int valuesCount, double *valuesOut);
+
+	int setTransformationMatrix(int valuesCount, const double *valuesIn);
+
+	/** Fill matrix4x4 with row major transformation matrix from parent coordinate
+	  * system of topScene to local coordinate system of this scene.
+	  * @return  OK if valid matrix returned, NOT_FOUND if no transformation, any
+	  * other value if failed. */
+	int getTotalTransformationMatrix(cmzn_scene* topScene, double* matrix4x4);
+
+	void timeChange(cmzn_timenotifierevent_id timenotifierevent);
+
+	/** Notify registered clients of change in the scene */
+	void notifyClients();
+
+	void beginChange()
+	{
+		++(this->cache);
+	}
+
+	void endChange()
+	{
+		--(this->cache);
+		if ((0 == this->cache) && this->changed)
+			this->notifyClients();
+	}
+
+	/** Mark scene as changed, needing rebuild and notify clients unless caching changed. 
+	  * For internal use only; called by changed graphics to owning scene. */
+	void setChanged()
+	{
+		this->changed = 1;
+		if (0 == this->cache)
+			this->notifyClients();
+	}
+
 }; /* struct cmzn_scene */
 
 struct MANAGER_MESSAGE(cmzn_tessellation);
@@ -126,7 +209,7 @@ typedef int(*cmzn_scene_callback)(struct cmzn_scene *scene,
 	void *user_data);
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, struct cmzn_scene *, \
-	gtMatrix *, void);
+	void *, void);
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_top_region_change, struct cmzn_scene *, \
 	struct cmzn_scene *, void);
@@ -296,30 +379,6 @@ int cmzn_scene_remove_transformation_callback(
 	struct cmzn_scene *scene,
 	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
 
-
-int cmzn_scene_has_transformation(struct cmzn_scene *scene);
-
-void cmzn_scene_remove_time_dependent_transformation(struct cmzn_scene *scene);
-
-int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
-	struct Computed_field *transformation_field);
-
-int cmzn_scene_set_transformation(struct cmzn_scene *scene,
-	gtMatrix *transformation);
-
-int cmzn_scene_get_transformation(struct cmzn_scene *scene,
-	gtMatrix *transformation);
-
-/***************************************************************************//**
- * This function will deaccess any computed fields being used by the scene
- * when the scene itself is not present in any scene.
- *
- * @param scene  pointer to the scene.
- *
- * @return Return 1 if successfully detach fields from scene otherwise 0.
- */
-int cmzn_scene_detach_fields(struct cmzn_scene *scene);
-
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene);
 
 PROTOTYPE_ANY_OBJECT(cmzn_scene);
@@ -396,13 +455,6 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 	struct cmzn_graphics *graphics, int delete_flag, int position);
 
 /**
- * Inform scene that it has changed and must be rebuilt.
- * Unless change caching is on, informs clients of scene that it has changed.
- * For internal use only; called by changed graphics to owning scene.
- */
-void cmzn_scene_changed(struct cmzn_scene *scene);
-
-/**
  * Get legacy default_coordinate_field set in cmgui command
  * "gfx modify g_element general".
  * @return  Non-accessed field, or 0 if none.
@@ -430,18 +482,17 @@ int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_sce
 int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,
 	void *scene_viewer_void);
 
-/**************************************************************************//**
- * This function will return the gtMatrix containing the total transformation
- * from the top scene to scene.
+/**
+ * Get gtMatrix containing the total transformation from the parent coordinate
+ * system for the top scene to scene, or NULL if none set.
  *
- * @param scene  pointer to the scene.
+ * @param scene  Scene to query.
  * @param top_scene  pointer to the the top scene.
- *
- * @return Return an allocated gtMatrix if successfully get a transformation
- * 	matrix. NULL if failed or if no transformation is set.
+ * @return  Allocated gtMatrix if transformation in effect, NULL if failed or
+ * no transformation is set.
  */
-gtMatrix *cmzn_scene_get_total_transformation(
-	struct cmzn_scene *scene, struct cmzn_scene *top_scene);
+gtMatrix *cmzn_scene_get_total_transformation(struct cmzn_scene *scene,
+	struct cmzn_scene *top_scene);
 
 int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
 	cmzn_scenefilter_id filter,
@@ -463,15 +514,6 @@ cmzn_scene *cmzn_scene_get_child_of_picking_name(cmzn_scene *scene, int position
 
 int cmzn_scene_triggers_top_region_change_callback(
 	struct cmzn_scene *scene);
-
-/**
- * this function will remove callbacks relying on external objects.
- * This function is called when:
- * 	- owning region is being destroyed
- * 	- scene is being removed from graphics module
- * 	- context is being destroyed
- */
-void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_io_data_type);
 

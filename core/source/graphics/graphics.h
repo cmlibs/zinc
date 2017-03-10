@@ -624,7 +624,7 @@ int cmzn_graphics_get_overlay_order(struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
  * This function will deaccess any computed fields being used by graphics, this
- * should only be called from cmzn_scene_detach_fields.
+ * should only be called from cmzn_scene::detachFields.
  *
  * @param graphics  pointer to the graphics.
  * @return Return 1 if successfully detach fields from graphics otherwise 0.

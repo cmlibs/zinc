@@ -315,7 +315,7 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(
  * for rendering 3-D scenes into rectangular windows or canvases using OpenGL.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure..
+ * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
 	cmzn_scene_id scene);
@@ -396,6 +396,100 @@ ZINC_API int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_get_spectrum_data_range(cmzn_scene_id scene,
 	cmzn_scenefilter_id filter, cmzn_spectrum_id spectrum,
 	int valuesCount, double *minimumValuesOut, double *maximumValuesOut);
+
+/**
+ * Clear transformation field or matrix in scene.
+ *
+ * @param scene  The scene to modify.
+ * @return  Result OK on success, ERROR_ARGUMENT on failure.
+ */
+ZINC_API int cmzn_scene_clear_transformation(cmzn_scene_id scene);
+
+/**
+ * Query whether scene has either a transformation field or matrix active.
+ *
+ * @param scene  The scene to query.
+ * @return  True scene has transformation, false if not or invalid scene.
+ */
+ZINC_API bool cmzn_scene_has_transformation(cmzn_scene_id scene);
+
+/**
+ * Get optional field providing the 4x4 transformation of the scene local
+ * coordinates into the parent scene local coordinate system, or world
+ * coordinate system if scene is for the root region.
+ * @see cmzn_scene_set_transformation_field
+ *
+ * @param scene  The scene to query.
+ * @return  Handle to field, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_field_id cmzn_scene_get_transformation_field(cmzn_scene_id scene);
+
+/**
+ * Set optional field providing the 4x4 transformation of the scene local
+ * coordinates into the parent scene local coordinate system, or world
+ * coordinate system if scene is for the root region.
+ * Overrides any current scene transformation matrix.
+ * @see cmzn_scene_set_transformation_matrix
+ *
+ * @param scene  The scene to modify.
+ * @param transformation_field  A 16 component field whose values give a 4x4
+ * transformation of homogeneous coordinates, or NULL/invalid to clear. This
+ * field must be spatially constant, but it may be time-varying in which case
+ * scene redraws are automatically trigger when the time changes. Runtime
+ * errors will be reported if this field cannot be evaluated given only the
+ * current timekeeper time. Field must belong to this scene's owning region.
+ * Alternatively, iff a transformation field is in use, passing an invalid/NULL
+ * field to this function clears transformation.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
+	cmzn_field_id transformation_field);
+
+/**
+ * Get fixed 4x4 transformation matrix of the scene local coordinates into the
+ * parent scene local coordinate system, or world coordinate system if scene is
+ * for the root region. If transformation is not active this function returns
+ * the 4x4 identity matrix.
+ * @see cmzn_scene_set_transformation_matrix
+ *
+ * @param scene  The scene to query.
+ * @param valuesCount  The size of the valuesOut array; currently should be 16.
+ * @param valuesOut  An array of at least size given by valuesCount to fill
+ * with the values of the transformation matrix. If valuesCount exceeds the
+ * number of components in the transformation matrix, these are not set.
+ * @return  The actual number of components in the transformation matrix,
+ * usually 16, or 0 if invalid arguments.
+ */
+ZINC_API int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Set fixed 4x4 transformation matrix of the scene local coordinates into the
+ * parent scene local coordinate system, or world coordinate system if scene is
+ * for the root region. Clears any current scene transformation field.
+ *
+ * The 16 components give the following matrix transformation:
+ * <pre>
+ *     |x.out| = | c01 c02 c03 c04 | |x.in|
+ *     |y.out| = | c05 c05 c07 c08 | |y.in|
+ *     |z.out| = | c09 c10 c11 c12 | |z.in|
+ *     |h.out| = | c13 c14 c15 c16 | |h.in|
+ * </pre>
+ * where 'in' coordinates are local coordinates in the scene, and 'out'
+ * coordinates are in the parent local or world coordinate system.
+ * Homogeneous coordinates are used after division by the h component which
+ * gives a perspective effect if not equal to 1.
+ * Typical no-perspective usage uses h.in=1 and the bottom row 0 0 0 1 so
+ * h.out=1, hence c04, c08, c12 give displacement and the upper-left 3x3 matrix
+ * defines basis vectors of local coordinates in terms of parent coordinates.
+ *
+ * @param scene  The scene to modify.
+ * @param valuesCount  The size of the valuesIn array, currently 16.
+ * @param valuesIn  An array of 16 values giving the 4x4 transformation matrix.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
+	int valuesCount, const double *valuesIn);
 
 /**
  * Returns the state of the scene's visibility flag.

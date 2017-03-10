@@ -666,7 +666,7 @@ void cmzn_graphics_module_remove_external_callback_dependency(
 		{
 			cmzn_region *region = *region_iter;
 			cmzn_scene *scene = cmzn_region_get_scene_private(region);
-			cmzn_scene_detach_from_owner(scene);
+			scene->detachFromOwner();
 		}
 	}
 }

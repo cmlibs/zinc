@@ -236,6 +236,36 @@ public:
 			spectrum.getId(), valuesCount, minimumValuesOut, maximumValuesOut);
 	}
 
+	int clearTransformation()
+	{
+		return cmzn_scene_clear_transformation(id);
+	}
+
+	bool hasTransformation() const
+	{
+		return cmzn_scene_has_transformation(id);
+	}
+
+	Field getTransformationField() const
+	{
+		return Field(cmzn_scene_get_transformation_field(id));
+	}
+
+	int setTransformationField(const Field& transformationField)
+	{
+		return cmzn_scene_set_transformation_field(id, transformationField.getId());
+	}
+
+	int getTransformationMatrix(int valuesCount, double *valuesOut) const
+	{
+		return cmzn_scene_get_transformation_matrix(this->getId(), valuesCount, valuesOut);
+	}
+
+	int setTransformationMatrix(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_scene_set_transformation_matrix(this->getId(), valuesCount, valuesIn);
+	}
+
 	bool getVisibilityFlag()
 	{
 		return cmzn_scene_get_visibility_flag(id);

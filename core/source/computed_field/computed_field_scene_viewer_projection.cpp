@@ -30,7 +30,7 @@ void Computed_field_scene_viewer_projection_scene_viewer_callback(
 	cmzn_sceneviewerevent_id event, void *field_void);
 
 void Computed_field_scene_projection_transformation_callback(
-	cmzn_scene_id scene, gtMatrix *matrix, void *field_void);
+	cmzn_scene_id scene, void *dummy_void, void *field_void);
 
 void Computed_field_scene_viewer_top_scene_change_callback(
 	cmzn_scene_id scene, cmzn_scene_id top_scene, void *field_void);
@@ -491,7 +491,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
 			cmzn_scene_remove_total_transformation_callback(scene,
-				current_scene,	Computed_field_scene_projection_transformation_callback,
+				current_scene, Computed_field_scene_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
 			cmzn_fieldmodule_destroy(&field_module);
 			transformation_callback_flag = 0;
@@ -569,8 +569,7 @@ that the computed field has changed.
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
 void Computed_field_scene_projection_transformation_callback(
-	cmzn_scene_id scene, gtMatrix *matrix,
-	void *field_void)
+	cmzn_scene_id scene, void *dummy_void, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -581,7 +580,7 @@ that the computed field has changed.
 {
 	Computed_field* field;
 	Computed_field_scene_viewer_projection* core;
-	USE_PARAMETER(matrix);
+	USE_PARAMETER(dummy_void);
 
 	if (scene && (field = (Computed_field *)field_void) &&
 		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
