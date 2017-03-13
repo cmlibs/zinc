@@ -84,8 +84,6 @@ private:
 
 	void updateTimeBehaviour();
 
-	int getTransformationMatrixRowMajor(int valuesCount, double *valuesOut);
-
 public:
 	~cmzn_scene(); // to call from DESTROY(cmzn_scene)
 
@@ -140,7 +138,7 @@ public:
 		return this->editorCopy;
 	}
 
-	/** @return  Handle to timekeeper for scene, or 0 if failed */
+	/** @return  Non-accessed timekeeper for scene, or 0 if failed */
 	cmzn_timekeeper *getTimekeeper();
 
 	void clearTransformation();
@@ -166,6 +164,8 @@ public:
 	int setTransformationField(cmzn_field *transformationFieldIn);
 
 	int getTransformationMatrix(int valuesCount, double *valuesOut);
+
+	int getTransformationMatrixRowMajor(int valuesCount, double *valuesOut);
 
 	int setTransformationMatrix(int valuesCount, const double *valuesIn);
 
@@ -200,6 +200,8 @@ public:
 		if (0 == this->cache)
 			this->notifyClients();
 	}
+
+	void processFieldmoduleevent(cmzn_fieldmoduleevent *event);
 
 }; /* struct cmzn_scene */
 

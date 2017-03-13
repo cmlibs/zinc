@@ -111,7 +111,12 @@ public:
 
 	static cmzn_timekeepermodule *create()
 	{
-		return new cmzn_timekeepermodule();
+		cmzn_timekeepermodule *timekeepermodule = new cmzn_timekeepermodule();
+		if ((timekeepermodule) && (timekeepermodule->default_timekeeper))
+			return timekeepermodule;
+		display_message(ERROR_MESSAGE, "Zinc.  Failed to create Timekeepermodule");
+		delete timekeepermodule;
+		return 0;
 	}
 
 	cmzn_timekeepermodule *access()
@@ -133,6 +138,7 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
+	/** @return  Non-accessed default timekeeper */
 	cmzn_timekeeper *getDefaultTimekeeper()
 	{
 		return this->default_timekeeper;

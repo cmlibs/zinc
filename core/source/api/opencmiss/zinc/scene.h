@@ -446,19 +446,21 @@ ZINC_API int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
 	cmzn_field_id transformation_field);
 
 /**
- * Get fixed 4x4 transformation matrix of the scene local coordinates into the
+ * Get 4x4 transformation matrix of the scene local coordinates into the
  * parent scene local coordinate system, or world coordinate system if scene is
- * for the root region. If transformation is not active this function returns
- * the 4x4 identity matrix.
+ * for the root region. If a transformation field is active, calculates the
+ * current transformation matrix from the field, or returns an error if the
+ * field cannot be evaluated. If no transformation is active this function
+ * returns the 4x4 identity matrix.
  * @see cmzn_scene_set_transformation_matrix
+ * @see cmzn_scene_set_transformation_field
  *
  * @param scene  The scene to query.
- * @param valuesCount  The size of the valuesOut array; currently should be 16.
+ * @param valuesCount  The size of the valuesOut array, at least 16.
  * @param valuesOut  An array of at least size given by valuesCount to fill
  * with the values of the transformation matrix. If valuesCount exceeds the
  * number of components in the transformation matrix, these are not set.
- * @return  The actual number of components in the transformation matrix,
- * usually 16, or 0 if invalid arguments.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
 	int valuesCount, double *valuesOut);

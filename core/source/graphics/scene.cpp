@@ -415,7 +415,6 @@ int cmzn_scene::evaluateTransformationMatrixFromField()
 		for (int i = 0; i < 16; ++i)
 			this->transformationMatrix[i] = ((i % 5) == 0) ? 1.0 : 0.0;
 	}
-	cmzn_timekeeper_destroy(&timekeeper);
 	cmzn_fieldcache_destroy(&fieldcache);
 	return return_code;
 }
@@ -430,10 +429,10 @@ void cmzn_scene::transformationChange()
 
 cmzn_timekeeper *cmzn_scene::getTimekeeper()
 {
-	cmzn_timekeepermodule *timekeepermodule = cmzn_scene_get_timekeepermodule(this);
+	cmzn_timekeepermodule *timekeepermodule = cmzn_graphics_module_get_timekeepermodule(this->graphics_module);
 	if (timekeepermodule)
 	{
-		cmzn_timekeeper *timekeeper = timekeepermodule->getDefaultTimekeeper();
+		cmzn_timekeeper *timekeeper = timekeepermodule->getDefaultTimekeeper(); // not accessed
 		cmzn_timekeepermodule_destroy(&timekeepermodule);
 		return timekeeper;
 	}
@@ -479,15 +478,15 @@ int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 
 int cmzn_scene::getTransformationMatrix(int valuesCount, double *valuesOut)
 {
-	if ((valuesCount != 16) || (!valuesOut))
-		return 0;
+	if ((valuesCount < 16) || (!valuesOut))
+		return CMZN_ERROR_ARGUMENT;
 	if (this->transformationActive)
 	{
 		if (this->transformationField)
 		{
 			int result = this->evaluateTransformationMatrixFromField();
 			if (CMZN_OK != result)
-				return 0;
+				return result;
 		}
 		for (int i = 0; i < 16; ++i)
 			valuesOut[i] = this->transformationMatrix[i];
@@ -498,13 +497,13 @@ int cmzn_scene::getTransformationMatrix(int valuesCount, double *valuesOut)
 		for (int i = 0; i < 16; ++i)
 			valuesOut[i] = ((i % 5) == 0) ? 1.0 : 0.0;
 	}
-	return 16;
+	return CMZN_OK;
 }
 
 int cmzn_scene::getTransformationMatrixRowMajor(int valuesCount, double *valuesOut)
 {
-	int result = this->getTransformationMatrix(valuesCount, valuesOut);
-	if ((result == 16) && this->transformationMatrixColumnMajor)
+	const int result = this->getTransformationMatrix(valuesCount, valuesOut);
+	if ((CMZN_OK == result) && this->transformationMatrixColumnMajor)
 	{
 		// transpose
 		for (int i = 1; i < 4; ++i)
@@ -580,7 +579,6 @@ void cmzn_scene::updateTimeBehaviour()
 						cmzn_scene_time_update_callback, this);
 				}
 			}
-			cmzn_timekeeper_destroy(&timekeeper);
 		}
 	}
 	else if (this->time_notifier)
@@ -588,10 +586,7 @@ void cmzn_scene::updateTimeBehaviour()
 		cmzn_timenotifier_clear_callback(this->time_notifier);
 		cmzn_timekeeper *timekeeper = this->getTimekeeper();
 		if (timekeeper)
-		{
 			timekeeper->removeTimeObject(this->time_notifier);
-			cmzn_timekeeper_destroy(&timekeeper);
-		}
 		cmzn_timenotifier_destroy(&(this->time_notifier));
 	}
 }
@@ -702,6 +697,78 @@ int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
 	return 0;
 }
 
+void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
+{
+	bool local_selection_changed = false;
+	if (this->selection_group)
+	{
+		struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
+		const cmzn_field_change_detail *base_change_detail = 0;
+		int change_flags = Computed_field_manager_message_get_object_change_and_detail(
+			managerMessage, cmzn_field_group_base_cast(this->selection_group), &base_change_detail);
+		if (change_flags & (MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field)))
+		{
+			if (base_change_detail)
+			{
+				const cmzn_field_hierarchical_group_change_detail *group_change_detail =
+					dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
+				int group_local_change = group_change_detail->getLocalChangeSummary();
+				if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
+					local_selection_changed = true;
+				int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
+				if (this->selectionnotifier_list && (0 < this->selectionnotifier_list->size()))
+				{
+					cmzn_selectionevent_id event = new cmzn_selectionevent();
+					event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
+						| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
+					for (cmzn_selectionnotifier_list::iterator iter = this->selectionnotifier_list->begin();
+						iter != this->selectionnotifier_list->end(); ++iter)
+					{
+						(*iter)->notify(event);
+					}
+					cmzn_selectionevent_destroy(&event);
+				}
+			}
+			// ensure child scene selection_group matches the appropriate subgroup or none if none
+			cmzn_region_id child_region = cmzn_region_get_first_child(this->region);
+			while ((NULL != child_region))
+			{
+				cmzn_scene_id child_scene = cmzn_region_get_scene_private(child_region);
+				if (child_scene)
+				{
+					cmzn_field_group_id child_group =
+						cmzn_field_group_get_subregion_field_group(this->selection_group, child_region);
+					cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
+					if (child_group)
+					{
+						cmzn_field_group_destroy(&child_group);
+					}
+				}
+				cmzn_region_reaccess_next_sibling(&child_region);
+			}
+		}
+	}
+	else if (this->selectionChanged)
+	{
+		local_selection_changed = true;
+		this->selectionChanged = false;
+	}
+	this->beginChange();
+	const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
+	if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
+		this->refreshFieldWrappers();
+	struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
+	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
+		(void *)&change_data, this->list_of_graphics);
+	if ((this->transformationField) && (change_flags & CMZN_FIELD_CHANGE_FLAG_RESULT))
+	{
+		const int field_change = cmzn_fieldmoduleevent_get_field_change_flags(event, this->transformationField);
+		if (field_change & CMZN_FIELD_CHANGE_FLAG_RESULT)
+			this->transformationChange();
+	}
+	this->endChange();
+}
+
 namespace {
 
 /** field module event callback */
@@ -709,71 +776,7 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 {
 	cmzn_scene *scene = reinterpret_cast<cmzn_scene *>(scene_void);
 	if (event && scene)
-	{
-		bool local_selection_changed = false;
-		if (scene->selection_group)
-		{
-			struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
-			const cmzn_field_change_detail *base_change_detail = 0;
-			int change_flags = Computed_field_manager_message_get_object_change_and_detail(
-				managerMessage, cmzn_field_group_base_cast(scene->selection_group), &base_change_detail);
-			if (change_flags & (
-				(MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field))))
-			{
-				if (base_change_detail)
-				{
-					const cmzn_field_hierarchical_group_change_detail *group_change_detail =
-						dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
-					int group_local_change = group_change_detail->getLocalChangeSummary();
-					if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
-						local_selection_changed = true;
-					int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
-					if (scene->selectionnotifier_list && (0 < scene->selectionnotifier_list->size()))
-					{
-						cmzn_selectionevent_id event = new cmzn_selectionevent();
-						event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
-							| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
-						for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
-							iter != scene->selectionnotifier_list->end(); ++iter)
-						{
-							(*iter)->notify(event);
-						}
-						cmzn_selectionevent_destroy(&event);
-					}
-				}
-				// ensure child scene selection_group matches the appropriate subgroup or none if none
-				cmzn_region_id child_region = cmzn_region_get_first_child(scene->region);
-				while ((NULL != child_region))
-				{
-					cmzn_scene_id child_scene = cmzn_region_get_scene_private(child_region);
-					if (child_scene)
-					{
-						cmzn_field_group_id child_group =
-							cmzn_field_group_get_subregion_field_group(scene->selection_group, child_region);
-						cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
-						if (child_group)
-						{
-							cmzn_field_group_destroy(&child_group);
-						}
-					}
-					cmzn_region_reaccess_next_sibling(&child_region);
-				}
-			}
-		}
-		else if (scene->selectionChanged)
-		{
-			local_selection_changed = true;
-			scene->selectionChanged = false;
-		}
-		cmzn_scene_begin_change(scene);
-		const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
-		if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
-			scene->refreshFieldWrappers();
-		struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
-			(void *)&change_data, scene->list_of_graphics);
-		cmzn_scene_end_change(scene);
-	}
+		scene->processFieldmoduleevent(event);
 }
 
 } // anonymous namespace
@@ -1385,9 +1388,9 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 {
 	int return_code;
 
-	if (scene)
+	cmzn_timekeeper *timekeeper;
+	if ((scene) && (timekeeper = scene->getTimekeeper()))
 	{
-		cmzn_timekeeper *timekeeper = scene->getTimekeeper();
 		double original_time = timekeeper->getTime();
 		if (force_rebuild)
 		{
@@ -1411,7 +1414,6 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 		{
 			timekeeper->setTimeQuiet(original_time);
 		}
-		cmzn_timekeeper_destroy(&timekeeper);
 	}
 	else
 	{
@@ -2363,7 +2365,7 @@ int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
 {
 	if (scene)
 		return scene->getTransformationMatrix(valuesCount, valuesOut);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
@@ -2554,18 +2556,28 @@ as a command, using the given <command_prefix>.
 	auto command_prefix = static_cast<const char *>(command_prefix_void);
 	if ((scene) && (command_prefix))
 	{
-		double transformationMatrix[16];
-		if (16 == cmzn_scene_get_transformation_matrix(scene, 16, transformationMatrix))
+		char *regionName = cmzn_region_get_path(scene->region);
+		make_valid_token(&regionName);
+		display_message(INFORMATION_MESSAGE, "%s %s", command_prefix, regionName);
+		DEALLOCATE(regionName);
+		if (scene->transformationField)
 		{
-			char *regionName = cmzn_region_get_path(scene->region);
-			make_valid_token(&regionName);
-			display_message(INFORMATION_MESSAGE, "%s %s", command_prefix, regionName);
-			DEALLOCATE(regionName);
-			for (int i = 0; i < 16; ++i)
-				display_message(INFORMATION_MESSAGE, " %g", (transformationMatrix)[i]);
-			display_message(INFORMATION_MESSAGE,";\n");
-			return 1;
+			char *fieldName = cmzn_field_get_name(scene->transformationField);
+			make_valid_token(&fieldName);
+			display_message(INFORMATION_MESSAGE, " field %s", fieldName);
+			DEALLOCATE(fieldName);
 		}
+		else if (scene->isTransformationActive())
+		{
+			for (int i = 0; i < 16; ++i)
+				display_message(INFORMATION_MESSAGE, " %g", (scene->transformationMatrix)[i]);
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, " off");
+		}
+		display_message(INFORMATION_MESSAGE, ";\n");
+		return 1;
 	}
 	else
 	{
@@ -2586,7 +2598,7 @@ in an easy-to-interpret matrix multiplication form.
 	if (scene)
 	{
 		double transformationMatrix[16];
-		if (16 == cmzn_scene_get_transformation_matrix(scene, 16, transformationMatrix))
+		if (CMZN_OK == scene->getTransformationMatrixRowMajor(16, transformationMatrix))
 		{
 			const char *coordinate_symbol = "xyzh";
 			char *regionName = cmzn_region_get_path(scene->region);
@@ -2595,28 +2607,14 @@ in an easy-to-interpret matrix multiplication form.
 			DEALLOCATE(regionName);
 			for (int i = 0; i < 4; ++i)
 			{
-				if (scene->isTransformationMatrixColumnMajor())
-				{
-					display_message(INFORMATION_MESSAGE,
-						"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
-						coordinate_symbol[i],
-						transformationMatrix[i],
-						transformationMatrix[i +  4],
-						transformationMatrix[i +  8],
-						transformationMatrix[i + 12],
-						coordinate_symbol[i]);
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,
-						"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
-						coordinate_symbol[i],
-						transformationMatrix[i*4    ],
-						transformationMatrix[i*4 + 1],
-						transformationMatrix[i*4 + 2],
-						transformationMatrix[i*4 + 3],
-						coordinate_symbol[i]);
-				}
+				display_message(INFORMATION_MESSAGE,
+					"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
+					coordinate_symbol[i],
+					transformationMatrix[i*4    ],
+					transformationMatrix[i*4 + 1],
+					transformationMatrix[i*4 + 2],
+					transformationMatrix[i*4 + 3],
+					coordinate_symbol[i]);
 			}
 			return 1;
 		}
@@ -3059,15 +3057,16 @@ int cmzn_scene::getTotalTransformationMatrix(cmzn_scene* topScene, double* matri
 			double parentMatrix[16], localMatrix[16];
 			for (int i = 0; i < 16; ++i)
 				parentMatrix[i] = matrix4x4[i];
-			if (16 != this->getTransformationMatrixRowMajor(16, localMatrix))
-				return CMZN_ERROR_GENERAL;
+			result = this->getTransformationMatrixRowMajor(16, localMatrix);
+			if (CMZN_OK != result)
+				return result;
 			multiply_matrix(4, 4, 4, parentMatrix, localMatrix, matrix4x4);
 		}
 		else
 		{
-			if (16 != this->getTransformationMatrixRowMajor(16, matrix4x4))
-				return CMZN_ERROR_GENERAL;
-			result = CMZN_OK;
+			result = this->getTransformationMatrixRowMajor(16, matrix4x4);
+			if (CMZN_OK != result)
+				return result;
 		}
 	}
 	return result;
