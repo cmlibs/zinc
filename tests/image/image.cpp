@@ -222,21 +222,19 @@ void SwapRange2(void *void_p, BufferSizeType n)
 
 void SwapRange4(void *void_p, BufferSizeType n)
 {
-	uint32_t *p = (uint32_t *)void_p;
-	uint32_t h1, h2, h3, h4;
-	BufferSizeType i;
-
-	for (i = 0; i < n; i++)
-	{
-		h1 = (*p) & 0xff;
-		h2 = ((*p) >> 8) & 0xff;
-		h3 = ((*p) >> 16) & 0xff;
-		h4 = ((*p) >> 24) & 0xff;
-		*p = (h1 << 24) | (h2 << 16) | (h3 << 8) | h4;
-
-		p = p + 1;
-	}
-
+        unsigned char tmp[4], *buffer = (unsigned char *)void_p;
+        unsigned int i, j;
+        for(i = 0; i < n; i++)
+        {
+                for(j = 0; j < 4; ++j)
+                {
+                        tmp[j] = *(buffer + 4*i + j);
+                }
+                for(j = 0; j < 4; ++j)
+                {
+                        *(buffer + 4*i + j) = tmp[3 - j];
+                }
+        }
 }
 
 void SwapRange8(void *void_p, BufferSizeType n)
