@@ -109,15 +109,7 @@ private:
 
 public:
 
-	static cmzn_timekeepermodule *create()
-	{
-		cmzn_timekeepermodule *timekeepermodule = new cmzn_timekeepermodule();
-		if ((timekeepermodule) && (timekeepermodule->default_timekeeper))
-			return timekeepermodule;
-		display_message(ERROR_MESSAGE, "Zinc.  Failed to create Timekeepermodule");
-		delete timekeepermodule;
-		return 0;
-	}
+	static cmzn_timekeepermodule *create();
 
 	cmzn_timekeepermodule *access()
 	{
