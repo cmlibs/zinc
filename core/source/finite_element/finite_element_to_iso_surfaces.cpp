@@ -12,6 +12,7 @@
 #include <map>
 #include "opencmiss/zinc/differentialoperator.h"
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"

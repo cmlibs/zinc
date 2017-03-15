@@ -25,6 +25,7 @@
 #include "graphics/scene.h"
 #include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -676,9 +677,11 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 	if (contains_all || (!nodeset))
 		return 0;
 	cmzn_field_node_group_id node_group = 0;
-	if (cmzn_nodeset_get_region_internal(nodeset) != this->region)
+	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+	cmzn_region *nodeset_region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
+	if (nodeset_region != this->region)
 	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(cmzn_nodeset_get_region_internal(nodeset));
+		cmzn_field_group *subregionGroup = this->getSubRegionGroup(nodeset_region);
 		if (subregionGroup)
 		{
 			node_group = Computed_field_group_core_cast(subregionGroup)->get_node_group(nodeset);
@@ -697,7 +700,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 			node_group = cmzn_field_cast_node_group(this->local_node_group);
 		if (!node_group)
 		{
-			// find by name & check it is for same master nodeset (must avoid group regions)
+			// find by name & check it is for same FE_nodeset
 			cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
 			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 			char *name = get_standard_node_group_name(master_nodeset);
@@ -706,7 +709,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 			node_group = cmzn_field_cast_node_group(node_group_field);
 			if (node_group)
 			{
-				if (cmzn_nodeset_match(master_nodeset, Computed_field_node_group_core_cast(node_group)->getMasterNodeset()))
+				if (Computed_field_node_group_core_cast(node_group)->get_fe_nodeset() == fe_nodeset)
 					setLocalNodeGroup(use_data, node_group);
 				else // wrong nodeset
 					cmzn_field_node_group_destroy(&node_group);

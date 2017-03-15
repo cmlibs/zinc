@@ -42,7 +42,7 @@ void ByteSwapWhenSystemIsLittleEndian(myType *p)
 #    define MAGICK_STATIC_LINK
 #  endif /* defined _MSC_VER */
 /* image magick interfaces */
-#include "magick/api.h"
+#include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 AnalyzeObjectEntry::AnalyzeObjectEntry():
@@ -421,7 +421,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 	int width = 0, height = 0;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 
 	if (cmgui_image_information && cmgui_image_information->valid &&
 		((cmgui_image_information->file_names && cmgui_image_information->number_of_file_names == 1) ||
@@ -430,7 +430,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 		cmgui_image = CREATE(Cmgui_image)();
 
 		int return_code = 1;
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
 		old_magick_size = magick_image_info->size;
 		magick_image_info->size = (char *)NULL;
@@ -559,7 +559,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 						magick_image = BlobToImage(magick_image_info,
 							memory_block.buffer,
 							memory_block.length,
-							&magick_exception);
+							magick_exception);
 
 						if (magick_image)
 						{
@@ -629,7 +629,7 @@ struct Cmgui_image *Cmgui_image_read_analyze_object_map(
 			}
 		}
 		DestroyImageInfo(magick_image_info);
-		DestroyExceptionInfo(&magick_exception);
+		DestroyExceptionInfo(magick_exception);
 		if (!return_code)
 		{
 			DESTROY(Cmgui_image)(&cmgui_image);

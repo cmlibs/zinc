@@ -46,6 +46,7 @@ FILE : scene.cpp
 #include "general/enumerator_conversion.hpp"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
+#include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region_private.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
@@ -471,7 +472,7 @@ int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 	}
 	REACCESS(cmzn_field)(&(this->transformationField), transformationFieldIn);
 	this->transformationActive = (0 != transformationFieldIn);
-	// callbacks are set up or cancelled with next call to updateTimeBehaviour() in notifyClients()
+	// callbacks are set up or cancelled with next call to updateTimeDependence() in notifyClients()
 	this->transformationChange();
 	return CMZN_OK;
 }
@@ -546,31 +547,30 @@ static void cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifi
 	static_cast<cmzn_scene *>(scene_void)->timeChange(timenotifierevent);
 }
 
-/** Ensure scene gets time callbacks if and only if it or its graphics are time varying */
-void cmzn_scene::updateTimeBehaviour()
+/** Update scene's graphics dependence on time, and ensure scene gets time
+  * callbacks if and only if it or its graphics are time dependent */
+void cmzn_scene::updateTimeDependence()
 {
-	struct cmzn_graphics_update_time_behaviour_data data;
-	data.default_coordinate_depends_on_time = 0;
-	data.time_dependent = 0;
+	bool timeDependent = false;
 	if ((this->transformationField) && Computed_field_has_multiple_times(this->transformationField))
-		data.time_dependent = 1;
+		timeDependent = true;
 	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-		cmzn_graphics_update_time_behaviour, (void *)&data, this->list_of_graphics);
-	if (data.time_dependent != 0)
+		cmzn_graphics_update_time_dependence, (void *)&timeDependent, this->list_of_graphics);
+	if (timeDependent)
 	{
 		if (!this->time_notifier)
 		{
 			cmzn_timekeeper *timekeeper = this->getTimekeeper();
 			if (!timekeeper)
 			{
-				display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeBehaviour.  Missing default timekeeper");
+				display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeDependence.  Missing default timekeeper");
 			}
 			else
 			{
 				this->time_notifier = Time_object_create_regular(/*update_frequency*/10.0, /*time_offset*/0.0);
 				if (!timekeeper->addTimeObject(this->time_notifier))
 				{
-					display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeBehaviour.  Failed to create time notifier");
+					display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeDependence.  Failed to create time notifier");
 					cmzn_timenotifier_destroy(&this->time_notifier);
 				}
 				else
@@ -593,7 +593,7 @@ void cmzn_scene::updateTimeBehaviour()
 
 void cmzn_scene::notifyClients()
 {
-	this->updateTimeBehaviour();
+	this->updateTimeDependence();
 	cmzn_region *parentRegion = cmzn_region_get_parent_internal(this->region);
 	cmzn_scene *parentScene = cmzn_region_get_scene_private(parentRegion);
 	if (parentScene)
@@ -1001,6 +1001,11 @@ static int cmzn_scene_build_graphics_objects(
 		if ((cmzn_scene_get_number_of_graphics(scene) > 0))
 		{
 			graphics_to_object_data.name_prefix = renderer->name_prefix;
+			graphics_to_object_data.graphics = 0;
+			graphics_to_object_data.glyph_gt_object = 0;
+			graphics_to_object_data.build_graphics = 0;
+			graphics_to_object_data.number_of_data_values = 0;
+			graphics_to_object_data.scenefilter = 0;
 			graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
@@ -1016,7 +1021,11 @@ static int cmzn_scene_build_graphics_objects(
 			graphics_to_object_data.time = renderer->time;
 			graphics_to_object_data.incrementalBuild = renderer->getIncrementalBuild();
 			graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(scene);
-			graphics_to_object_data.iso_surface_specification = NULL;
+			graphics_to_object_data.iso_surface_specification = 0;
+			for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+			{
+				graphics_to_object_data.top_level_number_in_xi[i] = 0;
+			}
 			return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_to_graphics_object, (void *) &graphics_to_object_data,
 				scene->list_of_graphics);

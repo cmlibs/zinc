@@ -7,22 +7,22 @@
 # Set the minimum version of cmake required to 2.8.1
 # The FATAL_ERROR is needed if using cmake < 2.4
 
-# This is the project name and shows up in ides
-project(ZincCore)
-
 IF( MSVC )
 	SET( ZINC_C_INLINE __inline )
 ELSE()
 	SET( ZINC_C_INLINE "static inline" )
 ENDIF()
 
-set( ZINC_CONFIGURE_HDR ${PROJECT_BINARY_DIR}/source/api/opencmiss/zinc/zincconfigure.h )
-set( ZINC_SHARED_OBJECT_HDR ${PROJECT_BINARY_DIR}/source/api/opencmiss/zinc/zincsharedobject.h )
-configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
+set(FILES_FOR_CLEANING)
+
+set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincsharedobject.h )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
 	${ZINC_CONFIGURE_HDR} )
-configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
 	${ZINC_SHARED_OBJECT_HDR} )
 set( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
+list(APPEND FILES_FOR_CLEANING ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} ${CMAKE_CURRENT_BINARY_DIR}/source)
 
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from
@@ -66,9 +66,25 @@ include(source/cmake/misc_source_files.cmake )
 include(source/cmake/zinc_lib_source_files.cmake)
 
 # Generate the version.cpp / version.h files
+set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
 set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/configure/version.cpp.cmake
-	${ZINC_VERSION_SRC})
+if (OPENCMISS_HAVE_MULTICONFIG_ENV)
+    set(CONFIGURE_BUILD_TYPE $<CONFIG>)
+else ()
+    set(CONFIGURE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+endif ()
+configure_file(${PROJECT_SOURCE_DIR}/cmake/configure_version_cpp_file.in.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake @ONLY)
+add_custom_command(OUTPUT ${ZINC_VERSION_STAGING_SRC}
+    COMMAND "${CMAKE_COMMAND}" -DACTIVE_BUILD_TYPE=${CONFIGURE_BUILD_TYPE} -P ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${ZINC_VERSION_STAGING_SRC} ${ZINC_VERSION_SRC}
+    COMMAND "${CMAKE_COMMAND}" -E remove ${ZINC_VERSION_STAGING_SRC}
+)
+add_custom_target(generate_version_cpp_file
+    DEPENDS ${ZINC_VERSION_STAGING_SRC}
+)
+set_source_files_properties(${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE)
+list(APPEND FILES_FOR_CLEANING ${ZINC_VERSION_SRC} ${CMAKE_CURRENT_BINARY_DIR}/configure_version_cpp_file.cmake)
 list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 
 #print_list_duplications( ZINC_LIB_SRCS )
@@ -91,6 +107,7 @@ if( ZINC_BUILD_SHARED_LIBRARY )
 	set( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
 	target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${DEPENDENT_LIBS})
 	target_include_directories(${ZINC_SHARED_TARGET} PRIVATE ${FREETYPE_INCLUDE_DIRS})
+        add_dependencies(${ZINC_SHARED_TARGET} generate_version_cpp_file)
 	if( WIN32 )
 		target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${LINK_PUBLIC} winmm.lib)
 	endif()
@@ -104,6 +121,7 @@ if( ZINC_BUILD_STATIC_LIBRARY )
 	add_library( ${ZINC_STATIC_TARGET} STATIC ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS} )
 	target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
 	target_include_directories(${ZINC_STATIC_TARGET} PUBLIC ${FREETYPE_INCLUDE_DIRS})
+        add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
 	if(WIN32)
 		target_link_libraries( ${ZINC_STATIC_TARGET} PUBLIC winmm.lib )
 	endif()
@@ -112,17 +130,19 @@ if( ZINC_BUILD_STATIC_LIBRARY )
 endif()
 
 set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
-	OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}${ZINC_DEVELOPER_VERSION}
-	OUTPUT_NAME_DEBUG ${ZINC_LIBRARY_NAME}d${ZINC_DEVELOPER_VERSION}
+	OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}
+	OUTPUT_NAME_DEBUG ${ZINC_LIBRARY_NAME}d
 	VERSION ${Zinc_VERSION}
 	SOVERSION ${Zinc_VERSION_MAJOR} )
 # VERSION property doesn't work on Windows so we will fake it here.
 if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
 	set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
-		OUTPUT_NAME_RELEASE ${ZINC_SHARED_TARGET}${ZINC_DEVELOPER_VERSION}.${Zinc_VERSION}
-		OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d${ZINC_DEVELOPER_VERSION}.${Zinc_VERSION} )
+		OUTPUT_NAME_RELEASE ${ZINC_SHARED_TARGET}.${Zinc_VERSION}
+		OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d.${Zinc_VERSION} )
 endif()
 
+# Additional clean files
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_FOR_CLEANING}")
 # Install rules for Zinc
 install(TARGETS
     ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}

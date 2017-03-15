@@ -14,6 +14,7 @@ DESCRIPTION :
 #include <stdio.h>
 
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"

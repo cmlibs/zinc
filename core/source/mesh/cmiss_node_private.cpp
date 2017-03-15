@@ -18,6 +18,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "node/node_operations.h"
@@ -145,7 +146,7 @@ struct cmzn_nodetemplate
 {
 private:
 	FE_nodeset *fe_nodeset;
-	FE_node *template_node;
+	FE_node_template *fe_node_template;
 	std::vector<cmzn_node_field*> fields;
 	std::vector<FE_field*> undefine_fields; // ACCESSed
 	int access_count;
@@ -153,7 +154,7 @@ private:
 public:
 	cmzn_nodetemplate(FE_nodeset *fe_nodeset_in) :
 		fe_nodeset(fe_nodeset_in->access()),
-		template_node(NULL),
+		fe_node_template(0),
 		access_count(1)
 	{
 	}
@@ -182,7 +183,7 @@ public:
 			return result;
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
+		this->invalidate();
 		cmzn_node_field *node_field = createNodeField(fe_field);
 		if (!node_field)
 			result = CMZN_ERROR_GENERAL;
@@ -215,7 +216,7 @@ public:
 			FE_NODAL_D3_DS1DS2DS3
 		};
 		const int number_of_fe_value_types = sizeof(all_fe_nodal_value_types) / sizeof(enum FE_nodal_value_type);
-		clearTemplateNode();
+		this->invalidate();
 		cmzn_node_field *node_field = createNodeField(fe_field);
 		int number_of_components = cmzn_field_get_number_of_components(field);
 		for (int component_number = 1; component_number <= number_of_components; ++component_number)
@@ -270,7 +271,7 @@ public:
 		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return CMZN_ERROR_NOT_FOUND;
-		clearTemplateNode();
+		this->invalidate();
 		return node_field->setTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
 	}
 
@@ -319,7 +320,7 @@ public:
 			return result;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
+		this->invalidate();
 		if (this->removeDefineField(fe_field) || this->removeUndefineField(fe_field))
 			return CMZN_OK;
 		return CMZN_ERROR_NOT_FOUND;
@@ -332,29 +333,28 @@ public:
 			return result;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
+		this->invalidate();
 		setUndefineNodeField(fe_field);
 		return CMZN_OK;
 	}
 
 	int validate()
 	{
-		if (template_node)
+		if (this->fe_node_template)
 			return 1;
-		template_node = ACCESS(FE_node)(
-			CREATE(FE_node)(0, this->fe_nodeset, (struct FE_node *)NULL));
+		this->fe_node_template = this->fe_nodeset->create_FE_node_template();
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
-			if (!fields[i]->defineAtNode(template_node))
+			if (!fields[i]->defineAtNode(this->fe_node_template->get_template_node()))
 			{
-				DEACCESS(FE_node)(&template_node);
+				cmzn::Deaccess(this->fe_node_template);
 				break;
 			}
 		}
-		if (!template_node)
+		if (!this->fe_node_template)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_validate.  Failed to create template node");
+				"cmzn_nodetemplate_validate.  Failed to create fe_node_template");
 			return 0;
 		}
 		return 1;
@@ -363,37 +363,40 @@ public:
 	// can be made more efficient
 	int mergeIntoNode(cmzn_node_id node)
 	{
-		int return_code = 1;
-		if (validate())
+		FE_nodeset *target_fe_nodeset = FE_node_get_FE_nodeset(node);
+		if (target_fe_nodeset == this->fe_nodeset)
 		{
-			if (0 < undefine_fields.size())
+			if (this->validate())
 			{
-				for (unsigned int i = 0; i < undefine_fields.size(); i++)
+				int return_code = CMZN_OK;
+				if (0 < undefine_fields.size())
 				{
-					if (FE_field_is_defined_at_node(undefine_fields[i], node) &&
-						!undefine_FE_field_at_node(node, undefine_fields[i]))
+					FE_region_begin_change(this->fe_nodeset->get_FE_region());
+					for (unsigned int i = 0; i < undefine_fields.size(); i++)
 					{
-						return_code = 0;
-						break;
+						int result = this->fe_nodeset->undefineFieldAtNode(node, undefine_fields[i]);
+						if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+						{
+							return_code = result;
+							break;
+						}
 					}
 				}
+				if ((return_code == CMZN_OK) && (0 < fields.size()))
+					return_code = this->fe_nodeset->merge_FE_node_template(node, this->fe_node_template);
+				if (0 < undefine_fields.size())
+					FE_region_end_change(this->fe_nodeset->get_FE_region());
+				return return_code;
 			}
-			if ((0 < fields.size() &&
-				(CMZN_OK != this->fe_nodeset->merge_FE_node_existing(node, template_node))))
-			{
-				return_code = 0;
-			}
+			else
+				display_message(ERROR_MESSAGE, "cmzn_node_merge.  Node template is not valid");
 		}
 		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_node_merge.  Node template is not valid");
-			return_code = 0;
-		}
-		return return_code;
+			display_message(ERROR_MESSAGE, "cmzn_node_merge.  Incompatible template");
+		return CMZN_ERROR_ARGUMENT;
 	}
 
-	FE_node *getTemplateNode() { return template_node; }
+	FE_node_template *get_FE_node_template() { return this->fe_node_template; }
 
 private:
 	~cmzn_nodetemplate()
@@ -406,7 +409,7 @@ private:
 		{
 			DEACCESS(FE_field)(&(undefine_fields[i]));
 		}
-		REACCESS(FE_node)(&template_node, NULL);
+		cmzn::Deaccess(this->fe_node_template);
 		FE_nodeset::deaccess(fe_nodeset);
 	}
 
@@ -479,9 +482,9 @@ private:
 		this->undefine_fields.push_back(fe_field);
 	}
 
-	void clearTemplateNode()
+	void invalidate()
 	{
-		REACCESS(FE_node)(&template_node, NULL);
+		cmzn::Deaccess(this->fe_node_template);
 	}
 
 	int checkValidFieldForDefine(cmzn_field_id field)
@@ -506,7 +509,7 @@ protected:
 	int access_count;
 
 	cmzn_nodeset(cmzn_field_node_group_id group) :
-		fe_nodeset(Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_nodeset->access()),
+		fe_nodeset(Computed_field_node_group_core_cast(group)->get_fe_nodeset()->access()),
 		group(group),
 		access_count(1)
 	{
@@ -552,10 +555,14 @@ public:
 		cmzn_node_id node = 0;
 		if (node_template->validate())
 		{
-			cmzn_node_id template_node = node_template->getTemplateNode();
-			node = ACCESS(FE_node)(this->fe_nodeset->create_FE_node_copy(identifier, template_node));
 			if (group)
+				FE_region_begin_change(this->fe_nodeset->get_FE_region());
+			node = this->fe_nodeset->create_FE_node(identifier, node_template->get_FE_node_template());
+			if (group)
+			{
 				Computed_field_node_group_core_cast(group)->addObject(node);
+				FE_region_end_change(this->fe_nodeset->get_FE_region());
+			}
 		}
 		else
 		{
@@ -570,35 +577,58 @@ public:
 		return new cmzn_nodetemplate(this->fe_nodeset);
 	}
 
-	cmzn_nodeiterator_id createIterator()
+	cmzn_nodeiterator_id createNodeiterator()
 	{
 		if (group)
-			return Computed_field_node_group_core_cast(group)->createIterator();
+			return Computed_field_node_group_core_cast(group)->createNodeiterator();
 		return this->fe_nodeset->createNodeiterator();
-	}
-
-	struct LIST(FE_node) *createRelatedNodeList()
-	{
-		return this->fe_nodeset->createRelatedNodeList();
 	}
 
 	int destroyAllNodes()
 	{
-		return destroyNodesConditional(/*conditional_field*/0);
+		if (this->group)
+		{
+			Computed_field_node_group *node_group = Computed_field_node_group_core_cast(this->group);
+			return this->fe_nodeset->destroyNodesInGroup(node_group->getLabelsGroup());
+		}
+		return this->fe_nodeset->destroyAllNodes();
 	}
 
 	int destroyNode(cmzn_node_id node)
 	{
-		return this->fe_nodeset->remove_FE_node(node);
+		if (this->containsNode(node))
+			return this->fe_nodeset->destroyNode(node);
+		return 0;
 	}
 
 	int destroyNodesConditional(cmzn_field_id conditional_field)
 	{
-		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
-		int return_code = this->fe_nodeset->remove_FE_node_list(node_list);
-		DESTROY(LIST(FE_node))(&node_list);
-		return return_code ? CMZN_OK : CMZN_ERROR_GENERAL;
+		if (!conditional_field)
+			return CMZN_ERROR_ARGUMENT;
+		DsLabelsGroup *labelsGroup = this->fe_nodeset->createLabelsGroup();
+		if (labelsGroup)
+		{
+			cmzn_region_id region = FE_region_get_cmzn_region(this->fe_nodeset->get_FE_region());
+			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+			cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+			cmzn_nodeiterator_id iterator = this->createNodeiterator();
+			cmzn_node_id node = 0;
+			while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+			{
+				cmzn_fieldcache_set_node(cache, node);
+				if (cmzn_field_evaluate_boolean(conditional_field, cache))
+					labelsGroup->setIndex(get_FE_node_index(node), true);
+			}
+			cmzn::Deaccess(iterator);
+			cmzn_fieldcache_destroy(&cache);
+			cmzn_fieldmodule_destroy(&fieldmodule);
+			int return_code = this->fe_nodeset->destroyNodesInGroup(*labelsGroup);
+			cmzn::Deaccess(labelsGroup);
+			return return_code;
+		}
+		return CMZN_ERROR_GENERAL;
 	}
+
 
 	cmzn_node_id findNodeByIdentifier(int identifier) const
 	{
@@ -642,7 +672,7 @@ public:
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->getSize();
-		return this->fe_nodeset->get_number_of_FE_nodes();
+		return this->fe_nodeset->getSize();
 	}
 
 	int isGroup()
@@ -668,26 +698,6 @@ protected:
 		if (group)
 			cmzn_field_node_group_destroy(&group);
 		FE_nodeset::deaccess(fe_nodeset);
-	}
-
-	struct LIST(FE_node) *createNodeListWithCondition(cmzn_field_id conditional_field)
-	{
-		cmzn_region_id region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
-		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
-		cmzn_nodeiterator_id iterator = this->createIterator();
-		cmzn_node_id node = 0;
-		struct LIST(FE_node) *node_list = this->createRelatedNodeList();
-		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-		{
-			if ((!conditional_field) || ((CMZN_OK == cmzn_fieldcache_set_node(cache, node)) &&
-					cmzn_field_evaluate_boolean(conditional_field, cache)))
-				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
-		}
-		cmzn_nodeiterator_destroy(&iterator);
-		cmzn_fieldcache_destroy(&cache);
-		cmzn_fieldmodule_destroy(&fieldmodule);
-		return node_list;
 	}
 
 };
@@ -827,7 +837,7 @@ cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
 	cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return nodeset->createIterator();
+		return nodeset->createNodeiterator();
 	return 0;
 }
 
@@ -969,13 +979,6 @@ cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 {
 	if (node_group)
 		return new cmzn_nodeset_group(node_group);
-	return 0;
-}
-
-struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset)
-{
-	if (nodeset)
-		return nodeset->createRelatedNodeList();
 	return 0;
 }
 
@@ -1222,11 +1225,10 @@ char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label label)
 
 cmzn_nodesetchanges::cmzn_nodesetchanges(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn) :
 	event(eventIn->access()),
-	changeLog(event->getFeRegionChanges()->getNodeChanges(
+	changeLog(event->getFeRegionChanges()->getNodeChangeLog(
 		cmzn_nodeset_get_FE_nodeset_internal(nodesetIn)->getFieldDomainType())),
 	access_count(1)
 {
-		
 }
 
 cmzn_nodesetchanges::~cmzn_nodesetchanges()
@@ -1253,6 +1255,17 @@ int cmzn_nodesetchanges::deaccess(cmzn_nodesetchanges* &nodesetchanges)
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_node_change_flags cmzn_nodesetchanges::getNodeChangeFlags(cmzn_node *node)
+{
+	cmzn_node_change_flags change = CMZN_NODE_CHANGE_FLAG_NONE;
+	if (node)
+	{
+		if (this->changeLog->isIndexChange(get_FE_node_index(node)))
+			change = this->changeLog->getChangeSummary();
+	}
+	return change;
 }
 
 cmzn_nodesetchanges_id cmzn_nodesetchanges_access(

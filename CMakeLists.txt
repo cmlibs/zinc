@@ -10,25 +10,31 @@ cmake_minimum_required(VERSION 3.0)
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.1.1 LANGUAGES C CXX)
 
-set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX).")
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_BINDINGS "Build bindings for ${PROJECT_NAME}, requires SWIG." YES)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
-set(ZINC_MODULE_PATH CACHE STRING "List of directories to search for CMake modules.")
 
-list(INSERT ZINC_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# Check bare minimum configuration
+set(ZINC_CMAKE_MODULE_PATH "" CACHE STRING "Location of OpenCMISS CMake modules.")
+if (DEFINED OPENCMISS_CMAKE_MODULE_PATH)
+    set(ZINC_CMAKE_MODULE_PATH "${OPENCMISS_CMAKE_MODULE_PATH}" CACHE STRING "Location of OpenCMISS CMake modules." FORCE)
+endif ()
+if (NOT EXISTS "${ZINC_CMAKE_MODULE_PATH}/Modules/OpenCMISS/OCMiscFunctions.cmake")
+    message(FATAL_ERROR "'${ZINC_CMAKE_MODULE_PATH}/Modules/OpenCMISS/OCMiscFunctions.cmake' does not exists.  The OpenCMISS CMake modules may not be installed/available.")
+endif ()
 
-set(CMAKE_MODULE_PATH ${ZINC_MODULE_PATH})
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/FindModuleWrappers")
+list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/Modules")
+list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/Modules/OpenCMISS")
 
 if(ZINC_BUILD_BINDINGS)
     option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
 endif()
 
-if (MSVC)
-    set(HAVE_MULTICONFIG_ENV YES)
-endif()
+include(OCMultiConfigEnvironment)
 
 # Optional libraries
 option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
@@ -48,6 +54,7 @@ endif()
 
 include(MacroDefinitions)
 include(FunctionDefinitions)
+include(OCMiscFunctions)
 
 find_package(Git QUIET)
 find_package(SWIG QUIET)
@@ -162,7 +169,15 @@ endif()
 
 if(ZINC_USE_ITK )
     find_package(ITK ${ITK_VERSION} CONFIG REQUIRED)
-    list(APPEND DEPENDENT_LIBS itk)
+    if (ITK_VERSION GREATER 4.0.0)
+        if (MSVC)
+            message(STATUS "FIX THIS! ")
+            find_package(hdf5)
+            find_package(szip)
+        endif ()
+    endif ()
+    list(APPEND DEPENDENT_LIBS  ${ITK_LIBRARIES})
+    include_directories(${ITK_INCLUDE_DIRS})
 endif()
 
 #if(ZINC_USE_OCE )
@@ -262,34 +277,6 @@ if(ZINC_BUILD_TESTS)
        set(LD_VARNAME "LD_LIBRARY_PATH")
     endif()
 
-    # Composes a native PATH-compatible variable to use for DLL/SO finding.
-    # Each extra argument is assumed a path to add. Added in the order specified.
-    function(get_library_path OUTPUT_VARIABLE)
-        if (WIN32)
-            set(PSEP "\\;")
-            set(LD_VARNAME "PATH")
-        elseif(APPLE)
-            set(LD_VARNAME "DYLD_LIBRARY_PATH")
-            set(PSEP ":")
-        elseif(UNIX)
-            set(LD_VARNAME "LD_LIBRARY_PATH")
-            set(PSEP ":")
-        else()
-            message(WARNING "get_library_path not implemented for '${CMAKE_HOST_SYSTEM}'")
-        endif()
-        # Load system environment - on windows its separated by semicolon, so we need to protect those 
-        string(REPLACE ";" "\\;" LD_PATH "$ENV{${LD_VARNAME}}")
-        foreach(_PATH ${ARGN})
-            if (HAVE_MULTICONFIG_ENV)
-                file(TO_NATIVE_PATH "${_PATH}/$<CONFIG>" _PATH)
-            else()
-                file(TO_NATIVE_PATH "${_PATH}" _PATH)
-            endif()
-            set(LD_PATH "${_PATH}${PSEP}${LD_PATH}")
-        endforeach()
-        set(${OUTPUT_VARIABLE} "${LD_VARNAME}=${LD_PATH}" PARENT_SCOPE)
-    endfunction()
-
     add_subdirectory(tests)
 endif()
 
@@ -387,3 +374,6 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 	message(STATUS "=====================================================")
 	message(STATUS "")
 endif()
+
+
+

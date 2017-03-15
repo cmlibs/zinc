@@ -3014,7 +3014,7 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 int cmzn_field_set_name_unique_concatentate(cmzn_field_id field, const char *first, const char *second)
 {
 	char *name;
-	const int len = strlen(first) + strlen(second);
+	const size_t len = strlen(first) + strlen(second);
 	ALLOCATE(name, char, len + 10);
 	if (!name)
 		return CMZN_RESULT_ERROR_MEMORY;

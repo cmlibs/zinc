@@ -87,6 +87,13 @@ PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
  */
 cmzn_region *cmzn_region_create_internal(cmzn_region *base_region);
 
+/**
+ * Create an iterator for the region's fields.
+ * Internal; externally use cmzn_fieldmodule_create_fielditerator
+ * @return  Accessed iterator.
+ */
+cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region);
+
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
  *

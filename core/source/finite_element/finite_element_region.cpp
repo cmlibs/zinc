@@ -42,13 +42,12 @@ FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
 {
 	this->fe_field_changes = fe_region->fe_field_changes;
 	for (int n = 0; n < 2; ++n)
-		this->fe_node_changes[n] = fe_region->nodesets[n]->extractChangeLog();
+		this->nodeChangeLogs[n] = fe_region->nodesets[n]->extractChangeLog();
 	// when extracting element change logs, propagate field change summary flags
 	// (RELATED flag) from nodes and parent elements
-	int nodeChanges;
-	CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(this->fe_node_changes[0], &nodeChanges);
-	bool parentChange = 0 != (nodeChanges & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node));
-	bool parentAllChange = CHANGE_LOG_IS_ALL_CHANGE(FE_node)(this->fe_node_changes[0]);
+	const int nodeChangeSummary = this->nodeChangeLogs[0]->getChangeSummary();
+	bool parentChange = 0 != (nodeChangeSummary & DS_LABEL_CHANGE_TYPE_RELATED);
+	bool parentAllChange = this->nodeChangeLogs[0]->isAllChange();
 	for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
 	{
 		if (0 != (this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog()))
@@ -74,16 +73,16 @@ FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
 
 FE_region_changes::~FE_region_changes()
 {
-	for (int n = 0; n < 2; ++n)
-		DESTROY(CHANGE_LOG(FE_node))(&(this->fe_node_changes[n]));
 	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
+	for (int n = 0; n < 2; ++n)
+		cmzn::Deaccess(this->nodeChangeLogs[n]);
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		cmzn::Deaccess(this->elementChangeLogs[dim]);
 }
 
 bool FE_region_changes::elementOrParentChanged(FE_element *element)
 {
-	return (0 != FE_element_or_parent_changed(element, this->elementChangeLogs, this->fe_node_changes[0]));
+	return (0 != FE_element_or_parent_changed(element, this->elementChangeLogs, this->nodeChangeLogs[0]));
 }
 
 /**
@@ -105,10 +104,8 @@ void FE_region::update()
 			if (!changed)
 				for (int n = 0; n < 2; ++n)
 				{
-					CHANGE_LOG(FE_node) *changeLog = this->nodesets[n]->getChangeLog();
-					int nodeChangeSummary;
-					if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changeLog, &nodeChangeSummary) &&
-						(nodeChangeSummary != 0))
+					const int nodeChangeSummary = this->nodesets[n]->getChangeLog()->getChangeSummary();
+					if (nodeChangeSummary != 0)
 					{
 						changed = true;
 						break;
@@ -117,7 +114,7 @@ void FE_region::update()
 			if (!changed)
 				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 				{
-					int elementChangeSummary = this->meshes[dim]->getChangeLog()->getChangeSummary();
+					const int elementChangeSummary = this->meshes[dim]->getChangeLog()->getChangeSummary();
 					if (elementChangeSummary != 0)
 					{
 						changed = true;
@@ -128,6 +125,11 @@ void FE_region::update()
 				cmzn_region_FE_region_change(this->cmiss_region);
 		}
 	}
+}
+
+cmzn_fielditerator *FE_region::create_fielditerator()
+{
+	return cmzn_region_create_fielditerator(this->cmiss_region);
 }
 
 /*
@@ -1042,19 +1044,28 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 			if (dimension)
 			{
 				FE_region_begin_change(fe_region);
+
+				// create field for accumulating node values for averaging
+				FE_field *node_accumulate_fe_field =
+					CREATE(FE_field)("cmzn_smooth_node_accumulate", fe_region);
+				if (!(set_FE_field_value_type(node_accumulate_fe_field, FE_VALUE_VALUE) &&
+					set_FE_field_number_of_components(node_accumulate_fe_field,
+						get_FE_field_number_of_components(fe_field))))
+					return_code = 0;
+				ACCESS(FE_field)(node_accumulate_fe_field);
+
 				/* create a field to store an integer value per component of fe_field */
 				FE_field *element_count_fe_field =
 					CREATE(FE_field)("cmzn_smooth_element_count", fe_region);
-				if (!(set_FE_field_number_of_components(element_count_fe_field,
-							get_FE_field_number_of_components(fe_field)) &&
-						set_FE_field_value_type(element_count_fe_field, INT_VALUE)))
+				if (!(set_FE_field_value_type(element_count_fe_field, INT_VALUE) &&
+					set_FE_field_number_of_components(element_count_fe_field,
+						get_FE_field_number_of_components(fe_field))))
 					return_code = 0;
 				ACCESS(FE_field)(element_count_fe_field);
-				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
-				LIST(FE_node) *copy_node_list = CREATE(LIST(FE_node))();
 
+				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
 				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();
-				if (!((element_count_fe_field) && (copy_node_list) && (elementIter))) 
+				if (!elementIter) 
 					return_code = 0;
 				FE_element *element;
 				while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
@@ -1062,7 +1073,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 					/* skip elements without field defined appropriately */
 					if (FE_element_field_is_standard_node_based(element, fe_field))
 					{
-						if (FE_element_smooth_FE_field(element, fe_field, time, element_count_fe_field, copy_node_list))
+						if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
 						{
 							fe_mesh->elementFieldChange(element, fe_field);
 						}
@@ -1077,17 +1088,27 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
 					CMZN_FIELD_DOMAIN_TYPE_NODES);
-				cmzn_nodeiterator *nodeIter = CREATE_LIST_ITERATOR(FE_node)(copy_node_list);
+				cmzn_nodeiterator *nodeIter = fe_nodeset->createNodeiterator();
+				if (!nodeIter)
+					return_code = 0;
 				cmzn_node *node = 0;
 				while ((0 != (node = cmzn_nodeiterator_next_non_access(nodeIter))))
 				{
-					FE_node_smooth_FE_field(node, fe_field, time, element_count_fe_field);
-					fe_nodeset->merge_FE_node(node);
+					if (FE_field_is_defined_at_node(fe_field, node))
+					{
+						if (FE_node_smooth_FE_field(node, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
+							fe_nodeset->nodeFieldChange(node, fe_field);
+						else
+						{
+							return_code = 0;
+							break;
+						}
+					}
 				}
 				cmzn_nodeiterator_destroy(&nodeIter);
 
-				DESTROY(LIST(FE_node))(&copy_node_list);
 				DEACCESS(FE_field)(&element_count_fe_field);
+				DEACCESS(FE_field)(&node_accumulate_fe_field);
 
 				FE_region_end_change(fe_region);
 			}
@@ -1334,7 +1355,7 @@ bool FE_region_need_add_cmiss_number_field(struct FE_region *fe_region)
 	if (fe_region && (!fe_region->informed_make_cmiss_number_field))
 	{
 		for (int n = 0; n < 2; ++n)
-			if (fe_region->nodesets[n]->get_number_of_FE_nodes())
+			if (fe_region->nodesets[n]->getSize())
 			{
 				fe_region->informed_make_cmiss_number_field = true;
 				return true;

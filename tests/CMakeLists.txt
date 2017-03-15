@@ -37,7 +37,7 @@ foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
 
-get_library_path(PATH_DEF "${Zinc_BINARY_DIR}/core")
+get_library_path(PATH_DEF "${Zinc_BINARY_DIR}/core/$<CONFIGURATION>")
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})

@@ -37,7 +37,7 @@ Utilities for handling images.
 #    define MAGICK_STATIC_LINK
 #  endif /* defined _MSC_VER */
 /* image magick interfaces */
-#include "magick/api.h"
+#include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 /* #define DEBUG_CODE 1 */
@@ -4714,7 +4714,7 @@ be specified in the <width> and <height> arguments.
 	int i, length, return_code;
 	Image *magick_image;
 	ImageInfo *magick_image_info;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 	long int file_size;
 	struct stat buf;
 	unsigned char *image_char;
@@ -4726,7 +4726,7 @@ be specified in the <width> and <height> arguments.
 		/* SAB.  Note that the data returned from this routine is
 			stored bottom to top and must be flipped to conform
 			with the top to bottom storage normally used by Cmgui */
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		if (magick_image_info=CloneImageInfo((ImageInfo *) NULL))
 		{
 			/* Copy it now but we may overwrite if a special case */
@@ -4769,7 +4769,7 @@ be specified in the <width> and <height> arguments.
 #if defined (DEBUG_CODE)
 			magick_image_info->verbose = 1;
 #endif /* defined (DEBUG_CODE) */
-			magick_image=ReadImage(magick_image_info,&magick_exception);
+			magick_image=ReadImage(magick_image_info,magick_exception);
 			if (magick_image)
 			{
 				if (magick_image->matte)
@@ -4820,6 +4820,7 @@ be specified in the <width> and <height> arguments.
 					"Could not read image %s", filename);
 				return_code = 0;
 			}
+			DestroyExceptionInfo(magick_exception);
 			DestroyImageInfo(magick_image_info);
 		}
 		else
@@ -6133,20 +6134,20 @@ DESCRIPTION :
 Extracts parameters from <magick_image> that matter for a Cmgui_image
 ==============================================================================*/
 {
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 	int return_code;
 
 	ENTER(get_magick_image_parameters);
 	if (magick_image && width && height && number_of_components &&
 		number_of_bytes_per_component)
 	{
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		*width = (int)magick_image->columns;
 		*height = (int)magick_image->rows;
-		if (magick_image->matte)
+		if (magick_image->alpha_trait != UndefinedPixelTrait)
 		{
 			if ((magick_image->colorspace == GRAYColorspace) ||
-				(IsGrayImage(magick_image, &magick_exception)&&(do_IsGrey_test)))
+				(IsImageGray(magick_image)&&(do_IsGrey_test)))
 			{
 				/* monochrome intensity with alpha */
 				*number_of_components = 2;
@@ -6160,7 +6161,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 		else
 		{
 			if ((magick_image->colorspace == GRAYColorspace) ||
-				(IsGrayImage(magick_image, &magick_exception)&&(do_IsGrey_test)))
+				(IsImageGray(magick_image)&&(do_IsGrey_test)))
 			{
 				/* monochrome intensity only */
 				*number_of_components = 1;
@@ -6172,7 +6173,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 			}
 		}
 		*number_of_bytes_per_component = magick_image->depth/8;
-		DestroyExceptionInfo(&magick_exception);
+		DestroyExceptionInfo(magick_exception);
 		return_code = 1;
 	}
 	else
@@ -6212,7 +6213,7 @@ Only these parameters matter to Cmgui_image for consistency.
 		{
 			if ((temp_magick_image->columns == magick_image->columns) &&
 				(temp_magick_image->rows == magick_image->rows) &&
-				(temp_magick_image->matte == magick_image->matte) &&
+				(temp_magick_image->alpha_trait == magick_image->alpha_trait) &&
 				(temp_magick_image->colorspace == magick_image->colorspace) &&
 				(temp_magick_image->depth == magick_image->depth))
 			{
@@ -6455,7 +6456,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 		{
 #if defined (ZINC_USE_IMAGEMAGICK)
 #  if MagickLibVersion >= 0x636
-			ExceptionInfo magick_exception;
+			ExceptionInfo *magick_exception;
 			char *magick_map = NULL;
 			char magick_map_i[] = "I";
 			char magick_map_ia[] = "IA";
@@ -6466,7 +6467,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			int y;
 
 			return_code = 1;
-			GetExceptionInfo(&magick_exception);
+			magick_exception = AcquireExceptionInfo();
 			switch (number_of_components)
 			{
 				case 1:
@@ -6516,19 +6517,19 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			if (return_code)
 			{
 				/*if (magick_image = AllocateImage((ImageInfo *) NULL)) */
-				magick_image = AcquireImage((ImageInfo *) NULL);
+				magick_image = AcquireImage((ImageInfo *) NULL, magick_exception);
 				if (magick_image != NULL)
 				{
 					magick_image->columns = width;
 					magick_image->rows = height;
-					(void) SetImageBackgroundColor(magick_image);
+					(void) SetImageBackgroundColor(magick_image, magick_exception);
 					pixels = source_pixels + height*source_width_bytes;
 					for (y = 0; (y < height) && return_code; y++)
 					{
 						pixels -= source_width_bytes;
 						if (MagickFalse == ImportImagePixels(magick_image,
 							0,y,width,1,
-							magick_map,magick_storage,pixels))
+							magick_map,magick_storage,pixels, magick_exception))
 						{
 							display_message(ERROR_MESSAGE, "Cmgui_image_constitute.  "
 								"Error setting pixels in ImageMagick.");
@@ -6547,6 +6548,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					number_of_bytes_per_component;
 				cmgui_image->number_of_images = 1;
 			}
+			DestroyExceptionInfo(magick_exception);
 #  else /* MagickLibVersion >= 0x636 */
 			unsigned char *p, *start_p;
 			int i, x, y;
@@ -6803,7 +6805,7 @@ equal to the number_of_components.
 	unsigned char *destination;
 #if defined (ZINC_USE_IMAGEMAGICK)
 	const char *magick_image_storage;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 	Image *magick_image;
 	int image_height_minus_1;
 	StorageType magick_storage_type = CharPixel;
@@ -6852,7 +6854,7 @@ equal to the number_of_components.
 			padding_bytes = 0;
 		}
 #if defined (ZINC_USE_IMAGEMAGICK)
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		/* get the magick_image for this <image_number> */
 		magick_image = cmgui_image->magick_image;
 		for (i = 0; (i < image_number) && magick_image; i++)
@@ -6934,7 +6936,7 @@ equal to the number_of_components.
 					(void *)destination, &magick_exception); */
 				ExportImagePixels(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
-					(void *)destination, &magick_exception);
+					(void *)destination, magick_exception);
 #else /* defined (ZINC_USE_IMAGEMAGICK) */
 				memcpy(destination, source, width_bytes);
 				source += source_width_bytes;
@@ -6975,7 +6977,7 @@ equal to the number_of_components.
 			}
 		}
 #if defined (ZINC_USE_IMAGEMAGICK)
-		DestroyExceptionInfo(&magick_exception);
+		DestroyExceptionInfo(magick_exception);
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 	}
 	else
@@ -7140,11 +7142,13 @@ the <format>
 #if defined (ZINC_USE_IMAGEMAGICK)
 		case CMGUI_IMAGE_RGB:
 		{
-			  TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
+			ExceptionInfo *magick_exception = AcquireExceptionInfo();
+			TransformImageColorspace(cmgui_image->magick_image, RGBColorspace, magick_exception);
 		  get_magick_image_parameters(cmgui_image->magick_image,
 					  &cmgui_image->width, &cmgui_image->height,
 					  &cmgui_image->number_of_components,
 					  &cmgui_image->number_of_bytes_per_component, 0);
+		  DestroyExceptionInfo(magick_exception);
 		} break;
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 		default:
@@ -7189,7 +7193,7 @@ and other parameters for formats that require them.
 	int image_data_length, length, number_of_files;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 	long int file_size;
 	struct stat buf;
 	struct IO_stream *image_file;
@@ -7214,7 +7218,7 @@ and other parameters for formats that require them.
 		{
 			return_code = 1;
 #if defined (ZINC_USE_IMAGEMAGICK)
-			GetExceptionInfo(&magick_exception);
+			magick_exception = AcquireExceptionInfo();
 			magick_image_info = CloneImageInfo((ImageInfo *) NULL);
 			if (NULL != magick_image_info)
 			{
@@ -7348,16 +7352,16 @@ and other parameters for formats that require them.
 							memory_block->buffer,
 							memory_block->length);
 #endif
-						SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+						SetImageInfo(magick_image_info, MagickFalse, magick_exception);
 
 						magick_image = BlobToImage(magick_image_info,
 							memory_block->buffer,
 							memory_block->length,
-							&magick_exception);
+							magick_exception);
 					}
 					else if (IO_stream_uri_is_native_imagemagick(magick_image_info->filename))
 					{
-						magick_image = ReadImage(magick_image_info, &magick_exception);
+						magick_image = ReadImage(magick_image_info, magick_exception);
 					}
 					else
 					{
@@ -7377,10 +7381,10 @@ and other parameters for formats that require them.
 
 									/* set the "magick" variable which specifies the image format based on prefix
 										if present, or the suffix, or an attempt to read the file */
-									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+									SetImageInfo(magick_image_info, MagickFalse, magick_exception);
 
 									magick_image = BlobToImage(magick_image_info,
-										image_data, image_data_length, &magick_exception);
+										image_data, image_data_length, magick_exception);
 									IO_stream_deallocate_read_to_memory(image_file);
 								}
 								else
@@ -7461,7 +7465,7 @@ and other parameters for formats that require them.
 					"Cmgui_image_read.  Could not create image information");
 				return_code = 0;
 			}
-			DestroyExceptionInfo(&magick_exception);
+			DestroyExceptionInfo(magick_exception);
 #else /* defined (ZINC_USE_IMAGEMAGICK) */
 			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *,
 				cmgui_image_information->number_of_file_names))
@@ -7606,7 +7610,7 @@ that the images be adjoined in the single file.
 	size_t magick_memory_block_length = 0;
 	void *temp_memory_block = NULL;
 	char *magick_file_name;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 	Image *local_magick_image, *magick_image, *temp_next, *temp_previous;
 	ImageInfo *magick_image_info;
 #else /* defined (ZINC_USE_IMAGEMAGICK) */
@@ -7624,7 +7628,7 @@ that the images be adjoined in the single file.
 	{
 		return_code = 1;
 #if defined (ZINC_USE_IMAGEMAGICK)
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		local_magick_image = (Image *)NULL;
 		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
 		if (NULL != magick_image_info)
@@ -7677,8 +7681,7 @@ that the images be adjoined in the single file.
 				}
 				local_magick_image = ResizeImage(magick_image,
 					magick_width, magick_height,
-					/*Default filters*/UndefinedFilter, /*blur*/1.0,
-					&magick_exception);
+					/*Default filters*/UndefinedFilter, magick_exception);
 				magick_image = local_magick_image;
 			}
 #if defined (DEBUG_CODE)
@@ -7728,7 +7731,7 @@ that the images be adjoined in the single file.
 						temp_next = magick_image->next;
 						magick_image->next = (Image *)NULL;
 					}
-					if (!WriteImage(magick_image_info, magick_image))
+					if (!WriteImage(magick_image_info, magick_image, magick_exception))
 					{
 						display_message(ERROR_MESSAGE,
 							"Could not write image \"%s\"", file_name);
@@ -7774,9 +7777,9 @@ that the images be adjoined in the single file.
 					/* Need to use the correct pointer type for the API */
 
 					/* If we have one already free it */
-					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+					SetImageInfo(magick_image_info, MagickFalse, magick_exception);
 					temp_memory_block = ImagesToBlob(magick_image_info, magick_image,
-						&magick_memory_block_length, &magick_exception);
+						&magick_memory_block_length, magick_exception);
 					if (NULL != temp_memory_block)
 					{
 						Cmgui_image_information_write_to_memory_block(cmgui_image_information,
@@ -7802,6 +7805,7 @@ that the images be adjoined in the single file.
 			{
 				DestroyImage(local_magick_image);
 			}
+			DestroyExceptionInfo(magick_exception);
 		}
 		else
 		{
@@ -7923,7 +7927,9 @@ string containing it's value.  Otherwise returns NULL.
 	if (cmgui_image)
 	{
 #if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
-		value = GetImageProperty(cmgui_image->magick_image, property);
+		ExceptionInfo *magick_exception = AcquireExceptionInfo();
+		value = GetImageProperty(cmgui_image->magick_image, property, magick_exception);
+		DestroyExceptionInfo(magick_exception);
 		if (NULL != value)
 		{
 			return_value = duplicate_string(value);
@@ -7963,8 +7969,9 @@ Sets the <property> is for <cmgui_image>.
 	if (cmgui_image)
 	{
 #if defined (ZINC_USE_IMAGEMAGICK) && MagickLibVersion >= 0x636
+		ExceptionInfo *magick_exception = AcquireExceptionInfo();
 		if (MagickTrue == SetImageProperty(cmgui_image->magick_image,
-			property, value))
+			property, value, magick_exception))
 		{
 			return_code = 1;
 		}
@@ -7972,6 +7979,7 @@ Sets the <property> is for <cmgui_image>.
 		{
 			return_code = 0;
 		}
+		DestroyExceptionInfo(magick_exception);
 #else /* defined (ZINC_USE_IMAGEMAGICK) */
 		USE_PARAMETER(property);
 		USE_PARAMETER(value);

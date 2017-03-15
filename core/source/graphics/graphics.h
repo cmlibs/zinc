@@ -141,9 +141,8 @@ finite element group scene.
 	DsLabelIndex incrementalBuildIndex;
 	/* flag indicating that selected graphics have changed */
 	int selected_graphics_changed;
-	/* flag indicating that this settings needs to be regenerated when time
-		changes */
-	int time_dependent;
+	/* flag indicating that this settings needs to be regenerated when time changes */
+	bool timeDependent;
 	enum cmzn_scenecoordinatesystem coordinate_system;
 // 	/* for accessing objects */
 	int access_count;
@@ -156,6 +155,44 @@ finite element group scene.
 
 	static inline int deaccess(cmzn_graphics **graphics_address);
 
+	/** Update internal flag to match whether any graphics field, glyph or other
+	  * member is time dependent */
+	void updateTimeDependence();
+
+	bool dataFieldIsTimeDependent() const
+	{
+		return (0 != this->data_field)
+			&& Computed_field_has_multiple_times(this->data_field);
+	}
+
+	bool pointGlyphScalingIsTimeDependent() const
+	{
+		if ((this->point_orientation_scale_field)
+			&& Computed_field_has_multiple_times(this->point_orientation_scale_field))
+			return true;
+		if ((this->signed_scale_field)
+			&& Computed_field_has_multiple_times(this->signed_scale_field))
+			return true;
+		return false;
+	}
+
+	bool coordinateFieldIsTimeDependent() const
+	{
+		return (0 != this->coordinate_field)
+			&& Computed_field_has_multiple_times(this->coordinate_field);
+	}
+
+	bool subgroupFieldIsTimeDependent() const
+	{
+		return (0 != this->subgroup_field)
+			&& Computed_field_has_multiple_times(this->subgroup_field);
+	}
+
+	bool isoscalarFieldIsTimeDependent() const
+	{
+		return (0 != this->isoscalar_field)
+			&& Computed_field_has_multiple_times(this->isoscalar_field);
+	}
 };
 
 struct cmzn_graphics_module;
@@ -179,14 +216,6 @@ struct cmzn_graphics_list_data
 	const char *line_prefix,*line_suffix;
 	enum cmzn_graphics_string_details graphics_string_detail;
 }; /* cmzn_graphics_list_data */
-
-struct cmzn_graphics_update_time_behaviour_data
-{
-	/* flag set by cmzn_scene if the default coordinate field depends on time */
-	int default_coordinate_depends_on_time;
-	/* flag set by settings if any of the settings depend on time */
-	int time_dependent;
-};
 
 struct cmzn_graphics_range
 {
@@ -554,8 +583,9 @@ char *cmzn_graphics_get_name_internal(struct cmzn_graphics *graphics);
 int cmzn_graphics_time_change(
 	struct cmzn_graphics *graphics,void *dummy_void);
 
-int cmzn_graphics_update_time_behaviour(
-	struct cmzn_graphics *graphics, void *update_time_behaviour_void);
+/** List iterator function for updating current dependence of graphics on time.
+  * @param time_dependent_bool_void  Void pointer to a bool, set to True if time dependent. */
+int cmzn_graphics_update_time_dependence(struct cmzn_graphics *graphics, void *time_dependent_bool_void);
 
 /**
  * Pass fieldmoduleevent and selection change to graphics
@@ -688,13 +718,5 @@ char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
 	enum cmzn_graphics_streamlines_colour_data_type type);
 
 bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_id point_attributes);
-
-bool cmzn_graphics_contain_surfaces(struct cmzn_graphics *graphics);
-
-bool cmzn_graphics_data_is_time_dependent(cmzn_graphics_id graphics);
-
-bool cmzn_graphics_point_attribute_is_time_dependent(cmzn_graphics_id graphics);
-
-bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics);
 
 #endif

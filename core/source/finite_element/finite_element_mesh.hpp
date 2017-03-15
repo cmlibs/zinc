@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_MESH_HPP)
 #define FINITE_ELEMENT_MESH_HPP
 
+#include "opencmiss/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
@@ -221,16 +222,17 @@ private:
 
 	// map element index -> FE_element (accessed)
 	block_array<DsLabelIndex, FE_element*, 128> fe_elements;
+
 	struct LIST(FE_element_field_info) *element_field_info_list;
+	/* keep pointer to last element field information so only need to
+	   note changed fields when this changes */
+	struct FE_element_field_info *last_fe_element_field_info;
 
 	FE_mesh *parentMesh; // not accessed
 	FE_mesh *faceMesh; // not accessed
 
 	/* log of elements added, removed or otherwise changed */
 	DsLabelsChangeLog *changeLog;
-	/* keep pointer to last element field information so only need to
-		 note changed fields when this changes */
-	struct FE_element_field_info *last_fe_element_field_info;
 
 	/* information for defining faces */
 	/* existence of element_type_node_sequence_list can tell us whether faces
@@ -439,7 +441,7 @@ public:
 		return this->labels.getIdentifier(elementIndex);
 	}
 
-	/** @ return  Non-accessed element object at index */
+	/** @return  Non-accessed element object at index */
 	inline FE_element *getElement(DsLabelIndex elementIndex) const
 	{
 		FE_element *element = 0;
@@ -471,7 +473,7 @@ public:
 		return this->getElement(this->labels.findLabelByIdentifier(identifier));
 	}
 
-	void removeElementIterator(cmzn_elementiterator *iterator); // private, but needed by cmzn_elementiterator
+	void removeElementiterator(cmzn_elementiterator *iterator); // private, but needed by cmzn_elementiterator
 
 	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
 
@@ -571,7 +573,7 @@ public:
 
 	int define_faces();
 
-	int remove_FE_element(struct FE_element *element);
+	int destroyElement(struct FE_element *element);
 
 	int destroyAllElements();
 
@@ -602,7 +604,7 @@ private:
 	virtual ~cmzn_elementiterator()
 	{
 		if (this->fe_mesh)
-			this->fe_mesh->removeElementIterator(this);
+			this->fe_mesh->removeElementiterator(this);
 		cmzn::Deaccess(this->iter);
 	}
 
