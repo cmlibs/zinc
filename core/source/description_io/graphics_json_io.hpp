@@ -52,7 +52,7 @@ protected:
 
 	void ioGeneralBoolEntries(Json::Value &graphicsSettings);
 
-	void ioGeneralDobuleEntries(Json::Value &graphicsSettings);
+	void ioGeneralDoubleEntries(Json::Value &graphicsSettings);
 
 	void ioGeneralEnumEntries(Json::Value &graphicsSettings);
 

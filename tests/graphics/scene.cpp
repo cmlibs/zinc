@@ -973,6 +973,7 @@ TEST(ZincScene, transformation)
 
 	FieldConstant matrixField = zinc.fm.createFieldConstant(16, newMatrix1);
 	EXPECT_TRUE(matrixField.isValid());
+	EXPECT_EQ(RESULT_OK, result = matrixField.setName("newMatrix1"));
 	Field tmp;
 	tmp = zinc.scene.getTransformationField();
 	EXPECT_FALSE(tmp.isValid());
@@ -1126,5 +1127,42 @@ TEST(ZincScene, transformation)
 		EXPECT_NEAR(expectedRange[i], maximums[i], coarseTolerance);
 		EXPECT_NEAR(expectedX[i], x[i], coarseTolerance);
 	}
+
+	// test serialisation of transformation with read/write Description
+
+	char *sceneDescriptionTransformationMatrix = zinc.scene.writeDescription();
+
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.clearTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+	char *sceneDescriptionNoTransformation = zinc.scene.writeDescription();
+
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationField(matrixField));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	char *sceneDescriptionTransformationField = zinc.scene.writeDescription();
+
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.readDescription(sceneDescriptionNoTransformation, /*overwrite*/true));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.readDescription(sceneDescriptionTransformationField, /*overwrite*/true));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_EQ(matrixField, tmp);
+
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.readDescription(sceneDescriptionTransformationMatrix, /*overwrite*/true));
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	tmp = zinc.scene.getTransformationField();
+	EXPECT_FALSE(tmp.isValid());
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.getTransformationMatrix(16, matrix));
+	for (int c = 0; c < 16; ++c)
+		EXPECT_NEAR(testMatrixRotationScale[c], matrix[c], tolerance);
+
+	cmzn_deallocate(sceneDescriptionTransformationMatrix);
+	cmzn_deallocate(sceneDescriptionNoTransformation);
+	cmzn_deallocate(sceneDescriptionTransformationField);
 }
 
