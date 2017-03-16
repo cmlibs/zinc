@@ -130,7 +130,6 @@ and the functions given their public names.
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_get_depth_of_field cmzn_sceneviewer_get_depth_of_field
 #define Scene_viewer_set_depth_of_field cmzn_sceneviewer_set_depth_of_field
-#define Scene_viewer_view_all cmzn_sceneviewer_view_all
 #define Scene_viewer_get_freespin_tumble_angle cmzn_sceneviewer_get_freespin_tumble_angle
 #define Scene_viewer_set_freespin_tumble_angle cmzn_sceneviewer_set_freespin_tumble_angle
 #define Scene_viewer_get_freespin_tumble_axis cmzn_sceneviewer_get_freespin_tumble_axis
@@ -1067,17 +1066,6 @@ Returns RGB data grabbed from the scene viewer when buffer type
 is SCENE_VIEWER_PIXEL_BUFFER.  The data is handed directly so it should
 be used immediately and not DEALLOCATED.  It is expected to be byte sized
 values for each of Red Green and Blue only.
-==============================================================================*/
-
-int Scene_viewer_view_all( struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 18 May 1998
-
-DESCRIPTION :
-Finds the x, y and z ranges from the scene and sets the view parameters so
-that everything can be seen, and with window's std_view_angle. Also adjusts
-near and far clipping planes; if specific values are required, should follow
-with commands for setting these.
 ==============================================================================*/
 
 int Scene_viewer_viewport_zoom(struct Scene_viewer *scene_viewer,

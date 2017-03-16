@@ -916,8 +916,8 @@ public:
 		sceneviewernotifier(this->sceneviewer.createSceneviewernotifier()),
 		notifiedCount(0)
 	{
-		sceneviewer.setScene(scene);
-		this->sceneviewernotifier.setCallback(*this);
+		EXPECT_EQ(RESULT_OK, sceneviewer.setScene(scene));
+		EXPECT_EQ(RESULT_OK, this->sceneviewernotifier.setCallback(*this));
 	}
 
 	int getNotifiedCount()
@@ -934,6 +934,7 @@ TEST(ZincScene, transformation)
 	Scenenotification scenenotification(zinc.context, zinc.scene);
 
 	const double tolerance = 1.0E-12;
+	const double coarseTolerance = 1.0E-5;
 	const double identity4x4[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 	double matrix[16];
 	int result;
@@ -1054,5 +1055,76 @@ TEST(ZincScene, transformation)
 	EXPECT_EQ(RESULT_OK, result = zinc.scene.getTransformationMatrix(16, matrix));
 	for (int c = 0; c < 16; ++c)
 		EXPECT_NEAR(0.75*newMatrix2[c], matrix[c], tolerance);
+
+	// test transformation correctly transforms scene coordinates range, gives correct transformation
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.clearTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_FALSE(zinc.scene.hasTransformation());
+	Region childRegion = zinc.root_region.createChild("child");
+	EXPECT_TRUE(childRegion.isValid());
+	Scene childScene = childRegion.getScene();
+	EXPECT_TRUE(childScene.isValid());
+	// make a sceneviewer to test its transformation APIs
+	Sceneviewer sceneviewer = zinc.scene.getSceneviewermodule().createSceneviewer(Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
+	EXPECT_EQ(RESULT_OK, result = sceneviewer.setScene(zinc.scene));
+	EXPECT_EQ(RESULT_OK, result = sceneviewer.setViewportSize(1,1));
+
+	double minimums[3], maximums[3], x[3];
+	Scenefilter noFilter;
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, result = zinc.scene.getCoordinatesRange(noFilter, minimums, maximums));
+	GraphicsPoints points = childScene.createGraphicsPoints();
+	EXPECT_TRUE(points.isValid());
+	Graphicspointattributes pointattr = points.getGraphicspointattributes();
+	const double offset[3] = { 1.1, 2.2, -3.3 };
+	// Note glyph transformations and graphics range do not yet affect Scene::getCoordinatesRange()
+	EXPECT_EQ(RESULT_OK, result = pointattr.setGlyphOffset(3, offset));
+	EXPECT_EQ(3, scenenotification.getNotifiedCount()); // add child, create points, modify points
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.getCoordinatesRange(noFilter, minimums, maximums));
+	EXPECT_EQ(RESULT_OK, result = sceneviewer.transformCoordinates(SCENECOORDINATESYSTEM_LOCAL, SCENECOORDINATESYSTEM_WORLD, zinc.scene, offset, x));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_NEAR(0.0, minimums[i], tolerance);
+		EXPECT_NEAR(0.0, maximums[i], tolerance);
+		EXPECT_NEAR(offset[i], x[i], coarseTolerance); // since offset was transformed
+	}
+	const double displacement[3] = { 12.3, 45.6, 78.9 };
+	const double testMatrixDisplacement[16] =
+	{
+		1, 0, 0, displacement[0],
+		0, 1, 0, displacement[1],
+		0, 0, 1, displacement[2],
+		0, 0, 0, 1
+	};
+	EXPECT_EQ(RESULT_OK, result = childScene.setTransformationMatrix(16, testMatrixDisplacement));
+	EXPECT_TRUE(childScene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.getCoordinatesRange(noFilter, minimums, maximums));
+	EXPECT_EQ(RESULT_OK, result = sceneviewer.transformCoordinates(SCENECOORDINATESYSTEM_LOCAL, SCENECOORDINATESYSTEM_WORLD, childScene, offset, x));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_NEAR(displacement[i], minimums[i], coarseTolerance);
+		EXPECT_NEAR(displacement[i], maximums[i], coarseTolerance);
+		EXPECT_NEAR(offset[i] + displacement[i], x[i], coarseTolerance); // since offset was transformed
+	}
+	const double testMatrixRotationScale[16] =
+	{
+		0.0, 1.5, 0.0, 0.0,
+		0.6, 0.0, 1.2, 0.0,
+		0.8, 0.0,-0.9, 0.0,
+		0.0, 0.0, 0.0, 1.0
+	};
+	const double expectedRange[3] = { 68.4, 102.06, -61.17 };
+	const double expectedX[3] = { 71.7, 98.76, -57.32 };
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.setTransformationMatrix(16, testMatrixRotationScale));
+	EXPECT_TRUE(zinc.scene.hasTransformation());
+	EXPECT_EQ(1, scenenotification.getNotifiedCount());
+	EXPECT_EQ(RESULT_OK, result = zinc.scene.getCoordinatesRange(noFilter, minimums, maximums));
+	EXPECT_EQ(RESULT_OK, result = sceneviewer.transformCoordinates(SCENECOORDINATESYSTEM_LOCAL, SCENECOORDINATESYSTEM_WORLD, childScene, offset, x));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_NEAR(expectedRange[i], minimums[i], coarseTolerance);
+		EXPECT_NEAR(expectedRange[i], maximums[i], coarseTolerance);
+		EXPECT_NEAR(expectedX[i], x[i], coarseTolerance);
+	}
 }
 

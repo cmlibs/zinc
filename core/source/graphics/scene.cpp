@@ -3121,53 +3121,50 @@ int cmzn_scene_get_global_graphics_range_internal(cmzn_scene_id top_scene,
 	return return_code;
 }
 
-int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
-	cmzn_scenefilter_id filter,
-	double *centre_x, double *centre_y, double *centre_z,
-	double *size_x, double *size_y, double *size_z)
+int cmzn_scene::getCoordinatesRange(cmzn_scenefilter *filter, double *minimumValuesOut3,
+	double *maximumValuesOut3)
 {
-	double max_x, max_y, max_z, min_x, min_y, min_z;
-	int return_code = 1;
-
-	if (top_scene && centre_x && centre_y && centre_z && size_x && size_y && size_z)
+	if (!((minimumValuesOut3) && (maximumValuesOut3)))
 	{
-		/* must first build graphics objects */
-		build_Scene(top_scene, filter);
-		/* get range of visible graphics_objects in scene */
-		Graphics_object_range_struct graphics_object_range;
-		cmzn_scene_id scene = top_scene;
-		cmzn_scene_get_global_graphics_range_internal(top_scene, scene, filter, &graphics_object_range);
-		if (graphics_object_range.first)
-		{
-			/* nothing in the scene; return zeros */
-			*centre_x = *centre_y = *centre_z = 0.0;
-			*size_x = *size_y = *size_z =0.0;
-		}
-		else
-		{
-			/* get centre and size of smallest cube enclosing visible scene 		struct cmzn_region *top_region = scene->region;*/
-			max_x = (double)graphics_object_range.maximum[0];
-			max_y = (double)graphics_object_range.maximum[1];
-			max_z = (double)graphics_object_range.maximum[2];
-			min_x = (double)graphics_object_range.minimum[0];
-			min_y = (double)graphics_object_range.minimum[1];
-			min_z = (double)graphics_object_range.minimum[2];
-			*centre_x = 0.5*(max_x + min_x);
-			*centre_y = 0.5*(max_y + min_y);
-			*centre_z = 0.5*(max_z + min_z);
-			*size_x = max_x - min_x;
-			*size_y = max_y - min_y;
-			*size_z = max_z - min_z;
-		}
+		display_message(ERROR_MESSAGE, "Scene getCoordinatesRange.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	/* must first build graphics objects */
+	build_Scene(this, filter);
+	/* get range of visible graphics_objects in scene */
+	Graphics_object_range_struct graphics_object_range;
+	cmzn_scene_get_global_graphics_range_internal(this, this, filter, &graphics_object_range);
+	if (graphics_object_range.first)
+		return CMZN_ERROR_NOT_FOUND;
+	for (int i = 0; i < 3; ++i)
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_global_graphics_range.  Invalid argument(s)");
-		return_code = 0;
+		maximumValuesOut3[i] = static_cast<double>(graphics_object_range.maximum[i]);
+		minimumValuesOut3[i] = static_cast<double>(graphics_object_range.minimum[i]);
 	}
+	return CMZN_OK;
+}
 
-	return (return_code);
+int cmzn_scene::getCoordinatesRangeCentreSize(cmzn_scenefilter *filter, double *centre3,
+	double *size3)
+{
+	double minimums[3] = { 0.0, 0.0, 0.0 };
+	double maximums[3] = { 0.0, 0.0, 0.0 };
+	const int result = this->getCoordinatesRange(filter, minimums, maximums);
+	for (int i = 0; i < 3; ++i)
+	{
+		centre3[i] = 0.5*(minimums[i] + maximums[i]);
+		size3[i] = maximums[i] - minimums[i];
+	}
+	return result;
+}
+
+int cmzn_scene_get_coordinates_range(cmzn_scene_id scene,
+	cmzn_scenefilter_id filter, double *minimumValuesOut3, double *maximumValuesOut3)
+{
+	if (scene)
+		return scene->getCoordinatesRange(filter, minimumValuesOut3, maximumValuesOut3);
+	display_message(ERROR_MESSAGE, "Scene getCoordinatesRange.  Missing scene");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct Scene_graphics_object_iterator_data

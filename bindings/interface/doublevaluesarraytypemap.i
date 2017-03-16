@@ -303,5 +303,5 @@
 	delete[] $1;
 };
 
-%apply (double *valuesOut3) { (double *eyeValuesOut3), (double *lookatValuesOut3), (double *upVectorValuesOut3), (double *coordinateValuesOut3) };
+%apply (double *valuesOut3) { (double *eyeValuesOut3), (double *lookatValuesOut3), (double *upVectorValuesOut3), (double *coordinateValuesOut3), (double *minimumValuesOut3), (double *maximumValuesOut3) };
 

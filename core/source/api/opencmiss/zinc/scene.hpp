@@ -152,6 +152,13 @@ public:
 		return Graphics(cmzn_scene_find_graphics_by_name(id, name));
 	}
 
+	int getCoordinatesRange(const Scenefilter& filter, double *minimumValuesOut3,
+		double *maximumValuesOut3)
+	{
+		return cmzn_scene_get_coordinates_range(id, filter.getId(),
+			minimumValuesOut3, maximumValuesOut3);
+	}
+
 	Graphics getFirstGraphics()
 	{
 		return Graphics(cmzn_scene_get_first_graphics(id));

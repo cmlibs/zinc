@@ -175,6 +175,13 @@ public:
 	  * other value if failed. */
 	int getTotalTransformationMatrix(cmzn_scene* topScene, double* matrix4x4);
 
+	int getCoordinatesRange(cmzn_scenefilter *filter, double *minimumValuesOut3,
+		double *maximumValuesOut3);
+
+	/** Returns graphics coordinates range as centre, size. Zeros them if any error. */
+	int getCoordinatesRangeCentreSize(cmzn_scenefilter *filter, double *centre3,
+		double *size3);
+
 	void timeChange(cmzn_timenotifierevent_id timenotifierevent);
 
 	/** Notify registered clients of change in the scene */
@@ -490,11 +497,6 @@ int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,
  */
 gtMatrix *cmzn_scene_get_total_transformation(struct cmzn_scene *scene,
 	struct cmzn_scene *top_scene);
-
-int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
-	cmzn_scenefilter_id filter,
-	double *centre_x, double *centre_y, double *centre_z,
-	double *size_x, double *size_y, double *size_z);
 
 typedef int(*graphics_object_tree_iterator_function)(
 	struct GT_object *graphics_object, double time, void *user_data);

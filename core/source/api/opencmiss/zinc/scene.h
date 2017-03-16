@@ -216,6 +216,23 @@ ZINC_API cmzn_graphics_id cmzn_scene_find_graphics_by_name(cmzn_scene_id scene,
 	const char *name);
 
 /**
+ * Get the range of world coordinates spanned by graphics in the scene and its
+ * sub-scenes, including application of scene transformation matrices.
+ * @note  Glyph graphics range is not included.
+ * 
+ * @param scene  Handle to the root scene to search.
+ * @param filter  Optional filter on which graphics to get range from. If
+ * omitted, then all graphics within the scene tree contribute.
+ * @param minimumValuesOut3  Array of size 3 to receive the minimum coordinates.
+ * @param maximumValuesOut3  Array of size 3 to receive the maximum coordinates.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no graphics coordinates
+ * found, or any other value on failue.
+ */
+ZINC_API int cmzn_scene_get_coordinates_range(cmzn_scene_id scene,
+	cmzn_scenefilter_id filter, double *minimumValuesOut3,
+	double *maximumValuesOut3);
+
+/**
  * Get the first graphics on the graphics list of <scene>.
 
  * @param scene  Handle to a scene object.
