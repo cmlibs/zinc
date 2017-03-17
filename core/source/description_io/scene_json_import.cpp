@@ -11,7 +11,9 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "general/debug.h"
+#include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/region.hpp"
 #include "description_io/graphics_json_import.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "graphics/scene.h"
@@ -29,15 +31,42 @@ int SceneJsonImport::import(const std::string &jsonString)
 		if (overwrite == 1)
 		{
 			scene.removeAllGraphics();
+			scene.clearTransformation();
 		}
 		if (root.isObject())
 		{
 			if (root["VisibilityFlag"].isBool())
 				scene.setVisibilityFlag(root["VisibilityFlag"].asBool());
-			Json::Value graphicsSettings = root["Graphics"];
-			for (unsigned int index = 0; index < graphicsSettings.size(); ++index )
+			Json::Value& graphicsSettings = root["Graphics"];
+			for (unsigned int index = 0; index < graphicsSettings.size(); ++index)
 			{
 				importGraphics(graphicsSettings[index]);
+			}
+			if (root.isMember("TransformationField"))
+			{
+				const Json::Value& v = root["TransformationField"];
+				if (v.isString())
+				{
+					auto field = this->scene.getRegion().getFieldmodule().findFieldByName(v.asCString());
+					if (!field.isValid())
+						display_message(WARNING_MESSAGE, "Scene readDescription.  TransformationField field \"%s\" not found", v.asCString());
+					this->scene.setTransformationField(field);
+				}
+				else
+					display_message(WARNING_MESSAGE, "Scene readDescription.  TransformationField does not specify a field name");
+			}
+			if (root.isMember("TransformationMatrix"))
+			{
+				const Json::Value& v = root["TransformationMatrix"];
+				if (v.isArray() && (v.size() == 16))
+				{
+					double values[16];
+					for (int i = 0; i < 16; ++i)
+						values[i] = v[i].asDouble();
+					scene.setTransformationMatrix(values);
+				}
+				else
+					display_message(WARNING_MESSAGE, "Scene readDescription.  Malformed TransformationMatrix");
 			}
 		}
 

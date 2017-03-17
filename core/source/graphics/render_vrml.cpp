@@ -2282,6 +2282,7 @@ graphics_object_tree_iterator_function
 Global functions
 ----------------
 */
+
 int export_to_vrml(char *file_name, cmzn_scene_id scene,
 	cmzn_scenefilter_id filter)
 /******************************************************************************
@@ -2291,7 +2292,6 @@ DESCRIPTION :
 Renders the visible objects to a VRML file.
 ==============================================================================*/
 {
-	double centre_x, centre_y, centre_z, radius, size_x, size_y, size_z;
 	FILE *vrml_file;
 	int return_code;
 	struct Export_to_vrml_data export_to_vrml_data;
@@ -2317,14 +2317,15 @@ Renders the visible objects to a VRML file.
 			fprintf(vrml_file,"Group {\n");
 			fprintf(vrml_file,"  children [\n");
 
-			if (cmzn_scene_get_global_graphics_range(scene, filter,
-				&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z) &&
-				(radius = sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
+			double centre[3], size[3];
+			const int result = scene->getCoordinatesRangeCentreSize(filter, centre, size);
+			if ((CMZN_OK == result) || (CMZN_ERROR_NOT_FOUND == result))
 			{
+				const double radius = sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
 				fprintf(vrml_file,"    Viewpoint {\n");
 				fprintf(vrml_file,"      description \"default\"\n");
 				fprintf(vrml_file,"      position %f %f %f\n",
-					centre_x, centre_y, centre_z + radius);
+					centre[0], centre[1], centre[2] + radius);
 				fprintf(vrml_file,"    } #Viewpoint\n");
 			}
 			fprintf(vrml_file,"    NavigationInfo {\n");

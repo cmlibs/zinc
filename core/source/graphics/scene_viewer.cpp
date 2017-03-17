@@ -2307,7 +2307,7 @@ Scene_viewer_render_scene_in_viewport to access this function.
 
 			if (incrementalBuild.isMoreWorkToDo())
 				// request another redraw to build some more graphics
-				cmzn_scene_changed(scene_viewer->scene);
+				scene_viewer->scene->setChanged();
 		}
 		scene_viewer->frame_count++;
 	}
@@ -2705,8 +2705,6 @@ int cmzn_sceneviewermodule_get_default_background_colour_rgb(
 	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
-
 	if (sceneviewermodule && valuesOut3)
 	{
 		valuesOut3[0] = sceneviewermodule->background_colour.red;
@@ -3006,11 +3004,13 @@ performed in idle time so that multiple redraws are avoided.
 				{
 					if (0==(i % 5))
 					{
+						scene_viewer->window_projection_matrix[i] = 1.0;
 						scene_viewer->projection_matrix[i]=1.0;
 						scene_viewer->modelview_matrix[i]=1.0;
 					}
 					else
 					{
+						scene_viewer->window_projection_matrix[i] = 0.0;
 						scene_viewer->projection_matrix[i]=0.0;
 						scene_viewer->modelview_matrix[i]=0.0;
 					}
@@ -4229,7 +4229,7 @@ int cmzn_sceneviewer_set_lighting_two_sided(
 }
 
 int cmzn_sceneviewer::getTransformationMatrix(
-  enum cmzn_scenecoordinatesystem fromCoordinateSystem,
+	enum cmzn_scenecoordinatesystem fromCoordinateSystem,
 	enum cmzn_scenecoordinatesystem toCoordinateSystem,
 	const gtMatrix *localToWorldTransformationMatrix,
 	double *transformationMatrix16)
@@ -4455,15 +4455,14 @@ int cmzn_sceneviewer::getTransformationMatrix(
 
 int cmzn_sceneviewer_transform_coordinates(
 	cmzn_sceneviewer_id sceneviewer,
-  enum cmzn_scenecoordinatesystem in_coordinate_system,
-  enum cmzn_scenecoordinatesystem out_coordinate_system,
+	enum cmzn_scenecoordinatesystem in_coordinate_system,
+	enum cmzn_scenecoordinatesystem out_coordinate_system,
 	cmzn_scene_id local_scene, const double *valuesIn3, double *valuesOut3)
 {
 	if (!((sceneviewer) &&(sceneviewer->scene) && (valuesIn3) && (valuesOut3)))
 		return CMZN_ERROR_ARGUMENT;
-	gtMatrix *localToWorldTransformation = 0;
-	if (local_scene)
-		localToWorldTransformation = cmzn_scene_get_total_transformation(local_scene, sceneviewer->scene);
+	gtMatrix *localToWorldTransformation =
+		cmzn_scene_get_total_transformation(local_scene ? local_scene : sceneviewer->scene, sceneviewer->scene);
 	double transformationMatrix16[16];
 	int result = sceneviewer->getTransformationMatrix(in_coordinate_system, out_coordinate_system,
 		localToWorldTransformation, transformationMatrix16);
@@ -6618,52 +6617,38 @@ It is expected to be byte sized values for each of Red Green and Blue only.
 	return (return_code);
 } /* Scene_viewer_set_pixel_image */
 
-int Scene_viewer_view_all(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 16 October 2001
-
-DESCRIPTION :
-Finds the x, y and z ranges from the scene and sets the view parameters so
-that everything can be seen, and with window's std_view_angle. Also adjusts
-near and far clipping planes; if specific values are required, should follow
-with commands for setting these.
-==============================================================================*/
+int cmzn_sceneviewer_view_all(struct Scene_viewer *scene_viewer)
 {
-	double centre_x, centre_y, centre_z, clip_factor, radius,
-		size_x, size_y, size_z, width_factor;
 	int return_code;
 
-	if (scene_viewer)
+	if (scene_viewer && scene_viewer->scene)
 	{
-		cmzn_scene_get_global_graphics_range(scene_viewer->scene,
-			scene_viewer->filter,
-			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z);
-		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
-		if (0 == radius)
+		double centre[3], size[3];
+		scene_viewer->scene->getCoordinatesRangeCentreSize(scene_viewer->filter, centre, size);
+		double radius = sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+		if (radius > 0.0)
 		{
-			radius = 0.5*(scene_viewer->right - scene_viewer->left);
+			/* enlarge radius to keep image within edge of window */
+			const double width_factor = 1.05; // should be a controllable sceneviewermodule default
+			radius *= width_factor;
 		}
 		else
 		{
-			/* enlarge radius to keep image within edge of window */
-			/*???RC width_factor should be read in from defaults file */
-			width_factor = 1.05;
-			radius *= width_factor;
+			radius = 0.5*(scene_viewer->right - scene_viewer->left);
 		}
-		/*???RC clip_factor should be read in from defaults file: */
-		clip_factor = 4.0;
-		return_code = Scene_viewer_set_view_simple(scene_viewer, centre_x, centre_y,
-			centre_z, radius, 40, clip_factor*radius);
+		const double clip_factor = 4.0; // should be a controllable sceneviewermodule default
+		return_code = Scene_viewer_set_view_simple(scene_viewer, centre[0], centre[1],
+			centre[2], radius, /*view_angle*/40.0, clip_factor*radius);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_view_all.  Invalid argument(s)");
+			"cmzn_sceneviewer_view_all.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Scene_viewer_view_all */
+}
 
 int Scene_viewer_viewport_zoom(struct Scene_viewer *scene_viewer,
 	double zoom_ratio)
@@ -7452,9 +7437,7 @@ int cmzn_sceneviewer_set_scenefilter(cmzn_sceneviewer_id scene_viewer,
 		{
 			REACCESS(cmzn_scenefilter)(&scene_viewer->filter, filter);
 			if (scene_viewer->scene)
-			{
-				cmzn_scene_changed(scene_viewer->scene);
-			}
+				scene_viewer->scene->setChanged();
 		}
 		return CMZN_OK;
 	}
@@ -7477,9 +7460,7 @@ int cmzn_sceneviewer_scenefilter_change(struct Scene_viewer *scene_viewer,	void 
 		{
 			/* calling scene changed as changing filter may require new graphics to be rebuild*/
 			if (scene_viewer->scene)
-			{
-				cmzn_scene_changed(scene_viewer->scene);
-			}
+				scene_viewer->scene->setChanged();
 		}
 	}
 	else

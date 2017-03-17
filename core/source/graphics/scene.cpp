@@ -23,11 +23,13 @@ FILE : scene.cpp
 #include "opencmiss/zinc/streamscene.h"
 #include "opencmiss/zinc/scene.h"
 #include "opencmiss/zinc/status.h"
+#include "opencmiss/zinc/timekeeper.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "description_io/scene_json_export.hpp"
@@ -42,6 +44,7 @@ FILE : scene.cpp
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
+#include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region_private.h"
@@ -62,7 +65,7 @@ FILE : scene.cpp
 #include "graphics/tessellation.hpp"
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, \
-	struct cmzn_scene *, gtMatrix *);
+	struct cmzn_scene *, void *);
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_top_region_change, \
 	struct cmzn_scene *, struct cmzn_scene *);
@@ -86,14 +89,12 @@ static void cmzn_scene_region_change(struct cmzn_region *region,
 DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_transformation, void)
 
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_transformation, \
-	struct cmzn_scene *, gtMatrix *)
+	struct cmzn_scene *, void *)
 
 DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_top_region_change, void)
 
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_top_region_change, \
 	struct cmzn_scene *, struct cmzn_scene *);
-
-static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene);
 
 cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn) :
 	region(regionIn),
@@ -106,10 +107,10 @@ cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmodu
 	list_of_graphics(CREATE(LIST(cmzn_graphics))()),
 	cache(0),
 	changed(0),
-	transformation(0),
+	transformationActive(false),
+	transformationMatrixColumnMajor(false),
+	transformationField(0),
 	visibility_flag(true),
-	transformation_field(0),
-	transformation_time_callback_flag(0),
 	graphics_module(graphicsmoduleIn),
 	time_notifier(0),
 	transformation_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))()),
@@ -125,14 +126,65 @@ cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmodu
 
 cmzn_scene::~cmzn_scene()
 {
+	this->detachFromOwner();
 	if (this->list_of_graphics)
 	{
 		// orphan graphics, first removing scene pointer
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_set_scene_for_list_private,
 			/*scene*/(void *)0, this->list_of_graphics);
-		DESTROY(LIST(cmzn_graphics))(&list_of_graphics);
+		DESTROY(LIST(cmzn_graphics))(&this->list_of_graphics);
 	}
+	if (this->element_divisions)
+	{
+		DEALLOCATE(this->element_divisions);
+		this->element_divisions = 0;
+	}
+}
+
+void cmzn_scene::detachFromOwner()
+{
+	// first notify selection clients as they call some scene APIs
+	if (this->selectionnotifier_list)
+	{
+		for (cmzn_selectionnotifier_list::iterator iter = this->selectionnotifier_list->begin();
+			iter != this->selectionnotifier_list->end(); ++iter)
+		{
+			cmzn_selectionnotifier_id selectionnotifier = *iter;
+			selectionnotifier->sceneDestroyed();
+			cmzn_selectionnotifier::deaccess(selectionnotifier);
+		}
+		delete this->selectionnotifier_list;
+		this->selectionnotifier_list = 0;
+	}
+	cmzn_fieldmodulenotifier_destroy(&this->fieldmodulenotifier);
+	if (this->transformation_callback_list)
+	{
+		DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))(
+			&(this->transformation_callback_list));
+	}
+	if (this->top_region_change_callback_list)
+	{
+		DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
+			&(this->top_region_change_callback_list));
+	}
+	if (this->update_callback_list)
+	{
+		struct cmzn_scene_callback_data *callback_data, *next;
+		callback_data = this->update_callback_list;
+		while (callback_data)
+		{
+			next = callback_data->next;
+			DEALLOCATE(callback_data);
+			callback_data = next;
+		}
+		this->update_callback_list = 0;
+	}
+	this->detachFields();
+}
+
+void cmzn_scene::detachFields()
+{
 	// destroy references to RC field wrappers
 	for (SceneCoordinateFieldWrapperMap::iterator iter = this->coordinateFieldWrappers.begin();
 		iter != this->coordinateFieldWrappers.end(); ++iter)
@@ -144,18 +196,20 @@ cmzn_scene::~cmzn_scene()
 	{
 		cmzn_field_destroy(&(iter->second.first));
 	}
-	if (selection_group)
-		cmzn_field_group_destroy(&selection_group);
-	if (transformation)
-		DEALLOCATE(transformation);
-	if (time_notifier)
+	if (this->selection_group)
+		cmzn_field_group_destroy(&this->selection_group);
+	if (this->time_notifier)
+	{
+		cmzn_timenotifier_clear_callback(this->time_notifier);
 		cmzn_timenotifier_destroy(&time_notifier);
-	if (default_coordinate_field)
-		cmzn_field_destroy(&default_coordinate_field);
-	if (element_divisions)
-		DEALLOCATE(element_divisions);
-	if (transformation_field)
-		cmzn_field_destroy(&transformation_field);
+	}
+	if (this->transformationField)
+		cmzn_field_destroy(&(this->transformationField));
+	this->transformationActive = false;
+	if (this->default_coordinate_field)
+		cmzn_field_destroy(&(this->default_coordinate_field));
+	if (this->list_of_graphics)
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_detach_fields, (void *)NULL, this->list_of_graphics);
 }
 
 cmzn_scene *cmzn_scene::create(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn)
@@ -343,85 +397,235 @@ void cmzn_scene::refreshFieldWrappers()
 	cmzn_fieldmodule_destroy(&fieldmodule);
 }
 
-/**
- * Informs registered clients of change in the scene.
- */
-static int cmzn_scene_inform_clients(
-	struct cmzn_scene *scene)
+int cmzn_scene::evaluateTransformationMatrixFromField()
 {
-	int return_code = 1;
-	if (scene)
+	if (!this->transformationField)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_fieldcache *fieldcache = cmzn_fieldcache::create(this->region);
+	cmzn_timekeeper *timekeeper = this->getTimekeeper();
+	const double time = (timekeeper) ? timekeeper->getTime() : 0.0;
+	cmzn_fieldcache_set_time(fieldcache, time);
+	int return_code = cmzn_field_evaluate_real(this->transformationField,
+		fieldcache, /*number_of_values*/16, this->transformationMatrix);
+	if (return_code != CMZN_OK)
 	{
-		// update_time_behaviour should be checked for efficiency:
-		cmzn_scene_update_time_behaviour(scene);
-		cmzn_region *parentRegion = cmzn_region_get_parent_internal(scene->region);
-		cmzn_scene *parentScene = cmzn_region_get_scene_private(parentRegion);
-		if (parentScene)
+		char *name = cmzn_field_get_name(this->transformationField);
+		display_message(WARNING_MESSAGE, "Failed to evaluate scene transformation matrix from field %s. Using identity.", name);
+		DEALLOCATE(name);
+		// set identity matrix
+		for (int i = 0; i < 16; ++i)
+			this->transformationMatrix[i] = ((i % 5) == 0) ? 1.0 : 0.0;
+	}
+	cmzn_fieldcache_destroy(&fieldcache);
+	return return_code;
+}
+
+void cmzn_scene::transformationChange()
+{
+	if (this->transformation_callback_list)
+		CMZN_CALLBACK_LIST_CALL(cmzn_scene_transformation)(
+			this->transformation_callback_list, this, (void *)0);
+	this->setChanged();
+}
+
+cmzn_timekeeper *cmzn_scene::getTimekeeper()
+{
+	cmzn_timekeepermodule *timekeepermodule = cmzn_graphics_module_get_timekeepermodule(this->graphics_module);
+	if (timekeepermodule)
+	{
+		cmzn_timekeeper *timekeeper = timekeepermodule->getDefaultTimekeeper(); // not accessed
+		cmzn_timekeepermodule_destroy(&timekeepermodule);
+		return timekeeper;
+	}
+	return 0;
+}
+
+void cmzn_scene::clearTransformation()
+{
+	const bool wasTransformationActive = this->transformationActive;
+	cmzn_field_destroy(&(this->transformationField));
+	this->transformationActive = false;
+	if (wasTransformationActive)
+		this->transformationChange();
+}
+
+void cmzn_scene::setTransformationMatrixColumnMajor(bool columnMajor)
+{
+	if (columnMajor != this->transformationMatrixColumnMajor)
+	{
+		this->transformationMatrixColumnMajor = columnMajor;
+		if (this->transformationActive)
+			this->transformationChange();
+	}
+}
+
+int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
+{
+	if (transformationFieldIn)
+	{
+		if ((0 == this->region)
+			|| (Computed_field_get_region(transformationFieldIn) != this->region)
+			|| (cmzn_field_get_number_of_components(transformationFieldIn) != 16))
+			return CMZN_ERROR_ARGUMENT;
+	}
+	const bool notify = (transformationFieldIn != this->transformationField)
+		|| (this->transformationActive && (!transformationFieldIn));
+	REACCESS(cmzn_field)(&(this->transformationField), transformationFieldIn);
+	this->transformationActive = (0 != transformationFieldIn);
+	if (notify)
+	{
+		// callbacks are set up or cancelled with next call to updateTimeDependence() in notifyClients()
+		this->transformationChange();
+	}
+	return CMZN_OK;
+}
+
+int cmzn_scene::getTransformationMatrix(double *valuesOut16)
+{
+	if (!valuesOut16)
+		return CMZN_ERROR_ARGUMENT;
+	if (this->transformationActive)
+	{
+		if (this->transformationField)
 		{
-			cmzn_scene_changed(parentScene);
+			int result = this->evaluateTransformationMatrixFromField();
+			if (CMZN_OK != result)
+				return result;
 		}
-		cmzn_scene_callback_data *callback_data = scene->update_callback_list;
-		while (callback_data)
-		{
-			(callback_data->callback)(scene,
-					callback_data->callback_user_data);
-				callback_data = callback_data->next;
-		}
-		scene->changed = 0;
+		for (int i = 0; i < 16; ++i)
+			valuesOut16[i] = this->transformationMatrix[i];
 	}
 	else
 	{
-		return_code = 0;
+		// return identity matrix
+		for (int i = 0; i < 16; ++i)
+			valuesOut16[i] = ((i % 5) == 0) ? 1.0 : 0.0;
 	}
-	return (return_code);
+	return CMZN_OK;
 }
 
-void cmzn_scene_changed(struct cmzn_scene *scene)
+int cmzn_scene::getTransformationMatrixRowMajor(double *valuesOut16)
 {
-	if (scene)
+	const int result = this->getTransformationMatrix(valuesOut16);
+	if ((CMZN_OK == result) && this->transformationMatrixColumnMajor)
 	{
-		scene->changed = 1;
-		if (0 == scene->cache)
+		// transpose
+		for (int i = 1; i < 4; ++i)
+			for (int j = 0; j < i; ++j)
+			{
+				const double tmp = valuesOut16[i*4 + j];
+				valuesOut16[i*4 + j] = valuesOut16[j*4 + i];
+				valuesOut16[j*4 + i] = tmp;
+			}
+	}
+	return result;
+}
+
+int cmzn_scene::setTransformationMatrix(const double *valuesIn16)
+{
+	if (!valuesIn16)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_field_destroy(&(this->transformationField));
+	this->transformationActive = true;
+	for (int i = 0; i < 16; ++i)
+		this->transformationMatrix[i] = valuesIn16[i];
+	this->transformationChange();
+	return CMZN_OK;
+}
+
+void cmzn_scene::timeChange(cmzn_timenotifierevent_id timenotifierevent)
+{
+	cmzn_scene_begin_change(this);
+	if ((this->transformationField) && Computed_field_has_multiple_times(this->transformationField))
+		this->transformationChange();
+	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_time_change, NULL, this->list_of_graphics);
+	cmzn_scene_end_change(this);
+}
+
+static void cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifierevent,
+	void *scene_void)
+{
+	static_cast<cmzn_scene *>(scene_void)->timeChange(timenotifierevent);
+}
+
+/** Update scene's graphics dependence on time, and ensure scene gets time
+  * callbacks if and only if it or its graphics are time dependent */
+void cmzn_scene::updateTimeDependence()
+{
+	bool timeDependent = false;
+	if ((this->transformationField) && Computed_field_has_multiple_times(this->transformationField))
+		timeDependent = true;
+	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+		cmzn_graphics_update_time_dependence, (void *)&timeDependent, this->list_of_graphics);
+	if (timeDependent)
+	{
+		if (!this->time_notifier)
 		{
-			cmzn_scene_inform_clients(scene);
+			cmzn_timekeeper *timekeeper = this->getTimekeeper();
+			if (!timekeeper)
+			{
+				display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeDependence.  Missing default timekeeper");
+			}
+			else
+			{
+				this->time_notifier = Time_object_create_regular(/*update_frequency*/10.0, /*time_offset*/0.0);
+				if (!timekeeper->addTimeObject(this->time_notifier))
+				{
+					display_message(ERROR_MESSAGE, "cmzn_scene::updateTimeDependence.  Failed to create time notifier");
+					cmzn_timenotifier_destroy(&this->time_notifier);
+				}
+				else
+				{
+					cmzn_timenotifier_set_callback(this->time_notifier,
+						cmzn_scene_time_update_callback, this);
+				}
+			}
 		}
 	}
+	else if (this->time_notifier)
+	{
+		cmzn_timenotifier_clear_callback(this->time_notifier);
+		cmzn_timekeeper *timekeeper = this->getTimekeeper();
+		if (timekeeper)
+			timekeeper->removeTimeObject(this->time_notifier);
+		cmzn_timenotifier_destroy(&(this->time_notifier));
+	}
+}
+
+void cmzn_scene::notifyClients()
+{
+	this->updateTimeDependence();
+	cmzn_region *parentRegion = cmzn_region_get_parent_internal(this->region);
+	cmzn_scene *parentScene = cmzn_region_get_scene_private(parentRegion);
+	if (parentScene)
+		parentScene->setChanged();
+	cmzn_scene_callback_data *callback_data = this->update_callback_list;
+	while (callback_data)
+	{
+		(callback_data->callback)(this, callback_data->callback_user_data);
+		callback_data = callback_data->next;
+	}
+	this->changed = 0;
 }
 
 int cmzn_scene_begin_change(cmzn_scene_id scene)
 {
 	if (scene)
 	{
-		/* increment cache to allow nesting */
-		(scene->cache)++;
-		return 1;
+		scene->beginChange();
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_end_change(cmzn_scene_id scene)
 {
 	if (scene)
 	{
-		/* decrement cache to allow nesting */
-		(scene->cache)--;
-		/* once cache has run out, inform clients of any changes */
-		if (0 == scene->cache)
-		{
-			if (scene->changed)
-			{
-				cmzn_scene_inform_clients(scene);
-			}
-		}
-		return 1;
+		scene->endChange();
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 /***************************************************************************//**
@@ -443,7 +647,7 @@ static int cmzn_scene_void_detach_from_cmzn_region(void *scene_void)
 				scene->region);
 		}
 		scene->region = (struct cmzn_region *)NULL;
-		cmzn_scene_detach_from_owner(scene);
+		scene->detachFromOwner();
 		return_code = DEACCESS(cmzn_scene)(&scene);
 	}
 	else
@@ -494,6 +698,78 @@ int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
 	return 0;
 }
 
+void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
+{
+	bool local_selection_changed = false;
+	if (this->selection_group)
+	{
+		struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
+		const cmzn_field_change_detail *base_change_detail = 0;
+		int change_flags = Computed_field_manager_message_get_object_change_and_detail(
+			managerMessage, cmzn_field_group_base_cast(this->selection_group), &base_change_detail);
+		if (change_flags & (MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field)))
+		{
+			if (base_change_detail)
+			{
+				const cmzn_field_hierarchical_group_change_detail *group_change_detail =
+					dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
+				int group_local_change = group_change_detail->getLocalChangeSummary();
+				if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
+					local_selection_changed = true;
+				int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
+				if (this->selectionnotifier_list && (0 < this->selectionnotifier_list->size()))
+				{
+					cmzn_selectionevent_id event = new cmzn_selectionevent();
+					event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
+						| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
+					for (cmzn_selectionnotifier_list::iterator iter = this->selectionnotifier_list->begin();
+						iter != this->selectionnotifier_list->end(); ++iter)
+					{
+						(*iter)->notify(event);
+					}
+					cmzn_selectionevent_destroy(&event);
+				}
+			}
+			// ensure child scene selection_group matches the appropriate subgroup or none if none
+			cmzn_region_id child_region = cmzn_region_get_first_child(this->region);
+			while ((NULL != child_region))
+			{
+				cmzn_scene_id child_scene = cmzn_region_get_scene_private(child_region);
+				if (child_scene)
+				{
+					cmzn_field_group_id child_group =
+						cmzn_field_group_get_subregion_field_group(this->selection_group, child_region);
+					cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
+					if (child_group)
+					{
+						cmzn_field_group_destroy(&child_group);
+					}
+				}
+				cmzn_region_reaccess_next_sibling(&child_region);
+			}
+		}
+	}
+	else if (this->selectionChanged)
+	{
+		local_selection_changed = true;
+		this->selectionChanged = false;
+	}
+	this->beginChange();
+	const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
+	if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
+		this->refreshFieldWrappers();
+	struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
+	FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
+		(void *)&change_data, this->list_of_graphics);
+	if ((this->transformationField) && (change_flags & CMZN_FIELD_CHANGE_FLAG_RESULT))
+	{
+		const int field_change = cmzn_fieldmoduleevent_get_field_change_flags(event, this->transformationField);
+		if (field_change & CMZN_FIELD_CHANGE_FLAG_RESULT)
+			this->transformationChange();
+	}
+	this->endChange();
+}
+
 namespace {
 
 /** field module event callback */
@@ -501,71 +777,7 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 {
 	cmzn_scene *scene = reinterpret_cast<cmzn_scene *>(scene_void);
 	if (event && scene)
-	{
-		bool local_selection_changed = false;
-		if (scene->selection_group)
-		{
-			struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
-			const cmzn_field_change_detail *base_change_detail = 0;
-			int change_flags = Computed_field_manager_message_get_object_change_and_detail(
-				managerMessage, cmzn_field_group_base_cast(scene->selection_group), &base_change_detail);
-			if (change_flags & (
-				(MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field))))
-			{
-				if (base_change_detail)
-				{
-					const cmzn_field_hierarchical_group_change_detail *group_change_detail =
-						dynamic_cast<const cmzn_field_hierarchical_group_change_detail *>(base_change_detail);
-					int group_local_change = group_change_detail->getLocalChangeSummary();
-					if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
-						local_selection_changed = true;
-					int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
-					if (scene->selectionnotifier_list && (0 < scene->selectionnotifier_list->size()))
-					{
-						cmzn_selectionevent_id event = new cmzn_selectionevent();
-						event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
-							| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
-						for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
-							iter != scene->selectionnotifier_list->end(); ++iter)
-						{
-							(*iter)->notify(event);
-						}
-						cmzn_selectionevent_destroy(&event);
-					}
-				}
-				// ensure child scene selection_group matches the appropriate subgroup or none if none
-				cmzn_region_id child_region = cmzn_region_get_first_child(scene->region);
-				while ((NULL != child_region))
-				{
-					cmzn_scene_id child_scene = cmzn_region_get_scene_private(child_region);
-					if (child_scene)
-					{
-						cmzn_field_group_id child_group =
-							cmzn_field_group_get_subregion_field_group(scene->selection_group, child_region);
-						cmzn_scene_set_selection_field(child_scene, cmzn_field_group_base_cast(child_group));
-						if (child_group)
-						{
-							cmzn_field_group_destroy(&child_group);
-						}
-					}
-					cmzn_region_reaccess_next_sibling(&child_region);
-				}
-			}
-		}
-		else if (scene->selectionChanged)
-		{
-			local_selection_changed = true;
-			scene->selectionChanged = false;
-		}
-		cmzn_scene_begin_change(scene);
-		const int change_flags = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
-		if (change_flags & CMZN_FIELD_CHANGE_FLAG_DEFINITION)
-			scene->refreshFieldWrappers();
-		struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
-			(void *)&change_data, scene->list_of_graphics);
-		cmzn_scene_end_change(scene);
-	}
+		scene->processFieldmoduleevent(event);
 }
 
 } // anonymous namespace
@@ -635,7 +847,7 @@ static void cmzn_scene_region_change(struct cmzn_region *region,
 	if (region && region_changes && scene)
 	{
 		if (region_changes->children_changed)
-				cmzn_scene_changed(scene);
+			scene->setChanged();
 	}
 	else
 	{
@@ -652,7 +864,6 @@ int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address)
 {
 	if (scene_address && *scene_address)
 	{
-		cmzn_scene_detach_from_owner(*scene_address);
 		delete *scene_address;
 		*scene_address = 0;
 		return 1;
@@ -732,7 +943,7 @@ int cmzn_scene_add_graphics(struct cmzn_scene *scene,
 		return_code=cmzn_graphics_add_to_list(graphics,position,
 			scene->list_of_graphics);
 		cmzn_graphics_set_scene_private(graphics, scene);
-		cmzn_scene_changed(scene);
+		scene->setChanged();
 	}
 	else
 	{
@@ -750,7 +961,7 @@ int cmzn_scene_remove_graphics(struct cmzn_scene *scene,
 	{
 		cmzn_graphics_set_scene_private(graphics, NULL);
 		cmzn_graphics_remove_from_list(graphics, scene->list_of_graphics);
-		cmzn_scene_changed(scene);
+		scene->setChanged();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -768,7 +979,7 @@ int cmzn_scene_modify_graphics(struct cmzn_scene *scene,
 	{
 		return_code=cmzn_graphics_modify_in_list(graphics,new_graphics,
 			scene->list_of_graphics);
-		cmzn_scene_changed(scene);
+		scene->setChanged();
 	}
 	else
 	{
@@ -1054,7 +1265,7 @@ int cmzn_region_deaccess_scene(struct cmzn_region *region)
 			{
 				/* Clear graphics module to avoid being called back when scene is detached
 				 * from region. @see cmzn_scene_void_detach_from_cmzn_region */
-				cmzn_scene_detach_from_owner(scene);
+				scene->detachFromOwner();
 				scene->graphics_module = NULL;
 				REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(cmzn_scene))(scene, list);
 			}
@@ -1187,10 +1398,9 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 {
 	int return_code;
 
-	if (scene)
+	cmzn_timekeeper *timekeeper;
+	if ((scene) && (timekeeper = scene->getTimekeeper()))
 	{
-		cmzn_timekeepermodule *timekeepermodule = cmzn_scene_get_timekeepermodule(scene);
-		cmzn_timekeeper *timekeeper = timekeepermodule ? timekeepermodule->getDefaultTimekeeper() : 0;
 		double original_time = timekeeper->getTime();
 		if (force_rebuild)
 		{
@@ -1214,7 +1424,6 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 		{
 			timekeeper->setTimeQuiet(original_time);
 		}
-		cmzn_timekeepermodule_destroy(&timekeepermodule);
 	}
 	else
 	{
@@ -1364,27 +1573,27 @@ int execute_cmzn_scene(struct cmzn_scene *scene,
 		if (renderer->picking)
 			glLoadName((GLuint)scene->picking_name);
 		/* save a matrix multiply when identity transformation */
-		if(scene->transformation)
+		if (scene->transformationActive)
 		{
 			/* Save starting modelview matrix */
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
 			glPushAttrib(GL_TRANSFORM_BIT);
 			glEnable(GL_NORMALIZE);
-			/* perform individual object transformation */
-			wrapperMultiplyCurrentMatrix(scene->transformation);
+			if (scene->transformationField)
+				scene->evaluateTransformationMatrixFromField();
+			GLdouble transmat[16];
+			for (int i = 0; i < 16; ++i)
+				transmat[i] = static_cast<GLdouble>(scene->transformationMatrix[i]);
+			if (scene->transformationMatrixColumnMajor)
+				glMultMatrixd(transmat);
+			else
+				glMultTransposeMatrixd(transmat);
 		}
-		if (scene->time_notifier)
-		{
-			renderer->time = cmzn_timenotifier_get_time(scene->time_notifier);
-		}
-		else
-		{
-			renderer->time = 0;
-		}
+		renderer->time = (scene->time_notifier) ? cmzn_timenotifier_get_time(scene->time_notifier) : 0.0;
 		return_code = renderer->cmzn_scene_execute_graphics(scene);
 		return_code = renderer->cmzn_scene_execute_child_scene(scene);
-		if (scene->transformation)
+		if (scene->transformationActive)
 		{
 			/* Restore starting modelview matrix */
 			glPopAttrib();
@@ -1954,7 +2163,7 @@ int cmzn_scene_modify(struct cmzn_scene *destination,
 			/* destroy list afterwards to avoid manager messages halfway through change */
 			DESTROY(LIST(cmzn_graphics))(&destroy_list_of_graphics);
 			/* inform the client of the change */
-			cmzn_scene_changed(destination);
+			destination->setChanged();
 			return_code = 1;
 		}
 		else
@@ -1991,7 +2200,7 @@ int cmzn_scene_set_visibility_flag(struct cmzn_scene *scene,
 		if (scene->visibility_flag != visibility_flag)
 		{
 			scene->visibility_flag = visibility_flag;
-			cmzn_scene_changed(scene);
+			scene->setChanged();
 		}
 		return CMZN_OK;
 	}
@@ -2071,8 +2280,9 @@ int cmzn_scene_add_transformation_callback(struct cmzn_scene *scene,
 	ENTER(cmzn_scene_add_transformation_callback);
 	if (scene && function)
 	{
-		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
-			scene->transformation_callback_list, function, user_data))
+		if ((scene->transformation_callback_list) 
+			&& CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
+				scene->transformation_callback_list, function, user_data))
 		{
 			return_code = 1;
 		}
@@ -2103,8 +2313,9 @@ int cmzn_scene_remove_transformation_callback(
 	ENTER(cmzn_scene_remove_transformation_callback);
 	if (scene && function)
 	{
-		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
-			scene->transformation_callback_list, function,user_data))
+		if ((scene->transformation_callback_list)
+			&& CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
+				scene->transformation_callback_list, function,user_data))
 		{
 			return_code = 1;
 		}
@@ -2127,434 +2338,52 @@ int cmzn_scene_remove_transformation_callback(
 	return (return_code);
 } /* cmzn_scene_remove_transformation_callback */
 
-int cmzn_scene_has_transformation(struct cmzn_scene *scene)
+int cmzn_scene_clear_transformation(cmzn_scene_id scene)
 {
-	int return_code;
-
-	ENTER(cmzn_scene_has_transformation);
 	if (scene)
 	{
-		if(scene->transformation)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
+		scene->clearTransformation();
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_has_transformation.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_scene_has_transformation */
-
-int cmzn_scene_get_transformation(struct cmzn_scene *scene,
-	gtMatrix *transformation)
-{
-	int i, j, return_code;
-
-	ENTER(cmzn_scene_get_transformation);
-	if (scene)
-	{
-		if(scene->transformation)
-		{
-			for (i=0;i<4;i++)
-			{
-				for (j=0;j<4;j++)
-				{
-					(*transformation)[i][j] = (*scene->transformation)[i][j];
-				}
-			}
-		}
-		else
-		{
-			/* Set the identity */
-			(*transformation)[0][0] = 1.0;
-			(*transformation)[0][1] = 0.0;
-			(*transformation)[0][2] = 0.0;
-			(*transformation)[0][3] = 0.0;
-			(*transformation)[1][0] = 0.0;
-			(*transformation)[1][1] = 1.0;
-			(*transformation)[1][2] = 0.0;
-			(*transformation)[1][3] = 0.0;
-			(*transformation)[2][0] = 0.0;
-			(*transformation)[2][1] = 0.0;
-			(*transformation)[2][2] = 1.0;
-			(*transformation)[2][3] = 0.0;
-			(*transformation)[3][0] = 0.0;
-			(*transformation)[3][1] = 0.0;
-			(*transformation)[3][2] = 0.0;
-			(*transformation)[3][3] = 1.0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_transformation.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_scene_get_transformation */
-
-int cmzn_scene_set_transformation(struct cmzn_scene *scene,
-	gtMatrix *transformation)
-{
-	int i, j, return_code;
-
-	ENTER(cmzn_scene_set_transformation);
-	if (scene)
-	{
-		return_code = 1;
-		if ((!transformation) || gtMatrix_is_identity(transformation))
-		{
-			if (scene->transformation)
-			{
-				DEALLOCATE(scene->transformation);
-			}
-		}
-		else
-		{
-			if (scene->transformation)
-			{
-				if (!gtMatrix_match(transformation, scene->transformation))
-				{
-					for (i = 0; i < 4; i++)
-					{
-						for (j = 0; j < 4; j++)
-						{
-							(*scene->transformation)[i][j] = (*transformation)[i][j];
-						}
-					}
-				}
-			}
-			else
-			{
-				if (ALLOCATE(scene->transformation, gtMatrix, 1))
-				{
-					for (i = 0; i < 4; i++)
-					{
-						for (j = 0; j < 4; j++)
-						{
-							(*scene->transformation)[i][j] = (*transformation)[i][j];
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "cmzn_scene_set_transformation.  "
-						"Unable to allocate transformation");
-					return_code = 0;
-				}
-			}
-		}
-		CMZN_CALLBACK_LIST_CALL(cmzn_scene_transformation)(
-			scene->transformation_callback_list, scene,
-			scene->transformation);
-		cmzn_scene_changed(scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_set_transformation.  Missing scene");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_scene_set_transformation */
-
-int cmzn_scene_trigger_time_dependent_transformation(cmzn_scene_id scene, double current_time)
-{
-	int return_code;
-	FE_value *values;
-	gtMatrix transformation_matrix;
-
-	if (scene && scene->transformation_field)
-	{
-		if (ALLOCATE(values, FE_value, 16))
-		{
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
-			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-			cmzn_fieldcache_set_time(field_cache, current_time);
-			if (CMZN_OK == cmzn_field_evaluate_real(scene->transformation_field,
-				field_cache, /*number_of_values*/16, values))
-			{
-				int i, j, k;
-				k = 0;
-				for (i = 0; i < 4; i++)
-				{
-					for (j = 0; j < 4; j++)
-					{
-						transformation_matrix[i][j] = values[k];
-						k++;
-					}
-				}
-				return_code = cmzn_scene_set_transformation(scene,
-					&transformation_matrix);
-			}
-			else
-			{
-				return_code = 0;
-			}
-			cmzn_fieldcache_destroy(&field_cache);
-			cmzn_fieldmodule_destroy(&field_module);
-			DEALLOCATE(values);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_scene_set_time_dependent_transformation.  "
-				"Unable to allocate values.");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_set_time_dependent_transformation.  "
-			"invalid argument.");
-		return_code=0;
-	}
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
-void cmzn_scene_remove_time_dependent_transformation(struct cmzn_scene *scene)
-{
-	if (scene->transformation_time_callback_flag)
-	{
-		 DEACCESS(Computed_field)(&(scene->transformation_field));
-		 scene->transformation_time_callback_flag = 0;
-	}
-}
-
-int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
-	 struct Computed_field *transformation_field)
-{
-	 int return_code = 0;
-
-	 if (scene && transformation_field)
-	 {
-			if (scene->time_notifier)
-			{
-				 cmzn_scene_remove_time_dependent_transformation(scene);
-				 scene->transformation_field=
-						ACCESS(Computed_field)(transformation_field);
-				 cmzn_scene_trigger_time_dependent_transformation(scene,
-					 cmzn_timenotifier_get_time(scene->time_notifier));
-				 scene->transformation_time_callback_flag = 1;
-				 return_code = 1;
-			}
-			return_code = scene->transformation_time_callback_flag;
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "cmzn_scene_set_transformation_with_time_callback.  "
-				 "Invalid argument(s).");
-			return_code=0;
-	 }
-
-	 return (return_code);
-}
-
-static void cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifierevent,
-	void *scene_void)
-{
-	struct cmzn_scene *scene;
-
-	if ((scene=(struct cmzn_scene *)scene_void))
-	{
-		cmzn_scene_begin_change(scene);
-		if (scene->transformation_time_callback_flag)
-		{
-			cmzn_scene_trigger_time_dependent_transformation(scene,
-				cmzn_timenotifierevent_get_time(timenotifierevent));
-		}
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_time_change,NULL,
-			scene->list_of_graphics);
-		cmzn_scene_end_change(scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_time_update_callback.  Invalid argument(s)");
-	}
-}
-
-int cmzn_scene_has_multiple_times(
-	struct cmzn_scene *scene)
-{
-	int return_code;
-	struct cmzn_graphics_update_time_behaviour_data data;
-
-	ENTER(cmzn_scene_has_multiple_times);
-	if (scene)
-	{
-		data.default_coordinate_depends_on_time = 0;
-		data.time_dependent = 0;
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_update_time_behaviour, (void *)&data,
-			scene->list_of_graphics);
-		return_code = data.time_dependent;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_has_multiple_times.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_scene_has_multiple_times */
-
-cmzn_timenotifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
-{
-	cmzn_timenotifier *return_time;
-
-	if (scene)
-	{
-		return_time=scene->time_notifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_time_notifier.  Missing scene");
-		return_time=(cmzn_timenotifier *)NULL;
-	}
-
-	return (return_time);
-}
-
-int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
-	cmzn_timenotifier *time)
-{
-	int return_code;
-
-	if (scene)
-	{
-		if (scene->time_notifier != time)
-		{
-			if (scene->time_notifier)
-			{
-				cmzn_timenotifier_clear_callback(scene->time_notifier);
-			}
-			REACCESS(Time_object)(&(scene->time_notifier),time);
-			if (time)
-			{
-				cmzn_timenotifier_set_callback(scene->time_notifier,
-					cmzn_scene_time_update_callback, scene);
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* cmzn_scene_set_time_notifier */
-
-static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
-{
-	int return_code;
-	cmzn_timenotifier *time;
-
-	if (scene)
-	{
-		return_code = 1;
-		/* Ensure the Scene object has a time object if and only if the
-			graphics object has more than one time */
-		if (cmzn_scene_has_multiple_times(scene))
-		{
-			time = cmzn_scene_get_time_notifier(scene);
-			if (!time)
-			{
-				cmzn_timekeepermodule *timekeepermodule = cmzn_scene_get_timekeepermodule(scene);
-				cmzn_timekeeper *timekeeper = timekeepermodule ? timekeepermodule->getDefaultTimekeeper() : 0;
-				time = Time_object_create_regular(/*update_frequency*/10.0,
-					/*time_offset*/0.0);
-				cmzn_scene_set_time_notifier(scene, time);
-				if (timekeeper)
-					timekeeper->addTimeObject(time);
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"cmzn_scene_update_time_behaviour.  Missing default timekeeper");
-					return_code = 0;
-				}
-				cmzn_timenotifier_destroy(&time);
-				cmzn_timekeepermodule_destroy(&timekeepermodule);
-			}
-		}
-		else
-		{
-			time = cmzn_scene_get_time_notifier(scene);
-			if(time == NULL)
-			{
-				cmzn_scene_set_time_notifier(scene,
-					(cmzn_timenotifier *)NULL);
-			}
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	return (return_code);
-}
-
-void cmzn_scene_detach_from_owner(cmzn_scene_id scene)
+bool cmzn_scene_has_transformation(cmzn_scene_id scene)
 {
 	if (scene)
-	{
-		// first notify selection clients as they call some scene APIs
-		if (scene->selectionnotifier_list)
-		{
-			for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
-				iter != scene->selectionnotifier_list->end(); ++iter)
-			{
-				cmzn_selectionnotifier_id selectionnotifier = *iter;
-				selectionnotifier->sceneDestroyed();
-				cmzn_selectionnotifier::deaccess(selectionnotifier);
-			}
-			delete scene->selectionnotifier_list;
-			scene->selectionnotifier_list = 0;
-		}
-		cmzn_fieldmodulenotifier_destroy(&scene->fieldmodulenotifier);
-		cmzn_scene_remove_time_dependent_transformation(scene);
-		if (scene->transformation_callback_list)
-		{
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))(
-				&(scene->transformation_callback_list));
-		}
-		if (scene->top_region_change_callback_list)
-		{
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
-				&(scene->top_region_change_callback_list));
-		}
-		struct cmzn_scene_callback_data *callback_data, *next;
-		callback_data = scene->update_callback_list;
-		while(callback_data)
-		{
-			next = callback_data->next;
-			DEALLOCATE(callback_data);
-			callback_data = next;
-		}
-		scene->update_callback_list = 0;
-	}
+		return scene->isTransformationActive();
+	return false;
+}
+
+cmzn_field_id cmzn_scene_get_transformation_field(cmzn_scene_id scene)
+{
+	if ((scene) && scene->getTransformationField())
+		return cmzn_field_access(scene->getTransformationField());
+	return 0;
+}
+
+int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
+	cmzn_field_id transformationField)
+{
+	if (scene)
+		return scene->setTransformationField(transformationField);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
+	double *valuesOut16)
+{
+	if (scene)
+		return scene->getTransformationMatrix(valuesOut16);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
+	const double *valuesIn16)
+{
+	if (scene)
+		return scene->setTransformationMatrix(valuesIn16);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_set_selection_field(cmzn_scene_id scene,
@@ -2618,7 +2447,7 @@ int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 				FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 					cmzn_graphics_update_selected, NULL, scene->list_of_graphics);
 			}
-			cmzn_scene_changed(scene);
+			scene->setChanged();
 			cmzn_scene_end_change(scene);
 		}
 		return_code = CMZN_OK;
@@ -2717,41 +2546,6 @@ void cmzn_scene_flush_tree_selections(cmzn_scene_id scene)
 	}
 }
 
-int cmzn_scene_detach_fields(struct cmzn_scene *scene)
-{
-	int return_code = 1;
-	if (scene)
-	{
-		//if (!scene->list_of_scene || scene->list_of_scene->empty())
-		{
-			cmzn_scene_remove_time_dependent_transformation(scene);
-			if (scene->default_coordinate_field)
-			{
-				DEACCESS(Computed_field)(&(scene->default_coordinate_field));
-			}
-			if (scene->list_of_graphics)
-			{
-				FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-					cmzn_graphics_detach_fields, (void *)NULL,
-					scene->list_of_graphics);
-			}
-			if (scene->transformation_field)
-			{
-				DEACCESS(Computed_field)(&(scene->transformation_field));
-			}
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_detach_fields.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return return_code;
-}
-
 cmzn_scene *cmzn_scene_access(cmzn_scene_id scene)
 {
 	if (scene)
@@ -2769,44 +2563,38 @@ Iterator function for writing the transformation in effect for <scene>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 {
-	char *command_prefix, *region_name;
-	int i,j,return_code;
-	gtMatrix transformation_matrix;
-
-	ENTER(list_cmzn_scene_transformation_commands);
-	if (scene&&(command_prefix=(char *)command_prefix_void))
+	auto command_prefix = static_cast<const char *>(command_prefix_void);
+	if ((scene) && (command_prefix))
 	{
-		return_code=cmzn_scene_get_transformation(scene,
-			&transformation_matrix);
-		if (return_code)
+		char *regionName = cmzn_region_get_path(scene->region);
+		make_valid_token(&regionName);
+		display_message(INFORMATION_MESSAGE, "%s %s", command_prefix, regionName);
+		DEALLOCATE(regionName);
+		if (scene->transformationField)
 		{
-			region_name = cmzn_region_get_path(scene->region);
-			/* put quotes around name if it contains special characters */
-			make_valid_token(&region_name);
-			display_message(INFORMATION_MESSAGE, "%s %s", command_prefix,
-					region_name);
-			DEALLOCATE(region_name);
-			for (i=0;i<4;i++)
-			{
-				for (j=0;j<4;j++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",
-						(transformation_matrix)[i][j]);
-				}
-			}
-			display_message(INFORMATION_MESSAGE,";\n");
+			char *fieldName = cmzn_field_get_name(scene->transformationField);
+			make_valid_token(&fieldName);
+			display_message(INFORMATION_MESSAGE, " field %s", fieldName);
+			DEALLOCATE(fieldName);
 		}
+		else if (scene->isTransformationActive())
+		{
+			for (int i = 0; i < 16; ++i)
+				display_message(INFORMATION_MESSAGE, " %g", (scene->transformationMatrix)[i]);
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, " off");
+		}
+		display_message(INFORMATION_MESSAGE, ";\n");
+		return 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"list_cmzn_scene_transformation_commands.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "list_cmzn_scene_transformation_commands.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* list_cmzn_scene_transformation_commands */
+	return 0;
+}
 
 int list_cmzn_scene_transformation(struct cmzn_scene *scene)
 /*******************************************************************************
@@ -2817,42 +2605,36 @@ Iterator function for writing the transformation in effect for <scene>
 in an easy-to-interpret matrix multiplication form.
 ==============================================================================*/
 {
-	const char *coordinate_symbol="xyzh";
-	int i,return_code;
-	gtMatrix transformation_matrix;
-
-	ENTER(list_cmzn_scene_transformation);
 	if (scene)
 	{
-		return_code=cmzn_scene_get_transformation(scene,
-			&transformation_matrix);
-		if (return_code)
+		double transformationMatrix[16];
+		if (CMZN_OK == scene->getTransformationMatrixRowMajor(transformationMatrix))
 		{
-			char *region_name = cmzn_region_get_path(scene->region);
-			display_message(INFORMATION_MESSAGE,"%s transformation:\n",
-				region_name);
-			DEALLOCATE(region_name);
-			for (i=0;i<4;i++)
+			const char *coordinate_symbol = "xyzh";
+			char *regionName = cmzn_region_get_path(scene->region);
+			make_valid_token(&regionName);
+			display_message(INFORMATION_MESSAGE, "%s transformation:\n", regionName);
+			DEALLOCATE(regionName);
+			for (int i = 0; i < 4; ++i)
 			{
 				display_message(INFORMATION_MESSAGE,
 					"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
 					coordinate_symbol[i],
-					transformation_matrix[0][i],transformation_matrix[1][i],
-					transformation_matrix[2][i],transformation_matrix[3][i],
+					transformationMatrix[i*4    ],
+					transformationMatrix[i*4 + 1],
+					transformationMatrix[i*4 + 2],
+					transformationMatrix[i*4 + 3],
 					coordinate_symbol[i]);
 			}
+			return 1;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"list_cmzn_scene_transformation.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "list_cmzn_scene_transformation.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* list_cmzn_scene_transformation */
+	return 0;
+}
 
 int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
@@ -3187,11 +2969,12 @@ int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
 			}
 		}
 		if (return_code)
-			return_code = CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
-				child_scene->transformation_callback_list, function, user_data);
-		if (scene == child_scene)
-			return_code &= CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_top_region_change)(
-				child_scene->top_region_change_callback_list, region_change_function, user_data);
+			return_code = (scene->transformation_callback_list)
+				&& CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_transformation)(
+					child_scene->transformation_callback_list, function, user_data);
+		if ((scene == child_scene) && return_code && (scene->top_region_change_callback_list))
+			return_code = CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_top_region_change)(
+				scene->top_region_change_callback_list, region_change_function, user_data);
 	}
 	else
 	{
@@ -3221,10 +3004,11 @@ int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_sce
 			}
 		}
 		if (return_code)
-			return_code = CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
-				scene->transformation_callback_list, function,user_data);
-		if (scene == child_scene)
-			return_code &= CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_top_region_change)(
+			return_code = (scene->transformation_callback_list)
+				&& CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_transformation)(
+					scene->transformation_callback_list, function,user_data);
+		if ((scene == child_scene) && return_code && (scene->top_region_change_callback_list))
+			return_code = CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_top_region_change)(
 				scene->top_region_change_callback_list, region_change_function, user_data);
 	}
 	else
@@ -3258,56 +3042,60 @@ int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,
 	return 0;
 }
 
-gtMatrix *cmzn_scene_get_total_transformation(
-	struct cmzn_scene *scene, struct cmzn_scene *top_scene)
+int cmzn_scene::getTotalTransformationMatrix(cmzn_scene* topScene, double* matrix4x4)
 {
-	gtMatrix *transformation = NULL;
-	int use_local_transformation = 0;
-
-	if (scene && top_scene)
+	if (!((topScene) && (matrix4x4)))
+		return CMZN_ERROR_ARGUMENT;
+	int result = CMZN_ERROR_NOT_FOUND;
+	if (this != topScene)
 	{
-		struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
-		struct cmzn_region *parent = cmzn_region_get_parent_internal(region);
-
-		if ((top_scene != scene) || parent)
+		struct cmzn_scene *parentScene = cmzn_region_get_scene_private(cmzn_region_get_parent_internal(this->region));
+		if (!parentScene)
 		{
-			struct cmzn_scene *parent_scene = cmzn_region_get_scene_private(parent);
-			if (parent_scene)
-			{
-				gtMatrix *parent_transformation =
-					cmzn_scene_get_total_transformation(parent_scene, top_scene);
-				transformation = parent_transformation;
-				if (transformation)
-				{
-					if (scene->transformation)
-					{
-						multiply_gtMatrix(scene->transformation, transformation, transformation);
-					}
-				}
-				else
-				{
-					/* top level of transformation set by user*/
-					use_local_transformation = 1;
-				}
-			}
+			display_message(ERROR_MESSAGE, "cmzn_scene::getTotalTransformationMatrix.  Scene is not descended from topScene");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		result = parentScene->getTotalTransformationMatrix(topScene, matrix4x4);
+		if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+			return result;
+	}
+	if (this->transformationActive)
+	{
+		if (result == CMZN_OK)
+		{
+			// parent transformation matrix stored in matrix4x4: multiply with local
+			double parentMatrix[16], localMatrix[16];
+			for (int i = 0; i < 16; ++i)
+				parentMatrix[i] = matrix4x4[i];
+			result = this->getTransformationMatrixRowMajor(localMatrix);
+			if (CMZN_OK != result)
+				return result;
+			multiply_matrix(4, 4, 4, parentMatrix, localMatrix, matrix4x4);
 		}
 		else
 		{
-			/* top level of transformation */
-			use_local_transformation = 1;
+			result = this->getTransformationMatrixRowMajor(matrix4x4);
+			if (CMZN_OK != result)
+				return result;
 		}
-		/* allocate a gtMatrix for the top/first found transformation */
-		if (use_local_transformation && scene->transformation &&
-			(ALLOCATE(transformation, gtMatrix, 1)))
-		{
-			for (int i = 0; i < 4; i++)
-			{
-				for (int j = 0; j < 4; j++)
-				{
-					(*transformation)[i][j] = (*scene->transformation)[i][j];
-				}
-			}
-		}
+	}
+	return result;
+}
+
+gtMatrix *cmzn_scene_get_total_transformation(
+	struct cmzn_scene *scene, struct cmzn_scene *top_scene)
+{
+	double matrix4x4[16];
+	int result = scene->getTotalTransformationMatrix(top_scene, matrix4x4);
+	if (result != CMZN_OK)
+		return 0;
+	gtMatrix *transformation;
+	ALLOCATE(transformation, gtMatrix, 1);
+	if (transformation)
+	{
+		for (int col = 0; col < 4; ++col)
+			for (int row = 0; row < 4; ++row)
+				(*transformation)[col][row] = matrix4x4[row*4 + col];
 	}
 	return transformation;
 }
@@ -3329,58 +3117,55 @@ int cmzn_scene_get_global_graphics_range_internal(cmzn_scene_id top_scene,
 			}
 			cmzn_region_reaccess_next_sibling(&child_region);
 		}
-		return_code &= cmzn_scene_get_range(scene, top_scene,filter, graphics_object_range);
+		return_code = cmzn_scene_get_range(scene, top_scene,filter, graphics_object_range);
 	}
 	return return_code;
 }
 
-int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
-	cmzn_scenefilter_id filter,
-	double *centre_x, double *centre_y, double *centre_z,
-	double *size_x, double *size_y, double *size_z)
+int cmzn_scene::getCoordinatesRange(cmzn_scenefilter *filter, double *minimumValuesOut3,
+	double *maximumValuesOut3)
 {
-	double max_x, max_y, max_z, min_x, min_y, min_z;
-	int return_code = 1;
-
-	if (top_scene && centre_x && centre_y && centre_z && size_x && size_y && size_z)
+	if (!((minimumValuesOut3) && (maximumValuesOut3)))
 	{
-		/* must first build graphics objects */
-		build_Scene(top_scene, filter);
-		/* get range of visible graphics_objects in scene */
-		Graphics_object_range_struct graphics_object_range;
-		cmzn_scene_id scene = top_scene;
-		cmzn_scene_get_global_graphics_range_internal(top_scene, scene, filter, &graphics_object_range);
-		if (graphics_object_range.first)
-		{
-			/* nothing in the scene; return zeros */
-			*centre_x = *centre_y = *centre_z = 0.0;
-			*size_x = *size_y = *size_z =0.0;
-		}
-		else
-		{
-			/* get centre and size of smallest cube enclosing visible scene 		struct cmzn_region *top_region = scene->region;*/
-			max_x = (double)graphics_object_range.maximum[0];
-			max_y = (double)graphics_object_range.maximum[1];
-			max_z = (double)graphics_object_range.maximum[2];
-			min_x = (double)graphics_object_range.minimum[0];
-			min_y = (double)graphics_object_range.minimum[1];
-			min_z = (double)graphics_object_range.minimum[2];
-			*centre_x = 0.5*(max_x + min_x);
-			*centre_y = 0.5*(max_y + min_y);
-			*centre_z = 0.5*(max_z + min_z);
-			*size_x = max_x - min_x;
-			*size_y = max_y - min_y;
-			*size_z = max_z - min_z;
-		}
+		display_message(ERROR_MESSAGE, "Scene getCoordinatesRange.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	/* must first build graphics objects */
+	build_Scene(this, filter);
+	/* get range of visible graphics_objects in scene */
+	Graphics_object_range_struct graphics_object_range;
+	cmzn_scene_get_global_graphics_range_internal(this, this, filter, &graphics_object_range);
+	if (graphics_object_range.first)
+		return CMZN_ERROR_NOT_FOUND;
+	for (int i = 0; i < 3; ++i)
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_global_graphics_range.  Invalid argument(s)");
-		return_code = 0;
+		maximumValuesOut3[i] = static_cast<double>(graphics_object_range.maximum[i]);
+		minimumValuesOut3[i] = static_cast<double>(graphics_object_range.minimum[i]);
 	}
+	return CMZN_OK;
+}
 
-	return (return_code);
+int cmzn_scene::getCoordinatesRangeCentreSize(cmzn_scenefilter *filter, double *centre3,
+	double *size3)
+{
+	double minimums[3] = { 0.0, 0.0, 0.0 };
+	double maximums[3] = { 0.0, 0.0, 0.0 };
+	const int result = this->getCoordinatesRange(filter, minimums, maximums);
+	for (int i = 0; i < 3; ++i)
+	{
+		centre3[i] = 0.5*(minimums[i] + maximums[i]);
+		size3[i] = maximums[i] - minimums[i];
+	}
+	return result;
+}
+
+int cmzn_scene_get_coordinates_range(cmzn_scene_id scene,
+	cmzn_scenefilter_id filter, double *minimumValuesOut3, double *maximumValuesOut3)
+{
+	if (scene)
+		return scene->getCoordinatesRange(filter, minimumValuesOut3, maximumValuesOut3);
+	display_message(ERROR_MESSAGE, "Scene getCoordinatesRange.  Missing scene");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct Scene_graphics_object_iterator_data

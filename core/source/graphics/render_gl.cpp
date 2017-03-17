@@ -778,7 +778,8 @@ public:
 			graphics));
 	}
 
-	/* Method to export individual graphics */
+	/** Method to export individual graphics
+	  * @param graphics  Not checked, must be non-NULL. */
 	template <class Threejs_export_class>
 	int Graphics_export(cmzn_graphics *graphics)
 	{
@@ -811,13 +812,13 @@ public:
 				sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
 			else
 				sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
-			bool morphsColoursAllowed = cmzn_graphics_data_is_time_dependent(graphics) && morphColours;
-			bool graphicsIsTimeDependent = (cmzn_graphics_point_attribute_is_time_dependent(graphics) ||
-				(cmzn_graphics_coordinates_is_time_dependent(graphics) ||
-					cmzn_graphics_isoscalar_field_is_time_dependent(graphics) ||
-					cmzn_graphics_subgroup_field_is_time_dependent(graphics)));
-			bool morphsVerticesAllowed = graphicsIsTimeDependent && morphVertices;
-			bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
+			const bool morphsColoursAllowed = graphics->dataFieldIsTimeDependent() && morphColours;
+			const bool graphicsIsTimeDependent = graphics->coordinateFieldIsTimeDependent()
+				|| graphics->pointGlyphScalingIsTimeDependent()
+				|| graphics->isoscalarFieldIsTimeDependent()
+				|| graphics->subgroupFieldIsTimeDependent();
+			const bool morphsVerticesAllowed = graphicsIsTimeDependent && morphVertices;
+			const bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
 			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
 				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name);
 			threejs_export->beginExport();
