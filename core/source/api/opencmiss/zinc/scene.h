@@ -449,18 +449,17 @@ ZINC_API cmzn_field_id cmzn_scene_get_transformation_field(cmzn_scene_id scene);
  * @see cmzn_scene_set_transformation_matrix
  *
  * @param scene  The scene to modify.
- * @param transformation_field  A 16 component field whose values give a 4x4
- * transformation of homogeneous coordinates, or NULL/invalid to clear. This
- * field must be spatially constant, but it may be time-varying in which case
- * scene redraws are automatically trigger when the time changes. Runtime
- * errors will be reported if this field cannot be evaluated given only the
- * current timekeeper time. Field must belong to this scene's owning region.
- * Alternatively, iff a transformation field is in use, passing an invalid/NULL
- * field to this function clears transformation.
+ * @param transformationField  A 16 component field whose values give a 4x4
+ * transformation of homogeneous coordinates, or NULL/invalid to clear
+ * transformation. This field must be spatially constant, but it may be
+ * time-varying in which case scene redraws are automatically triggered when
+ * the time changes. Runtime errors will be reported if this field cannot be
+ * evaluated given only the current timekeeper time. Field must belong to this
+ * scene's owning region.
  * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
-	cmzn_field_id transformation_field);
+	cmzn_field_id transformationField);
 
 /**
  * Get 4x4 transformation matrix of the scene local coordinates into the
@@ -473,14 +472,12 @@ ZINC_API int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
  * @see cmzn_scene_set_transformation_field
  *
  * @param scene  The scene to query.
- * @param valuesCount  The size of the valuesOut array, at least 16.
- * @param valuesOut  An array of at least size given by valuesCount to fill
- * with the values of the transformation matrix. If valuesCount exceeds the
- * number of components in the transformation matrix, these are not set.
+ * @param valuesOut16  An array large enough to fill with the 16 components of
+ * the transformation matrix.
  * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
-	int valuesCount, double *valuesOut);
+	double *valuesOut16);
 
 /**
  * Set fixed 4x4 transformation matrix of the scene local coordinates into the
@@ -503,12 +500,11 @@ ZINC_API int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
  * defines basis vectors of local coordinates in terms of parent coordinates.
  *
  * @param scene  The scene to modify.
- * @param valuesCount  The size of the valuesIn array, currently 16.
- * @param valuesIn  An array of 16 values giving the 4x4 transformation matrix.
+ * @param valuesIn16  An array of 16 values giving the 4x4 transformation matrix.
  * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
-	int valuesCount, const double *valuesIn);
+	const double *valuesIn16);
 
 /**
  * Returns the state of the scene's visibility flag.

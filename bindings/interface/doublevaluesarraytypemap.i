@@ -266,7 +266,7 @@
 	$1 = new double[3];
 };
 
-%typemap(argout)(double *valuesOut3)
+%typemap(argout) (double *valuesOut3)
 {
 	/* Applying out array of size 3 typemap */
 	PyObject *o;
@@ -305,3 +305,86 @@
 
 %apply (double *valuesOut3) { (double *eyeValuesOut3), (double *lookatValuesOut3), (double *upVectorValuesOut3), (double *coordinateValuesOut3), (double *minimumValuesOut3), (double *maximumValuesOut3) };
 
+
+%typemap(in) (const double *valuesIn16)
+{
+	/* Applying in array of size 16 typemap */
+	if (PyList_Check($input) && PyList_Size($input) == 16)
+	{
+		$1 = new double[16];
+		for (int i = 0; i < 16; i++)
+		{
+			PyObject *o = PyList_GetItem($input,i);
+			if (PyFloat_Check(o))
+			{
+				$1[i] = PyFloat_AsDouble(o);
+			}
+			else if (PyLong_Check(o))
+			{
+				$1[i] = PyLong_AsDouble(o);
+			}
+			else if (PyInt_Check(o))
+			{
+				$1[i] = static_cast<double>(PyInt_AsLong(o));
+			}
+			else
+			{
+				PyErr_SetString(PyExc_TypeError,"list may only contain a numbers");
+				delete[] $1;
+				return NULL;
+			}
+		}
+	}
+	else
+	{
+		PyErr_SetString(PyExc_TypeError,"not a list of size 16");
+		return NULL;
+	}
+};
+
+%typemap(freearg) (double const *valuesIn16)
+{
+	delete[] $1;
+};
+
+%typemap(in, numinputs=0) (double *valuesOut16)
+{
+	$1 = new double[16];
+};
+
+%typemap(argout) (double *valuesOut16)
+{
+	/* Applying out array of size 16 typemap */
+	PyObject *o;
+	o = PyList_New(16);
+	for (int i = 0 ; i < 16; i++)
+	{
+		PyList_SET_ITEM(o, i, PyFloat_FromDouble($1[i])); // steals reference
+	}
+	if ((!$result) || ($result == Py_None))
+	{
+		$result = o;
+	}
+	else
+	{
+		// note: code considers that tuples are supposed to be immutable
+		// should only modify if you have only reference to them!
+		if (!PyTuple_Check($result))
+		{
+			PyObject *previousResult = $result;
+			$result = PyTuple_New(2);
+			PyTuple_SET_ITEM($result, 0, previousResult); // steals reference
+			PyTuple_SET_ITEM($result, 1, o); // steals reference
+		}
+		else
+		{
+			PyObject *previousResult = $result;
+			PyObject *addResult = PyTuple_New(1);
+			PyTuple_SET_ITEM(addResult, 0, o); // steals reference
+			$result = PySequence_Concat(previousResult, addResult);
+			Py_DECREF(previousResult);
+			Py_DECREF(addResult);
+		}
+	}
+	delete[] $1;
+};

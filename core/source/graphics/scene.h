@@ -163,11 +163,11 @@ public:
 
 	int setTransformationField(cmzn_field *transformationFieldIn);
 
-	int getTransformationMatrix(int valuesCount, double *valuesOut);
+	int getTransformationMatrix(double *valuesOut16);
 
-	int getTransformationMatrixRowMajor(int valuesCount, double *valuesOut);
+	int getTransformationMatrixRowMajor(double *valuesOut16);
 
-	int setTransformationMatrix(int valuesCount, const double *valuesIn);
+	int setTransformationMatrix(const double *valuesIn16);
 
 	/** Fill matrix4x4 with row major transformation matrix from parent coordinate
 	  * system of topScene to local coordinate system of this scene.

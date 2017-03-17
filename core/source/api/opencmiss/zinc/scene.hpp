@@ -263,14 +263,14 @@ public:
 		return cmzn_scene_set_transformation_field(id, transformationField.getId());
 	}
 
-	int getTransformationMatrix(int valuesCount, double *valuesOut) const
+	int getTransformationMatrix(double *valuesOut16) const
 	{
-		return cmzn_scene_get_transformation_matrix(this->getId(), valuesCount, valuesOut);
+		return cmzn_scene_get_transformation_matrix(this->getId(), valuesOut16);
 	}
 
-	int setTransformationMatrix(int valuesCount, const double *valuesIn)
+	int setTransformationMatrix(const double *valuesIn16)
 	{
-		return cmzn_scene_set_transformation_matrix(this->getId(), valuesCount, valuesIn);
+		return cmzn_scene_set_transformation_matrix(this->getId(), valuesIn16);
 	}
 
 	bool getVisibilityFlag()

@@ -63,7 +63,7 @@ int SceneJsonImport::import(const std::string &jsonString)
 					double values[16];
 					for (int i = 0; i < 16; ++i)
 						values[i] = v[i].asDouble();
-					scene.setTransformationMatrix(16, values);
+					scene.setTransformationMatrix(values);
 				}
 				else
 					display_message(WARNING_MESSAGE, "Scene readDescription.  Malformed TransformationMatrix");

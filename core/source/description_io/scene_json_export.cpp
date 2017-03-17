@@ -45,7 +45,7 @@ std::string SceneJsonExport::getExportString()
 		else
 		{
 			double values[16];
-			this->scene.getTransformationMatrix(16, values);
+			this->scene.getTransformationMatrix(values);
 			Json::Value& v = root["TransformationMatrix"];
 			v.resize(16);
 			for (int i = 0; i < 16; ++i)

@@ -461,8 +461,6 @@ void cmzn_scene::setTransformationMatrixColumnMajor(bool columnMajor)
 
 int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 {
-	if (transformationFieldIn == this->transformationField)
-		return CMZN_OK;
 	if (transformationFieldIn)
 	{
 		if ((0 == this->region)
@@ -470,16 +468,21 @@ int cmzn_scene::setTransformationField(cmzn_field *transformationFieldIn)
 			|| (cmzn_field_get_number_of_components(transformationFieldIn) != 16))
 			return CMZN_ERROR_ARGUMENT;
 	}
+	const bool notify = (transformationFieldIn != this->transformationField)
+		|| (this->transformationActive && (!transformationFieldIn));
 	REACCESS(cmzn_field)(&(this->transformationField), transformationFieldIn);
 	this->transformationActive = (0 != transformationFieldIn);
-	// callbacks are set up or cancelled with next call to updateTimeDependence() in notifyClients()
-	this->transformationChange();
+	if (notify)
+	{
+		// callbacks are set up or cancelled with next call to updateTimeDependence() in notifyClients()
+		this->transformationChange();
+	}
 	return CMZN_OK;
 }
 
-int cmzn_scene::getTransformationMatrix(int valuesCount, double *valuesOut)
+int cmzn_scene::getTransformationMatrix(double *valuesOut16)
 {
-	if ((valuesCount < 16) || (!valuesOut))
+	if (!valuesOut16)
 		return CMZN_ERROR_ARGUMENT;
 	if (this->transformationActive)
 	{
@@ -490,45 +493,43 @@ int cmzn_scene::getTransformationMatrix(int valuesCount, double *valuesOut)
 				return result;
 		}
 		for (int i = 0; i < 16; ++i)
-			valuesOut[i] = this->transformationMatrix[i];
+			valuesOut16[i] = this->transformationMatrix[i];
 	}
 	else
 	{
 		// return identity matrix
 		for (int i = 0; i < 16; ++i)
-			valuesOut[i] = ((i % 5) == 0) ? 1.0 : 0.0;
+			valuesOut16[i] = ((i % 5) == 0) ? 1.0 : 0.0;
 	}
 	return CMZN_OK;
 }
 
-int cmzn_scene::getTransformationMatrixRowMajor(int valuesCount, double *valuesOut)
+int cmzn_scene::getTransformationMatrixRowMajor(double *valuesOut16)
 {
-	const int result = this->getTransformationMatrix(valuesCount, valuesOut);
+	const int result = this->getTransformationMatrix(valuesOut16);
 	if ((CMZN_OK == result) && this->transformationMatrixColumnMajor)
 	{
 		// transpose
 		for (int i = 1; i < 4; ++i)
 			for (int j = 0; j < i; ++j)
 			{
-				const double tmp = valuesOut[i*4 + j];
-				valuesOut[i*4 + j] = valuesOut[j*4 + i];
-				valuesOut[j*4 + i] = tmp;
+				const double tmp = valuesOut16[i*4 + j];
+				valuesOut16[i*4 + j] = valuesOut16[j*4 + i];
+				valuesOut16[j*4 + i] = tmp;
 			}
 	}
 	return result;
 }
 
-int cmzn_scene::setTransformationMatrix(int valuesCount, const double *valuesIn)
+int cmzn_scene::setTransformationMatrix(const double *valuesIn16)
 {
-	if (!((valuesCount == 16) && (valuesIn)))
+	if (!valuesIn16)
 		return CMZN_ERROR_ARGUMENT;
-	const bool wasTransformationActive = this->transformationActive;
 	cmzn_field_destroy(&(this->transformationField));
-	this->transformationActive = (valuesCount > 0);
-	for (int i = 0; i < valuesCount; ++i)
-		this->transformationMatrix[i] = valuesIn[i];
-	if (wasTransformationActive || this->transformationActive)
-		this->transformationChange();
+	this->transformationActive = true;
+	for (int i = 0; i < 16; ++i)
+		this->transformationMatrix[i] = valuesIn16[i];
+	this->transformationChange();
 	return CMZN_OK;
 }
 
@@ -2362,26 +2363,26 @@ cmzn_field_id cmzn_scene_get_transformation_field(cmzn_scene_id scene)
 }
 
 int cmzn_scene_set_transformation_field(cmzn_scene_id scene,
-	cmzn_field_id transformation_field)
+	cmzn_field_id transformationField)
 {
 	if (scene)
-		return scene->setTransformationField(transformation_field);
+		return scene->setTransformationField(transformationField);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_get_transformation_matrix(cmzn_scene_id scene,
-	int valuesCount, double *valuesOut)
+	double *valuesOut16)
 {
 	if (scene)
-		return scene->getTransformationMatrix(valuesCount, valuesOut);
+		return scene->getTransformationMatrix(valuesOut16);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scene_set_transformation_matrix(cmzn_scene_id scene,
-	int valuesCount, const double *valuesIn)
+	const double *valuesIn16)
 {
 	if (scene)
-		return scene->setTransformationMatrix(valuesCount, valuesIn);
+		return scene->setTransformationMatrix(valuesIn16);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -2607,7 +2608,7 @@ in an easy-to-interpret matrix multiplication form.
 	if (scene)
 	{
 		double transformationMatrix[16];
-		if (CMZN_OK == scene->getTransformationMatrixRowMajor(16, transformationMatrix))
+		if (CMZN_OK == scene->getTransformationMatrixRowMajor(transformationMatrix))
 		{
 			const char *coordinate_symbol = "xyzh";
 			char *regionName = cmzn_region_get_path(scene->region);
@@ -3066,14 +3067,14 @@ int cmzn_scene::getTotalTransformationMatrix(cmzn_scene* topScene, double* matri
 			double parentMatrix[16], localMatrix[16];
 			for (int i = 0; i < 16; ++i)
 				parentMatrix[i] = matrix4x4[i];
-			result = this->getTransformationMatrixRowMajor(16, localMatrix);
+			result = this->getTransformationMatrixRowMajor(localMatrix);
 			if (CMZN_OK != result)
 				return result;
 			multiply_matrix(4, 4, 4, parentMatrix, localMatrix, matrix4x4);
 		}
 		else
 		{
-			result = this->getTransformationMatrixRowMajor(16, matrix4x4);
+			result = this->getTransformationMatrixRowMajor(matrix4x4);
 			if (CMZN_OK != result)
 				return result;
 		}
