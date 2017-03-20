@@ -1008,7 +1008,7 @@ DESCRIPTION :
 static int Scene_viewer_use_pixel_buffer(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
-LAST MODIFIED : 8 April 2003
+LAST MODIFIED : 14 March 2017
 
 DESCRIPTION :
 Keeps a copy of the scene in a pixel buffer and only updates that image
@@ -1058,7 +1058,8 @@ emoter to make icons representing the current scene.
 			/* Just draw the pixel buffer back into the window */
 			glClearColor((scene_viewer->background_colour).red,
 				(scene_viewer->background_colour).green,
-				(scene_viewer->background_colour).blue,0.);
+				(scene_viewer->background_colour).blue,
+				(scene_viewer->background_colour).alpha);
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			glGetDoublev(GL_MODELVIEW_MATRIX,scene_viewer->modelview_matrix);
@@ -1280,7 +1281,7 @@ DESCRIPTION :
 static int Scene_viewer_render_background(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
-LAST MODIFIED : 8 April 2003
+LAST MODIFIED : 14 March 2017
 
 DESCRIPTION :
 Renders the background into the scene.
@@ -1297,7 +1298,8 @@ Renders the background into the scene.
 		/* clear the screen: colour buffer and depth buffer */
 		glClearColor((scene_viewer->background_colour).red,
 			(scene_viewer->background_colour).green,
-			(scene_viewer->background_colour).blue,0.0);
+			(scene_viewer->background_colour).blue,
+			(scene_viewer->background_colour).alpha);
 		glClearDepth(1.0);
 		if (0 == rendering_data->renderer->get_current_layer())
 		{
@@ -2715,6 +2717,22 @@ int cmzn_sceneviewermodule_get_default_background_colour_rgb(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_sceneviewermodule_get_default_background_colour_rgba(
+	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut4)
+{
+	int return_code = CMZN_ERROR_ARGUMENT;
+
+	if (sceneviewermodule && valuesOut4)
+	{
+		valuesOut4[0] = sceneviewermodule->background_colour.red;
+		valuesOut4[1] = sceneviewermodule->background_colour.green;
+		valuesOut4[2] = sceneviewermodule->background_colour.blue;
+		valuesOut4[3] = sceneviewermodule->background_colour.alpha;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_sceneviewermodule_set_default_background_colour_rgb(
 	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn3)
 {
@@ -2723,6 +2741,20 @@ int cmzn_sceneviewermodule_set_default_background_colour_rgb(
 		sceneviewermodule->background_colour.red = valuesIn3[0];
 		sceneviewermodule->background_colour.green = valuesIn3[1];
 		sceneviewermodule->background_colour.blue = valuesIn3[2];
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule_set_default_background_colour_rgba(
+	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn4)
+{
+	if (sceneviewermodule && valuesIn4)
+	{
+		sceneviewermodule->background_colour.red = valuesIn4[0];
+		sceneviewermodule->background_colour.green = valuesIn4[1];
+		sceneviewermodule->background_colour.blue = valuesIn4[2];
+		sceneviewermodule->background_colour.alpha = valuesIn4[3];
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -2948,6 +2980,7 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->background_colour).red=background_colour->red;
 				(scene_viewer->background_colour).green=background_colour->green;
 				(scene_viewer->background_colour).blue=background_colour->blue;
+				(scene_viewer->background_colour).alpha=background_colour->alpha;
 				/* set viewing transformation eye pos, look at point and up-vector */
 				/* initially view the x,y plane */
 				scene_viewer->eyex=0.0;
@@ -3902,6 +3935,7 @@ Returns the background_colour of the scene_viewer.
 		background_colour->red=scene_viewer->background_colour.red;
 		background_colour->green=scene_viewer->background_colour.green;
 		background_colour->blue=scene_viewer->background_colour.blue;
+		background_colour->alpha=scene_viewer->background_colour.alpha;
 		return_code=CMZN_OK;
 	}
 	else
@@ -3929,6 +3963,7 @@ Sets the background_colour of the scene_viewer.
 		scene_viewer->background_colour.red=background_colour->red;
 		scene_viewer->background_colour.green=background_colour->green;
 		scene_viewer->background_colour.blue=background_colour->blue;
+		scene_viewer->background_colour.alpha=background_colour->alpha;
 		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
@@ -7128,7 +7163,7 @@ int cmzn_sceneviewer_get_background_colour_rgb(
 LAST MODIFIED : 15 January 2007
 
 DESCRIPTION :
-Returns the background_colour of the scene_viewer.
+Returns the rgb background_colour of the scene_viewer.
 ==============================================================================*/
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
@@ -7148,13 +7183,40 @@ Returns the background_colour of the scene_viewer.
 	return (return_code);
 } /* cmzn_sceneviewer_get_background_colour_rgb */
 
+int cmzn_sceneviewer_get_background_colour_rgba(
+	cmzn_sceneviewer_id scene_viewer, double *valuesOut4)
+/*******************************************************************************
+LAST MODIFIED : 14 March 2017
+
+DESCRIPTION :
+Returns the rgba background_colour of the scene_viewer.
+==============================================================================*/
+{
+	int return_code = CMZN_ERROR_ARGUMENT;
+	struct Colour colour;
+
+	if (scene_viewer && valuesOut4)
+	{
+		return_code = Scene_viewer_get_background_colour(scene_viewer, &colour);
+		if (return_code == CMZN_OK)
+		{
+			valuesOut4[0] = colour.red;
+			valuesOut4[1] = colour.green;
+			valuesOut4[2] = colour.blue;
+			valuesOut4[3] = colour.alpha;
+		}
+	}
+
+	return (return_code);
+} /* cmzn_sceneviewer_get_background_colour_rgba */
+
 int cmzn_sceneviewer_set_background_colour_component_rgb(
 	cmzn_sceneviewer_id scene_viewer, double red, double green, double blue)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
 
 DESCRIPTION :
-Sets the background_colour of the scene_viewer.
+Sets the rgb background_colour of the scene_viewer.
 ==============================================================================*/
 {
 	double rgb[3] = {red, green, blue};
@@ -7168,13 +7230,33 @@ Sets the background_colour of the scene_viewer.
 	return (return_code);
 } /* cmzn_sceneviewer_set_background_colour_component_rgb */
 
+int cmzn_sceneviewer_set_background_colour_component_rgba(
+	cmzn_sceneviewer_id scene_viewer, double red, double green, double blue, double alpha)
+/*******************************************************************************
+LAST MODIFIED : 14 March 2017
+
+DESCRIPTION :
+Sets the rgba background_colour of the scene_viewer.
+==============================================================================*/
+{
+	double rgba[4] = {red, green, blue, alpha};
+	int return_code = CMZN_ERROR_ARGUMENT;
+
+	if (scene_viewer)
+	{
+		return_code = cmzn_sceneviewer_set_background_colour_rgba(scene_viewer, rgba);
+	}
+
+	return (return_code);
+} /* cmzn_sceneviewer_set_background_colour_component_rgba */
+
 int cmzn_sceneviewer_set_background_colour_rgb(
 	cmzn_sceneviewer_id scene_viewer, const double *valuesIn3)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2007
+LAST MODIFIED : 14 March 2017
 
 DESCRIPTION :
-Sets the background_colour of the scene_viewer.
+Sets the rgb background_colour of the scene_viewer.
 ==============================================================================*/
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
@@ -7185,11 +7267,36 @@ Sets the background_colour of the scene_viewer.
 		colour.red = valuesIn3[0];
 		colour.green = valuesIn3[1];
 		colour.blue = valuesIn3[2];
+		colour.alpha = 0.0;
 		return_code = Scene_viewer_set_background_colour(scene_viewer, &colour);
 	}
 
 	return (return_code);
 } /* cmzn_sceneviewer_set_background_colour_rgb */
+
+int cmzn_sceneviewer_set_background_colour_rgba(
+	cmzn_sceneviewer_id scene_viewer, const double *valuesIn4)
+/*******************************************************************************
+LAST MODIFIED : 14 March 2017
+
+DESCRIPTION :
+Sets the rgba background_colour of the scene_viewer.
+==============================================================================*/
+{
+	int return_code = CMZN_ERROR_ARGUMENT;
+	struct Colour colour;
+
+	if (scene_viewer && valuesIn4)
+	{
+		colour.red = valuesIn4[0];
+		colour.green = valuesIn4[1];
+		colour.blue = valuesIn4[2];
+		colour.alpha = valuesIn4[3];
+		return_code = Scene_viewer_set_background_colour(scene_viewer, &colour);
+	}
+
+	return (return_code);
+} /* cmzn_sceneviewer_set_background_colour_rgba */
 
 int cmzn_sceneviewer_write_image_to_file(cmzn_sceneviewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height,

@@ -30,7 +30,7 @@ LAST MODIFIED : 9 November 1994
 DESCRIPTION :
 ==============================================================================*/
 {
-	COLOUR_PRECISION blue,green,red;
+	COLOUR_PRECISION blue, green, red, alpha;
 }; /* struct Colour */
 
 /*
