@@ -82,16 +82,82 @@ Module functions
 ----------------
 */
 
-// forward declaration
-void cmzn_sceneviewer_request_changes(cmzn_sceneviewer_id sceneviewer, int changeFlags);
+int cmzn_sceneviewer::setBackgroundColourAlpha(double alpha)
+{
+	this->background_colour.alpha = alpha;
+	this->setChangedRepaint();
+	return CMZN_OK;
+}
+
+int cmzn_sceneviewer::getBackgroundColourRGB(double *valuesOut3) const
+{
+	if (valuesOut3)
+	{
+		valuesOut3[0] = this->background_colour.red;
+		valuesOut3[1] = this->background_colour.green;
+		valuesOut3[2] = this->background_colour.blue;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewer::setBackgroundColourRGB(const double *valuesIn3)
+{
+	if (valuesIn3)
+	{
+		this->background_colour.red = valuesIn3[0];
+		this->background_colour.green = valuesIn3[1];
+		this->background_colour.blue = valuesIn3[2];
+		this->setChangedRepaint();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewer::getBackgroundColourRGBA(double *valuesOut4) const
+{
+	if (valuesOut4)
+	{
+		valuesOut4[0] = this->background_colour.red;
+		valuesOut4[1] = this->background_colour.green;
+		valuesOut4[2] = this->background_colour.blue;
+		valuesOut4[3] = this->background_colour.alpha;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewer::setBackgroundColourRGBA(const double *valuesIn4)
+{
+	if (valuesIn4)
+	{
+		this->background_colour.red = valuesIn4[0];
+		this->background_colour.green = valuesIn4[1];
+		this->background_colour.blue = valuesIn4[2];
+		this->background_colour.alpha = valuesIn4[3];
+		this->setChangedRepaint();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void cmzn_sceneviewer::notifyClients()
+{
+	cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
+	event->changeFlags = this->changes;
+	for (auto iter = this->notifier_list->begin(); iter != this->notifier_list->end(); ++iter)
+	{
+		(*iter)->notify(event);
+	}
+	cmzn_sceneviewerevent_destroy(&event);
+}
 
 void cmzn_sceneviewer::setLightingLocalViewer(bool value)
 {
 	if (value != this->lightingLocalViewer)
 	{
 		this->lightingLocalViewer = value;
-		cmzn_sceneviewer_request_changes(this,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		this->setChangedRepaint();
 	}
 }
 
@@ -100,8 +166,7 @@ void cmzn_sceneviewer::setLightingTwoSided(bool value)
 	if (value != this->lightingTwoSided)
 	{
 		this->lightingTwoSided = value;
-		cmzn_sceneviewer_request_changes(this,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		this->setChangedRepaint();
 	}
 }
 
@@ -208,75 +273,24 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 	return CMZN_ERROR_ARGUMENT;
 }
 
-void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
-{
-	if (sceneviewer->notifier_list && (0 < sceneviewer->notifier_list->size()))
-	{
-		cmzn_sceneviewernotifier_list notifier_list(*(sceneviewer->notifier_list));
-		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
-		event->changeFlags = changeFlags;
-		for (cmzn_sceneviewernotifier_list::iterator iter = notifier_list.begin();
-			iter != notifier_list.end(); ++iter)
-		{
-			(*iter)->notify(event);
-		}
-		cmzn_sceneviewerevent_destroy(&event);
-	}
-}
-
-void cmzn_sceneviewer_request_changes(cmzn_sceneviewer_id sceneviewer, int changeFlags)
-{
-	if (sceneviewer)
-	{
-		sceneviewer->changes |= changeFlags;
-		if (sceneviewer->cache <= 0 && (sceneviewer->changes != 0))
-		{
-			int changes = sceneviewer->changes;
-			sceneviewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
-			cmzn_sceneviewer_begin_change(sceneviewer);
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
-				changes);
-			cmzn_sceneviewer_end_change(sceneviewer);
-		}
-	}
-}
-
-
 int cmzn_sceneviewer_begin_change(cmzn_sceneviewer_id sceneviewer)
 {
 	if (sceneviewer)
 	{
-		/* increment cache to allow nesting */
-		(sceneviewer->cache)++;
-		return 1;
+		sceneviewer->beginChange();
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewer_end_change(cmzn_sceneviewer_id sceneviewer)
 {
 	if (sceneviewer)
 	{
-		/* decrement cache to allow nesting */
-		(sceneviewer->cache)--;
-		/* once cache has run out, inform clients of any changes */
-		if (0 == sceneviewer->cache)
-		{
-			if (sceneviewer->changes)
-			{
-				cmzn_sceneviewer_request_changes(sceneviewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE);
-			}
-		}
-		return 1;
+		sceneviewer->endChange();
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct Scene_viewer_rendering_data
@@ -2480,8 +2494,7 @@ static void Scene_viewer_image_field_change(
 		{
 			REACCESS(Texture)(&(image_texture->texture),
 			cmzn_field_image_get_texture(image_texture->field));
-			cmzn_sceneviewer_request_changes(image_texture->scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			image_texture->scene_viewer->setChangedRepaint();
 		}
 	}
 	else
@@ -2555,67 +2568,8 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 void cmzn_sceneviewermodule_light_manager_callback(
 	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void);
 
-struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
-	struct Colour *background_colour,
-	cmzn_lightmodule *lightModule ,struct cmzn_light *default_light,
-	struct cmzn_light *default_ambient_light,
-	cmzn_scenefiltermodule_id filterModule)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Creates a cmzn_sceneviewermodule.
-==============================================================================*/
-{
-	struct cmzn_sceneviewermodule *sceneviewermodule;
-
-	if (background_colour)//-- && user_interface && interactive_tool_manager)
-	{
-		/* allocate memory for the scene_viewer structure */
-		if (ALLOCATE(sceneviewermodule,struct cmzn_sceneviewermodule,1))
-		{
-			sceneviewermodule->access_count = 1;
-			sceneviewermodule->graphics_buffer_package = CREATE(Graphics_buffer_package)();
-			sceneviewermodule->background_colour = *background_colour;
-			sceneviewermodule->default_light = cmzn_light_access(default_light);
-			sceneviewermodule->default_ambient_light = cmzn_light_access(default_ambient_light);
-			sceneviewermodule->lightModule = cmzn_lightmodule_access(lightModule);
-			sceneviewermodule->filterModule = cmzn_scenefiltermodule_access(filterModule);
-			//-- sceneviewermodule->user_interface = user_interface;
-			sceneviewermodule->scene_viewer_list = CREATE(LIST(Scene_viewer))();
-			sceneviewermodule->scenefilter_manager_callback_id =
-				MANAGER_REGISTER(cmzn_scenefilter)(cmzn_sceneviewermodule_scenefilter_manager_callback,
-					(void *)sceneviewermodule,
-					cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
-			sceneviewermodule->light_manager_callback_id =
-				MANAGER_REGISTER(cmzn_light)(cmzn_sceneviewermodule_light_manager_callback,
-					(void *)sceneviewermodule,
-					cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
-			sceneviewermodule->destroy_callback_list=
-					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Scene_viewer_module).  Not enough memory for scene_viewer");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_module).  Invalid argument(s)");
-		sceneviewermodule=(struct cmzn_sceneviewermodule *)NULL;
-	}
-
-	return (sceneviewermodule);
-} /* CREATE(cmzn_sceneviewermodule) */
-
 static int Scene_viewer_destroy_from_module(
 	struct Scene_viewer *scene_viewer, void *module_void)
-/*******************************************************************************
-LAST MODIFIED : 19 April 2007
-
-DESCRIPTION :
-==============================================================================*/
 {
 	int return_code;
 	struct cmzn_sceneviewermodule *module;
@@ -2623,8 +2577,8 @@ DESCRIPTION :
 	if (scene_viewer && (module = (struct cmzn_sceneviewermodule *)module_void))
 	{
 		/* destroy function will also remove scene viewer from module.
-		 * Removing the pointer to module here to prevent the list being modified.
-		 */
+		* Removing the pointer to module here to prevent the list being modified.
+		*/
 		scene_viewer->module = 0;
 		cmzn_sceneviewer_destroy(&scene_viewer);
 	}
@@ -2633,161 +2587,191 @@ DESCRIPTION :
 	return (return_code);
 }
 
-struct cmzn_sceneviewermodule *ACCESS(cmzn_sceneviewermodule)(struct cmzn_sceneviewermodule *sceneviewermodule)
+cmzn_sceneviewermodule::cmzn_sceneviewermodule(struct Colour *background_colourIn,
+		cmzn_lightmodule *lightmoduleIn, struct cmzn_light *default_lightIn,
+		struct cmzn_light *default_ambient_lightIn,
+		cmzn_scenefiltermodule_id scenefiltermoduleIn) :
+	graphics_buffer_package(CREATE(Graphics_buffer_package)()),
+	background_colour(*background_colourIn),
+	lightModule(cmzn_lightmodule_access(lightmoduleIn)),
+	default_light(cmzn_light_access(default_lightIn)),
+	default_ambient_light(cmzn_light_access(default_ambient_lightIn)),
+	filterModule(cmzn_scenefiltermodule_access(scenefiltermoduleIn)),
+	scene_viewer_list(CREATE(LIST(Scene_viewer))()),
+	destroy_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))()),
+	scenefilter_manager_callback_id(MANAGER_REGISTER(cmzn_scenefilter)(
+		cmzn_sceneviewermodule_scenefilter_manager_callback, (void *)this,
+		cmzn_scenefiltermodule_get_manager(this->filterModule))),
+	light_manager_callback_id(MANAGER_REGISTER(cmzn_light)(
+		cmzn_sceneviewermodule_light_manager_callback, (void *)this,
+		cmzn_lightmodule_get_manager(this->lightModule))),
+	access_count(1)
 {
-	if (sceneviewermodule)
-	{
-		(sceneviewermodule->access_count)++;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ACCESS(sceneviewermodule).  Invalid argument");
-	}
+}
 
+cmzn_sceneviewermodule::~cmzn_sceneviewermodule()
+{
+	// Call the destroy callbacks
+	CMZN_CALLBACK_LIST_CALL(cmzn_sceneviewermodule_callback)(
+		this->destroy_callback_list, this, NULL);
+	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))
+		(&this->destroy_callback_list);
+
+	// Destroy the scene viewers in the list as they are not accessed or
+	// deaccessed by the list (so not destroyed when delisted). The owners of
+	// these scene viewers should by virtue of having destroyed the command data
+	// and therefore this module no longer reference these scene viewers or
+	// they should register for destroy callbacks.
+	FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_module,
+		this, this->scene_viewer_list);
+	DESTROY(LIST(Scene_viewer))(&this->scene_viewer_list);
+	DESTROY(Graphics_buffer_package)(&this->graphics_buffer_package);
+
+	MANAGER_DEREGISTER(cmzn_scenefilter)(
+		this->scenefilter_manager_callback_id,
+		cmzn_scenefiltermodule_get_manager(this->filterModule));
+	cmzn_scenefiltermodule_destroy(&this->filterModule);
+	MANAGER_DEREGISTER(cmzn_light)(
+		this->light_manager_callback_id,
+		cmzn_lightmodule_get_manager(this->lightModule));
+	cmzn_lightmodule_destroy(&this->lightModule);
+	cmzn_light_destroy(&this->default_light);
+	cmzn_light_destroy(&this->default_ambient_light);
+}
+
+cmzn_sceneviewermodule *cmzn_sceneviewermodule::create(struct Colour *background_colourIn,
+	cmzn_lightmodule *lightmoduleIn, struct cmzn_light *default_lightIn,
+	struct cmzn_light *default_ambient_lightIn,
+	cmzn_scenefiltermodule_id scenefiltermoduleIn)
+{
+	if (!((background_colourIn) && (lightmoduleIn) && (scenefiltermoduleIn)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_sceneviewermodule::create.  Invalid argument(s)");
+		return 0;
+	}
+	auto sceneviewermodule = new cmzn_sceneviewermodule(background_colourIn,
+		lightmoduleIn, default_lightIn, default_ambient_lightIn, scenefiltermoduleIn);
+	if (!((sceneviewermodule) && (sceneviewermodule->graphics_buffer_package) &&
+		(sceneviewermodule->scene_viewer_list) && (sceneviewermodule->destroy_callback_list)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_sceneviewermodule::create.  Failed");
+		delete sceneviewermodule;
+		return 0;
+	}
 	return sceneviewermodule;
 }
 
-int DESTROY(cmzn_sceneviewermodule)(
-	struct cmzn_sceneviewermodule **sceneviewermodule_address)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Destroys the sceneviewermodule.
-==============================================================================*/
+int cmzn_sceneviewermodule::getDefaultBackgroundColourRGB(double *valuesOut3) const
 {
-	int return_code = 0;
-	struct cmzn_sceneviewermodule *sceneviewermodule = *sceneviewermodule_address;
-
-	ENTER(DESTROY(cmzn_sceneviewermodule));
-	if (sceneviewermodule != 0)
+	if (valuesOut3)
 	{
-		/* Call the destroy callbacks */
-		CMZN_CALLBACK_LIST_CALL(cmzn_sceneviewermodule_callback)(
-			sceneviewermodule->destroy_callback_list,sceneviewermodule,NULL);
-		DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))
-			(&sceneviewermodule->destroy_callback_list);
-
-		/* Destroy the scene viewers in the list as they are not accessed
-			or deaccessed by the list (so not destroyed when delisted).
-			The owners of these scene viewers
-			should by virtue of having destroyed the command data and
-			therefore this module no longer reference these scene viewers or
-			they should register for destroy callbacks. */
-		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_module,
-			sceneviewermodule, sceneviewermodule->scene_viewer_list);
-		DESTROY(LIST(Scene_viewer))(&sceneviewermodule->scene_viewer_list);
-		DESTROY(Graphics_buffer_package)(&sceneviewermodule->graphics_buffer_package);
-
-		MANAGER_DEREGISTER(cmzn_scenefilter)(
-			sceneviewermodule->scenefilter_manager_callback_id,
-			cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
-		cmzn_scenefiltermodule_destroy(&sceneviewermodule->filterModule);
-		MANAGER_DEREGISTER(cmzn_light)(
-			sceneviewermodule->light_manager_callback_id,
-			cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
-		cmzn_lightmodule_destroy(&sceneviewermodule->lightModule);
-		cmzn_light_destroy(&sceneviewermodule->default_light);
-		cmzn_light_destroy(&sceneviewermodule->default_ambient_light);
-		DEALLOCATE(*sceneviewermodule_address);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"DESTROY(cmzn_sceneviewermodule).  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(cmzn_sceneviewermodule) */
-
-int cmzn_sceneviewermodule_get_default_background_colour_rgb(
-	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
-{
-	int return_code = CMZN_ERROR_ARGUMENT;
-	if (sceneviewermodule && valuesOut3)
-	{
-		valuesOut3[0] = sceneviewermodule->background_colour.red;
-		valuesOut3[1] = sceneviewermodule->background_colour.green;
-		valuesOut3[2] = sceneviewermodule->background_colour.blue;
+		valuesOut3[0] = this->background_colour.red;
+		valuesOut3[1] = this->background_colour.green;
+		valuesOut3[2] = this->background_colour.blue;
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_sceneviewermodule_get_default_background_colour_rgba(
-	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut4)
+int cmzn_sceneviewermodule::setDefaultBackgroundColourRGB(const double *valuesIn3)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-
-	if (sceneviewermodule && valuesOut4)
+	if (valuesIn3)
 	{
-		valuesOut4[0] = sceneviewermodule->background_colour.red;
-		valuesOut4[1] = sceneviewermodule->background_colour.green;
-		valuesOut4[2] = sceneviewermodule->background_colour.blue;
-		valuesOut4[3] = sceneviewermodule->background_colour.alpha;
+		this->background_colour.red = valuesIn3[0];
+		this->background_colour.green = valuesIn3[1];
+		this->background_colour.blue = valuesIn3[2];
 		return CMZN_OK;
 	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule::getDefaultBackgroundColourRGBA(double *valuesOut4) const
+{
+	if (valuesOut4)
+	{
+		valuesOut4[0] = this->background_colour.red;
+		valuesOut4[1] = this->background_colour.green;
+		valuesOut4[2] = this->background_colour.blue;
+		valuesOut4[3] = this->background_colour.alpha;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule::setDefaultBackgroundColourRGBA(const double *valuesIn4)
+{
+	if (valuesIn4)
+	{
+		this->background_colour.red = valuesIn4[0];
+		this->background_colour.green = valuesIn4[1];
+		this->background_colour.blue = valuesIn4[2];
+		this->background_colour.alpha = valuesIn4[3];
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_sceneviewermodule_get_default_background_colour_alpha(
+	cmzn_sceneviewermodule_id sceneviewermodule)
+{
+	if (sceneviewermodule)
+		return sceneviewermodule->getDefaultBackgroundColourAlpha();
+	return 0.0;
+}
+
+int cmzn_sceneviewermodule_set_default_background_colour_alpha(
+	cmzn_sceneviewermodule_id sceneviewermodule, double alpha)
+{
+	if (sceneviewermodule)
+		return sceneviewermodule->setDefaultBackgroundColourAlpha(alpha);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule_get_default_background_colour_rgb(
+	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut3)
+{
+	if (sceneviewermodule)
+		return sceneviewermodule->getDefaultBackgroundColourRGB(valuesOut3);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewermodule_set_default_background_colour_rgb(
 	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn3)
 {
-	if (sceneviewermodule && valuesIn3)
-	{
-		sceneviewermodule->background_colour.red = valuesIn3[0];
-		sceneviewermodule->background_colour.green = valuesIn3[1];
-		sceneviewermodule->background_colour.blue = valuesIn3[2];
-		return CMZN_OK;
-	}
+	if (sceneviewermodule)
+		return sceneviewermodule->setDefaultBackgroundColourRGB(valuesIn3);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewermodule_get_default_background_colour_rgba(
+	cmzn_sceneviewermodule_id sceneviewermodule, double *valuesOut4)
+{
+	if (sceneviewermodule)
+		return sceneviewermodule->getDefaultBackgroundColourRGBA(valuesOut4);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewermodule_set_default_background_colour_rgba(
 	cmzn_sceneviewermodule_id sceneviewermodule, const double *valuesIn4)
 {
-	if (sceneviewermodule && valuesIn4)
-	{
-		sceneviewermodule->background_colour.red = valuesIn4[0];
-		sceneviewermodule->background_colour.green = valuesIn4[1];
-		sceneviewermodule->background_colour.blue = valuesIn4[2];
-		sceneviewermodule->background_colour.alpha = valuesIn4[3];
-		return CMZN_OK;
-	}
+	if (sceneviewermodule)
+		return sceneviewermodule->setDefaultBackgroundColourRGBA(valuesIn4);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_id sceneviewermodule)
 {
 	if (sceneviewermodule)
-		++(sceneviewermodule->access_count);
-	return sceneviewermodule;
+		return sceneviewermodule->access();
+	return 0;
 }
 
 int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address)
 {
-	int return_code = 0;
-	cmzn_sceneviewermodule_id object = 0;
-
-	if (sceneviewermodule_address && (object = *sceneviewermodule_address))
-	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
-		{
-			return_code = DESTROY(cmzn_sceneviewermodule)(sceneviewermodule_address);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*sceneviewermodule_address = 0;
-	}
-
-	return (return_code);
-} /* DEACCESS(object_type) */
+	if (sceneviewermodule_address)
+		return cmzn_sceneviewermodule::deaccess(*sceneviewermodule_address);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewermodule_add_destroy_callback(
 	struct cmzn_sceneviewermodule *sceneviewermodule,
@@ -3594,9 +3578,7 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 							scene_viewer->right=radius;
 							scene_viewer->bottom=-radius;
 							scene_viewer->top=radius;
-							cmzn_sceneviewer_request_changes(scene_viewer,
-								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+							scene_viewer->setChangedTransform();
 						} break;
 						case SV_DRAG_FLY:
 						{
@@ -3919,64 +3901,6 @@ Must call this in DESTROY function.
 	return (return_code);
 } /* Scene_viewer_sleep */
 
-int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
-	struct Colour *background_colour)
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Returns the background_colour of the scene_viewer.
-==============================================================================*/
-{
-	int return_code = CMZN_ERROR_ARGUMENT;
-
-	if (scene_viewer&&background_colour)
-	{
-		background_colour->red=scene_viewer->background_colour.red;
-		background_colour->green=scene_viewer->background_colour.green;
-		background_colour->blue=scene_viewer->background_colour.blue;
-		background_colour->alpha=scene_viewer->background_colour.alpha;
-		return_code=CMZN_OK;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_background_colour.  Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Scene_viewer_get_background_colour */
-
-int Scene_viewer_set_background_colour(struct Scene_viewer *scene_viewer,
-	struct Colour *background_colour)
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Sets the background_colour of the scene_viewer.
-==============================================================================*/
-{
-	int return_code = CMZN_ERROR_ARGUMENT;
-
-	if (scene_viewer&&background_colour)
-	{
-		scene_viewer->background_colour.red=background_colour->red;
-		scene_viewer->background_colour.green=background_colour->green;
-		scene_viewer->background_colour.blue=background_colour->blue;
-		scene_viewer->background_colour.alpha=background_colour->alpha;
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-		return_code = CMZN_OK;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_background_colour.  Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Scene_viewer_set_background_colour */
-
 int Scene_viewer_get_background_texture_info(struct Scene_viewer *scene_viewer,
 	double *bk_texture_left,double *bk_texture_top,
 	double *bk_texture_width,double *bk_texture_height,
@@ -4157,8 +4081,7 @@ int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
 			return CMZN_ERROR_ALREADY_EXISTS;
 		if (!ADD_OBJECT_TO_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
 			return CMZN_ERROR_GENERAL;
-		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		sceneviewer->setChangedRepaint();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -4218,8 +4141,7 @@ int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
 			return CMZN_ERROR_NOT_FOUND;
 		if (!REMOVE_OBJECT_FROM_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
 			return CMZN_ERROR_GENERAL;
-		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		sceneviewer->setChangedRepaint();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -4667,9 +4589,7 @@ int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->eyex = eyeValuesIn3[0];
 		scene_viewer->eyey = eyeValuesIn3[1];
 		scene_viewer->eyez = eyeValuesIn3[2];
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedTransform();
 		return_code = CMZN_OK;
 	}
 
@@ -4699,9 +4619,7 @@ int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->lookatx = lookatValuesIn3[0];
 		scene_viewer->lookaty = lookatValuesIn3[1];
 		scene_viewer->lookatz = lookatValuesIn3[2];
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedTransform();
 		return_code = CMZN_OK;
 	}
 
@@ -4734,9 +4652,7 @@ int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->upx = upVectorUnit[0];
 		scene_viewer->upy = upVectorUnit[1];
 		scene_viewer->upz = upVectorUnit[2];
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedTransform();
 		return_code = CMZN_OK;
 	}
 
@@ -4808,9 +4724,7 @@ int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			scene_viewer->setChangedTransform();
 			return_code=1;
 		}
 		else
@@ -4861,9 +4775,7 @@ int cmzn_sceneviewer_set_lookat_parameters_non_skew(
 			sceneviewer->upx=upv[0];
 			sceneviewer->upy=upv[1];
 			sceneviewer->upz=upv[2];
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedTransform();
 			return CMZN_OK;
 		}
 		else
@@ -4998,8 +4910,7 @@ consecutive across rows, eg:
 						modelview_matrix[i*4+j];
 				}
 			}
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+			scene_viewer->setChangedTransform();
 			return_code=1;
 		}
 		else
@@ -5078,8 +4989,7 @@ are used to position the intended viewing volume in user coordinates.
 			scene_viewer->NDC_top=NDC_top;
 			scene_viewer->NDC_width=NDC_width;
 			scene_viewer->NDC_height=NDC_height;
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+			scene_viewer->setChangedTransform();
 			return_code=1;
 		}
 		else
@@ -5147,9 +5057,7 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		if (projection_mode != scene_viewer->projection_mode)
 		{
 			scene_viewer->projection_mode=projection_mode;
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			scene_viewer->setChangedTransform();
 		}
 		return_code=1;
 	}
@@ -5231,8 +5139,7 @@ consecutive across rows, eg:
 					scene_viewer->projection_matrix[i*4+j] = projection_matrix[j*4+i];
 				}
 			}
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+			scene_viewer->setChangedTransform();
 			return_code=1;
 		}
 		else
@@ -5268,8 +5175,7 @@ int cmzn_sceneviewer_set_translation_rate(cmzn_sceneviewer_id sceneviewer,
 		if (translation_rate != sceneviewer->translate_rate)
 		{
 			sceneviewer->translate_rate = translation_rate;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedRepaint(); // Attribute only?
 		}
 		return CMZN_OK;
 	}
@@ -5291,8 +5197,7 @@ int cmzn_sceneviewer_set_tumble_rate(cmzn_sceneviewer_id sceneviewer,
 		if (tumble_rate != sceneviewer->tumble_rate)
 		{
 			sceneviewer->tumble_rate = tumble_rate;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedRepaint(); // Attribute only?
 		}
 		return CMZN_OK;
 	}
@@ -5314,8 +5219,7 @@ int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 		if (zoom_rate != sceneviewer->zoom_rate)
 		{
 			sceneviewer->zoom_rate = zoom_rate;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedRepaint(); // Attribute only?
 		}
 		return CMZN_OK;
 	}
@@ -5355,8 +5259,7 @@ int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
 			if (scene_viewer->transparency_mode!=transparency_mode)
 			{
 				scene_viewer->transparency_mode=transparency_mode;
-				cmzn_sceneviewer_request_changes(scene_viewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				scene_viewer->setChangedRepaint();
 			}
 		}
 	}
@@ -5384,8 +5287,7 @@ int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id scene_viewer,
 			scene_viewer->transparency_layers = transparency_layers;
 			if (scene_viewer->transparency_mode==CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
 			{
-				cmzn_sceneviewer_request_changes(scene_viewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				scene_viewer->setChangedRepaint();
 			}
 		}
 		return CMZN_OK;
@@ -5437,9 +5339,7 @@ int cmzn_sceneviewer_set_view_angle(cmzn_sceneviewer_id sceneviewer,
 		sceneviewer->right  = centre_x + width *size_ratio;
 		sceneviewer->bottom = centre_y - height*size_ratio;
 		sceneviewer->top    = centre_y + height*size_ratio;
-		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		sceneviewer->setChangedTransform();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -5564,9 +5464,7 @@ int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 		}
 		scene_viewer->far_plane_fly_debt = 0.0;
 		scene_viewer->near_plane_fly_debt = 0.0;
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedTransform();
 		return_code=1;
 	}
 	else
@@ -5755,9 +5653,7 @@ rendering a higher resolution image in parts.
 			scene_viewer->near_plane_fly_debt = 0.0;
 			scene_viewer->far_plane=far_plane;
 			scene_viewer->far_plane_fly_debt = 0.0;
-			cmzn_sceneviewer_request_changes(scene_viewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			scene_viewer->setChangedTransform();
 			return_code=1;
 		}
 		else
@@ -5845,8 +5741,7 @@ pixels per unit enables zooming to be achieved.
 		scene_viewer->user_viewport_top=viewport_top;
 		scene_viewer->user_viewport_pixels_per_unit_x=viewport_pixels_per_unit_x;
 		scene_viewer->user_viewport_pixels_per_unit_y=viewport_pixels_per_unit_y;
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+		scene_viewer->setChangedTransform();
 		return_code=1;
 	}
 	else
@@ -5880,8 +5775,7 @@ int cmzn_sceneviewer_set_antialias_sampling(cmzn_sceneviewer_id sceneviewer,
 		if (number_of_samples != sceneviewer->antialias)
 		{
 			sceneviewer->antialias = number_of_samples;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedRepaint();
 		}
 		return CMZN_OK;
 	}
@@ -5932,8 +5826,7 @@ depth of field 0 == infinite.
 	{
 		scene_viewer->depth_of_field = depth_of_field;
 		scene_viewer->focal_depth = focal_depth;
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedRepaint();
 	}
 	else
 	{
@@ -5975,8 +5868,7 @@ int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
 #endif /* defined (GL_VERSION_1_4) */
 		}
 		sceneviewer->blending_mode = blending_mode;
-		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		sceneviewer->setChangedRepaint();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -5998,8 +5890,7 @@ int cmzn_sceneviewer_set_perturb_lines_flag(cmzn_sceneviewer_id sceneviewer,
 		if (value != sceneviewer->perturb_lines)
 		{
 			sceneviewer->perturb_lines = value;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			sceneviewer->setChangedRepaint();
 		}
 		return CMZN_OK;
 	}
@@ -6052,8 +5943,7 @@ Sets the width and height of the Scene_viewers drawing area.
 		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
 		// Note: do not set flag CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED
 		// as repaint is invariably forced by window invalidation
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+		scene_viewer->setChangedTransformOnly();
 		return_code = 1;
 	}
 	else
@@ -6110,9 +6000,7 @@ int Scene_viewer_translate(struct Scene_viewer *scene_viewer, const double offse
 	scene_viewer->lookatx += offset[0];
 	scene_viewer->lookaty += offset[1];
 	scene_viewer->lookatz += offset[2];
-	cmzn_sceneviewer_request_changes(scene_viewer,
-		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	scene_viewer->setChangedTransform();
 	return CMZN_OK;
 }
 
@@ -6178,9 +6066,7 @@ int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
 	scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
 	scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
 	scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
-	cmzn_sceneviewer_request_changes(scene_viewer,
-		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	scene_viewer->setChangedTransform();
 	return CMZN_OK;
 }
 
@@ -6709,9 +6595,7 @@ Scales of the absolute image while keeping the same centre point.
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->user_viewport_pixels_per_unit_y);
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedTransform();
 		return_code=1;
 	}
 	else
@@ -6976,8 +6860,7 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 	{
 		return_code = Scene_viewer_image_texture_set_field(
 			&(scene_viewer->image_texture), image_field);
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedRepaint();
 	}
 	else
 	{
@@ -7109,9 +6992,7 @@ int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 		(CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE == viewport_mode)))
 	{
 		sceneviewer->viewport_mode = viewport_mode;
-		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		sceneviewer->setChangedTransform();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -7157,146 +7038,71 @@ struct Graphics_buffer *cmzn_sceneviewer_get_graphics_buffer(cmzn_sceneviewer_id
 	return scene_viewer->graphics_buffer;
 }
 
-int cmzn_sceneviewer_get_background_colour_rgb(
-	cmzn_sceneviewer_id scene_viewer, double *valuesOut3)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2007
-
-DESCRIPTION :
-Returns the rgb background_colour of the scene_viewer.
-==============================================================================*/
+double cmzn_sceneviewer_get_background_colour_alpha(
+	cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
+	if (sceneviewer)
+		return sceneviewer->getBackgroundColourAlpha();
+	return 0.0;
+}
 
-	if (scene_viewer && valuesOut3)
-	{
-		return_code = Scene_viewer_get_background_colour(scene_viewer, &colour);
-		if (return_code == CMZN_OK)
-		{
-			valuesOut3[0] = colour.red;
-			valuesOut3[1] = colour.green;
-			valuesOut3[2] = colour.blue;
-		}
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_get_background_colour_rgb */
-
-int cmzn_sceneviewer_get_background_colour_rgba(
-	cmzn_sceneviewer_id scene_viewer, double *valuesOut4)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2017
-
-DESCRIPTION :
-Returns the rgba background_colour of the scene_viewer.
-==============================================================================*/
+int cmzn_sceneviewer_set_background_colour_alpha(
+	cmzn_sceneviewer_id sceneviewer, double alpha)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
-
-	if (scene_viewer && valuesOut4)
-	{
-		return_code = Scene_viewer_get_background_colour(scene_viewer, &colour);
-		if (return_code == CMZN_OK)
-		{
-			valuesOut4[0] = colour.red;
-			valuesOut4[1] = colour.green;
-			valuesOut4[2] = colour.blue;
-			valuesOut4[3] = colour.alpha;
-		}
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_get_background_colour_rgba */
+	if (sceneviewer)
+		return sceneviewer->setBackgroundColourAlpha(alpha);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewer_set_background_colour_component_rgb(
-	cmzn_sceneviewer_id scene_viewer, double red, double green, double blue)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2007
-
-DESCRIPTION :
-Sets the rgb background_colour of the scene_viewer.
-==============================================================================*/
+	cmzn_sceneviewer_id sceneviewer, double red, double green, double blue)
 {
-	double rgb[3] = {red, green, blue};
-	int return_code = CMZN_ERROR_ARGUMENT;
-
-	if (scene_viewer)
-	{
-		return_code = cmzn_sceneviewer_set_background_colour_rgb(scene_viewer, rgb);
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_set_background_colour_component_rgb */
+	const double rgb[3] = { red, green, blue };
+	if (sceneviewer)
+		return sceneviewer->setBackgroundColourRGB(rgb);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewer_set_background_colour_component_rgba(
-	cmzn_sceneviewer_id scene_viewer, double red, double green, double blue, double alpha)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2017
-
-DESCRIPTION :
-Sets the rgba background_colour of the scene_viewer.
-==============================================================================*/
+	cmzn_sceneviewer_id sceneviewer, double red, double green, double blue, double alpha)
 {
-	double rgba[4] = {red, green, blue, alpha};
-	int return_code = CMZN_ERROR_ARGUMENT;
+	const double rgba[4] = { red, green, blue, alpha };
+	if (sceneviewer)
+		return sceneviewer->setBackgroundColourRGBA(rgba);
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	if (scene_viewer)
-	{
-		return_code = cmzn_sceneviewer_set_background_colour_rgba(scene_viewer, rgba);
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_set_background_colour_component_rgba */
+int cmzn_sceneviewer_get_background_colour_rgb(
+	cmzn_sceneviewer_id sceneviewer, double *valuesOut3)
+{
+	if (sceneviewer)
+		return sceneviewer->getBackgroundColourRGB(valuesOut3);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewer_set_background_colour_rgb(
-	cmzn_sceneviewer_id scene_viewer, const double *valuesIn3)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2017
-
-DESCRIPTION :
-Sets the rgb background_colour of the scene_viewer.
-==============================================================================*/
+	cmzn_sceneviewer_id sceneviewer, const double *valuesIn3)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
+	if (sceneviewer)
+		return sceneviewer->setBackgroundColourRGB(valuesIn3);
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	if (scene_viewer && valuesIn3)
-	{
-		colour.red = valuesIn3[0];
-		colour.green = valuesIn3[1];
-		colour.blue = valuesIn3[2];
-		colour.alpha = 0.0;
-		return_code = Scene_viewer_set_background_colour(scene_viewer, &colour);
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_set_background_colour_rgb */
+int cmzn_sceneviewer_get_background_colour_rgba(
+	cmzn_sceneviewer_id sceneviewer, double *valuesOut4)
+{
+	if (sceneviewer)
+		return sceneviewer->getBackgroundColourRGBA(valuesOut4);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewer_set_background_colour_rgba(
-	cmzn_sceneviewer_id scene_viewer, const double *valuesIn4)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2017
-
-DESCRIPTION :
-Sets the rgba background_colour of the scene_viewer.
-==============================================================================*/
+	cmzn_sceneviewer_id sceneviewer, const double *valuesIn4)
 {
-	int return_code = CMZN_ERROR_ARGUMENT;
-	struct Colour colour;
-
-	if (scene_viewer && valuesIn4)
-	{
-		colour.red = valuesIn4[0];
-		colour.green = valuesIn4[1];
-		colour.blue = valuesIn4[2];
-		colour.alpha = valuesIn4[3];
-		return_code = Scene_viewer_set_background_colour(scene_viewer, &colour);
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_set_background_colour_rgba */
+	if (sceneviewer)
+		return sceneviewer->setBackgroundColourRGBA(valuesIn4);
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int cmzn_sceneviewer_write_image_to_file(cmzn_sceneviewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height,
@@ -7591,8 +7397,7 @@ int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *messa
 			{
 				if (cmzn_sceneviewer_has_light_in_list(scene_viewer, changed_light_list))
 				{
-					cmzn_sceneviewer_request_changes(scene_viewer,
-						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+					scene_viewer->setChangedRepaint();
 				}
 				DESTROY_LIST(cmzn_light)(&changed_light_list);
 			}
@@ -7671,8 +7476,7 @@ int cmzn_sceneviewer_set_scene(cmzn_sceneviewer_id scene_viewer,
 			{
 				cmzn_scene_add_callback(scene_viewer->scene,
 					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-				cmzn_sceneviewer_request_changes(scene_viewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				scene_viewer->setChangedRepaint();
 			}
 		}
 		return CMZN_OK;
@@ -7684,8 +7488,7 @@ int Scene_viewer_scene_change(cmzn_sceneviewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		scene_viewer->setChangedRepaint();
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
