@@ -491,8 +491,9 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
+			default_background_colour.alpha = 1.0;
 			cmzn_scenefiltermodule_id filterModule = cmzn_graphics_module_get_scenefiltermodule(graphics_module);
-			graphics_module->sceneviewermodule = CREATE(cmzn_sceneviewermodule)(
+			graphics_module->sceneviewermodule = cmzn_sceneviewermodule::create(
 				&default_background_colour,
 				graphics_module->lightmodule, default_light,
 				default_ambient_light,

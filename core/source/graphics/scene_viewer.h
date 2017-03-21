@@ -215,7 +215,6 @@ DESCRIPTION:
 The default data used to create cmzn_sceneviewers.
 ==============================================================================*/
 {
-	int access_count;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour background_colour;
 	//struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -231,6 +230,63 @@ The default data used to create cmzn_sceneviewers.
 		*destroy_callback_list;
 	void *scenefilter_manager_callback_id;
 	void *light_manager_callback_id;
+
+private:
+	int access_count;
+
+	cmzn_sceneviewermodule(struct Colour *background_colourIn,
+		cmzn_lightmodule *lightmoduleIn, struct cmzn_light *default_lightIn,
+		struct cmzn_light *default_ambient_lightIn,
+		cmzn_scenefiltermodule_id scenefiltermoduleIn);
+
+	~cmzn_sceneviewermodule();
+
+public:
+
+	static cmzn_sceneviewermodule *create(struct Colour *background_colourIn,
+		cmzn_lightmodule *lightmoduleIn, struct cmzn_light *default_lightIn,
+		struct cmzn_light *default_ambient_lightIn,
+		cmzn_scenefiltermodule_id scenefiltermoduleIn);
+
+	cmzn_sceneviewermodule *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_sceneviewermodule* &sceneviewermodule)
+	{
+		if (sceneviewermodule)
+		{
+			--(sceneviewermodule->access_count);
+			if (sceneviewermodule->access_count <= 0)
+				delete sceneviewermodule;
+			sceneviewermodule = 0;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+
+	double getDefaultBackgroundColourAlpha() const
+	{
+		return this->background_colour.alpha;
+	}
+
+	int setDefaultBackgroundColourAlpha(double alpha)
+	{
+		this->background_colour.alpha = alpha;
+		return CMZN_OK;
+	}
+
+	int getDefaultBackgroundColourRGB(double *valuesOut3) const;
+
+	int setDefaultBackgroundColourRGB(const double *valuesIn3);
+
+	int getDefaultBackgroundColourRGBA(double *valuesOut4) const;
+
+	int setDefaultBackgroundColourRGBA(const double *valuesIn4);
+
 };
 
 struct Scene_viewer_image_texture
@@ -384,6 +440,21 @@ struct cmzn_sceneviewer
 	// if false (default) infinite lighting is assumed
 	bool lightingLocalViewer;
 
+	double getBackgroundColourAlpha() const
+	{
+		return this->background_colour.alpha;
+	}
+
+	int setBackgroundColourAlpha(double alpha);
+
+	int getBackgroundColourRGB(double *valuesOut3) const;
+
+	int setBackgroundColourRGB(const double *valuesIn3);
+
+	int getBackgroundColourRGBA(double *valuesOut4) const;
+
+	int setBackgroundColourRGBA(const double *valuesIn4);
+
 	bool isLightingLocalViewer()
 	{
 		return this->lightingLocalViewer;
@@ -408,6 +479,44 @@ struct cmzn_sceneviewer
 		const gtMatrix *localToWorldTransformationMatrix,
 		double *transformationMatrix16);
 
+	void beginChange()
+	{
+		++(this->cache);
+	}
+
+	void endChange()
+	{
+		--(this->cache);
+		if ((0 == this->cache) && (this->changes))
+			this->notifyClients();
+	}
+
+	/** Notify registered clients of change in the scene viewer */
+	void notifyClients();
+
+	/** Mark changed repaint required. Notify clients unless caching changes. */
+	void setChangedRepaint()
+	{
+		this->changes |= CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED;
+		if (0 == this->cache)
+			this->notifyClients();
+	}
+
+	void setChangedTransform()
+	{
+		this->changes |= (CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM |
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		if (0 == this->cache)
+			this->notifyClients();
+	}
+
+	void setChangedTransformOnly()
+	{
+		this->changes |= CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM;
+		if (0 == this->cache)
+			this->notifyClients();
+	}
+
 }; /* struct cmzn_sceneviewer */
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
@@ -420,17 +529,6 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 Global functions
 ----------------
 */
-struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
-	struct Colour *background_colour,
-	cmzn_lightmodule *lightModule ,struct cmzn_light *default_light,
-	struct cmzn_light *default_ambient_light,
-	cmzn_scenefiltermodule_id filterModule);
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-Creates a sceneviewermodule.
-==============================================================================*/
 
 int cmzn_sceneviewermodule_add_destroy_callback(struct cmzn_sceneviewermodule *sceneviewermodule,
 	CMZN_CALLBACK_FUNCTION(cmzn_sceneviewermodule_callback) *function,void *user_data);
@@ -574,24 +672,6 @@ significant value, 0.1 is a small value causing significant distortion.
 The <focal_depth> is depth in normalised device coordinates, -1 at near plane
 and +1 at far plane.  At this <focal_depth> the image is in focus no matter
 how small the <depth_of_field>.
-==============================================================================*/
-
-int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
-	struct Colour *background_colour);
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Returns the background_colour of the scene_viewer.
-==============================================================================*/
-
-int Scene_viewer_set_background_colour(struct Scene_viewer *scene_viewer,
-	struct Colour *background_colour);
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Sets the background_colour of the scene_viewer.
 ==============================================================================*/
 
 struct Texture *Scene_viewer_get_background_texture(
