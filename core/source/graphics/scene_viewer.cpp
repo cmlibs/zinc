@@ -1019,16 +1019,11 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_viewer_apply_projection_matrix */
 
+/** Keeps a copy of the scene in a pixel buffer and only updates that image
+  * when the scene_viewer->update_pixel_image flag is set.  This is used by the
+  * emoter to make icons representing the current scene.*/
 static int Scene_viewer_use_pixel_buffer(
 	struct Scene_viewer_rendering_data *rendering_data)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2017
-
-DESCRIPTION :
-Keeps a copy of the scene in a pixel buffer and only updates that image
-when the scene_viewer->update_pixel_image flag is set.  This is used by the
-emoter to make icons representing the current scene.
-==============================================================================*/
 {
 	GLboolean valid_raster;
 	GLdouble obj_x,obj_y,obj_z;
@@ -1037,7 +1032,6 @@ emoter to make icons representing the current scene.
 	struct Scene_viewer *scene_viewer;
 	void *new_data;
 
-	ENTER(Scene_viewer_use_pixel_buffer);
 	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
 	{
 		return_code = 1;
@@ -1107,14 +1101,11 @@ emoter to make icons representing the current scene.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Scene_viewer_use_pixel_buffer.  "
-			"Invalid arguments");
+		display_message(ERROR_MESSAGE, "Scene_viewer_use_pixel_buffer.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Scene_viewer_use_pixel_buffer */
+}
 
 static int Scene_viewer_initialise_matrices_and_swap_buffers(
 		struct Scene_viewer_rendering_data *rendering_data)
