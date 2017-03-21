@@ -35,7 +35,6 @@ TEST(cmzn_sceneviewer_api, destroy_context_before_scene_viewer)
 TEST(cmzn_sceneviewer_api, background_colour)
 {
 	ZincTestSetup zinc;
-	const double tolerance = 1.0E-12;
 	const double colourIn3[] = { 0.2, 0.4, 0.6 };
 	const double colourIn4[] = { 0.25, 0.45, 0.65, 0.85 };
 	double colour3[3], colour4[4];
@@ -46,10 +45,10 @@ TEST(cmzn_sceneviewer_api, background_colour)
 
 	// test defaults
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_get_background_colour_rgba(sv, colour4));
-	EXPECT_NEAR(0.0, colour4[0], tolerance);
-	EXPECT_NEAR(0.0, colour4[1], tolerance);
-	EXPECT_NEAR(0.0, colour4[2], tolerance);
-	EXPECT_NEAR(1.0, colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(0.0, colour4[0]);
+	EXPECT_DOUBLE_EQ(0.0, colour4[1]);
+	EXPECT_DOUBLE_EQ(0.0, colour4[2]);
+	EXPECT_DOUBLE_EQ(1.0, colour4[3]);
 
 	// test invalid arguments
 	EXPECT_EQ(0.0, cmzn_sceneviewer_get_background_colour_alpha(0));
@@ -66,39 +65,39 @@ TEST(cmzn_sceneviewer_api, background_colour)
 
 	// test setters
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_set_background_colour_alpha(sv, 0.77));
-	EXPECT_NEAR(0.77, cmzn_sceneviewer_get_background_colour_alpha(sv), tolerance);
+	EXPECT_DOUBLE_EQ(0.77, cmzn_sceneviewer_get_background_colour_alpha(sv));
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_get_background_colour_rgb(sv, colour3));
-	EXPECT_NEAR(0.0, colour3[0], tolerance);
-	EXPECT_NEAR(0.0, colour3[1], tolerance);
-	EXPECT_NEAR(0.0, colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(0.0, colour3[0]);
+	EXPECT_DOUBLE_EQ(0.0, colour3[1]);
+	EXPECT_DOUBLE_EQ(0.0, colour3[2]);
 
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_set_background_colour_component_rgb(sv, -1.0, 0.2, 0.8));
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_get_background_colour_rgb(sv, colour3));
-	EXPECT_NEAR(-1.0, colour3[0], tolerance);
-	EXPECT_NEAR(0.2, colour3[1], tolerance);
-	EXPECT_NEAR(0.8, colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(-1.0, colour3[0]);
+	EXPECT_DOUBLE_EQ(0.2, colour3[1]);
+	EXPECT_DOUBLE_EQ(0.8, colour3[2]);
 	// test alpha not affected
-	EXPECT_NEAR(0.77, cmzn_sceneviewer_get_background_colour_alpha(sv), tolerance);
+	EXPECT_DOUBLE_EQ(0.77, cmzn_sceneviewer_get_background_colour_alpha(sv));
 	EXPECT_EQ(RESULT_OK, cmzn_sceneviewer_set_background_colour_component_rgba(sv, 0.12, 0.34, 0.56, 0.78));
 	EXPECT_EQ(RESULT_OK, cmzn_sceneviewer_get_background_colour_rgba(sv, colour4));
-	EXPECT_NEAR(0.12, colour4[0], tolerance);
-	EXPECT_NEAR(0.34, colour4[1], tolerance);
-	EXPECT_NEAR(0.56, colour4[2], tolerance);
-	EXPECT_NEAR(0.78, colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(0.12, colour4[0]);
+	EXPECT_DOUBLE_EQ(0.34, colour4[1]);
+	EXPECT_DOUBLE_EQ(0.56, colour4[2]);
+	EXPECT_DOUBLE_EQ(0.78, colour4[3]);
 
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_set_background_colour_rgb(sv, colourIn3));
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_get_background_colour_rgb(sv, colour3));
-	EXPECT_NEAR(colourIn3[0], colour3[0], tolerance);
-	EXPECT_NEAR(colourIn3[1], colour3[1], tolerance);
-	EXPECT_NEAR(colourIn3[2], colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(colourIn3[0], colour3[0]);
+	EXPECT_DOUBLE_EQ(colourIn3[1], colour3[1]);
+	EXPECT_DOUBLE_EQ(colourIn3[2], colour3[2]);
 	// test alpha not affected
-	EXPECT_NEAR(0.78, cmzn_sceneviewer_get_background_colour_alpha(sv), tolerance);
+	EXPECT_DOUBLE_EQ(0.78, cmzn_sceneviewer_get_background_colour_alpha(sv));
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_set_background_colour_rgba(sv, colourIn4));
 	EXPECT_EQ(CMZN_RESULT_OK, cmzn_sceneviewer_get_background_colour_rgba(sv, colour4));
-	EXPECT_NEAR(colourIn4[0], colour4[0], tolerance);
-	EXPECT_NEAR(colourIn4[1], colour4[1], tolerance);
-	EXPECT_NEAR(colourIn4[2], colour4[2], tolerance);
-	EXPECT_NEAR(colourIn4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(colourIn4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(colourIn4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(colourIn4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(colourIn4[3], colour4[3]);
 
 	cmzn_sceneviewer_destroy(&sv);
 	cmzn_sceneviewermodule_destroy(&svm);
@@ -107,7 +106,6 @@ TEST(cmzn_sceneviewer_api, background_colour)
 TEST(ZincSceneviewer, backgroundColour)
 {
 	ZincTestSetupCpp zinc;
-	const double tolerance = 1.0E-12;
 	const double colourIn3[] = { 0.2, 0.4, 0.6 };
 	const double colourIn4[] = { 0.25, 0.45, 0.65, 0.85 };
 	double colour3[3], colour4[4];
@@ -119,10 +117,10 @@ TEST(ZincSceneviewer, backgroundColour)
 
 	// test defaults
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(0.0, colour4[0], tolerance);
-	EXPECT_NEAR(0.0, colour4[1], tolerance);
-	EXPECT_NEAR(0.0, colour4[2], tolerance);
-	EXPECT_NEAR(1.0, colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(0.0, colour4[0]);
+	EXPECT_DOUBLE_EQ(0.0, colour4[1]);
+	EXPECT_DOUBLE_EQ(0.0, colour4[2]);
+	EXPECT_DOUBLE_EQ(1.0, colour4[3]);
 
 	// test invalid arguments
 	Sceneviewer noSv;
@@ -141,39 +139,39 @@ TEST(ZincSceneviewer, backgroundColour)
 
 	// test setters
 	EXPECT_EQ(RESULT_OK, sv.setBackgroundColourAlpha(0.77));
-	EXPECT_NEAR(0.77, sv.getBackgroundColourAlpha(), tolerance);
+	EXPECT_DOUBLE_EQ(0.77, sv.getBackgroundColourAlpha());
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGB(colour3));
-	EXPECT_NEAR(0.0, colour3[0], tolerance);
-	EXPECT_NEAR(0.0, colour3[1], tolerance);
-	EXPECT_NEAR(0.0, colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(0.0, colour3[0]);
+	EXPECT_DOUBLE_EQ(0.0, colour3[1]);
+	EXPECT_DOUBLE_EQ(0.0, colour3[2]);
 
 	EXPECT_EQ(RESULT_OK, sv.setBackgroundColourComponentRGB(-1.0, 0.2, 0.8));
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGB(colour3));
-	EXPECT_NEAR(-1.0, colour3[0], tolerance);
-	EXPECT_NEAR(0.2, colour3[1], tolerance);
-	EXPECT_NEAR(0.8, colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(-1.0, colour3[0]);
+	EXPECT_DOUBLE_EQ(0.2, colour3[1]);
+	EXPECT_DOUBLE_EQ(0.8, colour3[2]);
 	// test alpha not affected
-	EXPECT_NEAR(0.77, sv.getBackgroundColourAlpha(), tolerance);
+	EXPECT_DOUBLE_EQ(0.77, sv.getBackgroundColourAlpha());
 	EXPECT_EQ(RESULT_OK, sv.setBackgroundColourComponentRGBA(0.12, 0.34, 0.56, 0.78));
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(0.12, colour4[0], tolerance);
-	EXPECT_NEAR(0.34, colour4[1], tolerance);
-	EXPECT_NEAR(0.56, colour4[2], tolerance);
-	EXPECT_NEAR(0.78, colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(0.12, colour4[0]);
+	EXPECT_DOUBLE_EQ(0.34, colour4[1]);
+	EXPECT_DOUBLE_EQ(0.56, colour4[2]);
+	EXPECT_DOUBLE_EQ(0.78, colour4[3]);
 
 	EXPECT_EQ(RESULT_OK, sv.setBackgroundColourRGB(colourIn3));
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGB(colour3));
-	EXPECT_NEAR(colourIn3[0], colour3[0], tolerance);
-	EXPECT_NEAR(colourIn3[1], colour3[1], tolerance);
-	EXPECT_NEAR(colourIn3[2], colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(colourIn3[0], colour3[0]);
+	EXPECT_DOUBLE_EQ(colourIn3[1], colour3[1]);
+	EXPECT_DOUBLE_EQ(colourIn3[2], colour3[2]);
 	// test alpha not affected
-	EXPECT_NEAR(0.78, sv.getBackgroundColourAlpha(), tolerance);
+	EXPECT_DOUBLE_EQ(0.78, sv.getBackgroundColourAlpha());
 	EXPECT_EQ(RESULT_OK, sv.setBackgroundColourRGBA(colourIn4));
 	EXPECT_EQ(RESULT_OK, sv.getBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(colourIn4[0], colour4[0], tolerance);
-	EXPECT_NEAR(colourIn4[1], colour4[1], tolerance);
-	EXPECT_NEAR(colourIn4[2], colour4[2], tolerance);
-	EXPECT_NEAR(colourIn4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(colourIn4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(colourIn4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(colourIn4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(colourIn4[3], colour4[3]);
 }
 
 TEST(cmzn_sceneviewer, lookat_parameters)
@@ -636,7 +634,6 @@ TEST(ZincSceneviewer, callback)
 
 TEST(ZincSceneviewermodule, defaultBackgroundColour)
 {
-	const double tolerance = 1.0E-12;
 	ZincTestSetupCpp zinc;
 
 	Sceneviewermodule svm = zinc.context.getSceneviewermodule();
@@ -650,16 +647,16 @@ TEST(ZincSceneviewermodule, defaultBackgroundColour)
 
 	// test defaults
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGB(colour3));
-	EXPECT_NEAR(oldColour3[0], colour3[0], tolerance);
-	EXPECT_NEAR(oldColour3[1], colour3[1], tolerance);
-	EXPECT_NEAR(oldColour3[2], colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(oldColour3[0], colour3[0]);
+	EXPECT_DOUBLE_EQ(oldColour3[1], colour3[1]);
+	EXPECT_DOUBLE_EQ(oldColour3[2], colour3[2]);
 	alpha = svm.getDefaultBackgroundColourAlpha();
-	EXPECT_NEAR(1.0, alpha, tolerance);
+	EXPECT_DOUBLE_EQ(1.0, alpha);
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(oldColour4[0], colour4[0], tolerance);
-	EXPECT_NEAR(oldColour4[1], colour4[1], tolerance);
-	EXPECT_NEAR(oldColour4[2], colour4[2], tolerance);
-	EXPECT_NEAR(oldColour4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(oldColour4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(oldColour4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(oldColour4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(oldColour4[3], colour4[3]);
 
 	// test invalid arguments
 	Sceneviewermodule noSvm;
@@ -676,48 +673,48 @@ TEST(ZincSceneviewermodule, defaultBackgroundColour)
 
 	// re-test defaults
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(oldColour4[0], colour4[0], tolerance);
-	EXPECT_NEAR(oldColour4[1], colour4[1], tolerance);
-	EXPECT_NEAR(oldColour4[2], colour4[2], tolerance);
-	EXPECT_NEAR(oldColour4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(oldColour4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(oldColour4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(oldColour4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(oldColour4[3], colour4[3]);
 
 	// test scene viewer created with default background colour
 	Sceneviewer sv1 = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv1.isValid());
 	EXPECT_EQ(RESULT_OK, sv1.getBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(oldColour4[0], colour4[0], tolerance);
-	EXPECT_NEAR(oldColour4[1], colour4[1], tolerance);
-	EXPECT_NEAR(oldColour4[2], colour4[2], tolerance);
-	EXPECT_NEAR(oldColour4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(oldColour4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(oldColour4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(oldColour4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(oldColour4[3], colour4[3]);
 
 	// test setting default background colours
 	EXPECT_EQ(RESULT_OK, svm.setDefaultBackgroundColourAlpha(0.5));
 	alpha = svm.getDefaultBackgroundColourAlpha();
-	EXPECT_NEAR(0.5, alpha, tolerance);
+	EXPECT_DOUBLE_EQ(0.5, alpha);
 	EXPECT_EQ(RESULT_OK, svm.setDefaultBackgroundColourRGB(newColour3));
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGB(colour3));
-	EXPECT_NEAR(newColour3[0], colour3[0], tolerance);
-	EXPECT_NEAR(newColour3[1], colour3[1], tolerance);
-	EXPECT_NEAR(newColour3[2], colour3[2], tolerance);
+	EXPECT_DOUBLE_EQ(newColour3[0], colour3[0]);
+	EXPECT_DOUBLE_EQ(newColour3[1], colour3[1]);
+	EXPECT_DOUBLE_EQ(newColour3[2], colour3[2]);
 	// check alpha is unchanged
 	alpha = svm.getDefaultBackgroundColourAlpha();
-	EXPECT_NEAR(0.5, alpha, tolerance);
+	EXPECT_DOUBLE_EQ(0.5, alpha);
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(newColour3[0], colour4[0], tolerance);
-	EXPECT_NEAR(newColour3[1], colour4[1], tolerance);
-	EXPECT_NEAR(newColour3[2], colour4[2], tolerance);
-	EXPECT_NEAR(0.5, colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(newColour3[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(newColour3[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(newColour3[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(0.5, colour4[3]);
 	EXPECT_EQ(RESULT_OK, svm.setDefaultBackgroundColourRGBA(newColour4));
 	EXPECT_EQ(RESULT_OK, svm.getDefaultBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(newColour4[0], colour4[0], tolerance);
-	EXPECT_NEAR(newColour4[1], colour4[1], tolerance);
-	EXPECT_NEAR(newColour4[2], colour4[2], tolerance);
-	EXPECT_NEAR(newColour4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(newColour4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(newColour4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(newColour4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(newColour4[3], colour4[3]);
 	Sceneviewer sv2 = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv2.isValid());
 	EXPECT_EQ(RESULT_OK, sv2.getBackgroundColourRGBA(colour4));
-	EXPECT_NEAR(newColour4[0], colour4[0], tolerance);
-	EXPECT_NEAR(newColour4[1], colour4[1], tolerance);
-	EXPECT_NEAR(newColour4[2], colour4[2], tolerance);
-	EXPECT_NEAR(newColour4[3], colour4[3], tolerance);
+	EXPECT_DOUBLE_EQ(newColour4[0], colour4[0]);
+	EXPECT_DOUBLE_EQ(newColour4[1], colour4[1]);
+	EXPECT_DOUBLE_EQ(newColour4[2], colour4[2]);
+	EXPECT_DOUBLE_EQ(newColour4[3], colour4[3]);
 }
