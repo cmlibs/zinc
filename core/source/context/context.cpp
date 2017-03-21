@@ -78,8 +78,9 @@ cmzn_context::~cmzn_context()
 cmzn_context *cmzn_context::create(const char *id)
 {
 	cmzn_context *context = new cmzn_context(id);
-	if (context && context->id && context->timekeepermodule)
+	if ((context) && (context->id) && (context->logger) && (context->timekeepermodule))
 		return context;
+	display_message(ERROR_MESSAGE, "Zinc.  Failed to create Context");
 	delete context;
 	return 0;
 }

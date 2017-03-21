@@ -116,10 +116,8 @@ static int cmzn_graphics_changed(struct cmzn_graphics *graphics,
 			break;
 		}
 		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
-		if (return_code)
-		{
-			cmzn_scene_changed(graphics->scene);
-		}
+		if (return_code && (graphics->scene))
+			graphics->scene->setChanged();
 	}
 	else
 	{
@@ -289,7 +287,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->graphics_changed = 1;
 			graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
 			graphics->selected_graphics_changed = 0;
-			graphics->time_dependent = 0;
+			graphics->timeDependent = false;
 
 			graphics->access_count=1;
 		}
@@ -4644,7 +4642,7 @@ int cmzn_graphics_time_change(
 		{
 			graphics->glyph->timeChange();
 		}
-		if (graphics->time_dependent)
+		if (graphics->timeDependent)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
@@ -4660,96 +4658,47 @@ int cmzn_graphics_time_change(
 	return (return_code);
 } /* cmzn_graphics_time_change */
 
-int cmzn_graphics_update_time_behaviour(
-	struct cmzn_graphics *graphics, void *update_time_behaviour_void)
+void cmzn_graphics::updateTimeDependence()
 {
-	int return_code, time_dependent;
-	struct cmzn_graphics_update_time_behaviour_data *data;
-
-	ENTER(cmzn_graphics_update_time_behaviour);
-	if (graphics && (data =
-		(struct cmzn_graphics_update_time_behaviour_data *)
-		update_time_behaviour_void))
-	{
-		return_code = 1;
-		time_dependent = 0;
-		if (graphics->glyph && graphics->glyph->isTimeVarying())
-		{
-			time_dependent = 1;
-		}
-		if (graphics->coordinate_field)
-		{
-			if (Computed_field_has_multiple_times(graphics->coordinate_field))
-			{
-				time_dependent = 1;
-			}
-		}
-		else
-		{
-			if (data->default_coordinate_depends_on_time)
-			{
-				time_dependent = 1;
-			}
-		}
-		if (graphics->texture_coordinate_field && Computed_field_has_multiple_times(
-			graphics->texture_coordinate_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->line_orientation_scale_field && Computed_field_has_multiple_times(
-			graphics->line_orientation_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (cmzn_graphics_isoscalar_field_is_time_dependent(graphics))
-		{
-			time_dependent = 1;
-		}
-		if (cmzn_graphics_point_attribute_is_time_dependent(graphics))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->label_field &&
-			Computed_field_has_multiple_times(graphics->label_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->label_density_field &&
-			Computed_field_has_multiple_times(graphics->label_density_field))
-		{
-			time_dependent = 1;
-		}
-		if (cmzn_graphics_subgroup_field_is_time_dependent(graphics))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->stream_vector_field &&
-			Computed_field_has_multiple_times(graphics->stream_vector_field))
-		{
-			time_dependent = 1;
-		}
-		if (cmzn_graphics_data_is_time_dependent(graphics))
-		{
-			time_dependent = 1;
-		}
-		/* Or any field that is pointed to has multiple times...... */
-
-		graphics->time_dependent = time_dependent;
-		if (time_dependent)
-		{
-			data->time_dependent = time_dependent;
-		}
-	}
+	if ((this->glyph) && this->glyph->isTimeVarying())
+		this->timeDependent = true;
+	else if ((this->coordinate_field) && Computed_field_has_multiple_times(this->coordinate_field))
+		this->timeDependent = true;
+	else if ((this->texture_coordinate_field) && Computed_field_has_multiple_times(this->texture_coordinate_field))
+		this->timeDependent = true;
+	else if ((this->line_orientation_scale_field) && Computed_field_has_multiple_times(this->line_orientation_scale_field))
+		this->timeDependent = true;
+	else if (this->isoscalarFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if (this->pointGlyphScalingIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->label_field) && Computed_field_has_multiple_times(this->label_field))
+		this->timeDependent = true;
+	else if ((this->label_density_field) && Computed_field_has_multiple_times(this->label_density_field))
+		this->timeDependent = true;
+	else if (this->subgroupFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->stream_vector_field) && Computed_field_has_multiple_times(this->stream_vector_field))
+		this->timeDependent = true;
+	else if (this->dataFieldIsTimeDependent())
+		this->timeDependent = true;
 	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_update_time_behaviour.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+		this->timeDependent = false;
+}
 
-	return (return_code);
-} /* cmzn_graphics_update_time_behaviour */
+int cmzn_graphics_update_time_dependence(struct cmzn_graphics *graphics, void *time_dependent_bool_void)
+{
+	bool *timeDependentAddress = static_cast<bool *>(time_dependent_bool_void);
+	if (!((graphics) && (timeDependentAddress)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_graphics_is_time_varying.  Invalid argument(s)");
+		return 0;
+	}
+	graphics->updateTimeDependence();
+	if (graphics->timeDependent)
+		*timeDependentAddress = true;
+	return 1;
+}
 
 int cmzn_graphics_glyph_change(
 	struct cmzn_graphics *graphics, void *manager_message_void)
@@ -6618,7 +6567,7 @@ int cmzn_graphics_flag_for_full_rebuild(
 	if (graphics)
 	{
 		return_code = 1;
-		if (graphics->time_dependent)
+		if (graphics->timeDependent)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
@@ -6777,65 +6726,4 @@ bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_
 		cmzn_glyph_destroy(&glyph);
 	}
 	return return_code;
-}
-
-bool cmzn_graphics_data_is_time_dependent(cmzn_graphics_id graphics)
-{
-	if (graphics && graphics->data_field &&
-		Computed_field_has_multiple_times(graphics->data_field))
-	{
-		return true;
-	}
-	return false;
-}
-
-bool cmzn_graphics_point_attribute_is_time_dependent(cmzn_graphics_id graphics)
-{
-	if (graphics)
-	{
-		if (graphics->point_orientation_scale_field &&
-			Computed_field_has_multiple_times(graphics->point_orientation_scale_field))
-		{
-			return  true;
-		}
-		if (graphics->signed_scale_field &&
-			Computed_field_has_multiple_times(graphics->signed_scale_field))
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-bool cmzn_graphics_coordinates_is_time_dependent(cmzn_graphics_id graphics)
-{
-	if (graphics && graphics->coordinate_field &&
-		Computed_field_has_multiple_times(graphics->coordinate_field))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool cmzn_graphics_subgroup_field_is_time_dependent(cmzn_graphics_id graphics)
-{
-	if (graphics && graphics->subgroup_field &&
-		Computed_field_has_multiple_times(graphics->subgroup_field))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool cmzn_graphics_isoscalar_field_is_time_dependent(cmzn_graphics_id graphics)
-{
-	if (graphics && graphics->isoscalar_field && Computed_field_has_multiple_times(
-	graphics->isoscalar_field))
-	{
-		return true;
-	}
-
-	return false;
 }

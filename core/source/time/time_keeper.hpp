@@ -109,10 +109,7 @@ private:
 
 public:
 
-	static cmzn_timekeepermodule *create()
-	{
-		return new cmzn_timekeepermodule();
-	}
+	static cmzn_timekeepermodule *create();
 
 	cmzn_timekeepermodule *access()
 	{
@@ -133,6 +130,7 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
+	/** @return  Non-accessed default timekeeper */
 	cmzn_timekeeper *getDefaultTimekeeper()
 	{
 		return this->default_timekeeper;

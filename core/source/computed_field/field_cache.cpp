@@ -119,6 +119,13 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	cmzn_region_destroy(&region);
 }
 
+cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region_id regionIn)
+{
+	if (regionIn)
+		return new cmzn_fieldcache(regionIn);
+	return 0;
+}
+
 int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not

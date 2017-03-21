@@ -40,6 +40,7 @@ Allocates memory and assigns field for a colour.
 		colour->red=red;
 		colour->green=green;
 		colour->blue=blue;
+		colour->alpha=0.0;
 	}
 	else
 	{
