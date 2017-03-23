@@ -30,6 +30,11 @@ list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/FindModuleWrappers")
 list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/Modules/OpenCMISS")
 
+set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
+if (DEFINED OPENCMISS_PACKAGE_CONFIG_DIR)
+    set(ZINC_PACKAGE_CONFIG_DIR "${OPENCMISS_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
+endif ()
+
 if(ZINC_BUILD_BINDINGS)
     option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
 endif()
@@ -95,6 +100,7 @@ if(WIN32)
     set(GLEW_STATIC TRUE)
 endif()
 set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew)
+set(ZINC_DEPS ZLIB BZip2 LibXml2 Fieldml-API FTGL OPTPP GLEW)
 
 set(USE_MSAA TRUE)
 
@@ -155,16 +161,19 @@ SET_GRAPHICS_DEFINES( )
 if(ZINC_USE_NETGEN)
     find_package(NETGEN ${NETGEN_VERSION} REQUIRED)
     list(APPEND DEPENDENT_LIBS nglib)
+    list(APPEND ZINC_DEPS NETGEN)
 endif()
 
 if(ZINC_USE_PNG)
     find_package(PNG ${PNG_VERSION} CONFIG REQUIRED)
     list(APPEND DEPENDENT_LIBS png)
+    list(APPEND ZINC_DEPS PNG)
 endif()
 
 if(ZINC_USE_IMAGEMAGICK)
     find_package(ImageMagick ${IMAGEMAGICK_VERSION} CONFIG REQUIRED)
     list(APPEND DEPENDENT_LIBS MagickCore)
+    list(APPEND ZINC_DEPS ImageMagick)
 endif()
 
 if(ZINC_USE_ITK )
@@ -177,6 +186,7 @@ if(ZINC_USE_ITK )
         endif ()
     endif ()
     list(APPEND DEPENDENT_LIBS  ${ITK_LIBRARIES})
+    list(APPEND ZINC_DEPS ITK)
     include_directories(${ITK_INCLUDE_DIRS})
 endif()
 
@@ -308,8 +318,6 @@ install(FILES
         COMPONENT Development
 )
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
-set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
-	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
 file(WRITE ${DEPFILE}
 	"include(CMakeFindDependencyMacro)\r\n"
 	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
@@ -317,7 +325,9 @@ file(WRITE ${DEPFILE}
 foreach(ZINCDEP ${ZINC_DEPS})
     if (${ZINCDEP}_FOUND)
         file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\r\n")
-    endif()
+	else ()
+        message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
+    endif ()
 endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
 install(FILES
