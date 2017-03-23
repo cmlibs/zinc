@@ -319,17 +319,17 @@ install(FILES
 )
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 file(WRITE ${DEPFILE}
-	"include(CMakeFindDependencyMacro)\r\n"
-	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
+	"include(CMakeFindDependencyMacro)\n"
+	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\n"
 )
 foreach(ZINCDEP ${ZINC_DEPS})
     if (${ZINCDEP}_FOUND)
-        file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\r\n")
+        file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\n")
 	else ()
         message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
     endif ()
 endforeach()
-file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
+file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
 install(FILES
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
