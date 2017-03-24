@@ -23,14 +23,13 @@ if (NOT EXISTS "${VIRTUALENV_EXEC}")
 endif ()
 
 # Create Python bindings for the Zinc library.
-
-set(PYTHON_VERSION "" CACHE STRING "Identify your preferred version of Python to locate. [2.6, 2.7, 3.0, 3.3, ...]")
+set(PYTHON_PREFERRED_VERSION "" CACHE STRING "Identify your preferred version of Python to locate, if not set the first available Python is used. [2.6, 2.7, 3.0, 3.3, ...]")
 
 # SWIG has already been found at this point.
 include(${SWIG_USE_FILE})
 
-set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION})
-# Force the finding of the python library always incase the desired PYTHON_VERSION has changed.
+set(Python_ADDITIONAL_VERSIONS ${PYTHON_PREFERRED_VERSION})
+# Force the finding of the python library always incase the desired PYTHON_PREFERRED_VERSION has changed.
 unset(PYTHONLIBS_FOUND CACHE)
 # I hate this masking of variables
 unset(PYTHON_LIBRARY CACHE)
