@@ -162,10 +162,12 @@ install(TARGETS
 # Zinc API header install rules
 install(FILES
     ${ZINC_SHARED_OBJECT_HDR}
+    ${ZINC_CONFIGURE_HDR}
     ${API_HDRS}
     ${APIPP_HDRS}
     DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc
-    COMPONENT Development)
+    COMPONENT Development
+)
 
 install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
     DESTINATION ${ZINC_INSTALL_INC_DIR}/opencmiss/zinc/types
