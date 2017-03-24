@@ -938,7 +938,7 @@ int cmzn_scene_add_graphics(struct cmzn_scene *scene,
 	struct cmzn_graphics *graphics,int position)
 {
 	int return_code;
-	if (scene && graphics && (NULL == cmzn_graphics_get_scene_private(graphics)))
+	if (scene && graphics && (graphics->getScene() == 0))
 	{
 		return_code=cmzn_graphics_add_to_list(graphics,position,
 			scene->list_of_graphics);
@@ -957,7 +957,8 @@ int cmzn_scene_add_graphics(struct cmzn_scene *scene,
 int cmzn_scene_remove_graphics(struct cmzn_scene *scene,
 	struct cmzn_graphics *graphics)
 {
-	if (scene && graphics && (scene == cmzn_graphics_get_scene_private(graphics)))
+	if (scene && graphics && ((graphics->getScene() == scene) ||
+		(scene->editorCopy && (graphics->getScene() == 0))))
 	{
 		cmzn_graphics_set_scene_private(graphics, NULL);
 		cmzn_graphics_remove_from_list(graphics, scene->list_of_graphics);
@@ -1693,7 +1694,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 					}
 					/* modify same_graphics to match new ones */
 					return_code = 1;
-					if (!cmzn_graphics_get_scene_private(same_graphics))
+					if (same_graphics->getScene() == 0)
 						cmzn_graphics_set_scene_private(same_graphics, scene);
 					DEACCESS(cmzn_graphics)(&same_graphics);
 				}
@@ -2794,10 +2795,9 @@ int cmzn_scene_move_graphics_before(cmzn_scene_id scene,
 	cmzn_graphics_id graphics, cmzn_graphics_id ref_graphics)
 {
 	int return_code = CMZN_ERROR_GENERAL;
-	if (scene && graphics &&
-		(cmzn_graphics_get_scene_private(graphics) == scene) && ((0 == ref_graphics) ||
-			(cmzn_graphics_get_scene_private(graphics) ==
-				cmzn_graphics_get_scene_private(ref_graphics))))
+	if (scene && graphics
+		&& ((graphics->getScene() == scene) || (scene->editorCopy && (graphics->getScene() == 0)))
+		&& ((0 == ref_graphics) || (graphics->getScene() == (ref_graphics->getScene()))))
 	{
 		cmzn_graphics_id current_graphics = ACCESS(cmzn_graphics)(graphics);
 		const int position = cmzn_scene_get_graphics_position(scene, ref_graphics);

@@ -193,6 +193,12 @@ finite element group scene.
 		return (0 != this->isoscalar_field)
 			&& Computed_field_has_multiple_times(this->isoscalar_field);
 	}
+
+	/** @return  Non-accessed scene. Can be NULL if editor copy. */
+	cmzn_scene *getScene() const
+	{
+		return this->scene;
+	}
 };
 
 struct cmzn_graphics_module;
@@ -660,8 +666,6 @@ int cmzn_graphics_get_overlay_order(struct cmzn_graphics *graphics);
  * @return Return 1 if successfully detach fields from graphics otherwise 0.
  */
 int cmzn_graphics_detach_fields(struct cmzn_graphics *graphics, void *dummy_void);
-
-struct cmzn_scene *cmzn_graphics_get_scene_private(struct cmzn_graphics *graphics);
 
 int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 	struct cmzn_scene *scene);
