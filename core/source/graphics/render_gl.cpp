@@ -799,8 +799,7 @@ public:
 				cmzn_texture_get_texture_coordinate_sizes(texture, 3, textureSizes);
 			}
 			char *graphics_name = cmzn_graphics_get_name_internal(graphics);
-			struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
-			struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
+			struct cmzn_region *region = cmzn_scene_get_region_internal(graphics->getScene());
 			char *group_name = 0;
 			cmzn_field_id groupField = 0;
 			groupField = cmzn_graphics_get_subgroup_field(graphics);
