@@ -32,7 +32,7 @@ list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/Modules/OpenCMISS")
 
 set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
 if (DEFINED OPENCMISS_PACKAGE_CONFIG_DIR)
-    set(ZINC_PACKAGE_CONFIG_DIR "${OPENCMISS_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
+    set(ZINC_PACKAGE_CONFIG_DIR "${OPENCMISS_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path)." FORCE)
 endif ()
 
 if(ZINC_BUILD_BINDINGS)
@@ -306,7 +306,7 @@ export(PACKAGE ${ZINC_BASE_NAME})
 
 # Install ZincLibraryDepends.cmake to the install destination
 install(EXPORT ${ZINC_EXPORT_SET_NAME}
-	DESTINATION ${PACKAGE_CONFIG_DIR}
+	DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
 	COMPONENT Development
 )
 include(CMakePackageConfigHelpers)
@@ -314,7 +314,7 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_N
 	COMPATIBILITY AnyNewerVersion)
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
-        DESTINATION ${PACKAGE_CONFIG_DIR}
+        DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
         COMPONENT Development
 )
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
@@ -332,7 +332,7 @@ endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
 install(FILES
         ${DEPFILE}
-        DESTINATION ${PACKAGE_CONFIG_DIR}
+        DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
         COMPONENT DevelopmentSDK
 )
 
