@@ -5022,13 +5022,6 @@ Must call cmzn_graphics_to_graphics_object afterwards to complete.
 	return (return_code);
 } /* cmzn_graphics_selected_element_points_change */
 
-struct cmzn_scene *cmzn_graphics_get_scene_private(struct cmzn_graphics *graphics)
-{
-	if (graphics)
-		return graphics->scene;
-	return NULL;
-}
-
 int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 	struct cmzn_scene *scene)
 {
