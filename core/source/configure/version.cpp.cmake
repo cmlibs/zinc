@@ -13,7 +13,7 @@ static const int ZINC_MAJOR_VERSION = @Zinc_VERSION_MAJOR@;
 static const int ZINC_MINOR_VERSION = @Zinc_VERSION_MINOR@;
 static const int ZINC_PATCH_VERSION = @Zinc_VERSION_PATCH@;
 static const char* ZINC_REVISION = "@ZINC_REVISION_LONG@";
-static const char* ZINC_BUILD_TYPE = "@CMAKE_BUILD_TYPE@";
+static const char* ZINC_BUILD_TYPE = "@CMAKE_BUILD_TYPE_LOWER@";
 
 int cmzn_context_get_version(cmzn_context_id context, int *version_out)
 {
@@ -43,8 +43,8 @@ char *cmzn_context_get_version_string(cmzn_context_id context)
 	if (context)
 	{
 		char *version_string = new char[1000];
-		sprintf(version_string, "%d.%d.%d.r%s",
-			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION, ZINC_REVISION);
+		sprintf(version_string, "%d.%d.%d",
+			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION);
 		if (0 == strcmp(ZINC_BUILD_TYPE, "debug"))
 		{
 			sprintf(version_string, "%s.Debug",	version_string);

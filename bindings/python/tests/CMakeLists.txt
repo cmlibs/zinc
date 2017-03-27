@@ -39,11 +39,10 @@ foreach(_TEST ${PYTHONTESTS})
     )
 endforeach()
 
-if(INSTALL_TO_VIRTUALENV)
-    find_program(VIRTUALENV_EXEC virtualenv)
-    # Add an extra test ensuring the installed opencmiss iron package works in the virtualenvironment
+if(ZINC_USE_VIRTUALENV)
+    # Add an extra test ensuring the installed opencmiss zinc package works in the virtualenvironment
     add_test(NAME Python_Bindings_Virtualenv
-        COMMAND ${CMAKE_COMMAND}
+        COMMAND "${CMAKE_COMMAND}"
         -DWD=${CMAKE_CURRENT_BINARY_DIR}
         -DVENV_EXEC=${VIRTUALENV_EXEC}
         -DPACKAGE_DIR=${NATIVE_PYTHON_BINDINGS_DIR}
@@ -54,4 +53,3 @@ if(INSTALL_TO_VIRTUALENV)
         ENVIRONMENT "${PATH_DEF}"
     )
 endif()
-    

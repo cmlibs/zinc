@@ -444,7 +444,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int col,i,row;
-	static GLfloat vector[16];
+	static GLdouble vector[16];
 
 	ENTER(wrapperMultiplyCurrentMatrix);
 	i=0;
@@ -455,7 +455,7 @@ DESCRIPTION :
 			vector[i++]=(*theMatrix)[col][row];
 		}
 	}
-	glMultMatrixf(vector);
+	glMultMatrixd(vector);
 	LEAVE;
 } /* wrapperMultiplyCurrentMatrix */
 #endif /* defined (OPENGL_API) */

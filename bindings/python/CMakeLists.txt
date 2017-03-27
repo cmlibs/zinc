@@ -4,17 +4,38 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Create Python bindings for the Zinc library.
+find_program(VIRTUALENV_EXEC virtualenv)
+mark_as_advanced(VIRTUALENV_EXEC)
 
-set(PYTHON_VERSION "" CACHE STRING "Identify your preferred version of Python to locate. [2.6, 2.7, 3.0, 3.3, ...]")
+# Bindings options
+set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
+if (DEFINED ZN_VIRTUALENV_INSTALL_PREFIX)
+    set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZN_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
+endif ()
+
+set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment.")
+if (DEFINED ZN_USE_VIRTUALENV)
+    set(ZINC_USE_VIRTUALENV ${ZN_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
+endif ()
+if (NOT EXISTS "${VIRTUALENV_EXEC}")
+    set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
+    message(STATUS "The program virtualenv was not found disabling it's use.")
+endif ()
+
+# Create Python bindings for the Zinc library.
+set(PYTHON_PREFERRED_VERSION "" CACHE STRING "Identify your preferred version of Python to locate, if not set the first available Python is used. [2.6, 2.7, 3.0, 3.3, ...]")
 
 # SWIG has already been found at this point.
 include(${SWIG_USE_FILE})
 
-set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION})
-# Force the finding of the python library always incase the desired PYTHON_VERSION has changed.
+set(Python_ADDITIONAL_VERSIONS ${PYTHON_PREFERRED_VERSION})
+# Force the finding of the python library always incase the desired PYTHON_PREFERRED_VERSION has changed.
 unset(PYTHONLIBS_FOUND CACHE)
+# I hate this masking of variables
 unset(PYTHON_LIBRARY CACHE)
+unset(PYTHON_LIBRARY)
+unset(PYTHON_DEBUG_LIBRARY CACHE)
+unset(PYTHON_DEBUG_LIBRARY)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHONINTERP_FOUND CACHE)
 unset(PYTHON_EXECUTABLE CACHE)
@@ -22,8 +43,8 @@ unset(PYTHONLIBS_VERSION_STRING)
 find_package(PythonInterp QUIET)
 find_package(PythonLibs QUIET)
 
-string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 1 PYTHONLIBS_MAJOR_VERSION)
-if(${PYTHONLIBS_MAJOR_VERSION} STREQUAL "3")
+three_part_version_to_vars(${PYTHONLIBS_VERSION_STRING} PYTHONLIBS_MAJOR_VERSION PYTHONLIBS_MINOR_VERSION PYTHONLIBS_PATCH_VERSION)
+if("${PYTHONLIBS_MAJOR_VERSION}" STREQUAL "3")
     set(PYTHONLIBS_SWIG_FLAGS -py3)
 endif()
 
@@ -104,6 +125,7 @@ endforeach()
 add_custom_target(collect_python_binding_files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/opencmiss/zinc
 )
+add_dependencies(collect_python_binding_files ${SWIG_MODULE_TARGETS})
 
 set(PYZINC_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 if(WIN32)
@@ -124,7 +146,7 @@ string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
 string(TOLOWER ${PROJECT_NAME} PYPI_PACKAGE_NAME)
-set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
+set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
 
 
 ################################################################
@@ -170,11 +192,10 @@ foreach(_file ${ADDITIONAL_PACKAGE_FILES})
     )
 endforeach()
 
-
 #################################
 # Create tarball
 set(PYPI_SOURCE_TARGZ "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${PYPI_PACKAGE_NAME}-${PYPI_SOURCE_TARGZ_VERSION}.tar.gz")
-add_custom_target(python-bindings-tarball
+add_custom_target(python_bindings_tarball
     COMMAND ${CMAKE_COMMAND} -E tar czf ${PYPI_SOURCE_TARGZ} -- $<CONFIG>/opencmiss setup.py ${ADDITIONAL_PACKAGE_FILES}
 )
 
@@ -182,4 +203,4 @@ include(${CMAKE_CURRENT_LIST_DIR}/InstallConfig.cmake)
 
 if (BUILD_TESTS)
     add_subdirectory(tests)
-endif()
+endif ()

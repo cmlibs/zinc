@@ -387,6 +387,16 @@ int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_timekeepermodule *cmzn_timekeepermodule::create()
+{
+	cmzn_timekeepermodule *timekeepermodule = new cmzn_timekeepermodule();
+	if ((timekeepermodule) && (timekeepermodule->default_timekeeper))
+		return timekeepermodule;
+	display_message(ERROR_MESSAGE, "Zinc.  Failed to create Timekeepermodule");
+	delete timekeepermodule;
+	return 0;
+}
+
 cmzn_timekeepermodule_id cmzn_timekeepermodule_access(
 	cmzn_timekeepermodule_id timekeepermodule)
 {

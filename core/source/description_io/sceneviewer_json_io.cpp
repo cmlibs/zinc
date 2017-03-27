@@ -18,6 +18,36 @@
 #include "region/cmiss_region.h"
 #include "opencmiss/zinc/status.h"
 
+namespace
+{
+	template <typename VALUETYPE> void writeArray(Json::Value &value, const char *key,
+		Json::ArrayIndex valuesCount, const VALUETYPE *values)
+	{
+		Json::Value& v = value[key];
+		v.resize(valuesCount);
+		for (Json::ArrayIndex i = 0; i < valuesCount; ++i)
+			v[i] = values[i];
+	}
+
+	/** Read array of doubles in value[key].
+	  * @return  True if array of correct size and type is read */
+	bool readArray(Json::Value &value, const char *key,
+		Json::ArrayIndex valuesCount, double *values)
+	{
+		if (!value.isMember(key))
+			return false;
+		const Json::Value& v = value[key];
+		if (!v.isArray() || ((v.size() != valuesCount)))
+		{
+			display_message(WARNING_MESSAGE, "Sceneviewer readDescription.  Value of %s is not an array of size %d", key, valuesCount);
+			return false;
+		}
+		for (Json::ArrayIndex i = 0; i < valuesCount; ++i)
+			values[i] = v[i].asDouble();
+		return true;
+	}
+
+}
 
 void SceneviewerJsonIO::ioEntries(Json::Value &sceneviewerSettings)
 {
@@ -138,29 +168,21 @@ void SceneviewerJsonIO::ioSceneEntries(Json::Value &sceneviewerSettings)
 
 void SceneviewerJsonIO::ioViewParameterEntries(Json::Value &sceneviewerSettings)
 {
+	double values3[3], values4[4];
 	if (mode == IO_MODE_EXPORT)
 	{
 		sceneviewerSettings["AntialiasSampling"] = sceneviewer.getAntialiasSampling();
-		double values3[3];
 		sceneviewer.getEyePosition(&(values3[0]));
-		sceneviewerSettings["EyePosition"].append(values3[0]);
-		sceneviewerSettings["EyePosition"].append(values3[1]);
-		sceneviewerSettings["EyePosition"].append(values3[2]);
+		writeArray(sceneviewerSettings, "EyePosition", 3, values3);
 		sceneviewer.getLookatPosition(&(values3[0]));
-		sceneviewerSettings["LookatPosition"].append(values3[0]);
-		sceneviewerSettings["LookatPosition"].append(values3[1]);
-		sceneviewerSettings["LookatPosition"].append(values3[2]);
+		writeArray(sceneviewerSettings, "LookatPosition", 3, values3);
 		sceneviewerSettings["TranslationRate"] = sceneviewer.getTranslationRate();
 		sceneviewerSettings["TumbleRate"] = sceneviewer.getTumbleRate();
 		sceneviewerSettings["ZoomRate"] = sceneviewer.getZoomRate();
 		sceneviewer.getUpVector(&(values3[0]));
-		sceneviewerSettings["UpVector"].append(values3[0]);
-		sceneviewerSettings["UpVector"].append(values3[1]);
-		sceneviewerSettings["UpVector"].append(values3[2]);
-		sceneviewer.getBackgroundColourRGB(&(values3[0]));
-		sceneviewerSettings["BackgroundColourRGB"].append(values3[0]);
-		sceneviewerSettings["BackgroundColourRGB"].append(values3[1]);
-		sceneviewerSettings["BackgroundColourRGB"].append(values3[2]);
+		writeArray(sceneviewerSettings, "UpVector", 3, values3);
+		sceneviewer.getBackgroundColourRGBA(values4);
+		writeArray(sceneviewerSettings, "BackgroundColourRGBA", 4, values4);
 		sceneviewerSettings["FarClippingPlane"] = sceneviewer.getFarClippingPlane();
 		sceneviewerSettings["NearClippingPlane"] = sceneviewer.getNearClippingPlane();
 		sceneviewerSettings["ViewAngle"] = sceneviewer.getViewAngle();
@@ -169,48 +191,22 @@ void SceneviewerJsonIO::ioViewParameterEntries(Json::Value &sceneviewerSettings)
 	{
 		if (sceneviewerSettings["AntialiasSampling"].isInt())
 			sceneviewer.setAntialiasSampling(sceneviewerSettings["AntialiasSampling"].asInt());
-		if (sceneviewerSettings["EyePosition"].isArray() &&
-			(sceneviewerSettings["EyePosition"].size() == 3))
-		{
-			double values3[3];
-			values3[0] = sceneviewerSettings["EyePosition"][0].asDouble();
-			values3[1] = sceneviewerSettings["EyePosition"][1].asDouble();
-			values3[2] = sceneviewerSettings["EyePosition"][2].asDouble();
+		if (readArray(sceneviewerSettings, "EyePosition", 3, values3))
 			sceneviewer.setEyePosition(&(values3[0]));
-		}
-		if (sceneviewerSettings["LookatPosition"].isArray() &&
-			(sceneviewerSettings["LookatPosition"].size() == 3))
-		{
-			double values3[3];
-			values3[0] = sceneviewerSettings["LookatPosition"][0].asDouble();
-			values3[1] = sceneviewerSettings["LookatPosition"][1].asDouble();
-			values3[2] = sceneviewerSettings["LookatPosition"][2].asDouble();
+		if (readArray(sceneviewerSettings, "LookatPosition", 3, values3))
 			sceneviewer.setLookatPosition(&(values3[0]));
-		}
 		if (sceneviewerSettings["TranslationRate"].isDouble())
 			sceneviewer.setTranslationRate(sceneviewerSettings["TranslationRate"].asDouble());
 		if (sceneviewerSettings["TumbleRate"].isDouble())
 			sceneviewer.setTumbleRate(sceneviewerSettings["TumbleRate"].asDouble());
 		if (sceneviewerSettings["ZoomRate"].isDouble())
 			sceneviewer.setZoomRate(sceneviewerSettings["ZoomRate"].asDouble());
-		if (sceneviewerSettings["UpVector"].isArray() &&
-			(sceneviewerSettings["UpVector"].size() == 3))
-		{
-			double values3[3];
-			values3[0] = sceneviewerSettings["UpVector"][0].asDouble();
-			values3[1] = sceneviewerSettings["UpVector"][1].asDouble();
-			values3[2] = sceneviewerSettings["UpVector"][2].asDouble();
+		if (readArray(sceneviewerSettings, "UpVector", 3, values3))
 			sceneviewer.setUpVector(&(values3[0]));
-		}
-		if (sceneviewerSettings["BackgroundColourRGB"].isArray() &&
-			(sceneviewerSettings["BackgroundColourRGB"].size() == 3))
-		{
-			double values3[3];
-			values3[0] = sceneviewerSettings["BackgroundColourRGB"][0].asDouble();
-			values3[1] = sceneviewerSettings["BackgroundColourRGB"][1].asDouble();
-			values3[2] = sceneviewerSettings["BackgroundColourRGB"][2].asDouble();
-			sceneviewer.setBackgroundColourRGB(&(values3[0]));
-		}
+		if (readArray(sceneviewerSettings, "BackgroundColourRGBA", 4, values4))
+			sceneviewer.setBackgroundColourRGBA(values4);
+		else if (readArray(sceneviewerSettings, "BackgroundColourRGB", 3, values3))
+			sceneviewer.setBackgroundColourRGB(values3);
 		if (sceneviewerSettings["FarClippingPlane"].isDouble())
 			sceneviewer.setFarClippingPlane(sceneviewerSettings["FarClippingPlane"].asDouble());
 		if (sceneviewerSettings["NearClippingPlane"].isDouble())

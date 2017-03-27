@@ -113,19 +113,21 @@ private:
 
 public:
 
-	cmzn_fieldcache(cmzn_region_id region) :
-		region(cmzn_region_access(region)),
+	cmzn_fieldcache(cmzn_region_id regionIn) :
+		region(cmzn_region_access(regionIn)),
 		locationCounter(0),
 		location(new Field_time_location()),
 		requestedDerivatives(0),
-		valueCaches(cmzn_region_get_field_cache_size(region), (FieldValueCache*)0),
+		valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
 		assignInCache(false),
 		access_count(1)
 	{
-		cmzn_region_add_field_cache(region, this);
+		cmzn_region_add_field_cache(this->region, this);
 	}
 
 	~cmzn_fieldcache();
+
+	static cmzn_fieldcache *create(cmzn_region_id regionIn);
 
 	cmzn_fieldcache_id access()
 	{

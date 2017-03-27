@@ -651,6 +651,11 @@ public:
 				sprintf(temp, "temp_%d.json", i+1);
 				graphics_json["URL"] = temp;
 			}
+			char *group_name = export_iter->second->getGroupNameNonAccessed();
+			if (group_name)
+				graphics_json["GroupName"] = group_name;
+
+
 			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
 			if (glyph_export)
 			{
@@ -773,7 +778,8 @@ public:
 			graphics));
 	}
 
-	/* Method to export individual graphics */
+	/** Method to export individual graphics
+	  * @param graphics  Not checked, must be non-NULL. */
 	template <class Threejs_export_class>
 	int Graphics_export(cmzn_graphics *graphics)
 	{
@@ -793,27 +799,36 @@ public:
 				cmzn_texture_get_texture_coordinate_sizes(texture, 3, textureSizes);
 			}
 			char *graphics_name = cmzn_graphics_get_name_internal(graphics);
-			struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
-			struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
+			struct cmzn_region *region = cmzn_scene_get_region_internal(graphics->getScene());
+			char *group_name = 0;
+			cmzn_field_id groupField = 0;
+			groupField = cmzn_graphics_get_subgroup_field(graphics);
+			if (groupField)
+				group_name = cmzn_field_get_name(groupField);
 			char *region_name = cmzn_region_get_name(region);
 			char new_file_prefix[50];
 			if (region_name)
 				sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
 			else
 				sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
-			bool morphsColoursAllowed = cmzn_graphics_data_is_time_dependent(graphics) && morphColours;
-			bool morphsVerticesAllowed = (cmzn_graphics_point_attribute_is_time_dependent(graphics) ||
-				cmzn_graphics_coordinates_is_time_dependent(graphics)) && morphVertices;
-			bool morphNormalsAllowed = (cmzn_graphics_point_attribute_is_time_dependent(graphics) ||
-				cmzn_graphics_coordinates_is_time_dependent(graphics)) && morphNormals;
+			const bool morphsColoursAllowed = graphics->dataFieldIsTimeDependent() && morphColours;
+			const bool graphicsIsTimeDependent = graphics->coordinateFieldIsTimeDependent()
+				|| graphics->pointGlyphScalingIsTimeDependent()
+				|| graphics->isoscalarFieldIsTimeDependent()
+				|| graphics->subgroupFieldIsTimeDependent();
+			const bool morphsVerticesAllowed = graphicsIsTimeDependent && morphVertices;
+			const bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
 			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
-				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0]);
+				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name);
 			threejs_export->beginExport();
 			threejs_export->exportMaterial(material);
 			cmzn_material_destroy(&material);
 			DEALLOCATE(graphics_name);
 			if (region_name)
 				DEALLOCATE(region_name);
+			cmzn_field_destroy(&groupField);
+			if (group_name)
+				DEALLOCATE(group_name);
 			exports_map.insert(std::make_pair(graphics, threejs_export));
 		}
 		else

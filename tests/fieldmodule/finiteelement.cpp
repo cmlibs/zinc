@@ -1252,6 +1252,12 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
 	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
+	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
+	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
 	// test invalid version:
 	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn1));
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn2));
