@@ -611,10 +611,7 @@ bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator)
 			if (next_char != separator)
 			{
 				if (((int)'\n' == next_char) || ((int)'\r' == next_char))
-				{
-					IO_stream_scan(this->input_file, " ");
-					return true;
-				}
+					break;
 				char *rest_of_line;
 				IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
 				display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%c%s' where only '%c key=value[, key=value[, ...]]' allowed.  %s",
@@ -623,7 +620,7 @@ bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator)
 				return false;
 			}
 		}
-		char *key;
+		char *key = 0;
 		if (!IO_stream_read_string(this->input_file, "[^=\n\r]", &key))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read key=value key.  %s", this->getFileLocation());
@@ -635,8 +632,8 @@ bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator)
 		{
 			if ((0 == separator) && (strlen(key) == 0))
 			{
-				IO_stream_scan(this->input_file, " ");
-				return true;
+				DEALLOCATE(key);
+				break;
 			}
 			display_message(ERROR_MESSAGE, "EX Reader.  Unexpected text '%s' where only 'key=value[, key=value[, ...]]' allowed.  %s",
 				key, this->getFileLocation());
@@ -666,8 +663,8 @@ bool EXReader::readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator)
 		}
 		separator = (int)',';
 	}
-	// consume end of line and subsequent whitespace characters
-	IO_stream_scan(this->input_file, " ");
+	// consume end of line characters
+	IO_stream_scan(this->input_file, "[\n\r]");
 	return true;
 }
 
@@ -2791,28 +2788,25 @@ bool EXReader::readElementHeaderField()
 					this->getFileLocation());
 			}
 			// optionally read additional key=value data
-			KeyValueMap keyValueMap;
+			KeyValueMap keyValueMapBase;
 			const char *scaleFactorSetName = 0; // prior to EX version 2, used the basis description as the scale factor name
-			if ((this->exVersion >= 2) || elementGridBased)
+			if (!this->readKeyValueMap(keyValueMapBase))
 			{
-				if (!this->readKeyValueMap(keyValueMap))
-				{
-					result = false;
-					break;
-				}
-				if (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode)
-				{
-					scaleFactorSetName = keyValueMap.getKeyValue("scale factor set");
-				}
-				if (keyValueMap.hasUnusedKeyValues())
-				{
-					std::string prefix("EX Reader.  Element field ");
-					prefix += get_FE_field_name(field);
-					prefix += " component ";
-					prefix += componentName;
-					prefix += ": ";
-					keyValueMap.reportUnusedKeyValues(prefix.c_str());
-				}
+				result = false;
+				break;
+			}
+			if ((this->exVersion >= 2) && (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode))
+			{
+				scaleFactorSetName = keyValueMapBase.getKeyValue("scale factor set");
+			}
+			if (keyValueMapBase.hasUnusedKeyValues())
+			{
+				std::string prefix("EX Reader.  Element field ");
+				prefix += get_FE_field_name(field);
+				prefix += " component ";
+				prefix += componentName;
+				prefix += ": ";
+				keyValueMapBase.reportUnusedKeyValues(prefix.c_str());
 			}
 			switch (elementParameterMappingMode)
 			{
@@ -2822,7 +2816,8 @@ bool EXReader::readElementHeaderField()
 				int nodeCount = 0;
 				if (1 != IO_stream_scan(input_file, " #Nodes=%d", &nodeCount))
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Error reading component number of nodes.  %s", this->getFileLocation());
+					display_message(ERROR_MESSAGE, "EX Reader.  Error reading field %s component %s number of nodes.  %s",
+						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
@@ -3323,12 +3318,23 @@ bool EXReader::readElementHeaderField()
 						prefix += ": ";
 						keyValueMap.reportUnusedKeyValues(prefix.c_str());
 					}
-					resultCode = eft->setLegacyGridNumberInXi(gridNumberInXi);
-					if (resultCode != CMZN_OK)
+					// don't set grid for element constant or single grid
+					bool setGrid = false;
+					for (int d = 0; d < dimension; ++d)
+						if ((gridNumberInXi[d] != 0) && (gridNumberInXi[d] != 1))
+						{
+							setGrid = true;
+							break;
+						}
+					if (setGrid)
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Invalid grid number in xi for field %s at element.  %s",
-							get_FE_field_name(field), this->getFileLocation());
-						result = false;
+						resultCode = eft->setLegacyGridNumberInXi(gridNumberInXi);
+						if (resultCode != CMZN_OK)
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Invalid grid number in xi for field %s at element.  %s",
+								get_FE_field_name(field), this->getFileLocation());
+							result = false;
+						}
 					}
 				}
 			} break;

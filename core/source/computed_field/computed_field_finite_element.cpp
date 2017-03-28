@@ -973,7 +973,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 				if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
 					continue;  // ignore non-element-based components
 				const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
-				const int *gridNumberInXi;
+				const int *gridNumberInXi = 0;
 				if ((1 == numberOfElementDOFs) || (gridNumberInXi = eft->getLegacyGridNumberInXi()))
 				{
 					// Ensuring the constant case is implemented for triangles etc. and no legacy grid
@@ -1001,8 +1001,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 					{
 					case FE_VALUE_VALUE:
 					{
-						FE_value *values = static_cast<FE_mesh_field_data::Component<FE_value> *>(meshFieldData->getComponentBase(c))
-							->getElementValues(elementIndex, numberOfElementDOFs);
+						auto component = static_cast<FE_mesh_field_data::Component<FE_value> *>(meshFieldData->getComponentBase(c));
+						FE_value *values = component->getOrCreateElementValues(elementIndex, numberOfElementDOFs);
 						if (!values)
 						{
 							display_message(ERROR_MESSAGE,
@@ -1017,8 +1017,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 					} break;
 					case INT_VALUE:
 					{
-						int *values = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(c))
-							->getElementValues(elementIndex, numberOfElementDOFs);
+						auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(c));
+						int *values = component->getOrCreateElementValues(elementIndex, numberOfElementDOFs);
 						if (!values)
 						{
 							display_message(ERROR_MESSAGE,

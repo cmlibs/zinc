@@ -682,20 +682,28 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		{
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
 		{
-			(*this->output_file) << ", grid based.\n"; // GRC split to have separate "element based"
 			const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
-			const int unitGridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
-			if (!gridNumberInXi)
-				gridNumberInXi = unitGridNumberInXi;
-			(*this->output_file) << " ";
-			const int dimension = this->mesh->getDimension();
-			for (int d = 0; d < dimension; ++d)
+			if (0 == gridNumberInXi)
 			{
-				if (0 < d)
-					(*this->output_file) << ", ";
-				(*this->output_file) << "#xi" << d + 1 << "=" << gridNumberInXi[d];
+				(*this->output_file) << ", element based.\n";
 			}
-			(*this->output_file) << "\n";
+			else
+			{
+				(*this->output_file) << ", grid based.\n";
+				// Future: force output in old EX format
+				//const int unitGridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
+				//if (!gridNumberInXi)
+				//	gridNumberInXi = unitGridNumberInXi;
+				(*this->output_file) << " ";
+				const int dimension = this->mesh->getDimension();
+				for (int d = 0; d < dimension; ++d)
+				{
+					if (0 < d)
+						(*this->output_file) << ", ";
+					(*this->output_file) << "#xi" << d + 1 << "=" << gridNumberInXi[d];
+				}
+				(*this->output_file) << "\n";
+			}
 			break;
 		}
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:

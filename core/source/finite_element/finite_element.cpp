@@ -15062,7 +15062,8 @@ int calculate_FE_element_field_values(cmzn_element *element,
 						return_code = 0;
 						break;
 					}
-					if (componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+					if ((componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+						&& (0 != componentEFT->getLegacyGridNumberInXi()))
 					{
 						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
 						if (!top_level_component_number_in_xi)
@@ -15155,8 +15156,9 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							break;
 						}
 					}
-					else /* not grid-based */
+					else /* not grid-based; includes non-grid element-based */
 					{
+						// calculate element values for component on the fieldElement
 						const int basisFunctionCount = componentEFT->getNumberOfFunctions();
 						ALLOCATE(*values_address, FE_value, basisFunctionCount);
 						if (!(*values_address))
@@ -15164,133 +15166,287 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							return_code = 0;
 							break;
 						}
-						// calculate element values for component on the fieldElement
-						if (0 < (*number_of_values_address = global_to_element_map_values(field, component_number,
-							componentEFT, fieldElement, time, nodeset, *values_address)))
+						switch (componentEFT->getElementParameterMappingMode())
 						{
-							if (previous_basis == componentEFT->getBasis())
+						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
+						{
+							if (0 == (*number_of_values_address = global_to_element_map_values(field, component_number,
+								componentEFT, fieldElement, time, nodeset, *values_address)))
 							{
-								*standard_basis_address= *(standard_basis_address-1);
-								*standard_basis_arguments_address=
-									*(standard_basis_arguments_address-1);
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Could not calculate node-based values for field %s in %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+							}
+						} break;
+						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
+						{
+							// element-based mapping stores the parameters ready for use in the element
+							if (field->value_type != FE_VALUE_VALUE)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Element-based non-grid field %s only implemented for real values", field->name);
+								return_code = 0;
+								break;
+							}
+							auto component = static_cast<FE_mesh_field_data::Component<FE_value> *>(meshFieldData->getComponentBase(component_number));
+							const FE_value *values = component->getElementValues(fieldElementIndex, basisFunctionCount);
+							if (!values)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Element-based field %s has no values at %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+								break;
+							}
+							memcpy(*values_address, values, basisFunctionCount*sizeof(FE_value));
+							*number_of_values_address = basisFunctionCount;
+						} break;
+						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:
+						{
+							if (field->value_type != FE_VALUE_VALUE)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Field-based field %s only implemented for real values", field->name);
+								return_code = 0;
+								break;
+							}
+							if (!get_FE_field_FE_value_value(field, component_number, *values_address))
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Field-based field %s has no values at %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+								break;
+							}
+							*number_of_values_address = 1;
+						} break;
+						}
+						if (!return_code)
+							break;
+						if (previous_basis == componentEFT->getBasis())
+						{
+							*standard_basis_address= *(standard_basis_address-1);
+							*standard_basis_arguments_address=
+								*(standard_basis_arguments_address-1);
+						}
+						else
+						{
+							previous_basis = componentEFT->getBasis();
+							if (blending_matrix)
+							{
+								/* SAB We don't want to keep the old one */
+								DEALLOCATE(blending_matrix);
+								blending_matrix=NULL;
+							}
+							*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
+							if (fieldElementDimension > elementDimension)
+							{
+								return_code=calculate_standard_basis_transformation(
+									previous_basis,coordinate_transformation,
+									elementDimension,standard_basis_arguments_address,
+									&number_of_inherited_values,standard_basis_address,
+									&blending_matrix);
 							}
 							else
 							{
-								previous_basis = componentEFT->getBasis();
-								if (blending_matrix)
-								{
-									/* SAB We don't want to keep the old one */
-									DEALLOCATE(blending_matrix);
-									blending_matrix=NULL;
-								}
-								*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
-								if (fieldElementDimension > elementDimension)
-								{
-									return_code=calculate_standard_basis_transformation(
-										previous_basis,coordinate_transformation,
-										elementDimension,standard_basis_arguments_address,
-										&number_of_inherited_values,standard_basis_address,
-										&blending_matrix);
-								}
-								else
-								{
-									/* standard basis transformation is just a big identity matrix, so don't compute */
-									/* also use the real basis arguments */
-									*standard_basis_arguments_address =
-										const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
-								}
+								/* standard basis transformation is just a big identity matrix, so don't compute */
+								/* also use the real basis arguments */
+								*standard_basis_arguments_address =
+									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
 							}
-							if (return_code)
+						}
+						if (return_code)
+						{
+							if (fieldElement == element)
 							{
-								if (fieldElement == element)
+								/* values already correct regardless of basis, but must make space for derivatives if needed */
+								if (calculate_derivatives)
 								{
-									/* values already correct regardless of basis, but must make space for derivatives if needed */
-									if (calculate_derivatives)
+									if (REALLOCATE(inherited_values,*values_address,FE_value,
+										(elementDimension+1)*(*number_of_values_address)))
 									{
-										if (REALLOCATE(inherited_values,*values_address,FE_value,
-											(elementDimension+1)*(*number_of_values_address)))
-										{
-											*values_address=inherited_values;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_values.  Could not reallocate values");
-											return_code=0;
-										}
-									}
-								}
-								else if ((monomial_basis_functions== *standard_basis_address)||
-									(polygon_basis_functions== *standard_basis_address))
-								{
-									/* project the fieldElement values onto the lower-dimension element
-											using the affine transformation */
-									/* allocate memory for the element values */
-									if (calculate_derivatives)
-									{
-										ALLOCATE(inherited_values,FE_value,
-											(elementDimension+1)*number_of_inherited_values);
-									}
-									else
-									{
-										ALLOCATE(inherited_values,FE_value,
-											number_of_inherited_values);
-									}
-									if (inherited_values)
-									{
-										row_size= *number_of_values_address;
-										inherited_value=inherited_values;
-										for (j=0;j<number_of_inherited_values;j++)
-										{
-											sum=0;
-											value= *values_address;
-											transformation=blending_matrix+j;
-											for (i=row_size;i>0;i--)
-											{
-												sum += (*transformation)*(*value);
-												value++;
-												transformation += number_of_inherited_values;
-											}
-											*inherited_value=(FE_value)sum;
-											inherited_value++;
-										}
-										DEALLOCATE(*values_address);
 										*values_address=inherited_values;
-										*number_of_values_address=number_of_inherited_values;
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"calculate_FE_element_field_values.  "
-											"Insufficient memory for inherited_values");
-										DEALLOCATE(*values_address);
+											"calculate_FE_element_field_values.  Could not reallocate values");
 										return_code=0;
 									}
+								}
+							}
+							else if ((monomial_basis_functions== *standard_basis_address)||
+								(polygon_basis_functions== *standard_basis_address))
+							{
+								/* project the fieldElement values onto the lower-dimension element
+										using the affine transformation */
+								/* allocate memory for the element values */
+								if (calculate_derivatives)
+								{
+									ALLOCATE(inherited_values,FE_value,
+										(elementDimension+1)*number_of_inherited_values);
+								}
+								else
+								{
+									ALLOCATE(inherited_values,FE_value,
+										number_of_inherited_values);
+								}
+								if (inherited_values)
+								{
+									row_size= *number_of_values_address;
+									inherited_value=inherited_values;
+									for (j=0;j<number_of_inherited_values;j++)
+									{
+										sum=0;
+										value= *values_address;
+										transformation=blending_matrix+j;
+										for (i=row_size;i>0;i--)
+										{
+											sum += (*transformation)*(*value);
+											value++;
+											transformation += number_of_inherited_values;
+										}
+										*inherited_value=(FE_value)sum;
+										inherited_value++;
+									}
+									DEALLOCATE(*values_address);
+									*values_address=inherited_values;
+									*number_of_values_address=number_of_inherited_values;
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"calculate_FE_element_field_values.  Invalid basis");
+										"calculate_FE_element_field_values.  "
+										"Insufficient memory for inherited_values");
+									DEALLOCATE(*values_address);
 									return_code=0;
 								}
-								if (return_code)
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_FE_element_field_values.  Invalid basis");
+								return_code=0;
+							}
+							if (return_code)
+							{
+								if (calculate_derivatives)
 								{
-									if (calculate_derivatives)
+									/* calculate the derivatives with respect to the xi
+											coordinates */
+									if (monomial_basis_functions==
+										*standard_basis_address)
 									{
-										/* calculate the derivatives with respect to the xi
-												coordinates */
-										if (monomial_basis_functions==
-											*standard_basis_address)
+										number_of_values= *number_of_values_address;
+										value= *values_address;
+										derivative_value=value+number_of_values;
+										orders= *standard_basis_arguments_address;
+										offset=1;
+										for (i=elementDimension;i>0;i--)
 										{
-											number_of_values= *number_of_values_address;
-											value= *values_address;
-											derivative_value=value+number_of_values;
-											orders= *standard_basis_arguments_address;
-											offset=1;
-											for (i=elementDimension;i>0;i--)
+											orders++;
+											order= *orders;
+											for (j=0;j<number_of_values;j++)
 											{
-												orders++;
-												order= *orders;
+												/* calculate derivative value */
+												power=(j/offset)%(order+1);
+												if (order==power)
+												{
+													*derivative_value=0;
+												}
+												else
+												{
+													*derivative_value=
+														(FE_value)(power+1)*value[j+offset];
+												}
+												/* move to the next derivative value */
+												derivative_value++;
+											}
+											offset *= (order+1);
+										}
+									}
+									else if (polygon_basis_functions==
+										*standard_basis_address)
+									{
+										number_of_values= *number_of_values_address;
+										value= *values_address;
+										derivative_value=value+number_of_values;
+										orders= *standard_basis_arguments_address;
+										offset=1;
+										for (i=elementDimension;i>0;i--)
+										{
+											orders++;
+											order= *orders;
+											if (order<0)
+											{
+												/* polygon */
+												order= -order;
+												if (order%2)
+												{
+													/* calculate derivatives with respect to
+														both polygon coordinates */
+													order /= 2;
+													polygon_offset=order%elementDimension;
+													order /= elementDimension;
+													number_of_polygon_verticies=
+														(-orders[polygon_offset])/2;
+													/* first polygon coordinate is
+														circumferential */
+													second_derivative_value=derivative_value+
+														(polygon_offset*number_of_values);
+													order=4*number_of_polygon_verticies;
+													scalar=
+														(FE_value)number_of_polygon_verticies;
+													for (j=0;j<number_of_values;j++)
+													{
+														/* calculate derivative values */
+														k=(j/offset)%order;
+														switch (k/number_of_polygon_verticies)
+														{
+															case 0:
+															{
+																*derivative_value=scalar*value[j+
+																	number_of_polygon_verticies*offset];
+																*second_derivative_value=value[j+
+																	2*number_of_polygon_verticies*
+																	offset];
+															} break;
+															case 1:
+															{
+																*derivative_value=0;
+																*second_derivative_value=value[j+
+																	2*number_of_polygon_verticies*
+																	offset];
+															} break;
+															case 2:
+															{
+																*derivative_value=scalar*value[j+
+																	number_of_polygon_verticies*offset];
+																*second_derivative_value=0;
+															} break;
+															case 3:
+															{
+																*derivative_value=0;
+																*second_derivative_value=0;
+															} break;
+														}
+														/* move to the next derivative value */
+														derivative_value++;
+														second_derivative_value++;
+													}
+													offset *= order;
+												}
+												else
+												{
+													/* second polgon xi.  Derivatives already
+														calculated */
+													derivative_value += number_of_values;
+												}
+											}
+											else
+											{
+												/* not polygon */
 												for (j=0;j<number_of_values;j++)
 												{
 													/* calculate derivative value */
@@ -15310,134 +15466,26 @@ int calculate_FE_element_field_values(cmzn_element *element,
 												offset *= (order+1);
 											}
 										}
-										else if (polygon_basis_functions==
-											*standard_basis_address)
-										{
-											number_of_values= *number_of_values_address;
-											value= *values_address;
-											derivative_value=value+number_of_values;
-											orders= *standard_basis_arguments_address;
-											offset=1;
-											for (i=elementDimension;i>0;i--)
-											{
-												orders++;
-												order= *orders;
-												if (order<0)
-												{
-													/* polygon */
-													order= -order;
-													if (order%2)
-													{
-														/* calculate derivatives with respect to
-															both polygon coordinates */
-														order /= 2;
-														polygon_offset=order%elementDimension;
-														order /= elementDimension;
-														number_of_polygon_verticies=
-															(-orders[polygon_offset])/2;
-														/* first polygon coordinate is
-															circumferential */
-														second_derivative_value=derivative_value+
-															(polygon_offset*number_of_values);
-														order=4*number_of_polygon_verticies;
-														scalar=
-															(FE_value)number_of_polygon_verticies;
-														for (j=0;j<number_of_values;j++)
-														{
-															/* calculate derivative values */
-															k=(j/offset)%order;
-															switch (k/number_of_polygon_verticies)
-															{
-																case 0:
-																{
-																	*derivative_value=scalar*value[j+
-																		number_of_polygon_verticies*offset];
-																	*second_derivative_value=value[j+
-																		2*number_of_polygon_verticies*
-																		offset];
-																} break;
-																case 1:
-																{
-																	*derivative_value=0;
-																	*second_derivative_value=value[j+
-																		2*number_of_polygon_verticies*
-																		offset];
-																} break;
-																case 2:
-																{
-																	*derivative_value=scalar*value[j+
-																		number_of_polygon_verticies*offset];
-																	*second_derivative_value=0;
-																} break;
-																case 3:
-																{
-																	*derivative_value=0;
-																	*second_derivative_value=0;
-																} break;
-															}
-															/* move to the next derivative value */
-															derivative_value++;
-															second_derivative_value++;
-														}
-														offset *= order;
-													}
-													else
-													{
-														/* second polgon xi.  Derivatives already
-															calculated */
-														derivative_value += number_of_values;
-													}
-												}
-												else
-												{
-													/* not polygon */
-													for (j=0;j<number_of_values;j++)
-													{
-														/* calculate derivative value */
-														power=(j/offset)%(order+1);
-														if (order==power)
-														{
-															*derivative_value=0;
-														}
-														else
-														{
-															*derivative_value=
-																(FE_value)(power+1)*value[j+offset];
-														}
-														/* move to the next derivative value */
-														derivative_value++;
-													}
-													offset *= (order+1);
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_values.  "
-												"Invalid basis");
-											DEALLOCATE(*values_address);
-											return_code=0;
-										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_values.  "
+											"Invalid basis");
+										DEALLOCATE(*values_address);
+										return_code=0;
 									}
 								}
 							}
-							if (*number_of_values_address>maximum_number_of_values)
-							{
-								maximum_number_of_values= *number_of_values_address;
-							}
-							number_of_values_address++;
-							values_address++;
-							standard_basis_address++;
-							standard_basis_arguments_address++;
 						}
-						else
+						if (*number_of_values_address>maximum_number_of_values)
 						{
-							display_message(ERROR_MESSAGE,
-								"calculate_FE_element_field_values.  "
-								"Could not calculate values");
-							return_code=0;
+							maximum_number_of_values= *number_of_values_address;
 						}
+						number_of_values_address++;
+						values_address++;
+						standard_basis_address++;
+						standard_basis_arguments_address++;
 					}
 				}
 				if (return_code)

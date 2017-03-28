@@ -1243,13 +1243,14 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 							}
 							else
 							{
+								// GRC: can't see any good reason to do this, and it messes up reading an empty string
 								/* consume white space */
-								if (0 <= sscanf(stream->buffer + stream->buffer_index,
-										" %n", &count))
-								{
-									stream->buffer_index += count;
-									local_counter += count;
-								}
+								//if (0 <= sscanf(stream->buffer + stream->buffer_index,
+								//		" %n", &count))
+								//{
+								//	stream->buffer_index += count;
+								//	local_counter += count;
+								//}
 								keep_scanning = 0;
 							}
 #if defined IO_STREAM_SPEED_UP_SSCANF

@@ -134,16 +134,14 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_NE(static_cast<cmzn_element_id>(0), element);
 	
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_element(cache, element));
-	double constant_value[3] = {2.0, 3.0, 4.0};
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(constant_field, cache, 3, &(constant_value[0])));
+	const double constantValues3In[3] = {2.0, 3.0, 4.0};
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(constant_field, cache, 3, constantValues3In));
 
-	constant_value[0] = 5.0;
-	constant_value[1] = 5.0;
-	constant_value[2] = 5.0;
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(constant_field, cache, 3, &(constant_value[0])));
-	EXPECT_EQ(2.0, constant_value[0]);
-	EXPECT_EQ(3.0, constant_value[1]);
-	EXPECT_EQ(4.0, constant_value[2]);
+	double constantValues3Out[3] = { 5.0, 5.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(constant_field, cache, 3, constantValues3Out));
+	EXPECT_EQ(constantValues3In[0], constantValues3Out[0]);
+	EXPECT_EQ(constantValues3In[1], constantValues3Out[1]);
+	EXPECT_EQ(constantValues3In[2], constantValues3Out[2]);
 
 	EXPECT_EQ(4, result = cmzn_nodeset_get_size(nodeset));
 	EXPECT_EQ(1, result = cmzn_mesh_get_size(mesh));
@@ -271,16 +269,15 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_TRUE(element.isValid());
 	
 	EXPECT_EQ(CMZN_OK, result = cache.setElement(element));
-	double constant_value[3] = {2.0, 3.0, 4.0};
-	EXPECT_EQ(CMZN_OK, result = constant_field.assignReal(cache, 3, &(constant_value[0])));
 
-	constant_value[0] = 5.0;
-	constant_value[1] = 5.0;
-	constant_value[2] = 5.0;
-	EXPECT_EQ(CMZN_OK, result = constant_field.evaluateReal(cache, 3, &(constant_value[0])));
-	EXPECT_EQ(2.0, constant_value[0]);
-	EXPECT_EQ(3.0, constant_value[1]);
-	EXPECT_EQ(4.0, constant_value[2]);
+	const double constantValues3In[3] = { 2.0, 3.0, 4.0 };
+	EXPECT_EQ(CMZN_OK, result = constant_field.assignReal(cache, 3, constantValues3In));
+
+	double constantValues3Out[3] = { 5.0, 5.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, result = constant_field.evaluateReal(cache, 3, constantValues3Out));
+	EXPECT_EQ(constantValues3In[0], constantValues3Out[0]);
+	EXPECT_EQ(constantValues3In[1], constantValues3Out[1]);
+	EXPECT_EQ(constantValues3In[2], constantValues3Out[2]);
 
 	EXPECT_EQ(4, result = nodeset.getSize());
 	EXPECT_EQ(1, result = mesh.getSize());
