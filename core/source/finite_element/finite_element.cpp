@@ -18139,12 +18139,7 @@ public:
 	{
 		// basis functions for a local node are assumed to be in order of nodal value types:
 		const int basisNodeFunctionIndex =
-			(xiIndex == 0) ? FE_NODAL_D_DS1 :
-			(xiIndex == 1) ? FE_NODAL_D_DS2 :
-			(xiIndex == 2) ? FE_NODAL_D_DS3 :
-			FE_NODAL_UNKNOWN;
-		if (basisNodeFunctionIndex == FE_NODAL_UNKNOWN)
-			return;
+			((xiIndex == 0) ? FE_NODAL_D_DS1 : (xiIndex == 1) ? FE_NODAL_D_DS2 : FE_NODAL_D_DS3) - FE_NODAL_VALUE;
 		const FE_value delta = this->component_values[basisNode2] - this->component_values[basisNode1];
 		for (int n = 0; n < 2; ++n)
 		{
