@@ -188,6 +188,14 @@ int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
 	int nodeNumber, int nodeFunctionIndex);
 
 /**
+ * @return  Number one higher than last function number for same basis node
+ * as supplied function number, or 0 if invalid.
+ * @param functionNumber  Basis function number starting at 0.
+ */
+int FE_basis_get_basis_node_function_number_limit(struct FE_basis *basis,
+	int functionNumber);
+
+/**
  * @return  The number of nodes expected for basis, or 0 if invalid basis.
  */
 int FE_basis_get_number_of_nodes(struct FE_basis *basis);

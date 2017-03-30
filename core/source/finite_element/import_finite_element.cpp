@@ -463,7 +463,7 @@ private:
 	void clearHeaderCache(bool clearElementShape = true)
 	{
 		cmzn::Deaccess(this->node_template);
-		nodeFieldComponentDerivativeVersions.clear();
+		this->nodeFieldComponentDerivativeVersions.clear();
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -1551,7 +1551,7 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		if (!IO_stream_read_string(this->input_file, "[^,)\n\r]", &derivative_type_name))
 			return false;
 		trim_string_in_place(derivative_type_name);
-		enum FE_nodal_value_type derivative_type;
+		enum FE_nodal_value_type derivative_type = FE_NODAL_UNKNOWN;
 		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &derivative_type))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
@@ -1601,11 +1601,7 @@ bool EXReader::readNodeHeaderField()
 	/* read the components */
 	int component_number = 0;
 	char *componentName = 0;
-	{
-		// add node field component derivatives versions storage
-		std::vector<NodeDerivativesVersions> dummy(number_of_components);
-		this->nodeFieldComponentDerivativeVersions[field] = dummy;
-	}
+	std::vector<NodeDerivativesVersions> nodeDerivativesVersions(number_of_components);
 	for (int component_number = 0; component_number < number_of_components; ++component_number)
 	{
 		IO_stream_scan(this->input_file, " ");
@@ -1630,7 +1626,7 @@ bool EXReader::readNodeHeaderField()
 		/* component name is sufficient for non-GENERAL_FE_FIELD */
 		if (GENERAL_FE_FIELD == fe_field_type)
 		{
-			NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[component_number];
+			NodeDerivativesVersions &componentNodeDerivativesVersions = nodeDerivativesVersions[component_number];
 			if (this->exVersion < 2)
 			{
 				// legacy EX format had same number of versions for all derivatives and 'value' derivative was compulsory (and first)
@@ -1646,28 +1642,28 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// legacy EX format required value derivative, and it had to be first
-				if (!nodeDerivativesVersions.addDerivative(FE_NODAL_VALUE, 1))
+				if (!componentNodeDerivativesVersions.addDerivative(FE_NODAL_VALUE, 1))
 				{
 					result = false;
 					break;
 				}
 				if (0 < number_of_derivatives)
 				{
-					if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
+					if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (nodeDerivativesVersions.getMaximumVersionCount() != 1)
+					if (componentNodeDerivativesVersions.getMaximumVersionCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (nodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
+					if (componentNodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1678,7 +1674,7 @@ bool EXReader::readNodeHeaderField()
 				// read in the optional number of versions, applied to value and all derivatives
 				if (1 == IO_stream_scan(this->input_file, ", #Versions=%d", &number_of_versions))
 				{
-					if (!nodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
+					if (!componentNodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1701,14 +1697,14 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// follow with derivative names and versions, even if empty ()
-				if (!this->readNodeDerivativesVersions(nodeDerivativesVersions))
+				if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
-				if (nodeDerivativesVersions.getValueCount() != valuesCount)
+				if (componentNodeDerivativesVersions.getValueCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1716,13 +1712,13 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 			}
-			nodeDerivativesVersions.calculateDerivativeOffsets();
+			componentNodeDerivativesVersions.calculateDerivativeOffsets();
 			// Zinc cannot yet handle per-derivative versions nor having no value parameters, so define in the old way
-			const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+			const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
 			int versionCount;
 			for (int d = 0; d < derivativeTypeCount; ++d)
 			{
-				FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+				FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
 				if (derivativeType != FE_NODAL_VALUE) // value is currently always already set as the first entry
 				{
 					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
@@ -1736,7 +1732,7 @@ bool EXReader::readNodeHeaderField()
 			}
 			if (!result)
 				break;
-			const int maximumVersionCount = nodeDerivativesVersions.getMaximumVersionCount();
+			const int maximumVersionCount = componentNodeDerivativesVersions.getMaximumVersionCount();
 			// version count can be 0 in field, but must have at least 1 value version
 			if (maximumVersionCount > 1)
 			{
@@ -1775,6 +1771,7 @@ bool EXReader::readNodeHeaderField()
 		FE_field *mergedField = FE_region_merge_FE_field(this->fe_region, field);
 		if (mergedField)
 		{
+			// must switch field
 			ACCESS(FE_field)(mergedField);
 			DEACCESS(FE_field)(&field);
 			field = mergedField;
@@ -1807,6 +1804,8 @@ bool EXReader::readNodeHeaderField()
 				node_field_creator))
 			{
 				this->headerFields.push_back(field);
+				// must do following after field is merged otherwise can be different field object:
+				this->nodeFieldComponentDerivativeVersions[field] = nodeDerivativesVersions;
 			}
 			else
 			{
@@ -1981,15 +1980,16 @@ cmzn_node *EXReader::readNode()
 					for (int k = 0; k < number_of_values; ++k)
 						values[k] = 0.0;
 					FE_value *componentValues = values;
+					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
 					for (int c = 0; (c < componentCount) && result; ++c)
 					{
-						NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[c];
-						const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
+						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
 						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
 						{
 							int versionCount;
-							FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
-							const int derivativeOffset = nodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
+							FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
 							for (int v = 0; v < versionCount; ++v)
 							{
 								if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING,
@@ -2002,7 +2002,7 @@ cmzn_node *EXReader::readNode()
 								}
 							}
 						}
-						componentValues += derivativeTypeCount*nodeDerivativesVersions.getMaximumVersionCount();
+						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
 				if (result)
@@ -2066,15 +2066,16 @@ cmzn_node *EXReader::readNode()
 					for (int k = 0; k < number_of_values; ++k)
 						values[k] = 0.0;
 					int *componentValues = values;
+					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
 					for (int c = 0; (c < componentCount) && result; ++c)
 					{
-						NodeDerivativesVersions& nodeDerivativesVersions = (this->nodeFieldComponentDerivativeVersions[field])[c];
-						const int derivativeTypeCount = nodeDerivativesVersions.getDerivativeTypeCount();
+						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
+						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
 						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
 						{
 							int versionCount;
-							FE_nodal_value_type derivativeType = nodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
-							const int derivativeOffset = nodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
+							FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
 							for (int v = 0; v < versionCount; ++v)
 							{
 								if (1 != IO_stream_scan(this->input_file, "%d",
@@ -2087,7 +2088,7 @@ cmzn_node *EXReader::readNode()
 								}
 							}
 						}
-						componentValues += derivativeTypeCount*nodeDerivativesVersions.getMaximumVersionCount();
+						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
 				if (result)

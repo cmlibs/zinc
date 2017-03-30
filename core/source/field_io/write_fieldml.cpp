@@ -99,7 +99,7 @@ namespace {
 			return &this->recordIndexSize;
 		}
 
-		const int *getRecordSizes() const
+		const int *getDenseRecordSizes() const
 		{
 			return &this->recordSize;
 		}
@@ -142,15 +142,17 @@ namespace {
 		const FmlObjectHandle fmlEftNodesArgument;
 		FmlObjectHandle fmlDenseArguments[2]; // only used to return values when dense
 		const FE_element_field_template *eft;
+		const int localNodeCount;
 		const FE_mesh *mesh;
+		const FE_nodeset *nodeset;
 		const bool isMapDense;
 		const int recordCount;
 		DsLabelIterator *elementLabelIterator;
 		const int recordIndexSize = 1;
-		const int recordSize;
+		int recordSizes[2];
 		int elementIdentifier;
-		const int *values;
-		mutable int offset; // offset incremented for each record
+		int *nodeIdentifiers;
+		mutable int offsets[2]; // offset incremented for each record
 
 	public:
 
@@ -160,13 +162,18 @@ namespace {
 			fmlElementsArgument(fmlElementsArgumentIn),
 			fmlEftNodesArgument(fmlEftNodesArgumentIn),
 			eft(this->meshEFTData->getElementfieldtemplate()),
+			localNodeCount(this->eft->getNumberOfLocalNodes()),
 			mesh(this->eft->getMesh()),
+			nodeset(this->mesh->getNodeset()),
 			isMapDense(meshEFTData->localToGlobalNodesIsDense()),
 			recordCount(meshEFTData->getElementLocalToGlobalNodeMapCount()),
 			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
-			recordSize(this->eft->getNumberOfLocalNodes()),
-			offset(-1)
+			nodeIdentifiers(new int[this->localNodeCount])
 		{
+			this->recordSizes[0] = 1;
+			this->recordSizes[1] = this->localNodeCount;
+			this->offsets[0] = -1;
+			this->offsets[1] = 0;
 			this->fmlDenseArguments[0] = this->fmlElementsArgument;
 			this->fmlDenseArguments[1] = this->fmlEftNodesArgument;
 		}
@@ -174,6 +181,7 @@ namespace {
 		~FE_mesh_local_to_global_nodes_parameter_generator()
 		{
 			cmzn::Deaccess(this->elementLabelIterator);
+			delete[] nodeIdentifiers;
 		}
 
 		bool isDense() const
@@ -213,15 +221,18 @@ namespace {
 			return &this->recordIndexSize;
 		}
 
-		const int *getRecordSizes() const
+		const int *getDenseRecordSizes() const
 		{
-			return &this->recordSize;
+			if (this->isMapDense)
+				return this->recordSizes;
+			return this->recordSizes + 1;
 		}
 
 		/** Advance to next record or first if starting.
 		  * @return  True if there is a record, false if not */
 		bool nextRecord()
 		{
+			const DsLabelIndex *nodeIndexes = 0;
 			DsLabelIndex elementIndex;
 			do
 			{
@@ -231,11 +242,13 @@ namespace {
 					display_message(ERROR_MESSAGE, "FieldML Writer:  Iterated beyond last element for local to global node map");
 					return false;
 				}
-				this->values = this->meshEFTData->getElementNodeIndexes(elementIndex);
-			} while (this->values == 0);
+				nodeIndexes = this->meshEFTData->getElementNodeIndexes(elementIndex);
+			} while (nodeIndexes == 0);
+			for (int n = 0; n < this->localNodeCount; ++n)
+				this->nodeIdentifiers[n] = this->nodeset->getNodeIdentifier(nodeIndexes[n]);
 			if (!this->isMapDense)
 				this->elementIdentifier = this->mesh->getElementIdentifier(elementIndex);
-			++this->offset;
+			++(this->offsets[0]);
 			return true;
 		}
 
@@ -246,12 +259,12 @@ namespace {
 
 		const int *getRecordValues() const
 		{
-			return this->values;
+			return this->nodeIdentifiers;
 		}
 
 		const int *getRecordOffsets() const
 		{
-			return &this->offset;
+			return this->offsets;
 		}
 	};
 
@@ -329,7 +342,7 @@ namespace {
 			return &this->recordIndexSize;
 		}
 
-		const int *getRecordSizes() const
+		const int *getDenseRecordSizes() const
 		{
 			return &this->recordSize;
 		}
@@ -351,7 +364,7 @@ namespace {
 				eftIndex = static_cast<int>(this->mft->getElementEFTIndex(elementIndex));
 			} while (eftIndex < 0);
 			this->value = this->outputEftIndexes[eftIndex];
-			this->eftsUsed[this->value] = true;
+			this->eftsUsed[this->value - 1] = true;
 			if (!this->isMapDense)
 				this->elementIdentifier = this->mesh->getElementIdentifier(elementIndex);
 			++this->offset;
@@ -383,7 +396,7 @@ namespace {
 
 class FieldMLWriter
 {
-	const char *derivativeNames[8] = { "value" "d_ds1", "d_ds2", "d2_ds1ds2", "d_ds3", "d2_ds1ds3", "d2_ds2ds3", "d3_ds1ds2ds3" };
+	const char *derivativeNames[8] = { "value", "d_ds1", "d_ds2", "d2_ds1ds2", "d_ds3", "d2_ds1ds3", "d2_ds2ds3", "d3_ds1ds2ds3" };
 	cmzn_region *region; // accessed
 	FE_region *fe_region; // not accessed
 	const char *location;
@@ -732,7 +745,8 @@ FmlObjectHandle FieldMLWriter::writeDenseParameters(const std::string& name,
 		return FML_INVALID_OBJECT_HANDLE;
 
 	bool failed = false;
-	for (int r = parameterGenerator.getRecordCount(); r < 0; --r)
+	const int *recordSizes = parameterGenerator.getDenseRecordSizes();
+	for (int r = parameterGenerator.getRecordCount(); 0 < r; --r)
 	{
 		if (!parameterGenerator.nextRecord())
 		{
@@ -741,9 +755,7 @@ FmlObjectHandle FieldMLWriter::writeDenseParameters(const std::string& name,
 			break;
 		}
 		FmlIoErrorNumber fmlIoError = FieldML_WriteSlab(fmlArrayWriter,
-			parameterGenerator.getRecordOffsets(),
-			parameterGenerator.getRecordSizes(),
-			parameterGenerator.getRecordValues());
+			parameterGenerator.getRecordOffsets(), recordSizes, parameterGenerator.getRecordValues());
 		if (FML_IOERR_NO_ERROR != fmlIoError)
 		{
 			failed = true;
@@ -812,7 +824,7 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 	if ((fmlKeyDataSource == FML_INVALID_OBJECT_HANDLE) || (fmlDataSource == FML_INVALID_OBJECT_HANDLE))
 		return FML_INVALID_OBJECT_HANDLE;
 
-	const int *recordSizes = parameterGenerator.getRecordSizes();
+	const int *recordSizes = parameterGenerator.getDenseRecordSizes();
 	int denseSize = 1;
 	for (int i = 0; i < denseIndexCount; ++i)
 		denseSize *= recordSizes[i];
@@ -1188,7 +1200,7 @@ int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 		std::string meshShapeEvaluatorName(mesh->getName());
 		meshShapeEvaluatorName += ".shape";
 		FmlObjectHandle fmlBooleanType = this->libraryImport("boolean");
-		FmlObjectHandle fmlMeshShapeEvaluator = Fieldml_CreatePiecewiseEvaluator(this->fmlSession,
+		fmlMeshShapeEvaluator = Fieldml_CreatePiecewiseEvaluator(this->fmlSession,
 			meshShapeEvaluatorName.c_str(), fmlBooleanType);
 		FmlObjectHandle fmlMeshShapeIdsArgument = this->getArgumentForType(fmlMeshShapeIdsType);
 		fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMeshShapeEvaluator, /*index*/1, fmlMeshShapeIdsArgument);
@@ -1466,7 +1478,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 				if (scalingCount > 0)
 					display_message(WARNING_MESSAGE, "FieldML Writer:  Scaling not yet implemented; omitting"); // GRC TODO
 				const int localNodeIndex = eft->getTermLocalNodeIndex(f, t);
-				const int derivativeIndex = eft->getTermNodeValueLabel(f, t) - 1;
+				const int derivativeIndex = eft->getTermNodeValueLabel(f, t) - CMZN_NODE_VALUE_LABEL_VALUE;
 				if ((derivativeIndex < 0) || (derivativeIndex > 7))
 				{
 					display_message(WARNING_MESSAGE, "FieldML Writer:  Derivative out of range");
@@ -1486,7 +1498,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 						return FML_INVALID_OBJECT_HANDLE;
 					if ((FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, fmlEftNodesArgument, fmlEftNodeIndexConstants[localNodeIndex]))
 						|| (FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, this->fmlNodeDerivativesArgument, this->fmlNodeDerivativeConstants[derivativeIndex]))
-						|| (FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, this->fmlNodeVersionsArgument, this->fmlNodeVersionConstants[derivativeIndex])))
+						|| (FML_OK != Fieldml_SetBind(this->fmlSession, fmlNodeParameter, this->fmlNodeVersionsArgument, this->fmlNodeVersionConstants[versionIndex])))
 					{
 						display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to get eft node parameter evaluator");
 						return FML_INVALID_OBJECT_HANDLE;
@@ -1634,7 +1646,7 @@ FmlObjectHandle FieldMLWriter::writeMeshfieldtemplate(const FE_mesh *mesh, const
 			DsLabelIndex firstElementIndex = mesh->getLabels().getFirstIndex();
 			const int eftIndex = mft->getElementEFTIndex(firstElementIndex);
 			if (FML_OK != (fmlError = Fieldml_SetDefaultEvaluator(this->fmlSession, fmlMft,
-				fmlMeshElementEvaluators[outputEftIndexes[eftIndex]])))
+				fmlMeshElementEvaluators[outputEftIndexes[eftIndex] - 1])))
 			{
 				display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to set simple mesh field template default evaluator");
 				return FML_INVALID_OBJECT_HANDLE;
@@ -1999,7 +2011,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 	std::vector<bool> mftIsDense(mfts.size(), false);
 	// get number of EFTs each MFT uses; can optimise output if 1
 	std::vector<int> mftEftCounts(mfts.size(), 0);
-	// get map from internal EFT index to output index + 1
+	// get map from internal EFT index to output index (starting at 1)
 	std::vector<int> outputEftIndexes(mesh->getElementfieldtemplateDataCount(), 0);
 	auto eftCount = efts.size();
 	for (size_t m = 0; m < mfts.size(); ++m)

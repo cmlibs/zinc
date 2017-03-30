@@ -78,6 +78,28 @@ void check_cube_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of unit cube model using EX2 format
+// cube model defines a 3-D RC coordinates field and 1-D pressure field
+// using the same trilinear Lagrange scalar template.
+// field dofs and mesh nodes connectivity are inline text in the fieldml document
+TEST(ZincRegion, ex2_cube)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	check_cube_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_cube_model(testFm);
+}
+
+// Test I/O of unit cube model using FieldML format
 // cube model defines a 3-D RC coordinates field and 1-D pressure field
 // using the same trilinear Lagrange scalar template.
 // field dofs and mesh nodes connectivity are inline text in the fieldml document
@@ -86,6 +108,7 @@ TEST(ZincRegion, fieldml_cube)
 	ZincTestSetupCpp zinc;
 	int result;
 
+	// initial input file is in legacy FieldML format not using element field templates
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_FIELDML_CUBE_RESOURCE)));
 	check_cube_model(zinc.fm);
@@ -194,6 +217,28 @@ void check_tetmesh_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of tetmesh model using EX2 format
+// tetmesh model defines a 3-D RC coordinates field over a tetrahedral
+// mesh in approximate unit sphere shape with trilinearSimplex basis/
+// node coordinates and connectivity are read from separate files
+TEST(ZincRegion, ex2_tetmesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_TETMESH_RESOURCE)));
+	check_tetmesh_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_tetmesh_model(testFm);
+}
+
+// Test I/O of tetmesh model using FieldML format
 // tetmesh model defines a 3-D RC coordinates field over a tetrahedral
 // mesh in approximate unit sphere shape with trilinearSimplex basis/
 // node coordinates and connectivity are read from separate files
@@ -281,6 +326,26 @@ void check_wheel_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of wheel model in EX2 format
+// wheel_indirect model is the same as the wheel_direct model except that it
+// uses a more efficient indirect element-to-function map
+TEST(ZincRegion, ex2_wheel)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_WHEEL_RESOURCE)));
+	check_wheel_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_wheel_model(testFm);
+}
+
+// test reading FieldML wheel model with direct element function map
 // wheel_direct model defines a 3-D RC coordinates field over a wheel mesh
 // consisting of 6 wedge elements in the centre, and 6 cube elements around
 // them, all coordinates interpolated with triquadratic bases.
@@ -299,6 +364,7 @@ TEST(ZincRegion, fieldml_wheel_direct)
 	check_wheel_model(zinc.fm);
 }
 
+// Test I/O of wheel model in FieldML format
 // wheel_indirect model is the same as the wheel_direct model except that it
 // uses a more efficient indirect element-to-function map
 TEST(ZincRegion, fieldml_wheel_indirect)
@@ -551,10 +617,11 @@ void check_mixed_template_squares(Fieldmodule& fm)
 
 }
 
+// Test reading EX model, writing and re-reading in EX2 format
 // 2D example with different templates for components of the coordinates field
 // and for two different scalar fields including mix of bilinear and
 // biquadratic elements, with latter two fields not defined on whole mesh.
-TEST(ZincRegion, mixed_template_squares)
+TEST(ZincRegion, ex2_mixed_template_squares)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -562,12 +629,25 @@ TEST(ZincRegion, mixed_template_squares)
 	create_mixed_template_squares(zinc.fm);
 	check_mixed_template_squares(zinc.fm);
 
-	// test writing and re-reading in EX format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_mixed_template_squares(testFm1);
+}
+
+// Test reading EX model, writing and re-reading in FieldML format
+// 2D example with different templates for components of the coordinates field
+// and for two different scalar fields including mix of bilinear and
+// biquadratic elements, with latter two fields not defined on whole mesh.
+TEST(ZincRegion, fieldml_mixed_template_squares)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	create_mixed_template_squares(zinc.fm);
+	check_mixed_template_squares(zinc.fm);
 
 	// test writing and re-reading in FieldML format
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.fieldml"));

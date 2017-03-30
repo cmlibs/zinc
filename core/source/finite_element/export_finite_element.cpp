@@ -202,6 +202,7 @@ class EXWriter
 	// following cached to check whether last field header applies to subsequent elements
 	std::vector<FE_field *> headerFields;
 	// following caches for elements only:
+	FE_element_shape *lastElementShape;
 	cmzn_element *headerElement;
 	ElementNodePacking *headerElementNodePacking;
 	std::vector<const FE_element_field_template *> headerScalingEfts;
@@ -220,6 +221,7 @@ public:
 		fe_region(0),
 		time(timeIn),
 		writeGroupOnly(false),
+		lastElementShape(0),
 		headerElement(0),
 		headerElementNodePacking(0)
 	{
@@ -244,6 +246,7 @@ public:
 	void clearHeaderCache()
 	{
 		this->headerFields.clear();
+		this->lastElementShape = 0;
 		this->headerElement = 0;
 		delete this->headerElementNodePacking;
 		this->headerElementNodePacking = 0;
@@ -586,20 +589,19 @@ bool EXWriter::writeElementShape(FE_element_shape *elementShape)
 {
 	if (!elementShape)
 	{
-		display_message(ERROR_MESSAGE,
-			"EXWriter::writeElementShape.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeElementShape.  Invalid argument(s)");
 		return false;
 	}
-	const int dimension = get_FE_element_shape_dimension(elementShape);
-	(*this->output_file) << " Shape. Dimension=" << dimension << ", ";
 	char *shape_description = FE_element_shape_get_EX_description(elementShape);
 	if (!shape_description)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeElementShape.  Invalid shape");
 		return false;
 	}
-	(*this->output_file) << shape_description << "\n";
+	const int dimension = get_FE_element_shape_dimension(elementShape);
+	(*this->output_file) << "Shape. Dimension=" << dimension << ", " << shape_description << "\n";
 	DEALLOCATE(shape_description);
+	this->lastElementShape = elementShape;
 	return true;
 }
 
@@ -732,7 +734,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 
 			const int nodeCount = eft->getNumberOfLocalNodes();
 			const int packedNodeOffset = this->headerElementNodePacking->getEftNodeOffset(eft);
-			(*this->output_file) << "   #Nodes=" << nodeCount << "\n";
+			(*this->output_file) << "  #Nodes=" << nodeCount << "\n";
 			// previously there was an entry for each basis node with the parameters extracted from it
 			// now there is a separate entry for each block of parameters mapped from
 			// the same nodes with the same number of terms
@@ -742,10 +744,13 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			int f = 0;
 			while (f < functionCount)
 			{
-				(*this->output_file) << "   ";
+				(*this->output_file) << "  ";
 				const int termCount = eft->getFunctionNumberOfTerms(f);
 				int valueCount = 1;
-				for (int f2 = f + 1; f2 < functionCount; ++f2)
+				// for compatibility with EX versions < 2 limit function values output to those
+				// for current basis node, otherwise repeated nodes will be bunched together
+				int f2basisNodeLimit = FE_basis_get_basis_node_function_number_limit(basis, f);
+				for (int f2 = f + 1; f2 < f2basisNodeLimit; ++f2)
 				{
 					if (eft->getFunctionNumberOfTerms(f2) != termCount)
 						break;
@@ -776,10 +781,10 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 				(*this->output_file) << ". #Values=" << valueCount << "\n";
 				// nodal value labels(versions) e.g. d/ds1(2), or the special zero for no terms
 				// multi term example: d/ds1(2)+d/ds2
-				(*this->output_file) << "     Value labels:";
-				for (int v = 0; v < valueCount; ++v)
+				(*this->output_file) << "   Value labels:";
+				const int f2limit = f + valueCount;
+				for (int f2 = f; f2 < f2limit; ++f2)
 				{
-					++f;
 					(*this->output_file) << " ";
 					if (termCount == 0)
 					{
@@ -791,23 +796,24 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 						{
 							if (t > 0)
 								(*this->output_file) << "+";
-							const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(f, t);
+							const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(f2, t);
 							const char *valueTypeString = ENUMERATOR_STRING(FE_nodal_value_type)(
 								cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel));
 							(*this->output_file) << valueTypeString;
-							const int version = eft->getTermNodeVersion(f, t);
+							const int version = eft->getTermNodeVersion(f2, t);
 							if (version > 0)
 								(*this->output_file) << "(" << version + 1 << ")";
 						}
 					}
 				}
+				(*this->output_file) << "\n";
 				// New: scale factor indexes only output if there is any scaling for this EFT
 				// For compatibility with old EX Versions, output scale factor indexes are relative
 				// to the whole element template, not per EFT, so must have the appropriate offset added.
 				if (eft->getNumberOfLocalScaleFactors() > 0)
 				{
-					(*this->output_file) << "     Scale factor indices:";
-					for (int v = 0; v < valueCount; ++v)
+					(*this->output_file) << "   Scale factor indices:";
+					for (int f2 = f; f2 < f2limit; ++f2)
 					{
 						(*this->output_file) << " ";
 						if (termCount == 0)
@@ -820,7 +826,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 							{
 								if (t > 0)
 									(*this->output_file) << "+";
-								const int termScaleFactorCount = eft->getTermScalingCount(f, t);
+								const int termScaleFactorCount = eft->getTermScalingCount(f2, t);
 								if (0 == termScaleFactorCount)
 								{
 									(*this->output_file) << "0"; // 0 means unscaled
@@ -831,7 +837,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 									{
 										if (s > 0)
 											(*this->output_file) << "*";
-										const int scaleFactorIndex = eft->getTermScaleFactorIndex(f, t, s);
+										const int scaleFactorIndex = eft->getTermScaleFactorIndex(f2, t, s);
 										(*this->output_file) << scaleFactorOffset + scaleFactorIndex + 1;
 									}
 								}
@@ -840,6 +846,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 					}
 					(*this->output_file) << "\n";
 				}
+				f = f2limit;
 			}
 		}	break;
 		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID:
@@ -1303,8 +1310,7 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 {
 	if (!element)
 	{
-		display_message(ERROR_MESSAGE,
-			"EXWriter::writeElementExt.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeElementExt.  Invalid argument(s)");
 		return false;
 	}
 	if (!this->elementIsToBeWritten(element))
@@ -1317,7 +1323,7 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 	bool newFieldHeader = true;
 	if (this->headerElement)
 	{
-		newShape = (elementShape != this->headerElement->getElementShape());
+		newShape = (elementShape != this->lastElementShape);
 		if (newShape)
 		{
 			newFieldHeader = this->elementHasFieldsToWrite(element); // reader must assume a blank, no-field template
@@ -1333,10 +1339,16 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 			}
 		}
 	}
-	if (newShape && (!this->writeElementShape(elementShape)))
-		return false;
-	if (newFieldHeader && !this->writeElementHeader(element))
-		return false;
+	if (newShape)
+	{
+		if (!this->writeElementShape(elementShape))
+			return false;
+	}
+	if (newFieldHeader)
+	{
+		if (!this->writeElementHeader(element))
+			return false;
+	}
 	if (!this->writeElement(element))
 		return false;
 	return true;
@@ -1859,7 +1871,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 							mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
 							cmzn_field_element_group_destroy(&element_group);
 						}
-						if (mesh)
+						if (mesh && (cmzn_mesh_get_size(mesh) > 0))
 						{
 							FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
 							(*output_file) << "!#mesh ";

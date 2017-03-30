@@ -3855,7 +3855,26 @@ int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
 			functionNumber += FE_basis_get_number_of_functions_per_node(basis, n);
 		return functionNumber;
 	}
+	display_message(ERROR_MESSAGE, "FE_basis_get_function_number_from_node_function.  Invalid argument(s)");
 	return -1;
+}
+
+int FE_basis_get_basis_node_function_number_limit(struct FE_basis *basis,
+	int functionNumber)
+{
+	if (basis && (0 <= functionNumber) && (functionNumber < basis->number_of_basis_functions))
+	{
+		int functionNumberLimit = 0;
+		const int nodeCount = FE_basis_get_number_of_nodes(basis);
+		for (int n = 0; n < nodeCount; ++n)
+		{
+			functionNumberLimit += FE_basis_get_number_of_functions_per_node(basis, n);
+			if (functionNumberLimit > functionNumber)
+				return functionNumberLimit;
+		}
+	}
+	display_message(ERROR_MESSAGE, "FE_basis_get_basis_node_function_number_limit.  Invalid argument(s)");
+	return 0;
 }
 
 int FE_basis_get_number_of_nodes(struct FE_basis *basis)
