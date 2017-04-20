@@ -384,6 +384,15 @@ public:
 		return this->localToGlobalNodes.getArray(elementIndex);
 	}
 
+	/** @return  Pointer to array of global node indexes for element, or 0 if failed. NOT to be freed.
+	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
+	DsLabelIndex *getOrCreateElementNodeIndexes(DsLabelIndex elementIndex)
+	{
+		return this->localToGlobalNodes.getOrCreateArray(elementIndex);
+	}
+
+	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
+
 #if 0
 	/** @return  Pointer to array of global scale factor indexes for element, or 0 if none. NOT to be freed.
 	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
@@ -437,8 +446,6 @@ public:
 	  * @param values  Array of scale factors to set. Required to have correct number for EFT.
 	  * @return  True on success, false on failure. */
 	bool setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
-
-	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
 
 	bool localToGlobalNodesIsDense() const;
 
@@ -504,6 +511,12 @@ public:
 	FE_mesh *getMesh() const
 	{
 		return this->mesh;
+	}
+
+	/** @return  Number of field components using this mesh field template PLUS external accesses held */
+	int getUsageCount() const
+	{
+		return this->access_count;
 	}
 
 	/** @return  True if no element field templates have been set */
@@ -604,7 +617,8 @@ public:
 			return this->meshFieldTemplate;
 		}
 
-		/** @param fieldTemplateIn  Field template: not checked; must be valid for mesh */
+		/** Currently assumes previous template had no per-element values
+		  * @param fieldTemplateIn  Field template: not checked; must be valid for mesh */
 		void setMeshfieldtemplate(FE_mesh_field_template *meshFieldTemplateIn)
 		{
 			meshFieldTemplateIn->access();
@@ -1015,10 +1029,6 @@ private:
 
 	cmzn_element *createElementObject(DsLabelIdentifier identifier);
 
-	FE_mesh_field_template *createBlankMeshFieldTemplate();
-
-	FE_mesh_field_template *cloneMeshFieldTemplate(const FE_mesh_field_template *source);
-
 	void clearElementFieldData();
 
 public:
@@ -1082,6 +1092,10 @@ public:
 	}
 
 	FE_element_field_template *mergeElementfieldtemplate(FE_element_field_template *eftIn);
+
+	FE_mesh_field_template *createBlankMeshFieldTemplate();
+
+	FE_mesh_field_template *cloneMeshFieldTemplate(const FE_mesh_field_template *source);
 
 	FE_mesh_field_template *getOrCreateBlankMeshFieldTemplate();
 

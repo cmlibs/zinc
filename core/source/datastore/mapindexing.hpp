@@ -326,7 +326,10 @@ public:
 		Indexing *indexing = getIndexingForLabels(&labels);
 		if (!indexing)
 			return 0;
-		indexing->setIndex(labels.findLabelByIdentifier(identifierIn));
+		DsLabelIndex index = labels.findLabelByIdentifier(identifierIn);
+		if (index == DS_LABEL_INDEX_INVALID)
+			return 0;
+		indexing->setIndex(index);
 		return 1;
 	}
 

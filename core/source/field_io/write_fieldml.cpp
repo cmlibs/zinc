@@ -1598,7 +1598,7 @@ FmlObjectHandle FieldMLWriter::writeMeshElementEvaluator(const FE_mesh *mesh,
 	FmlObjectHandle fmlMeshType = Fieldml_GetObjectByName(this->fmlSession, eft->getMesh()->getName());
 	FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(this->fmlSession, fmlMeshType);
 	FmlObjectHandle fmlMeshChartArgument = getArgumentForType(fmlMeshChartType);
-	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlEft, fmlChartArgument, fmlMeshChartArgument)))
+	if (FML_OK != (fmlError = Fieldml_SetBind(this->fmlSession, fmlMeshElementEvaluator, fmlChartArgument, fmlMeshChartArgument)))
 	{
 		display_message(WARNING_MESSAGE, "FieldML Writer:  Failed to bind mesh chart to generic chart");
 		return FML_INVALID_OBJECT_HANDLE;

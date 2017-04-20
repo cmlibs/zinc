@@ -177,7 +177,7 @@ public:
 		struct FE_basis *fe_basis = FE_region_get_FE_basis_matching_basis_type(
 			fe_region, int_basis_type_array);
 		DEALLOCATE(int_basis_type_array);
-		return ACCESS(FE_basis)(fe_basis);
+		return fe_basis;
 	}
 
 	enum cmzn_elementbasis_function_type getFunctionType(int chart_component) const
@@ -199,7 +199,6 @@ public:
 	{
 		FE_basis *basis = this->getFeBasis();
 		int numberOfNodes = FE_basis_get_number_of_nodes(basis);
-		DEACCESS(FE_basis)(&basis);
 		return numberOfNodes;
 	}
 
@@ -207,7 +206,6 @@ public:
 	{
 		FE_basis *basis = this->getFeBasis();
 		int numberOfFunctions = FE_basis_get_number_of_functions(basis);
-		DEACCESS(FE_basis)(&basis);
 		return numberOfFunctions;
 	}
 
@@ -215,7 +213,6 @@ public:
 	{
 		FE_basis *basis = this->getFeBasis();
 		int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex - 1);
-		DEACCESS(FE_basis)(&basis);
 		return numberOfFunctionsPerNode;
 	}
 
@@ -734,7 +731,6 @@ int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
 		}
 		cmzn_elementfieldtemplate::deaccess(eft);
 	}
-	DEACCESS(FE_basis)(&fe_basis);
 	return return_code;
 }
 
@@ -794,7 +790,6 @@ int cmzn_elementtemplate::defineFieldElementConstant(cmzn_field_id field, int co
 		}
 		cmzn_elementfieldtemplate::deaccess(eft);
 	}
-	DEACCESS(FE_basis)(&fe_basis);
 	return return_code;
 }
 

@@ -284,7 +284,8 @@ cmzn_mesh_group_id cmzn_fieldmodule_create_mesh_group_from_name_internal(
 /**
  * Internal function for getting the FE_basis for elementbasis in its
  * current state.
- * @return  Accessed FE_basis on success, 0 on failure.
+ * @return  Non-accessed FE_basis on success, 0 on failure. Note FE_basis
+ * should remain in existence until shutdown.
  */
 FE_basis *cmzn_elementbasis_get_FE_basis(cmzn_elementbasis_id elementbasis);
 

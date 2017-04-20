@@ -1035,7 +1035,6 @@ cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(
 	{
 		FE_basis *basis = cmzn_elementbasis_get_FE_basis(elementbasis);
 		cmzn_elementfieldtemplate_id eft = cmzn_elementfieldtemplate::create(cmzn_mesh_get_FE_mesh_internal(mesh), basis);
-		DEACCESS(FE_basis)(&basis);
 		return eft;
 	}
 	return 0;

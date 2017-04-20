@@ -51,6 +51,7 @@ const DsLabelIndex DS_LABEL_INDEX_UNALLOCATED = -2;
 
 class DsLabels;
 
+typedef block_array<DsLabelIndex, DsLabelIdentifier> DsLabelIdentifierArray;
 typedef cmzn_btree_index<DsLabels, DsLabelIndex, DsLabelIdentifier, DS_LABEL_INDEX_INVALID> DsLabelIdentifierToIndexMap;
 
 class DsLabelIterator;
@@ -66,7 +67,7 @@ class DsLabels : public cmzn::RefCounted
 	DsLabelIdentifier firstFreeIdentifier; // exact only if contiguous, otherwise only a minimum
 	DsLabelIdentifier firstIdentifier; // used if contiguous: identifier of first index
 	DsLabelIdentifier lastIdentifier; // used if contiguous: identifier of last valid index
-	block_array<DsLabelIndex,DsLabelIdentifier> identifiers; // used only if not contiguous
+	DsLabelIdentifierArray identifiers; // used only if not contiguous
 	DsLabelIdentifierToIndexMap identifierToIndexMap; // used only if not contiguous
 	int labelsCount; // number of valid labels
 	int indexSize; // allocated label array size; can have holes where labels removed

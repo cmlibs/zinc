@@ -1151,7 +1151,7 @@ FE_mesh_field_template *FE_mesh::createBlankMeshFieldTemplate()
   * mesh. Returns 0 if failed or source is not from this mesh. */
 FE_mesh_field_template *FE_mesh::cloneMeshFieldTemplate(const FE_mesh_field_template *source)
 {
-	if (!((source) && (this == source->mesh)))
+	if (!((source) && (this == source->getMesh())))
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Invalid argument");
 		return 0;
@@ -1467,7 +1467,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 				c2 = 0;
 			}
 			FE_mesh_field_template *new_mft = mft;
-			if (eft_mft_match_count < mft->access_count)
+			if (eft_mft_match_count < mft->getUsageCount())
 			{
 				// only some fields using mesh field template changing eft, hence clone, modify and set in fields
 				new_mft = this->cloneMeshFieldTemplate(mft);
