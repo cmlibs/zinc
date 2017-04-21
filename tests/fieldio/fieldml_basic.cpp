@@ -18,6 +18,7 @@
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
 #include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
@@ -725,27 +726,33 @@ TEST(ZincRegion, lines_alternate_node_order)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_ALTERNATE_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	check_lines_unit_scale_factors_model(zinc.fm);
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
 
-// Test cannot yet write models with inconsistent local-to-global-node map
+// Test writing models with inconsistent local-to-global-node map
 // for the same basis in an element.
 TEST(ZincRegion, lines_inconsistent_node_order)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_INCONSISTENT_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(ERROR_NOT_IMPLEMENTED, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
