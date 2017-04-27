@@ -1466,7 +1466,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				{
 					for (int v = 0; v < versionCount; ++v)
 					{
-						sprintf(tmpString, "%" FE_VALUE_STRING, componentValues[d*versionCount + v]);
+						sprintf(tmpString, "%" FE_VALUE_STRING, componentValues[v*derivativeCount + d]);
 						(*this->output_file) << " " << tmpString;
 					}
 				}
@@ -1491,7 +1491,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				tmpValues += derivativeCount*versionCount;
 				for (int d = 0; d < derivativeCount; ++d)
 					for (int v = 0; v < versionCount; ++v)
-						(*this->output_file) << " " << componentValues[d*versionCount + v];
+						(*this->output_file) << " " << componentValues[v*derivativeCount + d];
 			}
 			(*this->output_file) << "\n";
 			DEALLOCATE(values);

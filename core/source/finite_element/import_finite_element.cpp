@@ -1548,7 +1548,7 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 	while (true)
 	{
 		char *derivative_type_name = 0;
-		if (!IO_stream_read_string(this->input_file, "[^,)\n\r]", &derivative_type_name))
+		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &derivative_type_name))
 			return false;
 		trim_string_in_place(derivative_type_name);
 		enum FE_nodal_value_type derivative_type = FE_NODAL_UNKNOWN;
@@ -1563,11 +1563,15 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		if (1 == IO_stream_scan(this->input_file, "(%d)", &versionCount))
 		{
 			if (versionCount < 2)
+			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Derivative version count must be > 1 if specified");
-			return false;
+				return false;
+			}
 		}
 		else
+		{
 			versionCount = 1;
+		}
 		if (!nodeDerivativesVersions.addDerivative(derivative_type, versionCount))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Invalid derivative, number of versions or repeated derivative");

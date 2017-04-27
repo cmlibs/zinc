@@ -950,11 +950,6 @@ template <typename VALUETYPE> FmlObjectHandle FieldMLWriter::defineParametersFro
 		int offsets[2] = { 0, sparseLabelsCount };
 		int keySizes[2] = { numberOfRecords, sparseLabelsCount };
 		int keyOffsets[2]= { 0, 0 };
-		for (int i = 0; i < denseLabelsCount; ++i)
-		{
-			sizes[i] = denseLabelsArray[i]->getSize();
-			offsets[i] = 0;
-		}
 		Fieldml_SetArrayDataSourceRawSizes(this->fmlSession, fmlDataSource, rawSizes);
 		Fieldml_SetArrayDataSourceSizes(this->fmlSession, fmlDataSource, sizes);
 		Fieldml_SetArrayDataSourceOffsets(this->fmlSession, fmlDataSource, offsets);

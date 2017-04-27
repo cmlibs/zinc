@@ -11695,7 +11695,7 @@ int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value 
 		for (int v = 0; v < node_field_component->number_of_versions; ++v)
 			for (int d = 0; d < derivativesCount; ++d)
 			{
-				*(derivatives++) = node_field_component->nodal_value_types[d] + 1;
+				*(derivatives++) = node_field_component->nodal_value_types[d] - (FE_NODAL_VALUE - 1);
 				*(versions++) = v + 1;
 			}
 		if ((c != 0) && isHomogeneous)
