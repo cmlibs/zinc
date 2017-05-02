@@ -231,6 +231,14 @@ TEST(ZincRegion, fieldml_figure8)
 	EXPECT_EQ(OK, result = testRegion2.read(sir2));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_figure8_model(testFm2);
+
+	// test writing and re-reading EX format, via file
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/figure8.ex2"));
+	Region testRegion3 = zinc.root_region.createChild("test3");
+	EXPECT_TRUE(testRegion3.isValid());
+	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/figure8.ex2"));
+	Fieldmodule testFm3 = testRegion3.getFieldmodule();
+	check_figure8_model(testFm3);
 }
 
 namespace {
@@ -531,9 +539,9 @@ TEST(ZincRegion, bifurcation)
 	check_bifurcation(zinc.fm);
 
 	// test writing and re-reading in EX format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.exregion"));
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.ex2"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.exregion"));
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.ex2"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_bifurcation(testFm1);
 

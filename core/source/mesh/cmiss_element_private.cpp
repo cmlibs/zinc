@@ -843,6 +843,15 @@ int cmzn_elementtemplate::setMapNodeValueLabel(cmzn_field_id field, int componen
 						"Elementtemplate setMapNodeValueLabel.  Failed; only expected to work with defineFieldSimpleNodal.");
 				}
 			}
+			if (CMZN_OK == return_code)
+			{
+				// need to swap with the eft used for the component
+				return_code = this->fe_element_template->defineField(fe_field, c, eft);
+				if (CMZN_OK != return_code)
+				{
+					display_message(ERROR_MESSAGE, "Elementtemplate setMapNodeValueLabel.  Failed to set in element template");
+				}
+			}
 			cmzn_elementfieldtemplate::deaccess(eft);
 			if (CMZN_OK != return_code)
 				break;
@@ -900,6 +909,15 @@ int cmzn_elementtemplate::setMapNodeVersion(cmzn_field_id field, int componentNu
 				{
 					display_message(ERROR_MESSAGE,
 						"Elementtemplate setMapNodeVersion.  Failed; only expected to work with defineFieldSimpleNodal.");
+				}
+			}
+			if (CMZN_OK == return_code)
+			{
+				// need to swap with the eft used for the component
+				return_code = this->fe_element_template->defineField(fe_field, c, eft);
+				if (CMZN_OK != return_code)
+				{
+					display_message(ERROR_MESSAGE, "Elementtemplate setMapNodeVersion.  Failed to set in element template");
 				}
 			}
 			cmzn_elementfieldtemplate::deaccess(eft);
