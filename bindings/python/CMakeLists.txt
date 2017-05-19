@@ -127,7 +127,7 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     if (APPLE)
         set_target_properties(${MODULE_TARGET} PROPERTIES
             INSTALL_RPATH "@loader_path/${_REL_INSTALL_PATH}")
-    elseif (LINUX)
+    elseif (UNIX)
         set_target_properties(${MODULE_TARGET} PROPERTIES
             INSTALL_RPATH "\$ORIGIN/${_REL_INSTALL_PATH}")
     endif ()
