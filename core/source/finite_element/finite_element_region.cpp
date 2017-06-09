@@ -939,23 +939,25 @@ int FE_region_define_faces(struct FE_region *fe_region)
 	int return_code = 1;
 	if (fe_region)
 	{
-		FE_region_begin_change(fe_region);
-		FE_region_begin_define_faces(fe_region);
-		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 2 <= dimension; --dimension)
+		if (FE_region_get_highest_dimension(fe_region) > 1)
 		{
-			if (CMZN_OK != fe_region->meshes[dimension - 1]->define_faces())
+			FE_region_begin_change(fe_region);
+			FE_region_begin_define_faces(fe_region);
+			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 2 <= dimension; --dimension)
 			{
-				return_code = 0;
-				break;
+				if (CMZN_OK != fe_region->meshes[dimension - 1]->define_faces())
+				{
+					return_code = 0;
+					break;
+				}
 			}
+			FE_region_end_define_faces(fe_region);
+			FE_region_end_change(fe_region);
 		}
-		FE_region_end_define_faces(fe_region);
-		FE_region_end_change(fe_region);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_define_faces.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_region_define_faces.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;

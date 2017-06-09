@@ -4416,8 +4416,10 @@ FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
 	FE_element_type_node_sequence *element_type_node_sequence)
 {
 	if (element_type_node_sequence_list && element_type_node_sequence)
+	{
 		return FIND_BY_IDENTIFIER_IN_LIST(FE_element_type_node_sequence, identifier)(
 			element_type_node_sequence->identifier, element_type_node_sequence_list);
+	}
 	return 0;
 }
 
@@ -15961,7 +15963,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 
 	int return_code = 1;
 	FE_value *blending_matrix, *combined_blending_matrix, *transformation;
-	int add, i, *inherited_basis_arguments, j, k,
+	int i, *inherited_basis_arguments, j, k,
 		number_of_inherited_values, number_of_blended_values;
 
 	int number_of_element_field_nodes = 0;
@@ -16008,10 +16010,15 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 				previous_number_of_element_values=number_of_element_values;
 				previous_basis=basis;
 				Standard_basis_function *standard_basis_function;
-				if (calculate_standard_basis_transformation(basis,
-					coordinate_transformation,elementDimension,
-					&inherited_basis_arguments,&number_of_inherited_values,
-					&standard_basis_function,&blending_matrix))
+				if (fieldElementDimension == elementDimension)
+				{
+					blending_matrix = 0;
+					inherited_basis_arguments = 0;
+				}
+				else if (calculate_standard_basis_transformation(basis,
+					coordinate_transformation, elementDimension,
+					&inherited_basis_arguments, &number_of_inherited_values,
+					&standard_basis_function, &blending_matrix))
 				{
 					number_of_blended_values = FE_basis_get_number_of_blended_functions(basis);
 					if (number_of_blended_values > 0)
@@ -16027,69 +16034,79 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 							return_code = 0;
 						}
 					}
-					if (return_code)
+				}
+				else
+				{
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					transformation=blending_matrix;
+					element_value=element_values;
+					i=number_of_element_values;
+					while (return_code&&(i>0))
 					{
-						transformation=blending_matrix;
-						element_value=element_values;
-						i=number_of_element_values;
-						while (return_code&&(i>0))
+						bool add;
+						if (transformation)
 						{
-							add=0;
-							j=number_of_inherited_values;
+							add = false;
+							j = number_of_inherited_values;
 							while (!add&&(j>0))
 							{
 								if (1.e-8<fabs(*transformation))
 								{
-									add=1;
+									add = true;
 								}
 								transformation++;
 								j--;
 							}
 							transformation += j;
-							if (add)
+						}
+						else
+						{
+							add = true;
+						}
+						if (add)
+						{
+							struct FE_node *node = nodeset->getNode(*element_value);
+							if (node)
 							{
-								struct FE_node *node = nodeset->getNode(*element_value);
-								if (node)
+								k = 0;
+								while ((k<number_of_element_field_nodes)&&
+									(node != element_field_nodes_array[k]))
 								{
-									k = 0;
-									while ((k<number_of_element_field_nodes)&&
-										(node != element_field_nodes_array[k]))
+									k++;
+								}
+								if (k>=number_of_element_field_nodes)
+								{
+									struct FE_node **temp_element_field_nodes_array;
+									if (REALLOCATE(temp_element_field_nodes_array,
+										element_field_nodes_array, struct FE_node *,
+										number_of_element_field_nodes+1))
 									{
-										k++;
+										element_field_nodes_array = temp_element_field_nodes_array;
+										element_field_nodes_array[number_of_element_field_nodes] =
+											ACCESS(FE_node)(node);
+										number_of_element_field_nodes++;
 									}
-									if (k>=number_of_element_field_nodes)
+									else
 									{
-										struct FE_node **temp_element_field_nodes_array;
-										if (REALLOCATE(temp_element_field_nodes_array,
-											element_field_nodes_array, struct FE_node *,
-											number_of_element_field_nodes+1))
-										{
-											element_field_nodes_array = temp_element_field_nodes_array;
-											element_field_nodes_array[number_of_element_field_nodes] =
-												ACCESS(FE_node)(node);
-											number_of_element_field_nodes++;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_nodes.  "
-												"Could not REALLOCATE element_field_nodes_array");
-											return_code = 0;
-										}
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_nodes.  "
+											"Could not REALLOCATE element_field_nodes_array");
+										return_code = 0;
 									}
 								}
 							}
-							element_value++;
-							i--;
 						}
+						element_value++;
+						i--;
 					}
+				}
+				if (blending_matrix)
 					DEALLOCATE(blending_matrix);
+				if (inherited_basis_arguments)
 					DEALLOCATE(inherited_basis_arguments);
-				}
-				else
-				{
-					return_code=0;
-				}
 			}
 			else
 			{
