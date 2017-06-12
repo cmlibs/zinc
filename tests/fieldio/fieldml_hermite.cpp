@@ -14,6 +14,7 @@
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldcoordinatetransformation.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include <opencmiss/zinc/fieldgroup.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
@@ -560,4 +561,81 @@ TEST(ZincRegion, bifurcation)
 	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
 	Fieldmodule testFm3 = testRegion3.getFieldmodule();
 	check_bifurcation(testFm3, /*idFirst*/1, /*idBlockSize*/6, /*idBlockSpan*/8);
+}
+
+namespace {
+
+void check_prolate_heart_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	Field fibres = fm.findFieldByName("fibres");
+	EXPECT_TRUE(fibres.isValid());
+	EXPECT_EQ(3, fibres.getNumberOfComponents());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(60, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(218, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(256, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(99, nodes.getSize());
+
+	// make the group of exterior faces
+	Field isExterior = fm.createFieldIsExterior();
+	EXPECT_TRUE(isExterior.isValid());
+	FieldGroup exteriorGroup = fm.createFieldGroup();
+	EXPECT_TRUE(exteriorGroup.isValid());
+	EXPECT_EQ(RESULT_OK, result = exteriorGroup.setName("exterior"));
+	FieldElementGroup exteriorFacesGroup = exteriorGroup.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(exteriorFacesGroup.isValid());
+	MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+	EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
+	EXPECT_EQ(RESULT_OK, result = exteriorFacesMeshGroup.addElementsConditional(isExterior));
+	EXPECT_EQ(96, exteriorFacesMeshGroup.getSize());
+
+	Field rc_coordinates = fm.createFieldCoordinateTransformation(coordinates);
+	EXPECT_TRUE(rc_coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, result = rc_coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral volume = fm.createFieldMeshIntegral(one, rc_coordinates, mesh3d);
+	EXPECT_TRUE(volume.isValid());
+	const int numGaussPoints = 4;
+	EXPECT_EQ(RESULT_OK, result = volume.setNumbersOfPoints(1, &numGaussPoints));
+	FieldMeshIntegral surfaceArea = fm.createFieldMeshIntegral(one, rc_coordinates, exteriorFacesMeshGroup);
+	EXPECT_TRUE(surfaceArea.isValid());
+	EXPECT_EQ(RESULT_OK, result = surfaceArea.setNumbersOfPoints(1, &numGaussPoints));
+
+	Fieldcache cache = fm.createFieldcache();
+	double outVolume;
+	EXPECT_EQ(RESULT_OK, result = volume.evaluateReal(cache, 1, &outVolume));
+	EXPECT_NEAR(199205.30541176599, outVolume, 1.0E-1);
+	double outSurfaceArea;
+	EXPECT_EQ(RESULT_OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
+	EXPECT_NEAR(34589.128638176546, outSurfaceArea, 1.0E-1);
+}
+
+}
+
+TEST(FieldIO, prolate_heart)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_PROLATE_HEART_RESOURCE)));
+	check_prolate_heart_model(zinc.fm);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/prolate_heart.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/prolate_heart.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_prolate_heart_model(testFm1);
 }
