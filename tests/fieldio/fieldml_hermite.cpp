@@ -639,3 +639,53 @@ TEST(FieldIO, prolate_heart)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_prolate_heart_model(testFm1);
 }
+
+
+namespace {
+
+void check_hemisphere_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(48, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(100, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(53, nodes.getSize());
+
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral area = fm.createFieldMeshIntegral(one, coordinates, mesh2d);
+	EXPECT_TRUE(area.isValid());
+	const int numGaussPoints = 4;
+	EXPECT_EQ(RESULT_OK, result = area.setNumbersOfPoints(1, &numGaussPoints));
+
+	Fieldcache cache = fm.createFieldcache();
+	double areaOut;
+	EXPECT_EQ(RESULT_OK, result = area.evaluateReal(cache, 1, &areaOut));
+	EXPECT_NEAR(9.5681385964832906, areaOut, 1.0E-7);
+}
+
+}
+
+TEST(FieldIO, hemisphere)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_HEMISPHERE_RESOURCE)));
+	check_hemisphere_model(zinc.fm);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/hemisphere.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/hemisphere.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_hemisphere_model(testFm1);
+}
