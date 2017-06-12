@@ -4220,40 +4220,95 @@ bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
 
 	// apply modify functions for consecutive nodes increasing in xi1 (around theta)
 	const double TWO_PI = 2.0*PI;
-	for (int k = 0; k < number_of_nodes_in_xi3; ++k)
-		for (int j = 0; j < number_of_nodes_in_xi2; ++j)
-			for (int i = 1; i < number_of_nodes_in_xi1; ++i)
+	FE_value *thetaValue = values;
+	int localNode = 0;
+	FE_value offsetThetaXi2 = 0.0;
+	FE_value offsetThetaXi3 = 0.0;
+	for (int k = number_of_nodes_in_xi3 - 1; 0 <= k; --k)
+	{
+		FE_value lastThetaXi3 = *thetaValue;
+		for (int j = number_of_nodes_in_xi2 - 1; 0 <= j; --j)
+		{
+			FE_value lastThetaXi2 = *thetaValue;
+			for (int i = number_of_nodes_in_xi1 - 1; 0 < i; --i)
 			{
-				FE_value *thisThetaAddress = &values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i]];
-				const FE_value lastTheta = values[nodeValueIndexes[(k*number_of_nodes_in_xi2 + j)*number_of_nodes_in_xi1 + i - 1]];
+				FE_value lastThetaXi1 = *thetaValue;
+				thetaValue += FE_basis_get_number_of_functions_per_node(basis, localNode);
+				++localNode;
+				*thetaValue += (offsetThetaXi2 + offsetThetaXi3);
 				switch (mode)
 				{
 				case FE_BASIS_MODIFY_THETA_MODE_CLOSEST_IN_XI1:
-					if (lastTheta < (*thisThetaAddress - PI))
-						*thisThetaAddress -= TWO_PI;
-					else if (lastTheta > (*thisThetaAddress + PI))
-						*thisThetaAddress += TWO_PI;
+					if (lastThetaXi1 < (*thetaValue - PI))
+						*thetaValue -= TWO_PI;
+					else if (lastThetaXi1 >(*thetaValue + PI))
+						*thetaValue += TWO_PI;
 					break;
 				case FE_BASIS_MODIFY_THETA_MODE_DECREASING_IN_XI1:
-					if (lastTheta <= *thisThetaAddress)
-						*thisThetaAddress -= TWO_PI;
+					if (lastThetaXi1 <= *thetaValue)
+						*thetaValue -= TWO_PI;
 					break;
 				case FE_BASIS_MODIFY_THETA_MODE_INCREASING_IN_XI1:
-					if (lastTheta >= *thisThetaAddress)
-						*thisThetaAddress += TWO_PI;
+					if (lastThetaXi1 >= *thetaValue)
+						*thetaValue += TWO_PI;
 					break;
 				case FE_BASIS_MODIFY_THETA_MODE_NON_DECREASING_IN_XI1:
-					if (lastTheta > *thisThetaAddress)
-						*thisThetaAddress += TWO_PI;
+					if (lastThetaXi1 > *thetaValue)
+						*thetaValue += TWO_PI;
 					break;
 				case FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1:
-					if (lastTheta < *thisThetaAddress)
-						*thisThetaAddress -= TWO_PI;
+					if (lastThetaXi1 < *thetaValue)
+						*thetaValue -= TWO_PI;
 					break;
 				case FE_BASIS_MODIFY_THETA_MODE_INVALID:
 					break;
 				}
 			}
+			thetaValue += FE_basis_get_number_of_functions_per_node(basis, localNode);
+			++localNode;
+			if (j != 0)
+			{
+				if (*thetaValue > (lastThetaXi2 + PI))
+				{
+					offsetThetaXi2 = -TWO_PI;
+					*thetaValue += offsetThetaXi2;
+				}
+				else
+				{
+					if (*thetaValue < (lastThetaXi2 - PI))
+					{
+						offsetThetaXi2 = TWO_PI;
+						*thetaValue += offsetThetaXi2;
+					}
+					else
+					{
+						offsetThetaXi2 = 0.0;
+					}
+				}
+			}
+		}
+		if (k != 0)
+		{
+			offsetThetaXi2 = 0.0;
+			if (*thetaValue > (lastThetaXi3 + PI))
+			{
+				offsetThetaXi3 = -TWO_PI;
+				*thetaValue += offsetThetaXi3;
+			}
+			else
+			{
+				if (*thetaValue < (lastThetaXi3 - PI))
+				{
+					offsetThetaXi3 = TWO_PI;
+					*thetaValue += offsetThetaXi3;
+				}
+				else
+				{
+					offsetThetaXi3 = 0.0;
+				}
+			}
+		}
+	}
 
 	delete nodeValueIndexes;
 	return true;
