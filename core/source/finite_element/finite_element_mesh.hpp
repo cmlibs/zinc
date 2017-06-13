@@ -926,9 +926,6 @@ public:
 		/** convenient function for getting a single face for an element */
 		DsLabelIndex getElementFace(DsLabelIndex elementIndex, int faceNumber);
 
-		/** convenient function for setting a single face for an element */
-		int setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIndex faceIndex);
-
 	};
 
 private:

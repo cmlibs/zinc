@@ -3712,7 +3712,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 cmzn_element *EXReader::readElement()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(input_file, " ement %1[:] ", test_string)) // "El" has already been read
+	if (1 != IO_stream_scan(input_file, "ement %1[:] ", test_string)) // "El" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
 		return 0;
@@ -3769,20 +3769,12 @@ cmzn_element *EXReader::readElement()
 	// Faces: (optional)
 	if (1 == IO_stream_scan(input_file, " Faces %1[:]", test_string))
 	{
-		FE_mesh::ElementShapeFaces *elementShapeFaces = this->mesh->getElementShapeFaces(element->getIndex());
-		const int faceCount = elementShapeFaces->getFaceCount();
+		const FE_element_shape *elementShape = this->mesh->getElementShape(element->getIndex());
+		const int faceCount = FE_element_shape_get_number_of_faces(elementShape);
 		FE_mesh *faceMesh = this->mesh->getFaceMesh();
 		if ((!faceMesh) && (0 < faceCount))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to find face mesh.  %s", this->getFileLocation());
-			cmzn_element::deaccess(element);
-			return 0;
-		}
-		const FE_element_shape *elementShape = elementShapeFaces->getElementShape();
-		DsLabelIndex *faces = elementShapeFaces->getOrCreateElementFaces(element->getIndex());
-		if (!faces)
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Failed to allocate space for faces.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
 			return 0;
 		}
@@ -3794,32 +3786,38 @@ cmzn_element *EXReader::readElement()
 				cmzn_element::deaccess(element);
 				return 0;
 			}
-			if (faceIdentifier == -1)
-				continue; // denotes no face
-			if ((this->exVersion < 2) && (faceIdentifier == 0))
-				continue; // denoted no face in legacy versions
-			DsLabelIndex faceIndex = faceMesh->findIndexByIdentifier(faceIdentifier);
-			if (faceIndex < 0)
+			DsLabelIndex faceIndex = DS_LABEL_INDEX_INVALID;
+			if (!((faceIdentifier == -1) // denotes no face
+				|| ((faceIdentifier == 0) && (this->exVersion < 2)))) // denoted no face in legacy versions
 			{
-				if (faceIdentifier < 0)
+				faceIndex = faceMesh->findIndexByIdentifier(faceIdentifier);
+				if (faceIndex < 0)
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Negative face identifier is not permitted.  %s", this->getFileLocation());
-					cmzn_element::deaccess(element);
-					return 0;
+					if (faceIdentifier < 0)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Negative face identifier is not permitted.  %s", this->getFileLocation());
+						cmzn_element::deaccess(element);
+						return 0;
+					}
+					// create a face of the expected shape
+					FE_element_shape *faceShape = get_FE_element_shape_of_face(elementShape, i, this->fe_region);
+					cmzn_element *face = faceMesh->get_or_create_FE_element_with_identifier(faceIdentifier, faceShape);
+					if (!face)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to create face.  %s", this->getFileLocation());
+						cmzn_element::deaccess(element);
+						return 0;
+					}
+					faceIndex = face->getIndex();
+					cmzn_element::deaccess(face);
 				}
-				// create a face of the expected shape
-				FE_element_shape *faceShape = get_FE_element_shape_of_face(elementShape, i, this->fe_region);
-				cmzn_element *face = faceMesh->get_or_create_FE_element_with_identifier(faceIdentifier, faceShape);
-				if (!face)
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to create face.  %s", this->getFileLocation());
-					cmzn_element::deaccess(element);
-					return 0;
-				}
-				faceIndex = face->getIndex();
-				cmzn_element::deaccess(face);
 			}
-			faces[i] = faceIndex;
+			if (CMZN_OK != this->mesh->setElementFace(element->getIndex(), i, faceIndex))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element face.  %s", this->getFileLocation());
+				cmzn_element::deaccess(element);
+				return 0;
+			}
 		}
 	}
 

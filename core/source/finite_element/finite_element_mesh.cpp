@@ -968,18 +968,6 @@ DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementInde
 	return faces[faceNumber];
 }
 
-int FE_mesh::ElementShapeFaces::setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIndex faceIndex)
-{
-	// could remove following test if good arguments guaranteed
-	if ((faceNumber < 0) || (faceNumber >= this->faceCount))
-		return CMZN_ERROR_ARGUMENT;
-	DsLabelIndex *faces = this->getOrCreateElementFaces(elementIndex);
-	if (!faces)
-		return CMZN_ERROR_MEMORY;
-	faces[faceNumber] = faceIndex;
-	return CMZN_OK;
-}
-
 FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	fe_region(fe_regionIn),
 	dimension(dimensionIn),
@@ -2648,7 +2636,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 		{
 			FE_field *field = fields[f];
 			const char *fieldName = get_FE_field_name(field);
-			FE_field *targetField = FE_region_get_FE_field_from_name(targetNodeset->get_FE_region(), fieldName); // this may not exist
+			FE_field *targetField = (targetNodeset) ? FE_region_get_FE_field_from_name(targetNodeset->get_FE_region(), fieldName) : 0; // this may not exist
 			FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this);
 			if (!meshFieldData)
 				continue;
@@ -2685,7 +2673,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 						if (!nodeField)
 						{
 							DsLabelIdentifier nodeIdentifier = nodeset->getNodeIdentifier(nodeIndexes[n]);
-							cmzn_node *targetNode = targetNodeset->findNodeByIdentifier(nodeIdentifier);
+							cmzn_node *targetNode = (targetNodeset) ? targetNodeset->findNodeByIdentifier(nodeIdentifier) : 0;
 							if ((targetNode) && (targetField))
 								nodeField = FE_node_get_FE_node_field(targetNode, targetField);
 							if (!nodeField)
