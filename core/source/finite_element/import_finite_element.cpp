@@ -1344,7 +1344,7 @@ FE_field *EXReader::readField()
 			{
 				// before EX version 2, optional: mesh dimension=N (if not specified, determine from first embedded element location in old format)
 				// from EX version 2, require: host mesh=name, host mesh dimension=N
-				const char *dimensionString = keyValueMap.getKeyValue((this->exVersion < 2) ? "mesh dimension" : "host_mesh_dimension");
+				const char *dimensionString = keyValueMap.getKeyValue((this->exVersion < 2) ? "mesh dimension" : "host mesh dimension");
 				if (dimensionString)
 				{
 					const int dimension = atoi(dimensionString);

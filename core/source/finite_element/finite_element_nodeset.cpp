@@ -1031,19 +1031,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 							FE_mesh *targetHostMesh = const_cast<FE_mesh*>(FE_field_get_element_xi_host_mesh(targetEmbeddedField));
 							const DsLabelIdentifier elementIdentifier = sourceElement->getIdentifier();
 							cmzn_element *targetElement = targetHostMesh->findElementByIdentifier(elementIdentifier);
-							if (targetElement)
-							{
-								targetElement->access();
-							}
-							else
-							{
-								FE_element_shape *elementShape = sourceElement->getElementShape();
-								if (elementShape) // should be guaranteed by FE_mesh::canMerge()
-								{
-									targetElement = targetHostMesh->get_or_create_FE_element_with_identifier(
-										elementIdentifier, elementShape);
-								}
-							}
+							// target element should exist as FE_mesh::mergePart1Elements should have been called first
 							if (targetElement)
 							{
 								if (!set_FE_nodal_element_xi_value(node, targetEmbeddedField,
@@ -1051,7 +1039,6 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 								{
 									return_code = 0;
 								}
-								cmzn_element::deaccess(targetElement);
 							}
 							else
 							{

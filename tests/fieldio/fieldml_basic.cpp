@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
@@ -755,4 +756,104 @@ TEST(ZincRegion, lines_inconsistent_node_order)
 	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_lines_unit_scale_factors_model(testFm1);
+}
+
+namespace {
+
+void check_cube_element_xi_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	const double offsetValues[3] = { 0.1, 0.2, -0.35 };
+	FieldConstant offset = fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	FieldAdd bob = coordinates + offset;
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, result = bob.setName("bob"));
+
+	Field element_xi = fm.findFieldByName("element_xi");
+	EXPECT_TRUE(element_xi.isValid());
+	EXPECT_EQ(Field::VALUE_TYPE_MESH_LOCATION, element_xi.getValueType());
+	Field hostbob = fm.createFieldEmbedded(bob, element_xi);
+	EXPECT_TRUE(hostbob.isValid());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(1, mesh3d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+	Nodeset datapoints = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_EQ(5, datapoints.getSize());
+
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+
+	const double xiExpected[5][3] = {
+		{ 0.25, 0.25, 0.75 },
+		{ 0.25, 0.50, 0.75 },
+		{ 1.00, 0.25, 0.75 },
+		{ 1.00, 1.00, 1.00 },
+		{ 0.00, 0.00, 0.00 }
+	};
+	double xiOut[3];
+	double hostbobOut[3];
+	const double tolerance = 1.0E-8;
+	Fieldcache cache = fm.createFieldcache();
+	for (int i = 0; i < 5; ++i)
+	{
+		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
+		EXPECT_TRUE(datapoint.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setNode(datapoint));
+		Element elementOut = element_xi.evaluateMeshLocation(cache, 3, xiOut);
+		EXPECT_EQ(element1, elementOut);
+		EXPECT_NEAR(xiExpected[i][0], xiOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1], xiOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2], xiOut[2], tolerance);
+		EXPECT_EQ(RESULT_OK, result = hostbob.evaluateReal(cache, 3, hostbobOut));
+		EXPECT_NEAR(xiExpected[i][0] + offsetValues[0], hostbobOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1] + offsetValues[1], hostbobOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2] + offsetValues[2], hostbobOut[2], tolerance);
+	}
+}
+
+}
+
+TEST(FieldIO, cube_element_xi)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	// Test can't merge element:xi locations unless host elements have been defined first
+	EXPECT_EQ(RESULT_ERROR_INCOMPATIBLE_DATA, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+
+	// read the cube host mesh
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+
+	// Test can't read old EX format that had different dimension elements for element:xi field
+	EXPECT_EQ(RESULT_ERROR_GENERAL, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_FAIL_RESOURCE)));
+
+	// now read the datapoints with element:xi field
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+	check_cube_element_xi_model(zinc.fm);
+
+	// test writing datapoints and re-reading in EX2 format
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	StreamresourceFile srf = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2");
+	EXPECT_TRUE(srf.isValid());
+	EXPECT_EQ(RESULT_OK, result = sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_DATAPOINTS));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_cube_element_xi_model(testFm1);
 }

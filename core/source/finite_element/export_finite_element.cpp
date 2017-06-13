@@ -426,18 +426,22 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 			{
 				(*this->output_file) << ", spherical polar";
 			} break;
+			case NOT_APPLICABLE:
+			{
+				/* write nothing */
+			} break;
 			default:
 			{
 				display_message(WARNING_MESSAGE,
-					"EXWriter::writeFieldHeader.  Unknown coordinate system type");
+					"EXWriter::writeFieldHeader.  Unknown coordinate system type: ignoring");
 				/* write nothing */
-			}
+			} break;
 		}
 	}
 	else
 	{
 		display_message(WARNING_MESSAGE,
-			"EXWriter::writeFieldHeader.  Missing field coordinate system");
+			"EXWriter::writeFieldHeader.  Missing field coordinate system: ignoring.");
 	}
 
 	// In EX Versions < 2, value type was optional if coordinate system output for field

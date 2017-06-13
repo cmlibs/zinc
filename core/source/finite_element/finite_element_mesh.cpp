@@ -2877,33 +2877,32 @@ int FE_field_addMeshFieldComponentMergeData(struct FE_field *sourceField, void *
 }
 
 /**
- * Merge the elements and field definitions from source mesh.
+ * First part of mesh merge. Merge the elements and faces of source mesh.
+ * Do this before merging nodes so that elements exist for defining
+ * embedded element:xi node fields.
  * Assumes FE_mesh::canMerge() has been called and returned true.
- * Assumes Face mesh has been merged prior to this.
+ * Assumes Face mesh mergePart1Elements has been called and returned true.
  * Assumes FE_region change cache is on.
  * @param source  Source mesh to merge.
- * @return  1 on success, 0 on failure.
+ * @return  True on success, false on failure.
  */
-int FE_mesh::merge(const FE_mesh &source)
+bool FE_mesh::mergePart1Elements(const FE_mesh &source)
 {
 	if (source.dimension != this->dimension)
-		return 0;
+		return false;
 	if (!this->fe_region)
-		return 0;
+		return false;
 	if ((this->dimension > 1) && ((!this->faceMesh) || (!source.faceMesh)))
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh::merge.  Missing face mesh(es)");
-		return 0;
+		return false;
 	}
 
-	int return_code = 1;
-
-	// 1. define elements with shape and faces from source; fields are merged later
-
-	// note using a label iterator means they are merged in identifier order, currently
+	bool result = true;
+	// note using a label iterator means elements are merged in identifier order, currently
 	DsLabelIterator *iter = source.labels.createLabelIterator();
 	if (!iter)
-		return 0;
+		return false;
 	DsLabelIndex sourceElementIndex;
 	while ((sourceElementIndex = iter->nextIndex()) >= 0)
 	{
@@ -2917,7 +2916,7 @@ int FE_mesh::merge(const FE_mesh &source)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create %d-D mesh element %d",
 					this->dimension, identifier);
-				return_code = 0;
+				result = false;
 				break;
 			}
 			this->changeLog->setIndexChange(targetElementIndex, DS_LABEL_CHANGE_TYPE_ADD);
@@ -2926,7 +2925,7 @@ int FE_mesh::merge(const FE_mesh &source)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Missing shape for %d-D mesh element %d",
 					this->dimension, identifier);
-				return_code = 0;
+				result = false;
 				break;
 			}
 			if (!this->setElementShape(targetElementIndex, sourceElementShapeFaces->getElementShape()))
@@ -2934,7 +2933,7 @@ int FE_mesh::merge(const FE_mesh &source)
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to set shape for %d-D mesh element %d",
 					this->dimension, identifier);
 				this->destroyElement(targetElementIndex);
-				return_code = 0;
+				result = false;
 				break;
 			}
 		}
@@ -2957,7 +2956,7 @@ int FE_mesh::merge(const FE_mesh &source)
 					{
 						display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create target faces array for %d-D mesh element %d",
 							this->dimension, identifier);
-						return_code = 0;
+						result = false;
 						break;
 					}
 					for (int i = 0; i < faceCount; ++i)
@@ -2969,29 +2968,43 @@ int FE_mesh::merge(const FE_mesh &source)
 							if (faceIndex < 0)
 							{
 								display_message(ERROR_MESSAGE, "FE_mesh::merge.  Missing target face");
-								return_code = 0;
+								result = false;
 								break;
 							}
 							// must call setElementFace to also set up parent lists
 							if (CMZN_OK != this->setElementFace(targetElementIndex, i, faceIndex))
 							{
 								display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to set new face");
-								return_code = 0;
+								result = false;
 							}
 						}
 					}
-					if (return_code == 0)
+					if (!result)
 						break;
 				}
 			}
 		}
 	}
 	cmzn::Deaccess(iter);
-	if (return_code != 1)
-		return return_code;
+	return result;
+}
 
-	// 2. merge fields defined on source mesh i.e. shared mesh field templates
+/**
+ * Second part of mesh merge. Merge field definitions from source mesh,
+ * i.e. shared mesh field templates.
+ * Do this after merging nodes so that the exist for defining node-based
+ * element field parameter mappings.
+ * Assumes FE_mesh::mergePart1Elements has been called and returned true.
+ * Assumes FE_region change cache is on.
+ * @param source  Source mesh to merge.
+ * @return  True on success, false on failure.
+ */
+bool FE_mesh::mergePart2Fields(const FE_mesh &source)
+{
+	if (source.dimension != this->dimension)
+		return false;
 
+	bool result = true;
 	// make table of source to merged target EFT data index
 	std::vector<FE_mesh_field_template::EFTIndexType> sourceToTargetEFTDataIndex;
 	for (int i = 0; i < source.elementFieldTemplateDataCount; ++i)
@@ -3005,7 +3018,7 @@ int FE_mesh::merge(const FE_mesh &source)
 			if (0 == targetEFT)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to merge element field template");
-				return 0;
+				return false;
 			}
 			targetEftIndex = static_cast<FE_mesh_field_template::EFTIndexType>(targetEFT->getIndexInMesh());
 			FE_element_field_template::deaccess(targetEFT);
@@ -3022,7 +3035,7 @@ int FE_mesh::merge(const FE_mesh &source)
 			static_cast<void *>(&iteratorMergeData)))
 		{
 			display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create mesh field template map");
-			return 0;
+			return false;
 		}
 	}
 
@@ -3074,7 +3087,7 @@ int FE_mesh::merge(const FE_mesh &source)
 						if (!finalMFT)
 						{
 							display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to clone mesh field template");
-							return 0;
+							return false;
 						}
 					}
 				}
@@ -3099,7 +3112,7 @@ int FE_mesh::merge(const FE_mesh &source)
 					if (!finalMFT)
 					{
 						display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create mesh field template");
-						return 0;
+						return false;
 					}
 				}
 			}
@@ -3109,7 +3122,7 @@ int FE_mesh::merge(const FE_mesh &source)
 				{
 					display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to merge mesh field template");
 					FE_mesh_field_template::deaccess(finalMFT);
-					return 0;
+					return false;
 				}
 			}
 			// set finalMFT for this and all subsequent field components with same sourceMFT and targetMFT
@@ -3132,16 +3145,16 @@ int FE_mesh::merge(const FE_mesh &source)
 			if (!targetMeshFieldData)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create mesh field data");
-				return_code = 0;
+				result = false;
 			}
 		}
-		if (return_code)
+		if (result)
 		{
 			if (finalMFT != fieldComponentData.targetMFT)
 				targetMeshFieldData->setComponentMeshfieldtemplate(fieldComponentData.componentNumber, finalMFT);
 		}
 		FE_mesh_field_template::deaccess(finalMFT);
-		if (!return_code)
+		if (!result)
 			break;
 		FE_mesh_field_data::ComponentBase *sourceComponent = sourceMeshFieldData->components[fieldComponentData.componentNumber];
 		FE_mesh_field_data::ComponentBase *targetComponent = targetMeshFieldData->components[fieldComponentData.componentNumber];
@@ -3149,7 +3162,7 @@ int FE_mesh::merge(const FE_mesh &source)
 		if (!targetComponent->mergeElementValues(sourceComponent))
 		{
 			display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to merge element values");
-			return_code = 0;
+			result = false;
 			break;
 		}
 		if (0 == fieldComponentData.componentNumber)
@@ -3169,13 +3182,13 @@ int FE_mesh::merge(const FE_mesh &source)
 			if (!targetEFTData)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Missing target element field template data");
-				return_code = 0;
+				result = false;
 				break;
 			}
 			if (!targetEFTData->mergeElementVaryingData(*sourceEFTData))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to merge element local-to-global maps");
-				return_code = 0;
+				result = false;
 				break;
 			}
 			// simplest to mark all fields as changed as they may share local nodes and scale factors
@@ -3184,5 +3197,5 @@ int FE_mesh::merge(const FE_mesh &source)
 		}
 	}
 
-	return return_code;
+	return result;
 }

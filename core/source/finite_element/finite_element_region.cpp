@@ -1306,7 +1306,16 @@ int FE_region_merge(struct FE_region *target_fe_region,
 			return_code = 0;
 		}
 
-		// merge nodes (nodesets)
+		// merge meshes part 1: elements (so defined for element:xi node fields)
+		if (return_code)
+		{
+			// merge meshes from lowest to highest dimension so faces are merged before parent
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				if (!target_fe_region->meshes[dim]->mergePart1Elements(*(source_fe_region->meshes[dim])))
+					return_code = 0;
+		}
+
+		// merge nodesets: nodes and fields
 		if (return_code)
 		{
 			for (int n = 0; n < 2; ++n)
@@ -1314,12 +1323,12 @@ int FE_region_merge(struct FE_region *target_fe_region,
 					return_code = 0;
 		}
 
-		// merge elements (meshes)
+		// merge meshes part 2: fields
 		if (return_code)
 		{
 			// merge meshes from lowest to highest dimension so faces are merged before parent
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-				if (!target_fe_region->meshes[dim]->merge(*(source_fe_region->meshes[dim])))
+				if (!target_fe_region->meshes[dim]->mergePart2Fields(*(source_fe_region->meshes[dim])))
 					return_code = 0;
 		}
 

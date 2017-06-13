@@ -1444,7 +1444,10 @@ public:
 
 	bool canMerge(const FE_mesh &source) const;
 
-	int merge(const FE_mesh &source);
+	bool mergePart1Elements(const FE_mesh &source);
+
+	bool mergePart2Fields(const FE_mesh &source);
+
 };
 
 inline DsLabelIdentifier cmzn_element::getIdentifier() const
