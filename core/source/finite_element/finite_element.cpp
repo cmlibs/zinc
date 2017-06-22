@@ -5156,7 +5156,7 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element, FE_value time,
 	const FE_nodeset *nodeset, FE_value*& elementValues)
 {
-	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 			"Only implemented for node parameter, first found on field %s component %d at element %d.",
@@ -5350,7 +5350,7 @@ int global_to_element_map_nodes(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element,
 	DsLabelIndex *&basisNodeIndexes)
 {
-	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
 			"Only implemented for node parameter, first found on field %s component %d at element %d.",
@@ -6849,6 +6849,7 @@ FE_mesh_field_data *FE_field_getMeshFieldData(struct FE_field *field,
 {
 	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
 		return field->meshFieldData[mesh->getDimension() - 1];
+	display_message(ERROR_MESSAGE, "FE_field_getMeshFieldData.  Invalid argument(s)");
 	return 0;
 }
 
@@ -15064,7 +15065,7 @@ int calculate_FE_element_field_values(cmzn_element *element,
 						return_code = 0;
 						break;
 					}
-					if ((componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+					if ((componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 						&& (0 != componentEFT->getLegacyGridNumberInXi()))
 					{
 						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
@@ -15168,9 +15169,9 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							return_code = 0;
 							break;
 						}
-						switch (componentEFT->getElementParameterMappingMode())
+						switch (componentEFT->getParameterMappingMode())
 						{
-						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 						{
 							if (0 == (*number_of_values_address = global_to_element_map_values(field, component_number,
 								componentEFT, fieldElement, time, nodeset, *values_address)))
@@ -15181,7 +15182,7 @@ int calculate_FE_element_field_values(cmzn_element *element,
 								return_code = 0;
 							}
 						} break;
-						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
 						{
 							// element-based mapping stores the parameters ready for use in the element
 							if (field->value_type != FE_VALUE_VALUE)
@@ -15204,7 +15205,7 @@ int calculate_FE_element_field_values(cmzn_element *element,
 							memcpy(*values_address, values, basisFunctionCount*sizeof(FE_value));
 							*number_of_values_address = basisFunctionCount;
 						} break;
-						case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 						{
 							if (field->value_type != FE_VALUE_VALUE)
 							{
@@ -15982,7 +15983,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
 	{
 		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
-		if (componentEFT->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+		if (componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 		{
 			const int number_of_element_values = global_to_element_map_nodes(field, component_number,
 				componentEFT, fieldElement, element_values);
@@ -18257,7 +18258,7 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 		const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
 		if (!eft)
 			return true; // field not defined on element
-		if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 			continue;
 		if (FE_basis_get_number_of_nodes(eft->getBasis()) != basisNodeCount)
 			continue; // some cases not implemented e.g. Hermite * quadratic Lagrange

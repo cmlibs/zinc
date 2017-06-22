@@ -689,3 +689,401 @@ TEST(FieldIO, hemisphere)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_hemisphere_model(testFm1);
 }
+
+namespace {
+
+const double PI = 3.14159265358979323846;
+
+void createHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int elementsUpCount, int elementsTubeCount)
+{
+	int result;
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, result = coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, result = coordinates.setComponentName(3, "z"));
+
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, result = nodetemplate.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, result = nodetemplate.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_OK, result = nodetemplate.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS1, 1));
+	EXPECT_EQ(RESULT_OK, result = nodetemplate.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS2, 1));
+	EXPECT_EQ(RESULT_OK, result = nodetemplate.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D2_DS1DS2, 1));
+
+	// can't use cross derivative at collapsed apex so use different node template there
+	Nodetemplate nodetemplateApex = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplateApex.isValid());
+	EXPECT_EQ(RESULT_OK, result = nodetemplateApex.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, result = nodetemplateApex.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_OK, result = nodetemplateApex.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS1, 1));
+	EXPECT_EQ(RESULT_OK, result = nodetemplateApex.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS2, 1));
+
+	Elementbasis bicubicHermiteBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE);
+	EXPECT_TRUE(bicubicHermiteBasis.isValid());
+
+	Mesh mesh = fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+
+	// main element field template for regular elements away from apex is the default bicubic Hermite mapping
+	Elementfieldtemplate eft = mesh.createElementfieldtemplate(bicubicHermiteBasis);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+
+	// apex element field template uses local general scale factors to use proportions of global derivatives
+	// in a general linear map to give derivatives w.r.t. xi 2.
+	// Note xi1 is around the apex, xi2 is away from the apex.
+	// Note the eft needs to be edited around the apex as the local scale factor versions change.
+	// parameters for basis function multiplying derivative w.r.t. xi1 and cross derivative
+	// are zero at the apex, achieved by using 0 terms.
+	Elementfieldtemplate eftApex = mesh.createElementfieldtemplate(bicubicHermiteBasis);
+	EXPECT_TRUE(eftApex.isValid());
+	EXPECT_EQ(RESULT_OK, eftApex.setNumberOfLocalNodes(3));
+	EXPECT_EQ(3, eftApex.getNumberOfLocalNodes());
+	EXPECT_EQ(RESULT_OK, eftApex.setNumberOfLocalScaleFactors(4));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(1, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(2, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(3, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(4, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
+	const int indexes[] = { 0, 1, 2, 3, 4 };
+	// set parameter mappings for each function and term (two terms summed for first derivatives at apex)
+	// the first two nodes as understood by the basis are collapsed into one
+	// basis node 1 -> local node 1
+	EXPECT_EQ(1, eftApex.getFunctionNumberOfTerms(1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(1, /*term*/1, /*localNode*/1, Node::VALUE_LABEL_VALUE, /*version*/1));
+	// 0 terms = zero parameter for d/dxi1 basis
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(2, 0));
+	// 2 terms for d/dxi2 via general linear map
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(3, 2));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(3, /*term*/1, /*localNode*/1, Node::VALUE_LABEL_D_DS1, /*version*/1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermScaling(3, /*term1*/1, /*indexesCount*/1, indexes + 1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(3, /*term*/2, /*localNode*/1, Node::VALUE_LABEL_D_DS2, /*version*/1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermScaling(3, /*term1*/2, /*count*/1, indexes + 2));
+	// 0 terms = zero parameter for cross derivative
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(4, 0));
+	// basis node 2 -> local node 1
+	EXPECT_EQ(1, eftApex.getFunctionNumberOfTerms(5));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(5, /*term*/1, /*localNode*/1, Node::VALUE_LABEL_VALUE, /*version*/1));
+	// 0 terms = zero parameter for d/dxi1 basis
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(6, 0));
+	// 2 terms for d/dxi2 via general linear map
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(7, 2));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(7, /*term*/1, /*localNode*/1, Node::VALUE_LABEL_D_DS1, /*version*/1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermScaling(7, /*term1*/1, /*indexesCount*/1, indexes + 3));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(7, /*term*/2, /*localNode*/1, Node::VALUE_LABEL_D_DS2, /*version*/1));
+	EXPECT_EQ(RESULT_OK, eftApex.setTermScaling(7, /*term1*/2, /*count*/1, indexes + 4));
+	// 0 terms = zero parameter for cross derivative
+	EXPECT_EQ(RESULT_OK, eftApex.setFunctionNumberOfTerms(8, 0));
+	// basis nodes 3, 4  -> local nodes 2, 3
+	for (int n = 2; n < 4; ++n)
+	{
+		const int baseFunction = n*4;
+		for (int d = 1; d <= 4; ++d)
+		{
+			// rely on derivatives being in fixed order:
+			Node::ValueLabel valueLabel = static_cast<Node::ValueLabel>(Node::VALUE_LABEL_VALUE + d - 1);
+			EXPECT_EQ(1, eftApex.getFunctionNumberOfTerms(baseFunction + d));
+			EXPECT_EQ(RESULT_OK, eftApex.setTermNodeParameter(baseFunction + d, /*term*/1, /*localNode*/n,
+				valueLabel, /*version*/1));
+		}
+	}
+
+	Elementtemplate elementtemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	Elementtemplate elementtemplateApex = mesh.createElementtemplate();
+	EXPECT_TRUE(elementtemplateApex.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplateApex.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(RESULT_OK, elementtemplateApex.defineField(coordinates, -1, eftApex));
+
+	// create model
+	fm.beginChange();
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	// create nodes
+	int nodeIdentifier = 1;
+	const double radiansPerElementAround = 2.0*PI/elementsAroundCount;
+	const double radiansPerElementUp = 0.5*PI/elementsUpCount;
+
+	// create apex node
+	const double zero3[3] = { 0.0, 0.0, 0.0 };
+	const double dx_ds1_apex[3] = { radiansPerElementUp, 0.0, 0.0 };
+	const double dx_ds2_apex[3] = { 0.0, radiansPerElementUp, 0.0 };
+	Node node = nodes.createNode(nodeIdentifier++, nodetemplateApex);
+	EXPECT_TRUE(node.isValid());
+	EXPECT_EQ(RESULT_OK, cache.setNode(node));
+	EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, zero3));
+	EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 1, 3, dx_ds1_apex));
+	EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS2, 1, 3, dx_ds2_apex));
+
+	// create hemisphere nodes
+	for (int nu = 1; nu <= elementsUpCount; ++nu)
+	{
+		const double radiansUp = nu*radiansPerElementUp;
+		const double cosRadiansUp = cos(radiansUp);
+		const double sinRadiansUp = sin(radiansUp);
+		for (int na = 0; na < elementsAroundCount; ++na)
+		{
+			const double radiansAround = na*radiansPerElementAround;
+			const double cosRadiansAround = cos(radiansAround);
+			const double sinRadiansAround = sin(radiansAround);
+			const double x[3] = { cosRadiansAround*sinRadiansUp, sinRadiansAround*sinRadiansUp, 1.0 - cosRadiansUp };
+			const double dx_ds1[3] = {
+				-sinRadiansAround*sinRadiansUp*radiansPerElementAround,
+				 cosRadiansAround*sinRadiansUp*radiansPerElementAround,
+				 0.0 };
+			const double dx_ds2[3] = {
+				 cosRadiansAround*cosRadiansUp*radiansPerElementUp,
+				 sinRadiansAround*cosRadiansUp*radiansPerElementUp,
+				 sinRadiansUp*radiansPerElementUp };
+			node = nodes.createNode(nodeIdentifier++, nodetemplate);
+			EXPECT_TRUE(node.isValid());
+			EXPECT_EQ(RESULT_OK, cache.setNode(node));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, x));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, dx_ds1));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS2, /*version*/1, 3, dx_ds2));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D2_DS1DS2, /*version*/1, 3, zero3));
+ 		}
+	}
+
+	// create tube nodes
+	for (int nt = 1; nt <= elementsTubeCount; ++nt)
+	{
+		for (int na = 0; na < elementsAroundCount; ++na)
+		{
+			const double radiansAround = na*radiansPerElementAround;
+			const double cosRadiansAround = cos(radiansAround);
+			const double sinRadiansAround = sin(radiansAround);
+			const double x[3] = { cosRadiansAround, sinRadiansAround, 1.0 + nt*radiansPerElementUp };
+			const double dx_ds1[3] = {-sinRadiansAround*radiansPerElementAround, cosRadiansAround*radiansPerElementAround, 0.0 };
+			const double dx_ds2[3] = { 0.0, 0.0, radiansPerElementUp };
+			node = nodes.createNode(nodeIdentifier++, nodetemplate);
+			EXPECT_TRUE(node.isValid());
+			EXPECT_EQ(RESULT_OK, cache.setNode(node));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, x));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, dx_ds1));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS2, /*version*/1, 3, dx_ds2));
+			EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_D2_DS1DS2, /*version*/1, 3, zero3));
+		}
+	}
+
+	// create elements
+	int elementIdentifier = 1;
+
+	// create first row of elements at apex
+	for (int na = 0; na < elementsAroundCount; ++na)
+	{
+		eftApex.setScaleFactorVersion(1, na*2 + 1);
+		eftApex.setScaleFactorVersion(2, na*2 + 2);
+		eftApex.setScaleFactorVersion(3, ((na + 1) < elementsAroundCount) ? na*2 + 3 : 1);
+		eftApex.setScaleFactorVersion(4, ((na + 1) < elementsAroundCount) ? na*2 + 4 : 2);
+		// redefine field in template for changes to eftApex:
+		EXPECT_EQ(RESULT_OK, elementtemplateApex.defineField(coordinates, -1, eftApex));
+		Element element = mesh.createElement(elementIdentifier++, elementtemplateApex);
+		const int nodeIdentifiers[3] = { 1, na + 2, ((na + 1) < elementsAroundCount) ? na + 3 : 2 };
+		EXPECT_EQ(RESULT_OK, result = element.setNodesByIdentifier(eftApex, 3, nodeIdentifiers));
+		// set general linear map coefficients
+		const double radiansAround = na*radiansPerElementAround;
+		const double cosRadiansAround = cos(radiansAround);
+		const double sinRadiansAround = sin(radiansAround);
+		// try to avoid numerical differences between first and last coefficients
+		const double cosRadiansAroundNext = ((na + 1) < elementsAroundCount) ? cos(radiansAround + radiansPerElementAround) : cos(0);
+		const double sinRadiansAroundNext = ((na + 1) < elementsAroundCount) ? sin(radiansAround + radiansPerElementAround) : sin(0);
+		const double scalefactors[4] = { cosRadiansAround, sinRadiansAround, cosRadiansAroundNext, sinRadiansAroundNext };
+		EXPECT_EQ(RESULT_OK, result = element.setScaleFactors(eftApex, 4, scalefactors));
+	}
+
+	// create remaining rows on hemisphere and tube
+	const int elementsRemainingRowsCount = elementsUpCount + elementsTubeCount - 1;
+	for (int nr = 0; nr < elementsRemainingRowsCount; ++nr)
+	{
+		for (int na = 0; na < elementsAroundCount; ++na)
+		{
+			const int baseNodeIdentifier = 2 + elementsAroundCount*nr + na;
+			const int nodeIdentifierNextOffset = ((na + 1) < elementsAroundCount) ? 1 : 1 - elementsAroundCount;
+			Element element = mesh.createElement(elementIdentifier++, elementtemplate);
+			const int nodeIdentifiers[4] = { baseNodeIdentifier, baseNodeIdentifier + nodeIdentifierNextOffset,
+				baseNodeIdentifier + elementsAroundCount, baseNodeIdentifier + elementsAroundCount + nodeIdentifierNextOffset };
+			EXPECT_EQ(RESULT_OK, result = element.setNodesByIdentifier(eft, 4, nodeIdentifiers));
+		}
+	}
+	fm.endChange();
+}
+
+void checkHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int elementsUpCount, int elementsTubeCount)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	EXPECT_EQ(RESULT_OK, fm.defineAllFaces());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(elementsAroundCount*(elementsUpCount + elementsTubeCount), mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(2*elementsAroundCount*(elementsUpCount + elementsTubeCount), mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(elementsAroundCount*(elementsUpCount + elementsTubeCount) + 1, nodes.getSize());
+
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral area = fm.createFieldMeshIntegral(one, coordinates, mesh2d);
+	EXPECT_TRUE(area.isValid());
+	const int numGaussPoints = 4;
+	EXPECT_EQ(RESULT_OK, result = area.setNumbersOfPoints(1, &numGaussPoints));
+
+	// Surface area of a sphere is 4*PI*r^2, hemisphere is half. Add tube
+	const double radiansPerElementUp = 0.5*PI/elementsUpCount;
+	const double exactArea = 2*PI*(1.0 + radiansPerElementUp);
+
+	Fieldcache cache = fm.createFieldcache();
+	double areaOut;
+	EXPECT_EQ(RESULT_OK, result = area.evaluateReal(cache, 1, &areaOut));
+	EXPECT_NEAR(exactArea, areaOut, 0.03);
+	// test approximated value for one refinement
+	if ((elementsAroundCount == 6) && (elementsUpCount == 3) && (elementsTubeCount == 1))
+	{
+		EXPECT_NEAR(9.5434143995913274, areaOut, 1.0E-5);
+	}
+
+	// check element field template definition
+	Element element1 = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Elementfieldtemplate eft = element1.getElementfieldtemplate(coordinates, /*all_component*/-1);
+	EXPECT_TRUE(eft.isValid());
+	Elementbasis elementbasis = eft.getElementbasis();
+	EXPECT_TRUE(elementbasis.isValid());
+	EXPECT_EQ(Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE, elementbasis.getFunctionType(/*all_xi*/-1));
+	EXPECT_EQ(3, eft.getNumberOfLocalNodes());
+	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
+#ifdef FUTURE_CODE
+	// Can't test this after re-load as not yet saved
+	for (int i = 1; i <= 4; ++i)
+	{
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(i));
+		EXPECT_EQ(i, eft.getScaleFactorVersion(i));
+	}
+#endif // FUTURE_CODE
+
+	EXPECT_EQ(16, eft.getNumberOfFunctions());
+	for (int f = 1; f <= 16; ++f)
+	{
+		const int termCount = eft.getFunctionNumberOfTerms(f);
+		if ((f == 2) || (f == 4) || (f == 6) || (f == 8))
+		{
+			EXPECT_EQ(0, termCount);
+		}
+		else if ((f == 1) || (f == 5) || (f > 8))
+		{
+			EXPECT_EQ(1, termCount);
+			const int expectedLocalNodeIndex = (f <= 8) ? 1 : ((f <= 12) ? 2 : 3);
+			EXPECT_EQ(expectedLocalNodeIndex, eft.getTermLocalNodeIndex(f, 1));
+			const int derivativeCase = (f - 1) % 4;
+			Node::ValueLabel expectedValueLabel =
+				(derivativeCase == 0) ? Node::VALUE_LABEL_VALUE :
+				(derivativeCase == 1) ? Node::VALUE_LABEL_D_DS1 :
+				(derivativeCase == 2) ? Node::VALUE_LABEL_D_DS2 : Node::VALUE_LABEL_D2_DS1DS2;
+			EXPECT_EQ(expectedValueLabel, eft.getTermNodeValueLabel(f, 1));
+			EXPECT_EQ(1, eft.getTermNodeVersion(f, 1));
+		}
+		else // ((f == 3) || (f == 7))
+		{
+			EXPECT_EQ(2, termCount);
+			EXPECT_EQ(1, eft.getTermLocalNodeIndex(f, 1));
+			EXPECT_EQ(1, eft.getTermLocalNodeIndex(f, 2));
+			EXPECT_EQ(Node::VALUE_LABEL_D_DS1, eft.getTermNodeValueLabel(f, 1));
+			EXPECT_EQ(Node::VALUE_LABEL_D_DS2, eft.getTermNodeValueLabel(f, 2));
+			EXPECT_EQ(1, eft.getTermNodeVersion(f, 1));
+			EXPECT_EQ(1, eft.getTermNodeVersion(f, 2));
+			int scaleFactorIndex1, scaleFactorIndex2;
+			EXPECT_EQ(RESULT_OK, eft.getTermScaling(f, 1, 1, &scaleFactorIndex1));
+			EXPECT_EQ(RESULT_OK, eft.getTermScaling(f, 2, 1, &scaleFactorIndex2));
+			EXPECT_EQ((f == 3) ? 1 : 3, scaleFactorIndex1);
+			EXPECT_EQ((f == 3) ? 2 : 4, scaleFactorIndex2);
+		}
+	}
+
+	// test local nodes API for one element
+	Node node1 = nodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodes.findNodeByIdentifier(2);
+	EXPECT_TRUE(node2.isValid());
+	Node node3 = nodes.findNodeByIdentifier(3);
+	EXPECT_TRUE(node3.isValid());
+	Node node4 = nodes.findNodeByIdentifier(4);
+	EXPECT_TRUE(node4.isValid());
+	Node elementNode1 = element1.getNode(eft, 1);
+	EXPECT_EQ(node1, elementNode1);
+	Node elementNode2 = element1.getNode(eft, 2);
+	EXPECT_EQ(node2, elementNode2);
+	Node elementNode3 = element1.getNode(eft, 3);
+	EXPECT_EQ(node3, elementNode3);
+	// test setting node and restore it afterwards
+	EXPECT_EQ(RESULT_OK, element1.setNode(eft, 3, node4));
+	elementNode3 = element1.getNode(eft, 3);
+	EXPECT_EQ(node4, elementNode3);
+	EXPECT_EQ(RESULT_OK, element1.setNode(eft, 3, node3));
+	elementNode3 = element1.getNode(eft, 3);
+	EXPECT_EQ(node3, elementNode3);
+
+	// test scale factors for one element (only valid for one refinement)
+	if ((elementsAroundCount == 6) && (elementsUpCount == 3) && (elementsTubeCount == 1))
+	{
+		double scaleFactorsOrig[4];
+		const double scaleFactorsExpected[4] = { 1.0, 0.0, 0.5, 0.8660254037844386 };
+		EXPECT_EQ(RESULT_OK, element1.getScaleFactors(eft, 4, scaleFactorsOrig));
+		for (int i = 0; i < 4; ++i)
+			EXPECT_NEAR(scaleFactorsExpected[i], scaleFactorsOrig[i], 1.0E-13);
+		EXPECT_FALSE(element1.hasScaleFactor(eft, 0));
+		EXPECT_DOUBLE_EQ(0.0, element1.getScaleFactor(eft, 0));
+		for (int i = 1; i <= 4; ++i)
+		{
+			EXPECT_TRUE(element1.hasScaleFactor(eft, i));
+			EXPECT_DOUBLE_EQ(scaleFactorsOrig[i - 1], element1.getScaleFactor(eft, i));
+			const double sf = i*1.25;
+			EXPECT_EQ(RESULT_OK, element1.setScaleFactor(eft, i, sf));
+			const double sfOut = element1.getScaleFactor(eft, i);
+			EXPECT_DOUBLE_EQ(sf, sfOut);
+		}
+		EXPECT_FALSE(element1.hasScaleFactor(eft, 5));
+		EXPECT_DOUBLE_EQ(0.0, element1.getScaleFactor(eft, 5));
+		EXPECT_EQ(RESULT_OK, element1.setScaleFactors(eft, 4, scaleFactorsOrig));
+	}
+	else
+	{
+		EXPECT_TRUE(false); // to make sure we are testing the above
+	}
+}
+
+}
+
+/* Test creating a hemisphere with general linear mapped apex with connected tube */
+TEST(FieldIO, generateHemisphereTube2d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	const int elementsAroundCount = 6;
+	const int elementsUpCount = 3;
+	const int elementsTubeCount = 1;
+	createHemisphereTube2d(zinc.fm, elementsAroundCount, elementsUpCount, elementsTubeCount);
+	checkHemisphereTube2d(zinc.fm, elementsAroundCount, elementsUpCount, elementsTubeCount);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkHemisphereTube2d(testFm1, elementsAroundCount, elementsUpCount, elementsTubeCount);
+}

@@ -459,12 +459,13 @@ ZINC_API int cmzn_elementbasis_destroy(cmzn_elementbasis_id *element_basis_addre
 ZINC_API int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis);
 
 /**
- * Gets the basis function type for a component of the basis.
+ * Gets the basis function type for a chart component of the basis.
  *
  * @param element_basis  Element basis to query.
  * @param chart_component  The chart component to get the function for from 1 to
- * dimension.
- * @return  The basis function type.
+ * dimension, or -1 to request function type if homogeneous for all components.
+ * @return  The basis function type, or INVALID type if failed, including if
+ * chart_component -1 is used and basis is not homogeneous.
  */
 ZINC_API enum cmzn_elementbasis_function_type cmzn_elementbasis_get_function_type(
 	cmzn_elementbasis_id element_basis, int chart_component);
@@ -474,9 +475,9 @@ ZINC_API enum cmzn_elementbasis_function_type cmzn_elementbasis_get_function_typ
  *
  * @param element_basis  Element basis to modify.
  * @param chart_component  The chart component to set the function for from 1 to
- * dimension.
- * @param basis_type  The basis type to use on the chosen chart component.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * dimension, or -1 to set all components to use the same function type.
+ * @param function_type  The basis function type to set for the component.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_elementbasis_set_function_type(cmzn_elementbasis_id element_basis,
 	int chart_component, enum cmzn_elementbasis_function_type function_type);
@@ -565,10 +566,21 @@ ZINC_API cmzn_elementfieldtemplate_id cmzn_elementfieldtemplate_access(
  *
  * @param elementfieldtemplate_address  Address of handle to element field
  * template to destroy.
- * @return Result OK on success, otherwise an error code.
+ * @return  Result OK on success, otherwise an error code.
  */
 ZINC_API int cmzn_elementfieldtemplate_destroy(
 	cmzn_elementfieldtemplate_id *elementfieldtemplate_address);
+
+/**
+ * Get the element basis used by this element field template.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  Handle to element basis, or NULL/invalid handle if failed.
+ 
+ The parameter mapping mode or INVALID on error.
+ */
+ZINC_API cmzn_elementbasis_id cmzn_elementfieldtemplate_get_elementbasis(
+	cmzn_elementfieldtemplate_id elementfieldtemplate);
 
 /**
  * Get the parameter mapping mode used for all parameters in the template.
@@ -576,8 +588,8 @@ ZINC_API int cmzn_elementfieldtemplate_destroy(
  * @param elementfieldtemplate  Element field template to query.
  * @return  The parameter mapping mode or INVALID on error.
  */
-ZINC_API enum cmzn_element_parameter_mapping_mode
-	cmzn_elementfieldtemplate_get_element_parameter_mapping_mode(
+ZINC_API enum cmzn_elementfieldtemplate_parameter_mapping_mode
+	cmzn_elementfieldtemplate_get_parameter_mapping_mode(
 		cmzn_elementfieldtemplate_id elementfieldtemplate);
 
 /**
@@ -592,9 +604,9 @@ ZINC_API enum cmzn_element_parameter_mapping_mode
  * @param mode  The parameter mapping mode to set.
  * @return  Result OK on success, otherwise an error code.
  */
-ZINC_API int cmzn_elementfieldtemplate_set_element_parameter_mapping_mode(
+ZINC_API int cmzn_elementfieldtemplate_set_parameter_mapping_mode(
 	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	enum cmzn_element_parameter_mapping_mode mode);
+	enum cmzn_elementfieldtemplate_parameter_mapping_mode mode);
 
 /**
  * Get the type of scale factor required for the local scale factor index.
@@ -606,8 +618,8 @@ ZINC_API int cmzn_elementfieldtemplate_set_element_parameter_mapping_mode(
  * scale factors.
  * @return  The element scale factor type, or INVALID on error.
  */
-ZINC_API enum cmzn_element_scale_factor_type
-	cmzn_elementfieldtemplate_get_element_scale_factor_type(
+ZINC_API enum cmzn_elementfieldtemplate_scale_factor_type
+	cmzn_elementfieldtemplate_get_scale_factor_type(
 		cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex);
 
 /**
@@ -624,9 +636,9 @@ ZINC_API enum cmzn_element_scale_factor_type
  * @param type  The element scale factor type.
  * @return Result OK on success, otherwise an error code.
  */
-ZINC_API int cmzn_elementfieldtemplate_set_element_scale_factor_type(
+ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_type(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
-	enum cmzn_element_scale_factor_type type);
+	enum cmzn_elementfieldtemplate_scale_factor_type type);
 
 /**
  * Get the version of scale factor required for the local scale factor index.
@@ -639,7 +651,7 @@ ZINC_API int cmzn_elementfieldtemplate_set_element_scale_factor_type(
  * @return  The element scale factor version number >= 1, or 0 if invalid or
  * error.
  */
-ZINC_API int cmzn_elementfieldtemplate_get_element_scale_factor_version(
+ZINC_API int cmzn_elementfieldtemplate_get_scale_factor_version(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex);
 
 /**
@@ -657,7 +669,7 @@ ZINC_API int cmzn_elementfieldtemplate_get_element_scale_factor_version(
  * @param version  The version number >= 1.
  * @return Result OK on success, otherwise an error code.
  */
-ZINC_API int cmzn_elementfieldtemplate_set_element_scale_factor_version(
+ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_version(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
 	int version);
 
@@ -1100,6 +1112,22 @@ ZINC_API int cmzn_element_destroy(cmzn_element_id *element_address);
 ZINC_API int cmzn_element_get_dimension(cmzn_element_id element);
 
 /**
+ * Gets the element field template defining field component on element, or
+ * all field components for special homogeneous case with component -1.
+ *
+ * @param element  The element to query.
+ * @param field  The field to query. May be finite element type only.
+ * @param componentNumber  The component to query from 1 to number of
+ * components, or -1 to request element field template used by all components
+ * which fails if not homogeous i.e. if components have different templates.
+ * @return  Handle to element field template, or NULL/invalid handle if field
+ * not defined or on failure including special component -1 is used and field
+ * is not homogeneous over components in element.
+ */
+ZINC_API cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
+	cmzn_element_id element, cmzn_field_id field, int componentNumber);
+
+/**
  * Returns the non-negative integer uniquely identifying the element in its
  * mesh.
  *
@@ -1127,6 +1155,114 @@ ZINC_API int cmzn_element_set_identifier(cmzn_element_id element, int identifier
  * @return  Handle to the owning mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element);
+
+/**
+ * Gets a local node used by element field template in element.
+ * 
+ * @param element  The element to query.
+ * @param eft  The element field template to get the node for.
+ * @param localNodeIndex  The local index of the node to get, starting at 1.
+ * @return  Handle to valid node, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_node_id cmzn_element_get_node(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int localNodeIndex);
+
+/**
+ * Sets a local node used by element field template in element.
+ * 
+ * @param element  The element to modify.
+ * @param eft  The element field template to set the node for.
+ * @param localNodeIndex  The local index of the node to set, starting at 1.
+ * @param node  The global node to set.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_element_set_node(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int localNodeIndex, cmzn_node_id node);
+
+/**
+ * Sets all the local nodes used by the given element field template in this
+ * element by their identifiers. The nodes are found by identifier in the
+ * nodeset for the elements' owning mesh. It is an error if any node with a
+ * valid identifier is not found.
+ * 
+ * @param element  The element to modify.
+ * @param eft  The element field template to set nodes for.
+ * @param identifiersCount  The size of the identifiers array. Must equal the
+ * number of nodes in the element field template.
+ * @param identifiersIn  The array of node identifiers to set.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int identifiersCount,
+	const int *identifiersIn);
+
+/**
+ * Gets a scale factor used by element field template in element.
+ * @see cmzn_element_has_scale_factor
+ * 
+ * @param element  The element to query.
+ * @param eft  The element field template to get the scale factor for.
+ * @param scaleFactorIndex  The local index of the scale factor to get,
+ * starting at 1.
+ * @return  Scale factor value which can be any value including zero. Returns
+ * 0.0 on failure with an error message, can query if element has scale factor
+ * in this case.
+ */
+ZINC_API double cmzn_element_get_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex);
+
+/**
+ * Queries whether a scale factors exists for element field template in element.
+ * 
+ * @param element  The element to query.
+ * @param eft  The element field template to query.
+ * @param scaleFactorIndex  The local index of the scale factor to query,
+ * starting at 1.
+ * @return  True if scale factor exists, otherwise false.
+ */
+ZINC_API bool cmzn_element_has_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex);
+
+/**
+ * Sets a scale factor used by element field template in element.
+ * 
+ * @param element  The element to modify.
+ * @param eft  The element field template to set the scale factor for.
+ * @param scaleFactorIndex  The local index of the scale factor to set,
+ * starting at 1.
+ * @param value  The scale factor value to set.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_element_set_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex, double value);
+
+/**
+ * Gets all scale factors used by the given element field template in this
+ * element.
+ * 
+ * @param element  The element to query.
+ * @param eft  The element field template to get scale factors for.
+ * @param valuesCount  The size of the values array. Must equal the number of
+ * scale factors in the element field template.
+ * @param valuesOut  Array to fill with the scale factors.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_element_get_scale_factors(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int valuesCount, double *valuesOut);
+
+/**
+ * Sets all scale factors used by the given element field template in this
+ * element.
+ * 
+ * @param element  The element to modify.
+ * @param eft  The element field template to set scale factors for.
+ * @param valuesCount  The size of the values array. Must equal the number of
+ * scale factors in the element field template.
+ * @param valuesIn  The array of scale factors to set.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_element_set_scale_factors(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int valuesCount, const double *valuesIn);
 
 /**
  * Gets the shape type of the element. Note that legacy meshes may return an

@@ -1367,7 +1367,7 @@ FmlObjectHandle FieldMLWriter::writeElementfieldtemplate(const FE_element_field_
 		return FML_INVALID_OBJECT_HANDLE;
 	}
 
-	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		display_message(INFORMATION_MESSAGE, "FieldML Writer:  Only node-based element field templates are implemented");
 		return FML_INVALID_OBJECT_HANDLE;

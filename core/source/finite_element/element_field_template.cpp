@@ -78,7 +78,7 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	numberOfFunctions(FE_basis_get_number_of_functions(basisIn)),
 	locked(false),
 	indexInMesh(-1),
-	mappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID),
+	mappingMode(CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID),
 	termCounts(new int[this->numberOfFunctions]),
 	totalTermCount(0),
 	termOffsets(new int[this->numberOfFunctions]),
@@ -97,7 +97,7 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	legacyModifyThetaMode(FE_BASIS_MODIFY_THETA_MODE_INVALID),
 	access_count(1)
 {
-	this->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE);
+	this->setParameterMappingMode(CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE);
 	// FE_mesh maintains a list of these to clear mesh pointer when mesh is destroyed
 	this->mesh->addElementfieldtemplate(this);
 }
@@ -303,7 +303,7 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 		|| (this->mappingMode != source.mappingMode))
 		return false;
 	// Field mapping can only use a constant basis and uses no other parameters
-	if (this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD)
+	if (this->mappingMode != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD)
 	{
 		// Note: no need to compare offset arrays since they will match if counts match
 		if ((this->totalTermCount != source.totalTermCount)
@@ -312,14 +312,14 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 			|| (this->legacyModifyThetaMode != source.legacyModifyThetaMode)
 			|| (0 != memcmp(this->termCounts, source.termCounts, this->numberOfFunctions*sizeof(int))))
 			return false;
-		if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+		if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 		{
 			if ((0 != memcmp(this->localNodeIndexes, source.localNodeIndexes, this->totalTermCount*sizeof(int)))
 				|| (0 != memcmp(this->nodeValueLabels, source.nodeValueLabels, this->totalTermCount*sizeof(cmzn_node_value_label)))
 				|| (0 != memcmp(this->nodeVersions, source.nodeVersions, this->totalTermCount*sizeof(int))))
 				return false;
 		}
-		else if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+		else if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 		{
 			if ((this->legacyGridNumberInXi) && (source.legacyGridNumberInXi))
 			{
@@ -336,7 +336,7 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 		if (0 < this->numberOfLocalScaleFactors)
 		{
 			if ((this->totalLocalScaleFactorIndexes != source.totalLocalScaleFactorIndexes)
-				|| (0 != memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_element_scale_factor_type)))
+				|| (0 != memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_elementfieldtemplate_scale_factor_type)))
 				|| (0 != memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
 				|| (0 != memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
 				|| (0 != memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int))))
@@ -346,14 +346,14 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 	return true;
 }
 
-int FE_element_field_template::setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn)
+int FE_element_field_template::setParameterMappingMode(cmzn_elementfieldtemplate_parameter_mapping_mode modeIn)
 {
 	if (this->locked ||
-		(!((modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
-		|| (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
-		|| (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD))))
+		(!((modeIn == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+		|| (modeIn == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
+		|| (modeIn == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD))))
 		return CMZN_ERROR_ARGUMENT;
-	if (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD)
+	if (modeIn == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD)
 	{
 		// can only be constant basis
 		for (int i = 0; i < this->dimension; ++i)
@@ -362,7 +362,7 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 			FE_basis_get_xi_basis_type(this->basis, i, &basisType);
 			if (basisType != FE_BASIS_CONSTANT)
 			{
-				display_message(ERROR_MESSAGE, "Elementfieldtemplate setElementParameterMappingMode.  "
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate setParameterMappingMode.  "
 					"PARAMETER_MAPPING_MODE_FIELD only works with constant basis");
 				return CMZN_ERROR_ARGUMENT;
 			}
@@ -381,7 +381,7 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 	}
 	this->totalTermCount = this->numberOfFunctions;
 	this->mappingMode = modeIn;
-	if (modeIn == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (modeIn == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		// reset to default unscaled simple node map according to basis
 		this->numberOfLocalNodes = FE_basis_get_number_of_nodes(this->basis);
@@ -407,7 +407,7 @@ int FE_element_field_template::setElementParameterMappingMode(cmzn_element_param
 int FE_element_field_template::getHighestLocalNodeIndex() const
 {
 	int highestNodeIndex = -1;
-	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		for (int tt = 0; tt < this->totalTermCount; ++tt)
 		{
@@ -429,7 +429,7 @@ int FE_element_field_template::getHighestLocalNodeIndex() const
 int FE_element_field_template::setLegacyGridNumberInXi(const int *numberInXiIn)
 {
 	if (this->locked
-		|| (this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT))
+		|| (this->mappingMode != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT))
 		return CMZN_ERROR_ARGUMENT;
 	if (!numberInXiIn)
 	{
@@ -468,7 +468,7 @@ int FE_element_field_template::setLegacyModifyThetaMode(FE_basis_modify_theta_mo
 {
 	if (this->locked
 		|| ((modifyThetaModeIn != FE_BASIS_MODIFY_THETA_MODE_INVALID) &&
-			(this->mappingMode != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)))
+			(this->mappingMode != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)))
 		return CMZN_ERROR_ARGUMENT;
 	this->legacyModifyThetaMode = modifyThetaModeIn;
 	return CMZN_OK;
@@ -476,7 +476,7 @@ int FE_element_field_template::setLegacyModifyThetaMode(FE_basis_modify_theta_mo
 
 int FE_element_field_template::getNumberOfElementDOFs() const
 {
-	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+	if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 	{
 		if (this->legacyGridNumberInXi)
 		{
@@ -495,7 +495,7 @@ int FE_element_field_template::getNumberOfElementDOFs() const
 int FE_element_field_template::setNumberOfLocalNodes(int number)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (number < 1))
 		return CMZN_ERROR_ARGUMENT;
 	this->numberOfLocalNodes = number;
@@ -505,7 +505,7 @@ int FE_element_field_template::setNumberOfLocalNodes(int number)
 int FE_element_field_template::setFunctionNumberOfTerms(int functionNumber, int newNumberOfTerms)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (functionNumber < 0) || (functionNumber >= this->numberOfFunctions)
 		|| (newNumberOfTerms < 0))
 		return CMZN_ERROR_ARGUMENT;
@@ -561,7 +561,7 @@ int FE_element_field_template::setFunctionNumberOfTerms(int functionNumber, int 
 
 int FE_element_field_template::getTermLocalNodeIndex(int functionNumber, int term) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
 		&& this->validTerm(functionNumber, term))
 		return this->localNodeIndexes[this->termOffsets[functionNumber] + term];
 	return -1;
@@ -569,7 +569,7 @@ int FE_element_field_template::getTermLocalNodeIndex(int functionNumber, int ter
 
 cmzn_node_value_label FE_element_field_template::getTermNodeValueLabel(int functionNumber, int term) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
 		&& this->validTerm(functionNumber, term))
 		return this->nodeValueLabels[this->termOffsets[functionNumber] + term];
 	return CMZN_NODE_VALUE_LABEL_INVALID;
@@ -577,7 +577,7 @@ cmzn_node_value_label FE_element_field_template::getTermNodeValueLabel(int funct
 
 int FE_element_field_template::getTermNodeVersion(int functionNumber, int term) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
 		&& this->validTerm(functionNumber, term))
 		return this->nodeVersions[this->termOffsets[functionNumber] + term];
 	return -1;
@@ -585,7 +585,7 @@ int FE_element_field_template::getTermNodeVersion(int functionNumber, int term) 
 
 int FE_element_field_template::getTermNodeLegacyIndex(int functionNumber, int term) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
 		&& this->validTerm(functionNumber, term)
 		&& (this->nodeValueLabels[this->termOffsets[functionNumber] + term] == CMZN_NODE_VALUE_LABEL_INVALID))
 		return this->nodeVersions[this->termOffsets[functionNumber] + term];
@@ -596,7 +596,7 @@ int FE_element_field_template::setTermNodeParameter(int functionNumber,
 	int term, int localNodeIndex, cmzn_node_value_label valueLabel, int version)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (!this->validTerm(functionNumber, term))
 		|| (localNodeIndex < 0) || (localNodeIndex >= this->numberOfLocalNodes)
 		|| (!valid_node_value_label(valueLabel))
@@ -612,7 +612,7 @@ int FE_element_field_template::setTermNodeParameter(int functionNumber,
 int FE_element_field_template::setTermNodeParameterLegacyIndex(int functionNumber, int term, int localNodeIndex, int nodeDOFIndex)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (!this->validTerm(functionNumber, term))
 		|| (localNodeIndex < 0) || (localNodeIndex >= this->numberOfLocalNodes)
 		|| (nodeDOFIndex < 0))
@@ -627,7 +627,7 @@ int FE_element_field_template::setTermNodeParameterLegacyIndex(int functionNumbe
 
 bool FE_element_field_template::hasNodeParameterLegacyIndex() const
 {
-	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		for (int tt = 0; tt < this->totalTermCount; ++tt)
 		{
@@ -642,14 +642,14 @@ bool FE_element_field_template::hasNodeParameterLegacyIndex() const
 int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (number < 0))
 		return CMZN_ERROR_ARGUMENT;
 	if (number > this->numberOfLocalScaleFactors)
 	{
-		cmzn_element_scale_factor_type *oldScaleFactorTypes = this->scaleFactorTypes;
+		cmzn_elementfieldtemplate_scale_factor_type *oldScaleFactorTypes = this->scaleFactorTypes;
 		int *oldScaleFactorVersions = this->scaleFactorVersions;
-		this->scaleFactorTypes = new cmzn_element_scale_factor_type[number];
+		this->scaleFactorTypes = new cmzn_elementfieldtemplate_scale_factor_type[number];
 		this->scaleFactorVersions = new int[number];
 		// copy existing scale factor types and versions
 		for (int sf = 0; sf < this->numberOfLocalScaleFactors; ++sf)
@@ -660,7 +660,7 @@ int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 		// give new scale factors default type and version
 		for (int sf = this->numberOfLocalScaleFactors; sf < number; ++sf)
 		{
-			this->scaleFactorTypes[sf] = CMZN_ELEMENT_SCALE_FACTOR_TYPE_LOCAL_GENERAL;
+			this->scaleFactorTypes[sf] = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_GENERAL;
 			this->scaleFactorVersions[sf] = 0; // match by value
 		}
 		if (!this->localScaleFactorIndexes)
@@ -678,16 +678,16 @@ int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 	return CMZN_OK;
 }
 
-int FE_element_field_template::setElementScaleFactorType(int localIndex, cmzn_element_scale_factor_type type)
+int FE_element_field_template::setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type)
 {
 	if ((localIndex < 0) || (localIndex >= this->numberOfLocalScaleFactors)
-		|| (type <= CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID))
+		|| (type <= CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID))
 		return CMZN_ERROR_ARGUMENT;
 	this->scaleFactorTypes[localIndex] = type;
 	return CMZN_OK;
 }
 
-int FE_element_field_template::setElementScaleFactorVersion(int localIndex, int version)
+int FE_element_field_template::setScaleFactorVersion(int localIndex, int version)
 {
 	if ((localIndex < 0) || (localIndex >= this->numberOfLocalScaleFactors)
 		|| (version < 0))
@@ -698,7 +698,7 @@ int FE_element_field_template::setElementScaleFactorVersion(int localIndex, int 
 
 int FE_element_field_template::getTermScalingCount(int functionNumber, int term) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term)))
 		return 0;
@@ -708,7 +708,7 @@ int FE_element_field_template::getTermScalingCount(int functionNumber, int term)
 
 int FE_element_field_template::getTermScaleFactorIndex(int functionNumber, int term, int termScaleFactorIndex) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term))
 		|| (termScaleFactorIndex < 0))
@@ -723,7 +723,7 @@ int FE_element_field_template::getTermScaleFactorIndex(int functionNumber, int t
 
 int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex) const
 {
-	if ((CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term))
 		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexes)))
@@ -740,7 +740,7 @@ int FE_element_field_template::getTermScaling(int functionNumber, int term, int 
 int FE_element_field_template::setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex)
 {
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term))
 		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexes)))
@@ -773,7 +773,7 @@ int FE_element_field_template::sortNodeIndexes(std::vector<int>& extNodeIndexes)
 {
 	const int extNodeIndexCount = static_cast<int>(extNodeIndexes.size());
 	if (this->locked
-		|| (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
+		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (extNodeIndexCount > this->numberOfLocalNodes))
 		return CMZN_ERROR_ARGUMENT;
 	int lastExtNodeIndex = -1;
@@ -804,7 +804,7 @@ bool FE_element_field_template::validateAndLock()
 		return true; // if locked, it's already validated
 	// following lists all the things that are invalid, but only once
 	bool valid = true;
-	if (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		bool localNodesValid = true;
 		bool nodeValueLabelsValid = true;
@@ -847,6 +847,11 @@ bool FE_element_field_template::validateAndLock()
 	return valid;
 }
 
+cmzn_elementbasis *cmzn_elementfieldtemplate::getElementbasis() const
+{
+	return cmzn_elementbasis::create(this->getMesh()->get_FE_region(), this->getBasis());
+}
+
 cmzn_elementfieldtemplate_id cmzn_elementfieldtemplate_access(
 	cmzn_elementfieldtemplate_id elementfieldtemplate)
 {
@@ -863,39 +868,47 @@ int cmzn_elementfieldtemplate_destroy(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_element_scale_factor_type
-	cmzn_elementfieldtemplate_get_element_scale_factor_type(
-		cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex)
+cmzn_elementbasis_id cmzn_elementfieldtemplate_get_elementbasis(
+	cmzn_elementfieldtemplate_id elementfieldtemplate)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->getElementScaleFactorType(localIndex);
-	return CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID;
-}
-
-int cmzn_elementfieldtemplate_set_element_scale_factor_type(
-	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
-	enum cmzn_element_scale_factor_type type)
-{
-	if (elementfieldtemplate)
-		return elementfieldtemplate->setElementScaleFactorType(localIndex, type);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int cmzn_elementfieldtemplate_get_element_scale_factor_version(
-	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex)
-{
-	if (elementfieldtemplate)
-		return elementfieldtemplate->getElementScaleFactorVersion(localIndex);
+		return elementfieldtemplate->getElementbasis();
 	return 0;
 }
 
-int cmzn_elementfieldtemplate_set_element_scale_factor_version(
+enum cmzn_elementfieldtemplate_scale_factor_type
+	cmzn_elementfieldtemplate_get_scale_factor_type(
+		cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex)
+{
+	if (elementfieldtemplate)
+		return elementfieldtemplate->getScaleFactorType(localIndex);
+	return CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
+}
+
+int cmzn_elementfieldtemplate_set_scale_factor_type(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
+	enum cmzn_elementfieldtemplate_scale_factor_type type)
+{
+	if (elementfieldtemplate)
+		return elementfieldtemplate->setScaleFactorType(localIndex, type);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_elementfieldtemplate_get_scale_factor_version(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex)
+{
+	if (elementfieldtemplate)
+		return elementfieldtemplate->getScaleFactorVersion(localIndex);
+	return 0;
+}
+
+int cmzn_elementfieldtemplate_set_scale_factor_version(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
 	int version)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->setElementScaleFactorVersion(localIndex, version);
-	return CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID;
+		return elementfieldtemplate->setScaleFactorVersion(localIndex, version);
+	return CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
 }
 
 int cmzn_elementfieldtemplate_get_function_number_of_terms(
@@ -955,21 +968,21 @@ int cmzn_elementfieldtemplate_set_number_of_local_scale_factors(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_element_parameter_mapping_mode
-	cmzn_elementfieldtemplate_get_element_parameter_mapping_mode(
+enum cmzn_elementfieldtemplate_parameter_mapping_mode
+	cmzn_elementfieldtemplate_get_parameter_mapping_mode(
 		cmzn_elementfieldtemplate_id elementfieldtemplate)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->getElementParameterMappingMode();
-	return CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID;
+		return elementfieldtemplate->getParameterMappingMode();
+	return CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID;
 }
 
-int cmzn_elementfieldtemplate_set_element_parameter_mapping_mode(
+int cmzn_elementfieldtemplate_set_parameter_mapping_mode(
 	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	enum cmzn_element_parameter_mapping_mode mode)
+	enum cmzn_elementfieldtemplate_parameter_mapping_mode mode)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->setElementParameterMappingMode(mode);
+		return elementfieldtemplate->setParameterMappingMode(mode);
 	return CMZN_ERROR_ARGUMENT;
 }
 

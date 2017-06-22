@@ -391,7 +391,56 @@ public:
 		return this->localToGlobalNodes.getOrCreateArray(elementIndex);
 	}
 
-	bool setElementLocalNodes(DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange);
+	/** Get a local node for the given element.
+	  * @param elementIndex  Element index. Not checked.
+	  * @param localNodeIndex  Local index of node to get, starting at 0. Not checked.
+	  * @return  Index of node in nodeset, or INVALID if none/failed. */
+	DsLabelIndex getElementLocalNode(DsLabelIndex elementIndex, int localNodeIndex) const
+	{
+		if (elementIndex < 0)
+			return CMZN_ERROR_ARGUMENT;
+		const DsLabelIndex *elementNodeIndexes = this->getElementNodeIndexes(elementIndex);
+		if (elementNodeIndexes)
+			return elementNodeIndexes[localNodeIndex];
+		return DS_LABEL_INDEX_INVALID;
+	}
+
+	/** Set a local node for the given element.
+	  * @param elementIndex  Element index.
+	  * @param localNodeIndex  Local index of node to set, starting at 0. Not checked.
+	  * @param nodeIndex  Index of node in mesh's nodeset, or INVALID to clear.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementLocalNode(DsLabelIndex elementIndex, int localNodeIndex, DsLabelIndex nodeIndex);
+
+	/** Set all local nodes for the given element. Does not notify of changes.
+	  * @param elementIndex  Element index.
+	  * @param nodeIndexes  Array of nodeIndexes to set, size equal to localNodeCount for EFT.
+	  * @param localNodeChange  Set to true if any local nodes changed from
+	  * previous valid index, otherwise keeps prior value.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementLocalNodes(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes, bool& localNodeChange);
+
+	/** Set all local nodes for the given element, by identifier.
+	  * @param elementIndex  Element index. Not checked.
+	  * @param nodeIdentifiers  Array of identifiers of nodes to set, size equal to
+	  * localNodeCount for EFT. Use DS_LABEL_IDENTIFIER_INVALID to clear any node.
+	  * @param localNodeChange  Set to true if any local nodes changed from
+	  * previous valid index, otherwise keeps prior value.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementLocalNodesByIdentifier(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes, bool& localNodeChange);
+
+	/** Set a scale factors for this element field template in the given element.
+	  * @param elementIndex  The element to set scale factors for.
+	  * @param scaleFactorIndex  The local index of the scale factor to set, starting at 0.
+	  * @param value  The scale factor value to set.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementScaleFactor(DsLabelIndex elementIndex, int scaleFactorIndex, FE_value value);
+
+	/** Set all scale factors for this element field template in the given element. Does not notify of changes.
+	  * @param elementIndex  The element to set scale factors for.
+	  * @param values  Array of scale factors to set. Required to have correct number for EFT.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
 
 #if 0
 	/** @return  Pointer to array of global scale factor indexes for element, or 0 if none. NOT to be freed.
@@ -441,11 +490,6 @@ public:
 	{
 		return this->localScaleFactors.getValue(elementIndex);
 	}
-
-	/** @param elementIndex  The element to set scale factors for.
-	  * @param values  Array of scale factors to set. Required to have correct number for EFT.
-	  * @return  True on success, false on failure. */
-	bool setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
 
 	bool localToGlobalNodesIsDense() const;
 
@@ -802,28 +846,28 @@ public:
 		this->components[componentNumber]->clearElementData(elementIndex);
 	}
 
-	/** @param componentNumber  From 0 to componentCount, not checked
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
 	  * @return  Non-accessed component base */
 	ComponentBase *getComponentBase(int componentNumber) const
 	{
 		return this->components[componentNumber];
 	}
 
-	/** @param componentNumber  From 0 to componentCount, not checked
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
 	  * @return  Non-accessed field template */
 	const FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber) const
 	{
 		return this->components[componentNumber]->getMeshfieldtemplate();
 	}
 
-	/** @param componentNumber  From 0 to componentCount, not checked
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
 	  * @return  Non-accessed field template */
 	FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber)
 	{
 		return this->components[componentNumber]->getMeshfieldtemplate();
 	}
 
-	/** @param componentNumber  From 0 to componentCount, not checked */
+	/** @param componentNumber  From 0 to componentCount - 1, not checked */
 	void setComponentMeshfieldtemplate(int componentNumber, FE_mesh_field_template *meshFieldTemplate)
 	{
 		this->components[componentNumber]->setMeshfieldtemplate(meshFieldTemplate);

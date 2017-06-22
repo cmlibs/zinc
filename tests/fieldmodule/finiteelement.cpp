@@ -1467,14 +1467,14 @@ TEST(ZincElementfieldtemplate, element_based_constant)
 	Elementfieldtemplate eft = mesh1d.createElementfieldtemplate(constantBasis);
 	EXPECT_TRUE(eft.isValid());
 
-	EXPECT_EQ(Element::PARAMETER_MAPPING_MODE_NODE, eft.getElementParameterMappingMode());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
 	EXPECT_EQ(1, eft.getNumberOfFunctions());
 	EXPECT_EQ(1, eft.getNumberOfLocalNodes());
 	EXPECT_EQ(0, eft.getNumberOfLocalScaleFactors());
 	EXPECT_EQ(1, eft.getFunctionNumberOfTerms(1));
 
-	EXPECT_EQ(RESULT_OK, eft.setElementParameterMappingMode(Element::PARAMETER_MAPPING_MODE_ELEMENT));
-	EXPECT_EQ(Element::PARAMETER_MAPPING_MODE_ELEMENT, eft.getElementParameterMappingMode());
+	EXPECT_EQ(RESULT_OK, eft.setParameterMappingMode(Elementfieldtemplate::PARAMETER_MAPPING_MODE_ELEMENT));
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_ELEMENT, eft.getParameterMappingMode());
 
 	// many APIs are not supported for element-based parameter map:
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalNodes(1));
@@ -1501,7 +1501,7 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_TRUE(bilinearBasis.isValid());
 	eft = mesh2d.createElementfieldtemplate(bilinearBasis);
 	EXPECT_TRUE(eft.isValid());
-	EXPECT_EQ(Element::PARAMETER_MAPPING_MODE_NODE, eft.getElementParameterMappingMode());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
 
 	EXPECT_EQ(4, eft.getNumberOfFunctions());
 	EXPECT_EQ(4, eft.getNumberOfLocalNodes());
@@ -1523,8 +1523,8 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/0));
 	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
 	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 0, 0)); // invalid with no local scale factors
-	EXPECT_EQ(CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID, eft.getElementScaleFactorType(1));
-	EXPECT_EQ(0, eft.getElementScaleFactorVersion(1));
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(1));
+	EXPECT_EQ(0, eft.getScaleFactorVersion(1));
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalScaleFactors(-1));
 
 	// test modifications - number and type/version of local scale factors
@@ -1532,32 +1532,32 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(3, eft.getNumberOfLocalScaleFactors());
 	for (int sf = 1; sf <= 3; ++sf)
 	{
-		EXPECT_EQ(Element::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getElementScaleFactorType(sf));
-		EXPECT_EQ(RESULT_OK, eft.setElementScaleFactorType(sf, Element::SCALE_FACTOR_TYPE_LOCAL_PATCH));
-		EXPECT_EQ(Element::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getElementScaleFactorType(sf));
-		EXPECT_EQ(1, eft.getElementScaleFactorVersion(sf));
-		EXPECT_EQ(RESULT_OK, eft.setElementScaleFactorVersion(sf, 2));
-		EXPECT_EQ(2, eft.getElementScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(sf, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(1, eft.getScaleFactorVersion(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorVersion(sf, 2));
+		EXPECT_EQ(2, eft.getScaleFactorVersion(sf));
 	}
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(5));
 	EXPECT_EQ(5, eft.getNumberOfLocalScaleFactors());
 	for (int sf = 1; sf <= 3; ++sf)
 	{
-		EXPECT_EQ(Element::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getElementScaleFactorType(sf));
-		EXPECT_EQ(2, eft.getElementScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(2, eft.getScaleFactorVersion(sf));
 	}
 	for (int sf = 4; sf <= 5; ++sf)
 	{
-		EXPECT_EQ(Element::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getElementScaleFactorType(sf));
-		EXPECT_EQ(1, eft.getElementScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(1, eft.getScaleFactorVersion(sf));
 	}
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(4));
 	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
 	// invalid arguments:
-	EXPECT_EQ(CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID, eft.getElementScaleFactorType(0));
-	EXPECT_EQ(CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID, eft.getElementScaleFactorType(5));
-	EXPECT_EQ(0, eft.getElementScaleFactorVersion(0));
-	EXPECT_EQ(0, eft.getElementScaleFactorVersion(5));
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(0));
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(5));
+	EXPECT_EQ(0, eft.getScaleFactorVersion(0));
+	EXPECT_EQ(0, eft.getScaleFactorVersion(5));
 
 	// test modifications - number of local nodes
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(5));
@@ -1741,7 +1741,7 @@ TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
 	EXPECT_TRUE(tricubicHermiteBasis.isValid());
 	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(tricubicHermiteBasis);
 	EXPECT_TRUE(eft.isValid());
-	EXPECT_EQ(Element::PARAMETER_MAPPING_MODE_NODE, eft.getElementParameterMappingMode());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
 
 	EXPECT_EQ(64, eft.getNumberOfFunctions());
 	EXPECT_EQ(8, eft.getNumberOfLocalNodes());

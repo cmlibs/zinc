@@ -48,7 +48,7 @@ private:
 	bool locked; // set once in use by mesh/field or element template, so not modifiable
 	int indexInMesh; // if in use by mesh, the index (>=0) of its FE_mesh_element_field_template_data in mesh. Otherwise -1
 
-	cmzn_element_parameter_mapping_mode mappingMode; // ELEMENT|FIELD|NODE
+	cmzn_elementfieldtemplate_parameter_mapping_mode mappingMode; // ELEMENT|FIELD|NODE
 
 	// for each basis function: number of terms summed to give parameter;
 	// currently only supported for node mapping mode; all others have 1 term:
@@ -69,7 +69,7 @@ private:
 	// scale factor information: each term can be multiplied by zero or more scale factors
 	int numberOfLocalScaleFactors; // zero if unscaled; scaling currently only supported with node mapping
 	// metadata identifying type and version of each local scale factor, for merging:
-	cmzn_element_scale_factor_type *scaleFactorTypes;
+	cmzn_elementfieldtemplate_scale_factor_type *scaleFactorTypes;
 	int *scaleFactorVersions;
 	// packed array of all local scale factor indexes to be multiplied for each
 	// term for each function, in order of function then term then factor (size = totalLocalScaleFactorIndexes):
@@ -179,7 +179,7 @@ public:
 		return this->basis;
 	}
 
-	cmzn_element_parameter_mapping_mode getElementParameterMappingMode() const
+	cmzn_elementfieldtemplate_parameter_mapping_mode getParameterMappingMode() const
 	{
 		return this->mappingMode;
 	}
@@ -188,7 +188,7 @@ public:
 	  * mapping a single constant value for a given field component in every element using EFT.
 	  * For other mapping modes, resets to one term per basis function with no scaling hence
 	  * should be the first setting changed. */
-	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode modeIn);
+	int setParameterMappingMode(cmzn_elementfieldtemplate_parameter_mapping_mode modeIn);
 
 	/** @return  Highest local node index used in EFT, or -1 if not node-based. */
 	int getHighestLocalNodeIndex() const;
@@ -220,7 +220,7 @@ public:
 
 	bool hasElementDOFs() const
 	{
-		return (this->mappingMode == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT);
+		return (this->mappingMode == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT);
 	}
 
 	/** @return  Number of basis functions */
@@ -299,19 +299,19 @@ public:
 	  * Only valid in node mapping mode. */
 	int setNumberOfLocalScaleFactors(int number);
 
-	cmzn_element_scale_factor_type getElementScaleFactorType(int localIndex) const
+	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localIndex) const
 	{
 		if ((0 <= localIndex) && (localIndex < this->numberOfLocalScaleFactors))
 			return this->scaleFactorTypes[localIndex];
-		return CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID;
+		return CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
 	}
 
 	/** Set the type of scale factor mapped at the local index, used with the
 	  * scale factor version, global node, derivative etc. to merge common
 	  * scale factors from different fields */
-	int setElementScaleFactorType(int localIndex, cmzn_element_scale_factor_type type);
+	int setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type);
 
-	int getElementScaleFactorVersion(int localIndex) const
+	int getScaleFactorVersion(int localIndex) const
 	{
 		if ((0 <= localIndex) && (localIndex < this->numberOfLocalScaleFactors))
 			return this->scaleFactorVersions[localIndex];
@@ -321,7 +321,7 @@ public:
 	/** Set the version of scale factor mapped at the local index, used with the
 	  * scale factor type, global node, derivative etc. to merge common
 	  * scale factors from different fields */
-	int setElementScaleFactorVersion(int localIndex, int version);
+	int setScaleFactorVersion(int localIndex, int version);
 
 	/** @return  The number of scale factors multiplying term */
 	int getTermScalingCount(int functionNumber, int term) const;
@@ -433,15 +433,17 @@ public:
 		return this->impl->getBasis();
 	}
 
-	cmzn_element_parameter_mapping_mode getElementParameterMappingMode() const
+	cmzn_elementbasis *getElementbasis() const;
+
+	cmzn_elementfieldtemplate_parameter_mapping_mode getParameterMappingMode() const
 	{
-		return this->impl->getElementParameterMappingMode();
+		return this->impl->getParameterMappingMode();
 	}
 
-	int setElementParameterMappingMode(cmzn_element_parameter_mapping_mode mode)
+	int setParameterMappingMode(cmzn_elementfieldtemplate_parameter_mapping_mode mode)
 	{
 		this->copyOnWrite();
-		return this->impl->setElementParameterMappingMode(mode);
+		return this->impl->setParameterMappingMode(mode);
 	}
 
 	/** get handle to implementation, needed for internal use */
@@ -543,26 +545,26 @@ public:
 		return this->impl->setNumberOfLocalScaleFactors(number);
 	}
 
-	cmzn_element_scale_factor_type getElementScaleFactorType(int localIndex) const
+	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localIndex) const
 	{
-		return this->impl->getElementScaleFactorType(localIndex - 1);
+		return this->impl->getScaleFactorType(localIndex - 1);
 	}
 
-	int setElementScaleFactorType(int localIndex, cmzn_element_scale_factor_type type)
+	int setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type)
 	{
 		this->copyOnWrite();
-		return this->impl->setElementScaleFactorType(localIndex - 1, type);
+		return this->impl->setScaleFactorType(localIndex - 1, type);
 	}
 
-	int getElementScaleFactorVersion(int localIndex) const
+	int getScaleFactorVersion(int localIndex) const
 	{
-		return this->impl->getElementScaleFactorVersion(localIndex - 1) + 1;
+		return this->impl->getScaleFactorVersion(localIndex - 1) + 1;
 	}
 
-	int setElementScaleFactorVersion(int localIndex, int version)
+	int setScaleFactorVersion(int localIndex, int version)
 	{
 		this->copyOnWrite();
-		return this->impl->setElementScaleFactorVersion(localIndex - 1, version - 1);
+		return this->impl->setScaleFactorVersion(localIndex - 1, version - 1);
 	}
 
 	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const

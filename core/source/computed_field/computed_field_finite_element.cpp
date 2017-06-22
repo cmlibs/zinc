@@ -970,7 +970,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 					result = FIELD_ASSIGNMENT_RESULT_FAIL;
 					break;
 				}
-				if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT)
+				if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 					continue;  // ignore non-element-based components
 				const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
 				const int *gridNumberInXi = 0;

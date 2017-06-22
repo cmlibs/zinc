@@ -683,10 +683,10 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			break;
 		}
 
-		const cmzn_element_parameter_mapping_mode parameterMappingMode = eft->getElementParameterMappingMode();
+		const cmzn_elementfieldtemplate_parameter_mapping_mode parameterMappingMode = eft->getParameterMappingMode();
 		switch (parameterMappingMode)
 		{
-		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
+		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
 		{
 			const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
 			if (0 == gridNumberInXi)
@@ -712,12 +712,12 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			}
 			break;
 		}
-		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:
+		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 		{
 			(*this->output_file) << ", field based.\n";
 			break;
 		}
-		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
+		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 		{
 			(*this->output_file) << ", standard node based."; // GRC change to "node based"
 			int scaleFactorOffset = 0;
@@ -853,7 +853,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 				f = f2limit;
 			}
 		}	break;
-		case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID:
+		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID:
 		{
 			display_message(ERROR_MESSAGE, "EXWriter::writeElementHeaderField.  Invalid parameter mapping mode");
 			return false;

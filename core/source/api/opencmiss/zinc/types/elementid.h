@@ -41,6 +41,41 @@ struct cmzn_elementfieldtemplate;
 typedef struct cmzn_elementfieldtemplate *cmzn_elementfieldtemplate_id;
 
 /**
+ * Modes for how element parameters are mapped from global DOFs.
+ */
+enum cmzn_elementfieldtemplate_parameter_mapping_mode
+{
+	CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID = 0,
+		/*!< Invalid mapping mode */
+	CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT = 1,
+		/*!< Element parameters are mapped directly by element */
+	CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD = 2,
+		/*!< Constant value for field component */
+	CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE = 3
+		/*!< Element parameters are mapped from nodes via local-to-global node map */
+};
+
+/**
+ * Unique types for element scale factors which together with node/point
+ * location, derivative/value label, scale factor version and possibly matching
+ * value identify common scale factors for merging fields.
+ */
+enum cmzn_elementfieldtemplate_scale_factor_type
+{
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID = 0,
+		/*!< Invalid type */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL = 1,
+		/*!< General linear map coefficients globally shared across many elements of
+		 * the mesh */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_GENERAL = 2,
+		/*!< General linear map coefficients unique to points local to or referenced
+		 * referenced by local nodes of the element */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_PATCH = 3
+		/*!< Scaling from patch to local coordinates unique to points local to or
+		 * referenced by local nodes of the element */
+};
+
+/**
  * @brief A description of element shape and field definitions.
  *
  * A description of element shape and field definitions (incl. basis, parameter
@@ -74,41 +109,6 @@ enum cmzn_element_face_type
 	CMZN_ELEMENT_FACE_TYPE_XI2_1 = 7,    /*!< element on face where top-level xi2 = 1 */
 	CMZN_ELEMENT_FACE_TYPE_XI3_0 = 8,    /*!< element on face where top-level xi3 = 0 */
 	CMZN_ELEMENT_FACE_TYPE_XI3_1 = 9     /*!< element on face where top-level xi3 = 1 */
-};
-
-/**
- * Modes for how element parameters are mapped from global DOFs.
- */
-enum cmzn_element_parameter_mapping_mode
-{
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID = 0,
-		/*!< Invalid mapping mode */
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT = 1,
-		/*!< Element parameters are mapped directly by element */
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD = 2,
-		/*!< Constant value for field component */
-	CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE = 3
-		/*!< Element parameters are mapped from nodes via local-to-global node map */
-};
-
-/**
- * Unique types for element scale factors which together with node/point
- * location, derivative/value label, scale factor version and possibly matching
- * value identify common scale factors for merging fields.
- */
-enum cmzn_element_scale_factor_type
-{
-	CMZN_ELEMENT_SCALE_FACTOR_TYPE_INVALID = 0,
-		/*!< Invalid type */
-	CMZN_ELEMENT_SCALE_FACTOR_TYPE_GLOBAL_GENERAL = 1,
-		/*!< General linear map coefficients globally shared across many elements of
-		 * the mesh */
-	CMZN_ELEMENT_SCALE_FACTOR_TYPE_LOCAL_GENERAL = 2,
-		/*!< General linear map coefficients unique to points local to or referenced
-		 * referenced by local nodes of the element */
-	CMZN_ELEMENT_SCALE_FACTOR_TYPE_LOCAL_PATCH = 3
-		/*!< Scaling from patch to local coordinates unique to points local to or
-		 * referenced by local nodes of the element */
 };
 
 /**

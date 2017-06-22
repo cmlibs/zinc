@@ -1061,7 +1061,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 						{
 							FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
 							FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
-							if (!((eft) && (eft->getElementParameterMappingMode() == CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)))
+							if (!((eft) && (eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)))
 							{
 								definedAndNodeBased = false;
 								break;

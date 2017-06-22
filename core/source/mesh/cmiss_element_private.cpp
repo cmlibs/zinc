@@ -10,7 +10,6 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/status.h"
@@ -68,161 +67,197 @@ Global types
 
 /*============================================================================*/
 
-struct cmzn_elementbasis
+cmzn_elementbasis::cmzn_elementbasis(FE_region *fe_region, int mesh_dimension,
+		cmzn_elementbasis_function_type function_type) :
+	fe_region(ACCESS(FE_region)(fe_region)),
+	dimension(mesh_dimension),
+	function_types(new cmzn_elementbasis_function_type[mesh_dimension]),
+	access_count(1)
 {
-private:
-	FE_region *fe_region; // needed to get basis manager
-	int dimension;
-	cmzn_elementbasis_function_type *function_types;
-	int access_count;
-
-public:
-	cmzn_elementbasis(FE_region *fe_region, int mesh_dimension,
-			cmzn_elementbasis_function_type function_type) :
-		fe_region(ACCESS(FE_region)(fe_region)),
-		dimension(mesh_dimension),
-		function_types(new cmzn_elementbasis_function_type[mesh_dimension]),
-		access_count(1)
+	for (int i = 0; i < dimension; i++)
 	{
-		for (int i = 0; i < dimension; i++)
+		function_types[i] = function_type;
+	}
+}
+
+cmzn_elementbasis::~cmzn_elementbasis()
+{
+	DEACCESS(FE_region)(&fe_region);
+	delete[] function_types;
+}
+
+cmzn_elementbasis* cmzn_elementbasis::create(FE_region *fe_region, int mesh_dimension,
+	cmzn_elementbasis_function_type function_type)
+{
+	if ((fe_region) && (0 < mesh_dimension) && (mesh_dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS) &&
+		(function_type > CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID))
+	{
+		return new cmzn_elementbasis(fe_region, mesh_dimension, function_type);
+	}
+	display_message(ERROR_MESSAGE, "Fieldmodule createElementbasis.  Invalid argument(s)");
+	return 0;
+}
+
+cmzn_elementbasis* cmzn_elementbasis::create(FE_region *fe_region, FE_basis *basis)
+{
+	if ((fe_region) && (basis))
+	{
+		int dimension;
+		FE_basis_get_dimension(basis, &dimension);
+		FE_basis_type feBasisType;
+		FE_basis_get_xi_basis_type(basis, /*xi*/0, &feBasisType);
+		cmzn_elementbasis_function_type functionType = FE_basis_type_to_cmzn_elementbasis_function_type(feBasisType);
+		if (functionType == CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID)
 		{
-			function_types[i] = function_type;
-		}
-	}
-
-	cmzn_elementbasis_id access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_elementbasis_id &basis)
-	{
-		if (!basis)
-			return CMZN_ERROR_ARGUMENT;
-		--(basis->access_count);
-		if (basis->access_count <= 0)
-			delete basis;
-		basis = 0;
-		return CMZN_OK;
-	}
-
-	int getDimension() const { return dimension; }
-
-	/** @return  number of dimension using supplied function_type */
-	int getDimensionsUsingFunction(cmzn_elementbasis_function_type function_type) const
-	{
-		int count = 0;
-		for (int i = 0; i < dimension; i++)
-		{
-			if (function_types[i] == function_type)
-				count++;
-		}
-		return count;
-	}
-
-	/**
-	 * @return  1 if all function types set & at least 2 chart components linked
-	 * for each simplex basis */
-	int isValid() const
-	{
-		int return_code = 1;
-		if (0 < getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID))
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_elementbasis::isValid.  Function type not set");
-			return_code = 0;
-		}
-		if ((1 == getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX)) ||
-			(1 == getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX)))
-		{
-			display_message(ERROR_MESSAGE, "cmzn_elementbasis::isValid.  "
-				"Must be at least 2 linked dimension for simplex basis");
-			return_code = 0;
-		}
-		return return_code;
-	}
-
-	/** @return  Accessed FE_basis, or NULL on error */
-	FE_basis *getFeBasis() const
-	{
-		if (!isValid())
+			display_message(ERROR_MESSAGE, "cmzn_elementbasis::create.  Internal basis function type not implemented externally");
 			return 0;
-		const int length = dimension*(dimension + 1)/2 + 1;
-		int *int_basis_type_array;
-		if (!ALLOCATE(int_basis_type_array, int, length))
-			return 0;
-		*int_basis_type_array = dimension;
-		int *temp = int_basis_type_array + 1;
-		for (int i = 0; i < dimension; i++)
+		}
+		cmzn_elementbasis *elementbasis = new cmzn_elementbasis(fe_region, dimension, functionType);
+		if (elementbasis)
 		{
-			FE_basis_type fe_basis_type = cmzn_elementbasis_function_type_to_FE_basis_type(function_types[i]);
-			*temp = (int)fe_basis_type;
-			++temp;
-			for (int j = i + 1; j < dimension; j++)
+			for (int d = 1; d < dimension; ++d)
 			{
-				if (((fe_basis_type == LINEAR_SIMPLEX) ||
-					(fe_basis_type == QUADRATIC_SIMPLEX)) &&
-					(function_types[j] == function_types[i]))
+				FE_basis_type feBasisType2;
+				FE_basis_get_xi_basis_type(basis, d, &feBasisType2);
+				if (feBasisType2 != feBasisType)
 				{
-					*temp = 1;
+					functionType = FE_basis_type_to_cmzn_elementbasis_function_type(feBasisType2);
+					if (functionType == CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID)
+					{
+						display_message(ERROR_MESSAGE, "cmzn_elementbasis::create.  Internal basis function type not implemented externally");
+						cmzn_elementbasis::deaccess(elementbasis);
+						return 0;
+					}
+					elementbasis->setFunctionType(d + 1, functionType);
 				}
-				else
-				{
-					*temp = 0; // NO_RELATION
-				}
-				++temp;
 			}
+			return elementbasis;
 		}
-		struct FE_basis *fe_basis = FE_region_get_FE_basis_matching_basis_type(
-			fe_region, int_basis_type_array);
-		DEALLOCATE(int_basis_type_array);
-		return fe_basis;
 	}
+	return 0;
+}
 
-	enum cmzn_elementbasis_function_type getFunctionType(int chart_component) const
+int cmzn_elementbasis::getDimensionsUsingFunction(cmzn_elementbasis_function_type function_type) const
+{
+	int count = 0;
+	for (int i = 0; i < dimension; i++)
+	{
+		if (function_types[i] == function_type)
+			count++;
+	}
+	return count;
+}
+
+int cmzn_elementbasis::isValid() const
+{
+	int return_code = 1;
+	if (0 < getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID))
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_elementbasis::isValid.  Function type not set");
+		return_code = 0;
+	}
+	if ((1 == getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX)) ||
+		(1 == getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_elementbasis::isValid.  "
+			"Must be at least 2 linked dimension for simplex basis");
+		return_code = 0;
+	}
+	return return_code;
+}
+
+/** @return  Accessed FE_basis, or NULL on error */
+FE_basis *cmzn_elementbasis::getFeBasis() const
+{
+	if (!isValid())
+		return 0;
+	const int length = dimension*(dimension + 1)/2 + 1;
+	int *int_basis_type_array;
+	if (!ALLOCATE(int_basis_type_array, int, length))
+		return 0;
+	*int_basis_type_array = dimension;
+	int *temp = int_basis_type_array + 1;
+	for (int i = 0; i < dimension; i++)
+	{
+		FE_basis_type fe_basis_type = cmzn_elementbasis_function_type_to_FE_basis_type(function_types[i]);
+		*temp = (int)fe_basis_type;
+		++temp;
+		for (int j = i + 1; j < dimension; j++)
+		{
+			if (((fe_basis_type == LINEAR_SIMPLEX) ||
+				(fe_basis_type == QUADRATIC_SIMPLEX)) &&
+				(function_types[j] == function_types[i]))
+			{
+				*temp = 1;
+			}
+			else
+			{
+				*temp = 0; // NO_RELATION
+			}
+			++temp;
+		}
+	}
+	struct FE_basis *fe_basis = FE_region_get_FE_basis_matching_basis_type(
+		fe_region, int_basis_type_array);
+	DEALLOCATE(int_basis_type_array);
+	return fe_basis;
+}
+
+enum cmzn_elementbasis_function_type cmzn_elementbasis::getFunctionType(int chart_component) const
+{
+	if (chart_component == -1) // homogeneous case
+	{
+		for (int d = 1; d < this->dimension; ++d)
+		{
+			if (function_types[d] != function_types[d - 1])
+				return CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
+		}
+		return function_types[0];
+	}
+	if ((chart_component < 1) || (chart_component > this->dimension))
+		return CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
+	return function_types[chart_component - 1];
+}
+
+int cmzn_elementbasis::setFunctionType(int chart_component, cmzn_elementbasis_function_type function_type)
+{
+	if (FE_BASIS_TYPE_INVALID == cmzn_elementbasis_function_type_to_FE_basis_type(function_type))
+		return CMZN_ERROR_ARGUMENT;
+	if (chart_component == -1) // homogeneous case
+	{
+		for (int d = 0; d < this->dimension; ++d)
+			function_types[d] = function_type;
+	}
+	else
 	{
 		if ((chart_component < 1) || (chart_component > dimension))
-			return CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
-		return function_types[chart_component - 1];
-	}
-
-	int setFunctionType(int chart_component, cmzn_elementbasis_function_type function_type)
-	{
-		if ((chart_component < 1) || (chart_component > dimension))
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		function_types[chart_component - 1] = function_type;
-		return 1;
 	}
+	return CMZN_OK;
+}
 
-	int getNumberOfNodes() const
-	{
-		FE_basis *basis = this->getFeBasis();
-		int numberOfNodes = FE_basis_get_number_of_nodes(basis);
-		return numberOfNodes;
-	}
+int cmzn_elementbasis::getNumberOfNodes() const
+{
+	FE_basis *basis = this->getFeBasis();
+	int numberOfNodes = FE_basis_get_number_of_nodes(basis);
+	return numberOfNodes;
+}
 
-	int getNumberOfFunctions() const
-	{
-		FE_basis *basis = this->getFeBasis();
-		int numberOfFunctions = FE_basis_get_number_of_functions(basis);
-		return numberOfFunctions;
-	}
+int cmzn_elementbasis::getNumberOfFunctions() const
+{
+	FE_basis *basis = this->getFeBasis();
+	int numberOfFunctions = FE_basis_get_number_of_functions(basis);
+	return numberOfFunctions;
+}
 
-	int getNumberOfFunctionsPerNode(int basisNodeIndex) const
-	{
-		FE_basis *basis = this->getFeBasis();
-		int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex - 1);
-		return numberOfFunctionsPerNode;
-	}
-
-private:
-	~cmzn_elementbasis()
-	{
-		DEACCESS(FE_region)(&fe_region);
-		delete[] function_types;
-	}
-};
+int cmzn_elementbasis::getNumberOfFunctionsPerNode(int basisNodeIndex) const
+{
+	FE_basis *basis = this->getFeBasis();
+	int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex - 1);
+	return numberOfFunctionsPerNode;
+}
 
 /*============================================================================*/
 
@@ -477,11 +512,12 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 					cmzn_node *node = this->legacyNodes[nodeIndexes[n] - 1];
 					workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
 				}
-				if (!eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data(), localNodeChange))
+				const int result = eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data(), localNodeChange);
+				if (result != CMZN_OK)
 				{
 					display_message(ERROR_MESSAGE,
 						"Elementtemplate  setLegacyNodesInElement.  Failed to set element local nodes");
-					return CMZN_ERROR_GENERAL;
+					return result;
 				}
 			}
 		}
@@ -624,7 +660,7 @@ int cmzn_elementtemplate::addLegacyNodeIndexes(FE_field *field, int componentNum
 		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  Field %s component is not defined", get_FE_field_name(field));
 		return CMZN_ERROR_ARGUMENT;
 	}
-	if (eft->getElementParameterMappingMode() != CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE)
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		display_message(ERROR_MESSAGE, "Elementtemplate addLegacyNodeIndexes.  "
 			"Field %s component is not using node-based parameter map", get_FE_field_name(field));
@@ -742,7 +778,7 @@ int cmzn_elementtemplate::defineFieldElementConstant(cmzn_field_id field, int co
 			"Elementtemplate defineFieldElementConstant.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	cmzn_elementbasis_id basis = new cmzn_elementbasis(this->getMesh()->get_FE_region(),
+	cmzn_elementbasis_id basis = cmzn_elementbasis::create(this->getMesh()->get_FE_region(),
 		this->getMesh()->getDimension(), CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
 	FE_basis *fe_basis = basis->getFeBasis();
 	cmzn_elementbasis_destroy(&basis);
@@ -776,7 +812,7 @@ int cmzn_elementtemplate::defineFieldElementConstant(cmzn_field_id field, int co
 		cmzn_elementfieldtemplate *eft = cmzn_elementfieldtemplate::create(this->getMesh(), fe_basis);
 		if (eft)
 		{
-			return_code = eft->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT);
+			return_code = eft->setParameterMappingMode(CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT);
 			if (CMZN_OK == return_code)
 				return_code = this->fe_element_template->defineField(fe_field, componentNumber - 1, eft);
 			if (CMZN_OK != return_code)
@@ -1304,7 +1340,7 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (fe_region)
 		{
-			return new cmzn_elementbasis(fe_region, dimension, function_type);
+			return cmzn_elementbasis::create(fe_region, dimension, function_type);
 		}
 	}
 	return 0;
@@ -1887,9 +1923,64 @@ int cmzn_element_get_dimension(cmzn_element_id element)
 	return 0;
 }
 
+cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
+	cmzn_element_id element, cmzn_field_id field, int componentNumber)
+{
+	if (!(element && field && ((-1 == componentNumber) ||
+		((1 <= componentNumber) && (componentNumber <= cmzn_field_get_number_of_components(field))))))
+	{
+		display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  Invalid argument(s)");
+		return 0;
+	}
+	FE_field *fe_field = 0;
+	Computed_field_get_type_finite_element(field, &fe_field);
+	if ((!fe_field)
+		|| (get_FE_field_FE_field_type(fe_field) != GENERAL_FE_FIELD)
+		|| (get_FE_field_value_type(fe_field) != FE_VALUE_VALUE))
+	{
+		display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  Can only query a finite element type field on elements");
+		return 0;
+	}
+	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, element->getMesh());
+	if (!meshFieldData)
+		return 0;
+	FE_element_field_template *eft = 0;
+	const int firstComponent = (componentNumber > 0) ? componentNumber - 1 : 0;
+	const int limitComponent = (componentNumber > 0) ? componentNumber : get_FE_field_number_of_components(fe_field);
+	FE_mesh_field_template *lastMft = 0;
+	for (int c = firstComponent; c < limitComponent; ++c)
+	{
+		FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+		if (!mft)
+		{
+			display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  No mesh field template found for component %d", c + 1);
+			return 0;
+		}
+		if (mft != lastMft)
+		{
+			FE_element_field_template *eftTmp = mft->getElementfieldtemplate(element->getIndex());
+			if (!eftTmp)
+				return 0; // not defined
+			if (eft)
+			{
+				if (eftTmp != eft)
+					return 0; // not homogeneous;
+			}
+			else
+			{
+				eft = eftTmp;
+			}
+			lastMft = mft;
+		}
+	}
+	return cmzn_elementfieldtemplate::create(eft);
+}
+
 int cmzn_element_get_identifier(struct cmzn_element *element)
 {
-	return get_FE_element_identifier(element);
+	if (element)
+		return element->getIdentifier();
+	return DS_LABEL_IDENTIFIER_INVALID;
 }
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
@@ -1898,6 +1989,201 @@ cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 	if (fe_mesh)
 		return new cmzn_mesh(fe_mesh);
 	return 0;
+}
+
+cmzn_node_id cmzn_element_get_node(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int localNodeIndex)
+{
+	if (!((element) && (eft) && (0 < localNodeIndex) && (localNodeIndex <= eft->getNumberOfLocalNodes())))
+	{
+		display_message(ERROR_MESSAGE, "Element getNode.  Invalid argument(s)");
+		return 0;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element getNode.  Element field template is not from element's mesh");
+		return 0;
+	}
+	const DsLabelIndex nodeIndex = eftData->getElementLocalNode(element->getIndex(), localNodeIndex - 1);
+	if (nodeIndex == DS_LABEL_INDEX_INVALID)
+		return 0;
+	cmzn_node *node = mesh->getNodeset()->getNode(nodeIndex);
+	cmzn_node_access(node);
+	return node;
+}
+
+int cmzn_element_set_node(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int localNodeIndex, cmzn_node_id node)
+{
+	if (!((element) && (eft) && (0 < localNodeIndex) && (localNodeIndex <= eft->getNumberOfLocalNodes())))
+	{
+		display_message(ERROR_MESSAGE, "Element getNode.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element getNode.  Element field template is not from element's mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID);
+}
+
+int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int identifiersCount,
+	const int *identifiersIn)
+{
+	if (!((element) && (eft) && (identifiersCount == eft->getNumberOfLocalNodes()) && (identifiersIn)))
+	{
+		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Element field template is not from element's mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	bool localNodeChange = false;
+	const int result = eftData->setElementLocalNodesByIdentifier(element->getIndex(), identifiersIn, localNodeChange);
+	if (localNodeChange)
+	{
+		display_message(WARNING_MESSAGE, "Element setNodesByIdentifier.  Change in local-to-global node map in %d-D element %d",
+			mesh->getDimension(), element->getIdentifier());
+	}
+	if (result != CMZN_OK)
+	{
+		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Failed to set nodes for %d-D element %d",
+			mesh->getDimension(), element->getIdentifier());
+	}
+	return result;
+}
+
+double cmzn_element_get_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex)
+{
+	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Invalid argument(s)");
+		return 0.0;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Element field template is not from element's mesh");
+		return 0.0;
+	}
+	// following will cease to compile if FE_value is not double:
+	const double *scaleFactors = eftData->getElementScaleFactors(element->getIndex());
+	if (!scaleFactors)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactor.  No scale factor exists");
+		return 0.0;
+	}
+	return scaleFactors[scaleFactorIndex - 1];
+}
+
+bool cmzn_element_has_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex)
+{
+	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
+	{
+		display_message(ERROR_MESSAGE, "Element hasScaleFactor.  Invalid argument(s)");
+		return false;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element hasScaleFactor.  Element field template is not from element's mesh");
+		return false;
+	}
+	// following will cease to compile if FE_value is not double:
+	return (eftData->getElementScaleFactors(element->getIndex()) != 0);
+}
+
+int cmzn_element_set_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex, double value)
+{
+	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Invalid argument(s)");
+		return 0.0;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Element field template is not from element's mesh");
+		return 0.0;
+	}
+	// following will cease to compile if FE_value is not double:
+	const int result = eftData->setElementScaleFactor(element->getIndex(), scaleFactorIndex - 1, value);
+	if (result != CMZN_OK)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Failed to set scale factor");
+		return result;
+	}
+	return CMZN_OK;
+}
+
+int cmzn_element_get_scale_factors(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int valuesCount, double *valuesOut)
+{
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesOut)))
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element field template is not from element's mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	// following will cease to compile if FE_value is not double:
+	const double *scaleFactors = eftData->getElementScaleFactors(element->getIndex());
+	if (!scaleFactors)
+		return CMZN_ERROR_NOT_FOUND;
+	memcpy(valuesOut, scaleFactors, valuesCount*sizeof(double));
+	return CMZN_OK;
+}
+	
+int cmzn_element_set_scale_factors(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int valuesCount, const double *valuesIn)
+{
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesIn)))
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
+	if (!eftData)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Element field template is not from element's mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	// following will cease to compile if FE_value is not double:
+	const int result = eftData->setElementScaleFactors(element->getIndex(), valuesIn);
+	if (result != CMZN_OK)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Failed to set scale factors");
+		return result;
+	}
+
+	// simplest to mark all fields as changed as they may share scale factors
+	// can optimise in future
+	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	// following will update clients:
+	mesh->elementChange(element->getIndex(), DS_LABEL_CHANGE_TYPE_DEFINITION);
+	return CMZN_OK;
 }
 
 enum cmzn_element_shape_type cmzn_element_get_shape_type(

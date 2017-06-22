@@ -2694,7 +2694,7 @@ bool EXReader::readElementHeaderField()
 		if (GENERAL_FE_FIELD != fe_field_type)
 		{
 			/* component name is sufficient for non-GENERAL_FE_FIELD */
-			eft->setElementParameterMappingMode(CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD);
+			eft->setParameterMappingMode(CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD);
 		}
 		else
 		{
@@ -2743,7 +2743,7 @@ bool EXReader::readElementHeaderField()
 
 			IO_stream_scan(input_file, ", ");
 			// read the global to element map type
-			cmzn_element_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID;
+			cmzn_elementfieldtemplate_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID;
 			bool elementGridBased = false;
 			char *global_to_element_map_string = 0;
 			if (!IO_stream_read_string(input_file, "[^.]", &global_to_element_map_string))
@@ -2756,20 +2756,20 @@ bool EXReader::readElementHeaderField()
 			if ((0 == strcmp("standard node based", global_to_element_map_string))
 				|| (0 == strcmp("node based", global_to_element_map_string)))
 			{
-				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE;
+				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE;
 			}
 			else if (0 == strcmp("element based", global_to_element_map_string))
 			{
-				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT;
+				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT;
 			}
 			else if (0 == strcmp("grid based", global_to_element_map_string))
 			{
-				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT;
+				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT;
 				elementGridBased = true;
 			}
 			else if (0 == strcmp("field based", global_to_element_map_string))
 			{
-				elementParameterMappingMode = CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD;
+				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD;
 			}
 			else
 			{
@@ -2780,7 +2780,7 @@ bool EXReader::readElementHeaderField()
 			DEALLOCATE(global_to_element_map_string);
 			if (!result)
 				break;
-			if (CMZN_OK != eft->setElementParameterMappingMode(elementParameterMappingMode))
+			if (CMZN_OK != eft->setParameterMappingMode(elementParameterMappingMode))
 			{
 				display_message(WARNING_MESSAGE, "EX Reader.  Can't use element parameter mapping mode with chosen basis.  %s",
 					this->getFileLocation());
@@ -2800,7 +2800,7 @@ bool EXReader::readElementHeaderField()
 				result = false;
 				break;
 			}
-			if ((this->exVersion >= 2) && (CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode))
+			if ((this->exVersion >= 2) && (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == elementParameterMappingMode))
 			{
 				scaleFactorSetName = keyValueMapBase.getKeyValue("scale factor set");
 			}
@@ -2815,7 +2815,7 @@ bool EXReader::readElementHeaderField()
 			}
 			switch (elementParameterMappingMode)
 			{
-			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_NODE:
+			case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 			{
 				// node to element map: includes standard and general
 				int nodeCount = 0;
@@ -3288,7 +3288,7 @@ bool EXReader::readElementHeaderField()
 				}
 				componentPackedNodeIndexes[c].swap(packedNodeIndexes);
 			} break;
-			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_ELEMENT:
+			case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
 			{
 				this->hasElementValues = true;
 				if (elementGridBased)
@@ -3349,11 +3349,11 @@ bool EXReader::readElementHeaderField()
 					}
 				}
 			} break;
-			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_FIELD:
+			case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 			{
 				// nothing more to do
 			} break;
-			case CMZN_ELEMENT_PARAMETER_MAPPING_MODE_INVALID:
+			case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID:
 			{
 				// should never get here as handled above
 			} break;
@@ -3946,7 +3946,7 @@ cmzn_element *EXReader::readElement()
 					}
 					if (scaleFactors) // copy from last EFT's scale factors
 					{
-						if (!meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors))
+						if (CMZN_OK != meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set scale factors.  %s", this->getFileLocation());
 							cmzn_element::deaccess(element);

@@ -25,6 +25,70 @@ struct FE_region;
 
 class LegacyElementFieldData;
 
+/** External handle to element basis description; convertable to FE_basis */
+struct cmzn_elementbasis
+{
+private:
+	FE_region *fe_region; // needed to get basis manager
+	int dimension;
+	cmzn_elementbasis_function_type *function_types;
+	int access_count;
+
+	cmzn_elementbasis(FE_region *fe_region, int mesh_dimension,
+		cmzn_elementbasis_function_type function_type);
+
+	~cmzn_elementbasis();
+
+public:
+	static cmzn_elementbasis* create(FE_region *fe_region, int mesh_dimension,
+		cmzn_elementbasis_function_type function_type);
+
+	static cmzn_elementbasis* create(FE_region *fe_region, FE_basis *basis);
+
+	cmzn_elementbasis_id access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(cmzn_elementbasis_id &basis)
+	{
+		if (!basis)
+			return CMZN_ERROR_ARGUMENT;
+		--(basis->access_count);
+		if (basis->access_count <= 0)
+			delete basis;
+		basis = 0;
+		return CMZN_OK;
+	}
+
+	int getDimension() const
+	{
+		return dimension;
+	}
+
+	/** @return  number of dimension using supplied function_type */
+	int getDimensionsUsingFunction(cmzn_elementbasis_function_type function_type) const;
+
+	/** @return  1 if all function types set & at least 2 chart components linked for each simplex basis */
+	int isValid() const;
+
+	/** @return  Accessed FE_basis, or NULL on error */
+	FE_basis *getFeBasis() const;
+
+	enum cmzn_elementbasis_function_type getFunctionType(int chart_component) const;
+
+	int setFunctionType(int chart_component, cmzn_elementbasis_function_type function_type);
+
+	int getNumberOfNodes() const;
+
+	int getNumberOfFunctions() const;
+
+	int getNumberOfFunctionsPerNode(int basisNodeIndex) const;
+
+};
+
+
 /** External element template object handling legacy node mappings */
 struct cmzn_elementtemplate
 {

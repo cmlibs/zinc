@@ -539,37 +539,58 @@ FE_value *FE_mesh_element_field_template_data::getOrCreateElementScaleFactors(Ds
 	return values;
 }
 
-bool FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values)
+int FE_mesh_element_field_template_data::setElementLocalNode(DsLabelIndex elementIndex, int localNodeIndex, DsLabelIndex nodeIndex)
 {
-	FE_value *targetValues = this->getOrCreateElementScaleFactors(elementIndex);
-	if (!targetValues)
-		return false;
-	memcpy(targetValues, values, this->localScaleFactorCount*sizeof(FE_value));
-	return true;
-}
-
-/** Set local nodes for the given element.
-  * @param elementIndex  Element index. Not checked.
-  * @param nodeIndexes  Array of nodeIndexes to set, size equal to localNodeCount for EFT.
-  * @param localNodeChange  Set to true if any local nodes changed from
-  * previous valid index, otherwise keeps prior value.
-  * @return  True on success, false on failure. */
-bool FE_mesh_element_field_template_data::setElementLocalNodes(
-	DsLabelIndex elementIndex, DsLabelIndex *nodeIndexes, bool& localNodeChange)
-{
-	localNodeChange = false;
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
-		return false;
+		return CMZN_ERROR_ARGUMENT;
 	FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
-		return false;
-	DsLabelIndex *elementNodeIndexes = this->localToGlobalNodes.getOrCreateArray(elementIndex);
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIndex *elementNodeIndexes = this->getOrCreateElementNodeIndexes(elementIndex);
 	if (!elementNodeIndexes)
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_mesh_element_field_template_data::mergeElementLocalNodesIndirect.  Failed to create element node indexes");
-		return false;
+			"FE_mesh_element_field_template_data::setElementLocalNode.  Failed to create element node indexes");
+		return CMZN_ERROR_MEMORY;
+	}
+	if (elementNodeIndexes[localNodeIndex] != nodeIndex)
+	{
+		if (nodeIndex >= 0)
+			nodeset->incrementElementUsageCount(nodeIndex);
+		if (elementNodeIndexes[localNodeIndex] >= 0)
+			nodeset->decrementElementUsageCount(elementNodeIndexes[localNodeIndex]);
+		elementNodeIndexes[localNodeIndex] = nodeIndex;
+		// simplest to mark all fields as changed as they may share local nodes
+		// can optimise in future
+		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		// following will update clients:
+		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+		return CMZN_OK;
+	}
+	return CMZN_OK;
+
+}
+
+int FE_mesh_element_field_template_data::setElementLocalNodes(
+	DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes, bool& localNodeChange)
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_mesh *mesh = this->eft->getMesh();
+	if (!mesh)
+		return CMZN_ERROR_ARGUMENT;
+	FE_nodeset *nodeset = mesh->getNodeset();
+	if (!nodeset)
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIndex *elementNodeIndexes = this->getOrCreateElementNodeIndexes(elementIndex);
+	if (!elementNodeIndexes)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_mesh_element_field_template_data::setElementLocalNodes.  Failed to create element node indexes");
+		return CMZN_ERROR_MEMORY;
 	}
 	for (int n = 0; n < this->localNodeCount; ++n)
 	{
@@ -585,7 +606,104 @@ bool FE_mesh_element_field_template_data::setElementLocalNodes(
 			elementNodeIndexes[n] = nodeIndexes[n];
 		}
 	}
-	return true;
+	return CMZN_OK;
+}
+
+int FE_mesh_element_field_template_data::setElementLocalNodesByIdentifier(
+	DsLabelIndex elementIndex, const DsLabelIdentifier *nodeIdentifiers, bool& localNodeChange)
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_mesh *mesh = this->eft->getMesh();
+	if (!mesh)
+		return CMZN_ERROR_ARGUMENT;
+	FE_nodeset *nodeset = mesh->getNodeset();
+	if (!nodeset)
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIndex *elementNodeIndexes = this->getOrCreateElementNodeIndexes(elementIndex);
+	if (!elementNodeIndexes)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_mesh_element_field_template_data::setElementLocalNodesByIdentifier.  Failed to create element node indexes");
+		return CMZN_ERROR_MEMORY;
+	}
+	int result = CMZN_OK;
+	bool change = false;
+	for (int n = 0; n < this->localNodeCount; ++n)
+	{
+		DsLabelIndex nodeIndex = DS_LABEL_INDEX_INVALID;
+		if (nodeIdentifiers[n] >= 0)
+		{
+			nodeIndex = nodeset->findIndexByIdentifier(nodeIdentifiers[n]);
+			if (nodeIndex == DS_LABEL_INDEX_INVALID)
+			{
+				display_message(ERROR_MESSAGE,
+					"Element setNodesByIdentifier.  Failed to find node %d to set as local node %d of %d in %d-D element %d",
+					nodeIdentifiers[n], n + 1, this->localNodeCount, mesh->getDimension(), mesh->getElementIdentifier(elementIndex));
+				result = CMZN_ERROR_ARGUMENT;
+				break;
+			}
+		}
+		if (nodeIndex != elementNodeIndexes[n])
+		{
+			if (nodeIndex >= 0)
+				nodeset->incrementElementUsageCount(nodeIndex);
+			if (elementNodeIndexes[n] >= 0)
+			{
+				nodeset->decrementElementUsageCount(elementNodeIndexes[n]);
+				localNodeChange = true;
+			}
+			elementNodeIndexes[n] = nodeIndex;
+			change = true;
+		}
+	}
+	if (change)
+	{
+		// simplest to mark all fields as changed as they may share local nodes
+		// can optimise in future
+		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		// following will update clients:
+		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	}
+	return result;
+}
+
+int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elementIndex, int scaleFactorIndex, FE_value value)
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_mesh *mesh = this->eft->getMesh();
+	if (!mesh)
+		return CMZN_ERROR_ARGUMENT;
+	FE_value *targetValues = this->getOrCreateElementScaleFactors(elementIndex);
+	if (!targetValues)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_mesh_element_field_template_data::setElementScaleFactors.  Failed to create element scale factors");
+		return CMZN_ERROR_MEMORY;
+	}
+	targetValues[scaleFactorIndex] = value;
+	// simplest to mark all fields as changed as they may share scale factors
+	// can optimise in future
+	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	// following will update clients:
+	mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	return CMZN_OK;
+}
+
+int FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values)
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_value *targetValues = this->getOrCreateElementScaleFactors(elementIndex);
+	if (!targetValues)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_mesh_element_field_template_data::setElementScaleFactors.  Failed to create element scale factors");
+		return CMZN_ERROR_MEMORY;
+	}
+	memcpy(targetValues, values, this->localScaleFactorCount*sizeof(FE_value));
+	return CMZN_OK;
 }
 
 /** @return  True if local to global nodes stored for all elements of mesh */
@@ -711,7 +829,7 @@ bool FE_mesh_element_field_template_data::mergeElementVaryingData(const FE_mesh_
 					"Missing source local scale factors for element %d", elementIdentifier);
 				return false;
 			}
-			if (!this->setElementScaleFactors(targetElementIndex, sourceScaleFactors))
+			if (CMZN_OK != this->setElementScaleFactors(targetElementIndex, sourceScaleFactors))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
 					"Failed to set scale factors");
