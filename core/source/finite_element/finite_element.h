@@ -44,11 +44,6 @@ class FE_mesh_field_data;
 class FE_mesh;
 
 /**
- * Set of scale factors stored by mesh.
- */
-struct cmzn_mesh_scale_factor_set;
-
-/**
  * FE_field and FE_element haves pointers to owning FE_region in shared field info.
  */
 struct FE_region;

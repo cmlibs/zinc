@@ -22,44 +22,6 @@ Module types
 ------------
 */
 
-cmzn_mesh_scale_factor_set::~cmzn_mesh_scale_factor_set()
-{
-	DEALLOCATE(name);
-}
-
-cmzn_mesh_scale_factor_set::cmzn_mesh_scale_factor_set(FE_mesh *fe_meshIn, const char *nameIn) :
-	fe_mesh(fe_meshIn),
-	name(duplicate_string(nameIn)),
-	access_count(1)
-{
-}
-
-int cmzn_mesh_scale_factor_set::setName(const char *nameIn)
-{
-	if (nameIn)
-	{
-		cmzn_mesh_scale_factor_set *existingSet = this->fe_mesh->find_scale_factor_set_by_name(nameIn);
-		if (existingSet)
-		{
-			bool noChange = (existingSet == this);
-			cmzn_mesh_scale_factor_set::deaccess(existingSet);
-			if (noChange)
-			{
-				return CMZN_OK;
-			}
-		}
-		else
-		{
-			// Note: assumes FE_mesh does not store sets in a map
-			// Hence can change name in object
-			DEALLOCATE(this->name);
-			this->name = duplicate_string(nameIn);
-			return CMZN_OK;
-		}
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
 FE_element_template::FE_field_data::FE_field_data(FE_field *fieldIn) :
 	field(ACCESS(FE_field)(fieldIn)),
 	componentCount(get_FE_field_number_of_components(fieldIn)),
@@ -1137,13 +1099,6 @@ FE_mesh::~FE_mesh()
 	delete[] this->elementFieldTemplateData;
 	this->elementFieldTemplateDataCount = 0;
 	this->elementFieldTemplateData = 0;
-
-	const size_t size = this->scale_factor_sets.size();
-	for (size_t i = 0; i < size; ++i)
-	{
-		cmzn_mesh_scale_factor_set *scale_factor_set = this->scale_factor_sets[i];
-		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-	}
 }
 
 /** Assumes called by FE_region destructor, and change notification is disabled. */
@@ -1628,60 +1583,6 @@ struct FE_element_field_info_check_field_node_value_labels_data
 	struct FE_field *field;
 	struct FE_region *target_fe_region;
 };
-
-/**
- * Find handle to the mesh scale factor set of the given name, if any.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @param name  The name of the scale factor set. 
- * @return  Handle to the scale factor set, or 0 if none.
- * Up to caller to destroy returned handle.
- */
-cmzn_mesh_scale_factor_set *FE_mesh::find_scale_factor_set_by_name(
-	const char *name)
-{
-	if (name)
-	{
-		const size_t size = this->scale_factor_sets.size();
-		for (size_t i = 0; i < size; ++i)
-		{
-			if (0 == strcmp(this->scale_factor_sets[i]->getName(), name))
-			{
-				return this->scale_factor_sets[i]->access();
-			}
-		}
-	}
-	return 0;
-}
-
-/**
- * Create a mesh scale factor set. The new set is given a unique name in the
- * mesh, which can be changed.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @return  Handle to the new scale factor set, or 0 on failure. Up to caller
- * to destroy the returned handle.
- */
-cmzn_mesh_scale_factor_set *FE_mesh::create_scale_factor_set()
-{
-	char tempName[10];
-	for (int i = static_cast<int>(this->scale_factor_sets.size()) + 1; ; ++i)
-	{
-		sprintf(tempName, "temp%d", i);
-		cmzn_mesh_scale_factor_set *existingSet = this->find_scale_factor_set_by_name(tempName);
-		if (existingSet)
-		{
-			cmzn_mesh_scale_factor_set::deaccess(existingSet);
-		}
-		else
-		{
-			cmzn_mesh_scale_factor_set *scale_factor_set = cmzn_mesh_scale_factor_set::create(this, tempName);
-			this->scale_factor_sets.push_back(scale_factor_set);
-			return scale_factor_set->access();
-		}
-	}
-	return 0;
-}
 
 void FE_mesh::list_btree_statistics()
 {

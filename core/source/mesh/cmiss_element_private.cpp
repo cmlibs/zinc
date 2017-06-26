@@ -402,14 +402,6 @@ cmzn_elementtemplate::cmzn_elementtemplate(FE_mesh *fe_mesh_in) :
 
 cmzn_elementtemplate::~cmzn_elementtemplate()
 {
-#if 0 // GRC
-	for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
-		iter != scale_factor_set_sizes.end(); ++iter)
-	{
-		cmzn_mesh_scale_factor_set *temp = iter->first;
-		cmzn_mesh_scale_factor_set::deaccess(temp);
-	}
-#endif // GRC
 	const size_t legacyFieldDataCount = this->legacyFieldDataList.size();
 	for (size_t i = 0; i < legacyFieldDataCount; ++i)
 		delete this->legacyFieldDataList[i];
@@ -559,44 +551,6 @@ int cmzn_elementtemplate::setElementShapeType(cmzn_element_shape_type shapeTypeI
 		DEACCESS(FE_element_shape)(&elementShape);
 	return return_code;
 }
-
-#if 0 // GRC
-int cmzn_elementtemplate::setNumberOfScaleFactors(cmzn_mesh_scale_factor_set_id scale_factor_set, int numberOfScaleFactors)
-{
-	int return_code = CMZN_OK;
-	if (scale_factor_set && (0 <= numberOfScaleFactors))
-	{
-		ScaleFactorSetIntMap::iterator iter = this->scale_factor_set_sizes.find(scale_factor_set);
-		if (iter != scale_factor_set_sizes.end())
-		{
-			if (0 == numberOfScaleFactors)
-			{
-				cmzn_mesh_scale_factor_set *temp = scale_factor_set;
-				cmzn_mesh_scale_factor_set::deaccess(temp);
-				scale_factor_set_sizes.erase(iter);
-				this->invalidate();
-			}
-			else if (numberOfScaleFactors != iter->second)
-			{
-				display_message(ERROR_MESSAGE, "cmzn_elementtemplate_set_number_of_scale_factors.  "
-					"Can't change number size of a scale factor set in element template");
-				return_code = CMZN_ERROR_ARGUMENT;
-			}
-		}
-		else if (0 < numberOfScaleFactors)
-		{
-			scale_factor_set->access();
-			scale_factor_set_sizes[scale_factor_set] = numberOfScaleFactors;
-			this->invalidate();
-		}
-	}
-	else
-	{
-		return_code = CMZN_ERROR_ARGUMENT;
-	}
-	return return_code;
-}
-#endif // GRC
 
 int cmzn_elementtemplate::setNumberOfNodes(int legacyNodesCountIn)
 {
@@ -1225,16 +1179,6 @@ public:
 
 	FE_mesh *get_FE_mesh() const { return this->fe_mesh; }
 
-	cmzn_mesh_scale_factor_set *findMeshScaleFactorSetByName(const char *name)
-	{
-		return this->fe_mesh->find_scale_factor_set_by_name(name);
-	}
-
-	cmzn_mesh_scale_factor_set *createMeshScaleFactorSet()
-	{
-		return this->fe_mesh->create_scale_factor_set();
-	}
-
 	/** @return  Allocated name */
 	char *getName()
 	{
@@ -1478,41 +1422,6 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 {
 	if (mesh)
 		return mesh->findElementByIdentifier(identifier);
-	return 0;
-}
-
-/**
- * Find handle to the mesh scale factor set of the given name, if any.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @param mesh  The mesh to query.
- * @param name  The name of the scale factor set. 
- * @return  Handle to the scale factor set, or 0 if none.
- * Up to caller to destroy handle.
- */
-cmzn_mesh_scale_factor_set_id
-cmzn_mesh_find_mesh_scale_factor_set_by_name(cmzn_mesh_id mesh,
-	const char *name)
-{
-	if (mesh)
-		return mesh->findMeshScaleFactorSetByName(name);
-	return 0;
-}
-
-/**
- * Create a mesh scale factor set. The new set is given a unique name which
- * can be changed.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @param mesh  The mesh to create the new set in.
- * @return  Handle to the new scale factor set, or 0 on failure. Up to caller
- * to destroy the returned handle.
- */
-cmzn_mesh_scale_factor_set_id cmzn_mesh_create_mesh_scale_factor_set(
-	cmzn_mesh_id mesh)
-{
-	if (mesh)
-		return mesh->createMeshScaleFactorSet();
 	return 0;
 }
 
@@ -1768,31 +1677,6 @@ int cmzn_elementtemplate_set_element_shape_type(cmzn_elementtemplate_id element_
 		return element_template->setElementShapeType(shape_type);
 	return 0;
 }
-
-#if 0 // GRC
-/**
- * Sets the number of scale factors to be used with a given scale factor set in
- * elements defined from this template.
- * Note: The number of scale factors is arbitrary for a scale factor set and
- * an element, but cannot be changed once set.
- * Scale factor indices in element parameter maps are relative to scale factor
- * set for the element field component, and start at 1.
- *
- * @param element_template  Element template to modify.
- * @param scale_factor_set  The mesh scale factor set to assign numbers of scale
- * factors for.
- * @param number_of_scale_factors  The number of scale factors to set.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-int cmzn_elementtemplate_set_number_of_scale_factors(
-	cmzn_elementtemplate_id element_template,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int number_of_scale_factors)
-{
-	if (element_template)
-		return element_template->setNumberOfScaleFactors(scale_factor_set, number_of_scale_factors);
-	return CMZN_ERROR_ARGUMENT;
-}
-#endif // GRC
 
 int cmzn_elementtemplate_get_number_of_nodes(
 	cmzn_elementtemplate_id element_template)
@@ -2304,71 +2188,6 @@ char *cmzn_elementbasis_function_type_enum_to_string(enum cmzn_elementbasis_func
 {
 	const char *type_string = cmzn_elementbasis_function_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
-}
-
-/**
- * Returns a new handle to the scale factor set with reference count
- * incremented. Caller is responsible for destroying the new handle.
- *
- * @param scale_factor_set  The mesh scale factor set to obtain a new
- * reference to.
- * @return  New handle to the scale factor set.
- */
-cmzn_mesh_scale_factor_set_id cmzn_mesh_scale_factor_set_access(
-	cmzn_mesh_scale_factor_set_id scale_factor_set)
-{
-	if (scale_factor_set)
-		scale_factor_set->access();
-	return scale_factor_set;
-}
-
-/**
- * Destroys this handle to the finite element mesh and sets it to NULL.
- * Internally this just decrements the reference count.
- *
- * @param mesh_address  Address of handle to the mesh to destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-int cmzn_mesh_scale_factor_set_destroy(
-	cmzn_mesh_scale_factor_set_id *scale_factor_set_address)
-{
-	if (scale_factor_set_address)
-	{
-		return cmzn_mesh_scale_factor_set::deaccess(*scale_factor_set_address);
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-/**
- * Get the name of the mesh scale factor set.
- * @see cmzn_deallocate()
- *
- * @param scale_factor_set  The mesh scale factor set to query.
- * @return  On success: allocated string containing mesh name. Up to caller to
- * free using cmzn_deallocate().
- */
-char *cmzn_mesh_scale_factor_set_get_name(
-	cmzn_mesh_scale_factor_set_id scale_factor_set)
-{
-	if (scale_factor_set)
-		return duplicate_string(scale_factor_set->getName());
-	return 0;
-}
-
-/**
- * Set the name of the mesh scale factor set.
- *
- * @param scale_factor_set  The mesh scale factor set to modify.
- * @param name  The new name of the scale factor set; must not be in use by any
- * other set in the mesh.
- * @return  CMZN_OK on success, otherwise any other error code.
- */
-int cmzn_mesh_scale_factor_set_set_name(
-	cmzn_mesh_scale_factor_set_id scale_factor_set, const char *name)
-{
-	if (scale_factor_set && name)
-		return scale_factor_set->setName(name);
-	return 0;
 }
 
 cmzn_meshchanges::cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn) :

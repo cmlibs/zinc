@@ -25,63 +25,6 @@
 
 class FE_mesh;
 
-struct cmzn_mesh_scale_factor_set;
-
-/** Handle to a set of scale factors for a mesh.
- * Scale factors are used to scale global field parameters before use.
- * Actual values are stored under this handle in each element. */
-typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
-
-/**
- * Identifier of set of scale factors, under which scale factors are stored,
- * e.g. in elements.
- */
-struct cmzn_mesh_scale_factor_set
-{
-private:
-	FE_mesh *fe_mesh; // non-accessed pointer to owner
-	char *name;
-	int access_count;
-
-	cmzn_mesh_scale_factor_set();
-
-	~cmzn_mesh_scale_factor_set();
-
-	cmzn_mesh_scale_factor_set(FE_mesh *fe_meshIn, const char *nameIn);
-
-public:
-
-	static cmzn_mesh_scale_factor_set *create(FE_mesh *fe_meshIn, const char *nameIn)
-	{
-		return new cmzn_mesh_scale_factor_set(fe_meshIn, nameIn);
-	}
-
-	cmzn_mesh_scale_factor_set *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_mesh_scale_factor_set* &scale_factor_set)
-	{
-		if (!scale_factor_set)
-			return CMZN_ERROR_ARGUMENT;
-		--(scale_factor_set->access_count);
-		if (scale_factor_set->access_count <= 0)
-			delete scale_factor_set;
-		scale_factor_set = 0;
-		return CMZN_OK;
-	}
-
-	/** @return  Internal name, not a copy */
-	const char *getName() const
-	{
-		return this->name;
-	}
-
-	int setName(const char *nameIn);
-};
-
 class FE_mesh_field_template;
 
 /**
@@ -1019,10 +962,6 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
-	// scale factor sets in use. Used as identifier for finding scale factor
-	// arrays stored with elements 
-	std::vector<cmzn_mesh_scale_factor_set*> scale_factor_sets;
-
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
@@ -1297,10 +1236,6 @@ public:
 			return elementShapeFaces->getElementShapeType();
 		return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	}
-
-	cmzn_mesh_scale_factor_set *find_scale_factor_set_by_name(const char *name);
-
-	cmzn_mesh_scale_factor_set *create_scale_factor_set();
 
 	/** get size i.e. number of elements in mesh */
 	int getSize() const

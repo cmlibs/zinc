@@ -97,10 +97,6 @@ private:
 	int legacyNodesCount;
 	cmzn_node **legacyNodes;
 	std::vector<LegacyElementFieldData*> legacyFieldDataList;
-#if 0 // GRC
-	typedef std::map<cmzn_mesh_scale_factor_set*, int> ScaleFactorSetIntMap;
-	ScaleFactorSetIntMap scale_factor_set_sizes;
-#endif // GRC
 	int access_count;
 
 	cmzn_elementtemplate(FE_mesh *fe_mesh_in);
