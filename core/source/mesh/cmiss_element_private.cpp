@@ -1818,9 +1818,10 @@ cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 	}
 	FE_field *fe_field = 0;
 	Computed_field_get_type_finite_element(field, &fe_field);
+	Value_type valueType = get_FE_field_value_type(fe_field);
 	if ((!fe_field)
 		|| (get_FE_field_FE_field_type(fe_field) != GENERAL_FE_FIELD)
-		|| (get_FE_field_value_type(fe_field) != FE_VALUE_VALUE))
+		|| ((valueType != FE_VALUE_VALUE) && (valueType != INT_VALUE)))
 	{
 		display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  Can only query a finite element type field on elements");
 		return 0;

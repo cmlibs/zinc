@@ -127,15 +127,18 @@ public:
 		return 0;
 	}
 
-	int setGroupName(const char *group_name)
+	int setGroupName(const char *groupNameIn)
 	{
-		if (groupName)
+		char *tmp = 0;
+		if (groupNameIn)
 		{
-			DEALLOCATE(groupName);
-			groupName = 0;
+			tmp = duplicate_string(groupNameIn);
+			if (!tmp)
+				return CMZN_ERROR_MEMORY;
 		}
-		if (group_name)
-			groupName = duplicate_string(group_name);
+		if (this->groupName)
+			DEALLOCATE(this->groupName);
+		this->groupName = tmp;
 		return CMZN_OK;
 	}
 

@@ -17,6 +17,8 @@ to file.
 
 #include "general/enumerator.h"
 #include "general/value.h"
+#include "opencmiss/zinc/types/regionid.h"
+#include "opencmiss/zinc/types/fieldid.h"
 
 /*
 Global types
