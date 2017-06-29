@@ -782,11 +782,19 @@ public:
 		delete[] this->components;
 	}
 
-	/** @param componentNumber  From 0 to componentCount, not checked.
+	/** @param componentNumber  From 0 to componentCount - 1, not checked.
 	  * @param elementIndex  Element index >= 0. Not checked. */
 	void clearComponentElementData(int componentNumber, DsLabelIndex elementIndex)
 	{
 		this->components[componentNumber]->clearElementData(elementIndex);
+	}
+
+	/** Clear element data for all components
+	  * @param elementIndex  Element index >= 0. Not checked. */
+	void clearElementData(DsLabelIndex elementIndex)
+	{
+		for (int c = 0; c < this->componentCount; ++c)
+			this->components[c]->clearElementData(elementIndex);
 	}
 
 	/** @param componentNumber  From 0 to componentCount - 1, not checked

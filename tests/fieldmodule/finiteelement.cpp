@@ -1759,3 +1759,171 @@ TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
 		}
 	}
 }
+
+
+class FieldmodulecallbackRecordChange : public Fieldmodulecallback
+{
+public:
+	Fieldmoduleevent lastEvent;
+
+	FieldmodulecallbackRecordChange()
+	{ }
+
+	virtual void operator()(const Fieldmoduleevent &event)
+	{
+		this->lastEvent = event;
+	}
+};
+
+// tests that destroying an element frees its nodes to be destroyed if not in use by other elements
+// tests that destroying an element notifies change to mesh and fields
+TEST(ZincMesh, destroyElement)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(RESULT_OK, result = notifier.setCallback(recordChange));
+	EXPECT_FALSE(recordChange.lastEvent.isValid());
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	EXPECT_EQ(2, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	EXPECT_EQ(11, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	EXPECT_EQ(20, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	EXPECT_EQ(12, nodes.getSize());
+
+	// test can't destroy nodes in use by element
+	EXPECT_EQ(RESULT_ERROR_IN_USE, result = nodes.destroyAllNodes());
+	EXPECT_EQ(12, nodes.getSize());
+	// check above did not notify
+	EXPECT_FALSE(recordChange.lastEvent.isValid());
+
+	// now destroy an element
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Element element2 = mesh3d.findElementByIdentifier(2);
+	EXPECT_TRUE(element2.isValid());
+	EXPECT_EQ(RESULT_OK, result = mesh3d.destroyElement(element1));
+	// element1 should be safely orphaned by the above
+	EXPECT_EQ(1, mesh3d.getSize());
+	EXPECT_EQ(6, mesh2d.getSize());
+	EXPECT_EQ(12, mesh1d.getSize());
+	EXPECT_EQ(12, nodes.getSize());
+
+	// test for correct change notification
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	int summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	int coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	Meshchanges meshchanges3d = recordChange.lastEvent.getMeshchanges(mesh3d);
+	EXPECT_TRUE(meshchanges3d.isValid());
+	EXPECT_EQ(1, meshchanges3d.getNumberOfChanges());
+	int summaryElementChanges3d = meshchanges3d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges3d);
+	EXPECT_EQ(Element::CHANGE_FLAG_NONE, meshchanges3d.getElementChangeFlags(element2));
+	Meshchanges meshchanges2d = recordChange.lastEvent.getMeshchanges(mesh2d);
+	EXPECT_TRUE(meshchanges2d.isValid());
+	EXPECT_EQ(5, meshchanges2d.getNumberOfChanges());
+	int summaryElementChanges2d = meshchanges2d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges2d);
+	Meshchanges meshchanges1d = recordChange.lastEvent.getMeshchanges(mesh1d);
+	EXPECT_TRUE(meshchanges1d.isValid());
+	EXPECT_EQ(8, meshchanges1d.getNumberOfChanges());
+	int summaryElementChanges1d = meshchanges1d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges1d);
+	Nodesetchanges nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(0, nodesetchanges.getNumberOfChanges());
+	int summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, summaryNodeChanges);
+
+	// test can destroy nodes no longer in use by element1, but not those in element2
+	EXPECT_EQ(RESULT_ERROR_IN_USE, result = nodes.destroyAllNodes());
+	EXPECT_EQ(8, nodes.getSize());
+	// check the right nodes were destroyed
+	for (int n = 0; n < 12; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		if ((n % 3) > 0)
+			EXPECT_TRUE(node.isValid());
+		else
+			EXPECT_FALSE(node.isValid());
+	}
+
+	// check above did notify
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(4, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_REMOVE, summaryNodeChanges);
+
+	// now destroy remaining elements
+	EXPECT_EQ(RESULT_OK, result = mesh3d.destroyAllElements());
+	// element2 should be safely orphaned by the above
+	EXPECT_EQ(0, mesh3d.getSize());
+	EXPECT_EQ(0, mesh2d.getSize());
+	EXPECT_EQ(0, mesh1d.getSize());
+	EXPECT_EQ(8, nodes.getSize());
+
+	// test for correct change notification
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	meshchanges3d = recordChange.lastEvent.getMeshchanges(mesh3d);
+	EXPECT_TRUE(meshchanges3d.isValid());
+	EXPECT_EQ(1, meshchanges3d.getNumberOfChanges());
+	summaryElementChanges3d = meshchanges3d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges3d);
+	meshchanges2d = recordChange.lastEvent.getMeshchanges(mesh2d);
+	EXPECT_TRUE(meshchanges2d.isValid());
+	EXPECT_EQ(6, meshchanges2d.getNumberOfChanges());
+	summaryElementChanges2d = meshchanges2d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges2d);
+	meshchanges1d = recordChange.lastEvent.getMeshchanges(mesh1d);
+	EXPECT_TRUE(meshchanges1d.isValid());
+	EXPECT_EQ(12, meshchanges1d.getNumberOfChanges());
+	summaryElementChanges1d = meshchanges1d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges1d);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(0, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, summaryNodeChanges);
+
+	// test can destroy all nodes since no longer used by elements
+	EXPECT_EQ(RESULT_OK, result = nodes.destroyAllNodes());
+	EXPECT_EQ(0, nodes.getSize());
+
+	// check above did notify
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(8, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_REMOVE, summaryNodeChanges);
+}

@@ -2472,9 +2472,25 @@ int FE_mesh::define_faces()
 	return return_code;
 }
 
+struct FE_mesh_and_element_index
+{
+	FE_mesh *mesh;
+	const DsLabelIndex elementIndex;
+};
+
+int FE_field_clear_element_varying_data(struct FE_field *field, void *mesh_and_element_index_void)
+{
+	auto args = static_cast<FE_mesh_and_element_index*>(mesh_and_element_index_void);
+	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, args->mesh);
+	if (meshFieldData)
+		meshFieldData->clearElementData(args->elementIndex);
+	return 1;
+}
+
 /**
  * Removes element and all its faces that are not shared with other elements
- * from mesh.
+ * from mesh. Releases per-element data including nodes.
+ * Records remove element change but doesn't notify.
  * Note: expects FE_region change cache to be on or caller to call FE_region update.
  * Note: expects caller to record field changes.
  * This function is recursive.
@@ -2490,6 +2506,16 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
 		this->fe_elements.setValue(elementIndex, 0);
 		cmzn_element::deaccess(element);
 		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
+		// clear data for this element stored with field, e.g. per-element DOFs
+		FE_mesh_and_element_index mesh_and_element_index = { this, elementIndex };
+		FE_region_for_each_FE_field(this->fe_region, FE_field_clear_element_varying_data, &mesh_and_element_index);
+		// clear element field templates for element in all mesh field templates
+		// note this clears nodes and scale factors for element once last usage of EFT for element is removed
+		for (auto mftIter = this->meshFieldTemplates.begin(); mftIter != this->meshFieldTemplates.end(); ++mftIter)
+		{
+			FE_mesh_field_template *mft = *mftIter;
+			mft->setElementfieldtemplateIndex(elementIndex, FE_mesh_field_template::ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
+		}
 		if (this->parentMesh)
 			this->clearElementParents(elementIndex);
 		if (this->faceMesh)
@@ -2520,7 +2546,7 @@ int FE_mesh::destroyElement(cmzn_element *element)
 		return CMZN_ERROR_ARGUMENT;
 	FE_region_begin_change(this->fe_region);
 	int return_code = this->removeElementPrivate(element->getIndex());
-	if ((return_code = CMZN_OK) && (this->fe_region))
+	if ((CMZN_OK == return_code) && (this->fe_region))
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	FE_region_end_change(this->fe_region);
 	return return_code;
