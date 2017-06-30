@@ -1,3 +1,5 @@
+! 2 cube element mesh with grid, constant, indexed, integer, string fields
+!
 Region: /
 !#nodeset nodes
 #Fields=1
@@ -435,3 +437,4 @@ Shape. Dimension=1, line
  1 10 10 100
  1 10 10 100
  1 10 10 100
+!

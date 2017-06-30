@@ -983,15 +983,22 @@ char *EXReader::readString()
 bool EXReader::readCommentOrDirective()
 {
 	char test_string[5];
-	const bool hasDirectiveChar = this->readNextNonSpaceChar() == (int)'#';
+	char nextChar;
+	const int input_result = IO_stream_scan(input_file, "%c", &nextChar);
+	if (1 != input_result)
+		return true; // last line
+	const bool hasDirectiveChar = (nextChar == '#');
 	const bool nodesetDirective = hasDirectiveChar && (1 == IO_stream_scan(this->input_file, "nodese%1[t] ", test_string));
 	const bool meshDirective = hasDirectiveChar && (!nodesetDirective) && (1 == IO_stream_scan(this->input_file, "mes%1[h] ", test_string));
 	if (!(nodesetDirective || meshDirective))
 	{
-		// comment: ignore
-		char *rest_of_line;
-		IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
-		DEALLOCATE(rest_of_line);
+		// comment: read and ignore to end of line, if not already there
+		if ((nextChar != '\n') && (nextChar != '\r'))
+		{
+			char *rest_of_line;
+			IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
+			DEALLOCATE(rest_of_line);
+		}
 		return true;
 	}
 	if (!this->fe_region)
