@@ -6031,7 +6031,8 @@ Frees the memory for the field and sets <*field_address> to NULL.
 	{
 		if (0==field->access_count)
 		{
-			FE_mesh::deaccess(field->element_xi_host_mesh);
+			if (field->element_xi_host_mesh)
+				FE_mesh::deaccess(field->element_xi_host_mesh);
 			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 				delete field->meshFieldData[d];
 
@@ -7452,6 +7453,7 @@ Should only call this function for unmanaged fields.
 		(1==get_FE_field_number_of_components(indexer_field))&&
 		(INT_VALUE==get_FE_field_value_type(indexer_field))&&
 		/* and to avoid possible endless loops... */
+		(indexer_field != field) &&
 		(INDEXED_FE_FIELD != get_FE_field_FE_field_type(indexer_field)))
 	{
 		/* 1. make dynamic allocations for any new type-specific data */

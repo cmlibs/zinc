@@ -293,7 +293,7 @@ private:
 	bool writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex elementIndex, const FE_value *xi);
 	bool writeFieldHeader(int fieldIndex, struct FE_field *field);
 	bool writeFieldValues(struct FE_field *field);
-
+	bool writeOptionalFieldValues();
 	bool writeElementShape(FE_element_shape *elementShape);
 	bool writeBasis(FE_basis *basis);
 	bool elementIsToBeWritten(cmzn_element *element);
@@ -385,7 +385,7 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 			display_message(ERROR_MESSAGE, "EXWriter::writeFieldHeader.  Invalid indexed field");
 			return false;
 		}
-		(*this->output_file) <<  ", indexed, Index_field=" << get_FE_field_name(field) << ", #Values=" << number_of_indexed_values;
+		(*this->output_file) <<  ", indexed, Index_field=" << get_FE_field_name(indexer_field) << ", #Values=" << number_of_indexed_values;
 	} break;
 	default:
 	{
@@ -468,7 +468,7 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 	return true;
 }
 
-  /**
+/**
   * Writes the field values to <output_file> - if field is of type constant or
   * indexed. Each component or version starts on a new line.
   */
@@ -506,8 +506,8 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"EXWriter::writeFieldValues.  Error getting element_xi value");
+						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting element_xi value");
+						return false;
 					}
 				}
 			} break;
@@ -525,8 +525,8 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"EXWriter::writeFieldValues.  Error getting FE_value");
+						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting FE_value");
+						return false;
 					}
 				}
 			} break;
@@ -542,15 +542,14 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"EXWriter::writeFieldValues.  Error getting int");
+						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting int");
+						return false;
 					}
 				}
 			} break;
 			case STRING_VALUE:
 			{
-				char *the_string;
-
+				char *the_string = 0;
 				for (int k=0;k<number_of_values;k++)
 				{
 					if (get_FE_field_string_value(field,k,&the_string))
@@ -563,25 +562,53 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 						}
 						else
 						{
-							/* empty string */
+							/* output empty string */
 							(*this->output_file) << " \"\"";
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"EXWriter::writeFieldValues.  Could not get string");
+						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Could not get string");
+						return false;
 					}
 				}
 			} break;
 			default:
 			{
-				display_message(ERROR_MESSAGE,
-					"EXWriter::writeFieldValues.  Value type %s not supported",
+				display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Value type %s not supported",
 					Value_type_string(valueType));
+				return false;
 			} break;
 		}
 		(*this->output_file) << "\n";
+	}
+	return true;
+}
+
+/** If any fields have per-field parameters, e.g. is constant or indexed, writes a Values section
+  * future: change to support having only some components constant; probably remove indexed */
+bool EXWriter::writeOptionalFieldValues()
+{
+	if (!output_file)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeOptionalFieldValues.  Invalid argument(s)");
+		return false;
+	}
+	bool first = true;
+	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
+	{
+		FE_field *field = *fieldIter;
+		const FE_field_type feFieldType = get_FE_field_FE_field_type(field);
+		if ((feFieldType == CONSTANT_FE_FIELD) || (feFieldType == INDEXED_FE_FIELD))
+		{
+			if (first)
+			{
+				(*this->output_file) << "Values:\n";
+				first = false;
+			}
+			if (!this->writeFieldValues(field))
+				return false;
+		}
 	}
 	return true;
 }
@@ -924,7 +951,6 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 	this->headerScalingEfts.clear();
 
 	// make list of fields in header, order of EFT scale factor sets, node packing
-	bool writeFieldValues = false;
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
@@ -968,12 +994,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 			}
 		}
 		if (c == componentCount)
-		{
 			this->headerFields.push_back(field);
-			// in future: this should be per-component:
-			if (CONSTANT_FE_FIELD == get_FE_field_FE_field_type(field))
-				writeFieldValues = true;
-		}
 	}
 
 	(*this->output_file) << "#Scale factor sets=" << this->headerScalingEfts.size() << "\n";
@@ -995,20 +1016,9 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 			return false;
 	}
 
-	// write globally constant field values:
-	// future: change to write only values for constant components
-	if (writeFieldValues)
+	if (!this->writeOptionalFieldValues())
 	{
-		(*this->output_file) << " Values :\n";
-		for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
-		{
-			FE_field *field = *fieldIter;
-			if (CONSTANT_FE_FIELD == get_FE_field_FE_field_type(field))
-			{
-				if (!this->writeFieldValues(field))
-					return false;
-			}
-		}
+		return false;
 	}
 	return true;
 }
@@ -1062,7 +1072,7 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			(*this->output_file) << values[v];
+			(*this->output_file) << " " << values[v];
 			if (0 == ((v + 1) % columnCount))
 				(*this->output_file) << "\n";
 		}
@@ -1677,16 +1687,11 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 	this->headerFields.clear();
 
 	// make list of fields in header
-	bool writeFieldValues = false;
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
 		if (FE_field_is_defined_at_node(field, node))
-		{
 			this->headerFields.push_back(field);
-			if (CONSTANT_FE_FIELD == get_FE_field_FE_field_type(field))
-				writeFieldValues = true;
-		}
 	}
 
 	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";
@@ -1698,21 +1703,9 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 		if (!this->writeNodeHeaderField(node, fieldIndex, field))
 			return false;
 	}
-
-	// write globally constant field values:
-	// future: change to write only values for constant components
-	if (writeFieldValues)
+	if (!this->writeOptionalFieldValues())
 	{
-		(*this->output_file) << " Values :\n";
-		for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
-		{
-			FE_field *field = *fieldIter;
-			if (CONSTANT_FE_FIELD == get_FE_field_FE_field_type(field))
-			{
-				if (!this->writeFieldValues(field))
-					return false;
-			}
-		}
+		return false;
 	}
 	return true;
 }

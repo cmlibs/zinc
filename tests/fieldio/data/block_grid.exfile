@@ -1,0 +1,437 @@
+Region: /
+!#nodeset nodes
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, #Components=3
+  x.  Value index=1, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+  y.  Value index=5, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+  z.  Value index=9, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+Node: 1
+0 1 0 0
+0 0 1 0
+0 0 0 0
+Node: 7
+0 1 0 0
+0 0 1 0
+10 0 0 0
+Node: 4
+0 1 0 0
+10 0 1 0
+0 0 0 0
+Node: 10
+0 1 0 0
+10 0 1 0
+10 0 0 0
+Node: 2
+10 1 0 0
+0 0 1 0
+0 0 0 0
+Node: 8
+10 1 0 0
+0 0 1 0
+10 0 0 0
+Node: 5
+10 1 0 0
+10 0 1 0
+0 0 0 0
+Node: 11
+10 1 0 0
+10 0 1 0
+10 0 0 0
+Node: 3
+20 1 0 0
+0 0 1 0
+0 0 0 0
+Node: 9
+20 1 0 0
+0 0 1 0
+10 0 0 0
+Node: 6
+20 1 0 0
+10 0 1 0
+0 0 0 0
+Node: 12
+20 1 0 0
+10 0 1 0
+10 0 0 0
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+ Element: 0 0 1
+ Element: 0 0 2
+ Element: 0 0 3
+ Element: 0 0 4
+ Element: 0 0 5
+ Element: 0 0 6
+ Element: 0 0 7
+ Element: 0 0 8
+ Element: 0 0 9
+ Element: 0 0 10
+ Element: 0 0 11
+ Element: 0 0 12
+ Element: 0 0 13
+ Element: 0 0 14
+ Element: 0 0 15
+ Element: 0 0 16
+ Element: 0 0 17
+ Element: 0 0 18
+ Element: 0 0 19
+ Element: 0 0 20
+ Shape. Dimension=2, line*line
+ Element: 0 1 0
+ Faces:
+ 0 0 1
+ 0 0 2
+ 0 0 7
+ 0 0 8
+ Element: 0 2 0
+ Faces:
+ 0 0 3
+ 0 0 4
+ 0 0 9
+ 0 0 10
+ Element: 0 3 0
+ Faces:
+ 0 0 5
+ 0 0 6
+ 0 0 11
+ 0 0 12
+ Element: 0 4 0
+ Faces:
+ 0 0 13
+ 0 0 14
+ 0 0 1
+ 0 0 3
+ Element: 0 5 0
+ Faces:
+ 0 0 15
+ 0 0 16
+ 0 0 2
+ 0 0 4
+ Element: 0 6 0
+ Faces:
+ 0 0 17
+ 0 0 18
+ 0 0 3
+ 0 0 5
+ Element: 0 7 0
+ Faces:
+ 0 0 19
+ 0 0 20
+ 0 0 4
+ 0 0 6
+ Element: 0 8 0
+ Faces:
+ 0 0 7
+ 0 0 9
+ 0 0 13
+ 0 0 15
+ Element: 0 9 0
+ Faces:
+ 0 0 8
+ 0 0 10
+ 0 0 14
+ 0 0 16
+ Element: 0 10 0
+ Faces:
+ 0 0 9
+ 0 0 11
+ 0 0 17
+ 0 0 19
+ Element: 0 11 0
+ Faces:
+ 0 0 10
+ 0 0 12
+ 0 0 18
+ 0 0 20
+ Shape. Dimension=3, line*line*line
+ #Scale factor sets=1
+ c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
+ #Nodes=8
+ #Fields=6
+ 1) material_type, field, integer, #Components=1
+ number. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=2, #xi2=3, #xi3=2
+ 2) conductivity, field, indexed, Index_field=material_type, #Values=3, real, #Components=1
+ value. 
+ 3) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ y. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ z. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ 4) magnetic field vector, field, constant, rectangular cartesian, #Components=3
+ x. 
+ y. 
+ z. 
+ 5) material_name, field, indexed, Index_field=material_type, #Values=3, string, #Components=1
+ name. 
+ 6) potential, field, real, #Components=1
+ value. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=2, #xi2=3, #xi3=2
+ Values :
+ 2.740000000000000e+001 3.150000000000000e+001 2.020000000000000e+001
+ 1.000000000000000e-001 2.000000000000000e-001 9.000000000000000e-001
+ copper 'aluminium' "\"mixed\" alloy"
+ Element: 1 0 0
+ Faces:
+ 0 1 0
+ 0 2 0
+ 0 4 0
+ 0 5 0
+ 0 8 0
+ 0 9 0
+ Values :
+ 1 1 3
+ 1 1 3
+ 1 2 3
+ 1 2 2
+ 1 1 3
+ 1 1 3
+ 1 2 3
+ 2 2 2
+ 1 3 3
+ 1 3 3
+ 2 2 3
+ 2 2 2
+  0.000000e+00  1.500000e+00  3.000000e+00
+  3.233334e+00  2.409252e+00  3.440926e+00
+  6.466667e+00  4.633334e+00  4.818504e+00
+  9.700000e+00  7.380340e+00  6.842135e+00
+  4.900000e+00  3.471068e+00  4.080340e+00
+  5.809252e+00  4.117360e+00  4.466667e+00
+  8.033334e+00  5.918253e+00  5.717083e+00
+  1.078034e+01  8.347449e+00  7.600000e+00
+  9.800000e+00  7.480340e+00  6.942136e+00
+  1.024093e+01  7.866667e+00  7.229663e+00
+  1.161850e+01  9.117083e+00  8.234719e+00
+  1.364214e+01  1.100000e+01  9.820509e+00
+ Nodes:
+ 1 2 4 5 7 8 10 11
+ Scale factors:
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ #Scale factor sets=1
+ c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
+ #Nodes=8
+ #Fields=6
+ 1) material_type, field, integer, #Components=1
+ number. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=3, #xi2=3, #xi3=2
+ 2) conductivity, field, indexed, Index_field=material_type, #Values=3, real, #Components=1
+ value. 
+ 3) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ y. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ z. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value labels: value d/ds1 d/ds2 d2/ds1ds2
+     Scale factor indices: 29 30 31 32
+ 4) magnetic field vector, field, constant, rectangular cartesian, #Components=3
+ x. 
+ y. 
+ z. 
+ 5) material_name, field, indexed, Index_field=material_type, #Values=3, string, #Components=1
+ name. 
+ 6) potential, field, real, #Components=1
+ value. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=3, #xi2=3, #xi3=2
+ Values :
+ 2.740000000000000e+001 3.150000000000000e+001 2.020000000000000e+001
+ 1.000000000000000e-001 2.000000000000000e-001 9.000000000000000e-001
+ copper 'aluminium' "\"mixed\" alloy"
+ Element: 2 0 0
+ Faces:
+ 0 2 0
+ 0 3 0
+ 0 6 0
+ 0 7 0
+ 0 10 0
+ 0 11 0
+ Values :
+ 3 3 3 2
+ 3 3 3 2
+ 3 3 2 2
+ 2 2 2 2
+ 3 3 3 3
+ 3 3 3 2
+ 3 2 2 2
+ 2 2 2 2
+ 3 3 3 1
+ 3 3 1 1
+ 3 2 1 1
+ 2 1 1 1
+  3.000000e+00  4.000000e+00  5.000000e+00  6.000000e+00
+  3.440926e+00  4.310351e+00  5.230064e+00  6.175875e+00
+  4.818504e+00  5.373787e+00  6.083882e+00  6.881852e+00
+  6.842135e+00  7.033333e+00  7.469840e+00  8.060679e+00
+  4.080340e+00  4.806672e+00  5.633844e+00  6.515528e+00
+  4.466667e+00  5.091606e+00  5.850243e+00  6.683273e+00
+  5.717083e+00  6.089969e+00  6.667233e+00  7.366666e+00
+  7.600000e+00  7.667177e+00  8.002658e+00  8.512877e+00
+  6.942136e+00  7.133333e+00  7.569840e+00  8.160680e+00
+  7.229663e+00  7.363398e+00  7.753600e+00  8.307767e+00
+  8.234719e+00  8.217217e+00  8.481380e+00  8.933334e+00
+  9.820509e+00  9.603173e+00  9.691462e+00  9.994898e+00
+ Nodes:
+ 2 3 5 6 8 9 11 12
+ Scale factors:
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100
+ 1 10 10 100

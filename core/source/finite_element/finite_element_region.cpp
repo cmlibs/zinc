@@ -243,6 +243,15 @@ FE_region::~FE_region()
 
 	this->change_level = 1; // so no notifications
 
+	if (this->fe_field_info)
+	{
+		/* remove its pointer to this fe_region because being destroyed */
+		FE_field_info_clear_FE_region(this->fe_field_info);
+		DEACCESS(FE_field_info)(&(this->fe_field_info));
+	}
+	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
+	REMOVE_ALL_OBJECTS_FROM_LIST(FE_field)(this->fe_field_list);
+
 	// detach first to clean up some dynamic data and remove pointers back to FE_region
 	for (int n = 0; n < 2; ++n)
 		this->nodesets[n]->detach_from_FE_region();
@@ -255,19 +264,10 @@ FE_region::~FE_region()
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
 		FE_mesh::deaccess(this->meshes[dimension - 1]);
 
-	if (this->fe_field_info)
-	{
-		/* remove its pointer to this fe_region because being destroyed */
-		FE_field_info_clear_FE_region(this->fe_field_info);
-		DEACCESS(FE_field_info)(&(this->fe_field_info));
-	}
-
 	FE_region_bases_and_shapes::deaccess(this->bases_and_shapes);
 
 	DESTROY(LIST(FE_field))(&(this->fe_field_list));
 	DESTROY(FE_time_sequence_package)(&(this->fe_time));
-
-	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
 }
 
 /** Private: assumes current change log pointer is null or invalid */
@@ -1164,7 +1164,7 @@ struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
 	{
 		*type = FE_BASIS_CONSTANT;
 		++type;
-		for (int i = d + 1; d < dimension; ++i)
+		for (int i = d + 1; i < dimension; ++i)
 		{
 			*type = NO_RELATION;
 			++type;

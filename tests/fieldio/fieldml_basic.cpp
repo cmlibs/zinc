@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
@@ -857,3 +858,104 @@ TEST(FieldIO, cube_element_xi)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_cube_element_xi_model(testFm1);
 }
+
+namespace {
+
+void check_ex_element_grid_constant_indexed_fields(Fieldmodule& fm)
+{
+	int result;
+
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, coordinates.getValueType());
+	Field materialType = fm.findFieldByName("material_type");
+	EXPECT_TRUE(materialType.isValid());
+	EXPECT_EQ(1, materialType.getNumberOfComponents());
+	// integer type is not yet presented in the public API, currently reports as REAL
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, materialType.getValueType());
+	Field materialName = fm.findFieldByName("material_name");
+	EXPECT_TRUE(materialName.isValid());
+	EXPECT_EQ(1, materialName.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, materialName.getValueType());
+	Field conductivity = fm.findFieldByName("conductivity");
+	EXPECT_TRUE(conductivity.isValid());
+	EXPECT_EQ(1, conductivity.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, conductivity.getValueType());
+
+	Field magneticFieldVector = fm.findFieldByName("magnetic field vector");
+	EXPECT_TRUE(magneticFieldVector.isValid());
+	EXPECT_EQ(3, magneticFieldVector.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, magneticFieldVector.getValueType());
+
+	Field potential = fm.findFieldByName("potential");
+	EXPECT_TRUE(potential.isValid());
+	EXPECT_EQ(1, potential.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, potential.getValueType());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const double xi[3] = { 0.1, 0.2, 0.4 };
+	const double expectedConductivityOut[2] = { 27.4, 20.2 };
+	const double expectedCoordinatesOut[2][3] = { { 1, 2, 4 }, { 11, 2, 4 } };
+	const double expectedMagneticFieldVectorOut[3] = { 0.1, 0.2, 0.9 };
+	const char *expectedMaterialNameOut[2] = { "copper", "\"mixed\" alloy" };
+	const double expectedMaterialTypeOut[2] = { 1, 3 };
+	const double expectedPotentialOut[2] = { 4.4947897920000015, 4.3176384679999993 };
+	for (int e = 0; e < 2; ++e)
+	{
+		double conductivityOut, coordinatesOut[3], magneticFieldVectorOut[3], materialTypeOut, potentialOut;
+
+		Element element = mesh3d.findElementByIdentifier(e + 1);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setMeshLocation(element, 3, xi));
+
+		EXPECT_EQ(RESULT_OK, result = conductivity.evaluateReal(cache, 1, &conductivityOut));
+		EXPECT_DOUBLE_EQ(expectedConductivityOut[e], conductivityOut);
+
+		EXPECT_EQ(RESULT_OK, result = coordinates.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(expectedCoordinatesOut[e][c], coordinatesOut[c], 1.0E-6);
+
+		EXPECT_EQ(RESULT_OK, result = magneticFieldVector.evaluateReal(cache, 3, magneticFieldVectorOut));
+		// constant field should be same in both elements:
+		for (int c = 0; c < 3; ++c)
+			EXPECT_DOUBLE_EQ(expectedMagneticFieldVectorOut[c], magneticFieldVectorOut[c]);
+
+		char *materialNameOut = materialName.evaluateString(cache);
+		EXPECT_STREQ(expectedMaterialNameOut[e], materialNameOut);
+		cmzn_deallocate(materialNameOut);
+		materialNameOut = 0;
+
+		EXPECT_EQ(RESULT_OK, result = materialType.evaluateReal(cache, 1, &materialTypeOut));
+		EXPECT_DOUBLE_EQ(expectedMaterialTypeOut[e], materialTypeOut);
+
+		EXPECT_EQ(RESULT_OK, result = potential.evaluateReal(cache, 1, &potentialOut));
+		EXPECT_NEAR(expectedPotentialOut[e], potentialOut, 1.0E-6);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exelem_formats
+TEST(FieldIO, ex_element_grid_constant_indexed_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_BLOCK_GRID_RESOURCE)));
+	check_ex_element_grid_constant_indexed_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_element_grid_constant_indexed_fields(testFm1);
+}
+

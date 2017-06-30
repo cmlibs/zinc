@@ -302,7 +302,7 @@ cmzn_element::~cmzn_element()
 	if ((this->mesh) || (this->index != DS_LABEL_IDENTIFIER_INVALID))
 	{
 		display_message(ERROR_MESSAGE, "~cmzn_element.  Element has not been invalidated. Dimension %d Index %d",
-			this->mesh ? this->mesh->getDimension() : -1, this->index);
+			this->mesh ? this->mesh->getDimension() : 0, this->index);
 	}
 	if (0 != this->access_count)
 	{
@@ -338,6 +338,19 @@ FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
 			case INT_VALUE:
 				components[c] = new Component<int>(blankMeshFieldTemplate);
 				break;
+			case STRING_VALUE:
+			{
+				FE_field_type feFieldType = get_FE_field_FE_field_type(field);
+				if ((feFieldType == CONSTANT_FE_FIELD) || (feFieldType == INDEXED_FE_FIELD))
+				{
+					components[c] = new ComponentConstant(blankMeshFieldTemplate);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  String type is only implemented for constant and indexed field");
+					success = false;
+				}
+			}	break;
 			default:
 				display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  Unsupported value type");
 				success = false;
@@ -362,6 +375,7 @@ FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
 		{
 			for (int c = 0; c < componentCount; ++c)
 				delete components[c];
+			delete components;
 		}
 	}
 	return meshFieldData;
@@ -1718,11 +1732,14 @@ FE_element_template *FE_mesh::create_FE_element_template(FE_element_shape *eleme
 }
 
 /** Clean up element label and objects. Called by element create functions when they fail part way. */
-void FE_mesh::destroyElement(DsLabelIndex elementIndex)
+void FE_mesh::destroyElementPrivate(DsLabelIndex elementIndex)
 {
 	cmzn_element **elementAddress = this->fe_elements.getAddress(elementIndex);
 	if (elementAddress && (*elementAddress))
+	{
+		(*elementAddress)->invalidate();
 		cmzn_element::deaccess(*elementAddress);
+	}
 	this->labels.removeLabel(elementIndex);
 }
 
@@ -1805,7 +1822,7 @@ cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *el
 				else
 				{
 					display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Failed to set element shape or fields.");
-					this->destroyElement(elementIndex);
+					this->destroyElementPrivate(elementIndex);
 					element = 0;
 				}
 			}
@@ -1858,7 +1875,7 @@ cmzn_element *FE_mesh::get_or_create_FE_element_with_identifier(int identifier,
 		{
 			if ((!(element_shape)) || (0 != this->setElementShape(element->getIndex(), element_shape)))
 				return element->access();
-			this->destroyElement(element->getIndex());
+			this->destroyElementPrivate(element->getIndex());
 		}
 	}
 	else
@@ -2977,7 +2994,7 @@ bool FE_mesh::mergePart1Elements(const FE_mesh &source)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to set shape for %d-D mesh element %d",
 					this->dimension, identifier);
-				this->destroyElement(targetElementIndex);
+				this->destroyElementPrivate(targetElementIndex);
 				result = false;
 				break;
 			}

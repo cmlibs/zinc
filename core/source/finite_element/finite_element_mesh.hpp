@@ -626,8 +626,8 @@ public:
 
 	public:
 
-		Component(FE_mesh_field_template *fieldTemplateIn) :
-			ComponentBase(fieldTemplateIn)
+		Component(FE_mesh_field_template *meshFieldTemplateIn) :
+			ComponentBase(meshFieldTemplateIn)
 		{
 		}
 
@@ -755,6 +755,32 @@ public:
 		}
 
 	};
+
+	/** Simple component type for types without element varying quantities e.g. indexed string */
+	class ComponentConstant : public ComponentBase
+	{
+	public:
+
+		ComponentConstant(FE_mesh_field_template *meshFieldTemplateIn) :
+			ComponentBase(meshFieldTemplateIn)
+		{
+		}
+
+		virtual ~ComponentConstant()
+		{
+		}
+
+		virtual void clearElementData(DsLabelIndex)
+		{
+		}
+
+		virtual bool mergeElementValues(const ComponentBase *)
+		{
+			return true;
+		}
+
+	};
+
 
 private:
 	FE_field *field; // not accessed; structure is owned by field and dies with it
@@ -1011,7 +1037,7 @@ private:
 
 	bool mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_element_template *elementTemplate);
 
-	void destroyElement(DsLabelIndex elementIndex);
+	void destroyElementPrivate(DsLabelIndex elementIndex);
 
 	DsLabelIndex createElement(DsLabelIdentifier identifier);
 

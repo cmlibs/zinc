@@ -450,6 +450,7 @@ public:
 
 	bool readEXVersion();
 	bool readCommentOrDirective();
+	bool readFieldValues();
 	bool readNodeHeader();
 	cmzn_node *readNode();
 	bool readElementShape();
@@ -516,7 +517,6 @@ private:
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	char *readString();
 	FE_field *readField();
-	bool readFieldValues();
 	bool readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
@@ -939,7 +939,7 @@ char *EXReader::readString()
 					if (tmp)
 					{
 						theString = tmp;
-						strcat(theString, block);
+						strcpy(theString + length, block);
 					}
 					else
 					{
@@ -956,14 +956,13 @@ char *EXReader::readString()
 			}
 			if (theString)
 			{
-				// now get the end quote
+				// now get the matching end quote
 				DEALLOCATE(quoteString);
-				IO_stream_read_string(this->input_file, "[\"\']", &quoteString);
+				IO_stream_read_string(this->input_file, (quoteChar == '"') ? "[\"]" : "[\']", &quoteString);
 				if ((!quoteString) || (1 != strlen(quoteString)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Missing or multiple end quotes on string.  %s", this->getFileLocation());
 					DEALLOCATE(theString);
-					return 0;
 				}
 			}
 		}
@@ -1175,7 +1174,7 @@ FE_field *EXReader::readField()
 			if ((EOF != IO_stream_scan(this->input_file, " Index_field = ")) &&
 				IO_stream_read_string(this->input_file, "[^,]", &next_block))
 			{
-				FE_field *indexer_field = FE_region_get_FE_field_from_name(fe_region, next_block);
+				indexer_field = FE_region_get_FE_field_from_name(fe_region, next_block);
 				if (!indexer_field)
 				{
 					/* create and merge an appropriate indexer field */
@@ -1437,16 +1436,20 @@ FE_field *EXReader::readField()
 	return (field);
 }
 
-/** If any constant or indexed fields are in header, reads token "Values:"
-  * followed by their values from the stream */
+/** reads token "Values: followed by field constants, if any constant or indexed fields */
 bool EXReader::readFieldValues()
 {
-	if (!((this->node_template || this->elementtemplate)))
+	char test_string[5];
+	if (1 != IO_stream_scan(input_file, "alues %1[:] ", test_string)) // "V" has already been read
 	{
-		display_message(ERROR_MESSAGE, "EXReader::readFieldValues.  Invalid argument(s).  %s", this->getFileLocation());
+		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
 	}
-	bool first = true; // flag to consume "Values:" token with first field requiring values
+	if (!((this->node_template || this->elementtemplate)))
+	{
+		display_message(ERROR_MESSAGE, "EXReader.  Must have a current node or element template to read field values.  %s", this->getFileLocation());
+		return false;
+	}
 	const size_t fieldCount = this->headerFields.size();
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
@@ -1454,16 +1457,6 @@ bool EXReader::readFieldValues()
 		const int number_of_values = get_FE_field_number_of_values(field);
 		if (0 < number_of_values)
 		{
-			if (first)
-			{
-				char test_string[5];
-				if (1 != IO_stream_scan(input_file, " Values %1[:] ", test_string))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Values:\" token required for constant fields.  %s", this->getFileLocation());
-					return false;
-				}
-				first = false;
-			}
 			Value_type value_type = get_FE_field_value_type(field);
 			switch (value_type)
 			{
@@ -1860,8 +1853,6 @@ bool EXReader::readNodeHeader()
 			return false;
 		}
 	}
-	if (!this->readFieldValues())
-		return false;
 	return true;
 }
 
@@ -3536,8 +3527,6 @@ bool EXReader::readElementHeader()
 			return false;
 		}
 	}
-	if (!this->readFieldValues())
-		return false;
 	if (!this->elementtemplate->validate())
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Element field header failed validation.  %s", this->getFileLocation());
@@ -4269,6 +4258,11 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					DEALLOCATE(temp_string);
 					return_code = 0;
 				}
+			} break;
+			case 'V': /* Values */
+			{
+				if (!exReader.readFieldValues())
+					return_code = 0;
 			} break;
 			default:
 			{

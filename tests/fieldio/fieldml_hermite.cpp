@@ -1080,7 +1080,7 @@ TEST(FieldIO, generateHemisphereTube2d)
 	createHemisphereTube2d(zinc.fm, elementsAroundCount, elementsUpCount, elementsTubeCount);
 	checkHemisphereTube2d(zinc.fm, elementsAroundCount, elementsUpCount, elementsTubeCount);
 
-	// test writing and re-reading in FieldML format
+	// test writing and re-reading in EX2 format
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
 	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/hemisphere_tube.ex2"));
