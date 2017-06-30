@@ -740,9 +740,9 @@ int create_FE_element_snake_from_data_points(
 							for (i = 0; i < componentCount; ++i)
 							{
 								if ((CMZN_OK != cmzn_field_finite_element_set_node_parameters(define_field_array[n],
-									cache, i, CMZN_NODE_VALUE_LABEL_VALUE, 1, 1, &force_vectors[component*number_of_rows + j*2]))
+									cache, i + 1, CMZN_NODE_VALUE_LABEL_VALUE, 1, 1, &force_vectors[component*number_of_rows + j*2]))
 									|| (CMZN_OK != cmzn_field_finite_element_set_node_parameters(define_field_array[n],
-										cache, i, CMZN_NODE_VALUE_LABEL_D_DS1, 1, 1, &force_vectors[component*number_of_rows + j*2 + 1])))
+										cache, i + 1, CMZN_NODE_VALUE_LABEL_D_DS1, 1, 1, &force_vectors[component*number_of_rows + j*2 + 1])))
 								{
 									display_message(ERROR_MESSAGE,
 										"create_FE_element_snake_from_data_points.  Failed to set node parameters");
@@ -771,7 +771,7 @@ int create_FE_element_snake_from_data_points(
 					{
 						for (int i = 0; i < number_of_fe_fields; ++i)
 						{
-							cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[n]);
+							cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[i]);
 							if (CMZN_OK != cmzn_elementtemplate_define_field_simple_nodal(elementtemplate,
 								define_field, -1, basis, 2, nodeIndexes))
 							{
