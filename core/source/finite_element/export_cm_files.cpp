@@ -125,9 +125,7 @@ static int FE_element_field_add_basis_to_list(
 		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, element->getMesh());
 		if (!meshFieldData)
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_add_basis_to_list.  Field not defined on mesh");
-			return 0;
+			return 1; // not defined on mesh
 		}
 		for (int i = 0 ; return_code && (i < data->number_of_components) ; i++)
 		{
@@ -931,7 +929,7 @@ struct FE_element_write_cm_check_element_values_data
 static int FE_element_write_cm_check_element_values(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
-	if (data && (FE_field_is_defined_in_element(data->field, element)))
+	if (data && (FE_field_is_defined_in_element_not_inherited(data->field, element)))
 		++(data->number_of_elements);
 	return 1;
 }
@@ -952,8 +950,7 @@ static int write_cm_FE_element(
 		const int componentCount = get_FE_field_number_of_components(data->field);
 		if (!meshFieldData)
 		{
-			display_message(ERROR_MESSAGE, "write_cm_FE_element.  Field not defined on mesh");
-			return 0;
+			return 1; // not defined on mesh
 		}
 		if (FE_field_is_defined_in_element_not_inherited(data->field, element))
 		{
