@@ -13,11 +13,11 @@ to file.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* for IGES */
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 
 #include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/fieldcache.h"
@@ -155,6 +155,7 @@ public:
 		}
 		else
 		{
+			cmzn_fieldmodule_define_all_faces(this->destination_fieldmodule);
 			char *name = cmzn_field_get_name(this->source_field);
 			this->destination_fe_field = FE_region_get_FE_field_from_name(cmzn_region_get_FE_region(this->destination_region), name);
 			cmzn_deallocate(name);
@@ -169,7 +170,6 @@ public:
 			}
 			cmzn_elementiterator_destroy(&iter);
 		}
-		cmzn_fieldmodule_define_all_faces(this->destination_fieldmodule);
 		cmzn_fieldmodule_end_change(this->destination_fieldmodule);
 	}
 
@@ -774,7 +774,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 	char *out_string, numeric_string[20], *temp_string, time_string[14];
 	FILE *iges;
 	int count, i, global_count, length, out_length, parameter_pointer,
-		return_code, sub_count;
+		return_code;
 	struct IGES_entity_info *entity;
 	time_t coded_time;
 	struct tm *time_struct;
@@ -969,6 +969,9 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 				entity=entity->next;
 			}
 			/* parameter data section */
+			// write to string then output and pad with spaces.
+			// earlier code used fprintf %n specifier which is disabled by default on windows
+			char tmps[200];
 			entity=iges_entity_info_data.head;
 			while (entity)
 			{
@@ -978,19 +981,18 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* composite curve entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d%n",entity->type,
-							(entity->parameter).type_102.number_of_entities,&count);
-						count=64-count;
+						sprintf(tmps,"%d,%d",entity->type,
+							(entity->parameter).type_102.number_of_entities);
 						for (i=0;i<(entity->parameter).type_102.number_of_entities;i++)
 						{
-							fprintf(iges,",%d%n",
-								((entity->parameter).type_102.directory_pointers)[i],
-								&sub_count);
-							count -= sub_count;
+							char tmps2[50];
+							sprintf(tmps2, ",%d",
+								((entity->parameter).type_102.directory_pointers)[i]);
+							strcat(tmps, tmps2);
 						}
-						fprintf(iges,";");
-						count--;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						strcat(tmps, ";");
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -998,71 +1000,71 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* line entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%n",entity->type,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						sprintf(tmps,"%d,",entity->type);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,",
 							((entity->parameter).type_110.start)[0],
 							((entity->parameter).type_110.start)[1],
-							((entity->parameter).type_110.start)[2],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_110.start)[2]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
-						fprintf(iges,"%.6e,%.6e,%.6e;%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e;",
 							((entity->parameter).type_110.end)[0],
 							((entity->parameter).type_110.end)[1],
-							((entity->parameter).type_110.end)[2],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_110.end)[2]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 					} break;
 					case 112:
 					{
 						/* parametric spline curve entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%n",
+						sprintf(tmps,"%d,%d,%d,%d,%d,",
 							entity->type,(entity->parameter).type_112.spline_type,
 							(entity->parameter).type_112.degree_of_continuity,
 							(entity->parameter).type_112.number_of_dimensions,
-							(entity->parameter).type_112.n,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_112.n);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,",
 							((entity->parameter).type_112.tu)[0],
-							((entity->parameter).type_112.tu)[1],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.tu)[1]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_112.x)[0],
 							((entity->parameter).type_112.x)[1],
 							((entity->parameter).type_112.x)[2],
-							((entity->parameter).type_112.x)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.x)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_112.y)[0],
 							((entity->parameter).type_112.y)[1],
 							((entity->parameter).type_112.y)[2],
-							((entity->parameter).type_112.y)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.y)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e;%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e;",
 							((entity->parameter).type_112.z)[0],
 							((entity->parameter).type_112.z)[1],
 							((entity->parameter).type_112.z)[2],
-							((entity->parameter).type_112.z)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.z)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -1070,66 +1072,57 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* parametric spline surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%n",
-							entity->type,(entity->parameter).type_114.spline_boundary_type,
+						sprintf(tmps, "%d,%d,%d,%d,%d,",
+							entity->type, (entity->parameter).type_114.spline_boundary_type,
 							(entity->parameter).type_114.patch_type,
-							(entity->parameter).type_114.m,(entity->parameter).type_114.n,
-							&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_114.m, (entity->parameter).type_114.n);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_114.tu)[0],
 							((entity->parameter).type_114.tu)[1],
 							((entity->parameter).type_114.tv)[0],
-							((entity->parameter).type_114.tv)[1],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_114.tv)[1]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 								((entity->parameter).type_114.x)[i],
 								((entity->parameter).type_114.x)[i+1],
 								((entity->parameter).type_114.x)[i+2],
-								((entity->parameter).type_114.x)[i+3],&count);
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.x)[i+3]);
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 								((entity->parameter).type_114.y)[i],
 								((entity->parameter).type_114.y)[i+1],
 								((entity->parameter).type_114.y)[i+2],
-								((entity->parameter).type_114.y)[i+3],&count);
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.y)[i+3]);
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e%n",
+							sprintf(tmps, "%.6e,%.6e,%.6e,%.6e%c",
 								((entity->parameter).type_114.z)[i],
 								((entity->parameter).type_114.z)[i+1],
 								((entity->parameter).type_114.z)[i+2],
-								((entity->parameter).type_114.z)[i+3],&count);
-							if (12==i)
-							{
-								fprintf(iges,";");
-							}
-							else
-							{
-								fprintf(iges,",");
-							}
-							count++;
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.z)[i+3],
+								(12==i) ? ';' : ',');
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
@@ -1138,14 +1131,14 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* curve on parametric surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%d;%n",entity->type,
+						sprintf(tmps,"%d,%d,%d,%d,%d,%d;",entity->type,
 							(entity->parameter).type_142.how_curve_created,
 							(entity->parameter).type_142.surface_directory_pointer,
 							(entity->parameter).type_142.material_curve_directory_pointer,
 							(entity->parameter).type_142.world_curve_directory_pointer,
-							(entity->parameter).type_142.preferred_representation,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_142.preferred_representation);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -1153,24 +1146,23 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* trimmed parametric surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d%n",entity->type,
+						sprintf(tmps,"%d,%d,%d,%d,%d",entity->type,
 							(entity->parameter).type_144.surface_directory_pointer,
 							(entity->parameter).type_144.outer_boundary_type,
 							(entity->parameter).type_144.number_of_inner_boundary_curves,
-							(entity->parameter).type_144.outer_boundary_directory_pointer,
-							&count);
-						count=64-count;
+							(entity->parameter).type_144.outer_boundary_directory_pointer);
 						for (i=0;
 							i<(entity->parameter).type_144.number_of_inner_boundary_curves;
 							i++)
 						{
-							fprintf(iges,",%d%n",((entity->parameter).type_144.
-								inner_boundary_directory_pointers)[i],&sub_count);
-							count -= sub_count;
+							char tmps2[50];
+							sprintf(tmps2,",%d",((entity->parameter).type_144.
+								inner_boundary_directory_pointers)[i]);
+							strcat(tmps, tmps2);
 						}
-						fprintf(iges,";");
-						count--;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						strcat(tmps, ";");
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;

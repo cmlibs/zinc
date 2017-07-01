@@ -254,6 +254,7 @@ struct Convert_finite_elements_data
 
 /** Set the source fields to convert. This ensures matching destination fields exist.
   * Also ensures first source field is an appropriate coordinate field for dimension.
+  * Keeps pointer to passed fields array; caller must ensure it remains in existence.
   * @return  Result OK on success, any other value on failure. */
 int Convert_finite_elements_data::setFields(int sourceFieldsCount, cmzn_field_id *sourceFieldsIn)
 {
@@ -269,13 +270,13 @@ int Convert_finite_elements_data::setFields(int sourceFieldsCount, cmzn_field_id
 
 	this->maximum_number_of_components = 0; // grows in iteration below
 
-	ALLOCATE(this->destination_fields, cmzn_field_finite_element_id, number_of_fields);
+	ALLOCATE(this->destination_fields, cmzn_field_finite_element_id, sourceFieldsCount);
 	if (!this->destination_fields)
 		return CMZN_ERROR_MEMORY;
 	int result = CMZN_OK;
 	for (int f = 0; f < sourceFieldsCount; ++f)
 	{
-		cmzn_field_id source_field = this->source_fields[f];
+		cmzn_field_id source_field = sourceFieldsIn[f];
 		char *name = cmzn_field_get_name(source_field);
 		if (cmzn_field_get_value_type(source_field) != CMZN_FIELD_VALUE_TYPE_REAL)
 		{
@@ -306,6 +307,8 @@ int Convert_finite_elements_data::setFields(int sourceFieldsCount, cmzn_field_id
 		else
 		{
 			destination_field = cmzn_fieldmodule_create_field_finite_element(this->destination_fieldmodule, number_of_components);
+			cmzn_field_set_name(destination_field, name);
+			cmzn_field_set_managed(destination_field, true);
 			destination_field_finite_element = cmzn_field_cast_finite_element(destination_field);
 			if (!destination_field_finite_element)
 			{
@@ -464,7 +467,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 							}
 							else
 							{
-								cmzn_node_id node = cmzn_nodeset_create_node(this->destination_nodeset, -1, this->nodetemplate);
+								node = cmzn_nodeset_create_node(this->destination_nodeset, -1, this->nodetemplate);
 								if (node)
 								{
 									this->addNode(values, node);
@@ -513,7 +516,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 		{
 		}
 	}
-	return 0;
+	return 1;
 }
 
 /** Constructs destination elements for each subelement in the source mesh.
@@ -608,6 +611,25 @@ int finite_element_conversion(cmzn_region_id source_region,
 	int nodeIndexes[MAX_NUMBER_OF_NODES];
 	for (int i = 0; i < nodeIndexesCount; ++i)
 		nodeIndexes[i] = i + 1;
+
+	cmzn_element_shape_type elementShapeType = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
+	switch (mode)
+	{
+	case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
+	case CONVERT_TO_FINITE_ELEMENTS_BICUBIC:
+		elementShapeType = CMZN_ELEMENT_SHAPE_TYPE_SQUARE;
+		break;
+	case CONVERT_TO_FINITE_ELEMENTS_TRILINEAR:
+	case CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC:
+	case CONVERT_TO_FINITE_ELEMENTS_TRICUBIC:
+		elementShapeType = CMZN_ELEMENT_SHAPE_TYPE_CUBE;
+		break;
+	default:
+		display_message(ERROR_MESSAGE, "convert elements:  Invalid or unimplemented conversion mode.");
+		return 0;
+		break;
+	}
+
 	switch (mode)
 	{
 		case CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT:
@@ -638,7 +660,7 @@ int finite_element_conversion(cmzn_region_id source_region,
 			}
 			data.elementtemplate = cmzn_mesh_create_elementtemplate(data.destination_mesh);
 			if (!(data.elementtemplate)
-				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_SQUARE))
+				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType))
 				|| (CMZN_OK != cmzn_elementtemplate_set_number_of_nodes(data.elementtemplate, 4)))
 			{
 				display_message(ERROR_MESSAGE, "convert elements:  Failed to create Hermite element template.");
@@ -685,6 +707,14 @@ int finite_element_conversion(cmzn_region_id source_region,
 					display_message(ERROR_MESSAGE, "convert elements:  Failed to define Lagrange node template field");
 					return 0;
 				}
+			}
+			data.elementtemplate = cmzn_mesh_create_elementtemplate(data.destination_mesh);
+			if (!(data.elementtemplate)
+				|| (CMZN_OK != cmzn_elementtemplate_set_element_shape_type(data.elementtemplate, elementShapeType))
+				|| (CMZN_OK != cmzn_elementtemplate_set_number_of_nodes(data.elementtemplate, nodeIndexesCount)))
+			{
+				display_message(ERROR_MESSAGE, "convert elements:  Failed to create Lagrange element template.");
+				return 0;
 			}
 			const cmzn_elementbasis_function_type basis_function_type =
 				(mode == CONVERT_TO_FINITE_ELEMENTS_BICUBIC) ? CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE :
