@@ -48,6 +48,11 @@ if("${PYTHONLIBS_MAJOR_VERSION}" STREQUAL "3")
     set(PYTHONLIBS_SWIG_FLAGS -py3)
 endif()
 
+# Find relative path between zinc library install directory and the python module dynamic libraries.
+set(PYTHON_DESTINATION_PREFIX lib/python${PYTHONLIBS_MAJOR_VERSION}.${PYTHONLIBS_MINOR_VERSION}/$<CONFIG>/opencmiss.zinc)
+set(PYTHON_MODULE_TARGETS_DESTINATION_PREFIX "${PYTHON_DESTINATION_PREFIX}/opencmiss/zinc")
+file(RELATIVE_PATH _REL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_MODULE_TARGETS_DESTINATION_PREFIX} ${CMAKE_INSTALL_PREFIX}/${ZINC_INSTALL_LIB_DIR})
+
 # We have to set the include directories onto the directory because the swig
 # wrapping process requires the include directories.
 include_directories(${ZINC_API_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
@@ -119,9 +124,17 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
         LIBRARY_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
         RUNTIME_OUTPUT_DIRECTORY ${ZINC_PYTHON_PACKAGE_DIR}
     )
+    if (APPLE)
+        set_target_properties(${MODULE_TARGET} PROPERTIES
+            INSTALL_RPATH "@loader_path/${_REL_INSTALL_PATH}")
+    elseif (UNIX)
+        set_target_properties(${MODULE_TARGET} PROPERTIES
+            INSTALL_RPATH "\$ORIGIN/${_REL_INSTALL_PATH}")
+    endif ()
     list(APPEND SWIG_MODULE_TARGETS ${MODULE_TARGET})
     list(APPEND SETUP_PY_PACKAGE_FILES "'$<TARGET_FILE_NAME:${MODULE_TARGET}>'")
 endforeach()
+
 add_custom_target(collect_python_binding_files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/opencmiss/zinc
 )
@@ -147,7 +160,6 @@ string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION
 GET_SYSTEM_NAME(SYSTEM_NAME)
 string(TOLOWER ${PROJECT_NAME} PYPI_PACKAGE_NAME)
 set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
-
 
 ################################################################
 # Generate the required package files
