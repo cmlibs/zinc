@@ -30,12 +30,21 @@ struct cmzn_mesh_group;
 typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
 
 /**
- * @brief A description of parameter mapping and interpolation for a scalar
- * field or field component over an element.
+ * @brief  A template defining field parameter mapping and interpolation over
+ * an element chart.
  *
- * A description of parameter mapping and interpolation for a scalar
- * field or field component over an element. Used to specify interpolation
- * of a field component in an element template.
+ * A template defining parameter mapping and interpolation for a scalar
+ * quantity over an element chart, to apply to field components across elements
+ * of a mesh. Consists of an element basis, plus how to evaluate the parameter
+ * multiplying each function in the basis. The element parameter for each basis
+ * function is defined as a sum of zero or more terms, with each term
+ * multiplied by zero or more scale factors given by their local indexes.
+ * Depending on the parameter mapping mode, the terms map node parameters,
+ * element parameters or spatially constant field parameters. For node
+ * parameters each term extracts a node value/derivative version for a local
+ * node. When used on the mesh, a local-to-global node map for this template is
+ * applied to give different parameters for each element field component, and
+ * element scale factors are similarly indexed for each element.
  */
 struct cmzn_elementfieldtemplate;
 typedef struct cmzn_elementfieldtemplate *cmzn_elementfieldtemplate_id;
