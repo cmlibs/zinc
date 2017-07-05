@@ -442,7 +442,6 @@ void FE_mesh_element_field_template_data::clearAllElementVaryingData()
 	this->localToGlobalNodes.clear();
 	if (this->localScaleFactorCount > 0)
 	{
-		clearDynamicBlockArray(this->localScaleFactors);
 		this->localScaleFactors.clear();
 		// future: this->localToGlobalScaleFactors.clear();
 	}

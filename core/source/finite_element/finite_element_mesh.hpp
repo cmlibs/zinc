@@ -279,7 +279,7 @@ class FE_mesh_element_field_template_data
 	DsMapArrayLabelIndex localToGlobalNodes; // map from element[local node index] -> global nodes index
 	const int localScaleFactorCount; // cached from eft to guarantee efficiency
 	// temporary: store actual scale factors, until management of global scale factors finalised
-	block_array<DsLabelIndex, FE_value*> localScaleFactors;
+	dynarray_block_array<DsLabelIndex, FE_value*> localScaleFactors;
 	// future DsMapArrayLabelIndex localToGlobalScaleFactors; // map from element[local node index] -> global nodes index
 	// for each element, the number of field components using this eft. Clear per-element data when this drops to zero:
 	typedef unsigned short MeshfieldtemplateUsageCountType; // internal use only
@@ -622,7 +622,7 @@ public:
 		friend class FE_mesh;
 
 		block_array<DsLabelIndex, ValueType> elementScalarDOFs;
-		block_array<DsLabelIndex, ValueType*> elementVectorDOFs;
+		dynarray_block_array<DsLabelIndex, ValueType*> elementVectorDOFs;
 
 	public:
 
@@ -633,7 +633,6 @@ public:
 
 		virtual ~Component()
 		{
-			clearDynamicBlockArray(this->elementVectorDOFs);
 		}
 
 		/** @param elementIndex  Element index >= 0. Not checked. */

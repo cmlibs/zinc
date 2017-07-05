@@ -21,10 +21,7 @@
 // EntryType = type of values held in array
 template <typename IndexType, typename EntryType> class block_array
 {
-	template <typename IndexType, typename EntryType>
-		friend void clearDynamicBlockArray(block_array<IndexType, EntryType> &ba);
-
-private:
+protected:
 	// Note: any new attributes must be handled by swap() and all constructors
 	EntryType **blocks;
 	IndexType blockCount;
@@ -103,12 +100,12 @@ public:
 		}
 	}
 
-	~block_array()
+	virtual ~block_array()
 	{
-		clear();
+		this->clear();
 	}
 
-	void clear()
+	virtual void clear()
 	{
 		for (IndexType i = 0; i < this->blockCount; ++i)
 			delete[] this->blocks[i];
@@ -312,24 +309,35 @@ public:
 	
 };
 
-
-/** Calls delete[] on non-NULL pointer entries in block array, then clears it */
-template <typename IndexType, typename EntryType>
-void clearDynamicBlockArray(block_array<IndexType, EntryType> &ba)
+/** Variant of block_array for storing pointers to allocated array values.
+  * Calls array delete[] on non-NULL entries on clear and in destructor */
+template <typename IndexType, typename EntryType> class dynarray_block_array :
+	public block_array<IndexType, EntryType>
 {
-	const IndexType blockCount = ba.getBlockCount();
-	const IndexType blockLength = ba.getBlockLength();
-	for (IndexType blockIndex = 0; blockIndex < blockCount; ++blockIndex)
+public:
+	dynarray_block_array(IndexType blockLengthIn = CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES/sizeof(EntryType)) :
+		block_array(blockLengthIn, 0) // pointers must be initialised to 0
 	{
-		EntryType* block = ba.blocks[blockIndex];
-		if (block)
-		{
-			for (IndexType i = 0; i < blockLength; ++i)
-				delete[] block[i];
-		}
 	}
-	ba.clear();
-}
+
+private:
+	dynarray_block_array(const dynarray_block_array& source); // not implemented
+
+public:
+	virtual void clear()
+	{
+		for (IndexType blockIndex = 0; blockIndex < this->blockCount; ++blockIndex)
+		{
+			EntryType* block = this->blocks[blockIndex];
+			if (block)
+			{
+				for (IndexType i = 0; i < blockLength; ++i)
+					delete[] block[i];
+			}
+		}
+		this->block_array::clear();
+	}
+};
 
 /** stores boolean values as individual bits, with no value equivalent to false */
 template <typename IndexType>
