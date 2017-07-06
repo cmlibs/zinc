@@ -224,7 +224,7 @@ public:
 
 	/** Variant for EX reader which assumes template has already been validated,
 	  * does not set legacy nodes and does not cache changes as assumed on */
-	cmzn_element *cmzn_elementtemplate::createElementEX(int identifier)
+	cmzn_element *createElementEX(int identifier)
 	{
 		return this->getMesh()->create_FE_element(identifier, this->fe_element_template);
 	}

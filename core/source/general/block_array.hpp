@@ -13,6 +13,7 @@
 #define BLOCK_ARRAY_HPP
 
 #include "general/debug.h"
+#include <cstring>
 
 // DsMapArray assumes following is > 128:
 #define CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES 1024
@@ -316,7 +317,7 @@ template <typename IndexType, typename EntryType> class dynarray_block_array :
 {
 public:
 	dynarray_block_array(IndexType blockLengthIn = CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES/sizeof(EntryType)) :
-		block_array(blockLengthIn, 0) // pointers must be initialised to 0
+		block_array<IndexType, EntryType>(blockLengthIn, 0) // pointers must be initialised to 0
 	{
 	}
 
@@ -331,11 +332,11 @@ public:
 			EntryType* block = this->blocks[blockIndex];
 			if (block)
 			{
-				for (IndexType i = 0; i < blockLength; ++i)
+				for (IndexType i = 0; i < this->blockLength; ++i)
 					delete[] block[i];
 			}
 		}
-		this->block_array::clear();
+		this->block_array<IndexType, EntryType>::clear();
 	}
 };
 
@@ -346,7 +347,7 @@ template <typename IndexType>
 public:
 	// default size fits same number of entries as 32-bit index
 	bool_array(IndexType intBlockLength = CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES/32) :
-		block_array(intBlockLength, /*allocInitValueIn*/0)
+		block_array<IndexType, unsigned int>(intBlockLength, /*allocInitValueIn*/0)
 	{
 	}
 
