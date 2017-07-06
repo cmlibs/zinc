@@ -324,8 +324,6 @@ public:
 private:
 	dynarray_block_array(const dynarray_block_array& source); // not implemented
 
-	IndexType blockLength;
-
 public:
 	virtual void clear()
 	{
@@ -334,7 +332,7 @@ public:
 			EntryType* block = this->blocks[blockIndex];
 			if (block)
 			{
-				for (IndexType i = 0; i < this->block_array<IndexType, EntryType>::blockLength; ++i)
+				for (IndexType i = 0; i < this->blockLength; ++i)
 					delete[] block[i];
 			}
 		}
