@@ -369,7 +369,7 @@ private:
 	bool isValidLocalToGlobalNodeMap(FmlObjectHandle fmlLocalToGlobalNodeMap, FmlObjectHandle fmlLocalNodesArgument);
 
 	/** @return  Mesh element evaluator for fmlEvaluator, or 0 if none. Not accessed. */
-	inline MeshElementEvaluator* FieldMLReader::getMeshElementEvaluator(FmlObjectHandle fmlEvaluator)
+	inline MeshElementEvaluator* getMeshElementEvaluator(FmlObjectHandle fmlEvaluator)
 	{
 		auto iter = this->meshElementEvaluatorMap.find(fmlEvaluator);
 		if (iter != this->meshElementEvaluatorMap.end())
@@ -385,7 +385,7 @@ private:
 	  * nodes, eventually scale factor information etc.
 	  * Call getMeshElementEvaluator first.
 	  * @return  Mesh element evaluator for fmlEvaluator, or 0 if failed. Not accessed. */
-	MeshElementEvaluator* FieldMLReader::readMeshElementEvaluator(FmlObjectHandle fmlEvaluator);
+	MeshElementEvaluator* readMeshElementEvaluator(FmlObjectHandle fmlEvaluator);
 
 	/** Find or read mesh field template from fmlEvaluator
 	  * @return Scalar mesh field template merged in mesh, or 0 if failed. Not accessed. */

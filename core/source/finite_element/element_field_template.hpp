@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/status.h"
 #include "general/value.h"
+#include "finite_element/finite_element_basis.h"
 #include "datastore/labels.hpp"
 #include <vector>
 
@@ -24,7 +25,7 @@ struct FE_field;
 class FE_mesh;
 class FE_nodeset;
 struct FE_node_field_component;
-enum FE_basis_modify_theta_mode;
+
 
 class FE_element_field_template
 {
