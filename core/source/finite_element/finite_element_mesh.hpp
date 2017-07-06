@@ -564,306 +564,6 @@ public:
 };
 
 
-/** Stores field component definition on a mesh as a FE_mesh_field_template plus
-  * per-element parameters. */
-class FE_mesh_field_data
-{
-	friend class FE_mesh;
-
-public:
-	class ComponentBase
-	{
-		friend class FE_mesh;
-		friend class FE_mesh_field_data;
-
-		FE_mesh_field_template *meshFieldTemplate; // accessed
-
-	public:
-
-		ComponentBase(FE_mesh_field_template *meshFieldTemplateIn) :
-			meshFieldTemplate(meshFieldTemplateIn->access())
-		{
-		}
-
-		virtual ~ComponentBase()
-		{
-			FE_mesh_field_template::deaccess(this->meshFieldTemplate);
-		}
-
-		virtual void clearElementData(DsLabelIndex elementIndex) = 0;
-
-		/** @return  Non-accessed field template */
-		const FE_mesh_field_template *getMeshfieldtemplate() const
-		{
-			return this->meshFieldTemplate;
-		}
-
-		/** @return  Non-accessed field template */
-		FE_mesh_field_template *getMeshfieldtemplate()
-		{
-			return this->meshFieldTemplate;
-		}
-
-		/** Currently assumes previous template had no per-element values
-		  * @param fieldTemplateIn  Field template: not checked; must be valid for mesh */
-		void setMeshfieldtemplate(FE_mesh_field_template *meshFieldTemplateIn)
-		{
-			meshFieldTemplateIn->access();
-			FE_mesh_field_template::deaccess(this->meshFieldTemplate);
-			this->meshFieldTemplate = meshFieldTemplateIn;
-		}
-
-		virtual bool mergeElementValues(const ComponentBase *sourceBase) = 0;
-
-	};
-
-	template <typename ValueType> class Component : public ComponentBase
-	{
-		friend class FE_mesh;
-
-		block_array<DsLabelIndex, ValueType> elementScalarDOFs;
-		dynarray_block_array<DsLabelIndex, ValueType*> elementVectorDOFs;
-
-	public:
-
-		Component(FE_mesh_field_template *meshFieldTemplateIn) :
-			ComponentBase(meshFieldTemplateIn)
-		{
-		}
-
-		virtual ~Component()
-		{
-		}
-
-		/** @param elementIndex  Element index >= 0. Not checked. */
-		virtual void clearElementData(DsLabelIndex elementIndex)
-		{
-			ValueType** valuePtrAddress = this->elementVectorDOFs.getAddress(elementIndex);
-			if (valuePtrAddress)
-			{
-				delete[] *valuePtrAddress;
-				*valuePtrAddress = 0;
-			}
-		}
-
-		/** @param elementIndex  The element to get values for.
-		  * @param valuesCount  The number of values expected. Used to distinguish scalar/vector storage.
-		  * @return  Address of values, or 0 if none. Note can return address of a scalar when it doesn't
-		  * exist. */
-		const ValueType *getElementValues(DsLabelIndex elementIndex, int valuesCount) const
-		{
-			if (valuesCount == 1)
-				return this->elementScalarDOFs.getAddress(elementIndex); // can be false positive
-			return this->elementVectorDOFs.getValue(elementIndex);
-		}
-
-		/** @param elementIndex  The element to get values for.
-		  * @param valuesCount  The number of values expected. Used to distinguish scalar/vector storage.
-		  * @return  Address of values, or 0 if none. Note can return address of a scalar when it doesn't
-		  * exist. */
-		ValueType *getElementValues(DsLabelIndex elementIndex, int valuesCount)
-		{
-			if (valuesCount == 1)
-				return this->elementScalarDOFs.getAddress(elementIndex); // can be false positive
-			return this->elementVectorDOFs.getValue(elementIndex);
-		}
-
-		/** @param elementIndex  The element to get or create values for.
-		  * @param valuesCount  The number of values required to store >= 1.
-		  * @return  Pointer to values array or 0 if failed. Not to be deallocated! */
-		ValueType *getOrCreateElementValues(DsLabelIndex elementIndex, int valuesCount)
-		{
-			if (valuesCount == 1)
-				return this->elementScalarDOFs.getOrCreateAddress(elementIndex);
-			if (valuesCount <= 0)
-				return 0;
-			ValueType **existingValuesAddress = this->elementVectorDOFs.getAddress(elementIndex);
-			ValueType *values = (existingValuesAddress) ? *existingValuesAddress : 0;
-			if (!values)
-			{
-				values = new ValueType[valuesCount];
-				if (!values)
-					return 0;
-				if (existingValuesAddress)
-				{
-					*existingValuesAddress = values;
-				}
-				else if (!this->elementVectorDOFs.setValue(elementIndex, values))
-				{
-					delete values;
-					return 0;
-				}
-			}
-			return values;
-		}
-
-		/** @param elementIndex  The element to set values for.
-		  * @param valuesCount  Size of values array; must be >= 1.
-		  * @param values  Array of values to set. Must be non-null.
-		  * @return  True on success, false on failure. */
-		bool setElementValues(DsLabelIndex elementIndex, int valuesCount, const ValueType *values)
-		{
-			ValueType *targetValues = this->getOrCreateElementValues(elementIndex, valuesCount);
-			if (!targetValues)
-				return false;
-			memcpy(targetValues, values, valuesCount*sizeof(ValueType));
-			return true;
-		}
-
-		/** Copy element values from source component, finding target elements by identifier.
-		  * Used only by FE_mesh::merge to merge values from another region.
-		  * Must have already merged mesh field template for component, so target element
-		  * field template is guaranteed to be the same for each element in source.
-		  * @param sourceBase  Source component as base class. Must of same ValueType.
-		  * @return  True on success, false on failure. */
-		virtual bool mergeElementValues(const ComponentBase *sourceBase)
-		{
-			const Component *source = dynamic_cast<const Component<ValueType> *>(sourceBase);
-			if (!source)
-			{
-				display_message(ERROR_MESSAGE, "FE_mesh_field_data::Component::mergeElementDOFs.  Invalid source");
-				return false;
-			}
-			const FE_mesh *sourceMesh = source->meshFieldTemplate->getMesh();
-			const FE_mesh *targetMesh = this->meshFieldTemplate->getMesh();
-			DsLabelIndex sourceElementIndexLimit = source->meshFieldTemplate->getElementIndexLimit();
-			for (DsLabelIndex sourceElementIndex = source->meshFieldTemplate->getElementIndexStart();
-				sourceElementIndex < sourceElementIndexLimit; ++sourceElementIndex)
-			{
-				const DsLabelIdentifier elementIdentifier = sourceMesh->getElementIdentifier(sourceElementIndex);
-				if (DS_LABEL_IDENTIFIER_INVALID == elementIdentifier)
-					continue; // no element at that index
-				FE_element_field_template *sourceElementfieldtemplate = source->meshFieldTemplate->getElementfieldtemplate(sourceElementIndex);
-				if (!sourceElementfieldtemplate)
-					continue;
-				const int valuesCount = sourceElementfieldtemplate->getNumberOfElementDOFs();
-				if (0 == valuesCount)
-					continue;
-				const ValueType *sourceValues = source->getElementValues(sourceElementIndex, valuesCount);
-				if (!sourceValues)
-				{
-					display_message(ERROR_MESSAGE, "FE_mesh_field_data::Component::mergeElementDOFs.  Missing source DOFs");
-					return false;
-				}
-				const DsLabelIndex targetElementIndex = targetMesh->findIndexByIdentifier(elementIdentifier);
-				// the above must be valid if merge has got to this point, so not testing.
-				if (!this->setElementValues(targetElementIndex, valuesCount, sourceValues))
-					return false;
-			}
-			return true;
-		}
-
-	};
-
-	/** Simple component type for types without element varying quantities e.g. indexed string */
-	class ComponentConstant : public ComponentBase
-	{
-	public:
-
-		ComponentConstant(FE_mesh_field_template *meshFieldTemplateIn) :
-			ComponentBase(meshFieldTemplateIn)
-		{
-		}
-
-		virtual ~ComponentConstant()
-		{
-		}
-
-		virtual void clearElementData(DsLabelIndex)
-		{
-		}
-
-		virtual bool mergeElementValues(const ComponentBase *)
-		{
-			return true;
-		}
-
-	};
-
-
-private:
-	FE_field *field; // not accessed; structure is owned by field and dies with it
-	const int componentCount; // cached from field
-	const Value_type valueType;
-	ComponentBase **components;
-
-	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn) :
-		field(fieldIn),
-		componentCount(get_FE_field_number_of_components(fieldIn)),
-		valueType(get_FE_field_value_type(fieldIn)),
-		components(componentsIn) // takes ownership of passed-in array
-	{
-	}
-
-public:
-
-	/** @return  New mesh field data with blank FieldTemplates for field on mesh, or 0 if failed */
-	static FE_mesh_field_data *create(FE_field *field, FE_mesh *mesh);
-
-	~FE_mesh_field_data()
-	{
-		for (int i = 0; i < this->componentCount; ++i)
-			delete this->components[i];
-		delete[] this->components;
-	}
-
-	/** @param componentNumber  From 0 to componentCount - 1, not checked.
-	  * @param elementIndex  Element index >= 0. Not checked. */
-	void clearComponentElementData(int componentNumber, DsLabelIndex elementIndex)
-	{
-		this->components[componentNumber]->clearElementData(elementIndex);
-	}
-
-	/** Clear element data for all components
-	  * @param elementIndex  Element index >= 0. Not checked. */
-	void clearElementData(DsLabelIndex elementIndex)
-	{
-		for (int c = 0; c < this->componentCount; ++c)
-			this->components[c]->clearElementData(elementIndex);
-	}
-
-	/** @param componentNumber  From 0 to componentCount - 1, not checked
-	  * @return  Non-accessed component base */
-	ComponentBase *getComponentBase(int componentNumber) const
-	{
-		return this->components[componentNumber];
-	}
-
-	/** @param componentNumber  From 0 to componentCount - 1, not checked
-	  * @return  Non-accessed field template */
-	const FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber) const
-	{
-		return this->components[componentNumber]->getMeshfieldtemplate();
-	}
-
-	/** @param componentNumber  From 0 to componentCount - 1, not checked
-	  * @return  Non-accessed field template */
-	FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber)
-	{
-		return this->components[componentNumber]->getMeshfieldtemplate();
-	}
-
-	/** @param componentNumber  From 0 to componentCount - 1, not checked */
-	void setComponentMeshfieldtemplate(int componentNumber, FE_mesh_field_template *meshFieldTemplate)
-	{
-		this->components[componentNumber]->setMeshfieldtemplate(meshFieldTemplate);
-	}
-
-	bool isDefinedOnElements()
-	{
-		return !this->components[0]->getMeshfieldtemplate()->isBlank();
-	}
-
-	/** @return  True if any element of any component uses a non-linear basis in any direction */
-	bool usesNonLinearBasis() const
-	{
-		for (int i = 0; i < this->componentCount; ++i)
-			if (this->components[0]->getMeshfieldtemplate()->usesNonLinearBasis())
-				return true;
-		return false;
-	}
-};
-
 /**
  * A set of elements in the FE_region.
  */
@@ -1551,6 +1251,307 @@ public:
 	void setIndex(DsLabelIndex index)
 	{
 		this->iter->setIndex(index);
+	}
+};
+
+
+/** Stores field component definition on a mesh as a FE_mesh_field_template plus
+  * per-element parameters. Owned by field. */
+class FE_mesh_field_data
+{
+	friend class FE_mesh;
+
+public:
+	class ComponentBase
+	{
+		friend class FE_mesh;
+		friend class FE_mesh_field_data;
+
+		FE_mesh_field_template *meshFieldTemplate; // accessed
+
+	public:
+
+		ComponentBase(FE_mesh_field_template *meshFieldTemplateIn) :
+			meshFieldTemplate(meshFieldTemplateIn->access())
+		{
+		}
+
+		virtual ~ComponentBase()
+		{
+			FE_mesh_field_template::deaccess(this->meshFieldTemplate);
+		}
+
+		virtual void clearElementData(DsLabelIndex elementIndex) = 0;
+
+		/** @return  Non-accessed field template */
+		const FE_mesh_field_template *getMeshfieldtemplate() const
+		{
+			return this->meshFieldTemplate;
+		}
+
+		/** @return  Non-accessed field template */
+		FE_mesh_field_template *getMeshfieldtemplate()
+		{
+			return this->meshFieldTemplate;
+		}
+
+		/** Currently assumes previous template had no per-element values
+		  * @param fieldTemplateIn  Field template: not checked; must be valid for mesh */
+		void setMeshfieldtemplate(FE_mesh_field_template *meshFieldTemplateIn)
+		{
+			meshFieldTemplateIn->access();
+			FE_mesh_field_template::deaccess(this->meshFieldTemplate);
+			this->meshFieldTemplate = meshFieldTemplateIn;
+		}
+
+		virtual bool mergeElementValues(const ComponentBase *sourceBase) = 0;
+
+	};
+
+	template <typename ValueType> class Component : public ComponentBase
+	{
+		friend class FE_mesh;
+
+		block_array<DsLabelIndex, ValueType> elementScalarDOFs;
+		dynarray_block_array<DsLabelIndex, ValueType*> elementVectorDOFs;
+
+	public:
+
+		Component(FE_mesh_field_template *meshFieldTemplateIn) :
+			ComponentBase(meshFieldTemplateIn)
+		{
+		}
+
+		virtual ~Component()
+		{
+		}
+
+		/** @param elementIndex  Element index >= 0. Not checked. */
+		virtual void clearElementData(DsLabelIndex elementIndex)
+		{
+			ValueType** valuePtrAddress = this->elementVectorDOFs.getAddress(elementIndex);
+			if (valuePtrAddress)
+			{
+				delete[] *valuePtrAddress;
+				*valuePtrAddress = 0;
+			}
+		}
+
+		/** @param elementIndex  The element to get values for.
+		  * @param valuesCount  The number of values expected. Used to distinguish scalar/vector storage.
+		  * @return  Address of values, or 0 if none. Note can return address of a scalar when it doesn't
+		  * exist. */
+		const ValueType *getElementValues(DsLabelIndex elementIndex, int valuesCount) const
+		{
+			if (valuesCount == 1)
+				return this->elementScalarDOFs.getAddress(elementIndex); // can be false positive
+			return this->elementVectorDOFs.getValue(elementIndex);
+		}
+
+		/** @param elementIndex  The element to get values for.
+		  * @param valuesCount  The number of values expected. Used to distinguish scalar/vector storage.
+		  * @return  Address of values, or 0 if none. Note can return address of a scalar when it doesn't
+		  * exist. */
+		ValueType *getElementValues(DsLabelIndex elementIndex, int valuesCount)
+		{
+			if (valuesCount == 1)
+				return this->elementScalarDOFs.getAddress(elementIndex); // can be false positive
+			return this->elementVectorDOFs.getValue(elementIndex);
+		}
+
+		/** @param elementIndex  The element to get or create values for.
+		  * @param valuesCount  The number of values required to store >= 1.
+		  * @return  Pointer to values array or 0 if failed. Not to be deallocated! */
+		ValueType *getOrCreateElementValues(DsLabelIndex elementIndex, int valuesCount)
+		{
+			if (valuesCount == 1)
+				return this->elementScalarDOFs.getOrCreateAddress(elementIndex);
+			if (valuesCount <= 0)
+				return 0;
+			ValueType **existingValuesAddress = this->elementVectorDOFs.getAddress(elementIndex);
+			ValueType *values = (existingValuesAddress) ? *existingValuesAddress : 0;
+			if (!values)
+			{
+				values = new ValueType[valuesCount];
+				if (!values)
+					return 0;
+				if (existingValuesAddress)
+				{
+					*existingValuesAddress = values;
+				}
+				else if (!this->elementVectorDOFs.setValue(elementIndex, values))
+				{
+					delete values;
+					return 0;
+				}
+			}
+			return values;
+		}
+
+		/** @param elementIndex  The element to set values for.
+		  * @param valuesCount  Size of values array; must be >= 1.
+		  * @param values  Array of values to set. Must be non-null.
+		  * @return  True on success, false on failure. */
+		bool setElementValues(DsLabelIndex elementIndex, int valuesCount, const ValueType *values)
+		{
+			ValueType *targetValues = this->getOrCreateElementValues(elementIndex, valuesCount);
+			if (!targetValues)
+				return false;
+			memcpy(targetValues, values, valuesCount*sizeof(ValueType));
+			return true;
+		}
+
+		/** Copy element values from source component, finding target elements by identifier.
+		  * Used only by FE_mesh::merge to merge values from another region.
+		  * Must have already merged mesh field template for component, so target element
+		  * field template is guaranteed to be the same for each element in source.
+		  * @param sourceBase  Source component as base class. Must of same ValueType.
+		  * @return  True on success, false on failure. */
+		virtual bool mergeElementValues(const ComponentBase *sourceBase)
+		{
+			const Component *source = dynamic_cast<const Component<ValueType> *>(sourceBase);
+			if (!source)
+			{
+				display_message(ERROR_MESSAGE, "FE_mesh_field_data::Component::mergeElementDOFs.  Invalid source");
+				return false;
+			}
+			const FE_mesh *sourceMesh = source->meshFieldTemplate->getMesh();
+			const FE_mesh *targetMesh = this->meshFieldTemplate->getMesh();
+			DsLabelIndex sourceElementIndexLimit = source->meshFieldTemplate->getElementIndexLimit();
+			for (DsLabelIndex sourceElementIndex = source->meshFieldTemplate->getElementIndexStart();
+				sourceElementIndex < sourceElementIndexLimit; ++sourceElementIndex)
+			{
+				const DsLabelIdentifier elementIdentifier = sourceMesh->getElementIdentifier(sourceElementIndex);
+				if (DS_LABEL_IDENTIFIER_INVALID == elementIdentifier)
+					continue; // no element at that index
+				FE_element_field_template *sourceElementfieldtemplate = source->meshFieldTemplate->getElementfieldtemplate(sourceElementIndex);
+				if (!sourceElementfieldtemplate)
+					continue;
+				const int valuesCount = sourceElementfieldtemplate->getNumberOfElementDOFs();
+				if (0 == valuesCount)
+					continue;
+				const ValueType *sourceValues = source->getElementValues(sourceElementIndex, valuesCount);
+				if (!sourceValues)
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh_field_data::Component::mergeElementDOFs.  Missing source DOFs");
+					return false;
+				}
+				const DsLabelIndex targetElementIndex = targetMesh->findIndexByIdentifier(elementIdentifier);
+				// the above must be valid if merge has got to this point, so not testing.
+				if (!this->setElementValues(targetElementIndex, valuesCount, sourceValues))
+					return false;
+			}
+			return true;
+		}
+
+	};
+
+	/** Simple component type for types without element varying quantities e.g. indexed string */
+	class ComponentConstant : public ComponentBase
+	{
+	public:
+
+		ComponentConstant(FE_mesh_field_template *meshFieldTemplateIn) :
+			ComponentBase(meshFieldTemplateIn)
+		{
+		}
+
+		virtual ~ComponentConstant()
+		{
+		}
+
+		virtual void clearElementData(DsLabelIndex)
+		{
+		}
+
+		virtual bool mergeElementValues(const ComponentBase *)
+		{
+			return true;
+		}
+
+	};
+
+
+private:
+	FE_field *field; // not accessed; structure is owned by field and dies with it
+	const int componentCount; // cached from field
+	const Value_type valueType;
+	ComponentBase **components;
+
+	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn) :
+		field(fieldIn),
+		componentCount(get_FE_field_number_of_components(fieldIn)),
+		valueType(get_FE_field_value_type(fieldIn)),
+		components(componentsIn) // takes ownership of passed-in array
+	{
+	}
+
+public:
+
+	/** @return  New mesh field data with blank FieldTemplates for field on mesh, or 0 if failed */
+	static FE_mesh_field_data *create(FE_field *field, FE_mesh *mesh);
+
+	~FE_mesh_field_data()
+	{
+		for (int i = 0; i < this->componentCount; ++i)
+			delete this->components[i];
+		delete[] this->components;
+	}
+
+	/** @param componentNumber  From 0 to componentCount - 1, not checked.
+	  * @param elementIndex  Element index >= 0. Not checked. */
+	void clearComponentElementData(int componentNumber, DsLabelIndex elementIndex)
+	{
+		this->components[componentNumber]->clearElementData(elementIndex);
+	}
+
+	/** Clear element data for all components
+	  * @param elementIndex  Element index >= 0. Not checked. */
+	void clearElementData(DsLabelIndex elementIndex)
+	{
+		for (int c = 0; c < this->componentCount; ++c)
+			this->components[c]->clearElementData(elementIndex);
+	}
+
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
+	  * @return  Non-accessed component base */
+	ComponentBase *getComponentBase(int componentNumber) const
+	{
+		return this->components[componentNumber];
+	}
+
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
+	  * @return  Non-accessed field template */
+	const FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber) const
+	{
+		return this->components[componentNumber]->getMeshfieldtemplate();
+	}
+
+	/** @param componentNumber  From 0 to componentCount - 1, not checked
+	  * @return  Non-accessed field template */
+	FE_mesh_field_template *getComponentMeshfieldtemplate(int componentNumber)
+	{
+		return this->components[componentNumber]->getMeshfieldtemplate();
+	}
+
+	/** @param componentNumber  From 0 to componentCount - 1, not checked */
+	void setComponentMeshfieldtemplate(int componentNumber, FE_mesh_field_template *meshFieldTemplate)
+	{
+		this->components[componentNumber]->setMeshfieldtemplate(meshFieldTemplate);
+	}
+
+	bool isDefinedOnElements()
+	{
+		return !this->components[0]->getMeshfieldtemplate()->isBlank();
+	}
+
+	/** @return  True if any element of any component uses a non-linear basis in any direction */
+	bool usesNonLinearBasis() const
+	{
+		for (int i = 0; i < this->componentCount; ++i)
+			if (this->components[0]->getMeshfieldtemplate()->usesNonLinearBasis())
+				return true;
+		return false;
 	}
 };
 

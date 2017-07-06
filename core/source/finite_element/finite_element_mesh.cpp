@@ -311,76 +311,6 @@ cmzn_element::~cmzn_element()
 	}
 }
 
-FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
-{
-	if (!(field && mesh))
-		return 0;
-	FE_mesh_field_data *meshFieldData = 0;
-	FE_mesh_field_template *blankMeshFieldTemplate = mesh->getOrCreateBlankMeshFieldTemplate();
-	const int componentCount = get_FE_field_number_of_components(field);
-	ComponentBase **components = new ComponentBase*[componentCount];
-	if (components)
-	{
-		for (int c = 0; c < componentCount; ++c)
-			components[c] = 0;
-	}
-	if (blankMeshFieldTemplate && components)
-	{
-		bool success = true;
-		for (int c = 0; c < componentCount; ++c)
-		{
-			const Value_type valueType = get_FE_field_value_type(field);
-			switch (valueType)
-			{
-			case FE_VALUE_VALUE:
-				components[c] = new Component<FE_value>(blankMeshFieldTemplate);
-				break;
-			case INT_VALUE:
-				components[c] = new Component<int>(blankMeshFieldTemplate);
-				break;
-			case STRING_VALUE:
-			{
-				FE_field_type feFieldType = get_FE_field_FE_field_type(field);
-				if ((feFieldType == CONSTANT_FE_FIELD) || (feFieldType == INDEXED_FE_FIELD))
-				{
-					components[c] = new ComponentConstant(blankMeshFieldTemplate);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  String type is only implemented for constant and indexed field");
-					success = false;
-				}
-			}	break;
-			default:
-				display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  Unsupported value type");
-				success = false;
-				break;
-			}
-			if (success && (!components[c]))
-			{
-				if (success)
-				{
-					display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  Failed to create component");
-					success = false;
-				}
-			}
-		}
-		if (success)
-			meshFieldData = new FE_mesh_field_data(field, components);
-	}
-	FE_mesh_field_template::deaccess(blankMeshFieldTemplate);
-	if (!meshFieldData)
-	{
-		if (components)
-		{
-			for (int c = 0; c < componentCount; ++c)
-				delete components[c];
-			delete components;
-		}
-	}
-	return meshFieldData;
-}
-
 /** Free dynamic memory or resources held per-element e.g. reduce node element usage counts
   * @param elementIndex  Not checked, must be >= 0 */
 void FE_mesh_element_field_template_data::clearElementVaryingData(DsLabelIndex elementIndex)
@@ -3259,4 +3189,74 @@ bool FE_mesh::mergePart2Fields(const FE_mesh &source)
 	}
 
 	return result;
+}
+
+FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
+{
+	if (!(field && mesh))
+		return 0;
+	FE_mesh_field_data *meshFieldData = 0;
+	FE_mesh_field_template *blankMeshFieldTemplate = mesh->getOrCreateBlankMeshFieldTemplate();
+	const int componentCount = get_FE_field_number_of_components(field);
+	ComponentBase **components = new ComponentBase*[componentCount];
+	if (components)
+	{
+		for (int c = 0; c < componentCount; ++c)
+			components[c] = 0;
+	}
+	if (blankMeshFieldTemplate && components)
+	{
+		bool success = true;
+		for (int c = 0; c < componentCount; ++c)
+		{
+			const Value_type valueType = get_FE_field_value_type(field);
+			switch (valueType)
+			{
+			case FE_VALUE_VALUE:
+				components[c] = new Component<FE_value>(blankMeshFieldTemplate);
+				break;
+			case INT_VALUE:
+				components[c] = new Component<int>(blankMeshFieldTemplate);
+				break;
+			case STRING_VALUE:
+			{
+				FE_field_type feFieldType = get_FE_field_FE_field_type(field);
+				if ((feFieldType == CONSTANT_FE_FIELD) || (feFieldType == INDEXED_FE_FIELD))
+				{
+					components[c] = new ComponentConstant(blankMeshFieldTemplate);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  String type is only implemented for constant and indexed field");
+					success = false;
+				}
+			}	break;
+			default:
+				display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  Unsupported value type");
+				success = false;
+				break;
+			}
+			if (success && (!components[c]))
+			{
+				if (success)
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh_field_data::create.  Failed to create component");
+					success = false;
+				}
+			}
+		}
+		if (success)
+			meshFieldData = new FE_mesh_field_data(field, components);
+	}
+	FE_mesh_field_template::deaccess(blankMeshFieldTemplate);
+	if (!meshFieldData)
+	{
+		if (components)
+		{
+			for (int c = 0; c < componentCount; ++c)
+				delete components[c];
+			delete components;
+		}
+	}
+	return meshFieldData;
 }
