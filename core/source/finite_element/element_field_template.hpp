@@ -27,6 +27,25 @@ class FE_nodeset;
 struct FE_node_field_component;
 
 
+inline bool isScaleFactorTypeElement(cmzn_elementfieldtemplate_scale_factor_type scaleFactorType)
+{
+	return (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL)
+		|| (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH);
+}
+
+inline bool isScaleFactorTypeGlobal(cmzn_elementfieldtemplate_scale_factor_type scaleFactorType)
+{
+	return (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL)
+		|| (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH);
+}
+
+inline bool isScaleFactorTypeNode(cmzn_elementfieldtemplate_scale_factor_type scaleFactorType)
+{
+	return (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL)
+		|| (scaleFactorType == CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH);
+}
+
+
 class FE_element_field_template
 {
 	friend FE_mesh;
@@ -71,7 +90,11 @@ private:
 	int numberOfLocalScaleFactors; // zero if unscaled; scaling currently only supported with node mapping
 	// metadata identifying type and version of each local scale factor, for merging:
 	cmzn_elementfieldtemplate_scale_factor_type *scaleFactorTypes;
-	int *scaleFactorVersions;
+	int *scaleFactorIdentifiers;
+	// determined on validation: if any node scale factors in use, allocate and cache local node indexes for each.
+	// It is an error if a node scale factor is not for exactly one node
+	int *scaleFactorLocalNodeIndexes;
+
 	// packed array of all local scale factor indexes to be multiplied for each
 	// term for each function, in order of function then term then factor (size = totalLocalScaleFactorIndexes):
 	int *localScaleFactorIndexes;
@@ -134,8 +157,8 @@ public:
 	FE_element_field_template *cloneForModify() const;
 
 	/** Create a copy of the template for merging into a new mesh, keeping locked status.
-	* @param newMesh  New mesh to clone for. Must be same dimension as this eft's mesh.
-	* @return  New element field template with access count 1, or 0 if failed. */
+	  * @param newMesh  New mesh to clone for. Must be same dimension as this eft's mesh.
+	  * @return  New element field template with access count 1, or 0 if failed. */
 	FE_element_field_template *cloneForNewMesh(FE_mesh *newMesh) const;
 
 	FE_element_field_template *access()
@@ -300,29 +323,42 @@ public:
 	  * Only valid in node mapping mode. */
 	int setNumberOfLocalScaleFactors(int number);
 
-	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localIndex) const
+	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localScaleFactorIndex) const
 	{
-		if ((0 <= localIndex) && (localIndex < this->numberOfLocalScaleFactors))
-			return this->scaleFactorTypes[localIndex];
+		if ((0 <= localScaleFactorIndex) && (localScaleFactorIndex < this->numberOfLocalScaleFactors))
+			return this->scaleFactorTypes[localScaleFactorIndex];
 		return CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
 	}
 
 	/** Set the type of scale factor mapped at the local index, used with the
-	  * scale factor version, global node, derivative etc. to merge common
-	  * scale factors from different fields */
-	int setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type);
+	  * scale factor version, and node/element to merge common scale factors
+	  * across the mesh */
+	int setScaleFactorType(int localScaleFactorIndex, cmzn_elementfieldtemplate_scale_factor_type type);
 
-	int getScaleFactorVersion(int localIndex) const
+	int getScaleFactorIdentifier(int localScaleFactorIndex) const
 	{
-		if ((0 <= localIndex) && (localIndex < this->numberOfLocalScaleFactors))
-			return this->scaleFactorVersions[localIndex];
+		if ((0 <= localScaleFactorIndex) && (localScaleFactorIndex < this->numberOfLocalScaleFactors))
+			return this->scaleFactorIdentifiers[localScaleFactorIndex];
 		return -1;
 	}
 
-	/** Set the version of scale factor mapped at the local index, used with the
-	  * scale factor type, global node, derivative etc. to merge common
-	  * scale factors from different fields */
-	int setScaleFactorVersion(int localIndex, int version);
+	/** Set the identifier of the scale factor mapped at the local index, used
+	  * with the scale factor type, and node/element to merge common scale factors
+	  * across the mesh */
+	int setScaleFactorIdentifier(int localScaleFactorIndex, int identifier);
+
+	/** Get the local node index from which the scale factor is mapped, if any.
+	  * @return  Local node index >= 0, or -1 if none. */
+	int getScaleFactorLocalNodeIndex(int localScaleFactorIndex)
+	{
+		if ((this->scaleFactorLocalNodeIndexes)
+			&& (0 <= localScaleFactorIndex)
+			&& (localScaleFactorIndex < this->numberOfLocalScaleFactors))
+		{
+			return this->scaleFactorLocalNodeIndexes[localScaleFactorIndex];
+		}
+		return -1;
+	}
 
 	/** @return  The number of scale factors multiplying term */
 	int getTermScalingCount(int functionNumber, int term) const;
@@ -357,6 +393,12 @@ public:
 
 	/** @return  True if validated and locked, false if failed. */
 	bool validateAndLock();
+
+	/** @return  True if any node-based scale factors in use, requiring client to update if local nodes change */
+	bool hasNodeScaleFactors() const
+	{
+		return (0 != this->scaleFactorLocalNodeIndexes);
+	}
 
 };
 
@@ -546,26 +588,26 @@ public:
 		return this->impl->setNumberOfLocalScaleFactors(number);
 	}
 
-	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localIndex) const
+	cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int localScaleFactorIndex) const
 	{
-		return this->impl->getScaleFactorType(localIndex - 1);
+		return this->impl->getScaleFactorType(localScaleFactorIndex - 1);
 	}
 
-	int setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type)
+	int setScaleFactorType(int localScaleFactorIndex, cmzn_elementfieldtemplate_scale_factor_type type)
 	{
 		this->copyOnWrite();
-		return this->impl->setScaleFactorType(localIndex - 1, type);
+		return this->impl->setScaleFactorType(localScaleFactorIndex - 1, type);
 	}
 
-	int getScaleFactorVersion(int localIndex) const
+	int getScaleFactorIdentifier(int localScaleFactorIndex) const
 	{
-		return this->impl->getScaleFactorVersion(localIndex - 1) + 1;
+		return this->impl->getScaleFactorIdentifier(localScaleFactorIndex - 1);
 	}
 
-	int setScaleFactorVersion(int localIndex, int version)
+	int setScaleFactorIdentifier(int localScaleFactorIndex, int identifier)
 	{
 		this->copyOnWrite();
-		return this->impl->setScaleFactorVersion(localIndex - 1, version - 1);
+		return this->impl->setScaleFactorIdentifier(localScaleFactorIndex - 1, identifier);
 	}
 
 	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const

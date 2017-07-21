@@ -20,6 +20,7 @@
 #include "general/block_array.hpp"
 #include "general/list.h"
 #include <list>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -278,9 +279,7 @@ class FE_mesh_element_field_template_data
 	const int localNodeCount; // cached from eft to guarantee efficiency
 	DsMapArrayLabelIndex localToGlobalNodes; // map from element[local node index] -> global nodes index
 	const int localScaleFactorCount; // cached from eft to guarantee efficiency
-	// temporary: store actual scale factors, until management of global scale factors finalised
-	dynarray_block_array<DsLabelIndex, FE_value*> localScaleFactors;
-	// future DsMapArrayLabelIndex localToGlobalScaleFactors; // map from element[local node index] -> global nodes index
+	DsMapArrayLabelIndex localToGlobalScaleFactors; // map from element[local scale factor index] -> global scale factors index
 	// for each element, the number of field components using this eft. Clear per-element data when this drops to zero:
 	typedef unsigned short MeshfieldtemplateUsageCountType; // internal use only
 	block_array<DsLabelIndex, MeshfieldtemplateUsageCountType> meshfieldtemplateUsageCount;
@@ -297,8 +296,8 @@ public:
 		eft(eftIn->access()),
 		localNodeCount(eftIn->getNumberOfLocalNodes()),
 		localToGlobalNodes(elementLabels, (localNodeCount > 0) ? localNodeCount : 2, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID),
-		localScaleFactorCount(eftIn->getNumberOfLocalScaleFactors())
-		//localToGlobalScaleFactors(elementLabels, (localScaleFactorCount > 0) ? localScaleFactorCount : 2, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID)
+		localScaleFactorCount(eftIn->getNumberOfLocalScaleFactors()),
+		localToGlobalScaleFactors(elementLabels, (localScaleFactorCount > 0) ? localScaleFactorCount : 2, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID)
 	{
 	}
 
@@ -358,50 +357,64 @@ public:
 	/** Set all local nodes for the given element. Does not notify of changes.
 	  * @param elementIndex  Element index.
 	  * @param nodeIndexes  Array of nodeIndexes to set, size equal to localNodeCount for EFT.
-	  * @param localNodeChange  Set to true if any local nodes changed from
-	  * previous valid index, otherwise keeps prior value.
 	  * @return  Result OK on success, any other value on failure. */
-	int setElementLocalNodes(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes, bool& localNodeChange);
+	int setElementLocalNodes(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes);
 
 	/** Set all local nodes for the given element, by identifier.
 	  * @param elementIndex  Element index. Not checked.
 	  * @param nodeIdentifiers  Array of identifiers of nodes to set, size equal to
 	  * localNodeCount for EFT. Use DS_LABEL_IDENTIFIER_INVALID to clear any node.
-	  * @param localNodeChange  Set to true if any local nodes changed from
-	  * previous valid index, otherwise keeps prior value.
 	  * @return  Result OK on success, any other value on failure. */
-	int setElementLocalNodesByIdentifier(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes, bool& localNodeChange);
+	int setElementLocalNodesByIdentifier(DsLabelIndex elementIndex, const DsLabelIndex *nodeIndexes);
 
-	/** Set a scale factors for this element field template in the given element.
-	  * @param elementIndex  The element to set scale factors for.
-	  * @param scaleFactorIndex  The local index of the scale factor to set, starting at 0.
+	/** Get a scale factor for this element field template in the given element.
+	  * @param elementIndex  The element to get scale factor for.
+	  * @param localScaleFactorIndex  The local index of the scale factor to get,
+	  * from 0 to EFT number of local scale factors - 1. Not checked.
+	  * @param value  On success, set to the scale factor value.
+	  * @return  Result OK on success, any other value on failure. */
+	int getElementScaleFactor(DsLabelIndex elementIndex, int localScaleFactorIndex, FE_value& value);
+
+	/** Set a scale factor for this element field template in the given element.
+	  * Notifies all fields at this element changed.
+	  * @param elementIndex  The element to set scale factor for.
+	  * @param localScaleFactorIndex  The local index of the scale factor to set,
+	  * from 0 to EFT number of local scale factors - 1. Not checked.
 	  * @param value  The scale factor value to set.
 	  * @return  Result OK on success, any other value on failure. */
-	int setElementScaleFactor(DsLabelIndex elementIndex, int scaleFactorIndex, FE_value value);
+	int setElementScaleFactor(DsLabelIndex elementIndex, int localScaleFactorIndex, FE_value value);
 
-	/** Set all scale factors for this element field template in the given element. Does not notify of changes.
-	  * @param elementIndex  The element to set scale factors for.
-	  * @param values  Array of scale factors to set. Required to have correct number for EFT.
+	/** Get all scale factors for this element field template in the given element.
+	  * @param elementIndex  The element to get scale factors for.
+	  * @param valuesOut  Array to receive scale factors. Must have enough space for correct number in EFT.
 	  * @return  Result OK on success, any other value on failure. */
-	int setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *values);
+	int getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut);
 
-#if 0
-	/** @return  Pointer to array of global scale factor indexes for element, or 0 if none. NOT to be freed.
-	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
-	DsLabelIndex *getElementScaleFactorIndexes(DsLabelIndex elementIndex)
-	{
-		return this->localToGlobalScaleFactors.getArray(elementIndex);
-	}
+	/** Set all scale factors for this element field template in the given element.
+	  * Notifies all fields at this element changed.
+	  * @param elementIndex  The element to set scale factors for.
+	  * @param valuesIn  Array of scale factors to set. Required to have correct number for EFT.
+	  * @return  Result OK on success, any other value on failure. */
+	int setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *valuesIn);
 
-	/** @return  Pointer to existing or new array of global scale factor indexes for element, or 0 if failed. NOT to be freed.
-	  * @param elementIndex  Label index for element. Note: caller must ensure this is non-negative. */
+	/** Gets or creates array of scale factor indexes for element. If creating, guarantees
+	  * to create full array of valid indexes. Fails if any scale factor
+	  * index cannot be determined, releasing all scale factor indexes found up to that point
+	  * and freeing the array. Most common reason for failure is that node-based scale factor
+	  * is needed and the respective local node has not been set.
+	  * Discovered existing scale factors keep their current values. New scale factors are set to 0.
+	  * Fails if eft has no local scale factors.
+	  * @param elementIndex  Label index for element. Not checked.
+	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
 	DsLabelIndex *getOrCreateElementScaleFactorIndexes(DsLabelIndex elementIndex)
 	{
-		if (this->localScaleFactorCount > 0)
-			return this->localToGlobalScaleFactors.getOrCreateArray(elementIndex);
-		return 0;
+		DsLabelIndex *scaleFactorIndexes = this->localToGlobalScaleFactors.getArray(elementIndex);
+		if (scaleFactorIndexes)
+		{
+			return scaleFactorIndexes;
+		}
+		return this->createElementScaleFactorIndexes(elementIndex);
 	}
-#endif
 
 	void incrementMeshfieldtemplateUsageCount(DsLabelIndex elementIndex);
 
@@ -416,29 +429,35 @@ public:
 		return (this->localNodeCount > 0) || (this->localScaleFactorCount > 0);
 	}
 
-	/** @return  Pointer to array of scale factors for element, or 0 if failed. NOT to be freed.
-	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
-	FE_value *getOrCreateElementScaleFactors(DsLabelIndex elementIndex);
-
-	/** @return  Pointer to array of scale factors for element, or 0 if none. NOT to be freed.
-	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
-	const FE_value *getElementScaleFactors(DsLabelIndex elementIndex) const
-	{
-		return this->localScaleFactors.getValue(elementIndex);
-	}
-
-	/** @return  Pointer to array of scale factors for element, or 0 if none. NOT to be freed.
-	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
-	FE_value *getElementScaleFactors(DsLabelIndex elementIndex)
-	{
-		return this->localScaleFactors.getValue(elementIndex);
-	}
-
 	bool localToGlobalNodesIsDense() const;
 
 	int getElementLocalToGlobalNodeMapCount() const;
 
 	bool mergeElementVaryingData(const FE_mesh_element_field_template_data& source);
+
+private:
+
+	/** Creates and fills array of scale factor indexes for element. Fails if any scale factor
+	  * index cannot be determined, releasing all scale factor indexes found up to that point
+	  * and freeing the array. Most common reason for failure is that node-based scale factor
+	  * is needed and the respective local node has not been set.
+	  * Only call if no scale factor indexes array exists.
+	  * @param elementIndex  Label index for element. Checked to be non-negative.
+	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
+	DsLabelIndex *createElementScaleFactorIndexes(DsLabelIndex elementIndex);
+
+	/**  Releases usage counts and maps for element scale factor indexes, and removes array.
+	  * @param elementIndex  Label index for element. Checked to be non-negative. */
+	void destroyElementScaleFactorIndexes(DsLabelIndex elementIndex);
+
+	/** Update scale factor indexes to be for the newNodeIndexes. Only call if node
+	  * based scale factors are in use, and node indexes have changed from 
+	  * previously valid indexes.
+	  * This function is atomic: nothing is changed if it fails.
+	  * @return  True on success, false if failed. */
+	bool updateElementNodeScaleFactorIndexes(DsLabelIndex elementIndex,
+		const DsLabelIndex *newNodeIndexes);
+
 };
 
 
@@ -676,6 +695,14 @@ private:
 
 	std::list<FE_mesh_field_template*> meshFieldTemplates;
 
+	DsLabelIndex scaleFactorsCount;  // actual number of scale factors. Note can be holes in scaleFactors array
+	DsLabelIndex scaleFactorsIndexSize;  // allocated size of scale factors array, including holes
+	block_array<DsLabelIndex, FE_value> scaleFactors;
+	block_array<DsLabelIndex, int> scaleFactorUsageCounts;  // number of element x efts using this scale factor
+	std::map<int, DsLabelIndex> globalScaleFactorsIndex;  // index for global scale factor type
+	// zero terminated allocated array alternate identifier, index pairs. PATCH type uses negative identifier, GENERAL positive
+	dynarray_block_array<DsLabelIndex, DsLabelIndex*> nodeScaleFactorsIndex;
+
 	// cache last element template merged in, so not expensively recording field changes
 	// must clear when element template changed or deleted, and in extractChangeLog()
 	// not accessed, since FE_element_template accesses mesh
@@ -744,6 +771,11 @@ private:
 
 	void clearElementFieldData();
 
+	/** Add a new scale factor index and give it usage count 1.
+	  * Caller is required to set up node or global identifier mapping, and set value.
+	  * @return  New index, or DS_LABEL_INDEX_INVALID if failed */
+	DsLabelIndex createScaleFactorIndex();
+
 public:
 
 	static FE_mesh *create(FE_region *fe_region, int dimension)
@@ -788,16 +820,7 @@ public:
 
 	/** @param eft  Element field template from this mesh.
 	  * @return  Non-accessed mesh element field template data. */
-	const FE_mesh_element_field_template_data *getElementfieldtemplateData(const FE_element_field_template *eft) const
-	{
-		if (eft && (eft->getMesh() == this) && (eft->isMergedInMesh()))
-			return this->elementFieldTemplateData[eft->getIndexInMesh()];
-		return 0;
-	}
-
-	/** @param eft  Element field template from this mesh.
-	  * @return  Non-accessed mesh element field template data. */
-	FE_mesh_element_field_template_data *getElementfieldtemplateData(const FE_element_field_template *eft)
+	FE_mesh_element_field_template_data *getElementfieldtemplateData(const FE_element_field_template *eft) const
 	{
 		if (eft && (eft->getMesh() == this) && (eft->isMergedInMesh()))
 			return this->elementFieldTemplateData[eft->getIndexInMesh()];
@@ -1151,6 +1174,50 @@ public:
 	int destroyAllElements();
 
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
+
+	/** @param scaleFactorIndex  Not checked. Must be valid. */
+	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const
+	{
+		return this->scaleFactors.getValue(scaleFactorIndex);
+	}
+
+	/** @param scaleFactorIndex  Not checked. Must be valid. */
+	int getScaleFactorUsageCount(DsLabelIndex scaleFactorIndex) const
+	{
+		return this->scaleFactorUsageCounts.getValue(scaleFactorIndex);
+	}
+
+	/** Query whether scale factor exists at index.
+	  * @param scaleFactorIndex  Index from 0 to scaleFactorsIndexSize - 1. Checked. */
+	bool hasScaleFactor(DsLabelIndex scaleFactorIndex) const
+	{
+		if ((scaleFactorIndex < 0) || (scaleFactorIndex >= this->scaleFactorsIndexSize))
+		{
+			display_message(ERROR_MESSAGE, "FE_mesh::hasScaleFactor.  Index out of range");
+			return false;
+		}
+		return (this->scaleFactorUsageCounts.getValue(scaleFactorIndex) > 0);
+	}
+
+	/** Sets scale factor at index. Does not notify.
+	  * @param scaleFactorIndex  Not checked. Must be valid. */
+	void setScaleFactor(DsLabelIndex scaleFactorIndex, FE_value value)
+	{
+		this->scaleFactors.setValue(scaleFactorIndex, value);
+	}
+
+	/** Get index for scale factor with type, object index and identifier, and increment its
+	  * usage count. If none found, create a new scale factor with usage count 1 and return its index.
+	  * @return  Scale factor index, or DS_LABEL_INDEX_INVALID if failed */
+	DsLabelIndex getOrCreateScaleFactorIndex(cmzn_elementfieldtemplate_scale_factor_type scaleFactorType,
+		DsLabelIndex objectIndex, int scaleFactorIdentifier);
+
+	/** Decrement usage count for scale factor index, and if it drops to zero remove relevant
+	  * node or global map to it.
+	  * @param scaleFactorIndex  Up to caller to ensure valid. */
+	void releaseScaleFactorIndex(DsLabelIndex scaleFactorIndex,
+		cmzn_elementfieldtemplate_scale_factor_type scaleFactorType,
+		DsLabelIndex objectIndex, int scaleFactorIdentifier);
 
 	bool checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset);
 

@@ -65,23 +65,32 @@ enum cmzn_elementfieldtemplate_parameter_mapping_mode
 };
 
 /**
- * Unique types for element scale factors which together with node/point
- * location, derivative/value label, scale factor version and possibly matching
- * value identify common scale factors for merging fields.
+ * Unique types for element scale factors which together with node/element and
+ * scale factor identifier allow merging of common scale factors in
+ * neighbouring elements, or for different templates in the same element.
+ * Note that types with the PATCH suffix are intended to be used for rescaling,
+ * e.g. scaling arc-length derivatives to be with respect to element chart.
+ * Note that a NODE type scale factor must scale parameters from exactly one
+ * local node.
+ * Note that ELEMENT types are currently limited to using scale factor
+ * identifier 0, meaning unique to a given element and element field template.
  */
 enum cmzn_elementfieldtemplate_scale_factor_type
 {
 	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID = 0,
 		/*!< Invalid type */
-	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL = 1,
-		/*!< General linear map coefficients globally shared across many elements of
-		 * the mesh */
-	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_GENERAL = 2,
-		/*!< General linear map coefficients unique to points local to or referenced
-		 * referenced by local nodes of the element */
-	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_PATCH = 3
-		/*!< Scaling from patch to local coordinates unique to points local to or
-		 * referenced by local nodes of the element */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL = 1,
+		/*!< General linear map coefficients private to an element */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH = 2,
+		/*!< Patch to local element coordinate scaling private to an element */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL = 3,
+		/*!< General linear map coefficients shared across multiple points in the mesh */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH = 4,
+		/*!< Patch to local element coordinate scaling shared across multiple points in the mesh */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL = 5,
+		/*!< General linear map coefficients shared through global nodes */
+	CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH = 6
+		/*!< Patch to local element coordinate scaling shared through global nodes */
 };
 
 /**

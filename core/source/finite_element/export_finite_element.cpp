@@ -1199,18 +1199,18 @@ bool EXWriter::writeElement(cmzn_element *element)
 		for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
 		{
 			const FE_element_field_template *eft = *eftIter;
-			const FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
-			const FE_value *values = meshEftData->getElementScaleFactors(element->getIndex());
-			if (!values)
+			FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+			const DsLabelIndex *scaleFactorIndexes = meshEftData->getOrCreateElementScaleFactorIndexes(element->getIndex());
+			if (!scaleFactorIndexes)
 			{
-				display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing scale factors");
+				display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing scale factors for element %d", element->getIdentifier());
 				return false;
 			}
 			const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
 			for (int s = 0; s < scaleFactorCount; ++s)
 			{
 				++scaleFactorNumber;
-				sprintf(tmpString, "%" FE_VALUE_STRING, values[s]);
+				sprintf(tmpString, "%" FE_VALUE_STRING, mesh->getScaleFactor(scaleFactorIndexes[s]));
 				(*this->output_file) << " " << tmpString;
 				if ((0 < FE_VALUE_MAX_OUTPUT_COLUMNS)
 					&& (0 == (scaleFactorNumber % FE_VALUE_MAX_OUTPUT_COLUMNS)))

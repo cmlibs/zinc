@@ -139,15 +139,15 @@ public:
 	Elementfieldtemplate& operator=(const Elementfieldtemplate& elementfieldemplate)
 	{
 		cmzn_elementfieldtemplate_id temp_id = cmzn_elementfieldtemplate_access(elementfieldemplate.id);
-		if (0 != id)
-			cmzn_elementfieldtemplate_destroy(&id);
-		id = temp_id;
+		if (0 != this->id)
+			cmzn_elementfieldtemplate_destroy(&(this->id));
+		this->id = temp_id;
 		return *this;
 	}
 
 	~Elementfieldtemplate()
 	{
-		cmzn_elementfieldtemplate_destroy(&id);
+		cmzn_elementfieldtemplate_destroy(&(this->id));
 	}
 
 	enum ParameterMappingMode
@@ -161,19 +161,22 @@ public:
 	enum ScaleFactorType
 	{
 		SCALE_FACTOR_TYPE_INVALID = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID,
+		SCALE_FACTOR_TYPE_ELEMENT_GENERAL = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL,
+		SCALE_FACTOR_TYPE_ELEMENT_PATCH = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH,
 		SCALE_FACTOR_TYPE_GLOBAL_GENERAL = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL,
-		SCALE_FACTOR_TYPE_LOCAL_GENERAL = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_GENERAL,
-		SCALE_FACTOR_TYPE_LOCAL_PATCH = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_PATCH
+		SCALE_FACTOR_TYPE_GLOBAL_PATCH = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH,
+		SCALE_FACTOR_TYPE_NODE_GENERAL = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL,
+		SCALE_FACTOR_TYPE_NODE_PATCH = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH
 	};
 
 	bool isValid() const
 	{
-		return (0 != id);
+		return (0 != this->id);
 	}
 
 	cmzn_elementfieldtemplate_id getId() const
 	{
-		return id;
+		return this->id;
 	}
 
 	Elementbasis getElementbasis() const
@@ -183,101 +186,106 @@ public:
 
 	ParameterMappingMode getParameterMappingMode() const
 	{
-		return static_cast<ParameterMappingMode>(cmzn_elementfieldtemplate_get_parameter_mapping_mode(id));
+		return static_cast<ParameterMappingMode>(cmzn_elementfieldtemplate_get_parameter_mapping_mode(this->id));
 	}
 
 	int setParameterMappingMode(ParameterMappingMode mode)
 	{
-		return cmzn_elementfieldtemplate_set_parameter_mapping_mode(id,
+		return cmzn_elementfieldtemplate_set_parameter_mapping_mode(this->id,
 			static_cast<cmzn_elementfieldtemplate_parameter_mapping_mode>(mode));
 	}
 
-	ScaleFactorType getScaleFactorType(int localIndex) const
+	ScaleFactorType getScaleFactorType(int localScaleFactorIndex) const
 	{
 		return static_cast<ScaleFactorType>(
-			cmzn_elementfieldtemplate_get_scale_factor_type(id, localIndex));
+			cmzn_elementfieldtemplate_get_scale_factor_type(this->id, localScaleFactorIndex));
 	}
 
-	int setScaleFactorType(int localIndex, ScaleFactorType type)
+	int setScaleFactorType(int localScaleFactorIndex, ScaleFactorType type)
 	{
-		return cmzn_elementfieldtemplate_set_scale_factor_type(id,
-			localIndex, static_cast<cmzn_elementfieldtemplate_scale_factor_type>(type));
+		return cmzn_elementfieldtemplate_set_scale_factor_type(this->id,
+			localScaleFactorIndex, static_cast<cmzn_elementfieldtemplate_scale_factor_type>(type));
 	}
 
-	int getScaleFactorVersion(int localIndex) const
+	int getScaleFactorIdentifier(int localScaleFactorIndex) const
 	{
-		return cmzn_elementfieldtemplate_get_scale_factor_version(id, localIndex);
+		return cmzn_elementfieldtemplate_get_scale_factor_identifier(this->id, localScaleFactorIndex);
 	}
 
-	int setScaleFactorVersion(int localIndex, int version)
+	int setScaleFactorIdentifier(int localScaleFactorIndex, int identifier)
 	{
-		return cmzn_elementfieldtemplate_set_scale_factor_version(id, localIndex, version);
+		return cmzn_elementfieldtemplate_set_scale_factor_identifier(this->id, localScaleFactorIndex, identifier);
 	}
 
 	int getFunctionNumberOfTerms(int functionNumber) const
 	{
-		return cmzn_elementfieldtemplate_get_function_number_of_terms(id, functionNumber);
+		return cmzn_elementfieldtemplate_get_function_number_of_terms(this->id, functionNumber);
 	}
 
 	int setFunctionNumberOfTerms(int functionNumber, int newNumberOfTerms)
 	{
-		return cmzn_elementfieldtemplate_set_function_number_of_terms(id, functionNumber, newNumberOfTerms);
+		return cmzn_elementfieldtemplate_set_function_number_of_terms(this->id, functionNumber, newNumberOfTerms);
 	}
 
 	int getNumberOfFunctions() const
 	{
-		return cmzn_elementfieldtemplate_get_number_of_functions(id);
+		return cmzn_elementfieldtemplate_get_number_of_functions(this->id);
 	}
 
 	int getNumberOfLocalNodes() const
 	{
-		return cmzn_elementfieldtemplate_get_number_of_local_nodes(id);
+		return cmzn_elementfieldtemplate_get_number_of_local_nodes(this->id);
 	}
 
 	int setNumberOfLocalNodes(int number)
 	{
-		return cmzn_elementfieldtemplate_set_number_of_local_nodes(id, number);
+		return cmzn_elementfieldtemplate_set_number_of_local_nodes(this->id, number);
 	}
 
 	int getNumberOfLocalScaleFactors() const
 	{
-		return cmzn_elementfieldtemplate_get_number_of_local_scale_factors(id);
+		return cmzn_elementfieldtemplate_get_number_of_local_scale_factors(this->id);
 	}
 
 	int setNumberOfLocalScaleFactors(int number)
 	{
-		return cmzn_elementfieldtemplate_set_number_of_local_scale_factors(id, number);
+		return cmzn_elementfieldtemplate_set_number_of_local_scale_factors(this->id, number);
 	}
 
 	int getTermLocalNodeIndex(int functionNumber, int term) const
 	{
-		return cmzn_elementfieldtemplate_get_term_local_node_index(id, functionNumber, term);
+		return cmzn_elementfieldtemplate_get_term_local_node_index(this->id, functionNumber, term);
 	}
 
 	Node::ValueLabel getTermNodeValueLabel(int functionNumber, int term) const
 	{
-		return static_cast<Node::ValueLabel>(cmzn_elementfieldtemplate_get_term_node_value_label(id, functionNumber, term));
+		return static_cast<Node::ValueLabel>(cmzn_elementfieldtemplate_get_term_node_value_label(this->id, functionNumber, term));
 	}
 
 	int getTermNodeVersion(int functionNumber, int term) const
 	{
-		return cmzn_elementfieldtemplate_get_term_node_version(id, functionNumber, term);
+		return cmzn_elementfieldtemplate_get_term_node_version(this->id, functionNumber, term);
 	}
 
 	int setTermNodeParameter(int functionNumber, int term, int localNodeIndex, Node::ValueLabel nodeValueLabel, int version)
 	{
-		return cmzn_elementfieldtemplate_set_term_node_parameter(id, functionNumber, term,
+		return cmzn_elementfieldtemplate_set_term_node_parameter(this->id, functionNumber, term,
 			localNodeIndex, static_cast<cmzn_node_value_label>(nodeValueLabel), version);
 	}
 
 	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const
 	{
-		return cmzn_elementfieldtemplate_get_term_scaling(id, functionNumber, term, indexesCount, indexes);
+		return cmzn_elementfieldtemplate_get_term_scaling(this->id, functionNumber, term, indexesCount, indexes);
 	}
 
 	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes)
 	{
-		return cmzn_elementfieldtemplate_set_term_scaling(id, functionNumber, term, indexesCount, indexes);
+		return cmzn_elementfieldtemplate_set_term_scaling(this->id, functionNumber, term, indexesCount, indexes);
+	}
+
+	bool validate()
+	{
+		return cmzn_elementfieldtemplate_validate(this->id);
 	}
 
 };
@@ -436,14 +444,9 @@ public:
 		return cmzn_element_set_nodes_by_identifier(this->id, eft.getId(), identifiersCount, identifiersIn);
 	}
 
-	double getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex)
+	int getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double *valueOut)
 	{
-		return cmzn_element_get_scale_factor(this->id, eft.getId(), scaleFactorIndex);
-	}
-
-	bool hasScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex)
-	{
-		return cmzn_element_has_scale_factor(this->id, eft.getId(), scaleFactorIndex);
+		return cmzn_element_get_scale_factor(this->id, eft.getId(), scaleFactorIndex, valueOut);
 	}
 
 	int setScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double value)

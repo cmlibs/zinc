@@ -285,11 +285,13 @@ class EXReader
 		int scaleFactorOffset;
 		std::vector< std::pair<std::string, std::vector<int> > > fieldComponents;  // field name and components using this scale factor set, in order added
 		std::vector<FE_element_field_template *> efts;  // EFTs using this scale factor set, converted from field components above
+		std::vector<FE_value> values; // cache for reading into
 
 		ScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn) :
 			name(nameIn),
 			scaleFactorCount(scaleFactorCountIn),
-			scaleFactorOffset(scaleFactorOffsetIn)
+			scaleFactorOffset(scaleFactorOffsetIn),
+			values(scaleFactorCountIn)
 		{
 		}
 
@@ -3902,78 +3904,48 @@ cmzn_element *EXReader::readElement()
 		for (size_t ss = 0; ss < sfSetCount; ++ss)
 		{
 			ScaleFactorSet *sfSet = this->scaleFactorSets[ss];
-			// if multiple EFTs using sfSet, read scale factors directly into array for first EFT and copy these for following EFTs
-			const FE_value *scaleFactors = 0;
-			if (sfSet->efts.size() == 0)
+			// read the values into the sfSet values cache
+			const int scaleFactorCount = sfSet->scaleFactorCount;
+			FE_value *scaleFactors = sfSet->values.data();
+			for (int sf = 0; sf < scaleFactorCount; ++sf)
 			{
-				FE_value dummy;
-				// if no scale factor set is unused by any element field component, read and ignore
-				const int scaleFactorCount = sfSet->scaleFactorCount;
-				for (int sf = 0; sf < scaleFactorCount; ++sf)
+				if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
 				{
-					if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &dummy))
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
-						cmzn_element::deaccess(element);
-						return 0;
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				if (!finite(scaleFactors[sf]))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN scale factor.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
 				}
 			}
-			else
+			// set scale factors in element for zero or more EFTs using it
+			for (auto eftIter = sfSet->efts.begin(); eftIter != sfSet->efts.end(); ++eftIter)
 			{
-				for (auto eftIter = sfSet->efts.begin(); eftIter != sfSet->efts.end(); ++eftIter)
+				FE_element_field_template *eft = *eftIter;
+				// sanity check
+				if (eft->getNumberOfLocalScaleFactors() != sfSet->scaleFactorCount)
 				{
-					FE_element_field_template *eft = *eftIter;
-					const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
-					// sanity check
-					if (scaleFactorCount != sfSet->scaleFactorCount)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Element field template expects %d scale factors; there are %d in scale factor set.  %s",
-							scaleFactorCount, sfSet->scaleFactorCount, this->getFileLocation());
-						cmzn_element::deaccess(element);
-						return 0;
-					}
-					FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
-					if (!meshEftData)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Missing mesh element field template data.  %s", this->getFileLocation());
-						cmzn_element::deaccess(element);
-						return 0;
-					}
-					if (scaleFactors) // copy from last EFT's scale factors
-					{
-						if (CMZN_OK != meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set scale factors.  %s", this->getFileLocation());
-							cmzn_element::deaccess(element);
-							return 0;
-						}
-					}
-					else
-					{
-						scaleFactors = meshEftData->getOrCreateElementScaleFactors(element->getIndex());
-						if (!scaleFactors)
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Failed to allocate space for scale factors.  %s", this->getFileLocation());
-							cmzn_element::deaccess(element);
-							return 0;
-						}
-						for (int sf = 0; sf < scaleFactorCount; ++sf)
-						{
-							if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
-							{
-								display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
-								cmzn_element::deaccess(element);
-								return 0;
-							}
-							if (!finite(scaleFactors[sf]))
-							{
-								display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN scale factor.  %s", this->getFileLocation());
-								cmzn_element::deaccess(element);
-								return 0;
-							}
-						}
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Element field template expects %d scale factors; there are %d in scale factor set.  %s",
+						scaleFactorCount, sfSet->scaleFactorCount, this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+				if (!meshEftData)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Missing mesh element field template data.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+				if (CMZN_OK != meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element scale factors.  %s", this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
 				}
 			}
 		}

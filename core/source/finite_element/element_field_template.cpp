@@ -88,7 +88,8 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	nodeVersions(0),
 	numberOfLocalScaleFactors(0),
 	scaleFactorTypes(0),
-	scaleFactorVersions(0),
+	scaleFactorIdentifiers(0),
+	scaleFactorLocalNodeIndexes(0),
 	localScaleFactorIndexes(0),
 	termScaleFactorCounts(0),
 	termLocalScaleFactorIndexesOffsets(0),
@@ -119,7 +120,8 @@ FE_element_field_template::FE_element_field_template(const FE_element_field_temp
 	nodeVersions(copy_array(source.nodeVersions, source.totalTermCount)),
 	numberOfLocalScaleFactors(source.numberOfLocalScaleFactors),
 	scaleFactorTypes(copy_array(source.scaleFactorTypes, source.numberOfLocalScaleFactors)),
-	scaleFactorVersions(copy_array(source.scaleFactorVersions, source.numberOfLocalScaleFactors)),
+	scaleFactorIdentifiers(copy_array(source.scaleFactorIdentifiers, source.numberOfLocalScaleFactors)),
+	scaleFactorLocalNodeIndexes(0),
 	localScaleFactorIndexes(copy_array(source.localScaleFactorIndexes, source.totalLocalScaleFactorIndexes)),
 	termScaleFactorCounts(copy_array(source.termScaleFactorCounts, source.totalTermCount)),
 	termLocalScaleFactorIndexesOffsets(copy_array(source.termLocalScaleFactorIndexesOffsets, source.totalTermCount)),
@@ -160,8 +162,10 @@ void FE_element_field_template::clearScaling()
 	this->numberOfLocalScaleFactors = 0;
 	delete[] this->scaleFactorTypes;
 	this->scaleFactorTypes = 0;
-	delete[] this->scaleFactorVersions;
-	this->scaleFactorVersions = 0;
+	delete[] this->scaleFactorIdentifiers;
+	this->scaleFactorIdentifiers = 0;
+	delete[] this->scaleFactorLocalNodeIndexes;
+	this->scaleFactorLocalNodeIndexes = 0;
 	delete[] this->localScaleFactorIndexes;
 	this->localScaleFactorIndexes = 0;
 	delete[] this->termScaleFactorCounts;
@@ -337,7 +341,7 @@ bool FE_element_field_template::matches(const FE_element_field_template &source)
 		{
 			if ((this->totalLocalScaleFactorIndexes != source.totalLocalScaleFactorIndexes)
 				|| (0 != memcmp(this->scaleFactorTypes, source.scaleFactorTypes, this->numberOfLocalScaleFactors*sizeof(cmzn_elementfieldtemplate_scale_factor_type)))
-				|| (0 != memcmp(this->scaleFactorVersions, source.scaleFactorVersions, this->numberOfLocalScaleFactors*sizeof(int)))
+				|| (0 != memcmp(this->scaleFactorIdentifiers, source.scaleFactorIdentifiers, this->numberOfLocalScaleFactors*sizeof(int)))
 				|| (0 != memcmp(this->termScaleFactorCounts, source.termScaleFactorCounts, this->totalTermCount*sizeof(int)))
 				|| (0 != memcmp(this->localScaleFactorIndexes, source.localScaleFactorIndexes, this->totalLocalScaleFactorIndexes*sizeof(int))))
 				return false;
@@ -641,6 +645,7 @@ bool FE_element_field_template::hasNodeParameterLegacyIndex() const
 
 int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 {
+	// Future note: have to change validate code if allow scale factors with other mapping modes!
 	if (this->locked
 		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (number < 0))
@@ -648,20 +653,20 @@ int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 	if (number > this->numberOfLocalScaleFactors)
 	{
 		cmzn_elementfieldtemplate_scale_factor_type *oldScaleFactorTypes = this->scaleFactorTypes;
-		int *oldScaleFactorVersions = this->scaleFactorVersions;
+		int *oldScaleFactorIdentifiers = this->scaleFactorIdentifiers;
 		this->scaleFactorTypes = new cmzn_elementfieldtemplate_scale_factor_type[number];
-		this->scaleFactorVersions = new int[number];
+		this->scaleFactorIdentifiers = new int[number];
 		// copy existing scale factor types and versions
 		for (int sf = 0; sf < this->numberOfLocalScaleFactors; ++sf)
 		{
 			this->scaleFactorTypes[sf] = oldScaleFactorTypes[sf];
-			this->scaleFactorVersions[sf] = oldScaleFactorVersions[sf];
+			this->scaleFactorIdentifiers[sf] = oldScaleFactorIdentifiers[sf];
 		}
 		// give new scale factors default type and version
 		for (int sf = this->numberOfLocalScaleFactors; sf < number; ++sf)
 		{
-			this->scaleFactorTypes[sf] = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_LOCAL_GENERAL;
-			this->scaleFactorVersions[sf] = 0; // match by value
+			this->scaleFactorTypes[sf] = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL;
+			this->scaleFactorIdentifiers[sf] = 0; // unique to element and EFT
 		}
 		if (!this->localScaleFactorIndexes)
 		{
@@ -678,21 +683,21 @@ int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 	return CMZN_OK;
 }
 
-int FE_element_field_template::setScaleFactorType(int localIndex, cmzn_elementfieldtemplate_scale_factor_type type)
+int FE_element_field_template::setScaleFactorType(int localScaleFactorIndex, cmzn_elementfieldtemplate_scale_factor_type type)
 {
-	if ((localIndex < 0) || (localIndex >= this->numberOfLocalScaleFactors)
+	if ((localScaleFactorIndex < 0) || (localScaleFactorIndex >= this->numberOfLocalScaleFactors)
 		|| (type <= CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID))
 		return CMZN_ERROR_ARGUMENT;
-	this->scaleFactorTypes[localIndex] = type;
+	this->scaleFactorTypes[localScaleFactorIndex] = type;
 	return CMZN_OK;
 }
 
-int FE_element_field_template::setScaleFactorVersion(int localIndex, int version)
+int FE_element_field_template::setScaleFactorIdentifier(int localIndex, int identifier)
 {
 	if ((localIndex < 0) || (localIndex >= this->numberOfLocalScaleFactors)
-		|| (version < 0))
+		|| (identifier < 0))
 		return CMZN_ERROR_ARGUMENT;
-	this->scaleFactorVersions[localIndex] = version;
+	this->scaleFactorIdentifiers[localIndex] = identifier;
 	return CMZN_OK;
 }
 
@@ -831,19 +836,105 @@ bool FE_element_field_template::validateAndLock()
 				valid = nodeValueLabelsValid = false;
 			}
 		}
-		bool scaleFactorIndexesValid = true;
-		for (int si = 0; si < this->totalLocalScaleFactorIndexes; ++si)
+		if (0 < this->numberOfLocalScaleFactors)
 		{
-			if (scaleFactorIndexesValid &&
-				((this->localScaleFactorIndexes[si] < 0) || (this->localScaleFactorIndexes[si] >= this->numberOfLocalScaleFactors)))
+			bool scaleFactorIndexesValid = true;
+			for (int si = 0; si < this->totalLocalScaleFactorIndexes; ++si)
 			{
-				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Local scale factor index out of range");
-				valid = scaleFactorIndexesValid = false;
+				if (scaleFactorIndexesValid &&
+					((this->localScaleFactorIndexes[si] < 0) || (this->localScaleFactorIndexes[si] >= this->numberOfLocalScaleFactors)))
+				{
+					display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Term local scale factor index out of range");
+					valid = scaleFactorIndexesValid = false;
+				}
+			}
+			bool hasNodeScaleFactors = false;
+			bool scaleFactorIdentifiersValidElement = true;
+			bool scaleFactorIdentifiersValidOther = true;
+			for (int s = 0; s < this->numberOfLocalScaleFactors; ++s)
+			{
+				if (isScaleFactorTypeElement(this->scaleFactorTypes[s]))
+				{
+					if (scaleFactorIdentifiersValidElement && (this->scaleFactorIdentifiers[s] != 0))
+					{
+						display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  ELEMENT type scale factor identifier must be 0");
+						valid = scaleFactorIdentifiersValidElement = false;
+					}
+				}
+				else
+				{
+					if (scaleFactorIdentifiersValidOther && (this->scaleFactorIdentifiers[s] < 1))
+					{
+						display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  NODE or GLOBAL type scale factor identifier must be > 0");
+						valid = scaleFactorIdentifiersValidOther = false;
+					}
+					if (isScaleFactorTypeNode(this->scaleFactorTypes[s]))
+					{
+						hasNodeScaleFactors = true;
+					}
+				}
+			}
+			if (hasNodeScaleFactors)
+			{
+				this->scaleFactorLocalNodeIndexes = new int[this->numberOfLocalScaleFactors];
+				if (!this->scaleFactorLocalNodeIndexes)
+				{
+					display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Failed to allocate scale factor local node indexes");
+					valid = false;
+				}
+				else
+				{
+					for (int s = 0; s < this->numberOfLocalScaleFactors; ++s)
+					{
+						this->scaleFactorLocalNodeIndexes[s] = -1;
+					}
+					for (int tt = 0; tt < this->totalTermCount; ++tt)
+					{
+						const int localNodeIndex = this->localNodeIndexes[tt];
+						const int scaleFactorCount = termScaleFactorCounts[tt];
+						const int localScaleFactorIndexesOffset = this->termLocalScaleFactorIndexesOffsets[tt];
+						for (int si = localScaleFactorIndexesOffset; si < localScaleFactorIndexesOffset + scaleFactorCount; ++si)
+						{
+							const int localScaleFactorIndex = this->localScaleFactorIndexes[si];
+							if (isScaleFactorTypeNode(this->scaleFactorTypes[localScaleFactorIndex]))
+							{
+								if (this->scaleFactorLocalNodeIndexes[localScaleFactorIndex] < 0)
+								{
+									this->scaleFactorLocalNodeIndexes[localScaleFactorIndex] = localNodeIndex;
+								}
+								else if (this->scaleFactorLocalNodeIndexes[localScaleFactorIndex] != localNodeIndex)
+								{
+									display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  "
+										"Scale factor %d is node type, but scales parameters from more than one local node",
+										localScaleFactorIndex + 1);
+									valid = false;
+								}
+							}
+						}
+					}
+					for (int s = 0; s < this->numberOfLocalScaleFactors; ++s)
+					{
+						if (isScaleFactorTypeNode(this->scaleFactorTypes[s]) && (this->scaleFactorLocalNodeIndexes[s] < 0))
+						{
+							display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  "
+								"Scale factor %d is node type, but is not scaling a parameter from a local node", s + 1);
+							valid = false;
+						}
+					}
+				}
 			}
 		}
 	}
 	if (valid)
+	{
 		this->locked = true;
+	}
+	else
+	{
+		// free these as only exist if validated and locked since not dynamically resizing
+		delete[] this->scaleFactorLocalNodeIndexes;
+		this->scaleFactorLocalNodeIndexes = 0;
+	}
 	return valid;
 }
 
@@ -894,21 +985,21 @@ int cmzn_elementfieldtemplate_set_scale_factor_type(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_elementfieldtemplate_get_scale_factor_version(
-	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex)
+int cmzn_elementfieldtemplate_get_scale_factor_identifier(
+	cmzn_elementfieldtemplate_id elementfieldtemplate, int localScaleFactorIndex)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->getScaleFactorVersion(localIndex);
-	return 0;
+		return elementfieldtemplate->getScaleFactorIdentifier(localScaleFactorIndex);
+	return -1;
 }
 
-int cmzn_elementfieldtemplate_set_scale_factor_version(
+int cmzn_elementfieldtemplate_set_scale_factor_identifier(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int localIndex,
-	int version)
+	int identifier)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->setScaleFactorVersion(localIndex, version);
-	return CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
+		return elementfieldtemplate->setScaleFactorIdentifier(localIndex, identifier);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_elementfieldtemplate_get_function_number_of_terms(
@@ -1039,6 +1130,14 @@ int cmzn_elementfieldtemplate_set_term_scaling(
 	if (elementfieldtemplate)
 		return elementfieldtemplate->setTermScaling(functionNumber, term, indexesCount, indexes);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_elementfieldtemplate_validate(
+	cmzn_elementfieldtemplate_id elementfieldtemplate)
+{
+	if (elementfieldtemplate)
+		return elementfieldtemplate->validateAndLock();
+	return false;
 }
 
 cmzn_elementfieldtemplate_id cmzn_mesh_create_elementfieldtemplate(

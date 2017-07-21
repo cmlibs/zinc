@@ -759,8 +759,7 @@ public:
 				}
 			}
 		}
-		bool localNodeChange = false;
-		if (CMZN_OK != this->meshEftData.setElementLocalNodes(this->elementIndex, this->nodeIndexes, localNodeChange))
+		if (CMZN_OK != this->meshEftData.setElementLocalNodes(this->elementIndex, this->nodeIndexes))
 		{
 			display_message(ERROR_MESSAGE, "FieldML Reader:  MeshLocalToGlobalNodeParameterConsumer failed to set local nodes for %d-D element %d",
 				this->mesh->getDimension(), this->elementIdentifier);

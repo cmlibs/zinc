@@ -190,17 +190,39 @@ public:
 
 	/**
 	 * Gets or creates block containing values at index and returns address of index.
+	 * Uses default initialisation of values in new blocks.
+	 * @param index  The index of the address to create.
+	 * @return  The address for value for given index, or 0 if failed.
+	 */
+	EntryType *getOrCreateAddress(IndexType index)
+	{
+		IndexType blockIndex = index / blockLength;
+		EntryType *block = 0;
+		if (blockIndex < blockCount)
+			block = blocks[blockIndex];
+		if (!block)
+		{
+			block = getOrCreateBlock(blockIndex);
+			if (!block)
+				return 0;
+		}
+		return block + (index % blockLength);
+	}
+
+	/**
+	 * Gets or creates block containing values at index and returns address of index.
 	 * If block is newly created it is initialised as described below.
 	 * @param index  The index of the address to create.
 	 * @param initValue  Value to initialise entries in block to.
-	 * @param initIndexSpacing  Spacing of value to be initialised; 0 or negative to
-	 * not initialise values, 1 to set all, any other value is amount offset from 0 to
-	 * blockLength to set to initValue, e.g. 10 initialises:
+	 * @param initIndexSpacing  Spacing of values to be initialised >= 1,
+	 * e.g. 10 initialises:
 	 * 0 10 20 ... blockLength (truncated to nearest multiple of 10)
 	 * @return  The address for value for given index, or 0 if failed.
 	 */
-	EntryType *getOrCreateAddress(IndexType index, EntryType initValue = 0, IndexType initIndexSpacing = 0)
+	EntryType *getOrCreateAddressArrayInit(IndexType index, EntryType& initValue, IndexType initIndexSpacing)
 	{
+		if (initIndexSpacing < 1)
+			return 0;
 		IndexType blockIndex = index / blockLength;
 		EntryType *block = 0;
 		if (blockIndex < blockCount)
@@ -259,6 +281,7 @@ public:
 				return block[entryIndex];
 			}
 		}
+		// do not warn about invalid index as used to query whether set
 		return this->allocInitValue;
 	}
 

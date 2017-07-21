@@ -115,7 +115,7 @@ public:
 	ValueType *getOrCreateArray(DsLabelIndex index)
 	{
 		const IndexType arrayIndex = index*this->arraySize;
-		ValueType *array = this->values.getOrCreateAddress(arrayIndex, this->unallocatedValue, this->arraySize);
+		ValueType *array = this->values.getOrCreateAddressArrayInit(arrayIndex, this->unallocatedValue, this->arraySize);
 		if (array && (*array == this->unallocatedValue))
 		{
 			// first value is initially this->unallocatedValue: change so marked as allocated

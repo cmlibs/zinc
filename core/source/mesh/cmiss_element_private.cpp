@@ -460,7 +460,6 @@ LegacyElementFieldData *cmzn_elementtemplate::getOrCreateLegacyElementFieldData(
 int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 {
 	FE_mesh *mesh = this->getMesh();
-	bool localNodeChange = false;
 	std::vector<DsLabelIndex> workingNodeIndexes(this->legacyNodesCount, DS_LABEL_INDEX_INVALID);
 	const size_t fieldCount = this->legacyFieldDataList.size();
 	for (size_t f = 0; f < fieldCount; ++f)
@@ -504,7 +503,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 					cmzn_node *node = this->legacyNodes[nodeIndexes[n] - 1];
 					workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
 				}
-				const int result = eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data(), localNodeChange);
+				const int result = eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data());
 				if (result != CMZN_OK)
 				{
 					display_message(ERROR_MESSAGE,
@@ -513,12 +512,6 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 				}
 			}
 		}
-	}
-	if (localNodeChange)
-	{
-		display_message(WARNING_MESSAGE, "Elementtemplate  setLegacyNodesInElement.  "
-			"Change in local-to-global node map in %d-D element %d",
-			mesh->getDimension(), element->getIdentifier());
 	}
 	// simplest to mark all fields as changed as they may share local nodes and scale factors
 	// can optimise in future
@@ -1933,13 +1926,7 @@ int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Element field template is not from element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	bool localNodeChange = false;
-	const int result = eftData->setElementLocalNodesByIdentifier(element->getIndex(), identifiersIn, localNodeChange);
-	if (localNodeChange)
-	{
-		display_message(WARNING_MESSAGE, "Element setNodesByIdentifier.  Change in local-to-global node map in %d-D element %d",
-			mesh->getDimension(), element->getIdentifier());
-	}
+	const int result = eftData->setElementLocalNodesByIdentifier(element->getIndex(), identifiersIn);
 	if (result != CMZN_OK)
 	{
 		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Failed to set nodes for %d-D element %d",
@@ -1948,127 +1935,82 @@ int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 	return result;
 }
 
-double cmzn_element_get_scale_factor(cmzn_element_id element,
-	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex)
+int cmzn_element_get_scale_factor(cmzn_element_id element,
+	cmzn_elementfieldtemplate_id eft, int localScaleFactorIndex, double *valueOut)
 {
-	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
+	FE_mesh *mesh;
+	if (!((element) && (eft) && (0 < localScaleFactorIndex)
+		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors()) && (valueOut)
+		&& (mesh = element->getMesh())))
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Invalid argument(s)");
-		return 0.0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_mesh *mesh = element->getMesh();
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Element field template is not from element's mesh");
-		return 0.0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	// following will cease to compile if FE_value is not double:
-	const double *scaleFactors = eftData->getElementScaleFactors(element->getIndex());
-	if (!scaleFactors)
-	{
-		display_message(ERROR_MESSAGE, "Element getScaleFactor.  No scale factor exists");
-		return 0.0;
-	}
-	return scaleFactors[scaleFactorIndex - 1];
-}
-
-bool cmzn_element_has_scale_factor(cmzn_element_id element,
-	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex)
-{
-	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
-	{
-		display_message(ERROR_MESSAGE, "Element hasScaleFactor.  Invalid argument(s)");
-		return false;
-	}
-	FE_mesh *mesh = element->getMesh();
-	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
-	if (!eftData)
-	{
-		display_message(ERROR_MESSAGE, "Element hasScaleFactor.  Element field template is not from element's mesh");
-		return false;
-	}
-	// following will cease to compile if FE_value is not double:
-	return (eftData->getElementScaleFactors(element->getIndex()) != 0);
+	return eftData->getElementScaleFactor(element->getIndex(), localScaleFactorIndex - 1, *valueOut);
 }
 
 int cmzn_element_set_scale_factor(cmzn_element_id element,
-	cmzn_elementfieldtemplate_id eft, int scaleFactorIndex, double value)
+	cmzn_elementfieldtemplate_id eft, int localScaleFactorIndex, double value)
 {
-	if (!((element) && (eft) && (0 < scaleFactorIndex) && (scaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
+	FE_mesh *mesh;
+	if (!((element) && (eft) && (0 < localScaleFactorIndex)
+		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors())
+		&& (mesh = element->getMesh())))
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Invalid argument(s)");
-		return 0.0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_mesh *mesh = element->getMesh();
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Element field template is not from element's mesh");
-		return 0.0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	// following will cease to compile if FE_value is not double:
-	const int result = eftData->setElementScaleFactor(element->getIndex(), scaleFactorIndex - 1, value);
-	if (result != CMZN_OK)
-	{
-		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Failed to set scale factor");
-		return result;
-	}
-	return CMZN_OK;
+	return eftData->setElementScaleFactor(element->getIndex(), localScaleFactorIndex - 1, value);
 }
 
 int cmzn_element_get_scale_factors(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int valuesCount, double *valuesOut)
 {
-	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesOut)))
+	FE_mesh *mesh;
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesOut)
+		&& (mesh = element->getMesh())))
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Invalid argument(s)");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_mesh *mesh = element->getMesh();
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element field template is not from element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	// following will cease to compile if FE_value is not double:
-	const double *scaleFactors = eftData->getElementScaleFactors(element->getIndex());
-	if (!scaleFactors)
-		return CMZN_ERROR_NOT_FOUND;
-	memcpy(valuesOut, scaleFactors, valuesCount*sizeof(double));
-	return CMZN_OK;
+	return eftData->getElementScaleFactors(element->getIndex(), valuesOut);
 }
 	
 int cmzn_element_set_scale_factors(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int valuesCount, const double *valuesIn)
 {
-	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesIn)))
+	FE_mesh *mesh;
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesIn)
+		&& (mesh = element->getMesh())))
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Invalid argument(s)");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_mesh *mesh = element->getMesh();
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Element field template is not from element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	// following will cease to compile if FE_value is not double:
-	const int result = eftData->setElementScaleFactors(element->getIndex(), valuesIn);
-	if (result != CMZN_OK)
-	{
-		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Failed to set scale factors");
-		return result;
-	}
-
-	// simplest to mark all fields as changed as they may share scale factors
-	// can optimise in future
-	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-	// following will update clients:
-	mesh->elementChange(element->getIndex(), DS_LABEL_CHANGE_TYPE_DEFINITION);
-	return CMZN_OK;
+	return eftData->setElementScaleFactors(element->getIndex(), valuesIn);
 }
 
 enum cmzn_element_shape_type cmzn_element_get_shape_type(

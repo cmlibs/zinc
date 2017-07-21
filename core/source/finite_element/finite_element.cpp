@@ -5168,8 +5168,8 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 		display_message(ERROR_MESSAGE, "global_to_element_map_values.  Field %s is not FE_value type, not implemented", field->name);
 		return 0;
 	}
-	const FE_mesh *mesh = element->getMesh();
-	const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
 	FE_basis *basis = eft->getBasis();
 
 	const DsLabelIndex elementIndex = element->getIndex();
@@ -5181,15 +5181,16 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			field->name, componentNumber + 1, element->getIdentifier());
 		return 0;
 	}
-	const FE_value *scaleFactors = 0;
+	std::vector<FE_value> scaleFactorsVector(eft->getNumberOfLocalScaleFactors());
+	FE_value *scaleFactors = 0;
 	if (0 < eft->getNumberOfLocalScaleFactors())
 	{
-		scaleFactors = meshEFTData->getElementScaleFactors(elementIndex);
-		if (!scaleFactors)
+		scaleFactors = scaleFactorsVector.data();
+		if (CMZN_OK != meshEFTData->getElementScaleFactors(elementIndex, scaleFactors))
 		{
 			display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-				"Missing scale factors for field %s component %d at element %d.",
-				field->name, componentNumber + 1, element->getIdentifier());
+				"Element %d is missing scale factors for field %s component %d.",
+				element->getIdentifier(), field->name, componentNumber + 1);
 			return 0;
 		}
 	}
@@ -18310,17 +18311,12 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 		const int localScaleFactorCount = eft->getNumberOfLocalScaleFactors();
 		if (localScaleFactorCount)
 		{
-			FE_value *scaleFactors = meshEFTData->getElementScaleFactors(element->getIndex());
-			if (!scaleFactors)
+			std::vector<FE_value> scaleFactors(localScaleFactorCount, 1.0);
+			if (CMZN_OK != meshEFTData->setElementScaleFactors(element->getIndex(), scaleFactors.data()))
 			{
-				display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Element %d is missing scale factors",
-					element->getIdentifier());
+				display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Failed to set unit scale factors");
 				return false;
 			}
-			for (int s = 0; s < localScaleFactorCount; ++s)
-				scaleFactors[s] = 0.0;
-			// since other fields may share scale factors, safest to mark all fields as changed for now
-			mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		}
 		// get element corner/end values
 		for (int n = 0; n < basisNodeCount; n++)

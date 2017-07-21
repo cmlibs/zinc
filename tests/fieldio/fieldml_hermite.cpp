@@ -748,10 +748,14 @@ void createHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int elemen
 	EXPECT_EQ(RESULT_OK, eftApex.setNumberOfLocalNodes(3));
 	EXPECT_EQ(3, eftApex.getNumberOfLocalNodes());
 	EXPECT_EQ(RESULT_OK, eftApex.setNumberOfLocalScaleFactors(4));
-	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(1, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
-	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(2, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
-	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(3, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
-	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(4, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(1, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorIdentifier(1, 1));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(2, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorIdentifier(2, 2));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(3, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorIdentifier(3, 101));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorType(4, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL));
+	EXPECT_EQ(RESULT_OK, eftApex.setScaleFactorIdentifier(4, 102));
 	const int indexes[] = { 0, 1, 2, 3, 4 };
 	// set parameter mappings for each function and term (two terms summed for first derivatives at apex)
 	// the first two nodes as understood by the basis are collapsed into one
@@ -881,12 +885,15 @@ void createHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int elemen
 	int elementIdentifier = 1;
 
 	// create first row of elements at apex
+	// note scale factor identifiers follow convention of offseting by 100 for each 'version' around apex
 	for (int na = 0; na < elementsAroundCount; ++na)
 	{
-		eftApex.setScaleFactorVersion(1, na*2 + 1);
-		eftApex.setScaleFactorVersion(2, na*2 + 2);
-		eftApex.setScaleFactorVersion(3, ((na + 1) < elementsAroundCount) ? na*2 + 3 : 1);
-		eftApex.setScaleFactorVersion(4, ((na + 1) < elementsAroundCount) ? na*2 + 4 : 2);
+		const int va = na;
+		const int vb = ((na + 1) % elementsAroundCount);
+		eftApex.setScaleFactorIdentifier(1, va*100 + 1);
+		eftApex.setScaleFactorIdentifier(2, va*100 + 2);
+		eftApex.setScaleFactorIdentifier(3, vb*100 + 1);
+		eftApex.setScaleFactorIdentifier(4, vb*100 + 2);
 		// redefine field in template for changes to eftApex:
 		EXPECT_EQ(RESULT_OK, elementtemplateApex.defineField(coordinates, -1, eftApex));
 		Element element = mesh.createElement(elementIdentifier++, elementtemplateApex);
@@ -971,8 +978,8 @@ void checkHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int element
 	// Can't test this after re-load as not yet saved
 	for (int i = 1; i <= 4; ++i)
 	{
-		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(i));
-		EXPECT_EQ(i, eft.getScaleFactorVersion(i));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL, eft.getScaleFactorType(i));
+		EXPECT_EQ(i, eft.getScaleFactorIdentifier(i));
 	}
 #endif // FUTURE_CODE
 
@@ -1045,19 +1052,19 @@ void checkHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int element
 		EXPECT_EQ(RESULT_OK, element1.getScaleFactors(eft, 4, scaleFactorsOrig));
 		for (int i = 0; i < 4; ++i)
 			EXPECT_NEAR(scaleFactorsExpected[i], scaleFactorsOrig[i], 1.0E-13);
-		EXPECT_FALSE(element1.hasScaleFactor(eft, 0));
-		EXPECT_DOUBLE_EQ(0.0, element1.getScaleFactor(eft, 0));
+		double sfDummy;
+		EXPECT_EQ(RESULT_ERROR_ARGUMENT, element1.getScaleFactor(eft, 0, &sfDummy));
 		for (int i = 1; i <= 4; ++i)
 		{
-			EXPECT_TRUE(element1.hasScaleFactor(eft, i));
-			EXPECT_DOUBLE_EQ(scaleFactorsOrig[i - 1], element1.getScaleFactor(eft, i));
+			double sfOut;
+			EXPECT_EQ(RESULT_OK, element1.getScaleFactor(eft, i, &sfOut));
+			EXPECT_DOUBLE_EQ(scaleFactorsOrig[i - 1], sfOut);
 			const double sf = i*1.25;
 			EXPECT_EQ(RESULT_OK, element1.setScaleFactor(eft, i, sf));
-			const double sfOut = element1.getScaleFactor(eft, i);
+			EXPECT_EQ(RESULT_OK, element1.getScaleFactor(eft, i, &sfOut));
 			EXPECT_DOUBLE_EQ(sf, sfOut);
 		}
-		EXPECT_FALSE(element1.hasScaleFactor(eft, 5));
-		EXPECT_DOUBLE_EQ(0.0, element1.getScaleFactor(eft, 5));
+		EXPECT_EQ(RESULT_ERROR_ARGUMENT, element1.getScaleFactor(eft, 5, &sfDummy));
 		EXPECT_EQ(RESULT_OK, element1.setScaleFactors(eft, 4, scaleFactorsOrig));
 	}
 	else

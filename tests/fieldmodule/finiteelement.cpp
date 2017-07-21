@@ -1524,7 +1524,7 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
 	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 0, 0)); // invalid with no local scale factors
 	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(1));
-	EXPECT_EQ(0, eft.getScaleFactorVersion(1));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(1));
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalScaleFactors(-1));
 
 	// test modifications - number and type/version of local scale factors
@@ -1532,32 +1532,32 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(3, eft.getNumberOfLocalScaleFactors());
 	for (int sf = 1; sf <= 3; ++sf)
 	{
-		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(sf));
-		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(sf, Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH));
-		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getScaleFactorType(sf));
-		EXPECT_EQ(1, eft.getScaleFactorVersion(sf));
-		EXPECT_EQ(RESULT_OK, eft.setScaleFactorVersion(sf, 2));
-		EXPECT_EQ(2, eft.getScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(sf, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(0, eft.getScaleFactorIdentifier(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(sf, 2));
+		EXPECT_EQ(2, eft.getScaleFactorIdentifier(sf));
 	}
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(5));
 	EXPECT_EQ(5, eft.getNumberOfLocalScaleFactors());
 	for (int sf = 1; sf <= 3; ++sf)
 	{
-		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_PATCH, eft.getScaleFactorType(sf));
-		EXPECT_EQ(2, eft.getScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(2, eft.getScaleFactorIdentifier(sf));
 	}
 	for (int sf = 4; sf <= 5; ++sf)
 	{
-		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_LOCAL_GENERAL, eft.getScaleFactorType(sf));
-		EXPECT_EQ(1, eft.getScaleFactorVersion(sf));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(0, eft.getScaleFactorIdentifier(sf));
 	}
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(4));
 	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
 	// invalid arguments:
 	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(0));
 	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(5));
-	EXPECT_EQ(0, eft.getScaleFactorVersion(0));
-	EXPECT_EQ(0, eft.getScaleFactorVersion(5));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(0));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(5));
 
 	// test modifications - number of local nodes
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(5));
@@ -1760,6 +1760,36 @@ TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
 	}
 }
 
+// Test EFT validate fails for non-zero identifier for element-based scale factor
+// Test EFT validate fails for zero identifier for non-element-based scale factor
+TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	Elementbasis bilinearBasis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh2d.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(1));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(1));
+	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
+	EXPECT_TRUE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 1));
+	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
+	EXPECT_FALSE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(1, Elementfieldtemplate::SCALE_FACTOR_TYPE_GLOBAL_GENERAL));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_GLOBAL_GENERAL, eft.getScaleFactorType(1));
+	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
+	EXPECT_TRUE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 0));
+	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
+	EXPECT_FALSE(eft.validate());
+}
 
 class FieldmodulecallbackRecordChange : public Fieldmodulecallback
 {
