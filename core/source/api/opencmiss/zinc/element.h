@@ -583,102 +583,6 @@ ZINC_API cmzn_elementbasis_id cmzn_elementfieldtemplate_get_elementbasis(
 	cmzn_elementfieldtemplate_id elementfieldtemplate);
 
 /**
- * Get the parameter mapping mode used for all parameters in the template.
- *
- * @param elementfieldtemplate  Element field template to query.
- * @return  The parameter mapping mode or INVALID on error.
- */
-ZINC_API enum cmzn_elementfieldtemplate_parameter_mapping_mode
-	cmzn_elementfieldtemplate_get_parameter_mapping_mode(
-		cmzn_elementfieldtemplate_id elementfieldtemplate);
-
-/**
- * Set the parameter mapping mode used for all parameters in the template.
- * A current restriction is that all parameters are mapped by NODE, ELEMENT
- * or FIELD.
- * Note this resets the mapping to the default for the given mapping mode:
- * one term per basis function with no scaling hence should be the first
- * setting changed.
- *
- * @param elementfieldtemplate  Element field template to modify.
- * @param mode  The parameter mapping mode to set.
- * @return  Result OK on success, otherwise an error code.
- */
-ZINC_API int cmzn_elementfieldtemplate_set_parameter_mapping_mode(
-	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	enum cmzn_elementfieldtemplate_parameter_mapping_mode mode);
-
-/**
- * Get the type of scale factor mapped to the local scale factor index.
- * Used to match common scale factors between elements and fields.
- *
- * @param elementfieldtemplate  Element field template to query.
- * @param localScaleFactorIndex  The local scale factor index from 1 to number
- * of local scale factors.
- * @return  The element scale factor type, or INVALID on error.
- */
-ZINC_API enum cmzn_elementfieldtemplate_scale_factor_type
-	cmzn_elementfieldtemplate_get_scale_factor_type(
-		cmzn_elementfieldtemplate_id elementfieldtemplate,
-		int localScaleFactorIndex);
-
-/**
- * Set the type of scale factor mapped to the local scale factor index.
- * Used to match common scale factors between elements and fields.
- * Global scale factors are matched by type and as appropriate
- * global node/element and local or global scale factor identifier.
- * New scale factors default to ELEMENT GENERAL type.
- *
- * @param elementfieldtemplate  Element field template to query.
- * @param localScaleFactorIndex  The local scale factor index from 1 to number
- * of local scale factors.
- * @param type  The element scale factor type.
- * @return  Result OK on success, otherwise an error code.
- */
-ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_type(
-	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	int localScaleFactorIndex,
-	enum cmzn_elementfieldtemplate_scale_factor_type type);
-
-/**
- * Get the identifier of the scale factor mapped to the local scale factor
- * index. Used to match common scale factors between elements and fields.
- *
- * @param elementfieldtemplate  Element field template to query.
- * @param localScaleFactorIndex  The local scale factor index from 1 to number
- * of local scale factors.
- * @return  The element scale factor identifier >= 0, or -1 if invalid or
- * error.
- */
-ZINC_API int cmzn_elementfieldtemplate_get_scale_factor_identifier(
-	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	int localScaleFactorIndex);
-
-/**
- * Set the identifier of the scale factor mapped to the local scale factor
- * index. Used to match common scale factors between elements and fields.
- * Global scale factors are matched by type and as appropriate
- * global node/element and local or global scale factor identifier.
- * For each global scale factor type, the identifier is globally unique.
- * For each node-based scale factor type, the identifier is unique at each
- * node. For each element-based scale factor, only the special identifier 0
- * is currently permitted, and scale factors are private to each element and
- * element field template.
- * New scale factors default to ELEMENT GENERAL type with identifier 0.
- *
- * @param elementfieldtemplate  Element field template to modify.
- * @param localScaleFactorIndex  The local scale factor index from 1 to number
- * of local scale factors.
- * @param identifier  The identifier >= 0. Special value 0 is only permitted
- * for element type scale factors, but this is not checked until final
- * validation.
- * @return  Result OK on success, otherwise an error code.
- */
-ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_identifier(
-	cmzn_elementfieldtemplate_id elementfieldtemplate,
-	int localScaleFactorIndex, int identifier);
-
-/**
  * Get the number of terms that are summed to give the element parameter weighting
  * the given function number.
  *
@@ -757,6 +661,102 @@ ZINC_API int cmzn_elementfieldtemplate_get_number_of_local_scale_factors(
  */
 ZINC_API int cmzn_elementfieldtemplate_set_number_of_local_scale_factors(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int number);
+
+/**
+ * Get the parameter mapping mode used for all parameters in the template.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @return  The parameter mapping mode or INVALID on error.
+ */
+ZINC_API enum cmzn_elementfieldtemplate_parameter_mapping_mode
+	cmzn_elementfieldtemplate_get_parameter_mapping_mode(
+		cmzn_elementfieldtemplate_id elementfieldtemplate);
+
+/**
+ * Set the parameter mapping mode used for all parameters in the template.
+ * A current restriction is that all parameters are mapped by NODE, ELEMENT
+ * or FIELD.
+ * Note this resets the mapping to the default for the given mapping mode:
+ * one term per basis function with no scaling hence should be the first
+ * setting changed.
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param mode  The parameter mapping mode to set.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_parameter_mapping_mode(
+	cmzn_elementfieldtemplate_id elementfieldtemplate,
+	enum cmzn_elementfieldtemplate_parameter_mapping_mode mode);
+
+/**
+ * Get the identifier of the scale factor mapped to the local scale factor
+ * index. Used to match common scale factors between elements and fields.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localScaleFactorIndex  The local scale factor index from 1 to number
+ * of local scale factors.
+ * @return  The element scale factor identifier >= 0, or -1 if invalid or
+ * error.
+ */
+ZINC_API int cmzn_elementfieldtemplate_get_scale_factor_identifier(
+	cmzn_elementfieldtemplate_id elementfieldtemplate,
+	int localScaleFactorIndex);
+
+/**
+ * Set the identifier of the scale factor mapped to the local scale factor
+ * index. Used to match common scale factors between elements and fields.
+ * Global scale factors are matched by type and as appropriate
+ * global node/element and local or global scale factor identifier.
+ * For each global scale factor type, the identifier is globally unique.
+ * For each node-based scale factor type, the identifier is unique at each
+ * node. For each element-based scale factor, only the special identifier 0
+ * is currently permitted, and scale factors are private to each element and
+ * element field template.
+ * New scale factors default to ELEMENT GENERAL type with identifier 0.
+ *
+ * @param elementfieldtemplate  Element field template to modify.
+ * @param localScaleFactorIndex  The local scale factor index from 1 to number
+ * of local scale factors.
+ * @param identifier  The identifier >= 0. Special value 0 is only permitted
+ * for element type scale factors, but this is not checked until final
+ * validation.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_identifier(
+	cmzn_elementfieldtemplate_id elementfieldtemplate,
+	int localScaleFactorIndex, int identifier);
+
+/**
+ * Get the type of scale factor mapped to the local scale factor index.
+ * Used to match common scale factors between elements and fields.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localScaleFactorIndex  The local scale factor index from 1 to number
+ * of local scale factors.
+ * @return  The element scale factor type, or INVALID on error.
+ */
+ZINC_API enum cmzn_elementfieldtemplate_scale_factor_type
+	cmzn_elementfieldtemplate_get_scale_factor_type(
+		cmzn_elementfieldtemplate_id elementfieldtemplate,
+		int localScaleFactorIndex);
+
+/**
+ * Set the type of scale factor mapped to the local scale factor index.
+ * Used to match common scale factors between elements and fields.
+ * Global scale factors are matched by type and as appropriate
+ * global node/element and local or global scale factor identifier.
+ * New scale factors default to ELEMENT GENERAL type.
+ *
+ * @param elementfieldtemplate  Element field template to query.
+ * @param localScaleFactorIndex  The local scale factor index from 1 to number
+ * of local scale factors.
+ * @param type  The element scale factor type.
+ * @return  Result OK on success, otherwise an error code.
+ */
+ZINC_API int cmzn_elementfieldtemplate_set_scale_factor_type(
+	cmzn_elementfieldtemplate_id elementfieldtemplate,
+	int localScaleFactorIndex,
+	enum cmzn_elementfieldtemplate_scale_factor_type type);
 
 /**
  * Get the local node index from which a node parameter is extracted for the
