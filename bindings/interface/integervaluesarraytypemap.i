@@ -135,9 +135,8 @@
 %typemap(in) (int identifiersCount, const int *identifiersIn) = (int valuesCount, const int *valuesIn);
 %typemap(freearg) (int identifiersCount, const int *identifiersIn) = (int valuesCount, const int *valuesIn);
 
-// array getter in-handler expects an integer array size only
-// and allocates array to accept output; see argout-handler
-%typemap(in, numinputs=0) ( int *valuesOut3)
+// ignore int *valuesOut3 on input; it's an output argument only
+%typemap(in, numinputs=0) int *valuesOut3
 {
 	$1 = new int[3];
 };
