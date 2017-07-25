@@ -10,8 +10,11 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 
+#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"

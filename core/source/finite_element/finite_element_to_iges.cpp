@@ -22,6 +22,8 @@ to file.
 #include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"

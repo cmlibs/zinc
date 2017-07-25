@@ -11,10 +11,10 @@
 #ifndef CMZN_FIELDMODULE_H__
 #define CMZN_FIELDMODULE_H__
 
-#include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
 

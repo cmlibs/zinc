@@ -19,10 +19,13 @@ Functions for converting one finite_element representation to another.
 #include <time.h>
 #include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/elementbasis.h"
+#include "opencmiss/zinc/elementtemplate.h"
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/status.h"

@@ -20,6 +20,7 @@
 #include "computed_field/field_module.hpp"
 #include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/scene.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/scene.h"

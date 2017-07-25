@@ -20,6 +20,7 @@
 #include "opencmiss/zinc/fieldlogicaloperators.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldtime.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"

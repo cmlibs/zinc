@@ -15,10 +15,10 @@
 #ifndef CMZN_FIELDGROUP_H__
 #define CMZN_FIELDGROUP_H__
 
-#include "types/elementid.h"
 #include "types/fieldid.h"
 #include "types/fieldgroupid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
 #include "types/fieldsubobjectgroupid.h"

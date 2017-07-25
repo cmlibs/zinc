@@ -17,13 +17,12 @@
 #include <stdio.h>
 #include <math.h>
 
-
-#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/font.h"
 #include "opencmiss/zinc/glyph.h"
 #include "opencmiss/zinc/graphics.h"
 #include "opencmiss/zinc/material.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/status.h"

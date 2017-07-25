@@ -11,8 +11,8 @@
 #if !defined (FINITE_ELEMENT_H)
 #define FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/node.h"
-#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/types/nodeid.h"
+#include "opencmiss/zinc/types/elementid.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "datastore/labels.hpp"

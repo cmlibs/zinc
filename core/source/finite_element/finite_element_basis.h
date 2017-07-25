@@ -11,7 +11,7 @@
 #if !defined (FINITE_ELEMENT_BASIS_H)
 #define FINITE_ELEMENT_BASIS_H
 
-#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/elementbasisid.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

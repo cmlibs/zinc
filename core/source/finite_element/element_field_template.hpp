@@ -12,8 +12,9 @@
 #if !defined (CMZN_ELEMENT_FIELD_TEMPLATE_HPP)
 #define CMZN_ELEMENT_FIELD_TEMPLATE_HPP
 
-#include "opencmiss/zinc/element.h"
-#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/elementfieldtemplateid.h"
+#include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/status.h"
 #include "general/value.h"
 #include "finite_element/finite_element_basis.h"

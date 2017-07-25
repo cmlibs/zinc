@@ -18,6 +18,7 @@
 #include "types/fieldcacheid.h"
 #include "types/fieldfiniteelementid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 #include "types/nodeid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"

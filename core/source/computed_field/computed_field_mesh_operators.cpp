@@ -15,6 +15,7 @@
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include "opencmiss/zinc/fieldmeshoperators.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "element/element_operations.h"

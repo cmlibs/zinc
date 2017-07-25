@@ -16,6 +16,7 @@ and the nodes for 1D elements.
 #include <math.h>
 #include <stdio.h>
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"

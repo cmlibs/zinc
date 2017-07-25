@@ -18,9 +18,12 @@ the volume mesh, CMGUI will visualize them to the user.
 #include <stdlib.h>
 #include <math.h>
 #include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/elementbasis.h"
+#include "opencmiss/zinc/elementtemplate.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
 #include "general/debug.h"
 #include "general/mystring.h"

@@ -11,6 +11,8 @@
 #include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"

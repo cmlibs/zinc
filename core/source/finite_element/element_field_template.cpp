@@ -10,6 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "opencmiss/zinc/elementfieldtemplate.h"
+#include "opencmiss/zinc/mesh.h"
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_private.h"

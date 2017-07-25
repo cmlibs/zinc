@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <vector>
 
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/status.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"

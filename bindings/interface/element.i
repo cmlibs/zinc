@@ -36,7 +36,15 @@
 %{
 #include "opencmiss/zinc/fieldimage.hpp"
 #include "opencmiss/zinc/element.hpp"
+#include "opencmiss/zinc/elementbasis.hpp"
+#include "opencmiss/zinc/elementfieldtemplate.hpp"
+#include "opencmiss/zinc/elementtemplate.hpp"
+#include "opencmiss/zinc/mesh.hpp"
 %}
 
+%include "opencmiss/zinc/elementbasis.hpp"
+%include "opencmiss/zinc/elementfieldtemplate.hpp"
+%include "opencmiss/zinc/elementtemplate.hpp"
 %include "opencmiss/zinc/element.hpp"
+%include "opencmiss/zinc/mesh.hpp"
 

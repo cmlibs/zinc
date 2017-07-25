@@ -12,6 +12,9 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/core.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/differentialoperator.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/element.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementbasis.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementfieldtemplate.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementtemplate.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/field.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldalias.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldarithmeticoperators.h
@@ -43,6 +46,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/light.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/logger.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.h
@@ -67,6 +71,9 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/contextid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/differentialoperatorid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementbasisid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementfieldtemplateid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementtemplateid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldaliasid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldcacheid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldcompositeid.h
@@ -86,6 +93,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/lightid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/loggerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/materialid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/meshid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/regionid.h

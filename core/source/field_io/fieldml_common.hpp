@@ -12,12 +12,13 @@
 #if !defined (CMZN_FIELDML_COMMON_HPP)
 #define CMZN_FIELDML_COMMON_HPP
 
-#include <vector>
-#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/elementbasisid.h"
 #include "fieldml_api.h"
 #include "datastore/labels.hpp"
 #include "datastore/map.hpp"
 #include "datastore/mapindexing.hpp"
+#include <vector>
 
 const FmlObjectHandle FML_INVALID_OBJECT_HANDLE = (const FmlObjectHandle)FML_INVALID_HANDLE;
 

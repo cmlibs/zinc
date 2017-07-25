@@ -14,6 +14,7 @@ Implements a number of basic component wise operations on computed fields.
 #include <math.h>
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
