@@ -47,6 +47,8 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodeset.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodetemplate.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.hpp

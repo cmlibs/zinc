@@ -11,17 +11,17 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stdlib.h>
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/scene.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/scene.h"
 #include "opencmiss/zinc/fieldcad.h"
@@ -37,6 +37,7 @@
 #if defined (USE_OPENCASCADE)
 #include "cad/field_location.hpp"
 #endif /* defined (USE_OPENCASCADE) */
+#include <cstdlib>
 #include <list>
 
 char computed_field_group_type_string[] = "group";

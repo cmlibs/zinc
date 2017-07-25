@@ -19,7 +19,7 @@
 #include "types/fieldgroupid.h"
 #include "types/fieldmoduleid.h"
 #include "types/meshid.h"
-#include "types/nodeid.h"
+#include "types/nodesetid.h"
 #include "types/regionid.h"
 #include "types/fieldsubobjectgroupid.h"
 

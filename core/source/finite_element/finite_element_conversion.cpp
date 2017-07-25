@@ -27,6 +27,8 @@ Functions for converting one finite_element representation to another.
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"

@@ -14,6 +14,7 @@
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"

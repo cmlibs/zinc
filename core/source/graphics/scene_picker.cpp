@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"

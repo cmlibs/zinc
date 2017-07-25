@@ -8,13 +8,12 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <cmath>
-#include <iostream>
+#include "opencmiss/zinc/fieldnodesetoperators.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "opencmiss/zinc/fieldnodesetoperators.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "region/cmiss_region.h"
@@ -22,6 +21,9 @@
 #include "general/mystring.h"
 #include "general/message.h"
 #include "finite_element/finite_element_region.h"
+#include <cmath>
+#include <iostream>
+
 using namespace std;
 
 class Computed_field_nodeset_operators_package : public Computed_field_type_package

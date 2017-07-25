@@ -48,6 +48,8 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodeset.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodetemplate.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.h
@@ -95,6 +97,8 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/materialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/meshid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodeid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodesetid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodetemplateid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/regionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/scenecoordinatesystem.h

@@ -15,12 +15,17 @@
 
 #include <cmath>
 #include <cstdlib>
+#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldconstant.h"
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldlogicaloperators.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldtime.h"
 #include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"

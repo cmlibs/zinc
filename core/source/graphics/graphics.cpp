@@ -24,6 +24,7 @@
 #include "opencmiss/zinc/material.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"

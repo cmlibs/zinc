@@ -8,11 +8,15 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/elementfieldtemplate.h"
+#include "opencmiss/zinc/elementtemplate.h"
 #include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"

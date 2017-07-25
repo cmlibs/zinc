@@ -17,7 +17,7 @@
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
 #include "types/meshid.h"
-#include "types/nodeid.h"
+#include "types/nodesetid.h"
 #include "types/fieldsubobjectgroupid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"

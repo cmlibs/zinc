@@ -8,34 +8,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef CMZN_NODESETID_H__
-#define CMZN_NODESETID_H__
-
-/**
- * @brief A set of nodes or points.
- *
- * A set of nodes or points, equivalent to a zero-dimensional mesh.
- */
-struct cmzn_nodeset;
-typedef struct cmzn_nodeset *cmzn_nodeset_id;
-
-/**
- * @brief A subset of a master nodeset.
- *
- * A specialised nodeset consisting of a subset of nodes from a master nodeset.
- */
-struct cmzn_nodeset_group;
-typedef struct cmzn_nodeset_group *cmzn_nodeset_group_id;
-
-/**
- * @brief A description of field parameters to define at a node.
- *
- * A description of field parameters to define at a node (incl. value/derivative
- * types, versions), used as a template for creating new nodes in a nodeset, or
- * merging into a node to define or undefine fields on it.
- */
-struct cmzn_nodetemplate;
-typedef struct cmzn_nodetemplate *cmzn_nodetemplate_id;
+#ifndef CMZN_NODEID_H__
+#define CMZN_NODEID_H__
 
 /**
  * @brief Point object used to represent finite element nodes.
@@ -75,14 +49,6 @@ enum cmzn_node_value_label
 	CMZN_NODE_VALUE_LABEL_D2_DS2DS3 = 7,   /*!< cross derivative w.r.t. arc lengths S2,S3 */
 	CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3 = 8 /*!< triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 };
-
-/**
- * @brief Object describing changes to a nodeset in a fieldmoduleevent.
- *
- * Object describing changes to a nodeset in a fieldmoduleevent
- */
-struct cmzn_nodesetchanges;
-typedef struct cmzn_nodesetchanges *cmzn_nodesetchanges_id;
 
 /**
  * Bit flags summarising changes to a node or nodes in a nodeset.

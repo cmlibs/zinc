@@ -12,6 +12,7 @@
 
 #include "opencmiss/zinc/elementbasis.h"
 #include "opencmiss/zinc/elementtemplate.h"
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/mesh.h"

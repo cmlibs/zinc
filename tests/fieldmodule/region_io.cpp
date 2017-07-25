@@ -16,6 +16,7 @@
 #include <opencmiss/zinc/fieldmodule.h>
 #include <opencmiss/zinc/fieldfiniteelement.h>
 #include <opencmiss/zinc/node.h>
+#include <opencmiss/zinc/nodeset.h>
 #include <opencmiss/zinc/region.h>
 #include <opencmiss/zinc/status.h>
 #include <opencmiss/zinc/stream.h>
