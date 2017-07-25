@@ -13,6 +13,7 @@
 
 #include "types/elementbasisid.h"
 #include "types/elementfieldtemplateid.h"
+#include "types/nodeid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
 
