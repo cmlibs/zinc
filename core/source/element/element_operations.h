@@ -15,7 +15,9 @@ therefore cannot reside in finite element modules.
 #if !defined (ELEMENT_OPERATIONS_H)
 #define ELEMENT_OPERATIONS_H
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/types/fieldfiniteelementid.h"
+#include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
+#include "opencmiss/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

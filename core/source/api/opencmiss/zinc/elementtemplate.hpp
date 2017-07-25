@@ -13,6 +13,7 @@
 #include "opencmiss/zinc/elementtemplate.h"
 #include "opencmiss/zinc/element.hpp"
 #include "opencmiss/zinc/elementfieldtemplate.hpp"
+#include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/node.hpp"
 
 namespace OpenCMISS

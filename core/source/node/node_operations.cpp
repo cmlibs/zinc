@@ -21,6 +21,7 @@ cannot reside in finite element modules.
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldtime.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"

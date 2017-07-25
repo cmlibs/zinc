@@ -14,7 +14,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/types/fieldfiniteelementid.h"
 #include "computed_field/computed_field.h"
 #include "general/enumerator.h"
 #include "general/list.h"

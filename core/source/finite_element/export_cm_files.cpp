@@ -12,9 +12,12 @@
 
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"

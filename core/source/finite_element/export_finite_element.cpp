@@ -18,6 +18,8 @@ Functions for exporting finite element data to a file.
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/region.h"
 #include "datastore/labels.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"

@@ -15,6 +15,7 @@ The functions for creating graphical objects from finite elements.
 #include "opencmiss/zinc/differentialoperator.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"

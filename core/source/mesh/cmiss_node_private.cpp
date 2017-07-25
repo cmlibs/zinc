@@ -11,8 +11,11 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdarg.h>
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "opencmiss/zinc/timesequence.h"
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"
@@ -1056,7 +1059,6 @@ cmzn_nodetemplate_id cmzn_nodetemplate_access(cmzn_nodetemplate_id node_template
 		return node_template->access();
 	return 0;
 }
-
 
 int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address)
 {

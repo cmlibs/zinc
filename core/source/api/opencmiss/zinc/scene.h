@@ -18,7 +18,7 @@
 #include "types/graphicsid.h"
 #include "types/lightid.h"
 #include "types/materialid.h"
-#include "types/nodeid.h"
+#include "types/nodesetid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
 #include "types/sceneviewerid.h"

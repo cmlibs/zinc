@@ -13,7 +13,7 @@
 
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
-#include "types/nodeid.h"
+#include "types/nodesetid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
 
