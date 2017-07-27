@@ -337,11 +337,11 @@ private:
 
 	int not_in_use();
 
-	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 
-	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, MeshLocationFieldValueCache& valueCache);
 
-	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, StringFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, StringFieldValueCache& valueCache);
 
 	virtual void propagate_coordinate_system()
 	{
@@ -1447,19 +1447,6 @@ int cmzn_field_finite_element_set_node_parameters(
 		return cmzn_field_finite_element_core_cast(finite_element_field)->setNodeParameters(*cache,
 			component_number, node_value_label, version_number, values_count, values_in);
 	return CMZN_ERROR_ARGUMENT;
-}
-
-const FE_mesh *cmzn_field_stored_mesh_location_get_FE_mesh(cmzn_field_id field)
-{
-	if (field && field->core)
-	{
-		Computed_field_finite_element *fieldFiniteElement=
-			static_cast<Computed_field_finite_element*>(field->core);
-		if (ELEMENT_XI_VALUE == get_FE_field_value_type(fieldFiniteElement->fe_field))
-			return FE_field_get_element_xi_host_mesh(fieldFiniteElement->fe_field);
-	}
-	display_message(ERROR_MESSAGE, "cmzn_field_stored_mesh_location_get_FE_mesh.  Invalid argument(s)");
-	return 0;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
@@ -4790,4 +4777,73 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 {
 	const char *measure_string = cmzn_field_edge_discontinuity_measure_conversion::to_string(measure);
 	return (measure_string ? duplicate_string(measure_string) : 0);
+}
+
+const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
+{
+	if (field && field->core && (CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
+	{
+		Computed_field_finite_element *fieldFiniteElement = dynamic_cast<Computed_field_finite_element*>(field->core);
+		if (fieldFiniteElement)
+		{
+			return FE_field_get_element_xi_host_mesh(fieldFiniteElement->fe_field);
+		}
+		Computed_field_find_mesh_location *fieldFindMeshLocation = dynamic_cast<Computed_field_find_mesh_location*>(field->core);
+		if (fieldFindMeshLocation)
+		{
+			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->get_mesh());
+		}
+	}
+	display_message(ERROR_MESSAGE, "cmzn_field_get_host_FE_mesh.  Invalid argument(s)");
+	return 0;
+}
+
+int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field)
+{
+	if (!((destination_field) && (source_field)
+		&& (cmzn_field_get_value_type(destination_field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+		&& (cmzn_field_get_value_type(source_field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const FE_mesh *source_fe_mesh = cmzn_field_get_host_FE_mesh(source_field);
+	if (!source_fe_mesh)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Source field does not have a host mesh");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const FE_mesh *destination_fe_mesh = cmzn_field_get_host_FE_mesh(destination_field);
+	if (destination_fe_mesh != source_fe_mesh)
+	{
+		if (!destination_fe_mesh)
+		{
+			FE_field *destination_fe_field = 0;
+			Computed_field_get_type_finite_element(destination_field, &destination_fe_field);
+			if (!destination_fe_field)
+			{
+				display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
+					"Destination is not a stored mesh location field");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			if (CMZN_OK == FE_field_set_element_xi_host_mesh(destination_fe_field, source_fe_mesh))
+			{
+				display_message(WARNING_MESSAGE, "Discovered host mesh '%s' for element_xi / stored mesh location field '%s'. Should be explicitly set.",
+					source_fe_mesh->getName(), destination_field->name);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
+					"Failed to set destination host mesh");
+				return CMZN_ERROR_ARGUMENT;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  "
+				"Source and destination fields have different host meshes");
+			return CMZN_ERROR_ARGUMENT;
+		}
+	}
+	return CMZN_OK;
 }

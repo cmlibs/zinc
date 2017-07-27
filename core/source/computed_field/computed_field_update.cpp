@@ -17,6 +17,7 @@ Functions for updating values of one computed field from those of another.
 #include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -34,9 +35,20 @@ int cmzn_nodeset_assign_field_from_source(
 	int return_code = 1;
 	if (nodeset && destination_field && source_field)
 	{
+		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
+		if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+		{
+			// element_xi fields used to allow locations in multiple meshes, but are now
+			// restricted to a single host mesh. This must be discovered if necessary.
+			// This only happens when read from legacy EX format or created in Cmgui.
+			const int result = cmzn_field_discover_element_xi_host_mesh_from_source(destination_field, source_field);
+			if (CMZN_OK != result)
+			{
+				return 0;
+			}
+		}
 		const int number_of_components =
 			Computed_field_get_number_of_components(destination_field);
-		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		// can always evaluate to a string value
 		if ((value_type == CMZN_FIELD_VALUE_TYPE_STRING) ||
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&

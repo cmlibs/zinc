@@ -738,7 +738,4 @@ char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
 
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
 
-/** @return  Host mesh for element xi locations. For time being must check if none. */
-const FE_mesh *cmzn_field_stored_mesh_location_get_FE_mesh(cmzn_field_id field);
-
 #endif /* !defined (COMPUTED_FIELD_H) */
