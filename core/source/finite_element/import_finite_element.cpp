@@ -1,7 +1,7 @@
 /**
  * FILE : import_finite_element.cpp
  *
- * Functions for importing finite element data from a EX file format.
+ * Functions for importing finite element data from EX file format.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -44,11 +44,12 @@ Module types
 namespace {
 
 /** @return  True if zero terminated string s contains at least one contiguous digits
-  * optionally padded with any number of leading and/or trailing spaces. */
-bool isIntegerString(const char *s)
+  * optionally padded with any number of leading and/or trailing whitespace.
+  * @param n  Optional length of valid string, otherwise must end in zero. */
+bool isIntegerString(const char *s, size_t n = 0)
 {
 	const char *c = s;
-	while ('  ' == *c)
+	while (isspace(*c))
 		++c;
 	if (!isdigit(*c))
 		return false;
@@ -56,8 +57,10 @@ bool isIntegerString(const char *s)
 	{
 		++c;
 	} while (isdigit(*c));
-	while (' ' == *c)
+	while (isspace(*c))
 		++c;
+	if (n > 0)
+		return ((c - s) == n);
 	return ('\0' == *c);
 }
 
@@ -289,6 +292,8 @@ class EXReader
 		std::string name;
 		int scaleFactorCount;
 		int scaleFactorOffset;
+		std::vector<cmzn_elementfieldtemplate_scale_factor_type> scaleFactorTypes;
+		std::vector<int> scaleFactorIdentifiers;
 		std::vector< std::pair<std::string, std::vector<int> > > fieldComponents;  // field name and components using this scale factor set, in order added
 		std::vector<FE_element_field_template *> efts;  // EFTs using this scale factor set, converted from field components above
 		std::vector<FE_value> values; // cache for reading into
@@ -297,6 +302,8 @@ class EXReader
 			name(nameIn),
 			scaleFactorCount(scaleFactorCountIn),
 			scaleFactorOffset(scaleFactorOffsetIn),
+			scaleFactorTypes(scaleFactorCountIn, CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH),
+			scaleFactorIdentifiers(scaleFactorCountIn, 0),
 			values(scaleFactorCountIn)
 		{
 		}
@@ -327,6 +334,130 @@ class EXReader
 				if (efts[i] == eft)
 					return;
 			this->efts.push_back(eft);
+		}
+
+		bool parseScaleFactorIdentifiers(const char *scaleFactorIdentifiersString)
+		{
+			if (0 == this->scaleFactorCount)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader:  Can't have scale factor identifiers if no scale factors");
+				return false;
+			}
+			if (!scaleFactorIdentifiersString)
+			{
+				return true; // use defaults: all type element_patch, identifier 0
+			}
+			int index = 0;
+			const char *s = scaleFactorIdentifiersString;
+			while (true)
+			{
+				while (isspace(*s))
+				{
+					++s;
+				}
+				if (*s == '\0')
+				{
+					if (index != this->scaleFactorCount)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader:  Too few scale factor types and identifiers");
+						return false;
+					}
+					break;
+				}
+				if (index >= this->scaleFactorCount)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader:  Unexpected text '%s' after scale factor types and identifiers", s);
+					return false;
+				}
+				size_t n = strcspn(s, " (");
+				cmzn_elementfieldtemplate_scale_factor_type scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
+				if (0 == strncmp(s, "element_general", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL;
+				}
+				else if (0 == strncmp(s, "element_patch", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH;
+				}
+				else if (0 == strncmp(s, "global_general", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL;
+				}
+				else if (0 == strncmp(s, "global_patch", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH;
+				}
+				else if (0 == strncmp(s, "node_general", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL;
+				}
+				else if (0 == strncmp(s, "node_patch", n))
+				{
+					scaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "EX Reader:  Unknown scale factor type '%.*s'", n, s);
+					return false;
+				}
+				const char *typeString = s;
+				s += n;
+				while (isspace(*s))
+				{
+					++s;
+				}
+				if (*s != '(')
+				{
+					display_message(ERROR_MESSAGE, "EXReader:  Missing bracket and identifiers (#,#,...) after scale factor type '%.*s'",
+						n, typeString);
+					return false;
+				}
+				++s;
+				while (true)
+				{
+					size_t r = strcspn(s, ",)");
+					if (!isIntegerString(s, r))
+					{
+						display_message(ERROR_MESSAGE, "EXReader:  Missing integer identifier after scale factor type '%.*s'",
+							n, typeString);
+						return false;
+					}
+					int scaleFactorIdentifier;
+					sscanf(s, "%d", &scaleFactorIdentifier);
+					this->scaleFactorTypes[index] = scaleFactorType;
+					this->scaleFactorIdentifiers[index] = scaleFactorIdentifier;
+					++index;
+					s += r;
+					if (*s != ',')
+					{
+						if (*s != ')')
+						{
+							display_message(ERROR_MESSAGE, "EXReader:  Invalid character '%c' in scale factor identifiers for scale factor type %.*s",
+								*s, n, typeString);
+							return false;
+						}
+						++s;
+						break;
+					}
+					++s;
+					if (index >= this->scaleFactorCount)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader: Too many scale factor types and identifiers");
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		cmzn_elementfieldtemplate_scale_factor_type getScaleFactorType(int index) const
+		{
+			return this->scaleFactorTypes[index];
+		}
+
+		int getScaleFactorIdentifier(int index) const
+		{
+			return this->scaleFactorIdentifiers[index];
 		}
 	};
 
@@ -485,7 +616,8 @@ private:
 	}
 
 	/*** @return  Pointer to scale factor set with name and details, or 0 if failed */
-	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn)
+	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn,
+		const char *scaleFactorIdentifiersString)
 	{
 		if ((!nameIn) || (scaleFactorCountIn < 1) || (scaleFactorOffsetIn < 0))
 		{
@@ -495,11 +627,19 @@ private:
 		if (0 != this->findScaleFactorSet(nameIn))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", nameIn, this->getFileLocation());
-			return false;
+			return 0;
 		}
 		ScaleFactorSet *sfSet = new ScaleFactorSet(nameIn, scaleFactorCountIn, scaleFactorOffsetIn);
-		if (sfSet)
-			this->scaleFactorSets.push_back(sfSet);
+		if (!sfSet)
+		{
+			return 0;
+		}
+		if (!sfSet->parseScaleFactorIdentifiers(scaleFactorIdentifiersString))
+		{
+			delete sfSet;
+			return 0;
+		}
+		this->scaleFactorSets.push_back(sfSet);
 		return sfSet;
 	}
 
@@ -2904,6 +3044,19 @@ bool EXReader::readElementHeaderField()
 					result = false;
 					break;
 				}
+				if (sfSet)
+				{
+					for (int s = 0; s < scaleFactorCount; ++s)
+					{
+						if ((CMZN_OK != eft->setScaleFactorType(s + 1, sfSet->getScaleFactorType(s)))
+							|| (CMZN_OK != eft->setScaleFactorIdentifier(s + 1, sfSet->getScaleFactorIdentifier(s))))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set scale factor type or identifier.  %s", this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+				}
 				// set following to true if scale factors are actually used, EX version < 2 only
 				bool usingScaleFactors = false;
 				// following stores element node indexes in order referenced by EFT (until sorted later)
@@ -3502,6 +3655,7 @@ bool EXReader::readElementHeader()
 				"EX Reader.  Must have positive #Scale factors.  %s", this->getFileLocation());
 			return false;
 		}
+		const char *scaleFactorIdentifiersString = keyValueMap.getKeyValue("identifiers");
 		if (keyValueMap.hasUnusedKeyValues())
 		{
 			std::string prefix("EX Reader.  Scale factor set ");
@@ -3509,8 +3663,11 @@ bool EXReader::readElementHeader()
 			prefix += ": ";
 			keyValueMap.reportUnusedKeyValues(prefix.c_str());
 		}
-		if (0 == this->createScaleFactorSet(scaleFactorSetName.c_str(), scaleFactorCount, scaleFactorOffset))
+		if (0 == this->createScaleFactorSet(scaleFactorSetName.c_str(), scaleFactorCount, scaleFactorOffset, scaleFactorIdentifiersString))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Failed to create scale factor set.  %s", this->getFileLocation());
 			return false;
+		}
 		scaleFactorOffset += scaleFactorCount;
 	}
 

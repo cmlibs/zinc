@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : export_finite_element.c
-
-LAST MODIFIED : 16 May 2003
-
-DESCRIPTION :
-Functions for exporting finite element data to a file.
-==============================================================================*/
+/**
+ * FILE : export_finite_element.cpp
+ *
+ * Functions for exporting finite element data to EX format.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -302,6 +299,7 @@ private:
 	bool elementIsToBeWritten(cmzn_element *element);
 	bool elementHasFieldsToWrite(cmzn_element *element);
 	bool elementFieldsMatchLastElement(cmzn_element *element);
+	bool writeEftScaleFactorIdentifiers(const FE_element_field_template *eft);
 	bool writeElementHeaderField(cmzn_element *element, int fieldIndex, FE_field *field);
 	ElementNodePacking *createElementNodePacking(cmzn_element *element);
 	bool writeElementHeader(cmzn_element *element);
@@ -934,6 +932,70 @@ ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
 }
 
 /**
+ * Writes EFT scale factor types and identifiers. Example:
+ * global_general(11,12) node_patch(1,2,3,4)
+ */
+bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *eft)
+{
+	if (!((eft) && (eft->getNumberOfLocalScaleFactors() > 0)))
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template");
+		return false;
+	}
+	cmzn_elementfieldtemplate_scale_factor_type lastScaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	for (int s = 0; s < scaleFactorCount; ++s)
+	{
+		const cmzn_elementfieldtemplate_scale_factor_type scaleFactorType = eft->getScaleFactorType(s);
+		const int identifier = eft->getScaleFactorIdentifier(s);
+		if (scaleFactorType != lastScaleFactorType)
+		{
+			if (s > 0)
+			{
+				(*this->output_file) << ") ";
+			}
+			const char *typeName = 0;
+			switch (scaleFactorType)
+			{
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL:
+				typeName = "element_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH:
+				typeName = "element_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL:
+				typeName = "global_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH:
+				typeName = "global_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL:
+				typeName = "node_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH:
+				typeName = "node_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID:
+				break;
+			}
+			if (typeName == 0)
+			{
+				display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template scale factor type");
+				return false;
+			}
+			(*this->output_file) << typeName << "(" << identifier;
+			lastScaleFactorType = scaleFactorType;
+		}
+		else
+		{
+			(*this->output_file) << "," << identifier;
+		}
+	}
+	(*this->output_file) << ")";
+	return true;
+}
+
+/**
  * Writes the element field information header for element. If the
  * field_order_info is supplied the header is restricted to include only
  * components/fields/bases for it.
@@ -1005,8 +1067,11 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 	for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
 	{
 		++scaleFactorSetIndex;
-		(*this->output_file) << "  ";
-		(*this->output_file) << "scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors() << "\n";
+		(*this->output_file) << "  scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors()
+			<< ", identifiers=\"";
+		if (!this->writeEftScaleFactorIdentifiers(*eftIter))
+			return false;
+		(*this->output_file) << "\"\n";
 	}
 	(*this->output_file) << "#Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
 	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";

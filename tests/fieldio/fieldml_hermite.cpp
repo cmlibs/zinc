@@ -974,14 +974,11 @@ void checkHemisphereTube2d(Fieldmodule& fm, int elementsAroundCount, int element
 	EXPECT_EQ(Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE, elementbasis.getFunctionType(/*all_xi*/-1));
 	EXPECT_EQ(3, eft.getNumberOfLocalNodes());
 	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
-#ifdef FUTURE_CODE
-	// Can't test this after re-load as not yet saved
 	for (int i = 1; i <= 4; ++i)
 	{
 		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_GENERAL, eft.getScaleFactorType(i));
-		EXPECT_EQ(i, eft.getScaleFactorIdentifier(i));
+		EXPECT_EQ((i < 3) ? i : 98 + i, eft.getScaleFactorIdentifier(i));
 	}
-#endif // FUTURE_CODE
 
 	EXPECT_EQ(16, eft.getNumberOfFunctions());
 	for (int f = 1; f <= 16; ++f)
