@@ -1842,7 +1842,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (graphics->label_field || (last_glyph_number_with_label_text >= 0))
 			{
-				sprintf(temp_string," label_offset \"%g,%g,%g\"",graphics->label_offset[0],
+				sprintf(temp_string," label_offset %g,%g,%g",graphics->label_offset[0],
 					graphics->label_offset[1],graphics->label_offset[2]);
 				append_string(&graphics_string,temp_string,&error);
 			}

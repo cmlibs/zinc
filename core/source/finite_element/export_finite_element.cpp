@@ -1552,8 +1552,8 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 						(*this->output_file) << " " << tmpString;
 					}
 				}
+				(*this->output_file) << "\n";
 			}
-			(*this->output_file) << "\n";
 			DEALLOCATE(values);
 		}
 	} break;
@@ -1572,10 +1572,14 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				const int *componentValues = tmpValues;
 				tmpValues += derivativeCount*versionCount;
 				for (int d = 0; d < derivativeCount; ++d)
+				{
 					for (int v = 0; v < versionCount; ++v)
+					{
 						(*this->output_file) << " " << componentValues[v*derivativeCount + d];
+					}
+				}
+				(*this->output_file) << "\n";
 			}
-			(*this->output_file) << "\n";
 			DEALLOCATE(values);
 		}
 	} break;

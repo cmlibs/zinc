@@ -564,7 +564,7 @@ int FE_mesh_element_field_template_data::setElementLocalNodesByIdentifier(
 	FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
 		return CMZN_ERROR_ARGUMENT;
-	std::vector<DsLabelIndex> nodeIndexes(this->eft->getNumberOfLocalNodes(), DS_LABEL_INDEX_INVALID);
+	std::vector<DsLabelIndex> nodeIndexes(this->localNodeCount, DS_LABEL_INDEX_INVALID);
 	for (int n = 0; n < this->localNodeCount; ++n)
 	{
 		if (nodeIdentifiers[n] >= 0)
