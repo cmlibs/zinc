@@ -34,12 +34,10 @@ namespace {
 		return values;
 	}
 
-	/**
-	* Ensure values array is large enough for newSize,
-	* with copy of values up to lowest of newIndex or oldIndex,
-	* copy (newSize-newIndex) values from oldIndex to newIndex,
-	* if growing (newIndex > oldIndex) set any new values to fillValue.
-	*/
+	/** Ensure values array is large enough for newSize,
+	  * with copy of values up to lowest of newIndex or oldIndex,
+	  * copy (newSize-newIndex) values from oldIndex to newIndex,
+	  * if growing (newIndex > oldIndex) set any new values to fillValue. */
 	template<typename VALUETYPE> void edit_array(
 		VALUETYPE *&values, int newIndex, int oldIndex, int newSize, VALUETYPE fillValue)
 	{
@@ -123,7 +121,8 @@ FE_element_field_template::FE_element_field_template(const FE_element_field_temp
 	numberOfLocalScaleFactors(source.numberOfLocalScaleFactors),
 	scaleFactorTypes(copy_array(source.scaleFactorTypes, source.numberOfLocalScaleFactors)),
 	scaleFactorIdentifiers(copy_array(source.scaleFactorIdentifiers, source.numberOfLocalScaleFactors)),
-	scaleFactorLocalNodeIndexes(0),
+	scaleFactorLocalNodeIndexes(source.scaleFactorLocalNodeIndexes ?
+		copy_array(source.scaleFactorLocalNodeIndexes, source.numberOfLocalScaleFactors) : 0),
 	localScaleFactorIndexes(copy_array(source.localScaleFactorIndexes, source.totalLocalScaleFactorIndexes)),
 	termScaleFactorCounts(copy_array(source.termScaleFactorCounts, source.totalTermCount)),
 	termLocalScaleFactorIndexesOffsets(copy_array(source.termLocalScaleFactorIndexesOffsets, source.totalTermCount)),
@@ -270,6 +269,9 @@ FE_element_field_template *FE_element_field_template::cloneForModify() const
 		return 0;
 	}
 	eft->locked = false;
+	// clear any copied data which should be computed on validation:
+	delete eft->scaleFactorLocalNodeIndexes;
+	eft->scaleFactorLocalNodeIndexes = 0;
 	return eft;
 }
 
