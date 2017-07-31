@@ -46,12 +46,32 @@ namespace {
 
 }
 
+int FE_field_add_to_list_if_coordinate(FE_field *field, void *feFieldListVoid)
+{
+	LIST(FE_field) *feFieldList = static_cast<LIST(FE_field) *>(feFieldListVoid);
+	if (field && feFieldList)
+	{
+		if (FE_field_is_coordinate_field(field, 0))
+		{
+			if (!ADD_OBJECT_TO_LIST(FE_field)(field, feFieldList))
+				return 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 AdjacentElements1d::AdjacentElements1d(cmzn_mesh_id meshIn, cmzn_field_id fieldIn) :
 	mesh(cmzn_mesh_get_FE_mesh_internal(meshIn)),
 	nodeset(this->mesh ? this->mesh->getNodeset() : 0),
 	node_element_list(0)
 {
 	struct LIST(FE_field) *feFieldList = Computed_field_get_defining_FE_field_list(fieldIn);
+	if (0 == NUMBER_IN_LIST(FE_field)(feFieldList))
+	{
+		// use any coordinate fields
+		FE_region_for_each_FE_field(cmzn_mesh_get_FE_region_internal(meshIn), FE_field_add_to_list_if_coordinate, (void *)feFieldList);
+	}
 	FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_add_unique_mft_to_vector, static_cast<void*>(this), feFieldList);
 	DESTROY(LIST(FE_field))(&feFieldList);
 	const size_t mftCount = this->mfts.size();
@@ -141,11 +161,12 @@ DsLabelIndex AdjacentElements1d::getElementNodeIndexOnFace(struct FE_element *el
 			const int nodeCount = eft->getNumberOfLocalNodes();
 			if (1 < nodeCount)
 			{
-				const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(element->getIndex());
-				// GRC: this is how it used to work, just assumes first two local nodes are in right order
-				// in future analyse EFT and determine first/last local nodes properly.
-				if (nodeIndexes)
-					return nodeIndexes[face_index];
+				const DsLabelIndex nodeIndex = (0 == face_index) ?
+					meshEFTData->getElementFirstNodeIndex(element->getIndex()) : meshEFTData->getElementLastNodeIndex(element->getIndex());
+				if (nodeIndex != DS_LABEL_INDEX_INVALID)
+				{
+					return nodeIndex;
+				}
 			}
 		}
 	}
@@ -196,7 +217,6 @@ int AdjacentElements1d::getAdjacentElements(struct FE_element *element,
 										if (adjacent_element)
 										{
 											(*adjacent_elements)[i] = adjacent_element;
-											cmzn_element_destroy(&adjacent_element); // this function never accessed elements
 											i++;
 										}
 										else
@@ -210,8 +230,8 @@ int AdjacentElements1d::getAdjacentElements(struct FE_element *element,
 								}
 							}
 						}
-						*number_of_adjacent_elements = i;
 					}
+					*number_of_adjacent_elements = i;
 					if (i == 0)
 					{
 						/* Don't keep the array if there are no elements */

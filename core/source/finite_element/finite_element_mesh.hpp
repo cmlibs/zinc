@@ -312,6 +312,14 @@ public:
 		return this->eft;
 	}
 
+	/** @return  Global index of first node used in element, or DS_LABEL_INDEX_INVALID if none.
+	  * @param elementIndex  Label index for element.Caller must ensure this is non-negative. */
+	DsLabelIndex getElementFirstNodeIndex(DsLabelIndex elementIndex) const;
+	
+	/** @return  Global index of last node used by element, or DS_LABEL_INDEX_INVALID if none.
+	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
+	DsLabelIndex getElementLastNodeIndex(DsLabelIndex elementIndex) const;
+
 	/** @return  Pointer to array of global node indexes for element, or 0 if none. NOT to be freed.
 	  * @param elementIndex  Label index for element. Caller must ensure this is non-negative. */
 	DsLabelIndex *getElementNodeIndexes(DsLabelIndex elementIndex)

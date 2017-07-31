@@ -414,6 +414,44 @@ void FE_mesh_element_field_template_data::decrementMeshfieldtemplateUsageCount(D
 		display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::decrementMeshfieldtemplateUsageCount.  Missing count");
 }
 
+DsLabelIndex FE_mesh_element_field_template_data::getElementFirstNodeIndex(DsLabelIndex elementIndex) const
+{
+	if (this->eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const int localNodeIndex = this->eft->getTermLocalNodeIndex(0, 0);
+	if (localNodeIndex < 0)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const DsLabelIndex *nodeIndexes = this->getElementNodeIndexes(elementIndex);
+	if (!nodeIndexes)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	return nodeIndexes[localNodeIndex];
+}
+
+DsLabelIndex FE_mesh_element_field_template_data::getElementLastNodeIndex(DsLabelIndex elementIndex) const
+{
+	if (this->eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const int localNodeIndex = this->eft->getTermLocalNodeIndex(this->eft->getNumberOfFunctions() - 1, 0);
+	if (localNodeIndex < 0)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	const DsLabelIndex *nodeIndexes = this->getElementNodeIndexes(elementIndex);
+	if (!nodeIndexes)
+	{
+		return DS_LABEL_INDEX_INVALID;
+	}
+	return nodeIndexes[localNodeIndex];
+}
+
 /** @return  Upper limit of element indexes for which EFT is set.
   * Value is at least one greater than last index using EFT. */
 DsLabelIndex FE_mesh_element_field_template_data::getElementIndexLimit() const
