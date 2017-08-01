@@ -11,8 +11,9 @@
 
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/field.hpp"
-#include "opencmiss/zinc/element.hpp"
+#include "opencmiss/zinc/mesh.hpp"
 #include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/nodeset.hpp"
 #include "opencmiss/zinc/region.hpp"
 #include "opencmiss/zinc/timesequence.hpp"
 #include "opencmiss/zinc/types/scenecoordinatesystem.hpp"

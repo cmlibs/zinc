@@ -40,7 +40,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 			cmzn_scene_id scene = streaminformation_scene->getScene();
 			if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 			{
-				int size = streams_list.size();
+				const int size = static_cast<int>(streams_list.size());
 				char **resource_names = new char *[size];
 				int current_index = 0;
 				for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
@@ -120,7 +120,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 					{
 						char *buffer_out = duplicate_string(output_string[i].c_str());
-						unsigned int buffer_size = strlen(buffer_out);
+						unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
 						memory_resource->setBuffer(buffer_out, buffer_size);
 						cmzn_streamresource_memory_destroy(&memory_resource);
 						i++;

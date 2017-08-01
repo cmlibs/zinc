@@ -2138,7 +2138,7 @@ be shared by multiple materials using the same program.
 							 {
 									append_string(&components_string, "a", &components_error);
 							 }
-							 number_of_inputs = strlen(components_string);
+							 number_of_inputs = static_cast<int>(strlen(components_string));
 							 while (!components_error && (strlen(components_string) < 4))
 							 {
 								append_string(&components_string, "r", &components_error);
@@ -2716,7 +2716,7 @@ be shared by multiple materials using the same program.
 						}
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(vertex_program_string), vertex_program_string);
+							static_cast<GLsizei>(strlen(vertex_program_string)), vertex_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
@@ -2737,7 +2737,7 @@ be shared by multiple materials using the same program.
 						}
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-							strlen(fragment_program_string), fragment_program_string);
+							static_cast<GLsizei>(strlen(fragment_program_string)), fragment_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,

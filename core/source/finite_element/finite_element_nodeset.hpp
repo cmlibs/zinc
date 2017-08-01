@@ -64,11 +64,11 @@ class FE_nodeset
 	DsLabels labels; // node identifiers
 
 	// map labels -> FE_node (accessed)
-	block_array<DsLabelIndex, FE_node*, 128> fe_nodes;
+	block_array<DsLabelIndex, FE_node*> fe_nodes;
 
 	// number of element references to node, so can't destroy while in use
 	typedef unsigned short ElementUsageCountType; // internal use only
-	block_array<DsLabelIndex, ElementUsageCountType, 512> elementUsageCount;
+	block_array<DsLabelIndex, ElementUsageCountType> elementUsageCount;
 
 	struct LIST(FE_node_field_info) *node_field_info_list;
 	struct FE_node_field_info *last_fe_node_field_info;
@@ -84,6 +84,8 @@ class FE_nodeset
 	FE_nodeset(FE_region *fe_region);
 
 	~FE_nodeset();
+
+	void createChangeLog();
 
 	int remove_FE_node_private(struct FE_node *node);
 
@@ -141,7 +143,7 @@ public:
 		nodeChange(get_FE_node_index(node), DS_LABEL_CHANGE_TYPE_REMOVE, node);
 	}
 
-	FE_region *get_FE_region()
+	FE_region *get_FE_region() const
 	{
 		return this->fe_region;
 	}
@@ -154,11 +156,17 @@ public:
 	void setFieldDomainType(cmzn_field_domain_type domainTypeIn)
 	{
 		this->domainType = domainTypeIn;
+		this->labels.setName(this->getName());
+	}
+
+	const char *getName() const;
+
+	const DsLabels& getLabels() const
+	{
+		return this->labels;
 	}
 
 	void clear();
-
-	void createChangeLog();
 
 	/** @return Accessed changes */
 	DsLabelsChangeLog *extractChangeLog();
@@ -243,15 +251,15 @@ public:
 
 	DsLabelsGroup *createLabelsGroup();
 
-	int change_FE_node_identifier(struct FE_node *node, int new_identifier);
+	int change_FE_node_identifier(struct FE_node *node, DsLabelIdentifier new_identifier);
 
 	FE_node_template *create_FE_node_template(FE_node *node);
 
 	FE_node_template *create_FE_node_template();
 
-	FE_node *get_or_create_FE_node_with_identifier(int identifier);
+	FE_node *get_or_create_FE_node_with_identifier(DsLabelIdentifier identifier);
 
-	FE_node *create_FE_node(int identifier, FE_node_template *node_template);
+	FE_node *create_FE_node(DsLabelIdentifier identifier, FE_node_template *node_template);
 
 	int merge_FE_node_template(struct FE_node *destination, FE_node_template *fe_node_template);
 

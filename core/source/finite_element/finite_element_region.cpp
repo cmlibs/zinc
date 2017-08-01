@@ -16,10 +16,11 @@ finite element fields defined on or interpolated over them.
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/node.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
-#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/callback_private.h"
@@ -37,10 +38,11 @@ Module types
 ------------
 */
 
-FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
+FE_region_changes::FE_region_changes(struct FE_region *fe_regionIn) :
+	fe_region(ACCESS(FE_region)(fe_regionIn)),
 	access_count(1)
 {
-	this->fe_field_changes = fe_region->fe_field_changes;
+	this->fe_field_changes = fe_region->extractFieldChangeLog();
 	for (int n = 0; n < 2; ++n)
 		this->nodeChangeLogs[n] = fe_region->nodesets[n]->extractChangeLog();
 	// when extracting element change logs, propagate field change summary flags
@@ -50,25 +52,25 @@ FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
 	bool parentAllChange = this->nodeChangeLogs[0]->isAllChange();
 	for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
 	{
-		if (0 != (this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog()))
+		this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog();
+		if (parentChange)
 		{
-			if (parentChange)
-			{
-				if (parentAllChange)
-					this->elementChangeLogs[dim]->setAllChange(DS_LABEL_CHANGE_TYPE_RELATED);
-				else
-					this->elementChangeLogs[dim]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
-			}
+			if (parentAllChange)
+				this->elementChangeLogs[dim]->setAllChange(DS_LABEL_CHANGE_TYPE_RELATED);
 			else
-			{
-				int elementChanges = this->elementChangeLogs[dim]->getChangeSummary();
-				parentChange = 0 != (elementChanges & DS_LABEL_CHANGE_TYPE_RELATED);
-			}
-			if (parentChange && !parentAllChange)
-				parentAllChange = this->elementChangeLogs[dim]->isAllChange();
+				this->elementChangeLogs[dim]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
 		}
+		else
+		{
+			int elementChanges = this->elementChangeLogs[dim]->getChangeSummary();
+			parentChange = 0 != (elementChanges & DS_LABEL_CHANGE_TYPE_RELATED);
+		}
+		if (parentChange && !parentAllChange)
+			parentAllChange = this->elementChangeLogs[dim]->isAllChange();
+		// following flag is used for propagation of field changes from
+		// nodes, and on to face elements
+		this->propagatedToDimension[dim] = false;
 	}
-	fe_region->createChangeLogs();
 }
 
 FE_region_changes::~FE_region_changes()
@@ -78,12 +80,67 @@ FE_region_changes::~FE_region_changes()
 		cmzn::Deaccess(this->nodeChangeLogs[n]);
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		cmzn::Deaccess(this->elementChangeLogs[dim]);
+	DEACCESS(FE_region)(&(this->fe_region));
 }
 
-bool FE_region_changes::elementOrParentChanged(FE_element *element)
+/** If not already done, propagate field changes from nodes, or higher
+  * dimension elements to faces of this dimension.
+  * @param dimension   Mesh dimension from 1 to MAXIMUM_ELEMENT_XI_DIMENSIONS */
+bool FE_region_changes::propagateToDimension(int dimension)
 {
-	return (0 != FE_element_or_parent_changed(element, this->elementChangeLogs, this->nodeChangeLogs[0]));
+	if ((dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		display_message(INFORMATION_MESSAGE, "FE_region_changes::propagateToDimension.  Invalid dimension");
+		return false;
+	}
+	if (this->propagatedToDimension[dimension - 1])
+		return true;
+	if (!this->elementChangeLogs[dimension - 1]->isAllChange())
+	{
+		FE_mesh *mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
+		if (mesh)
+		{
+			// propagate from parent element changes, node changes, both, or neither
+			DsLabelsChangeLog *changeLog = this->elementChangeLogs[dimension - 1];
+			DsLabelsGroup *group = changeLog->getLabelsGroup();
+			const DsLabelsGroup *parentGroup = 0;
+			if (dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS)
+			{
+				this->propagateToDimension(dimension + 1);
+				const DsLabelsChangeLog *parentChangeLog = this->elementChangeLogs[dimension];
+				if (parentChangeLog->getChangeSummary() != DS_LABEL_CHANGE_TYPE_NONE)
+					parentGroup = parentChangeLog->getLabelsGroup();
+			}
+			const DsLabelsChangeLog *nodeChangeLog = this->nodeChangeLogs[0];
+			const DsLabelsGroup *nodeGroup = 0;
+			if (nodeChangeLog->getChangeSummary() != DS_LABEL_CHANGE_TYPE_NONE)
+				nodeGroup = nodeChangeLog->getLabelsGroup();
+			if (parentGroup || nodeGroup)
+			{
+				bool relatedChange = (0 != (changeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_RELATED));
+				const DsLabelIndex elementIndexLimit = mesh->getLabelsIndexSize();
+				for (DsLabelIndex elementIndex = 0; elementIndex < elementIndexLimit; ++elementIndex)
+				{
+					if (relatedChange && group->hasIndex(elementIndex))
+						continue; // optimisation only works after relatedChange is set
+					if (mesh->getElementIdentifier(elementIndex) == DS_LABEL_IDENTIFIER_INVALID)
+						continue; // no element at index, normal if elements have been removed
+					if ((parentGroup && mesh->elementHasParentInGroup(elementIndex, *parentGroup))
+						|| (nodeGroup && mesh->elementHasNodeInGroup(elementIndex, *nodeGroup)))
+					{
+						group->setIndex(elementIndex, true);
+						relatedChange = true;
+					}
+				}
+				if (relatedChange)
+					this->elementChangeLogs[dimension - 1]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
+			}
+		}
+	}
+	this->propagatedToDimension[dimension - 1] = true;
+	return true;
 }
+
 
 /**
  * Tells parent region about changes to fields, nodes and elements.
@@ -162,18 +219,21 @@ FE_region::FE_region(FE_region *base_fe_region) :
 	informed_make_xi_field(false),
 	access_count(1)
 {
+	this->createFieldChangeLog();
 	for (int n = 0; n < 2; ++n)
 		this->nodesets[n] = FE_nodeset::create(this);
 	this->nodesets[0]->setFieldDomainType(CMZN_FIELD_DOMAIN_TYPE_NODES);
 	this->nodesets[1]->setFieldDomainType(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 
 	for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
+	{
 		this->meshes[dimension - 1] = FE_mesh::create(this, dimension);
+		this->meshes[dimension - 1]->setNodeset(this->nodesets[0]);
+	}
 	for (int dimension = 2; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
 		this->meshes[dimension - 1]->setFaceMesh(this->meshes[dimension - 2]);
 	for (int dimension = 1; dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
 		this->meshes[dimension - 1]->setParentMesh(this->meshes[dimension]);
-	this->createChangeLogs();
 }
 
 FE_region::~FE_region()
@@ -183,17 +243,19 @@ FE_region::~FE_region()
 	if (0 != this->change_level)
 		display_message(WARNING_MESSAGE, "~FE_region.  Non-zero change_level %d", this->change_level);
 
-	for (int n = 0; n < 2; ++n)
-	{
-		this->nodesets[n]->detach_from_FE_region();
-		FE_nodeset::deaccess(this->nodesets[n]);
-	}
+	this->change_level = 1; // so no notifications
 
+	// detach first to clean up some dynamic data and remove pointers back to FE_region
+	for (int n = 0; n < 2; ++n)
+		this->nodesets[n]->detach_from_FE_region();
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
-	{
 		this->meshes[dimension - 1]->detach_from_FE_region();
+
+	// then deaccess to destroy handle
+	for (int n = 0; n < 2; ++n)
+		FE_nodeset::deaccess(this->nodesets[n]);
+	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
 		FE_mesh::deaccess(this->meshes[dimension - 1]);
-	}
 
 	if (this->fe_field_info)
 	{
@@ -210,20 +272,20 @@ FE_region::~FE_region()
 	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
 }
 
-/**
- * Creates and initializes the change logs in FE_region.
- * Centralised so they are created and recreated consistently.
- */
-void FE_region::createChangeLogs()
+/** Private: assumes current change log pointer is null or invalid */
+void FE_region::createFieldChangeLog()
 {
-	this->fe_field_changes = CREATE(CHANGE_LOG(FE_field))(
-		this->fe_field_list, /*max_changes*/-1);
+	this->fe_field_changes = CREATE(CHANGE_LOG(FE_field))(this->fe_field_list);
+	if (!this->fe_field_changes)
+		display_message(ERROR_MESSAGE, "FE_region::createFieldChangeLog.  Failed to create change log");
+}
 
-	for (int n = 0; n < 2; ++n)
-		this->nodesets[n]->createChangeLog();
-
-	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-		this->meshes[dim]->createChangeLog();
+struct CHANGE_LOG(FE_field) *FE_region::extractFieldChangeLog()
+{
+	struct CHANGE_LOG(FE_field) *returnChangeLog = this->fe_field_changes;
+	CHANGE_LOG_MERGE_ALL_CHANGE(FE_field)(returnChangeLog);
+	this->createFieldChangeLog();
+	return returnChangeLog;
 }
 
 /*
@@ -424,105 +486,6 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 	return (fe_field);
 }
 
-struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field, int number_of_indexed_values,
-	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
-	enum Value_type value_type, int number_of_components, char **component_names,
-	int number_of_times, enum Value_type time_value_type,
-	struct FE_field_external_information *external)
-{
-	char *component_name;
-	int i;
-	struct FE_field *fe_field;
-
-	ENTER(FE_region_get_FE_field_with_properties);
-	fe_field = (struct FE_field *)NULL;
-	if (fe_region && name && coordinate_system && (0 < number_of_components))
-	{
-		/* search the FE_region for a field of that name */
-		fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
-			fe_region->fe_field_list);
-		if (fe_field)
-		{
-			/* make sure the field matches in every way */
-			if (!FE_field_matches_description(fe_field, name, fe_field_type,
-				indexer_field, number_of_indexed_values, cm_field_type,
-				coordinate_system, value_type, number_of_components, component_names,
-				number_of_times, time_value_type, external))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_get_FE_field_with_properties.  "
-					"Inconsistent with field of same name in region");
-				fe_field = (struct FE_field *)NULL;
-			}
-		}
-		else
-		{
-			fe_field = CREATE(FE_field)(name, fe_region);
-			if (fe_field &&
-				set_FE_field_external_information(fe_field, external) &&
-				set_FE_field_value_type(fe_field, value_type) &&
-				set_FE_field_number_of_components(fe_field, number_of_components) &&
-				((CONSTANT_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_constant(fe_field)) &&
-				((GENERAL_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_general(fe_field)) &&
-				((INDEXED_FE_FIELD != fe_field_type) ||
-					set_FE_field_type_indexed(fe_field,
-						indexer_field,number_of_indexed_values)) &&
-				set_FE_field_CM_field_type(fe_field, cm_field_type) &&
-				set_FE_field_coordinate_system(fe_field, coordinate_system) &&
-				set_FE_field_time_value_type(fe_field, time_value_type) &&
-				set_FE_field_number_of_times(fe_field, number_of_times))
-			{
-				if (component_names)
-				{
-					for (i = 0; (i < number_of_components) && fe_field; i++)
-					{
-						component_name = component_names[i];
-						if (component_name)
-						{
-							if (!set_FE_field_component_name(fe_field, i, component_name))
-							{
-								DESTROY(FE_field)(&fe_field);
-								fe_field = (struct FE_field *)NULL;
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				DESTROY(FE_field)(&fe_field);
-				fe_field = (struct FE_field *)NULL;
-			}
-			if (fe_field)
-			{
-				if (!FE_region_merge_FE_field(fe_region, fe_field))
-				{
-					DESTROY(FE_field)(&fe_field);
-					fe_field = (struct FE_field *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_get_FE_field_with_properties.  "
-					"Could not create new field");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_get_FE_field_with_properties.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (fe_field);
-}
-
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field)
 {
@@ -549,6 +512,7 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 					/*???debug*/printf("FE_region_merge_FE_field: %p OBJECT_NOT_IDENTIFIER_CHANGED field %p\n",fe_region,merged_fe_field);
 #endif /* defined (DEBUG_CODE) */
 							fe_region->FE_field_change(merged_fe_field, CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
+							fe_region->update();
 						}
 						else
 						{
@@ -575,6 +539,7 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 					/*???debug*/printf("FE_region_merge_FE_field: %p ADD field %p\n",fe_region,merged_fe_field);
 #endif /* defined (DEBUG_CODE) */
 					fe_region->FE_field_change(merged_fe_field, CHANGE_LOG_OBJECT_ADDED(FE_field));
+					fe_region->update();
 				}
 				else
 				{
@@ -609,8 +574,11 @@ bool FE_region_is_FE_field_in_use(struct FE_region *fe_region,
 				if (fe_region->nodesets[n]->is_FE_field_in_use(fe_field))
 					return true;
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-				if (fe_region->meshes[dim]->is_FE_field_in_use(fe_field))
+			{
+				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, fe_region->meshes[dim]);
+				if ((meshFieldData) && meshFieldData->isDefinedOnElements())
 					return true;
+			}
 		}
 		else
 		{
@@ -666,7 +634,10 @@ Fields can only be removed if not defined on any nodes and element in
 				return_code = REMOVE_OBJECT_FROM_LIST(FE_field)(fe_field,
 					fe_region->fe_field_list);
 				if (return_code)
+				{
 					fe_region->FE_field_change(fe_field, CHANGE_LOG_OBJECT_REMOVED(FE_field));
+					fe_region->update();
+				}
 				DEACCESS(FE_field)(&fe_field);
 			}
 		}
@@ -728,7 +699,10 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 					return_code = set_FE_field_name(field, new_name);
 					LIST_END_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list);
 					if (return_code)
+					{
 						fe_region->FE_field_change(field, CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field));
+						fe_region->update();
+					}
 				}
 				else
 				{
@@ -967,23 +941,25 @@ int FE_region_define_faces(struct FE_region *fe_region)
 	int return_code = 1;
 	if (fe_region)
 	{
-		FE_region_begin_change(fe_region);
-		FE_region_begin_define_faces(fe_region);
-		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 2 <= dimension; --dimension)
+		if (FE_region_get_highest_dimension(fe_region) > 1)
 		{
-			if (CMZN_OK != fe_region->meshes[dimension - 1]->define_faces())
+			FE_region_begin_change(fe_region);
+			FE_region_begin_define_faces(fe_region);
+			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 2 <= dimension; --dimension)
 			{
-				return_code = 0;
-				break;
+				if (CMZN_OK != fe_region->meshes[dimension - 1]->define_faces())
+				{
+					return_code = 0;
+					break;
+				}
 			}
+			FE_region_end_define_faces(fe_region);
+			FE_region_end_change(fe_region);
 		}
-		FE_region_end_define_faces(fe_region);
-		FE_region_end_change(fe_region);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_define_faces.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_region_define_faces.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;
@@ -1067,20 +1043,43 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();
 				if (!elementIter) 
 					return_code = 0;
-				FE_element *element;
-				while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
+				fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, fe_mesh);
+				if (!meshFieldData)
 				{
-					/* skip elements without field defined appropriately */
-					if (FE_element_field_is_standard_node_based(element, fe_field))
+					display_message(ERROR_MESSAGE,
+						"FE_region_smooth_FE_field.  FE_field is not defined on mesh");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					FE_element *element;
+					const int componentCount = get_FE_field_number_of_components(fe_field);
+					while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
 					{
-						if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
+						/* skip elements without field defined appropriately */
+						bool definedAndNodeBased = true;
+						for (int c = 0; c < componentCount; ++c)
 						{
-							fe_mesh->elementFieldChange(element, fe_field);
+							FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+							FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+							if (!((eft) && (eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)))
+							{
+								definedAndNodeBased = false;
+								break;
+							}
 						}
-						else
+						if (definedAndNodeBased)
 						{
-							return_code = 0;
-							break;
+							if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
+							{
+								fe_mesh->elementChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
+							}
+							else
+							{
+								return_code = 0;
+								break;
+							}
 						}
 					}
 				}
@@ -1155,6 +1154,27 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	return 0;
 }
 
+struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
+	struct FE_region *fe_region, int dimension)
+{
+	if ((!fe_region) || (dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+		return 0;
+	int basisType[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	basisType[0] = dimension;
+	int *type = basisType + 1;
+	for (int d = 0; d < dimension; ++d)
+	{
+		*type = FE_BASIS_CONSTANT;
+		++type;
+		for (int i = d + 1; i < dimension; ++i)
+		{
+			*type = NO_RELATION;
+			++type;
+		}
+	}
+	return make_FE_basis(basisType, fe_region->bases_and_shapes->getBasisManager());
+}
+
 void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
 	struct cmzn_region *cmiss_region)
 {
@@ -1170,88 +1190,50 @@ struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region)
 }
 
 /**
- * FE_field iterator version of FE_region_merge_FE_field.
- * Assumed to be called from FE_region_merge since transfers ownership of new
- * field so source region is consumed / made unusable in the process. 
+ * Finds or creates a new field in FE_region matching the supplied one,
+ * converting all indexer fields and host meshes.
+ * FE_field iterator assumed to be called from FE_region_merge, and
+ * assumes that FE_region_can_merge has passed.
  */
-static int FE_field_merge_into_FE_region(struct FE_field *fe_field,
+static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 	void *fe_region_void)
 {
-	int return_code = 1;
 	FE_region *fe_region = reinterpret_cast<struct FE_region *>(fe_region_void);
-	if (fe_field && fe_region)
+	if (!(sourceField && fe_region))
 	{
-		FE_field *indexer_fe_field = 0;
-		/* if the field is indexed, the indexer field needs to be merged first,
-			 and the merged indexer field substituted */
-		if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(fe_field))
-		{
-			int number_of_indexed_values;
-			if (get_FE_field_type_indexed(fe_field,
-				&indexer_fe_field, &number_of_indexed_values))
-			{
-				char *indexer_fe_field_name;
-				if (GET_NAME(FE_field)(indexer_fe_field, &indexer_fe_field_name))
-				{
-					if (FE_field_merge_into_FE_region(indexer_fe_field, fe_region_void))
-					{
-						/* get the merged indexer field */
-						if (!(indexer_fe_field = FE_region_get_FE_field_from_name(fe_region,
-							indexer_fe_field_name)))
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-					DEALLOCATE(indexer_fe_field_name);
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* change fe_field to belong to <fe_region>;
-				 substitute the indexer field if required */
-			if (!(FE_field_set_FE_field_info(fe_field,
-				FE_region_get_FE_field_info(fe_region)) &&
-				((!indexer_fe_field) ||
-					FE_field_set_indexer_field(fe_field, indexer_fe_field)) &&
-				FE_region_merge_FE_field(fe_region, fe_field)))
-			{
-				return_code = 0;
-			}
-		}
+		display_message(ERROR_MESSAGE, "FE_field_merge_into_FE_region.  Invalid argument(s)");
+		return 0;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_merge_into_FE_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
+	// if target field exists, assume it has passed FE_region_can_merge
+	const char *fieldName = get_FE_field_name(sourceField);
+	FE_field *targetField = FE_region_get_FE_field_from_name(fe_region, fieldName);
+	if (targetField)
+		return 1;
 
-/** @return  1 on success, 0 on failure. */
-int FE_field_check_element_node_value_labels(struct FE_field *field,
-	void *target_fe_region_void)
-{
-	FE_region *fe_region = FE_field_get_FE_region(field);
-	FE_region *target_fe_region = static_cast<FE_region *>(target_fe_region_void);
-	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+	FE_field_type feFieldType = get_FE_field_FE_field_type(sourceField);
+	Value_type valueType = get_FE_field_value_type(sourceField);
+	if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(sourceField))
 	{
-		if (!fe_region->meshes[dim]->check_field_element_node_value_labels(field, target_fe_region))
+		// must merge indexer field first
+		FE_field *indexerField;
+		int number_of_indexed_values = 0;
+		if (!(get_FE_field_type_indexed(sourceField, &indexerField, &number_of_indexed_values)
+			&& FE_field_merge_into_FE_region(indexerField, fe_region_void)))
 			return 0;
 	}
+	targetField = CREATE(FE_field)(fieldName, fe_region);
+	// don't want to be warned about this changing, so set here:
+	set_FE_field_CM_field_type(targetField, get_FE_field_CM_field_type(sourceField));
+	if (!(FE_field_copy_without_identifier(targetField, sourceField) &&
+		ADD_OBJECT_TO_LIST(FE_field)(targetField, fe_region->fe_field_list)))
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_field_merge_into_FE_region.  Failed to create field %s for target region", fieldName);
+		DESTROY(FE_field)(&targetField);
+		return 0;
+	}
+	fe_region->FE_field_change(targetField, CHANGE_LOG_OBJECT_ADDED(FE_field));
+	fe_region->update();
 	return 1;
 }
 
@@ -1282,12 +1264,16 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 
 	// check/convert finite element field parameter mappings from indexes to derivatives & versions
 	// conversion must happen with or without a target_fe_region
-	if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_check_element_node_value_labels,
-		(void *)target_fe_region, source_fe_region->fe_field_list))
+	FE_nodeset *target_fe_nodeset = (target_fe_region) ? target_fe_region->nodesets[0] : 0;
+	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension); --dimension)
 	{
-		display_message(ERROR_MESSAGE,
-			"Cannot merge field(s) into region as cannot migrate element field mapping indexes to derivatives/versions");
-		return false;
+		FE_mesh *source_fe_mesh = source_fe_region->meshes[dimension - 1];
+		if (!source_fe_mesh->checkConvertLegacyNodeParameters(target_fe_nodeset))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cannot merge field(s) into region as cannot migrate element field mapping indexes to derivatives/versions");
+			return false;
+		}
 	}
 
 	if (target_fe_region)
@@ -1322,7 +1308,16 @@ int FE_region_merge(struct FE_region *target_fe_region,
 			return_code = 0;
 		}
 
-		// merge nodes (nodesets)
+		// merge meshes part 1: elements (so defined for element:xi node fields)
+		if (return_code)
+		{
+			// merge meshes from lowest to highest dimension so faces are merged before parent
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				if (!target_fe_region->meshes[dim]->mergePart1Elements(*(source_fe_region->meshes[dim])))
+					return_code = 0;
+		}
+
+		// merge nodesets: nodes and fields
 		if (return_code)
 		{
 			for (int n = 0; n < 2; ++n)
@@ -1330,12 +1325,12 @@ int FE_region_merge(struct FE_region *target_fe_region,
 					return_code = 0;
 		}
 
-		// merge elements (meshes)
+		// merge meshes part 2: fields
 		if (return_code)
 		{
 			// merge meshes from lowest to highest dimension so faces are merged before parent
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-				if (!target_fe_region->meshes[dim]->merge(*(source_fe_region->meshes[dim])))
+				if (!target_fe_region->meshes[dim]->mergePart2Fields(*(source_fe_region->meshes[dim])))
 					return_code = 0;
 		}
 

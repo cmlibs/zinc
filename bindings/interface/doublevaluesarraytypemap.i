@@ -259,9 +259,8 @@
 
 %apply (double const *valuesIn3) { (double const *eyeValuesIn3), (double const *lookatValuesIn3), (double const *upVectorValuesIn3) };
 
-// array getter in-handler expects an integer array size only
-// and allocates array to accept output; see argout-handler
-%typemap(in, numinputs=0) ( double *valuesOut3)
+// ignore double *valuesOut3 on input; it's an output argument only
+%typemap(in, numinputs=0) double *valuesOut3
 {
 	$1 = new double[3];
 };
@@ -347,7 +346,7 @@
 	delete[] $1;
 };
 
-%typemap(in, numinputs=0) (double *valuesOut4)
+%typemap(in, numinputs=0) double *valuesOut4
 {
 	$1 = new double[4];
 };
@@ -431,7 +430,7 @@
 	delete[] $1;
 };
 
-%typemap(in, numinputs=0) (double *valuesOut16)
+%typemap(in, numinputs=0) double *valuesOut16
 {
 	$1 = new double[16];
 };
@@ -472,3 +471,37 @@
 	}
 	delete[] $1;
 };
+
+%typemap(argout) (double *valueOut)
+{
+	PyObject *o = PyFloat_FromDouble(*$1);
+	if ((!$result) || ($result == Py_None))
+	{
+		$result = o;
+	}
+	else
+	{
+		if (!PyTuple_Check($result))
+		{
+			PyObject *previousResult = $result;
+			$result = PyTuple_New(2);
+			PyTuple_SET_ITEM($result, 0, previousResult); // steals reference
+			PyTuple_SET_ITEM($result, 1, o); // steals reference
+		}
+		else
+		{
+			PyObject *previousResult = $result;
+			PyObject *addResult = PyTuple_New(1);
+			PyTuple_SET_ITEM(addResult, 0, o); // steals reference
+			$result = PySequence_Concat(previousResult, addResult);
+			Py_DECREF(previousResult);
+			Py_DECREF(addResult);
+		}
+	}
+}
+
+// ignore double *valueOut on input; it's an output argument only
+%typemap(in, numinputs=0) double *valueOut (double temp)
+{
+	$1 = &temp;
+}

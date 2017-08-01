@@ -134,16 +134,14 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_NE(static_cast<cmzn_element_id>(0), element);
 	
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_element(cache, element));
-	double constant_value[3] = {2.0, 3.0, 4.0};
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(constant_field, cache, 3, &(constant_value[0])));
+	const double constantValues3In[3] = {2.0, 3.0, 4.0};
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(constant_field, cache, 3, constantValues3In));
 
-	constant_value[0] = 5.0;
-	constant_value[1] = 5.0;
-	constant_value[2] = 5.0;
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(constant_field, cache, 3, &(constant_value[0])));
-	EXPECT_EQ(2.0, constant_value[0]);
-	EXPECT_EQ(3.0, constant_value[1]);
-	EXPECT_EQ(4.0, constant_value[2]);
+	double constantValues3Out[3] = { 5.0, 5.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(constant_field, cache, 3, constantValues3Out));
+	EXPECT_EQ(constantValues3In[0], constantValues3Out[0]);
+	EXPECT_EQ(constantValues3In[1], constantValues3Out[1]);
+	EXPECT_EQ(constantValues3In[2], constantValues3Out[2]);
 
 	EXPECT_EQ(4, result = cmzn_nodeset_get_size(nodeset));
 	EXPECT_EQ(1, result = cmzn_mesh_get_size(mesh));
@@ -271,16 +269,15 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_TRUE(element.isValid());
 	
 	EXPECT_EQ(CMZN_OK, result = cache.setElement(element));
-	double constant_value[3] = {2.0, 3.0, 4.0};
-	EXPECT_EQ(CMZN_OK, result = constant_field.assignReal(cache, 3, &(constant_value[0])));
 
-	constant_value[0] = 5.0;
-	constant_value[1] = 5.0;
-	constant_value[2] = 5.0;
-	EXPECT_EQ(CMZN_OK, result = constant_field.evaluateReal(cache, 3, &(constant_value[0])));
-	EXPECT_EQ(2.0, constant_value[0]);
-	EXPECT_EQ(3.0, constant_value[1]);
-	EXPECT_EQ(4.0, constant_value[2]);
+	const double constantValues3In[3] = { 2.0, 3.0, 4.0 };
+	EXPECT_EQ(CMZN_OK, result = constant_field.assignReal(cache, 3, constantValues3In));
+
+	double constantValues3Out[3] = { 5.0, 5.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, result = constant_field.evaluateReal(cache, 3, constantValues3Out));
+	EXPECT_EQ(constantValues3In[0], constantValues3Out[0]);
+	EXPECT_EQ(constantValues3In[1], constantValues3Out[1]);
+	EXPECT_EQ(constantValues3In[2], constantValues3Out[2]);
 
 	EXPECT_EQ(4, result = nodeset.getSize());
 	EXPECT_EQ(1, result = mesh.getSize());
@@ -1456,4 +1453,507 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	}
 
 	zinc.fm.endChange();
+}
+
+TEST(ZincElementfieldtemplate, element_based_constant)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+
+	Elementbasis constantBasis = zinc.fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_CONSTANT);
+	EXPECT_TRUE(constantBasis.isValid());
+	Elementfieldtemplate eft = mesh1d.createElementfieldtemplate(constantBasis);
+	EXPECT_TRUE(eft.isValid());
+
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+	EXPECT_EQ(1, eft.getNumberOfFunctions());
+	EXPECT_EQ(1, eft.getNumberOfLocalNodes());
+	EXPECT_EQ(0, eft.getNumberOfLocalScaleFactors());
+	EXPECT_EQ(1, eft.getFunctionNumberOfTerms(1));
+
+	EXPECT_EQ(RESULT_OK, eft.setParameterMappingMode(Elementfieldtemplate::PARAMETER_MAPPING_MODE_ELEMENT));
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_ELEMENT, eft.getParameterMappingMode());
+
+	// many APIs are not supported for element-based parameter map:
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalNodes(1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalScaleFactors(1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setFunctionNumberOfTerms(1, 2));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setFunctionNumberOfTerms(1, 0));
+}
+
+TEST(ZincElementfieldtemplate, node_based_bilinear)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	// test invalid basis for mesh dimension
+	Elementbasis linearBasis = zinc.fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(linearBasis.isValid());
+	Elementfieldtemplate eft = mesh2d.createElementfieldtemplate(linearBasis);
+	EXPECT_FALSE(eft.isValid());
+
+	// test default node interpolation
+	Elementbasis bilinearBasis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	eft = mesh2d.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+
+	EXPECT_EQ(4, eft.getNumberOfFunctions());
+	EXPECT_EQ(4, eft.getNumberOfLocalNodes());
+	EXPECT_EQ(0, eft.getNumberOfLocalScaleFactors());
+	for (int i = 1; i <= 4; ++i)
+	{
+		EXPECT_EQ(1, eft.getFunctionNumberOfTerms(i));
+		EXPECT_EQ(i, eft.getTermLocalNodeIndex(/*functionNumber*/i, /*term*/1));
+		EXPECT_EQ(Node::VALUE_LABEL_VALUE, eft.getTermNodeValueLabel(/*functionNumber*/i, /*term*/1));
+		EXPECT_EQ(1, eft.getTermNodeVersion(/*functionNumber*/i, /*term*/1));
+	}
+	// invalid arguments:
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.getFunctionNumberOfTerms(0));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.getFunctionNumberOfTerms(5));
+	EXPECT_EQ(0, eft.getTermLocalNodeIndex(/*functionNumber*/1, /*term*/0));
+	EXPECT_EQ(0, eft.getTermLocalNodeIndex(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(Node::VALUE_LABEL_INVALID, eft.getTermNodeValueLabel(/*functionNumber*/1, /*term*/0));
+	EXPECT_EQ(Node::VALUE_LABEL_INVALID, eft.getTermNodeValueLabel(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/0));
+	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 0, 0)); // invalid with no local scale factors
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(1));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalScaleFactors(-1));
+
+	// test modifications - number and type/version of local scale factors
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(3));
+	EXPECT_EQ(3, eft.getNumberOfLocalScaleFactors());
+	for (int sf = 1; sf <= 3; ++sf)
+	{
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(sf, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH));
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(0, eft.getScaleFactorIdentifier(sf));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(sf, 2));
+		EXPECT_EQ(2, eft.getScaleFactorIdentifier(sf));
+	}
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(5));
+	EXPECT_EQ(5, eft.getNumberOfLocalScaleFactors());
+	for (int sf = 1; sf <= 3; ++sf)
+	{
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH, eft.getScaleFactorType(sf));
+		EXPECT_EQ(2, eft.getScaleFactorIdentifier(sf));
+	}
+	for (int sf = 4; sf <= 5; ++sf)
+	{
+		EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(sf));
+		EXPECT_EQ(0, eft.getScaleFactorIdentifier(sf));
+	}
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(4));
+	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
+	// invalid arguments:
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(0));
+	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(5));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(0));
+	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(5));
+
+	// test modifications - number of local nodes
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(5));
+	EXPECT_EQ(5, eft.getNumberOfLocalNodes());
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(4));
+	EXPECT_EQ(4, eft.getNumberOfLocalNodes());
+	// invalid arguments:
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalNodes(0));
+	EXPECT_EQ(4, eft.getNumberOfLocalNodes());
+
+	// test modifications - number of terms
+	EXPECT_EQ(RESULT_OK, eft.setFunctionNumberOfTerms(/*functionNumber*/1, 2));
+	EXPECT_EQ(2, eft.getFunctionNumberOfTerms(/*functionNumber*/1));
+	EXPECT_EQ(RESULT_OK, eft.setFunctionNumberOfTerms(/*functionNumber*/4, 0));
+	EXPECT_EQ(0, eft.getFunctionNumberOfTerms(/*functionNumber*/4));
+	EXPECT_EQ(1, eft.getTermLocalNodeIndex(/*functionNumber*/1, /*term*/1));
+	EXPECT_EQ(Node::VALUE_LABEL_VALUE, eft.getTermNodeValueLabel(/*functionNumber*/1, /*term*/1));
+	EXPECT_EQ(1, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/1));
+	EXPECT_EQ(0, eft.getTermLocalNodeIndex(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(Node::VALUE_LABEL_VALUE, eft.getTermNodeValueLabel(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(1, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(/*functionNumber*/1, /*term*/2, /*localNodeIndex*/2, Node::VALUE_LABEL_VALUE, /*version*/3));
+
+	EXPECT_EQ(2, eft.getTermLocalNodeIndex(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(Node::VALUE_LABEL_VALUE, eft.getTermNodeValueLabel(/*functionNumber*/1, /*term*/2));
+	EXPECT_EQ(3, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
+	for (int i = 2; i <= 3; ++i)
+	{
+		EXPECT_EQ(i, eft.getTermLocalNodeIndex(/*functionNumber*/i, /*term*/1));
+		EXPECT_EQ(Node::VALUE_LABEL_VALUE, eft.getTermNodeValueLabel(/*functionNumber*/i, /*term*/1));
+		EXPECT_EQ(1, eft.getTermNodeVersion(/*functionNumber*/i, /*term*/1));
+	}
+	// invalid arguments:
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setTermNodeParameter(/*functionNumber*/1, /*term*/1, 0, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setTermNodeParameter(/*functionNumber*/1, /*term*/1, 5, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setTermNodeParameter(/*functionNumber*/1, /*term*/1, 1, Node::VALUE_LABEL_INVALID, 1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setTermNodeParameter(/*functionNumber*/1, /*term*/1, 1, Node::VALUE_LABEL_VALUE, 0));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setTermNodeParameter(/*functionNumber*/4, /*term*/1, 1, Node::VALUE_LABEL_VALUE, 1)); // no terms
+
+	// test modifications - scaling
+	const int node1term1scaling[2] = { 1, 2 };
+	const int node1term2scaling[2] = { 2, 3 };
+	const int node2scaling = 2;
+	const int node3scaling = 4;
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scaling));
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scaling));
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scaling));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 0, 0));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 0, 0));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 0, 0));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 0, 0));
+	int node1term1scalingOut[2];
+	int node1term2scalingOut[2];
+	int node2scalingOut;
+	int node3scalingOut;
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scaling));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node2scaling, node2scalingOut);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/2, /*term*/1, 0, 0));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scaling));
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/3, /*term*/1, 0, 0));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node2scaling, node2scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scaling));
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scaling));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node2scaling, node2scalingOut);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	// invalid arguments:
+	int dummy;
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/0, /*term*/1, 1, &dummy));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/4, /*term*/1, 1, &dummy));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/0, 1, &dummy));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/3, 1, &dummy));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/3, -1, &dummy));
+
+	// test modifications - terms with scaling
+	EXPECT_EQ(RESULT_OK, eft.setFunctionNumberOfTerms(/*functionNumber*/1, 3));
+	EXPECT_EQ(3, eft.getFunctionNumberOfTerms(/*functionNumber*/1));
+	const int node1term3scaling = 4;
+	int node1term3scalingOut;
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/1, /*term*/3, 1, &node1term3scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node2scaling, node2scalingOut);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/1, /*term*/3, 1, &node1term3scaling));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/1, /*term*/3, 1, &node1term3scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node1term3scaling, node1term3scalingOut);
+	EXPECT_EQ(node2scaling, node2scalingOut);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setFunctionNumberOfTerms(/*functionNumber*/2, 0));
+	EXPECT_EQ(0, eft.getFunctionNumberOfTerms(/*functionNumber*/2));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/1, /*term*/3, 1, &node1term3scalingOut));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term1scaling[0], node1term1scalingOut[0]);
+	EXPECT_EQ(node1term1scaling[1], node1term1scalingOut[1]);
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node1term3scaling, node1term3scalingOut);
+	EXPECT_EQ(node3scaling, node3scalingOut);
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(/*functionNumber*/1, /*term*/1, 0, 0));
+	EXPECT_EQ(RESULT_OK, eft.setFunctionNumberOfTerms(/*functionNumber*/3, 0));
+	EXPECT_EQ(0, eft.getFunctionNumberOfTerms(/*functionNumber*/3));
+	EXPECT_EQ(0, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 2, node1term1scalingOut));
+	EXPECT_EQ(2, eft.getTermScaling(/*functionNumber*/1, /*term*/2, 2, node1term2scalingOut));
+	EXPECT_EQ(1, eft.getTermScaling(/*functionNumber*/1, /*term*/3, 1, &node1term3scalingOut));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/2, /*term*/1, 1, &node2scalingOut));
+	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/3, /*term*/1, 1, &node3scalingOut));
+	EXPECT_EQ(node1term2scaling[0], node1term2scalingOut[0]);
+	EXPECT_EQ(node1term2scaling[1], node1term2scalingOut[1]);
+	EXPECT_EQ(node1term3scaling, node1term3scalingOut);
+}
+
+TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+
+	// test default node interpolation
+	Elementbasis tricubicHermiteBasis = zinc.fm.createElementbasis(3, Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE);
+	EXPECT_TRUE(tricubicHermiteBasis.isValid());
+	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(tricubicHermiteBasis);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+
+	EXPECT_EQ(64, eft.getNumberOfFunctions());
+	EXPECT_EQ(8, eft.getNumberOfLocalNodes());
+	EXPECT_EQ(0, eft.getNumberOfLocalScaleFactors());
+	int fn = 1;
+	for (int no = 1; no <= 8; ++no)
+	{
+		for (int va = 1; va <= 8; ++va)
+		{
+			EXPECT_EQ(1, eft.getFunctionNumberOfTerms(fn));
+			EXPECT_EQ(no, eft.getTermLocalNodeIndex(/*functionNumber*/fn, /*term*/1));
+			EXPECT_EQ(static_cast<Node::ValueLabel>(va), eft.getTermNodeValueLabel(/*functionNumber*/fn, /*term*/1));
+			EXPECT_EQ(1, eft.getTermNodeVersion(/*functionNumber*/fn, /*term*/1));
+			++fn;
+		}
+	}
+}
+
+// Test EFT validate fails for non-zero identifier for element-based scale factor
+// Test EFT validate fails for zero identifier for non-element-based scale factor
+TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	Elementbasis bilinearBasis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh2d.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(Elementfieldtemplate::PARAMETER_MAPPING_MODE_NODE, eft.getParameterMappingMode());
+
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(1));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(1));
+	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
+	EXPECT_TRUE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 1));
+	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
+	EXPECT_FALSE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(1, Elementfieldtemplate::SCALE_FACTOR_TYPE_GLOBAL_GENERAL));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_GLOBAL_GENERAL, eft.getScaleFactorType(1));
+	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
+	EXPECT_TRUE(eft.validate());
+	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 0));
+	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
+	EXPECT_FALSE(eft.validate());
+}
+
+class FieldmodulecallbackRecordChange : public Fieldmodulecallback
+{
+public:
+	Fieldmoduleevent lastEvent;
+
+	FieldmodulecallbackRecordChange()
+	{ }
+
+	virtual void operator()(const Fieldmoduleevent &event)
+	{
+		this->lastEvent = event;
+	}
+};
+
+// tests that destroying an element frees its nodes to be destroyed if not in use by other elements
+// tests that destroying an element notifies change to mesh and fields
+TEST(ZincMesh, destroyElement)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(RESULT_OK, result = notifier.setCallback(recordChange));
+	EXPECT_FALSE(recordChange.lastEvent.isValid());
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	EXPECT_EQ(2, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	EXPECT_EQ(11, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	EXPECT_EQ(20, mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	EXPECT_EQ(12, nodes.getSize());
+
+	// test can't destroy nodes in use by element
+	EXPECT_EQ(RESULT_ERROR_IN_USE, result = nodes.destroyAllNodes());
+	EXPECT_EQ(12, nodes.getSize());
+	// check above did not notify
+	EXPECT_FALSE(recordChange.lastEvent.isValid());
+
+	// now destroy an element
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Element element2 = mesh3d.findElementByIdentifier(2);
+	EXPECT_TRUE(element2.isValid());
+	EXPECT_EQ(RESULT_OK, result = mesh3d.destroyElement(element1));
+	// element1 should be safely orphaned by the above
+	EXPECT_EQ(1, mesh3d.getSize());
+	EXPECT_EQ(6, mesh2d.getSize());
+	EXPECT_EQ(12, mesh1d.getSize());
+	EXPECT_EQ(12, nodes.getSize());
+
+	// test for correct change notification
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	int summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	int coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	Meshchanges meshchanges3d = recordChange.lastEvent.getMeshchanges(mesh3d);
+	EXPECT_TRUE(meshchanges3d.isValid());
+	EXPECT_EQ(1, meshchanges3d.getNumberOfChanges());
+	int summaryElementChanges3d = meshchanges3d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges3d);
+	EXPECT_EQ(Element::CHANGE_FLAG_NONE, meshchanges3d.getElementChangeFlags(element2));
+	Meshchanges meshchanges2d = recordChange.lastEvent.getMeshchanges(mesh2d);
+	EXPECT_TRUE(meshchanges2d.isValid());
+	EXPECT_EQ(5, meshchanges2d.getNumberOfChanges());
+	int summaryElementChanges2d = meshchanges2d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges2d);
+	Meshchanges meshchanges1d = recordChange.lastEvent.getMeshchanges(mesh1d);
+	EXPECT_TRUE(meshchanges1d.isValid());
+	EXPECT_EQ(8, meshchanges1d.getNumberOfChanges());
+	int summaryElementChanges1d = meshchanges1d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges1d);
+	Nodesetchanges nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(0, nodesetchanges.getNumberOfChanges());
+	int summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, summaryNodeChanges);
+
+	// test can destroy nodes no longer in use by element1, but not those in element2
+	EXPECT_EQ(RESULT_ERROR_IN_USE, result = nodes.destroyAllNodes());
+	EXPECT_EQ(8, nodes.getSize());
+	// check the right nodes were destroyed
+	for (int n = 0; n < 12; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		if ((n % 3) > 0)
+			EXPECT_TRUE(node.isValid());
+		else
+			EXPECT_FALSE(node.isValid());
+	}
+
+	// check above did notify
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(4, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_REMOVE, summaryNodeChanges);
+
+	// now destroy remaining elements
+	EXPECT_EQ(RESULT_OK, result = mesh3d.destroyAllElements());
+	// element2 should be safely orphaned by the above
+	EXPECT_EQ(0, mesh3d.getSize());
+	EXPECT_EQ(0, mesh2d.getSize());
+	EXPECT_EQ(0, mesh1d.getSize());
+	EXPECT_EQ(8, nodes.getSize());
+
+	// test for correct change notification
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	meshchanges3d = recordChange.lastEvent.getMeshchanges(mesh3d);
+	EXPECT_TRUE(meshchanges3d.isValid());
+	EXPECT_EQ(1, meshchanges3d.getNumberOfChanges());
+	summaryElementChanges3d = meshchanges3d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges3d);
+	meshchanges2d = recordChange.lastEvent.getMeshchanges(mesh2d);
+	EXPECT_TRUE(meshchanges2d.isValid());
+	EXPECT_EQ(6, meshchanges2d.getNumberOfChanges());
+	summaryElementChanges2d = meshchanges2d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges2d);
+	meshchanges1d = recordChange.lastEvent.getMeshchanges(mesh1d);
+	EXPECT_TRUE(meshchanges1d.isValid());
+	EXPECT_EQ(12, meshchanges1d.getNumberOfChanges());
+	summaryElementChanges1d = meshchanges1d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_REMOVE, summaryElementChanges1d);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(0, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, summaryNodeChanges);
+
+	// test can destroy all nodes since no longer used by elements
+	EXPECT_EQ(RESULT_OK, result = nodes.destroyAllNodes());
+	EXPECT_EQ(0, nodes.getSize());
+
+	// check above did notify
+	EXPECT_TRUE(recordChange.lastEvent.isValid());
+	summaryFieldChange = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, summaryFieldChange);
+	coordinatesFieldChange = recordChange.lastEvent.getFieldChangeFlags(coordinates);
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, coordinatesFieldChange);
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodes);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(8, nodesetchanges.getNumberOfChanges());
+	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
+	EXPECT_EQ(Node::CHANGE_FLAG_REMOVE, summaryNodeChanges);
 }

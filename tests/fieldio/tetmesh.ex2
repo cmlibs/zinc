@@ -1,0 +1,427 @@
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node: 1
+  0.000000000000000e+00  1.666666716337204e-01  4.712086915969849e-01
+Node: 2
+  2.500000000000000e-01  1.666666716337204e-01  3.990841507911682e-01
+Node: 3
+  0.000000000000000e+00  3.716512024402618e-01  3.333333432674408e-01
+Node: 4
+  2.500000000000000e-01  2.746208012104034e-01  3.333333432674408e-01
+Node: 5
+  4.203929124702377e-01  1.493296010877703e-01  2.197801091934176e-01
+Node: 6
+  1.139584250632038e-01  4.643906471538776e-01  1.335079616018506e-01
+Node: 7
+  1.047842693131447e-01 -1.216302332864668e-01  4.699816853774054e-01
+Node: 8
+ -2.860847058105710e-01  2.107675698110343e-01  3.460974083574382e-01
+Node: 9
+ -1.962513823038130e-01 -4.501080253267278e-02  4.535003267544548e-01
+Node: 10
+  3.803384588142564e-01 -1.405760195307595e-01  2.852322285787254e-01
+Node: 11
+ -1.929083502819747e-01  4.470959268986263e-01  9.885832549949415e-02
+Node: 12
+  3.519630992810837e-01  3.510716299626377e-01  1.728000075616203e-02
+Node: 13
+  4.941629558374744e-01  2.161220260419368e-02 -4.776890619355161e-02
+Node: 14
+ -4.342549494678548e-01 -1.280795837283121e-01  2.028664604919218e-01
+Node: 15
+  5.975170211622851e-02  4.696202835259190e-01 -1.524235420943749e-01
+Node: 16
+ -4.436311116752566e-01  2.162750019072896e-01  5.080579237677704e-02
+Node: 17
+  3.059586921027154e-01  2.198790120072043e-01 -3.232172109319627e-01
+Node: 18
+  3.357801792341773e-01 -3.664626276811731e-01 -2.429831180536221e-02
+Node: 19
+  1.467415203902673e-01 -3.800090071319727e-01  2.829384166449897e-01
+Node: 20
+ -1.318221433378719e-01 -3.072613948308739e-01  3.659946350752681e-01
+Node: 21
+ -1.154374883138905e-01 -4.827449385891175e-01  2.163220630714846e-02
+Node: 22
+  3.642554562369713e-01 -1.290545252516323e-01 -3.106827481455944e-01
+Node: 23
+ -4.538308441113258e-01  8.927009568986568e-03 -2.025594869912190e-01
+Node: 24
+ -2.979351724064552e-01  3.258026331613518e-01 -2.275975461741350e-01
+Node: 25
+  1.172652229279828e-01 -3.736231267327574e-01 -3.039945589123630e-01
+Node: 26
+ -3.880648138632178e-01 -2.870769116279939e-01 -1.130663799702753e-01
+Node: 27
+ -2.340757437560504e-02  2.747550891633101e-01 -4.139274869231919e-01
+Node: 28
+ -2.288677189695588e-01  6.371397475175061e-02 -4.365041348992175e-01
+Node: 29
+  5.906986972463356e-02 -3.745421489449107e-02 -4.918590620166728e-01
+Node: 30
+ -2.138762823357266e-01 -2.615806908368172e-01 -3.636998197791716e-01
+Node: 31
+  6.859447354030629e-02  1.118023283842205e-01  2.751065169959183e-01
+Node: 32
+ -6.189714264220279e-02  5.430868648784158e-02 -1.850313605766330e-01
+Node: 33
+ -1.351394371444881e-01 -8.313075885524815e-02  1.384394210017095e-01
+Node: 34
+ -5.678852976095067e-02  2.144570715199013e-01  6.332160380245036e-02
+Node: 35
+  1.806666493452832e-02 -2.174053915944322e-01 -1.117340562036783e-01
+Node: 36
+  2.405897473233149e-01  1.409188517333709e-01  1.398100132874502e-01
+Node: 37
+  1.897585376186373e-01  1.738944322465300e-01 -7.581134088151413e-02
+Node: 38
+  1.559087589872702e-01 -7.527185888132173e-02  6.150468029133003e-02
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Shape. Dimension=3, simplex(2;3)*simplex*simplex
+#Scale factor sets=0
+#Nodes=4
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ y. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+ z. l.simplex(2;3)*l.simplex*l.simplex, no modify, standard node based.
+  #Nodes=4
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+Element: 1
+ Nodes:
+ 31 4 3 1
+Element: 2
+ Nodes:
+ 32 34 33 38
+Element: 3
+ Nodes:
+ 31 36 10 38
+Element: 4
+ Nodes:
+ 38 19 33 35
+Element: 5
+ Nodes:
+ 38 7 31 33
+Element: 6
+ Nodes:
+ 29 27 32 17
+Element: 7
+ Nodes:
+ 32 24 28 23
+Element: 8
+ Nodes:
+ 15 32 27 17
+Element: 9
+ Nodes:
+ 34 11 3 6
+Element: 10
+ Nodes:
+ 38 7 10 31
+Element: 11
+ Nodes:
+ 38 7 19 10
+Element: 12
+ Nodes:
+ 29 35 22 32
+Element: 13
+ Nodes:
+ 29 35 25 22
+Element: 14
+ Nodes:
+ 32 38 33 35
+Element: 15
+ Nodes:
+ 21 33 35 26
+Element: 16
+ Nodes:
+ 4 31 3 6
+Element: 17
+ Nodes:
+ 33 23 32 26
+Element: 18
+ Nodes:
+ 24 34 16 32
+Element: 19
+ Nodes:
+ 16 33 8 14
+Element: 20
+ Nodes:
+ 33 23 16 32
+Element: 21
+ Nodes:
+ 33 23 14 16
+Element: 22
+ Nodes:
+ 37 38 22 13
+Element: 23
+ Nodes:
+ 38 19 18 10
+Element: 24
+ Nodes:
+ 12 15 37 6
+Element: 25
+ Nodes:
+ 35 19 21 18
+Element: 26
+ Nodes:
+ 34 36 6 31
+Element: 27
+ Nodes:
+ 18 10 13 38
+Element: 28
+ Nodes:
+ 33 23 26 14
+Element: 29
+ Nodes:
+ 33 9 20 7
+Element: 30
+ Nodes:
+ 32 37 15 34
+Element: 31
+ Nodes:
+ 36 12 13 37
+Element: 32
+ Nodes:
+ 32 37 17 15
+Element: 33
+ Nodes:
+ 4 12 36 6
+Element: 34
+ Nodes:
+ 4 12 5 36
+Element: 35
+ Nodes:
+ 36 38 13 10
+Element: 36
+ Nodes:
+ 34 15 6 37
+Element: 37
+ Nodes:
+ 4 31 2 1
+Element: 38
+ Nodes:
+ 14 33 20 21
+Element: 39
+ Nodes:
+ 38 19 35 18
+Element: 40
+ Nodes:
+ 33 9 14 20
+Element: 41
+ Nodes:
+ 24 34 11 16
+Element: 42
+ Nodes:
+ 31 4 36 6
+Element: 43
+ Nodes:
+ 21 35 25 30
+Element: 44
+ Nodes:
+ 33 34 16 8
+Element: 45
+ Nodes:
+ 38 36 34 31
+Element: 46
+ Nodes:
+ 36 13 12 5
+Element: 47
+ Nodes:
+ 34 15 11 6
+Element: 48
+ Nodes:
+ 31 2 10 36
+Element: 49
+ Nodes:
+ 36 10 5 2
+Element: 50
+ Nodes:
+ 33 34 32 16
+Element: 51
+ Nodes:
+ 38 7 33 19
+Element: 52
+ Nodes:
+ 33 31 38 34
+Element: 53
+ Nodes:
+ 4 36 5 2
+Element: 54
+ Nodes:
+ 5 13 10 36
+Element: 55
+ Nodes:
+ 33 9 8 14
+Element: 56
+ Nodes:
+ 35 19 33 21
+Element: 57
+ Nodes:
+ 4 31 36 2
+Element: 58
+ Nodes:
+ 21 33 26 14
+Element: 59
+ Nodes:
+ 31 7 9 33
+Element: 60
+ Nodes:
+ 23 32 24 16
+Element: 61
+ Nodes:
+ 37 32 22 38
+Element: 62
+ Nodes:
+ 18 38 22 35
+Element: 63
+ Nodes:
+ 33 7 20 19
+Element: 64
+ Nodes:
+ 22 29 32 17
+Element: 65
+ Nodes:
+ 36 37 6 12
+Element: 66
+ Nodes:
+ 21 33 20 19
+Element: 67
+ Nodes:
+ 13 38 36 37
+Element: 68
+ Nodes:
+ 8 31 3 1
+Element: 69
+ Nodes:
+ 31 34 3 6
+Element: 70
+ Nodes:
+ 7 31 9 1
+Element: 71
+ Nodes:
+ 18 38 13 22
+Element: 72
+ Nodes:
+ 29 27 28 32
+Element: 73
+ Nodes:
+ 27 24 28 32
+Element: 74
+ Nodes:
+ 30 32 26 35
+Element: 75
+ Nodes:
+ 33 31 8 9
+Element: 76
+ Nodes:
+ 21 26 35 30
+Element: 77
+ Nodes:
+ 34 36 38 37
+Element: 78
+ Nodes:
+ 30 32 28 23
+Element: 79
+ Nodes:
+ 29 35 30 25
+Element: 80
+ Nodes:
+ 29 35 32 30
+Element: 81
+ Nodes:
+ 30 32 23 26
+Element: 82
+ Nodes:
+ 32 35 22 38
+Element: 83
+ Nodes:
+ 8 11 3 34
+Element: 84
+ Nodes:
+ 16 8 34 11
+Element: 85
+ Nodes:
+ 31 2 7 10
+Element: 86
+ Nodes:
+ 34 31 8 33
+Element: 87
+ Nodes:
+ 31 8 3 34
+Element: 88
+ Nodes:
+ 34 36 37 6
+Element: 89
+ Nodes:
+ 32 30 28 29
+Element: 90
+ Nodes:
+ 15 24 27 32
+Element: 91
+ Nodes:
+ 31 7 2 1
+Element: 92
+ Nodes:
+ 24 34 15 11
+Element: 93
+ Nodes:
+ 37 32 38 34
+Element: 94
+ Nodes:
+ 24 34 32 15
+Element: 95
+ Nodes:
+ 33 35 26 32
+Element: 96
+ Nodes:
+ 13 12 17 37
+Element: 97
+ Nodes:
+ 21 35 18 25
+Element: 98
+ Nodes:
+ 32 37 22 17
+Element: 99
+ Nodes:
+ 18 35 22 25
+Element: 100
+ Nodes:
+ 37 22 17 13
+Element: 101
+ Nodes:
+ 12 15 17 37
+Element: 102
+ Nodes:
+ 9 31 8 1

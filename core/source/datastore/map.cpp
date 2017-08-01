@@ -12,10 +12,10 @@
 
 #include "datastore/map.hpp"
 
-DsMapBase::DsMapBase(int labelsArraySizeIn, DsLabels **labelsArrayIn) :
+DsMapBase::DsMapBase(int labelsArraySizeIn, const DsLabels **labelsArrayIn) :
 	dense(true),
 	labelsArraySize(labelsArraySizeIn),
-	labelsArray(new DsLabels*[labelsArraySizeIn])
+	labelsArray(new const DsLabels*[labelsArraySizeIn])
 {
 	for (int i = 0; i < labelsArraySize; i++)
 		this->labelsArray[i] = cmzn::Access(labelsArrayIn[i]);
@@ -28,7 +28,7 @@ DsMapBase::~DsMapBase()
 	delete[] this->labelsArray;
 }
 
-bool DsMapBase::checkLabelsArrays(int labelsArraySizeIn, DsLabels **labelsArrayIn)
+bool DsMapBase::checkLabelsArrays(int labelsArraySizeIn, const DsLabels **labelsArrayIn)
 {
 	if ((labelsArraySizeIn < 0) || ((0 < labelsArraySizeIn) && !(labelsArrayIn)))
 		return false;

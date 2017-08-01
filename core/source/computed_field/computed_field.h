@@ -36,6 +36,7 @@ if a value is already known.
 #if !defined (COMPUTED_FIELD_H)
 #define COMPUTED_FIELD_H
 
+#include "opencmiss/zinc/types/meshid.h"
 #include "opencmiss/zinc/field.h"
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
@@ -598,14 +599,9 @@ This function returns true if the <field> can find element and xi given
 a set of values.
 ==============================================================================*/
 
-int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+/* Returns true if all fields are defined in the same way at the two elements. */
+bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2);
@@ -741,7 +737,5 @@ enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string);
 char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
 
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
-
-char *cmzn_field_stored_mesh_location_get_mesh_name(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_H) */

@@ -19,6 +19,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -968,90 +969,62 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-If <grid_field> is a single component grid-based field in <element>, creates and
-returns an Element_point_ranges containing all the grid points at which the
-value of <grid_field> is in the <ranges>.
-No Element_point_ranges object is returned without error if:
-- <grid_field> is not grid-based in <element>.
-- No grid points in <element> have <grid_field> value in the given <ranges>.
-==============================================================================*/
 {
-	int grid_value_in_range,i,number_of_grid_values,*values;
-	struct Element_point_ranges *element_point_ranges;
-	struct Element_point_ranges_identifier identifier;
-
-	ENTER(Element_point_ranges_from_grid_field_ranges);
-	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element && FE_element_is_top_level(element, (void *)0) && grid_field &&
-		(1==get_FE_field_number_of_components(grid_field))&&
-		(INT_VALUE==get_FE_field_value_type(grid_field))&&ranges)
-	{
-		if (FE_element_field_is_grid_based(element,grid_field))
-		{
-			if (get_FE_element_field_component_grid_int_values(element,
-				grid_field,/*component_number*/0,&values))
-			{
-				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
-					element, grid_field, /*component_number*/0);
-				/* work out if any values are in the given ranges */
-				grid_value_in_range=0;
-				for (i=0;(i<number_of_grid_values)&&(!grid_value_in_range);i++)
-				{
-					grid_value_in_range=Multi_range_is_value_in_range(ranges,values[i]);
-				}
-				if (grid_value_in_range)
-				{
-					identifier.element=element;
-					identifier.top_level_element=element;
-					identifier.sampling_mode=CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
-					get_FE_element_field_component_grid_map_number_in_xi(element,grid_field,
-						/*component_number*/0, identifier.number_in_xi);
-					/* set exact_xi to something reasonable, just in case it is used */
-					for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
-					{
-						identifier.exact_xi[i]=0.5;
-					}
-					element_point_ranges=CREATE(Element_point_ranges)(&identifier);
-					if (element_point_ranges)
-					{
-						for (i=0;i<number_of_grid_values;i++)
-						{
-							if (Multi_range_is_value_in_range(ranges,values[i]))
-							{
-								Element_point_ranges_add_range(element_point_ranges,i,i);
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Element_point_ranges_from_grid_field_ranges.  "
-							"Could not create Element_point_ranges");
-					}
-				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_ranges_from_grid_field_ranges.  "
-					"Error reading grid field");
-			}
-		}
-	}
-	else
+	if (!(element && element->getMesh() && FE_element_is_top_level(element, (void *)0)
+		&& grid_field && (1 == get_FE_field_number_of_components(grid_field))
+		&& (INT_VALUE == get_FE_field_value_type(grid_field)) && ranges))
 	{
 		display_message(ERROR_MESSAGE,
 			"Element_point_ranges_from_grid_field_ranges.  Invalid argument(s)");
+		return 0;
 	}
-	LEAVE;
-
-	return (element_point_ranges);
-} /* Element_point_ranges_from_grid_field_ranges */
+	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	if (!meshFieldData)
+		return 0;
+	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));
+	const FE_mesh_field_template *mft = component->getMeshfieldtemplate();
+	const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+	if (!eft)
+		return 0;
+	const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
+	const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+	if ((0 == numberOfElementDOFs) || (!gridNumberInXi))
+		return 0;
+	const int *values = component->getElementValues(element->getIndex(), numberOfElementDOFs);
+	if (!values)
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_from_grid_field_ranges.  Failed to get grid values");
+		return 0;
+	}
+	/* work out if any values are in the given ranges */
+	struct Element_point_ranges *element_point_ranges = 0;
+	for (int i = 0; i < numberOfElementDOFs; ++i)
+	{
+		if (Multi_range_is_value_in_range(ranges, values[i]))
+		{
+			if (!element_point_ranges)
+			{
+				struct Element_point_ranges_identifier identifier;
+				identifier.element = element;
+				identifier.top_level_element = element;
+				identifier.sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
+				/* set exact_xi to something reasonable, just in case it is used */
+				for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+					identifier.exact_xi[d] = 0.0;
+				element_point_ranges = CREATE(Element_point_ranges)(&identifier);
+				if (!element_point_ranges)
+				{
+					display_message(ERROR_MESSAGE,
+						"Element_point_ranges_from_grid_field_ranges.  Failed to create Element_point_ranges");
+					return 0;
+				}
+			}
+			Element_point_ranges_add_range(element_point_ranges, i, i);
+		}
+	}
+	return element_point_ranges;
+}
 
 int FE_element_grid_to_Element_point_ranges_list(struct FE_element *element,
 	void *grid_to_list_data_void)
@@ -1107,158 +1080,115 @@ Uses only top level elements.
 int Element_point_ranges_grid_to_multi_range(
 	struct Element_point_ranges *element_point_ranges,
 	void *grid_to_multi_range_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Last parameter is a struct Element_point_ranges_grid_to_multi_range_data.
-If <grid_fe_field> is grid-based as in <element_point_ranges>, adds the values
-for this field for points in the ranges to the <multi_range>.
-If field and element_point_ranges not identically grid-based, clear
-<all_points_native> flag.
-==============================================================================*/
 {
-	int dimension,native,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
-		number_of_grid_values,return_code,*values;
-	struct Element_point_ranges_grid_to_multi_range_data
-		*grid_to_multi_range_data;
+	auto grid_to_multi_range_data =
+		static_cast<struct Element_point_ranges_grid_to_multi_range_data *>(grid_to_multi_range_data_void);
+	int dimension;
 	struct FE_element *element;
-	struct FE_field *grid_fe_field;
-
-	ENTER(Element_point_ranges_grid_to_multi_range);
-	if (element_point_ranges&&(element=element_point_ranges->id.element)&&
-		(dimension=get_FE_element_dimension(element))&&
-		(grid_to_multi_range_data=
-			(struct Element_point_ranges_grid_to_multi_range_data *)
-			grid_to_multi_range_data_void)&&
-		(grid_fe_field=grid_to_multi_range_data->grid_fe_field))
-	{
-		return_code=1;
-		/* work out if element_point_ranges matches the native discretization of
-			 grid_fe_field in element */
-		native=0;
-		if (FE_element_is_top_level(element, (void *)0) &&
-			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
-				element_point_ranges->id.sampling_mode)&&
-			FE_element_field_is_grid_based(element,grid_fe_field))
-		{
-			return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
-				grid_fe_field,/*component_number*/0,number_in_xi);
-			if (return_code)
-			{
-				native=1;
-				for (i=0;(i<dimension)&&native;i++)
-				{
-					if (number_in_xi[i] != element_point_ranges->id.number_in_xi[i])
-					{
-						native=0;
-					}
-				}
-			}
-		}
-		if (native)
-		{
-			return_code=get_FE_element_field_component_grid_int_values(element,
-				grid_fe_field,/*component_number*/0,&values);
-			if (return_code)
-			{
-				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
-					element, grid_fe_field, /*component_number*/0);
-				for (i=0;(i<number_of_grid_values)&&return_code;i++)
-				{
-					if (Multi_range_is_value_in_range(element_point_ranges->ranges,i))
-					{
-						return_code=
-							Multi_range_add_range(grid_to_multi_range_data->multi_range,
-								values[i],values[i]);
-					}
-				}
-				DEALLOCATE(values);
-			}
-		}
-		else
-		{
-			/* clear flag to allow problem to be reported later */
-			grid_to_multi_range_data->all_points_native=0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Element_point_ranges_grid_to_multi_range.  Failed");
-		}
-	}
-	else
+	struct FE_field *grid_field;
+	if (!((element_point_ranges) && (grid_to_multi_range_data)
+		&& (element = element_point_ranges->id.element)
+		&& (dimension = element->getDimension())
+		&& (grid_field = grid_to_multi_range_data->grid_fe_field)
+		&& (INT_VALUE == get_FE_field_value_type(grid_field))))
 	{
 		display_message(ERROR_MESSAGE,
 			"Element_point_ranges_grid_to_multi_range.  Invalid argument(s)");
-		return_code=0;
+		return 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_grid_to_multi_range */
-
-int FE_element_grid_to_multi_range(struct FE_element *element,
-	void *grid_to_multi_range_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Last parameter is a struct FE_element_grid_to_multi_range_data.
-If <grid_fe_field> is grid-based as in <element>, adds all values for this field
-in <element> to the <multi_range>.
-==============================================================================*/
-{
-	int i,number_of_grid_values,return_code,*values;
-	struct FE_element_grid_to_multi_range_data *grid_to_multi_range_data;
-	struct FE_field *grid_fe_field;
-	struct Multi_range *multi_range;
-
-	ENTER(FE_element_grid_to_multi_range);
-	if (element&&(grid_to_multi_range_data=
-		(struct FE_element_grid_to_multi_range_data *)
-		grid_to_multi_range_data_void)&&
-		(grid_fe_field=grid_to_multi_range_data->grid_fe_field)&&
-		(1==get_FE_field_number_of_components(grid_fe_field))&&
-		(INT_VALUE==get_FE_field_value_type(grid_fe_field))&&
-		(multi_range=grid_to_multi_range_data->multi_range))
-	{
-		return_code = 1;
-		if (FE_element_is_top_level(element, (void *)0) &&
-			FE_element_field_is_grid_based(element, grid_fe_field))
+	/* work out if element_point_ranges matches the native discretization of
+		grid_fe_field in element */
+	if (!(FE_element_is_top_level(element, (void *)0)
+		&& (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS == element_point_ranges->id.sampling_mode)))
+		return 1;
+	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	if (!meshFieldData)
+		return 1;
+	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));
+	const FE_mesh_field_template *mft = component->getMeshfieldtemplate();
+	const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+	if (!eft)
+		return 1;
+	const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
+	const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+	if ((0 == numberOfElementDOFs) || (!gridNumberInXi))
+		return 1;
+	bool native = true;
+	for (int d = 0; d < dimension; ++d)
+		if (gridNumberInXi[d] != element_point_ranges->id.number_in_xi[d])
 		{
-			if (get_FE_element_field_component_grid_int_values(element,
-				grid_fe_field,/*component_number*/0,&values))
-			{
-				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
-					element, grid_fe_field, /*component_number*/0);
-				for (i=0;(i<number_of_grid_values)&&return_code;i++)
-				{
-					return_code=Multi_range_add_range(multi_range,values[i],values[i]);
-				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				return_code=0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_grid_to_multi_range.  Failed");
-			}
+			native = false;
+			break;
 		}
+	if (native)
+	{
+		const int *values = component->getElementValues(element->getIndex(), numberOfElementDOFs);
+		if (!values)
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_point_ranges_from_grid_field_ranges.  Failed to get grid values");
+			return 0;
+		}
+		for (int i = 0; i < numberOfElementDOFs; ++i)
+			if (Multi_range_is_value_in_range(element_point_ranges->ranges, i))
+			{
+				if (!Multi_range_add_range(grid_to_multi_range_data->multi_range, values[i], values[i]))
+					return 0;
+			}
 	}
 	else
 	{
+		/* clear flag to allow problem to be reported later */
+		grid_to_multi_range_data->all_points_native = 0;
+	}
+	return 1;
+}
+
+int FE_element_grid_to_multi_range(struct FE_element *element,
+	void *grid_to_multi_range_data_void)
+{
+	auto grid_to_multi_range_data =
+		static_cast<struct FE_element_grid_to_multi_range_data *>(grid_to_multi_range_data_void);
+	struct FE_field *grid_field;
+	struct Multi_range *multi_range;
+	if (!((element) && (grid_to_multi_range_data)
+		&& (grid_field = grid_to_multi_range_data->grid_fe_field)
+		&& (1 == get_FE_field_number_of_components(grid_field))
+		&& (INT_VALUE == get_FE_field_value_type(grid_field))
+		&& (multi_range = grid_to_multi_range_data->multi_range)))
+	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_grid_to_multi_range.  Invalid argument(s)");
-		return_code=0;
+		return 0;
 	}
-	LEAVE;
+	if (!FE_element_is_top_level(element, (void *)0))
+		return 1;
 
-	return (return_code);
-} /* FE_element_grid_to_multi_range */
+	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	if (!meshFieldData)
+		return 1;
+	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));
+	const FE_mesh_field_template *mft = component->getMeshfieldtemplate();
+	const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+	if (!eft)
+		return 1;
+	const int numberOfElementDOFs = eft->getNumberOfElementDOFs();
+	const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+	if ((0 == numberOfElementDOFs) || (!gridNumberInXi))
+		return 1;
+
+	const int *values = component->getElementValues(element->getIndex(), numberOfElementDOFs);
+	if (!values)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_grid_to_multi_range.  Failed to get grid values");
+		return 0;
+	}
+	for (int i = 0; i < numberOfElementDOFs; ++i)
+		if (!Multi_range_add_range(multi_range, values[i], values[i]))
+			return 0;
+	return 1;
+}
 
 static int Field_value_index_ranges_set_grid_values(
 	struct Field_value_index_ranges *field_value_index_ranges,

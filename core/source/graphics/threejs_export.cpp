@@ -883,7 +883,7 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 				if (position_vertex_count > 0)
 				{
 					GLfloat *values = &positions[total_position_vertex_count * 3];
-					for (int i = 0; i < position_vertex_count; i++)
+					for (unsigned int i = 0; i < position_vertex_count; i++)
 					{
 						values[0] = position_vertex_buffer[i*3];
 						values[1] = position_vertex_buffer[i*3 + 1];
@@ -899,7 +899,7 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 				if (normal_vertex_count > 0)
 				{
 					GLfloat *values = &normals[total_normal_vertex_count * 3];
-					for (int i = 0; i < normal_vertex_count; i++)
+					for (unsigned int i = 0; i < normal_vertex_count; i++)
 					{
 						values[0] = normal_buffer[i*3];
 						values[1] = normal_buffer[i*3 + 1];
@@ -916,7 +916,7 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 				if (texture_coordinate0_vertex_count > 0)
 				{
 					GLfloat *values = &uvs[total_texture_coordinate0_vertex_count * 3];
-					for (int i = 0; i < total_texture_coordinate0_vertex_count; i++)
+					for (unsigned int i = 0; i < total_texture_coordinate0_vertex_count; i++)
 					{
 						values[0] = texture_coordinate0_buffer[i*3];
 						values[1] = texture_coordinate0_buffer[i*3 + 1];

@@ -238,8 +238,8 @@ int cmzn_field_image_write(cmzn_field_image_id image_field,
 	{
 		struct Cmgui_image *cmgui_image = Texture_get_image(cmzn_field_image_get_texture(image_field));
 		const cmzn_stream_properties_list streams_list = streaminformation_image->getResourcesList();
-		int number_of_streams = streams_list.size();
-		if ((number_of_streams > 0 ) && cmgui_image &&
+		const int number_of_streams = static_cast<int>(streams_list.size());
+		if ((number_of_streams > 0) && cmgui_image &&
 			(Cmgui_image_get_number_of_images(cmgui_image) == number_of_streams))
 		{
 			cmzn_stream_properties_list_const_iterator iter;

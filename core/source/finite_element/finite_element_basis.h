@@ -11,7 +11,7 @@
 #if !defined (FINITE_ELEMENT_BASIS_H)
 #define FINITE_ELEMENT_BASIS_H
 
-#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/elementbasisid.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -69,6 +69,18 @@ list.
 DECLARE_LIST_TYPES(FE_basis);
 
 DECLARE_MANAGER_TYPES(FE_basis);
+
+/** Mode for modifying basis values for cycling theta every 2*PI.
+  * @see FE_basis_modify_theta_in_xi1 */
+enum FE_basis_modify_theta_mode
+{
+	FE_BASIS_MODIFY_THETA_MODE_INVALID,
+	FE_BASIS_MODIFY_THETA_MODE_CLOSEST_IN_XI1,
+	FE_BASIS_MODIFY_THETA_MODE_DECREASING_IN_XI1,
+	FE_BASIS_MODIFY_THETA_MODE_INCREASING_IN_XI1,
+	FE_BASIS_MODIFY_THETA_MODE_NON_DECREASING_IN_XI1,
+	FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1
+};
 
 /*
 Global functions
@@ -168,9 +180,20 @@ If fails, puts zero at <dimension_address>.
 ==============================================================================*/
 
 /**
- * Returns the number of basis functions of <basis>, or 0 if invalid basis.
+ * @return  Function number >=0 from node number and node function, or -1 if
+ * invalid.
+ * @param nodeNumber  Basis node number starting at 0.
  */
-int FE_basis_get_number_of_functions(struct FE_basis *basis);
+int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
+	int nodeNumber, int nodeFunctionIndex);
+
+/**
+ * @return  Number one higher than last function number for same basis node
+ * as supplied function number, or 0 if invalid.
+ * @param functionNumber  Basis function number starting at 0.
+ */
+int FE_basis_get_basis_node_function_number_limit(struct FE_basis *basis,
+	int functionNumber);
 
 /**
  * @return  The number of nodes expected for basis, or 0 if invalid basis.
@@ -195,7 +218,8 @@ cmzn_elementbasis_function_type FE_basis_type_to_cmzn_elementbasis_function_type
 /**
  * Returns the basis type of <basis> on <xi_number> -- on main diagonal of
  * type array. The first xi_number is 0.
- * @return  FE_basis_type
+ * @param basis_type_address  Address for returning basis type.
+ * @return  1 on success, 0 on failure
  */
 int FE_basis_get_xi_basis_type(struct FE_basis *basis,
 	int xi_number, enum FE_basis_type *basis_type_address);
@@ -318,5 +342,31 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 	int **inherited_arguments_address,int *number_of_inherited_values_address,
 	Standard_basis_function **inherited_standard_basis_function_address,
 	FE_value **blending_matrix_address);
+
+/**
+ * Modifies element values for basis to handle theta cycling every 2*PI.
+ * This is a dirty hack, and actually performs two separate tasks:
+ * 1. At apex points with several elements interpolating polar theta
+ * coordinates around the apex, it copies theta values from the parameters for
+ * the next local nodes away from the apex. This makes up for these values not
+ * being properly handled by versions or a general map. Note that the previous
+ * version of this function determined the apex case by calling 'node_on_axis'
+ * which returned true if r was 0. This new version uses only the theta
+ * parameter values and assumes the xi1 * +/-{xi2|xi3} plane at which all theta
+ * value parameters are zero is the apex.
+ * 2. Adjusts the values according to the mode e.g. theta increase or decrease
+ * in xi1 direction. This should probably be handled by explictly adding or
+ * subtracting constant 2*PI to the values at one end of xi1 or other, as a
+ * standard part of the 
+ * Only certain tensor product bases are supported.
+ * Only modes giving theta varying in xi1 are implemented.
+ * @param basis  The basis the parameters are for.
+ * @param mode  The modify mode to apply.
+ * @param values  The element parameter values, same as the number of basis
+ * functions.
+ * @return  True on success, false on failure.
+ */
+bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
+	enum FE_basis_modify_theta_mode mode, FE_value *values);
 
 #endif /* !defined (FINITE_ELEMENT_BASIS_H) */

@@ -15,11 +15,17 @@
 
 #include <cmath>
 #include <cstdlib>
+#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldconstant.h"
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldlogicaloperators.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/fieldtime.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"
@@ -716,7 +722,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 							if (element_with_identifier)
 							{
 								next_spare_element_number = fe_mesh->get_next_FE_element_identifier(next_spare_element_number);
-								return_code = fe_mesh->change_FE_element_identifier(element_with_identifier, next_spare_element_number);
+								return_code = element_with_identifier->setIdentifier(next_spare_element_number);
 								if (return_code != CMZN_OK)
 								{
 									display_message(ERROR_MESSAGE,
@@ -724,7 +730,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 									break;
 								}
 							}
-							return_code = fe_mesh->change_FE_element_identifier(element_values[i].element, element_values[i].new_number);
+							return_code = element_values[i].element->setIdentifier(element_values[i].new_number);
 							if (return_code != CMZN_OK)
 							{
 								display_message(ERROR_MESSAGE,

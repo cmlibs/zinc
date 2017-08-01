@@ -92,7 +92,7 @@ public:
 			*fieldNames = 0;
 			if (!strings_vectors.empty())
 			{
-				int size = strings_vectors.size();
+				const size_t size = strings_vectors.size();
 				char **names_array = *fieldNames;
 				ALLOCATE(names_array, char *, size);
 				std::vector<std::string>::iterator pos;
@@ -104,7 +104,7 @@ public:
 					location++;
 				}
 				*fieldNames = names_array;
-				return strings_vectors.size();
+				return static_cast<int>(strings_vectors.size());
 			}
 		}
 		return 0;
@@ -127,15 +127,18 @@ public:
 		return 0;
 	}
 
-	int setGroupName(const char *group_name)
+	int setGroupName(const char *groupNameIn)
 	{
-		if (groupName)
+		char *tmp = 0;
+		if (groupNameIn)
 		{
-			DEALLOCATE(groupName);
-			groupName = 0;
+			tmp = duplicate_string(groupNameIn);
+			if (!tmp)
+				return CMZN_ERROR_MEMORY;
 		}
-		if (group_name)
-			groupName = duplicate_string(group_name);
+		if (this->groupName)
+			DEALLOCATE(this->groupName);
+		this->groupName = tmp;
 		return CMZN_OK;
 	}
 
@@ -377,7 +380,7 @@ public:
 			*fieldNames = 0;
 			if (!strings_vectors.empty())
 			{
-				int size = strings_vectors.size();
+				const size_t size = strings_vectors.size();
 				char **names_array = *fieldNames;
 				ALLOCATE(names_array, char *, size);
 				std::vector<std::string>::iterator pos;
@@ -389,7 +392,7 @@ public:
 					location++;
 				}
 				*fieldNames = names_array;
-				return strings_vectors.size();
+				return static_cast<int>(strings_vectors.size());
 			}
 		}
 		return 0;

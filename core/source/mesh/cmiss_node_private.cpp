@@ -11,8 +11,11 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdarg.h>
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "opencmiss/zinc/timesequence.h"
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"
@@ -649,16 +652,14 @@ public:
 
 	FE_region *getFeRegion() const { return fe_nodeset->get_FE_region(); }
 
+	/** @return  Allocated name */
 	char *getName()
 	{
-		char *name = 0;
 		if (group)
-			name = cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
-		else if (this->fe_nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
-			name = duplicate_string("datapoints");
+			return cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
 		else
-			name = duplicate_string("nodes");
-		return name;
+			return duplicate_string(this->fe_nodeset->getName());
+		return 0;
 	}
 
 	cmzn_nodeset_id getMaster()
@@ -1059,7 +1060,6 @@ cmzn_nodetemplate_id cmzn_nodetemplate_access(cmzn_nodetemplate_id node_template
 	return 0;
 }
 
-
 int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address)
 {
 	if (node_template_address)
@@ -1305,78 +1305,4 @@ cmzn_node_change_flags cmzn_nodesetchanges_get_summary_node_change_flags(
 	if (nodesetchanges)
 		return nodesetchanges->getSummaryNodeChangeFlags();
 	return CMZN_NODE_CHANGE_FLAG_NONE;
-}
-
-FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
-	enum cmzn_node_value_label nodal_value_label)
-{
-	FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-	switch (nodal_value_label)
-	{
-		case CMZN_NODE_VALUE_LABEL_INVALID:
-			fe_nodal_value_type = FE_NODAL_UNKNOWN;
-			break;
-		case CMZN_NODE_VALUE_LABEL_VALUE:
-			fe_nodal_value_type = FE_NODAL_VALUE;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS1:
-			fe_nodal_value_type = FE_NODAL_D_DS1;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS2:
-			fe_nodal_value_type = FE_NODAL_D_DS2;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
-			fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS3:
-			fe_nodal_value_type = FE_NODAL_D_DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
-			fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
-			fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
-			fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
-			break;
-	}
-	return fe_nodal_value_type;
-}
-
-enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
-	FE_nodal_value_type value_type)
-{
-	enum cmzn_node_value_label value_label = CMZN_NODE_VALUE_LABEL_INVALID;
-	switch (value_type)
-	{
-		case FE_NODAL_UNKNOWN:
-			value_label = CMZN_NODE_VALUE_LABEL_INVALID;
-			break;
-		case FE_NODAL_VALUE:
-			value_label = CMZN_NODE_VALUE_LABEL_VALUE;
-			break;
-		case FE_NODAL_D_DS1:
-			value_label = CMZN_NODE_VALUE_LABEL_D_DS1;
-			break;
-		case FE_NODAL_D_DS2:
-			value_label = CMZN_NODE_VALUE_LABEL_D_DS2;
-			break;
-		case FE_NODAL_D2_DS1DS2:
-			value_label = CMZN_NODE_VALUE_LABEL_D2_DS1DS2;
-			break;
-		case FE_NODAL_D_DS3:
-			value_label = CMZN_NODE_VALUE_LABEL_D_DS3;
-			break;
-		case FE_NODAL_D2_DS1DS3:
-			value_label = CMZN_NODE_VALUE_LABEL_D2_DS1DS3;
-			break;
-		case FE_NODAL_D2_DS2DS3:
-			value_label = CMZN_NODE_VALUE_LABEL_D2_DS2DS3;
-			break;
-		case FE_NODAL_D3_DS1DS2DS3:
-			value_label = CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3;
-			break;
-	}
-	return value_label;
 }

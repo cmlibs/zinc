@@ -14,7 +14,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/types/fieldfiniteelementid.h"
 #include "computed_field/computed_field.h"
 #include "general/enumerator.h"
 #include "general/list.h"
@@ -141,16 +141,13 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 ==============================================================================*/
 
+/**
+ * Returns true if field is a 1 component integer finite element field which is
+ * defined grid-based in element.
+ * Used for choosing field suitable for identifying grid points.
+ */
 int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
-==============================================================================*/
+	cmzn_field_id field, void *element_void);
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
 	void *dummy_void);
@@ -187,5 +184,12 @@ cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string);
 
 char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);
+
+/** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
+const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
+
+/** Discover and set destination host mesh from source field, or check it matches if already set.
+  * @return  Result OK on success, any other value on failure. */
+int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field);
 
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

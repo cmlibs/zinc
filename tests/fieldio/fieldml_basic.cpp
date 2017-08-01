@@ -9,7 +9,9 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
@@ -18,6 +20,7 @@
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
 #include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
@@ -78,6 +81,28 @@ void check_cube_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of unit cube model using EX2 format
+// cube model defines a 3-D RC coordinates field and 1-D pressure field
+// using the same trilinear Lagrange scalar template.
+// field dofs and mesh nodes connectivity are inline text in the fieldml document
+TEST(ZincRegion, ex2_cube)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	check_cube_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_cube_model(testFm);
+}
+
+// Test I/O of unit cube model using FieldML format
 // cube model defines a 3-D RC coordinates field and 1-D pressure field
 // using the same trilinear Lagrange scalar template.
 // field dofs and mesh nodes connectivity are inline text in the fieldml document
@@ -86,6 +111,7 @@ TEST(ZincRegion, fieldml_cube)
 	ZincTestSetupCpp zinc;
 	int result;
 
+	// initial input file is in legacy FieldML format not using element field templates
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_FIELDML_CUBE_RESOURCE)));
 	check_cube_model(zinc.fm);
@@ -194,6 +220,28 @@ void check_tetmesh_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of tetmesh model using EX2 format
+// tetmesh model defines a 3-D RC coordinates field over a tetrahedral
+// mesh in approximate unit sphere shape with trilinearSimplex basis/
+// node coordinates and connectivity are read from separate files
+TEST(ZincRegion, ex2_tetmesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_TETMESH_RESOURCE)));
+	check_tetmesh_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_tetmesh_model(testFm);
+}
+
+// Test I/O of tetmesh model using FieldML format
 // tetmesh model defines a 3-D RC coordinates field over a tetrahedral
 // mesh in approximate unit sphere shape with trilinearSimplex basis/
 // node coordinates and connectivity are read from separate files
@@ -281,6 +329,26 @@ void check_wheel_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of wheel model in EX2 format
+// wheel_indirect model is the same as the wheel_direct model except that it
+// uses a more efficient indirect element-to-function map
+TEST(ZincRegion, ex2_wheel)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_WHEEL_RESOURCE)));
+	check_wheel_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_wheel_model(testFm);
+}
+
+// test reading FieldML wheel model with direct element function map
 // wheel_direct model defines a 3-D RC coordinates field over a wheel mesh
 // consisting of 6 wedge elements in the centre, and 6 cube elements around
 // them, all coordinates interpolated with triquadratic bases.
@@ -299,6 +367,7 @@ TEST(ZincRegion, fieldml_wheel_direct)
 	check_wheel_model(zinc.fm);
 }
 
+// Test I/O of wheel model in FieldML format
 // wheel_indirect model is the same as the wheel_direct model except that it
 // uses a more efficient indirect element-to-function map
 TEST(ZincRegion, fieldml_wheel_indirect)
@@ -551,10 +620,11 @@ void check_mixed_template_squares(Fieldmodule& fm)
 
 }
 
+// Test reading EX model, writing and re-reading in EX2 format
 // 2D example with different templates for components of the coordinates field
 // and for two different scalar fields including mix of bilinear and
 // biquadratic elements, with latter two fields not defined on whole mesh.
-TEST(ZincRegion, mixed_template_squares)
+TEST(ZincRegion, ex2_mixed_template_squares)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -562,12 +632,25 @@ TEST(ZincRegion, mixed_template_squares)
 	create_mixed_template_squares(zinc.fm);
 	check_mixed_template_squares(zinc.fm);
 
-	// test writing and re-reading in EX format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_mixed_template_squares(testFm1);
+}
+
+// Test reading EX model, writing and re-reading in FieldML format
+// 2D example with different templates for components of the coordinates field
+// and for two different scalar fields including mix of bilinear and
+// biquadratic elements, with latter two fields not defined on whole mesh.
+TEST(ZincRegion, fieldml_mixed_template_squares)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	create_mixed_template_squares(zinc.fm);
+	check_mixed_template_squares(zinc.fm);
 
 	// test writing and re-reading in FieldML format
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.fieldml"));
@@ -645,27 +728,234 @@ TEST(ZincRegion, lines_alternate_node_order)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_ALTERNATE_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	check_lines_unit_scale_factors_model(zinc.fm);
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
 
-// Test cannot yet write models with inconsistent local-to-global-node map
+// Test writing models with inconsistent local-to-global-node map
 // for the same basis in an element.
 TEST(ZincRegion, lines_inconsistent_node_order)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_INCONSISTENT_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(ERROR_NOT_IMPLEMENTED, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
+
+namespace {
+
+void check_cube_element_xi_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	const double offsetValues[3] = { 0.1, 0.2, -0.35 };
+	FieldConstant offset = fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	FieldAdd bob = coordinates + offset;
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, result = bob.setName("bob"));
+
+	Field element_xi = fm.findFieldByName("element_xi");
+	EXPECT_TRUE(element_xi.isValid());
+	EXPECT_EQ(Field::VALUE_TYPE_MESH_LOCATION, element_xi.getValueType());
+	Field hostbob = fm.createFieldEmbedded(bob, element_xi);
+	EXPECT_TRUE(hostbob.isValid());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(1, mesh3d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+	Nodeset datapoints = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_EQ(5, datapoints.getSize());
+
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+
+	const double xiExpected[5][3] = {
+		{ 0.25, 0.25, 0.75 },
+		{ 0.25, 0.50, 0.75 },
+		{ 1.00, 0.25, 0.75 },
+		{ 1.00, 1.00, 1.00 },
+		{ 0.00, 0.00, 0.00 }
+	};
+	double xiOut[3];
+	double hostbobOut[3];
+	const double tolerance = 1.0E-8;
+	Fieldcache cache = fm.createFieldcache();
+	for (int i = 0; i < 5; ++i)
+	{
+		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
+		EXPECT_TRUE(datapoint.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setNode(datapoint));
+		Element elementOut = element_xi.evaluateMeshLocation(cache, 3, xiOut);
+		EXPECT_EQ(element1, elementOut);
+		EXPECT_NEAR(xiExpected[i][0], xiOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1], xiOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2], xiOut[2], tolerance);
+		EXPECT_EQ(RESULT_OK, result = hostbob.evaluateReal(cache, 3, hostbobOut));
+		EXPECT_NEAR(xiExpected[i][0] + offsetValues[0], hostbobOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1] + offsetValues[1], hostbobOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2] + offsetValues[2], hostbobOut[2], tolerance);
+	}
+}
+
+}
+
+TEST(FieldIO, cube_element_xi)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	// Test can't merge element:xi locations unless host elements have been defined first
+	EXPECT_EQ(RESULT_ERROR_INCOMPATIBLE_DATA, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+
+	// read the cube host mesh
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+
+	// Test can't read old EX format that had different dimension elements for element:xi field
+	EXPECT_EQ(RESULT_ERROR_GENERAL, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_FAIL_RESOURCE)));
+
+	// now read the datapoints with element:xi field
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+	check_cube_element_xi_model(zinc.fm);
+
+	// test writing datapoints and re-reading in EX2 format
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	StreamresourceFile srf = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2");
+	EXPECT_TRUE(srf.isValid());
+	EXPECT_EQ(RESULT_OK, result = sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_DATAPOINTS));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_cube_element_xi_model(testFm1);
+}
+
+namespace {
+
+void check_ex_element_grid_constant_indexed_fields(Fieldmodule& fm)
+{
+	int result;
+
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, coordinates.getValueType());
+	Field materialType = fm.findFieldByName("material_type");
+	EXPECT_TRUE(materialType.isValid());
+	EXPECT_EQ(1, materialType.getNumberOfComponents());
+	// integer type is not yet presented in the public API, currently reports as REAL
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, materialType.getValueType());
+	Field materialName = fm.findFieldByName("material_name");
+	EXPECT_TRUE(materialName.isValid());
+	EXPECT_EQ(1, materialName.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, materialName.getValueType());
+	Field conductivity = fm.findFieldByName("conductivity");
+	EXPECT_TRUE(conductivity.isValid());
+	EXPECT_EQ(1, conductivity.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, conductivity.getValueType());
+
+	Field magneticFieldVector = fm.findFieldByName("magnetic field vector");
+	EXPECT_TRUE(magneticFieldVector.isValid());
+	EXPECT_EQ(3, magneticFieldVector.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, magneticFieldVector.getValueType());
+
+	Field potential = fm.findFieldByName("potential");
+	EXPECT_TRUE(potential.isValid());
+	EXPECT_EQ(1, potential.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, potential.getValueType());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const double xi[3] = { 0.1, 0.2, 0.4 };
+	const double expectedConductivityOut[2] = { 27.4, 20.2 };
+	const double expectedCoordinatesOut[2][3] = { { 1, 2, 4 }, { 11, 2, 4 } };
+	const double expectedMagneticFieldVectorOut[3] = { 0.1, 0.2, 0.9 };
+	const char *expectedMaterialNameOut[2] = { "copper", "\"mixed\" alloy" };
+	const double expectedMaterialTypeOut[2] = { 1, 3 };
+	const double expectedPotentialOut[2] = { 4.4947897920000015, 4.3176384679999993 };
+	for (int e = 0; e < 2; ++e)
+	{
+		double conductivityOut, coordinatesOut[3], magneticFieldVectorOut[3], materialTypeOut, potentialOut;
+
+		Element element = mesh3d.findElementByIdentifier(e + 1);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setMeshLocation(element, 3, xi));
+
+		EXPECT_EQ(RESULT_OK, result = conductivity.evaluateReal(cache, 1, &conductivityOut));
+		EXPECT_DOUBLE_EQ(expectedConductivityOut[e], conductivityOut);
+
+		EXPECT_EQ(RESULT_OK, result = coordinates.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(expectedCoordinatesOut[e][c], coordinatesOut[c], 1.0E-6);
+
+		EXPECT_EQ(RESULT_OK, result = magneticFieldVector.evaluateReal(cache, 3, magneticFieldVectorOut));
+		// constant field should be same in both elements:
+		for (int c = 0; c < 3; ++c)
+			EXPECT_DOUBLE_EQ(expectedMagneticFieldVectorOut[c], magneticFieldVectorOut[c]);
+
+		char *materialNameOut = materialName.evaluateString(cache);
+		EXPECT_STREQ(expectedMaterialNameOut[e], materialNameOut);
+		cmzn_deallocate(materialNameOut);
+		materialNameOut = 0;
+
+		EXPECT_EQ(RESULT_OK, result = materialType.evaluateReal(cache, 1, &materialTypeOut));
+		EXPECT_DOUBLE_EQ(expectedMaterialTypeOut[e], materialTypeOut);
+
+		EXPECT_EQ(RESULT_OK, result = potential.evaluateReal(cache, 1, &potentialOut));
+		EXPECT_NEAR(expectedPotentialOut[e], potentialOut, 1.0E-6);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exelem_formats
+TEST(FieldIO, ex_element_grid_constant_indexed_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_BLOCK_GRID_RESOURCE)));
+	check_ex_element_grid_constant_indexed_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_element_grid_constant_indexed_fields(testFm1);
+}
+

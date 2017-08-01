@@ -19,6 +19,8 @@ Computed field types
 Types used only internally to computed fields.
 */
 
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldcache.h"
 #include "general/cmiss_set.hpp"
 #include "computed_field/field_location.hpp"
 #include "computed_field/field_cache.hpp"

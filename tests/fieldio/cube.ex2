@@ -1,0 +1,117 @@
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+2) pressure, field, rectangular cartesian, real, #Components=1
+ 1. #Values=1 (value)
+Node: 1
+  0.000000000000000e+00  0.000000000000000e+00  0.000000000000000e+00
+  8.000000000000000e+04
+Node: 2
+  1.000000000000000e+00  0.000000000000000e+00  0.000000000000000e+00
+  1.000000000000000e+05
+Node: 3
+  0.000000000000000e+00  1.000000000000000e+00  0.000000000000000e+00
+  1.000000000000000e+05
+Node: 4
+  1.000000000000000e+00  1.000000000000000e+00  0.000000000000000e+00
+  8.000000000000000e+04
+Node: 5
+  0.000000000000000e+00  0.000000000000000e+00  1.000000000000000e+00
+  1.000000000000000e+05
+Node: 6
+  1.000000000000000e+00  0.000000000000000e+00  1.000000000000000e+00
+  8.000000000000000e+04
+Node: 7
+  0.000000000000000e+00  1.000000000000000e+00  1.000000000000000e+00
+  8.000000000000000e+04
+Node: 8
+  1.000000000000000e+00  1.000000000000000e+00  1.000000000000000e+00
+  1.000000000000000e+05
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Shape. Dimension=3, line*line*line
+#Scale factor sets=0
+#Nodes=8
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+2) pressure, field, rectangular cartesian, real, #Components=1
+ 1. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+Element: 1
+ Nodes:
+ 1 2 3 4 5 6 7 8

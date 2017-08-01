@@ -742,7 +742,7 @@ void AnalyzeImageHandler::readImageData(void *imgBuffer, int buffer_length)
 	data = imgBuffer;
 	int bytes = getComponentDepth()/4;
 	size_t sz = buffer_length / bytes;
-	readImageInternal(sz);
+	readImageInternal(static_cast<unsigned int>(sz));
 }
 
 void AnalyzeImageHandler::readImageData()
@@ -770,7 +770,7 @@ void AnalyzeImageHandler::readImageData()
 	int bytes = getComponentDepth()/4;
 	ALLOCATE(data, char, bytes*sz);
 	fread(data, sizeof(char), bytes*sz, file);
-	readImageInternal(sz);
+	readImageInternal(static_cast<unsigned int>(sz));
 }
 
 int AnalyzeImageHandler::getOrientation() const

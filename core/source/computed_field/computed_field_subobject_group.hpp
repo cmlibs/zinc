@@ -638,9 +638,9 @@ public:
 
 		bool isParentElementCompatible(cmzn_element_id element)
 		{
-			FE_region *fe_region = this->fe_nodeset->get_FE_region();
-			FE_region *element_fe_region = FE_element_get_FE_region(element);
-			return (element_fe_region == fe_region);
+			if ((element) && element->getMesh())
+				return (this->fe_nodeset->get_FE_region() == element->getMesh()->get_FE_region());
+			return false;
 		}
 
 		/**

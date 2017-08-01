@@ -24,6 +24,7 @@
 #include <opencmiss/zinc/fieldmatrixoperators.h>
 #include <opencmiss/zinc/fieldvectoroperators.h>
 #include <opencmiss/zinc/fieldtime.h>
+#include <opencmiss/zinc/mesh.h>
 #include <opencmiss/zinc/node.h>
 #include <opencmiss/zinc/region.h>
 #include <opencmiss/zinc/status.h>

@@ -31,6 +31,7 @@ Global types
 
 struct cmzn_font;
 struct cmzn_scene;
+class DsLabelsChangeLog;
 
 enum GT_object_type
 /*******************************************************************************
@@ -559,13 +560,12 @@ typedef int (GT_object_primitive_object_name_conditional_function) \
 	(int object_name, void *user_data);
 
 /*
- * Mark primitives in the graphics object whose object name integer is matched
- * by the conditional function + user data as invalid.
+ * Mark primitives in the graphics object whose object name integer index
+ * is marked as changed in the changeLog.
  * This means those objects' primitives must be rebuilt, but others are kept.
  */
-int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_object,
-	GT_object_primitive_object_name_conditional_function *conditional_function,
-	void *user_data);
+int GT_object_invalidate_selected_primitives(struct GT_object *graphics_object,
+	DsLabelsChangeLog *changeLog);
 
 /**
  * Clears all primitives and vertext arrays from graphics object.

@@ -32,9 +32,13 @@
 
 %{
 #include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/nodetemplate.hpp"
+#include "opencmiss/zinc/nodeset.hpp"
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/fieldconditional.hpp"
 %}
 
 %include "opencmiss/zinc/node.hpp"
+%include "opencmiss/zinc/nodetemplate.hpp"
+%include "opencmiss/zinc/nodeset.hpp"
 

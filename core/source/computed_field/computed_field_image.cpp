@@ -15,6 +15,7 @@
 #include "opencmiss/zinc/status.h"
 #include "opencmiss/zinc/stream.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_find_xi_graphics.h"

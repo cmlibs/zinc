@@ -14,7 +14,6 @@
 #include "opencmiss/zinc/fieldgroup.h"
 #include "configure/version.h"
 #include "context/context.h"
-#include "curve/curve.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -34,7 +33,6 @@ cmzn_context::cmzn_context(const char *idIn) :
 	element_point_ranges_selection(0),
 	io_stream_package(0),
 	timekeepermodule(cmzn_timekeepermodule::create()),
-	curve_manager(0),
 	graphics_module(0),
 	access_count(1)
 {
@@ -63,8 +61,6 @@ cmzn_context::~cmzn_context()
 		cmzn_region_set_context_private(*iter, 0);
 	if (this->element_point_ranges_selection)
 		DESTROY(Element_point_ranges_selection)(&this->element_point_ranges_selection);
-	if (this->curve_manager)
-		DESTROY(MANAGER(Curve))(&this->curve_manager);
 	if (this->io_stream_package)
 		DESTROY(IO_stream_package)(&this->io_stream_package);
 	cmzn_timekeepermodule::deaccess(this->timekeepermodule);
@@ -226,27 +222,6 @@ cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(cmzn_context_id conte
 	if (context && context->timekeepermodule)
 		return context->timekeepermodule->access();
 	return 0;
-}
-
-struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(
-	cmzn_context_id context)
-{
-	MANAGER(Curve) *curve_manager = NULL;
-	if (context)
-	{
-		if (!context->curve_manager)
-		{
-			context->curve_manager = CREATE(MANAGER(Curve))();
-		}
-		curve_manager = context->curve_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_default_curve_manager.  "
-			"Missing context");
-	}
-	return curve_manager;
 }
 
 cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(

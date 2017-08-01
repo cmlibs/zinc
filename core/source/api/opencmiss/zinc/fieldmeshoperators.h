@@ -15,6 +15,7 @@
 #include "types/fieldmoduleid.h"
 #include "types/elementid.h"
 #include "types/fieldmeshoperatorsid.h"
+#include "types/meshid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
 

@@ -13,8 +13,11 @@ Functions for updating values of one computed field from those of another.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -32,9 +35,20 @@ int cmzn_nodeset_assign_field_from_source(
 	int return_code = 1;
 	if (nodeset && destination_field && source_field)
 	{
+		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
+		if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+		{
+			// element_xi fields used to allow locations in multiple meshes, but are now
+			// restricted to a single host mesh. This must be discovered if necessary.
+			// This only happens when read from legacy EX format or created in Cmgui.
+			const int result = cmzn_field_discover_element_xi_host_mesh_from_source(destination_field, source_field);
+			if (CMZN_OK != result)
+			{
+				return 0;
+			}
+		}
 		const int number_of_components =
 			Computed_field_get_number_of_components(destination_field);
-		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		// can always evaluate to a string value
 		if ((value_type == CMZN_FIELD_VALUE_TYPE_STRING) ||
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
@@ -165,133 +179,128 @@ int cmzn_element_assign_grid_field_from_source_sub(
 		int number_of_components = cmzn_field_get_number_of_components(data->source_field);
 		element_point_ranges = (struct Element_point_ranges *)NULL;
 		return_code = 1;
-		/* trivial rejection to see if element has storage for any grid based field 
-			- no faces or lines */
-		if (FE_element_has_values_storage(element))
+		if (Computed_field_get_native_discretization_in_element(
+			data->destination_field, element,
+			element_point_ranges_identifier.number_in_xi))
 		{
-			if (Computed_field_get_native_discretization_in_element(
-				data->destination_field, element,
-				element_point_ranges_identifier.number_in_xi))
+			destination_field_is_grid_based = 1;
+		}
+		else
+		{
+			destination_field_is_grid_based = 0;
+		}
+		if (data->group_field)
+		{
+			if ((CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
+				cmzn_field_evaluate_boolean(data->group_field, data->field_cache))
 			{
-				destination_field_is_grid_based = 1;
+				element_selected = 1;
+				can_select_individual_points = 0;
 			}
 			else
 			{
-				destination_field_is_grid_based = 0;
+				element_selected = 0;
+				can_select_individual_points = 1;
 			}
-			if (data->group_field)
+		}
+		else
+		{
+			element_selected = 1;
+			can_select_individual_points = 1;
+		}
+		if (destination_field_is_grid_based)
+		{
+			if (can_select_individual_points &&
+				data->element_point_ranges_selection)
 			{
-				if ((CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
-					cmzn_field_evaluate_boolean(data->group_field, data->field_cache))
+				element_point_ranges_identifier.element = element;
+				element_point_ranges_identifier.top_level_element = element;
+				element_point_ranges_identifier.sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
+				/* already set the number_in_xi, above */
+				if (0 != (element_point_ranges = ACCESS(Element_point_ranges)(
+							FIND_BY_IDENTIFIER_IN_LIST(
+							Element_point_ranges, identifier)(&element_point_ranges_identifier,
+								Element_point_ranges_selection_get_element_point_ranges_list(
+									data->element_point_ranges_selection)))))
 				{
 					element_selected = 1;
-					can_select_individual_points = 0;
 				}
 				else
 				{
 					element_selected = 0;
-					can_select_individual_points = 1;
 				}
 			}
 			else
 			{
-				element_selected = 1;
-				can_select_individual_points = 1;
+				element_point_ranges_identifier.element = element;
+				element_point_ranges_identifier.top_level_element = element;
+				element_point_ranges_identifier.sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
+				/* already set the number_in_xi, above */
+				element_point_ranges = ACCESS(Element_point_ranges)(
+					CREATE(Element_point_ranges)(
+						&element_point_ranges_identifier));
+				FE_element_get_xi_points(element, 
+					element_point_ranges_identifier.sampling_mode,
+					element_point_ranges_identifier.number_in_xi,
+					element_point_ranges_identifier.exact_xi,
+					(cmzn_fieldcache_id)0,
+					/*coordinate_field*/(struct Computed_field *)NULL,
+					/*density_field*/(struct Computed_field *)NULL,
+					&maximum_element_point_number,
+					/*xi_points_address*/(FE_value_triple **)NULL);
+				Element_point_ranges_add_range(element_point_ranges,
+					0, maximum_element_point_number - 1);
 			}
-			if (destination_field_is_grid_based)
+		}
+		if (element_selected)
+		{
+			data->selected_count++;
+			if (destination_field_is_grid_based &&
+				(CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
+				cmzn_field_is_defined_at_location(data->source_field, data->field_cache) &&
+				ALLOCATE(values, FE_value, number_of_components))
 			{
-				if (can_select_individual_points &&
-					data->element_point_ranges_selection)
+				if (element_point_ranges)
 				{
-					element_point_ranges_identifier.element = element;
-					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
-					/* already set the number_in_xi, above */
-					if (0 != (element_point_ranges = ACCESS(Element_point_ranges)(
-							 FIND_BY_IDENTIFIER_IN_LIST(
-							 Element_point_ranges, identifier)(&element_point_ranges_identifier,
-								 Element_point_ranges_selection_get_element_point_ranges_list(
-									 data->element_point_ranges_selection)))))
-					{
-						element_selected = 1;
-					}
-					else
-					{
-						element_selected = 0;
-					}
-				}
-				else
-				{
-					element_point_ranges_identifier.element = element;
-					element_point_ranges_identifier.top_level_element = element;
-					element_point_ranges_identifier.sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
-					/* already set the number_in_xi, above */
-					element_point_ranges = ACCESS(Element_point_ranges)(
-						CREATE(Element_point_ranges)(
-							&element_point_ranges_identifier));
-					FE_element_get_xi_points(element, 
-						element_point_ranges_identifier.sampling_mode,
-						element_point_ranges_identifier.number_in_xi,
-						element_point_ranges_identifier.exact_xi,
-						(cmzn_fieldcache_id)0,
-						/*coordinate_field*/(struct Computed_field *)NULL,
-						/*density_field*/(struct Computed_field *)NULL,
-						&maximum_element_point_number,
-						/*xi_points_address*/(FE_value_triple **)NULL);
-					Element_point_ranges_add_range(element_point_ranges,
-						0, maximum_element_point_number - 1);
-				}
-			}
-			if (element_selected)
-			{
-				data->selected_count++;
-				if (destination_field_is_grid_based &&
-					(CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
-					cmzn_field_is_defined_at_location(data->source_field, data->field_cache) &&
-					ALLOCATE(values, FE_value, number_of_components))
-				{
-					if (element_point_ranges)
-					{
-						selected_ranges = 
-							Element_point_ranges_get_ranges(element_point_ranges);
+					selected_ranges = 
+						Element_point_ranges_get_ranges(element_point_ranges);
 						
-						number_of_ranges =
-							Multi_range_get_number_of_ranges(selected_ranges);
-						for (i = 0; i < number_of_ranges; i++)
+					number_of_ranges =
+						Multi_range_get_number_of_ranges(selected_ranges);
+					for (i = 0; i < number_of_ranges; i++)
+					{
+						if (Multi_range_get_range(selected_ranges, i, &start, &stop))
 						{
-							if (Multi_range_get_range(selected_ranges, i, &start, &stop))
+							for (grid_point_number = start ; grid_point_number <= stop ; grid_point_number++)
 							{
-								for (grid_point_number = start ; grid_point_number <= stop ; grid_point_number++)
+								if (FE_element_get_numbered_xi_point(
+											element, element_point_ranges_identifier.sampling_mode,
+											element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
+											(cmzn_fieldcache_id)0,
+											/*coordinate_field*/(struct Computed_field *)NULL,
+											/*density_field*/(struct Computed_field *)NULL,
+											grid_point_number, xi))
 								{
-									if (FE_element_get_numbered_xi_point(
-											 element, element_point_ranges_identifier.sampling_mode,
-											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
-											 (cmzn_fieldcache_id)0,
-											 /*coordinate_field*/(struct Computed_field *)NULL,
-											 /*density_field*/(struct Computed_field *)NULL,
-											 grid_point_number, xi))
+									if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache,
+											element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+										(CMZN_OK == cmzn_field_evaluate_real(data->source_field,
+											data->field_cache, number_of_components, values)))
 									{
-										if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache,
-												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
-											(CMZN_OK == cmzn_field_evaluate_real(data->source_field,
-												data->field_cache, number_of_components, values)))
-										{
-											cmzn_field_assign_real(data->destination_field,
-												data->field_cache, number_of_components, values);
-										}
+										cmzn_field_assign_real(data->destination_field,
+											data->field_cache, number_of_components, values);
 									}
 								}
 							}
 						}
 					}
-					data->success_count++;
-					DEALLOCATE(values);
 				}
+				data->success_count++;
+				DEALLOCATE(values);
 			}
-			if (element_point_ranges)
-			{
-				DEACCESS(Element_point_ranges)(&element_point_ranges);
-			}
+		}
+		if (element_point_ranges)
+		{
+			DEACCESS(Element_point_ranges)(&element_point_ranges);
 		}
 	}
 	else

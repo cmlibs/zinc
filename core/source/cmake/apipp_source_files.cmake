@@ -11,6 +11,9 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/context.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/differentialoperator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/element.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementbasis.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementfieldtemplate.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementtemplate.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldcache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldmodule.hpp
@@ -42,7 +45,10 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/light.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/logger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodeset.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodetemplate.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.hpp

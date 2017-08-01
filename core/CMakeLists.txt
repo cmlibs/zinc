@@ -54,7 +54,7 @@ include(source/cmake/graphics_source_files.cmake )
 # Defines IMAGE_PROCESSING_SRCS
 include(source/cmake/image_processing_source_files.cmake )
 
-# Defines COMFILE_SRCS, CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS
+# Defines COMFILE_SRCS, ELEMENT_SRCS, EMOTER_SRCS
 # FIELD_IO_SRCS, INTERACTION_SRCS, IO_DEVICES_SRCS, MESH_SRCS, NODE_SRCS,
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
 include(source/cmake/misc_source_files.cmake )

@@ -12,8 +12,7 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"

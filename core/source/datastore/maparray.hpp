@@ -24,7 +24,7 @@ class DsMapArray
 	DsLabels *labels;
 	const IndexType arraySize;
 	const IndexType arraysPerBlock;
-	block_array<IndexType, ValueType, 256> values;
+	block_array<IndexType, ValueType> values;
 	// First value in array is initialised to this->unallocatedValue if not allocated,
 	// any other value if it is in use. Hence this cannot be a valid value for the
 	// supplied ValueType.
@@ -42,7 +42,8 @@ public:
 		// array blocks must be multiple of arraySize
 		// use exact size if large enough to prevent wastage when sparse
 		arraySize(static_cast<IndexType>(arraySizeIn)),
-		arraysPerBlock(arraySizeIn >= 32 ? 1 : (256 / arraySizeIn)),
+		arraysPerBlock(arraySizeIn*sizeof(ValueType) >= 128 ? 1 :
+			(CMZN_BLOCK_ARRAY_DEFAULT_BLOCK_SIZE_BYTES / (arraySizeIn*sizeof(ValueType)))),
 		values(arraysPerBlock*arraySizeIn, initValueIn),
 		unallocatedValue(unallocatedValueIn),
 		initValue(initValueIn)
@@ -54,12 +55,18 @@ public:
 		Deaccess(this->labels);
 	}
 
+	/** Clear all data held for all indexes */
+	void clear()
+	{
+		this->values.clear();
+	}
+
 	/**
 	 * Clear array held for index, if any. Does not free memory.
 	 */
 	void clearArray(DsLabelIndex index)
 	{
-		IndexType arrayIndex = index*this->arraySize;
+		const IndexType arrayIndex = index*this->arraySize;
 		ValueType *array = this->values.getAddress(arrayIndex);
 		if (array && (*array != this->unallocatedValue))
 		{
@@ -69,12 +76,33 @@ public:
 		}
 	}
 
+	/** remove array at index, freeing block if all arrays in it destroyed
+	  * @param index  Not checked */
+	void destroyArray(DsLabelIndex index)
+	{
+		const IndexType arrayIndex = index*this->arraySize;
+		ValueType *array = this->values.getAddress(arrayIndex);
+		if (array)
+		{
+			*array = this->unallocatedValue;
+			const IndexType blockIndex = index/this->arraysPerBlock;
+			// block must exist as just found array in it
+			ValueType *block = this->values.getBlock(blockIndex);
+			for (int i = 0; i < this->arraysPerBlock; ++i)
+			{
+				if (block[i*this->arraySize] != this->unallocatedValue)
+					return;
+			}
+			this->values.destroyBlock(blockIndex);
+		}
+	}
+
 	/**
-	 * @return address of array for the given labels index, or 0 if unallocated.
+	 * @return  Address of array for the given labels index, or 0 if unallocated.
 	 */
 	ValueType *getArray(DsLabelIndex index) const
 	{
-		IndexType arrayIndex = index*this->arraySize;
+		const IndexType arrayIndex = index*this->arraySize;
 		ValueType *array = this->values.getAddress(arrayIndex);
 		if (array && (*array != this->unallocatedValue))
 			return array;
@@ -86,8 +114,8 @@ public:
 	 */
 	ValueType *getOrCreateArray(DsLabelIndex index)
 	{
-		IndexType arrayIndex = index*this->arraySize;
-		ValueType *array = this->values.getOrCreateAddress(arrayIndex, this->unallocatedValue, this->arraySize);
+		const IndexType arrayIndex = index*this->arraySize;
+		ValueType *array = this->values.getOrCreateAddressArrayInit(arrayIndex, this->unallocatedValue, this->arraySize);
 		if (array && (*array == this->unallocatedValue))
 		{
 			// first value is initially this->unallocatedValue: change so marked as allocated
@@ -95,6 +123,15 @@ public:
 			*array = this->initValue;
 		}
 		return array;
+	}
+
+	/* get the highest index data is held for, minimum from allocated blocks or labels size */
+	DsLabelIndex getIndexLimit() const
+	{
+		DsLabelIndex indexLimit = this->values.getBlockCount()*this->arraysPerBlock;
+		if (indexLimit > this->labels->getIndexSize())
+			indexLimit = this->labels->getIndexSize();
+		return indexLimit;
 	}
 
 };

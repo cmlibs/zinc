@@ -1,7 +1,7 @@
 /**
  * FILE : import_finite_element.h
  *
- * Functions for importing finite element data from a EX file format.
+ * Functions for importing finite element data from EX file format.
  */
 /* OpenCMISS-Zinc Library
 *

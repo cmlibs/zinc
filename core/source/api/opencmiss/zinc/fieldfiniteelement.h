@@ -18,6 +18,7 @@
 #include "types/fieldcacheid.h"
 #include "types/fieldfiniteelementid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 #include "types/nodeid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -80,7 +81,7 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * field cache passed to this function.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to get parameters for.
+ * @param finite_element_field  The finite element field to get parameters for.
  * @param cache  Store of location to get values and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to get parameters for, from 1 to the
@@ -93,7 +94,7 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_out  Array of real values to be set from the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_finite_element_get_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -106,7 +107,7 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * field cache passed to this function.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to set parameters for.
+ * @param finite_element_field  The finite element field to set parameters for.
  * @param cache  Store of location to assign at and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to set parameters for, from 1 to the
@@ -119,7 +120,7 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_in  Array of real values to be assigned to the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -390,11 +391,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
  * coordinate chart.
  *
  * @param fieldmodule  Region field module which will own new field.
- * @param mesh  The mesh for which locations are stored.
+ * @param host_mesh  The host mesh for which locations are stored. Currently
+ * limited to a mesh from the same region. Note that if a mesh group is passed,
+ * the master mesh is used.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
-	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id mesh);
+	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id host_mesh);
 
 /**
  * If the field is stored_mesh_location type, return type-specific handle to it.

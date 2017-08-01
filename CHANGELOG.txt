@@ -1,5 +1,13 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.1.2
+API changes:
+(Break) Split element API header into: element, elementbasis, elementfieldtemplate, elementtemplate, mesh
+(Break) Split node API header into: node, nodeset, nodetemplate
+Deprecated several element template methods.
+Behaviour changes:
+Now writes models in new EX and FieldML formats which cannot be read into older versions of Zinc.
+
 v3.1.1
 Deprecated API status headers and enums for result/error codes. Use result headers and enums instead.
 Default behaviour changes:

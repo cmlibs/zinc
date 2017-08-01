@@ -257,7 +257,7 @@ DESCRIPTION :
 				}
 				else if (!strcmp(block->type, "struct FE_element"))
 				{
-					list_FE_element(block->ptr, NULL);
+					//list_FE_element(block->ptr, NULL);
 				}
 				else if (!strcmp(block->type, "struct MC_triangle"))
 				{

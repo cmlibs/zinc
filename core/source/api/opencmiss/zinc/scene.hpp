@@ -13,6 +13,7 @@
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/light.hpp"
+#include "opencmiss/zinc/nodeset.hpp"
 #include "opencmiss/zinc/region.hpp"
 #include "opencmiss/zinc/scenefilter.hpp"
 #include "opencmiss/zinc/selection.hpp"

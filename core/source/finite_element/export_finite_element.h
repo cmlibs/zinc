@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : export_finite_element.h
-
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Functions for exporting finite element data to a file.
-==============================================================================*/
+/**
+* FILE : export_finite_element.h
+*
+* Functions for exporting finite element data to EX format.
+*/
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public

@@ -801,9 +801,8 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
 		{
-			char *meshName = cmzn_field_stored_mesh_location_get_mesh_name(field.getId());
-			typeSettings["Mesh"] = meshName;
-			DEALLOCATE(meshName);
+			const FE_mesh *mesh = cmzn_field_get_host_FE_mesh(field.getId());
+			typeSettings["Mesh"] = (mesh) ? mesh->getName() : "unknown";
 		} break;
 		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 		{

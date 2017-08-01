@@ -303,10 +303,10 @@ inline FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField
 		versionNumber));
 }
 
-inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& mesh)
+inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& hostMesh)
 {
 	return FieldStoredMeshLocation(reinterpret_cast<cmzn_field_stored_mesh_location_id>(
-		cmzn_fieldmodule_create_field_stored_mesh_location(id, mesh.getId())));
+		cmzn_fieldmodule_create_field_stored_mesh_location(id, hostMesh.getId())));
 }
 
 inline FieldStoredMeshLocation Field::castStoredMeshLocation()

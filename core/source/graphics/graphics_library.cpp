@@ -477,12 +477,13 @@ initialised.
 ==============================================================================*/
 {
 	char *end, *p;
-	int extNameLen, n, return_code;
+	int return_code;
 
 	/* check arguments */
 	if (extName)
 	{
-		extNameLen=strlen(extName);
+		const size_t extNameLen = strlen(extName);
+		size_t n;
 
 		p=(char *)glGetString(GL_EXTENSIONS);
 	
