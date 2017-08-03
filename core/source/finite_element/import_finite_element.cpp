@@ -2794,7 +2794,7 @@ bool EXReader::readElementHeaderField()
 	int resultCode;
 	char *componentName = 0;
 
-	std::vector<cmzn_elementfieldtemplate *> componentEFTs(componentCount, 0);
+	std::vector<cmzn_elementfieldtemplate *> componentEFTs(componentCount, static_cast<cmzn_elementfieldtemplate *>(0));
 	std::vector< std::vector<int> > componentPackedNodeIndexes(componentCount);
 	
 	for (int c = 0; c < componentCount; ++c)

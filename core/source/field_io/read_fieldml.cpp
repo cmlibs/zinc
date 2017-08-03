@@ -253,10 +253,10 @@ class FieldMLReader
 public:
 	FieldMLReader(struct cmzn_region *region, const char *filename) :
 		region(cmzn_region_access(region)),
+		mesh(0),
 		field_module(cmzn_region_get_fieldmodule(region)),
 		filename(filename),
 		fmlSession(Fieldml_CreateFromFile(filename)),
-		mesh(0),
 		fmlNodesType(FML_INVALID_OBJECT_HANDLE),
 		fmlNodesArgument(FML_INVALID_OBJECT_HANDLE),
 		fmlMeshType(FML_INVALID_OBJECT_HANDLE),
@@ -446,14 +446,15 @@ public:
 		fieldmlReader(fieldmlReaderIn),
 		map(mapIn),
 		isDense(false),
-		denseRecordOffsets((mapIn.getLabelsArraySize() > 2) ? mapIn.getLabelsArraySize() : 2),
-		denseRecordOffsetsPtr(this->denseRecordOffsets.data()),
-		denseRecordSizes(this->denseRecordOffsets.size()),
 		sparseRecordCount(0),
 		recordCount(0),
+		denseRecordOffsets((mapIn.getLabelsArraySize() > 2) ? mapIn.getLabelsArraySize() : 2),
+		denseRecordSizes(this->denseRecordOffsets.size()),
 		denseIndex(-1),
 		denseIndexCount(0),
-		sparseIndexCount(0)
+		denseRecordBufferSize(0),
+		sparseIndexCount(0),
+		denseRecordOffsetsPtr(this->denseRecordOffsets.data())
 	{
 	}
 
@@ -2186,7 +2187,6 @@ FieldmlEft *FieldMLReader::readElementFieldTemplate(FmlObjectHandle fmlEvaluator
 			evaluatorName.c_str(), elementParametersName.c_str(), this->getName(fmlParametersArgumentValueType).c_str());
 		return 0;
 	}
-	const FmlObjectHandle fmlElementParametersEvaluatorType = Fieldml_GetObjectType(this->fmlSession, fmlElementParametersEvaluator);
 
 	if ((Fieldml_GetObjectType(this->fmlSession, fmlElementParametersEvaluator) != FHT_AGGREGATE_EVALUATOR) ||
 		(1 != Fieldml_GetIndexEvaluatorCount(this->fmlSession, fmlElementParametersEvaluator)))
@@ -2215,8 +2215,6 @@ FieldmlEft *FieldMLReader::readElementFieldTemplate(FmlObjectHandle fmlEvaluator
 	}
 	fieldmlEft->setFmlChartArgument(fmlChartArgument);
 
-	FmlObjectHandle fmlEftLocalNodesArgument = FML_INVALID_OBJECT_HANDLE;
-	FmlObjectHandle fmlEftLocalScaleFactorsArgument = FML_INVALID_OBJECT_HANDLE;
 	for (int f = 0; f < functionCount; ++f)
 	{
 		const int parameterIndex = swizzle ? swizzle[f] : f + 1;
@@ -2538,7 +2536,6 @@ MeshElementEvaluator* FieldMLReader::readMeshElementEvaluatorEft(FmlObjectHandle
 			evaluatorName.c_str(), this->getName(fmlSourceEvaluator).c_str());
 		return 0;
 	}
-	FE_element_field_template *eft = fieldmlEft->getEft();
 
 	if (Fieldml_GetBindByArgument(this->fmlSession, fmlEvaluator, fieldmlEft->getFmlChartArgument()) != this->fmlMeshChartArgument)
 	{

@@ -5362,7 +5362,6 @@ int global_to_element_map_nodes(FE_field *field, int componentNumber,
 	}
 	const FE_mesh *mesh = element->getMesh();
 	const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
-	FE_basis *basis = eft->getBasis();
 
 	const DsLabelIndex elementIndex = element->getIndex();
 	const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(elementIndex);
@@ -15228,6 +15227,13 @@ int calculate_FE_element_field_values(cmzn_element *element,
 								break;
 							}
 							*number_of_values_address = 1;
+						} break;
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID:
+						{
+							display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+								"Invalid parameter mapping mode for field %s in %d-D element %d",
+								field->name, fieldElementDimension, fieldElement->getIdentifier());
+							return_code = 0;
 						} break;
 						}
 						if (!return_code)

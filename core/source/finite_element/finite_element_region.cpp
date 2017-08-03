@@ -1210,8 +1210,6 @@ static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 	if (targetField)
 		return 1;
 
-	FE_field_type feFieldType = get_FE_field_FE_field_type(sourceField);
-	Value_type valueType = get_FE_field_value_type(sourceField);
 	if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(sourceField))
 	{
 		// must merge indexer field first
