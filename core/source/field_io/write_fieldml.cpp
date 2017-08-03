@@ -750,7 +750,7 @@ FmlObjectHandle FieldMLWriter::writeDenseParameters(const std::string& name,
 	{
 		if (!parameterGenerator.nextRecord())
 		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name);
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name.c_str());
 			failed = true;
 			break;
 		}
@@ -855,7 +855,7 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 	{
 		if (!parameterGenerator.nextRecord())
 		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name);
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Too few parameters for evaluator %s", name.c_str());
 			failed = true;
 			break;
 		}
@@ -879,7 +879,7 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 	FmlErrorNumber fmlError;
 	if (FML_OK != (fmlError = Fieldml_SetInlineData(this->fmlSession, fmlDataResource, sstring.c_str(), sstringSize)))
 	{
-		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set inline data for parameters %s", name);
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set inline data for parameters %s", name.c_str());
 		return FML_INVALID_OBJECT_HANDLE;
 	}
 	FmlObjectHandle fmlParameters = FML_INVALID_OBJECT_HANDLE;
@@ -888,14 +888,14 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 		|| (FML_OK != (fmlError = Fieldml_SetKeyDataSource(this->fmlSession, fmlParameters, fmlKeyDataSource)))
 		|| (FML_OK != (fmlError = Fieldml_SetDataSource(this->fmlSession, fmlParameters, fmlDataSource))))
 	{
-		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set attributes for parameters %s", name);
+		display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set attributes for parameters %s", name.c_str());
 		return FML_INVALID_OBJECT_HANDLE;
 	}
 	for (int s = 0; s < sparseIndexCount; ++s)
 	{
 		if (FML_OK != (fmlError = Fieldml_AddSparseIndexEvaluator(this->fmlSession, fmlParameters, fmlSparseIndexArguments[s])))
 		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set sparse index for parameters %s", name);
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set sparse index for parameters %s", name.c_str());
 			return FML_INVALID_OBJECT_HANDLE;
 		}
 	}
@@ -904,7 +904,7 @@ FmlObjectHandle FieldMLWriter::writeSparseParameters(const std::string& name,
 		if (FML_OK != (fmlError = Fieldml_AddDenseIndexEvaluator(this->fmlSession, fmlParameters,
 			fmlDenseIndexArguments[d], /*orderHandle*/FML_INVALID_OBJECT_HANDLE)))
 		{
-			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set dense index for parameters %s", name);
+			display_message(ERROR_MESSAGE, "FieldML Writer:  Failed to set dense index for parameters %s", name.c_str());
 			return FML_INVALID_OBJECT_HANDLE;
 		}
 	}
@@ -1110,7 +1110,6 @@ int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 	if ((elementLabels.getSize() == 0) && (!writeIfEmpty))
 		return CMZN_OK;
 	FmlErrorNumber fmlError;
-	int *shapeIds = 0;
 	FmlObjectHandle fmlMeshType = Fieldml_CreateMeshType(this->fmlSession, mesh->getName());
 	const char *meshChartName = "xi";
 	FmlObjectHandle fmlMeshChartType = Fieldml_CreateMeshChartType(this->fmlSession, fmlMeshType, meshChartName);
@@ -1567,7 +1566,6 @@ FmlObjectHandle FieldMLWriter::writeMeshElementEvaluator(const FE_mesh *mesh,
 		}
 	}
 
-	FmlObjectHandle fmlEftScaleFactors = FML_INVALID_OBJECT_HANDLE;
 	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
 	if (scaleFactorCount > 0)
 	{
