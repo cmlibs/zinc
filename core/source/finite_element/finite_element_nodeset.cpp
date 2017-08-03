@@ -1020,7 +1020,6 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 				FE_field *targetEmbeddedField = data.targetEmbeddedFields[f];
 				if (FE_field_is_defined_at_node(targetEmbeddedField, node))
 				{
-					const int number_of_components = get_FE_field_number_of_components(targetEmbeddedField);
 					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
 					cmzn_element *sourceElement;
 					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];

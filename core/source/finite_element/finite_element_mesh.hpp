@@ -189,7 +189,7 @@ public:
  */
 struct cmzn_element
 {
-	friend FE_mesh;
+	friend class FE_mesh;
 private:
 	// non-accessed pointer to owning mesh; cleared if mesh is destroyed or element orphaned from mesh
 	FE_mesh *mesh;
@@ -475,7 +475,7 @@ private:
 class FE_mesh_field_template
 {
 public:
-	friend FE_mesh;
+	friend class FE_mesh;
 
 	// short integer to save memory in FE_mesh_field_template. Signed to store unset value -1
 	typedef short EFTIndexType;

@@ -50,9 +50,9 @@ namespace {
 		const FmlObjectHandle fmlElementsArgument;
 		DsLabelIterator *elementLabelIterator;
 		DsLabelIndex elementIndex;
-		const int recordIndexSize = 1; // never used as always dense
-		const int recordSize = 1;
-		const int elementIdentifier = -1; // never used as always dense
+		const int recordIndexSize; // never used as always dense
+		const int recordSize;
+		const int elementIdentifier; // never used as always dense
 		int value; // store in member so can return values address
 		int offset; // offset incremented for each record
 
@@ -63,6 +63,9 @@ namespace {
 			fmlElementsArgument(fmlElementsArgumentIn),
 			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
 			elementIndex(DS_LABEL_INDEX_INVALID),
+			recordIndexSize(1),
+			recordSize(1),
+			elementIdentifier(-1),
 			offset(-1)
 		{
 		}
@@ -148,7 +151,7 @@ namespace {
 		const bool isMapDense;
 		const int recordCount;
 		DsLabelIterator *elementLabelIterator;
-		const int recordIndexSize = 1;
+		const int recordIndexSize;
 		int recordSizes[2];
 		int elementIdentifier;
 		int *nodeIdentifiers;
@@ -168,6 +171,8 @@ namespace {
 			isMapDense(meshEFTData->localToGlobalNodesIsDense()),
 			recordCount(meshEFTData->getElementLocalToGlobalNodeMapCount()),
 			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
+			recordIndexSize(1),
+			elementIdentifier(-1),
 			nodeIdentifiers(new int[this->localNodeCount])
 		{
 			this->recordSizes[0] = 1;
@@ -278,8 +283,8 @@ namespace {
 		std::vector<bool> eftsUsed; // remember which efts are used, by output index - 1
 		const int recordCount;
 		DsLabelIterator *elementLabelIterator;
-		const int recordIndexSize = 1;
-		const int recordSize = 1;
+		const int recordIndexSize;
+		const int recordSize;
 		int elementIdentifier;
 		int value; // store in member so can return values address
 		mutable int offset; // offset incremented for each record
@@ -296,6 +301,9 @@ namespace {
 			eftsUsed(outputEftCount, false),
 			recordCount(mft->getElementsDefinedCount()),
 			elementLabelIterator(this->mesh->getLabels().createLabelIterator()),
+			recordIndexSize(1),
+			recordSize(1),
+			elementIdentifier(-1),
 			offset(-1)
 		{
 		}
@@ -394,9 +402,14 @@ namespace {
 
 };
 
+namespace {
+
+const char *derivativeNames[8] = { "value", "d_ds1", "d_ds2", "d2_ds1ds2", "d_ds3", "d2_ds1ds3", "d2_ds2ds3", "d3_ds1ds2ds3" };
+
+}
+
 class FieldMLWriter
 {
-	const char *derivativeNames[8] = { "value", "d_ds1", "d_ds2", "d2_ds1ds2", "d_ds3", "d2_ds1ds3", "d2_ds2ds3", "d3_ds1ds2ds3" };
 	cmzn_region *region; // accessed
 	FE_region *fe_region; // not accessed
 	const char *location;

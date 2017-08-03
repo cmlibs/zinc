@@ -55,8 +55,8 @@ class ElementNodePacking
 	class EftNodes
 	{
 	public:
-		const int offset;
-		const int count;
+		int offset;  // actually constant, but can't make const to use default assignment and copy constructor
+		int count;  // actually constant, but can't make const to use default assignment and copy constructor
 		std::vector<const FE_element_field_template *> efts;
 		const DsLabelIndex *nodeIndexes;
 
@@ -1797,7 +1797,6 @@ bool EXWriter::writeNodeExt(cmzn_node *node)
 	if (!this->nodeIsToBeWritten(node))
 		return true;
 
-	bool newFieldHeader = true;
 	if ((0 == this->headerNode)
 		|| !FE_nodes_have_same_header(node, this->headerNode, field_order_info))
 	{

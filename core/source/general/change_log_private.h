@@ -130,24 +130,6 @@ Note the CREATE for CHANGE_LOG_ENTRY is in the ADD function. \
 	return (return_code); \
 } /* DESTROY_CHANGE_LOG_ENTRY(object_type) */
 
-#define DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION( object_type ) \
-static int object_type ## _pointers_match(struct object_type *object, \
-   void *object_void ) \
-/***************************************************************************** \
-LAST MODIFIED : 11 August 2003 \
-\
-DESCRIPTION : \
-SAB.  An iterator function for finding if there is an <object> with pointer \
-<object_void>.  Used when the <object_void> could reference an object that has 
-already been destroyed and therefore the pointer cannot be dereferenced to \
-examine the identifier. \
-============================================================================*/ \
-{ \
-	int return_code; \
-   return_code =  object == object_void; \
-    return (return_code); \
-} /* object_type ## _pointer_match */
-
 #define CHANGE_LOG_ITERATOR_DATA( object_type ) change_log_iterator_data_ ## object_type
 
 #define CHANGE_LOG_ITERATOR( object_type ) change_log_iterator_ ## object_type
@@ -583,7 +565,6 @@ DECLARE_INDEXED_LIST_FUNCTIONS(CHANGE_LOG_ENTRY(object_type)) \
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
 	CHANGE_LOG_ENTRY(object_type), the_object, struct object_type *, \
 	compare_pointer) \
-DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_MERGE_ALL_CHANGE_INTO_OBJECT_FUNCTION(object_type) \
 DEFINE_CHANGE_LOG_ITERATOR_DATA_AND_FUNCTION(object_type)
 

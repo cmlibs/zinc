@@ -49,7 +49,7 @@ inline bool isScaleFactorTypeNode(cmzn_elementfieldtemplate_scale_factor_type sc
 
 class FE_element_field_template
 {
-	friend FE_mesh;
+	friend class FE_mesh;
 
 	friend int global_to_element_map_values(FE_field *field, int componentNumber,
 		const FE_element_field_template *eft, cmzn_element *element, FE_value time,

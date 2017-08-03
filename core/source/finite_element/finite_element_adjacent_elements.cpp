@@ -84,7 +84,7 @@ AdjacentElements1d::AdjacentElements1d(cmzn_mesh_id meshIn, cmzn_field_id fieldI
 	while (return_code && (0 != (element = cmzn_elementiterator_next_non_access(iter))))
 	{
 		int lastEFTIndex = -1;
-		for (int f = 0; f < mftCount; ++f)
+		for (size_t f = 0; f < mftCount; ++f)
 		{
 			const FE_mesh_field_template *mft = this->mfts[f];
 			const int eftIndex = mft->getElementEFTIndex(element->getIndex());
@@ -150,7 +150,7 @@ DsLabelIndex AdjacentElements1d::getElementNodeIndexOnFace(struct FE_element *el
 {
 	int lastEFTIndex = -1;
 	const size_t mftCount = this->mfts.size();
-	for (int f = 0; f < mftCount; ++f)
+	for (size_t f = 0; f < mftCount; ++f)
 	{
 		const FE_mesh_field_template *mft = this->mfts[f];
 		const int eftIndex = mft->getElementEFTIndex(element->getIndex());
