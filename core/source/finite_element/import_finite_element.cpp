@@ -60,7 +60,7 @@ bool isIntegerString(const char *s, size_t n = 0)
 	while (isspace(*c))
 		++c;
 	if (n > 0)
-		return ((c - s) == n);
+		return (static_cast<size_t>(c - s) == n);
 	return ('\0' == *c);
 }
 
@@ -144,7 +144,7 @@ public:
 	bool hasUnusedKeyValues() const
 	{
 		const size_t count = this->strings.size() / 2;
-		for (int i = 0; i < count; ++i)
+		for (size_t i = 0; i < count; ++i)
 			if (!this->stringsUsed[i])
 				return true;
 		return false;
@@ -153,7 +153,7 @@ public:
 	void reportUnusedKeyValues(const char *prefix) const
 	{
 		const size_t count = this->strings.size() / 2;
-		for (int i = 0; i < count; ++i)
+		for (size_t i = 0; i < count; ++i)
 			if (!this->stringsUsed[i])
 			{
 				display_message(WARNING_MESSAGE, "%sIgnoring unrecognised key value pair (invalid or from newer version): %s=%s",
@@ -240,10 +240,14 @@ public:
 		return static_cast<int>(this->derivatives.size());
 	}
 
-	FE_nodal_value_type getDerivativeTypeAndVersionCountAtIndex(int index, int& versionCount) const
+	FE_nodal_value_type getDerivativeTypeAtIndex(int index) const
 	{
-		versionCount = this->versionCounts[index];
 		return this->derivatives[index];
+	}
+
+	int getDerivativeVersionCountAtIndex(int index) const
+	{
+		return this->versionCounts[index];
 	}
 
 	/** @return  The sum of versionCounts for all derivative types. */
@@ -854,7 +858,6 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 		// determine the region path, element type and element number. First read
 		// two strings and determine if the second is a number, in which case the
 		// region path is omitted
-		cmzn_region *region = 0;
 		char *whitespace_string = 0;
 		char *first_string = 0;
 		char *separator_string = 0;
@@ -869,8 +872,6 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 			// if the region path has been omitted, otherwise next in the file
 			if (1 == sscanf(second_string, " %d", &elementIdentifier))
 			{
-				// Note default changed from root_region to current_region
-				region = FE_region_get_cmzn_region(this->fe_region);
 				element_type_string = first_string;
 			}
 			else if (1 == IO_stream_scan(this->input_file, " %d", &elementIdentifier))
@@ -1176,7 +1177,7 @@ bool EXReader::readCommentOrDirective()
 			domainType = CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS;
 		else
 			display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary nodeset name '%s' in directive, assuming default %s.  %s",
-				domainName, this->useData ? "datapoints" : "nodes", this->getFileLocation());
+				domainName.c_str(), this->useData ? "datapoints" : "nodes", this->getFileLocation());
 		FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, domainType);
 		if (!this->setNodeset(nodeset))
 			return false;
@@ -1197,7 +1198,7 @@ bool EXReader::readCommentOrDirective()
 		if (0 != domainName.compare(this->mesh->getName()))
 		{
 			display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary mesh name '%s' in directive, assuming %s (matching dimension).  %s",
-				domainName, this->mesh->getName(), this->getFileLocation());
+				domainName.c_str(), this->mesh->getName(), this->getFileLocation());
 		}
 		const char *faceMeshName = keyValueMap.getKeyValue("face mesh");
 		if (faceMeshName)
@@ -1207,7 +1208,7 @@ bool EXReader::readCommentOrDirective()
 			{
 				if (0 != strcmp(faceMesh->getName(), faceMeshName))
 					display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary face mesh name '%s' in directive, assuming default %s.  %s",
-						domainName, faceMesh->getName(), this->getFileLocation());
+						domainName.c_str(), faceMesh->getName(), this->getFileLocation());
 			}
 			else
 			{
@@ -1222,7 +1223,7 @@ bool EXReader::readCommentOrDirective()
 			{
 				if (0 != strcmp(this->nodeset->getName(), nodesetName))
 					display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary nodeset name '%s' in directive, assuming default %s.  %s",
-						domainName, this->nodeset->getName(), this->getFileLocation());
+						domainName.c_str(), this->nodeset->getName(), this->getFileLocation());
 			}
 		}
 	}
@@ -1751,7 +1752,6 @@ bool EXReader::readNodeHeaderField()
 	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	struct FE_node_field_creator *node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
 	/* read the components */
-	int component_number = 0;
 	char *componentName = 0;
 	std::vector<NodeDerivativesVersions> nodeDerivativesVersions(number_of_components);
 	for (int component_number = 0; component_number < number_of_components; ++component_number)
@@ -1867,10 +1867,9 @@ bool EXReader::readNodeHeaderField()
 			componentNodeDerivativesVersions.calculateDerivativeOffsets();
 			// Zinc cannot yet handle per-derivative versions nor having no value parameters, so define in the old way
 			const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-			int versionCount;
 			for (int d = 0; d < derivativeTypeCount; ++d)
 			{
-				FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+				const FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAtIndex(d);
 				if (derivativeType != FE_NODAL_VALUE) // value is currently always already set as the first entry
 				{
 					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
@@ -2137,8 +2136,7 @@ cmzn_node *EXReader::readNode()
 						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
 						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
 						{
-							int versionCount;
-							FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
 							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
 							for (int v = 0; v < versionCount; ++v)
 							{
@@ -2223,8 +2221,7 @@ cmzn_node *EXReader::readNode()
 						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
 						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
 						{
-							int versionCount;
-							FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAndVersionCountAtIndex(d, versionCount);
+							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
 							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
 							for (int v = 0; v < versionCount; ++v)
 							{
