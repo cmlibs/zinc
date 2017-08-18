@@ -93,9 +93,10 @@ Evaluates the <field> into the <fitting_field_values>.
 		number_of_components = get_FE_field_number_of_components(field);
 		for (i = 0; (i < number_of_components) && return_code; i++)
 		{
-			if (get_FE_nodal_FE_value_value(accumulate_data->current_node,
-				field, /*component_number*/i, /*version*/0,
-				FE_NODAL_VALUE, /*time*/0, accumulate_data->fitting_field_values))
+			const int result = get_FE_nodal_FE_value_value(accumulate_data->current_node,
+				field, /*component_number*/i, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0,
+				/*time*/0, accumulate_data->fitting_field_values);
+			if (CMZN_OK == result)
 			{
 				accumulate_data->fitting_field_values++;
 			}

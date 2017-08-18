@@ -18,20 +18,22 @@
 #include "opencmiss/zinc/nodetemplate.h"
 #include "opencmiss/zinc/timesequence.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/field_module.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
-#include "computed_field/computed_field_finite_element.h"
-#include "node/node_operations.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/message.h"
-#include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_node_private.hpp"
+#include "node/node_operations.h"
 #include <vector>
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
 
 /*
 Global types
@@ -45,15 +47,14 @@ namespace {
 class cmzn_node_field
 {
 	FE_field *fe_field;
-	FE_node_field_creator *node_field_creator;
+	std::vector<FE_node_field_template> componentNodefieldtemplates;
 	FE_time_sequence *timesequence;
 
 public:
 
 	cmzn_node_field(FE_field *fe_field) :
 		fe_field(ACCESS(FE_field)(fe_field)),
-		node_field_creator(
-			CREATE(FE_node_field_creator)(get_FE_field_number_of_components(fe_field))),
+		componentNodefieldtemplates(get_FE_field_number_of_components(fe_field)),
 		timesequence(NULL)
 	{
 	}
@@ -62,8 +63,28 @@ public:
 	{
 		if (timesequence)
 			DEACCESS(FE_time_sequence)(&timesequence);
-		DESTROY(FE_node_field_creator)(&node_field_creator);
 		DEACCESS(FE_field)(&fe_field);
+	}
+
+	/** Set up node field with a copy of node field in use in node.
+	  * @return  Result OK on success, any other value on failure. Client should clean up on failure. */
+	int cloneNodeField(cmzn_node *node)
+	{
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
+		if (!node_field)
+		{
+			return CMZN_ERROR_NOT_FOUND;
+		}
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		for (int c = 0; c < componentCount; ++c)
+		{
+			this->componentNodefieldtemplates[c] = *(node_field->getComponent(c));
+		}
+		if (node_field->time_sequence)
+		{
+			this->setTimesequence(node_field->time_sequence);
+		}
+		return CMZN_OK;
 	}
 
 	/** note: does not ACCESS */
@@ -79,59 +100,69 @@ public:
 
 	int defineAtNode(FE_node *node)
 	{
-		return define_FE_field_at_node(node, fe_field,
-			timesequence, node_field_creator);
+		return define_FE_field_at_node(node, this->fe_field, this->componentNodefieldtemplates.data(),
+			this->timesequence);
 	}
 
-	int getValueNumberOfVersions(int componentNumber, enum FE_nodal_value_type fe_nodal_value_type)
+	int getValueNumberOfVersions(int componentNumber, cmzn_node_value_label valueLabel)
 	{
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
-			return 0;
-		USE_PARAMETER(fe_nodal_value_type);
-		if ((componentNumber < -1) || (componentNumber == 0) ||
-				(componentNumber > get_FE_field_number_of_components(fe_field)))
-			return 0;
-		if ((FE_NODAL_VALUE != fe_nodal_value_type) &&
-				!FE_node_field_creator_has_derivative(node_field_creator, componentNumber - 1, fe_nodal_value_type))
-			return 0;
-		return FE_node_field_creator_get_number_of_versions(node_field_creator, componentNumber - 1);
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
+			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
+			|| (componentNumber < -1)
+			|| (componentNumber == 0)
+			|| (componentNumber > componentCount))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate getValueNumberOfVersions.  Invalid arguments");
+			return -1;
+		}
+		if (componentNumber == -1)
+		{
+			const int versionsCount = this->componentNodefieldtemplates[0].getValueNumberOfVersions(valueLabel);
+			for (int c = 1; c < componentCount; ++c)
+			{
+				if (this->componentNodefieldtemplates[c].getValueNumberOfVersions(valueLabel) != versionsCount)
+				{
+					return -1; // not consistent over components
+				}
+			}
+			return versionsCount;
+		}
+		return this->componentNodefieldtemplates[componentNumber - 1].getValueNumberOfVersions(valueLabel);
 	}
 
-	/** versions should be per-fe_nodal_value_type, but are not currently */
-	int setValueNumberOfVersions(int componentNumber,
-		enum FE_nodal_value_type fe_nodal_value_type, int numberOfVersions)
+	/** @param componentNumber  From 1 to number of components or -1 to set for all
+	  * @param numberOfVersions  Number of versions > 1, or 0 to undefine. */
+	int setValueNumberOfVersions(int componentNumber, cmzn_node_value_label valueLabel, int numberOfVersions)
 	{
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
+			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
+			|| (componentNumber < -1)
+			|| (componentNumber == 0)
+			|| (componentNumber > componentCount)
+			|| (numberOfVersions < 0))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate setValueNumberOfVersions.  Invalid arguments");
 			return CMZN_ERROR_ARGUMENT;
-		if (numberOfVersions < 0)
-			return CMZN_ERROR_ARGUMENT;
+		}
 		int first = 0;
 		int limit = get_FE_field_number_of_components(fe_field);
-		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > limit))
-			return CMZN_ERROR_ARGUMENT;
 		if (componentNumber > 0)
 		{
 			first = componentNumber - 1;
 			limit = componentNumber;
 		}
-		if (numberOfVersions == 0)
+		for (int c = first; c < limit; ++c)
 		{
-			for (int i = first; i < limit; i++)
-				FE_node_field_creator_undefine_derivative(node_field_creator, i, fe_nodal_value_type);
-		}
-		else
-		{
-			for (int i = first; i < limit; i++)
+			const int result = this->componentNodefieldtemplates[c].setValueNumberOfVersions(valueLabel, numberOfVersions);
+			if (result != CMZN_OK)
 			{
-				int result = FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
-				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
-					return CMZN_ERROR_GENERAL;
-				const int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, i);
-				if (numberOfVersions > currentNumberOfVersions)
+				if (((numberOfVersions == 0) && (result != CMZN_ERROR_NOT_FOUND))
+					|| (numberOfVersions > 0) && (result != CMZN_ERROR_ALREADY_EXISTS))
 				{
-					result = FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
-					if (result != CMZN_OK)
-						return CMZN_ERROR_GENERAL;
+					display_message(ERROR_MESSAGE, "Nodetemplate setValueNumberOfVersions.  Failed");
+					return result;
 				}
 			}
 		}
@@ -183,23 +214,42 @@ public:
 	{
 		int result = this->checkValidFieldForDefine(field);
 		if (result != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineField.  Invalid field");
 			return result;
+		}
+		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		this->invalidate();
-		cmzn_node_field *node_field = createNodeField(fe_field);
+		cmzn_node_field *node_field = this->createNodeField(fe_field);
 		if (!node_field)
-			result = CMZN_ERROR_GENERAL;
-		return result;
+		{
+			this->removeDefineField(fe_field);
+			return CMZN_ERROR_GENERAL;
+		}
+		// External behaviour defaults to having VALUE defined, which must removed if not wanted
+		result = node_field->setValueNumberOfVersions(-1, CMZN_NODE_VALUE_LABEL_VALUE, 1);
+		if (result != CMZN_OK)
+		{
+			return result;
+		}
+		return CMZN_OK;
 	}
 
 	int defineFieldFromNode(cmzn_field_id field, cmzn_node_id node)
 	{
-		if (!((node) && fe_nodeset->containsNode(node)))
+		if (!((node) && this->fe_nodeset->containsNode(node)))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineFieldFromNode.  Invalid node");
 			return CMZN_ERROR_ARGUMENT;
+		}
 		int result = this->checkValidFieldForDefine(field);
 		if (result != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineFieldFromNode.  Invalid field");
 			return result;
+		}
+		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		if (!FE_field_is_defined_at_node(fe_field, node))
@@ -208,36 +258,18 @@ public:
 			this->removeUndefineField(fe_field);
 			return CMZN_ERROR_NOT_FOUND;
 		}
-		const enum FE_nodal_value_type all_fe_nodal_value_types[] = {
-			FE_NODAL_VALUE,
-			FE_NODAL_D_DS1,
-			FE_NODAL_D_DS2,
-			FE_NODAL_D2_DS1DS2,
-			FE_NODAL_D_DS3,
-			FE_NODAL_D2_DS1DS3,
-			FE_NODAL_D2_DS2DS3,
-			FE_NODAL_D3_DS1DS2DS3
-		};
-		const int number_of_fe_value_types = sizeof(all_fe_nodal_value_types) / sizeof(enum FE_nodal_value_type);
-		this->invalidate();
-		cmzn_node_field *node_field = createNodeField(fe_field);
-		int number_of_components = cmzn_field_get_number_of_components(field);
-		for (int component_number = 1; component_number <= number_of_components; ++component_number)
+		cmzn_node_field *node_field = this->createNodeField(fe_field);
+		if (!node_field)
 		{
-			// versions should be per-nodal-value-type, but are not currently
-			const int numberOfVersions = get_FE_node_field_component_number_of_versions(node, fe_field, component_number - 1);
-			for (int i = 0; i < number_of_fe_value_types; ++i)
-			{
-				enum FE_nodal_value_type fe_nodal_value_type = all_fe_nodal_value_types[i];
-				if (FE_nodal_value_version_exists(node, fe_field, component_number - 1,
-						/*version*/0, fe_nodal_value_type))
-					node_field->setValueNumberOfVersions(component_number, fe_nodal_value_type, numberOfVersions);
-			}
+			return CMZN_ERROR_GENERAL;
 		}
-		struct FE_time_sequence *timesequence = get_FE_node_field_FE_time_sequence(node, fe_field);
-		if (timesequence)
-			node_field->setTimesequence(timesequence);
-		return (node_field) ? CMZN_OK : CMZN_ERROR_GENERAL;
+		result = node_field->cloneNodeField(node);
+		if (result != CMZN_OK)
+		{
+			this->removeDefineField(fe_field);
+			return result;
+		}
+		return CMZN_OK;
 	}
 
 	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
@@ -283,26 +315,28 @@ public:
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
-			return 0;
+		{
+			return -1;
+		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
-			return 0;
-		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
-		return node_field->getValueNumberOfVersions(componentNumber, fe_nodal_value_type);
+		{
+			return -1;
+		}
+		return node_field->getValueNumberOfVersions(componentNumber, nodeValueLabel);
 	}
 
 	int setValueNumberOfVersions(cmzn_field_id field, int componentNumber,
-		enum cmzn_node_value_label nodeValueLabel, int numberOfVersions)
+		cmzn_node_value_label nodeValueLabel, int numberOfVersions)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_set_value_number_of_versions.  Field must be real finite_element type");
+				"cmzn_nodetemplate_set_value_number_of_versions.  Field must be real finite element type");
 			return CMZN_ERROR_ARGUMENT;
 		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
@@ -311,9 +345,7 @@ public:
 		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
 			return CMZN_ERROR_NOT_FOUND;
-		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
-		return node_field->setValueNumberOfVersions(componentNumber, fe_nodal_value_type, numberOfVersions);
+		return node_field->setValueNumberOfVersions(componentNumber, nodeValueLabel, numberOfVersions);
 	}
 
 	int removeField(cmzn_field_id field)
@@ -1107,7 +1139,7 @@ int cmzn_nodetemplate_get_value_number_of_versions(
 {
 	if (node_template)
 		return node_template->getValueNumberOfVersions(field, component_number, node_value_label);
-	return 0;
+	return -1;
 }
 
 int cmzn_nodetemplate_set_value_number_of_versions(

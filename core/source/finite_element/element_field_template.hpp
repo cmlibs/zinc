@@ -25,7 +25,7 @@ struct FE_basis;
 struct FE_field;
 class FE_mesh;
 class FE_nodeset;
-struct FE_node_field_component;
+class FE_node_field_template;
 
 
 inline bool isScaleFactorTypeElement(cmzn_elementfieldtemplate_scale_factor_type scaleFactorType)
@@ -138,10 +138,10 @@ private:
 	void setIndexInMesh(FE_mesh *meshIn, int indexInMeshIn);
 
 	bool convertNodeParameterLegacyIndexes(std::vector<int> &legacyDOFIndexes,
-		std::vector<const FE_node_field_component*> &nodeFieldComponents);
+		std::vector<const FE_node_field_template*> &nodeFieldTemplates);
 
 	bool checkNodeParameterLegacyIndexes(std::vector<int> &legacyDOFIndexes,
-		std::vector<const FE_node_field_component*> &nodeFieldComponents);
+		std::vector<const FE_node_field_template*> &nodeFieldTemplates);
 
 	/** Called by ~FE_mesh */
 	void detachFromMesh()

@@ -1011,7 +1011,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field, FE_value time)
 {
 	int return_code = 1;
-	if (fe_region && fe_field)
+	if (fe_region && fe_field && (get_FE_field_value_type(fe_field) == FE_VALUE_VALUE))
 	{
 		if (IS_OBJECT_IN_LIST(FE_field)(fe_field, fe_region->fe_field_list))
 		{

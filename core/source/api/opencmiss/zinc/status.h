@@ -32,6 +32,9 @@ extern "C" {
  */
 enum cmzn_status
 {
+	CMZN_WARNING_PART_DONE = -9,
+		/*!< Operation completed where possible, with documented behaviour for remainder.
+		 * e.g. returned when get/set field parameters and not all components have parameters. */
 	CMZN_ERROR_IN_USE = -8,
 		/*!< Operation failed or partially completed due to object(s) being in use.
 		 * e.g. returned when attempting to destroy node in use by elements */

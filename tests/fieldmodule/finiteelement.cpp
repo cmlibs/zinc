@@ -369,8 +369,8 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	EXPECT_EQ(2, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
 	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 1));
-	// following is 2 not 1, due to limitation that all values/derivatives have same number of versions
-	EXPECT_EQ(2, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	// following is now correctly 1 since now support variable number of versions per derivative / value label
+	EXPECT_EQ(1, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
 	// test clearing the number of versions
 	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 0));
 	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
@@ -1175,6 +1175,7 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	Nodetemplate nodetemplate = nodeset.createNodetemplate();
 	EXPECT_EQ(OK, nodetemplate.defineField(feField));
 	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 2));
+	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
 	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_VALUE, 3));
 	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_D_DS1, 1));
 	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_D_DS1, 2));
@@ -1182,14 +1183,14 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_VALUE));
 	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_VALUE));
 	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 3, Node::VALUE_LABEL_VALUE));
-	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(-1, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
 
-	// currently restricted to same number of versions for all derivatives of component
+	// note prior restriction to same number of versions for all derivatives / value labels has been removed
 	// hence get the following get as many versions as for VALUE
 	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_D_DS1));
-	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_D_DS1));
-	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 3, Node::VALUE_LABEL_D_DS1));
-	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(1, nodetemplate.getValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(1, nodetemplate.getValueNumberOfVersions(feField, 3, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(-1, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_D_DS1));
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
@@ -1212,16 +1213,16 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	double derivativesOut2[3];
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, valuesIn1));
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 2, 3, valuesIn2));
-	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesIn3));
+	EXPECT_EQ(WARNING_PART_DONE, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesIn3));
 	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 4, 3, valuesIn3));
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 1, 3, derivativesIn1));
-	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesIn2));
+	EXPECT_EQ(WARNING_PART_DONE, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesIn2));
 
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, valuesOut1));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 2, 3, valuesOut2));
-	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesOut3));
+	EXPECT_EQ(WARNING_PART_DONE, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesOut3));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 1, 3, derivativesOut1));
-	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesOut2));
+	EXPECT_EQ(WARNING_PART_DONE, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesOut2));
 	EXPECT_DOUBLE_EQ(valuesIn1[0], valuesOut1[0]);
 	EXPECT_DOUBLE_EQ(valuesIn1[1], valuesOut1[1]);
 	EXPECT_DOUBLE_EQ(valuesIn1[2], valuesOut1[2]);
@@ -1235,10 +1236,8 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_DOUBLE_EQ(derivativesIn1[1], derivativesOut1[1]);
 	EXPECT_DOUBLE_EQ(derivativesIn1[2], derivativesOut1[2]);
 	EXPECT_DOUBLE_EQ(derivativesIn2[0], derivativesOut2[0]);
-	// these values should be zero, but are actually stored due to number of versions
-	// being same for all value types in component. Change once fixed
-	EXPECT_DOUBLE_EQ(derivativesIn2[1], derivativesOut2[1]);
-	EXPECT_DOUBLE_EQ(derivativesIn2[2], derivativesOut2[2]);
+	EXPECT_DOUBLE_EQ(0.0, derivativesOut2[1]);
+	EXPECT_DOUBLE_EQ(0.0, derivativesOut2[2]);
 
 	// set/get individual components
 
@@ -1246,6 +1245,9 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	double valueOut1;
 	const double valueIn2 = 3.45;
 	double valueOut2;
+	double dummyOut;
+	const double valueIn3 = 4.56;
+	double valueOut3;
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
 	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
@@ -1255,11 +1257,17 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
 	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
-	// test invalid version:
+	// test invalid versions:
 	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn1));
+	EXPECT_EQ(ERROR_NOT_FOUND, feField.getNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 3, 1, &dummyOut));
+	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, 2, Node::VALUE_LABEL_D_DS1, 2, 1, &valueIn1));
+	EXPECT_EQ(ERROR_NOT_FOUND, feField.getNodeParameters(cache, 2, Node::VALUE_LABEL_D_DS1, 2, 1, &dummyOut));
 	EXPECT_EQ(OK, feField.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn2));
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueOut2));
 	EXPECT_DOUBLE_EQ(valueIn2, valueOut2);
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_D_DS1, 2, 1, &valueIn3));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, 1, Node::VALUE_LABEL_D_DS1, 2, 1, &valueOut3));
+	EXPECT_DOUBLE_EQ(valueIn3, valueOut3);
 }
 
 

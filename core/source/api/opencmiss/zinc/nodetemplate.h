@@ -49,7 +49,7 @@ ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(
 ZINC_API int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address);
 
 /**
- * Defines the field on the node_template with just a single node value per
+ * Define the field on the node_template with just a single node value per
  * field component with no time variation. Replaces any existing definition
  * (or undefine state) of the field in the template.
  * Per-component derivatives and multiple versions can be added subsequently.
@@ -63,7 +63,7 @@ ZINC_API int cmzn_nodetemplate_define_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);
 
 /**
- * Defines the field on the node template based on its definition in the
+ * Define the field on the node template based on its definition in the
  * supplied node. Replaces any existing definition (or undefine state) in the
  * template. If the field is not defined on the node it is removed as a
  * defined/undefined field in the template.
@@ -80,35 +80,33 @@ ZINC_API int cmzn_nodetemplate_define_field_from_node(
 	cmzn_node_id node);
 
 /**
- * Gets the number of value/derivative parameters under a given node value label
- * for a field component in the node template.
+ * Get the number of value/derivative parameters under a given node value
+ * label for a field component in the node template.
  *
  * @param node_template  Node template to query.
  * @param field  The field to query value/derivative parameters for. Must be
  * finite_element type only.
  * @param component_number  The component from 1 to the number of field
- * components, or -1 to get maximum number of versions in any component.
+ * components, or -1 to get the number of versions if consistent for all
+ * components.
  * @param node_value_label  The label of the node value/derivative to query.
- * @return  Number of versions value label in component of field, or maximum in
- * any component if component_number is -1. Valid return value can be 0.
- * Returns 0 if field not defined or invalid arguments are supplied.
+ * @return  Number of versions for value label in component of field, or all
+ * components -1 supplied and components are consistent. Valid return value can
+ * be 0 if there are no versions for the supplied node value label. Returns -1
+ * if field not defined, has inconsistent components if all components queried,
+ * or invalid arguments are supplied.
  */
 ZINC_API int cmzn_nodetemplate_get_value_number_of_versions(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,
 	enum cmzn_node_value_label node_value_label);
 
 /**
- * Sets the number of value/derivative parameters under a given node value label
- * for a field component in the node template.
- * Must have first called cmzn_nodetemplate_define_field() for field.
- * Limitation: Zinc is currently limited to having either 0 versions for a
- * derivative label (but at least 1 for the VALUE), or the same positive
- * number of versions for all value/derivative perameters.
- * Callers should assume this will be fixed in a future release, and therefore
- * set the number of versions independently for each value/derivative.
- * For now the largest number of versions set for any value/derivative will be
- * the amount of storage set aside per-field-component, and the field will need
- * to be undefined then re-defined to reduce the number of versions.
+ * Sets the number of value/derivative parameters under a given node value
+ * label for a field component in the node template.
+ * Must have first called cmzn_nodetemplate_define_field() for field. Note that
+ * a field is initially defined with a single VALUE label version, which may be
+ * changed using this function, including passing 0 versions to remove storage
+ * for the VALUE.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define value/derivative parameters for. Must be
@@ -116,10 +114,10 @@ ZINC_API int cmzn_nodetemplate_get_value_number_of_versions(
  * @param component_number  The component from 1 to the number of field
  * components, or -1 to define identically for all components.
  * @param node_value_label  The label of the node value/derivative to define.
- * @param number_of_versions  The number of versions of the value to define.
- * Can be 0 to request no parameters be stored, however the storage allocated
- * may be greater.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param number_of_versions  The number of versions of the derivative/value
+ * label to store. Can be 0 to request no parameters be stored.
+ * @return  Result OK on success, ERROR_NOT_FOUND if field is not defined, or
+ * any other error result for other reasons of failure.
  */
 ZINC_API int cmzn_nodetemplate_set_value_number_of_versions(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,

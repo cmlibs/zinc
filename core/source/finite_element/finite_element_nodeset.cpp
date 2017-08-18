@@ -1023,8 +1023,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
 					cmzn_element *sourceElement;
 					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-					if (get_FE_nodal_element_xi_value(node, targetEmbeddedField, /*component_number*/0, /*version_number*/0,
-						FE_NODAL_VALUE, &sourceElement, xi))
+					if (get_FE_nodal_element_xi_value(node, targetEmbeddedField, /*component_number*/0, &sourceElement, xi))
 					{
 						if (sourceElement)
 						{
@@ -1035,7 +1034,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 							if (targetElement)
 							{
 								if (!set_FE_nodal_element_xi_value(node, targetEmbeddedField,
-									/*component_number*/0, /*version_number*/0, FE_NODAL_VALUE, targetElement, xi))
+									/*component_number*/0, targetElement, xi))
 								{
 									return_code = 0;
 								}

@@ -19,7 +19,8 @@ SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/finite_element_nodeset.cpp
 	source/finite_element/finite_element_region.cpp
 	source/finite_element/finite_element_time.cpp
-	source/finite_element/import_finite_element.cpp )
+	source/finite_element/import_finite_element.cpp
+	source/finite_element/node_field_template.cpp )
 SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/element_field_template.hpp
 	source/finite_element/export_finite_element.h
@@ -32,7 +33,8 @@ SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/finite_element.h
 	source/finite_element/finite_element_basis.h
 	source/finite_element/finite_element_time.h
-	source/finite_element/import_finite_element.h )
+	source/finite_element/import_finite_element.h
+	source/finite_element/node_field_template.hpp )
 
 SET( FINITE_ELEMENT_GRAPHICS_SRCS
 	source/finite_element/finite_element_to_graphics_object.cpp

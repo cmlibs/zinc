@@ -20,9 +20,11 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/debug.h"
 #include "general/math.h"
 #include "general/io_stream.h"
@@ -176,113 +178,88 @@ private:
 };
 
 
-class NodeDerivativesVersions
+class NodeValueLabelsVersions
 {
-	std::vector<FE_nodal_value_type> derivatives;
-	std::vector<int> versionCounts;
-	// mapping from derivative index to Zinc internal storage index, with value first
-	std::vector<int> derivativeOffsets;
+	std::vector<cmzn_node_value_label> valueLabels;
+	std::vector<int> versionsCounts;
 
 public:
 
-	/** For exVersion < 2 only. Call once after all derivatives added with 1
-	* version each) to set same number of versions for all derivatives.
-	* Remember than in the old format parameters are nested by derivatives within versions.
-	* Note the first derivative must have been value!
-	* @return  True on success, false if first derivative is not value, if
-	* more than one version already specified for derivatives or versionCount < 1 */
-	bool setLegacyAllDerivativesVersionCount(int versionCount)
+	/** For exVersion < 2 only. Call once after all value labels added (with 1
+	  * version each) to set same number of versions for all value labels.
+	  * Remember that in the old format parameters are nested with value labels within versions.
+	  * Note the first valueLabel must have been VALUE!
+	  * @return  True on success, false if first valueLabel is not VALUE, if
+	  * more than one version already specified for any valueLabel or versionCount < 1 */
+	bool setLegacyAllValueLabelsVersionsCount(int versionCount)
 	{
-		if ((this->derivatives.size() < 1)
-			|| (this->derivatives[0] != FE_NODAL_VALUE)
+		if ((this->valueLabels.size() < 1)
+			|| (this->valueLabels[0] != CMZN_NODE_VALUE_LABEL_VALUE)
 			|| (versionCount < 1)
-			|| (this->getMaximumVersionCount() > 1))
+			|| (this->getMaximumVersionsCount() > 1))
+		{
+			display_message(ERROR_MESSAGE, "NodeValueLabelsVersions::setLegacyAllValueLabelsVersionCount.  Invalid argument(s)");
 			return false;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
+		}
+		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
 			*iter = versionCount;
 		return true;
 	}
 
-	/** @return  True if added, false if invalid derivative, versionCount < 1 or derivative already used */
-	bool addDerivative(FE_nodal_value_type derivative, int versionCount)
+	/** @return  True if added, false if invalid valueLabel, versionCount < 1 or valueLabel already used */
+	bool setValueLabelVersionsCount(cmzn_node_value_label valueLabel, int versionCount)
 	{
-		if ((derivative < FE_NODAL_VALUE)
-			|| (derivative > FE_NODAL_D3_DS1DS2DS3)
+		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
+			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
 			|| (versionCount < 1)
-			|| (getDerivativeVersionCount(derivative) > 0))
+			|| (getValueLabelVersionsCount(valueLabel) > 0))
 			return false;
-		this->derivatives.push_back(derivative);
-		this->versionCounts.push_back(versionCount);
+		this->valueLabels.push_back(valueLabel);
+		this->versionsCounts.push_back(versionCount);
 		return true;
 	}
 
-	int getDerivativeVersionCount(FE_nodal_value_type derivative)
+	int getValueLabelVersionsCount(cmzn_node_value_label valueLabel)
 	{
-		const size_t derivativesCount = this->derivatives.size();
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] == derivative)
-				return this->versionCounts[d];
+		const size_t valueLabelsCount = this->valueLabels.size();
+		for (size_t d = 0; d < valueLabelsCount; ++d)
+			if (this->valueLabels[d] == valueLabel)
+				return this->versionsCounts[d];
 		return 0;
 	}
 
-	int getMaximumVersionCount() const
+	int getMaximumVersionsCount() const
 	{
-		int maximumVersionCount = 0;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
-			if (*iter > maximumVersionCount)
-				maximumVersionCount = *iter;
-		return maximumVersionCount;
+		int maximumVersionsCount = 0;
+		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
+			if (*iter > maximumVersionsCount)
+				maximumVersionsCount = *iter;
+		return maximumVersionsCount;
 	}
 
-	/** @return  The number of derivatives/value types. */
-	int getDerivativeTypeCount() const
+	/** @return  The number of value labels defined. */
+	int getValueLabelsCount() const
 	{
-		return static_cast<int>(this->derivatives.size());
+		return static_cast<int>(this->valueLabels.size());
 	}
 
-	FE_nodal_value_type getDerivativeTypeAtIndex(int index) const
+	cmzn_node_value_label getValueLabelAtIndex(int index) const
 	{
-		return this->derivatives[index];
+		return this->valueLabels[index];
 	}
 
-	int getDerivativeVersionCountAtIndex(int index) const
+	int getVersionsCountAtIndex(int index) const
 	{
-		return this->versionCounts[index];
+		return this->versionsCounts[index];
 	}
 
-	/** @return  The sum of versionCounts for all derivative types. */
-	int getValueCount() const
+	/** @return  The sum of versionCounts for all value labels. */
+	int getTotalValuesCount() const
 	{
-		int valueCount = 0;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
-			valueCount += *iter;
-		return valueCount;
-	}
-
-	/** Call after fully set up to calculate legacy internal offsets for storing derivatives, with value first */
-	void calculateDerivativeOffsets()
-	{
-		const size_t derivativesCount = this->derivatives.size();
-		this->derivativeOffsets.resize(derivativesCount);
-		int offset = 0;
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] == FE_NODAL_VALUE)
-			{
-				this->derivativeOffsets[d] = 0;
-				++offset;
-				break;
-			}
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] != FE_NODAL_VALUE)
-			{
-				this->derivativeOffsets[d] = offset;
-				++offset;
-			}
-	}
-
-	int getDerivativeOffsetAtIndex(int index) const
-	{
-		return this->derivativeOffsets[index];
+		int valuesCount = 0;
+		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
+			valuesCount += *iter;
+		return valuesCount;
 	}
 };
 
@@ -476,7 +453,7 @@ class EXReader
 	FE_element_shape* elementShape;
 	FE_node_template *node_template;
 	cmzn_elementtemplate *elementtemplate;
-	std::map<FE_field *, std::vector<NodeDerivativesVersions> > nodeFieldComponentDerivativeVersions;
+	std::map<FE_field *, std::vector<NodeValueLabelsVersions> > nodeFieldComponentValueLabelsVersions;
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
 	std::vector<ScaleFactorSet *> scaleFactorSets;
@@ -607,7 +584,7 @@ private:
 	void clearHeaderCache(bool clearElementShape = true)
 	{
 		cmzn::Deaccess(this->node_template);
-		this->nodeFieldComponentDerivativeVersions.clear();
+		this->nodeFieldComponentValueLabelsVersions.clear();
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -669,7 +646,7 @@ private:
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	char *readString();
 	FE_field *readField();
-	bool readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions);
+	bool readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLabelsVersions);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
 	struct FE_basis *readBasis();
@@ -1689,7 +1666,7 @@ bool EXReader::readFieldValues()
  * (value,d/ds1(2),d/ds2,d2/ds1ds2)
  * @return  True on success, false if not read correctly.
  */
-bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions)
+bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLabelsVersions)
 {
 	int next_char = this->readNextNonSpaceChar();
 	if (next_char != (int)'(')
@@ -1700,14 +1677,15 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &derivative_type_name))
 			return false;
 		trim_string_in_place(derivative_type_name);
-		enum FE_nodal_value_type derivative_type = FE_NODAL_UNKNOWN;
-		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &derivative_type))
+		FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
+		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &valueType))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
 			DEALLOCATE(derivative_type_name);
 			return false;
 		}
 		DEALLOCATE(derivative_type_name);
+		cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
 		int versionCount = 0;
 		if (1 == IO_stream_scan(this->input_file, "(%d)", &versionCount))
 		{
@@ -1721,7 +1699,7 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		{
 			versionCount = 1;
 		}
-		if (!nodeDerivativesVersions.addDerivative(derivative_type, versionCount))
+		if (!nodeValueLabelsVersions.setValueLabelVersionsCount(valueLabel, versionCount))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Invalid derivative, number of versions or repeated derivative");
 			return false;
@@ -1750,10 +1728,10 @@ bool EXReader::readNodeHeaderField()
 	bool result = true;
 	const int number_of_components = get_FE_field_number_of_components(field);
 	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
-	struct FE_node_field_creator *node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
+	std::vector<FE_node_field_template> componentNodefieldtemplates(number_of_components);
 	/* read the components */
 	char *componentName = 0;
-	std::vector<NodeDerivativesVersions> nodeDerivativesVersions(number_of_components);
+	std::vector<NodeValueLabelsVersions> nodeValueLabelsVersions(number_of_components);
 	for (int component_number = 0; component_number < number_of_components; ++component_number)
 	{
 		IO_stream_scan(this->input_file, " ");
@@ -1778,7 +1756,7 @@ bool EXReader::readNodeHeaderField()
 		/* component name is sufficient for non-GENERAL_FE_FIELD */
 		if (GENERAL_FE_FIELD == fe_field_type)
 		{
-			NodeDerivativesVersions &componentNodeDerivativesVersions = nodeDerivativesVersions[component_number];
+			NodeValueLabelsVersions &componentNodeValueLabelsVersions = nodeValueLabelsVersions[component_number];
 			if (this->exVersion < 2)
 			{
 				// legacy EX format had same number of versions for all derivatives and 'value' derivative was compulsory (and first)
@@ -1794,28 +1772,28 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// legacy EX format required value derivative, and it had to be first
-				if (!componentNodeDerivativesVersions.addDerivative(FE_NODAL_VALUE, 1))
+				if (!componentNodeValueLabelsVersions.setValueLabelVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE, 1))
 				{
 					result = false;
 					break;
 				}
 				if (0 < number_of_derivatives)
 				{
-					if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
+					if (!this->readNodeValueLabelsVersions(componentNodeValueLabelsVersions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeDerivativesVersions.getMaximumVersionCount() != 1)
+					if (componentNodeValueLabelsVersions.getMaximumVersionsCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
+					if (componentNodeValueLabelsVersions.getValueLabelsCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1826,7 +1804,7 @@ bool EXReader::readNodeHeaderField()
 				// read in the optional number of versions, applied to value and all derivatives
 				if (1 == IO_stream_scan(this->input_file, ", #Versions=%d", &number_of_versions))
 				{
-					if (!componentNodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
+					if (!componentNodeValueLabelsVersions.setLegacyAllValueLabelsVersionsCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1837,7 +1815,7 @@ bool EXReader::readNodeHeaderField()
 			}
 			else
 			{
-				// EX Version 2+: supports variable number of versions per derivative. parameters
+				// EX Version 2+: supports variable number of versions per derivative.
 				// Note that parameters for versions of a given derivative are consecutive in the new format i.e. version cycles within derivative
 				int valuesCount = 0;
 				if (!((1 == IO_stream_scan(this->input_file, ". #Values=%d", &valuesCount))
@@ -1849,14 +1827,14 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// follow with derivative names and versions, even if empty ()
-				if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
+				if (!this->readNodeValueLabelsVersions(componentNodeValueLabelsVersions))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
-				if (componentNodeDerivativesVersions.getValueCount() != valuesCount)
+				if (componentNodeValueLabelsVersions.getTotalValuesCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1864,37 +1842,22 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 			}
-			componentNodeDerivativesVersions.calculateDerivativeOffsets();
-			// Zinc cannot yet handle per-derivative versions nor having no value parameters, so define in the old way
-			const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-			for (int d = 0; d < derivativeTypeCount; ++d)
+			const int valueLabelsCount = componentNodeValueLabelsVersions.getValueLabelsCount();
+			for (int d = 0; d < valueLabelsCount; ++d)
 			{
-				const FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAtIndex(d);
-				if (derivativeType != FE_NODAL_VALUE) // value is currently always already set as the first entry
+				const cmzn_node_value_label valueLabel = componentNodeValueLabelsVersions.getValueLabelAtIndex(d);
+				const int versionsCount = componentNodeValueLabelsVersions.getVersionsCountAtIndex(d);
+				if (CMZN_OK != componentNodefieldtemplates[component_number].setValueNumberOfVersions(valueLabel, versionsCount))
 				{
-					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
-							ENUMERATOR_STRING(FE_nodal_value_type)(derivativeType), get_FE_field_name(field), componentName, this->getFileLocation());
-						result = false;
-						break;
-					}
-				}
-			}
-			if (!result)
-				break;
-			const int maximumVersionCount = componentNodeDerivativesVersions.getMaximumVersionCount();
-			// version count can be 0 in field, but must have at least 1 value version
-			if (maximumVersionCount > 1)
-			{
-				if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, component_number, maximumVersionCount))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of versions for field %s component %s.  %s",
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
+						ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(valueLabel)),
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
 			}
+			if (!result)
+				break;
 		}
 		if (this->exVersion >= 2)
 		{
@@ -1951,12 +1914,12 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (result)
 		{
-			if (define_FE_field_at_node(node_template->get_template_node(), field, fe_time_sequence,
-				node_field_creator))
+			if (define_FE_field_at_node(node_template->get_template_node(), field,
+				componentNodefieldtemplates.data(), fe_time_sequence))
 			{
 				this->headerFields.push_back(field);
 				// must do following after field is merged otherwise can be different field object:
-				this->nodeFieldComponentDerivativeVersions[field] = nodeDerivativesVersions;
+				this->nodeFieldComponentValueLabelsVersions[field] = nodeValueLabelsVersions;
 			}
 			else
 			{
@@ -1966,7 +1929,6 @@ bool EXReader::readNodeHeaderField()
 			}
 		}
 	}
-	DESTROY(FE_node_field_creator)(&node_field_creator);
 	if (componentName)
 		DEALLOCATE(componentName);
 	DEACCESS(FE_field)(&field);
@@ -1976,7 +1938,7 @@ bool EXReader::readNodeHeaderField()
 /**
  * Creates a node template with the field information read from stream.
  * Fills list of header fields in read order.
- * Creates and fills nodeFieldComponentDerivativeVersions to store
+ * Creates and fills nodeFieldComponentValueLabelsVersions to store
  * new format with variable versions per derivative.
  */
 bool EXReader::readNodeHeader()
@@ -2062,15 +2024,17 @@ cmzn_node *EXReader::readNode()
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
-		int number_of_values = 0;
-		for (int c = 0; c < componentCount; ++c)
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+		if (!node_field)
 		{
-			number_of_values += get_FE_node_field_component_number_of_versions(node, field, c)*
-				(1 + get_FE_node_field_component_number_of_derivatives(node, field, c));
+			display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
+			result = false;
+			break;
 		}
+		const int number_of_values = node_field->getTotalValuesCount();
 		if (number_of_values <= 0)
 		{
-			display_message(ERROR_MESSAGE, "No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
+			display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
 			result = false;
 			break;
 		}
@@ -2086,8 +2050,7 @@ cmzn_node *EXReader::readNode()
 				for (int k = 0; k < number_of_values; ++k)
 				{
 					if (!(this->readElementXiValue(field, element, xi)
-						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, /*version*/0,
-							FE_NODAL_VALUE, element, xi)))
+						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, element, xi)))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
 							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
@@ -2105,160 +2068,111 @@ cmzn_node *EXReader::readNode()
 		} break;
 		case FE_VALUE_VALUE:
 		{
-			FE_value *values;
-			if (ALLOCATE(values, FE_value, number_of_values))
+			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			std::vector<FE_value> valuesVector(maximumValuesCount);
+			FE_value *values = valuesVector.data();
+			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valuesCount = nft.getTotalValuesCount();
+				for (int k = 0; k < valuesCount; ++k)
+				{
+					if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+					if (!finite(values[k]))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+				if (!result)
+				{
+					break;
+				}
 				if (this->exVersion < 2)
 				{
-					// before EX version 2, derivatives were nested within versions, hence need separate code to read
-					for (int k = 0; k < number_of_values; ++k)
+					// all derivatives / value labels had same number of versions in old format
+					const int versionsCount = nft.getVersionsCountAtIndex(0);
+					if (versionsCount > 1)
 					{
-						if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+						std::vector<FE_value> tmpValuesVector(valuesVector);
+						FE_value *tmpValues = tmpValuesVector.data();
+						const int valueLabelsCount = nft.getValueLabelsCount();
+						for (int d = 0; d < valueLabelsCount; ++d)
 						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-				}
-				else
-				{
-					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
-					// initialise values to 0.0 to clear versions that are not read
-					for (int k = 0; k < number_of_values; ++k)
-						values[k] = 0.0;
-					FE_value *componentValues = values;
-					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
-					for (int c = 0; (c < componentCount) && result; ++c)
-					{
-						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
-						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
-						{
-							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
-							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
-							for (int v = 0; v < versionCount; ++v)
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING,
-									componentValues + derivativeTypeCount*v + derivativeOffset))
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-									result = false;
-									break;
-								}
+								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
 							}
 						}
-						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
-				if (result)
+				if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
+					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
 				{
-					for (int k = 0; k < number_of_values; ++k)
-					{
-						if (!finite(values[k]))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
+						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+					result = false;
 				}
-				if (result)
-				{
-					int length;
-					if (!set_FE_nodal_field_FE_value_values(field, node, values, &length, (this->timeIndex) ? this->timeIndex->time : 0.0))
-					{
-						result = false;
-					}
-					else if (length != number_of_values)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
-							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
-						result = false;
-					}
-				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"EXReader::readNode.  Insufficient memory for FE_value_values");
-				result = false;
 			}
 		} break;
 		case INT_VALUE:
 		{
-			int *values;
-			if (ALLOCATE(values, int, number_of_values))
+			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			std::vector<int> valuesVector(maximumValuesCount);
+			int *values = valuesVector.data();
+			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valuesCount = nft.getTotalValuesCount();
+				for (int k = 0; k < valuesCount; ++k)
+				{
+					if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+				if (!result)
+				{
+					break;
+				}
 				if (this->exVersion < 2)
 				{
-					// before EX version 2, derivatives were nested within versions, hence need separate code to read
-					for (int k = 0; k < number_of_values; ++k)
+					// all derivatives / value labels had same number of versions in old format
+					const int versionsCount = nft.getVersionsCountAtIndex(0);
+					if (versionsCount > 1)
 					{
-						if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+						std::vector<int> tmpValuesVector(valuesVector);
+						int *tmpValues = tmpValuesVector.data();
+						const int valueLabelsCount = nft.getValueLabelsCount();
+						for (int d = 0; d < valueLabelsCount; ++d)
 						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-				}
-				else
-				{
-					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
-					// initialise values to 0.0 to clear versions that are not read
-					for (int k = 0; k < number_of_values; ++k)
-						values[k] = 0.0;
-					int *componentValues = values;
-					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
-					for (int c = 0; (c < componentCount) && result; ++c)
-					{
-						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
-						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
-						{
-							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
-							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
-							for (int v = 0; v < versionCount; ++v)
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								if (1 != IO_stream_scan(this->input_file, "%d",
-									componentValues + derivativeTypeCount*v + derivativeOffset))
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-									result = false;
-									break;
-								}
+								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
 							}
 						}
-						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
-				if (result)
+				if (!cmzn_node_set_field_component_int_values(node, field, c,
+					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
 				{
-					int length;
-					// time is not supported by int. Add in future?
-					if (!set_FE_nodal_field_int_values(field, node, values, &length))
-					{
-						result = false;
-					}
-					else if (length != number_of_values)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
-							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
-						result = false;
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
+						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+					result = false;
 				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "EXReader::readNode.  Insufficient memory for int values");
-				result = false;
 			}
 		} break;
 		case STRING_VALUE:
@@ -2270,7 +2184,7 @@ cmzn_node *EXReader::readNode()
 					char *theString = this->readString();
 					if (theString)
 					{
-						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, /*version*/0, FE_NODAL_VALUE, theString))
+						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, theString))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
 								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());

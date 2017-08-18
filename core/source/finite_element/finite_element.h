@@ -11,7 +11,6 @@
 #if !defined (FINITE_ELEMENT_H)
 #define FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/types/elementid.h"
 #include "finite_element/finite_element_basis.h"
@@ -32,6 +31,8 @@ Global types
 
 class DsLabelsGroup;
 class DsLabelsChangeLog;
+
+class FE_node_field_template;
 
 /**
  * FE_node has pointer to owning FE_nodeset in shared field info.
@@ -135,8 +136,6 @@ inline enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
 	return static_cast<cmzn_node_value_label>(nodal_value_type);
 }
 
-struct FE_node_field_creator;
-
 struct cmzn_node;
 #define FE_node cmzn_node
 
@@ -232,18 +231,6 @@ Stores a list of fields in the order they are added.
 The contents of this object are private.
 ==============================================================================*/
 
-struct FE_field_and_string_data
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-Used by FE_node_has_FE_field_and_string_data
-==============================================================================*/
-{
-	struct FE_field *fe_field;
-	char *string;
-};
-
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_domain_type);
 
 /*
@@ -251,116 +238,16 @@ Global functions
 ----------------
 */
 
-struct FE_node_field_creator *CREATE(FE_node_field_creator)(
-	int number_of_components);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-An object for defining the components, number_of_versions,
-number_of_derivatives and their types at a node.
-By default each component has 1 version and no derivatives.
-==============================================================================*/
-
-struct FE_node_field_creator *create_FE_node_field_creator_from_node_field(
-	struct FE_node *node, struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2001
-
-DESCRIPTION :
-Creates an FE_node_field_creator from <node>,<field>
-==============================================================================*/
-
-int DESTROY(FE_node_field_creator)(
-	struct FE_node_field_creator **node_field_creator_address);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Frees the memory for the node field creator and sets
-<*node_field_creator_address> to NULL.
-==============================================================================*/
-
-/**
- * Adds the derivative of specified <derivative_type> to the <component_number>
- * specified.
- * @return  CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if derivative already
- * defined, CMZN_ERROR_ARGUMENT if invalid argument(s) supplied.
- */
-int FE_node_field_creator_define_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type);
-
-/**
- * Removes the derivative of specified <derivative_type> for the <component_number>
- * specified.
- */
-void FE_node_field_creator_undefine_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type);
-
-/**
- * Returns the number of derivatives defined for a given component in the
- * node field creator (not including value).
- *
- * @param node_field_creator  Node field creator to query.
- * @param component_number  The component from 0 to the number of field
- * components-1.
- * @return  Number of versions for component of field, or 0 if field not
- * defined or invalid arguments are supplied.
- */
-int FE_node_field_creator_get_number_of_derivatives(
-	struct FE_node_field_creator *node_field_creator, int component_number);
-
-/**
- * Specifies the <number_of_versions> for <component_number> specified.
- * @return  CMZN_OK  on success, otherwise any other error.
- */
-int FE_node_field_creator_define_versions(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	int number_of_versions);
-
-/**
- * Returns the number of versions defined for a given component in the
- * node field creator.
- *
- * @param node_field_creator  Node field creator to query.
- * @param component_number  The component from 0 to the number of field
- * components-1, or negative to get maximum number of versions in any component.
- * @return  Number of versions for component of field, or maximum in any
- * component if component_number is -1). Returns 0 if field not defined or
- * invalid arguments are supplied.
- */
-int FE_node_field_creator_get_number_of_versions(
-	struct FE_node_field_creator *node_field_creator, int component_number);
-
-/***************************************************************************//**
- * Returns whether a nodal derivative is defined for a component in the
- * node field creator.
- *
- * @param node_field_creator  Node field creator to query.
- * @param component_number  The component from 0 to the number of field
- * components-1, or negative to check if *any* component has the nodal derivative.
- * @param derivative_type  The type of nodal derivative to check.
- * @return  1 if derivative_type is defined for component_number of field (or
- * for any component if component_number is -1), 0 if not.
- */
-int FE_node_field_creator_has_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
 
+/** Define a field at a node. Does not assign values.
+  * @param componentTemplates  Pointer to array of node field templates. These
+  * are copied for internal use and valuesOffset set appropriately.
+  * @param timeSequence  Optional time sequence for time-varying parameters. */
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
-	struct FE_time_sequence *fe_time_seqence,
-	struct FE_node_field_creator *fe_node_field_creator);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Defines a field at a node (does not assign values).
-==============================================================================*/
+	const FE_node_field_template *componentTemplatesIn,
+	struct FE_time_sequence *timesequence);
 
 /**
  * Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
@@ -454,96 +341,86 @@ DESCRIPTION :
 Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
-int FE_nodal_value_version_exists(struct FE_node *node,
-	struct FE_field *field, int component_number,int version,
-	enum FE_nodal_value_type type);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
+/** Get node field parameters for valueLabel, version at time.
+  * If valueLabel is VALUE all components must be defined, otherwise at least
+  * one component, and undefined components are returned with value 0.
+  * @param componentNumber  Component number starting at 0, or negative to get
+  * all components. 
+  * @return  Result OK on full success, WARNING_PART_DONE if only some components
+  * have parameters, ERROR_NOT_FOUND if field not defined or none of the requested
+  * components have parameters, otherwise any other error code. */
+#define PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION( value_typename, value_enum ) \
+int get_FE_nodal_ ## value_typename ## _value(cmzn_node *node, FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, value_typename *valuesOut);
 
-DESCRIPTION :
-Returns 1 if the <field>, <component_number>, <version> and <type> are stored at the
-node.
-???DB.  May need speeding up
-==============================================================================*/
+/** Set node field parameters for valueLabel, version at time.
+  * If valueLabel is VALUE all components must be defined, otherwise at least
+  * one component, and undefined components are returned with value 0.
+  * @param componentNumber  Field component number starting at 0, or negative to
+  * set all component values.
+  * @return  Result OK on full success, WARNING_PART_DONE if only some components
+  * have parameters (and which were set), ERROR_NOT_FOUND if field not defined
+  * or none of the requested components have parameters, otherwise any other error code. */
+#define PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION( value_typename, value_enum ) \
+int set_FE_nodal_ ## value_typename ## _value(cmzn_node *node,  FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, const value_typename *valuesIn);
 
-int get_FE_nodal_value_as_string(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type, FE_value time, char **string);
-/*******************************************************************************
-LAST MODIFIED : 22 November 2001
-
-DESCRIPTION :
-Returns as a string the value for the (<version>, <type>) for the <field>
-<component_number> at the <node>.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-
-#define PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
-int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type *value); \
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
- \
-DESCRIPTION : \
-Gets a particular value (<version>, <type>) for the field> \
-and <component_number> at the <node> and <time>. \
-==============================================================================*/
-
-#define PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
-int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type value); \
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
- \
-DESCRIPTION : \
-Sets a particular value (<version>, <type>) for the <field> \
-and <component_number> at the <node>. \
-==============================================================================*/
-
-#define PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
-int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type **value); \
-/******************************************************************************* \
-LAST MODIFIED : 8 May 2007 \
- \
-DESCRIPTION : \
-Returns a pointer to the memory which contains the values storage for this  \
-degree of freedom.  This pointer will be invalid if the node is modified so \
-it should only be used temporarily. \
-==============================================================================*/
+/** Get address of node field parameter for valueLabel, version at time.
+  * @param componentNumber  Field component number starting at 0.
+  * @param valueAddress  On success, address of node parameter. Will be invalid
+  * if the node is modified so it should only be used temporarily.
+  * @return  1 on success, otherwise 0. */
+#define PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_typename, value_enum ) \
+int get_FE_nodal_ ## value_typename ## _storage(cmzn_node *node, FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, value_typename **valueAddress);
 
 #define PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
 PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
 PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
 PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION(value_type,value_enum)
 
-PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
-PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
-PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( float , FLOAT_VALUE )
-PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
-PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS(FE_value, FE_VALUE_VALUE)
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS(double, DOUBLE_VALUE)
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS(float, FLOAT_VALUE)
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS(int, INT_VALUE)
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS(short, SHORT_VALUE)
 
+/**
+ * Gets an element:xi value stored at a node.
+ * Note doesn't support value labels and versions.
+ */
 int get_FE_nodal_element_xi_value(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type, struct FE_element **element, FE_value *xi);
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Gets a particular element_xi_value (<version>, <type>) for the field <component> at the
-<node>.
-==============================================================================*/
+	FE_field *field, int component_number,
+	cmzn_element **element, FE_value *xi);
 
 /**
  * Sets a particular element_xi_value (<version>, <type>) for the field
  * <component> at the <node>.
  */
 int set_FE_nodal_element_xi_value(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi);
+	FE_field *field, int component_number,
+	cmzn_element *element, const FE_value *xi);
+
+/** Returns a copy of the string for field component at the <node. 
+  * Up to the calling function to DEALLOCATE the returned string.
+  * @param stringOut  On success, set to allocated string value, or 0 if no
+  * string. */
+int get_FE_nodal_string_value(struct FE_node *node,
+	FE_field *field, int componentNumber, char **stringOut);
+
+/** Copies and sets the string value of field component at node.
+  * @param stringIn  May be NULL. */
+int set_FE_nodal_string_value(struct FE_node *node,
+	FE_field *field, int componentNumber, const char *stringIn);
+
+/** Get as a string the node field component with valueLabel, version at time.
+  * @return  Allocated string, or 0 if faile. */
+char *get_FE_nodal_value_as_string(struct FE_node *node, FE_field *field,
+	int componentNumber, cmzn_node_value_label valueLabel, int version,
+	FE_value time);
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void);
 /*******************************************************************************
@@ -588,151 +465,89 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *nodeset,
  */
 bool FE_node_can_merge(struct FE_node *targetNode, struct FE_node *sourceNode);
 
-int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-Returns true(1) if the <data_void>->fe_field is define at the <node> AND
-the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string.
-Otherwise returns false (0)
-==============================================================================*/
-
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_nodal_value_type);
 
-int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
-	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
-	int *the_array_index,int *the_index_high,int *the_index_low);
-/*******************************************************************************
-LAST MODIFIED : 1 August 2000
-
-DESCRIPTION
-Given a <field> and <time>, checks that <field> has times defined and returns:
-<the_array_index>, the array index of <field> times closest to <time>.
-<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
-(ideally <the_index_high>==<the_index_low>==<the_array_index>).
-<the_time_low> the time corresponding to <the_index_low>.
-<the_time_high> the time corresponding to <the_index_high>.
-
-All this information (rather than just <the_array_index> ) is returned so can
-perform interpolation, etc.
-==============================================================================*/
-
-int get_FE_nodal_string_value(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,char **string);
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Returns a copy of the string for <version>, <type> of <field><component_number>
-at the <node>. Up to the calling function to DEALLOCATE the returned string.
-Returned <*string> may be a valid NULL if that is what is in the node.
-==============================================================================*/
-
-int set_FE_nodal_string_value(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type, const char *string);
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Copies and sets the <string> for <version>, <type> of <field><component_number>
-at the <node>. <string> may be NULL.
-==============================================================================*/
-
-int set_FE_nodal_field_double_values(struct FE_field *field,
-	struct FE_node *node,double *values, int *number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the doubles in values.
-Returns the number of doubles copied in number_of_values.
-Assumes that values is set up with the correct number of doubles.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-
-int get_FE_nodal_field_number_of_values(struct FE_field *field,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 20 September 1999
-
-DESCRIPTION :
-Returns the total number of values stored for that field at the node, equals
-sum of (1+num_derivatives)*num_versions for each component.
-==============================================================================*/
-
 /**
- * Get derivative and version labels for all parameters for all components of
- * field at node. These are in the same order as returned by
- * get_FE_nodal_field_FE_value_values, cycling from slowest to fastest:
- * components, versions, derivatives.
+ * Get all parameters for field component at node and time.
+ * Parameter order cycles slowest for derivative / value label, with versions
+ * for a given value label consecutive.
  *
- * @param field  The field to query; must be FE_value valued.
- * @param node  The node to get parameters for.
- * @param time  The time to get parameters at. If between time indexes the
- * parameters are interpolated. If outside range of times the nearest (first or
- * last) time is returned.
- * @param lastNode  Optional last node for comparing field layout. If node has
- * same field info, parameter labels are returned as-is for efficiency.
- * @param componentParameterCounts  Array of component count size for receiving
- * numbers of parameters per component. Passed in pre-allocated to sufficient size.
- * @param componentDerivatives  Array of per-component arrays for receiving
- * derivative / value type arrays. Passed in pre-allocated to sufficient size
- * for each component. First derivative type is 1 = value.
- * @param componentVersions  Array of per-component arrays for receiving
- * version arrays. Passed in pre-allocated to sufficient size for each component.
- * version numbers start at 1.
- * @param isHomogeneous  On successful return, set to true if a multicomponent
- * field with all components having the same number of parameters with labels
- * in the same order, so the caller can use values for all components together.
- * @return  CMZN_OK if node parameter labels are correctly returned,
- * CMZN_ERROR_NOT_FOUND if field not defined, otherwise any other error code.
+ * @param node  The node which stores the field values.
+ * @param field  The fields whose values are to be returned from.
+ * @param componentNumber  The component number starting at 0.
+ * @param time  The time to get values at. If node field is not time-varying,
+ * this argument is ignored. If time varying, parameters are interpolated to
+ * in-between times, or if out of range the parameters at minimum or maximum
+ * time are returned.
+ * @param valuesCount  The size of the values array. Must be at least as big
+ * as number of values for the component.
+ * @param valuesOut  Array to receive node field values.
+ * @return  Result OK on success, any other value on failure.
  */
-int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value time,
-	FE_node *lastNode, int *componentParameterCounts, int **componentDerivatives, 
-	int **componentVersions, bool &isHomogeneous);
+int cmzn_node_get_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	FE_value *valuesOut);
 
 /**
- * Allocates and returns a copy of the <number_of_values>-length <values> array
- * stored at the <node> for all components derivatives and versions of <field>.
- * It will return the values specified at <time> if time sequence is found on
- * node field. If time is out of its range then it will return either the values
- * at minimum or maximum time.
- * It is up to the calling function to DEALLOCATE the returned array.
+ * Set all parameters for field component at node and time.
+ * Parameter order cycles slowest for derivative / value label, with versions
+ * for a given value label consecutive.
  *
- * @param  field  fields value to be returned from.
- * @param  node  the node which stores the field values.
- * @param  time  returns the values at <time> if nodal field has the concept of
- *    time, otherwise this argument is ignored.
- * @param  values  <number_of_values>-length <values> array to be returned, it
- *   stores all components derivatives and versions of <field> at <node>. Array
- *   is allocated by this function and must be be deallocated by the caller.
- * @return  1 if successfully returns a value otherwise 0.
- */
-int get_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values);
-
-/**
- * Sets all FE_value-type parameters for field at node.
- * Assumes that values is set up with the correct number of FE_values.
- * Assumes that the node->values_storage has been allocated with enough
- * memory to hold all the values.
- * Assumes that the nodal fields have been set up, with information to
- * place the values.
- *
+ * @param node  The node which stores the field values.
+ * @param field  The fields whose values are to be set.
+ * @param componentNumber  The component number starting at 0.
  * @param time  The time to set values at, ignored for non-time-varying field.
  * For a time-varying field, must exactly equal a time at which parameters are
  * stored.
- * @param number_of_values  On return equals the number of values set.
+ * @param valuesCount  The size of the values array. Must match number of
+ * values for the component.
+ * @param valuesIn  The array of values to set.
+ * @return  Result OK on success, any other value on failure.
  */
-int set_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node, FE_value *values, int *number_of_values, FE_value time);
+int cmzn_node_set_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const FE_value *valuesIn);
+
+/**
+ * Get all parameters for field component at node and time. Integer variant.
+ * Parameter order cycles slowest for derivative / value label, with versions
+ * for a given value label consecutive.
+ *
+ * @param node  The node which stores the field values.
+ * @param field  The fields whose values are to be returned from.
+ * @param componentNumber  The component number starting at 0.
+ * @param time  The time to get values at. If node field is not time-varying,
+ * this argument is ignored. If time varying, parameters are interpolated to
+ * in-between times, or if out of range the parameters at minimum or maximum
+ * time are returned.
+ * @param valuesCount  The size of the values array. Must be at least as big
+ * as number of values for the component.
+ * @param valuesOut  Array to receive node field values.
+ * @return  Result OK on success, any other value on failure.
+ */
+int cmzn_node_get_field_component_int_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	int *valuesOut);
+
+/**
+ * Set all parameters for field component at node and time. Integer variant.
+ * Parameter order cycles slowest for derivative / value label, with versions
+ * for a given value label consecutive.
+ *
+ * @param node  The node which stores the field values.
+ * @param field  The fields whose values are to be set.
+ * @param componentNumber  The component number starting at 0.
+ * @param time  The time to set values at, ignored for non-time-varying field.
+ * For a time-varying field, must exactly equal a time at which parameters are
+ * stored.
+ * @param valuesCount  The size of the values array. Must match number of
+ * values for the component.
+ * @param valuesIn  The array of values to set.
+ * @return  Result OK on success, any other value on failure.
+ */
+int cmzn_node_set_field_component_int_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const int *valuesIn);
 
 /**
  * Assigns all parameters for the field at the node, taken from sparse arrays.
@@ -759,62 +574,10 @@ int set_FE_nodal_field_FE_value_values(struct FE_field *field,
  * component and derivative.
  */
 int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *node,
-	int arraySize, FE_value *values, int *valueExists, int valuesCount,
+	int arraySize, const FE_value *values, const int *valueExists, int valuesCount,
 	int componentsSize, int componentsOffset,
 	int derivativesSize, int derivativesOffset,
 	int versionsSize, int versionsOffset);
-
-int set_FE_nodal_field_float_values(struct FE_field *field,
-	struct FE_node *node,float *values, int *number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the floats in values.
-Returns the number of floats copied in number_of_values.
-Assumes that values is set up with the correct number of floats.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-
-/**
- * Allocates and returns a copy of the <number_of_values>-length <values> array
- * stored at the <node> for all components derivatives and versions of <field>.
- * It will return the values specified at <time> if time sequence is found on
- * node field. If time is out of its range then it will return either the values
- * at minimum or maximum time.
- * It is up to the calling function to DEALLOCATE the returned array.
- *
- * @param  field  fields value to be returned from.
- * @param  node  the node which stores the field values.
- * @param  time  returns the values at <time> if nodal field has the concept of
- *    time, otherwise this argument is ignored.
- * @param  values  <number_of_values>-length <values> array to be returned, it
- *   stores all components derivatives and versions of <field> at <node>. Array
- *   is allocated by this function and must be be deallocated by the caller.
- * @return  1 if successfully returns a value otherwise 0.
- */
-int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node, int *number_of_values, FE_value time, int **values);
-
-int set_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *values, int *number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the integers in values.
-Returns the number of integers copied in number_of_values.
-Assumes that values is set up with the correct number of ints.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
 
 int get_FE_node_number_of_values(struct FE_node *node);
 /*******************************************************************************
@@ -824,57 +587,10 @@ DESCRIPTION :
 Returns the number of values stored at the <node>.
 ==============================================================================*/
 
-int get_FE_node_number_of_fields(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 30 October 1998
-
-DESCRIPTION :
-Returns the number of fields stored at the <node>.
-==============================================================================*/
-
-struct FE_time_sequence *get_FE_node_field_FE_time_sequence(struct FE_node *node,
-	struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 15 November 2004
-
-DESCRIPTION :
-Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
-<node> and <field> have no time dependence then the function will return NULL.
-==============================================================================*/
-
-enum FE_nodal_value_type *get_FE_node_field_component_nodal_value_types(
-	struct FE_node *node,struct FE_field *field,int component_number);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns an array of the (1+number_of_derivatives) value types for the
-node field component.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
-
-int get_FE_node_field_component_number_of_derivatives(struct FE_node *node,
-	struct FE_field *field,int component_number);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns the number of derivatives for the node field component.
-==============================================================================*/
-
-int get_FE_node_field_component_number_of_versions(struct FE_node *node,
-	struct FE_field *field,int component_number);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns the number of versions for the node field component.
-==============================================================================*/
-
 /**
  * @return  The non-negative node identifier, otherwise
  * DS_LABEL_IDENTIFIER_INVALID on error or if node is orphaned from nodeset.
-*/
+ */
 int get_FE_node_identifier(struct FE_node *node);
 
 /**
@@ -891,23 +607,6 @@ DsLabelIndex get_FE_node_index(struct FE_node *node);
  * to use by privileged caller.
  */
 void set_FE_node_index(struct FE_node *node, DsLabelIndex index);
-
-/***************************************************************************//**
- * Returns the first coordinate field define at the node, currently in
- * alphabetical order. Not reliable for finding the correct coordinate field
- * if multiple defined such as reference, deformed, texture coordinates.
- */
-struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node);
-
-int FE_node_find_default_coordinate_field_iterator(
-	struct FE_node *node, void *fe_field_ptr_void);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-An FE_node iterator that returns 1 when an appropriate default_coordinate
-fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
 
 /***************************************************************************//**
  * Writes to the console the node identifier and details of the fields and
@@ -1846,40 +1545,6 @@ field->values_storage specified by value_number.
 Give an error if field->values_storage isn't storing array types.
 ==============================================================================*/
 
-int get_FE_field_double_array_value(struct FE_field *field, int value_number,
-	double *array, int number_of_array_values);
-/*******************************************************************************
-LAST MODIFIED : 4 March 1999
-
-DESCRIPTION :
-Get the double array in field->values_storage specified by value_number, of
-of length number_of_array_values. If number_of_array_values > the stored arrays
-max length, gets the max length.
-MUST allocate space for the array before calling this function.
-
-Use get_FE_field_array_attributes() or get_FE_field_max_array_size()
-to get the size of an array.
-==============================================================================*/
-
-int set_FE_field_double_array_value(struct FE_field *field, int value_number,
-	double *array, int number_of_array_values);
-/*******************************************************************************
-
-DESCRIPTION :
-Finds any existing double array at the place specified by  value_number in
-field->values_storage.
-Frees it.
-Allocates a new array, according to number_of_array_values.
-Copies the contents of the passed array to this allocated one.
-Copies number of array values, and the pointer to the allocated array to the
-specified place in the field->values_storage.
-
-Therefore, should free the passed array, after passing it to this function
-
-The field value MUST have been previously allocated with
-set_FE_field_number_of_values
-==============================================================================*/
-
 int get_FE_field_string_value(struct FE_field *field,int value_number,
 	char **string);
 /*******************************************************************************
@@ -1919,14 +1584,6 @@ DESCRIPTION :
 Sets the specified global value for the <field>, to the passed Element and xi
 The field value MUST have been previously allocated with
 set_FE_field_number_of_values
-==============================================================================*/
-
-int get_FE_field_FE_value(struct FE_field *field,int number,FE_value *value);
-/*******************************************************************************
-LAST MODIFIED : 3 March 1999
-
-DESCRIPTION :
-Gets the specified global value for the <field>.
 ==============================================================================*/
 
 int get_FE_field_FE_value_value(struct FE_field *field,int number,
@@ -1993,19 +1650,6 @@ Should only call this function for unmanaged fields.
  * All others should use FE_region_set_FE_field_name.
  */
 int set_FE_field_name(struct FE_field *field, const char *name);
-
-int calculate_FE_field(struct FE_field *field,int component_number,
-	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,
-	FE_value time, FE_value *value);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Calculates the <value> of the <field> for the specified <node> or <element> and
-<xi_coordinates>.  If 0<=component_number<=number_of_components, then only the
-specified component is calculated, otherwise all components are calculated.  The
-storage for the <value> should have been allocated outside the function.
-==============================================================================*/
 
 /**
  * Returns true if element is a top_level parent of other_element.
@@ -2301,19 +1945,6 @@ LAST MODIFIED : 13 July 1999
 
 DESCRIPTION :
 Gets the <field_order_info> field at the specified field_number
-==============================================================================*/
-
-int define_node_field_and_field_order_info(struct FE_node *node,
-	struct FE_field *field, struct FE_node_field_creator *node_field_creator,
-	struct FE_field_order_info *field_order_info);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Helper function for create_config_template_node() and
-create_mapping_template_node() that, given the node, field and
-field_order_info, defines the field at the node, and places it at the end of
-the field_order_info list.
 ==============================================================================*/
 
 /**

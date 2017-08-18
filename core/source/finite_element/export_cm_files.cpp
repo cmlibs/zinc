@@ -25,6 +25,7 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -440,52 +441,48 @@ static int FE_node_write_cm_check_node_values(
 	int return_code = 1;
 	if (node && data)
 	{
-		int i;
-		int has_versions = 0;
-		if (FE_field_is_defined_at_node(data->field,node))
+		bool has_versions = false;
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
 			if (data->number_of_nodes)
 			{
 				/* Check for consistent number of derivatives */
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0 ; c < data->number_of_components ; ++c)
 				{
-					if (data->number_of_derivatives[i] !=
-						get_FE_node_field_component_number_of_derivatives(
-							node, data->field, i))
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					if (data->number_of_derivatives[c] != nft->getMaximumDerivativeNumber())
 					{
 						display_message(ERROR_MESSAGE, "FE_node_write_cm_check_node_values.  "
-							"Node %d has inconsistent numbers of derivatives.",
+							"Node %d has inconsistent numbers of derivatives / value labels.",
 							get_FE_node_identifier(node));
 						return_code = 0;
 					}
-					if (1 != get_FE_node_field_component_number_of_versions(
-							 node, data->field, i))
+					if (1 != nft->getMaximumVersionsCount())
 					{
-						data->has_versions[i]++;
-						has_versions = 1;
+						++(data->has_versions[c]);
+						has_versions = true;
 					}
 				}
 			}
 			else
 			{
 				/* This is the first node */
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0; c < data->number_of_components; ++c)
 				{
-					data->number_of_derivatives[i] =
-						get_FE_node_field_component_number_of_derivatives(
-							node, data->field, i);
-					if (1 != get_FE_node_field_component_number_of_versions(
-							 node, data->field, i))
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					data->number_of_derivatives[c] = nft->getMaximumDerivativeNumber();
+					if (1 != nft->getMaximumVersionsCount())
 					{
-						data->has_versions[i]++;
-						has_versions = 1;
+						++(data->has_versions[c]);
+						has_versions = true;
 					}
 				}
 			}
-			data->number_of_nodes++;
+			++(data->number_of_nodes);
 			if (has_versions)
 			{
-				data->number_of_nodes_with_versions++;
+				++(data->number_of_nodes_with_versions);
 			}
 		}
 	}
@@ -506,26 +503,35 @@ static int write_cm_FE_node(
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
-	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
-		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
-		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
+	const cmzn_node_value_label derivativeValueLabels[] =
+	{
+		CMZN_NODE_VALUE_LABEL_D_DS1,
+		CMZN_NODE_VALUE_LABEL_D_DS2,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
+		CMZN_NODE_VALUE_LABEL_D_DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
+		CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
+	};
 	FE_value value;
-	int i, j, k, number_of_versions, return_code;
+	int j, k, number_of_versions, return_code;
 
 	if (node && data)
 	{
 		return_code = 1;
-		if (FE_field_is_defined_at_node(data->field, node))
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
 			fprintf(data->ipnode_file, " Node number [    1]:     %d\n",
 				get_FE_node_identifier(node));
-			for (i = 0 ; i < data->number_of_components ; i++)
+			for (int c = 0; c < data->number_of_components; ++c)
 			{
-				if (data->has_versions[i])
+				const FE_node_field_template *nft = node_field->getComponent(c);
+				if (data->has_versions[c])
 				{
-					number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+					number_of_versions = nft->getMaximumVersionsCount();
 					fprintf(data->ipnode_file, " The number of versions for nj=%d is [1]:  %d\n",
-						i + 1, number_of_versions);
+						c + 1, number_of_versions);
 				}
 				else
 				{
@@ -537,15 +543,14 @@ static int write_cm_FE_node(
 					{
 						fprintf(data->ipnode_file, " For version number%2d:\n", j + 1);
 					}
-					get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, /*version*/j,
-						FE_NODAL_VALUE, /*time*/0.0, &value);
+					get_FE_nodal_FE_value_value(node, data->field, c,
+						CMZN_NODE_VALUE_LABEL_VALUE, /*version*/j, /*time*/0.0, &value);
 					fprintf(data->ipnode_file, " The Xj(%d) coordinate is [ 0.00000E+00]:  %le\n",
-						i + 1, value);
-
-					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+						c + 1, value);
+					for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 					{
-						get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, /*version*/j,
-							value_type[k], /*time*/0.0, &value);
+						get_FE_nodal_FE_value_value(node, data->field, c, 
+							derivativeValueLabels[k], /*version*/j, /*time*/0.0, &value);
 						fprintf(data->ipnode_file, " The derivative wrt direction%s is [ 0.00000E+00]:  %le\n",
 							value_strings[k], value);
 					}
@@ -570,28 +575,41 @@ static int write_cm_FE_nodal_mapping(
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
-	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
-		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
-		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
+	const cmzn_node_value_label derivativeValueLabels[] =
+	{
+		CMZN_NODE_VALUE_LABEL_D_DS1,
+		CMZN_NODE_VALUE_LABEL_D_DS2,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
+		CMZN_NODE_VALUE_LABEL_D_DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
+		CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
+	};
 	FE_value diff, sum, *values = NULL;
-	int component_number_of_versions, i, inverse_match, inverse_match_version,
+	int inverse_match, inverse_match_version,
 		j, k, m, n, map_derivatives, match_version, match, node_number,
-		number_of_versions, return_code;
+		return_code;
 
 	if (node && data)
 	{
 		return_code = 1;
 		map_derivatives = 1;
-		if (FE_field_is_defined_at_node(data->field, node))
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
-			/* Does this node have any versions?
-			   We can only apply our rules for derivatives if all the components
-				have the same number of versions */
-			number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, /*version 1*/0);
-			for (i = 1 ; i < data->number_of_components ; i++)
+			// Does this node have any versions?
+			// We can only apply our rules for derivatives if all the components
+			// have the same number of versions
+			int number_of_versions = -1;
+			for (int c = 0; c < data->number_of_components; ++c)
 			{
-				component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
-				if (number_of_versions != component_number_of_versions)
+				const FE_node_field_template *nft = node_field->getComponent(c);
+				const int component_number_of_versions = nft->getMaximumVersionsCount();
+				if (c == 0)
+				{
+					number_of_versions = component_number_of_versions;
+				}
+				else if (number_of_versions != component_number_of_versions)
 				{
 					map_derivatives = 0;
 					/* Just see if we have any versions and if so map positions */
@@ -614,38 +632,38 @@ static int write_cm_FE_nodal_mapping(
 					ALLOCATE(values, FE_value, number_of_versions *
 						data->number_of_components * data->maximum_number_of_derivatives);
 
-					for (i = 0 ; i < data->number_of_components ; i++)
+					for (int c = 0 ; c < data->number_of_components ; ++c)
 					{
 						for (j = 0 ; j < number_of_versions ; j++)
 						{
-							for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+							for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 							{
-								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i,
-									/*version*/j,
-									value_type[k], /*time*/0.0, values +
+								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/c,
+									derivativeValueLabels[k], /*version*/j, /*time*/0.0, values +
 									j * data->number_of_components * data->maximum_number_of_derivatives
-									+ i * data->maximum_number_of_derivatives + k);
+									+ c * data->maximum_number_of_derivatives + k);
 							}
 							for ( ; k < data->maximum_number_of_derivatives ; k++)
 							{
 								values[j * data->number_of_components * data->maximum_number_of_derivatives
-									+ i * data->maximum_number_of_derivatives + k] = 0.0;
+									+ c * data->maximum_number_of_derivatives + k] = 0.0;
 							}
 						}
 					}
 				}
 
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0; c < data->number_of_components; ++c)
 				{
-					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", i + 1);
-					component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", c + 1);
+					const int component_number_of_versions = nft->getMaximumVersionsCount();
 
 					/* We don't map out the first version */
 					fprintf(data->ipmap_file, " For version number%2d:\n", 1);
 
 					fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: N\n");
 
-					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+					for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 					{
 						fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
 							value_strings[k]);
@@ -658,10 +676,10 @@ static int write_cm_FE_nodal_mapping(
 						fprintf(data->ipmap_file, " For version number%2d:\n", j + 1);
 
 						fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: Y\n");
-						fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d 1 %d 1\n", node_number, i + 1);
+						fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d 1 %d 1\n", node_number, c + 1);
 						fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
 
-						for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+						for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 						{
 							if (map_derivatives &&
 								/* Only try for first deriavites */
@@ -721,10 +739,10 @@ static int write_cm_FE_nodal_mapping(
 								if (match_version)
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
-											  value_strings[k]);
+										value_strings[k]);
 									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, match_version,
-										i + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
+										c + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
 								}
 								else if (inverse_match_version)
@@ -733,19 +751,19 @@ static int write_cm_FE_nodal_mapping(
 											  value_strings[k]);
 									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, inverse_match_version,
-										i + 1, k + 2);
+										c + 1, k + 2);
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: -0.10000E+01\n");
 								}
 								else
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
-											  value_strings[k]);
+										value_strings[k]);
 								}
 							}
 							else
 							{
 								fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
-											  value_strings[k]);
+									value_strings[k]);
 							}
 						}
 					}
@@ -1049,11 +1067,16 @@ static int write_cm_FE_element(
 								node_number_array[j] = -1;
 								node = 0;
 							}
-							if (node)
-								number_of_versions_array[j] = get_FE_node_field_component_number_of_versions(node,
-									data->field, /*component*/0);
+							const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+							if (node_field)
+							{
+								const FE_node_field_template *nft = node_field->getComponent(/*component*/0);
+								number_of_versions_array[j] = nft->getMaximumVersionsCount();
+							}
 							else
+							{
 								number_of_versions_array[j] = 0;
+							}
 							versions_array[j] = version;
 
 							fprintf(data->ipelem_file, " %d", node_number_array[j]);

@@ -79,6 +79,8 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * Get parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, absent
+ * parameters are set to zero, and WARNING_PART_DONE is returned.
  * @see cmzn_fieldcache_set_node
  *
  * @param finite_element_field  The finite element field to get parameters for.
@@ -94,7 +96,10 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_out  Array of real values to be set from the parameters.
- * @return  Result OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were obtained), ERROR_NOT_FOUND if
+ * field not defined or none of the requested components have parameters,
+ * otherwise any other error code.
  */
 ZINC_API int cmzn_field_finite_element_get_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -105,6 +110,8 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * Set parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, sets
+ * those that do exist and returns WARNING_PART_DONE.
  * @see cmzn_fieldcache_set_node
  *
  * @param finite_element_field  The finite element field to set parameters for.
@@ -120,7 +127,10 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_in  Array of real values to be assigned to the parameters.
- * @return  Result OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were set), ERROR_NOT_FOUND if field
+ * not defined or none of the requested components have parameters, otherwise
+ * any other error code.
  */
 ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,

@@ -26,23 +26,19 @@ void Field_zeroNodeDerivatives(Field &field)
 {
 	Fieldmodule fm = field.getFieldmodule();
 	fm.beginChange();
+	FieldFiniteElement feField = field.castFiniteElement();
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	const double zero3[3] = { 0.0, 0.0, 0.0 };
+	Nodeiterator iter = nodeset.createNodeiterator();
+	Node node;
+	while ((node = iter.next()).isValid())
 	{
-		Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
-		EXPECT_TRUE(nodeset.isValid());
-		FieldNodeValue dx_ds1 = fm.createFieldNodeValue(field, Node::VALUE_LABEL_D_DS1, 1);
-		FieldNodeValue dx_ds2 = fm.createFieldNodeValue(field, Node::VALUE_LABEL_D_DS2, 1);
-		FieldNodeValue dx_ds3 = fm.createFieldNodeValue(field, Node::VALUE_LABEL_D_DS3, 1);
-		Fieldcache cache = fm.createFieldcache();
-		const double zero3[3] = { 0.0, 0.0, 0.0 };
-		Nodeiterator iter = nodeset.createNodeiterator();
-		Node node;
-		while ((node = iter.next()).isValid())
-		{
-			EXPECT_EQ(OK, cache.setNode(node));
-			EXPECT_EQ(OK, dx_ds1.assignReal(cache, 3, zero3));
-			EXPECT_EQ(OK, dx_ds2.assignReal(cache, 3, zero3));
-			EXPECT_EQ(OK, dx_ds3.assignReal(cache, 3, zero3));
-		}
+		EXPECT_EQ(OK, cache.setNode(node));
+		EXPECT_EQ(OK, feField.setNodeParameters(cache, /*componentNumber=all*/-1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, zero3));
+		EXPECT_EQ(OK, feField.setNodeParameters(cache, /*componentNumber=all*/-1, Node::VALUE_LABEL_D_DS2, /*version*/1, 3, zero3));
+		EXPECT_EQ(OK, feField.setNodeParameters(cache, /*componentNumber=all*/-1, Node::VALUE_LABEL_D_DS3, /*version*/1, 3, zero3));
 	}
 	fm.endChange();
 }

@@ -15,7 +15,10 @@ modules such as finite_element_region.c.
 #if !defined (FINITE_ELEMENT_PRIVATE_H)
 #define FINITE_ELEMENT_PRIVATE_H
 
+#include "opencmiss/zinc/types/nodeid.h"
+#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/list.h"
@@ -26,24 +29,13 @@ Global types
 ------------
 */
 
-struct FE_node_field;
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Forward declaration since passed to FE_region functions for finding and
-reusing FE_node_field_info.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(FE_node_field);
-
 struct FE_node_field_info;
 /*******************************************************************************
 LAST MODIFIED : 4 October 2002
 
 DESCRIPTION :
 Structure describing how fields and their values and derivatives are stored in
-FE_node structures.
+cmzn_node structures.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(FE_node_field_info);
@@ -149,48 +141,6 @@ separate functions for each type.
 ==============================================================================*/
 
 /**
- * Specifies how to find the value and derivatives for a field component at a
- * node. This only appears as part of a FE_node_field.
- * Public only to allow efficient conversion of legacy node DOF indexes.
- * @see FE_mesh::checkConvertLegacyNodeParameters
- */
-struct FE_node_field_component
-{
-	/* the offset for the global value within the list of all global values and
-		derivatives at the node */
-	int value;
-	/* the number of global derivatives.  NB The global derivatives are assumed to
-		follow directly after the global value in the list of all global values and
-		derivatives at the node */
-	int number_of_derivatives;
-	/* the number of versions at the node.  Different fields may use different
-		versions eg if the node is on the axis in prolate spheroidal coordinates
-		(mu=0 or mu=pi).  NB The different versions are assumed to follow directly
-		after each other (only need one starting <value>) and to have the same
-		<number_of derivatives> */
-	int number_of_versions;
-	/* the types the nodal values */
-	enum FE_nodal_value_type *nodal_value_types;
-
-	/** @param dofIndex  Legacy index of parameter at node. From 0 to number of DOFs at node - 1.
-	  * @param valueType  On success, contains the value type of the DOF index.
-	  * @param version  On success, contains the version of the DOF index.
-	  * @return  True on success, 0 if failed. */
-	bool convertLegacyDOFIndexToValueTypeAndVersion(int dofIndex, FE_nodal_value_type &valueType, int &version) const
-	{
-		if (dofIndex < 0)
-			return false;
-		if (!this->nodal_value_types)
-			return false;
-		version = dofIndex / (this->number_of_derivatives + 1);
-		valueType = this->nodal_value_types[dofIndex % (this->number_of_derivatives + 1)];
-		if (version >= this->number_of_versions)
-			return false;
-		return true;
-	}
-};
-
-/**
  * Describes storage of global values and derivatives for a field at a node.
  * Public only to allow efficient conversion of legacy node DOF indexes.
  * @see FE_mesh::checkConvertLegacyNodeParameters
@@ -199,8 +149,8 @@ struct FE_node_field
 {
 	/* the field which this accesses values and derivatives for */
 	struct FE_field *field;
-	/* an array with <number_of_components> node field components */
-	struct FE_node_field_component *components;
+	/* an array with <number_of_components> node field templates */
+	FE_node_field_template *components;
 	/* the time dependence of all components below this point,
 	   if it is non-NULL then every value storage must be an array of
 	   values that matches this fe_time_sequence */
@@ -209,11 +159,95 @@ struct FE_node_field
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
 
-	const FE_node_field_component *getComponent(int componentIndex) const
+	const FE_node_field_template *getComponent(int componentIndex) const
 	{
 		return &this->components[componentIndex];
 	}
+
+	FE_node_field(struct FE_field *fieldIn);
+
+	~FE_node_field();
+
+	static FE_node_field *create(struct FE_field *fieldIn);
+
+	/** Clone node field, optionally offseting all component valuesOffsets.
+	  * For non-GENERAL_FE_FIELD types, the valuesOffset is not changed.*/
+	static FE_node_field *clone(const FE_node_field& source, int deltaValuesOffset = 0);
+
+	FE_node_field *access()
+	{
+		++this->access_count;
+		return this;
+	}
+
+	static int deaccess(FE_node_field* &node_field)
+	{
+		if (!node_field)
+		{
+			return CMZN_ERROR_ARGUMENT;
+		}
+		--(node_field->access_count);
+		if (node_field->access_count <= 0)
+		{
+			delete node_field;
+		}
+		node_field = 0;
+		return CMZN_OK;
+	}
+
+	void setField(FE_field *fieldIn)
+	{
+		REACCESS(FE_field)(&this->field, fieldIn);
+	}
+
+	/** @return  True if field is multi component with all components defined identically */
+	bool isHomogeneousMultiComponent() const
+	{
+		const int componentCount = get_FE_field_number_of_components(this->field);
+		if (componentCount <= 1)
+		{
+			return false;
+		}
+		for (int c = 1; c < componentCount; ++c)
+		{
+			if (!(this->components[c].matches(this->components[0])))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Returns the maximum total number of field parameters for any component */
+	int getMaximumComponentTotalValuesCount() const
+	{
+		int maximumComponentTotalValuesCount = 0;
+		const int componentCount = get_FE_field_number_of_components(this->field);
+		for (int c = 0; c < componentCount; ++c)
+		{
+			if (this->components[c].getTotalValuesCount() > maximumComponentTotalValuesCount)
+			{
+				maximumComponentTotalValuesCount = this->components[c].getTotalValuesCount();
+			}
+		}
+		return maximumComponentTotalValuesCount;
+	}
+
+	/** Returns the total number of field parameters for all components */
+	int getTotalValuesCount() const
+	{
+		int totalValuesCount = 0;
+		const int componentCount = get_FE_field_number_of_components(this->field);
+		for (int c = 0; c < componentCount; ++c)
+		{
+			totalValuesCount += this->components[c].getTotalValuesCount();
+		}
+		return totalValuesCount;
+	}
+
 };
+
+DECLARE_LIST_TYPES(FE_node_field);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field);
 
@@ -349,7 +383,7 @@ Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
 in <fe_field_change_log>.
 ==============================================================================*/
 
-PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier);
+PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_node,cm_node_identifier);
 
 /**
  * Creates and returns a non-global node to be used as a template for
@@ -358,7 +392,7 @@ PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifie
  * mesh. Should have no fields.
  * @return  Accessed node, or 0 on error. Do not merge into FE_nodeset!
  */
-struct FE_node *create_template_FE_node(FE_node_field_info *node_field_info);
+cmzn_node *create_template_FE_node(FE_node_field_info *node_field_info);
 
 /**
  * Creates and returns a non-global node with the specified index,
@@ -374,16 +408,16 @@ struct FE_node *create_template_FE_node(FE_node_field_info *node_field_info);
  * @param template_node  node to copy.
  * @return  Accessed node, or 0 on error.
  */
-struct FE_node *create_FE_node_from_template(DsLabelIndex index, struct FE_node *template_node);
+cmzn_node *create_FE_node_from_template(DsLabelIndex index, cmzn_node *template_node);
 
 /**
  * Clear content of node and disconnect it from owning nodeset.
  * Use when removing node from nodeset or deleting nodeset to safely orphan any
  * externally accessed nodes.
  */
-void FE_node_invalidate(struct FE_node *node);
+void FE_node_invalidate(cmzn_node *node);
 
-struct FE_node_field_info *FE_node_get_FE_node_field_info(struct FE_node *node);
+struct FE_node_field_info *FE_node_get_FE_node_field_info(cmzn_node *node);
 /*******************************************************************************
 LAST MODIFIED : 13 February 2003
 
@@ -391,7 +425,7 @@ DESCRIPTION :
 Returns the FE_node_field_info from <node>. Must not be modified!
 ==============================================================================*/
 
-int FE_node_set_FE_node_field_info(struct FE_node *node,
+int FE_node_set_FE_node_field_info(cmzn_node *node,
 	struct FE_node_field_info *fe_node_field_info);
 /*******************************************************************************
 LAST MODIFIED : 24 February 2003
@@ -403,10 +437,14 @@ describe the same data layout in the nodal values_storage!
 Private function only to be called by FE_region when merging FE_regions!
 ==============================================================================*/
 
-/** @param node  Not checked, must be valid.
-  * @param field  Not checked, must be valid.
-  * @return  Object giving definition of field on node, or 0 if not defined. */
-const FE_node_field *FE_node_get_FE_node_field(struct FE_node *node,
+/**
+ * Get the node_field describing parameter storage for field at node.
+ * @param node  The node to query.
+ * @param field  The field to query.
+ * @return  Non-accessed node_field, or 0 if not defined. Use immediately,
+ * access or copy as may be destroyed at any time.
+ */
+const FE_node_field *cmzn_node_get_FE_node_field(cmzn_node *node,
 	struct FE_field *field);
 
 /**
@@ -417,7 +455,7 @@ const FE_node_field *FE_node_get_FE_node_field(struct FE_node *node,
  * remains unchanged.
  * Function is atomic; <destination> is unchanged if <source> cannot be merged.
  */
-int merge_FE_node(struct FE_node *destination, struct FE_node *source);
+int merge_FE_node(cmzn_node *destination, cmzn_node *source);
 
 /**
  * Create structure storing an element with its identifier being its cm_type
