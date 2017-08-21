@@ -500,7 +500,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 						"Elementtemplate  setLegacyNodesInElement.  Invalid element field template");
 					return CMZN_ERROR_GENERAL;
 				}
-				if (workingNodeIndexes.capacity() < nodeIndexesCount)
+				if (workingNodeIndexes.capacity() < static_cast<size_t>(nodeIndexesCount))
 					workingNodeIndexes.reserve(nodeIndexesCount);
 				for (int n = 0; n < nodeIndexesCount; ++n)
 				{
@@ -1179,7 +1179,6 @@ public:
 	/** @return  Allocated name */
 	char *getName()
 	{
-		char *name = 0;
 		if (group)
 			return cmzn_field_get_name(cmzn_field_element_group_base_cast(group));
 		else

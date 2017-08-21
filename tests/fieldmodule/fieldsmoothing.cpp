@@ -105,7 +105,6 @@ TEST(ZincFieldsmoothing, smoothHermiteCubes)
 		{ 1.5, 0.5, 0.5 },
 		{ 1.972, 0.104, 0.972 },
 	};
-	const double expectedDerivatives2[3] = { 1.0, 0.0, 0.0 };
 	double values2[6][3];
 	for (int v = 0; v < 6; ++v)
 	{

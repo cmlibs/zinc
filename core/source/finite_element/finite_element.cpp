@@ -4585,11 +4585,11 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 
 	const int basisFunctionCount = eft->getNumberOfFunctions();
 	int lastLocalNodeIndex = -1;
-	FE_node *node;
+	FE_node *node = 0;
 	// Cache last node_field_info since expensive to find and probably same as last node
 	// If same node_field_info, then same node field template
 	FE_node_field_info *node_field_info = 0;
-	const FE_node_field_template *nft;
+	const FE_node_field_template *nft = 0;
 	FE_time_sequence *time_sequence = 0;
 	int time_index_one, time_index_two;
 	FE_value time_xi;

@@ -2242,7 +2242,6 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 		{
 			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		}
-		FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(valueCache);
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
