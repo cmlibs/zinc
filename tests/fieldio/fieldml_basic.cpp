@@ -959,3 +959,124 @@ TEST(FieldIO, ex_element_grid_constant_indexed_fields)
 	check_ex_element_grid_constant_indexed_fields(testFm1);
 }
 
+namespace {
+
+void check_ex_special_node_fields(Fieldmodule& fm)
+{
+	Field cell_type = fm.findFieldByName("cell_type");
+	EXPECT_TRUE(cell_type.isValid());
+	EXPECT_EQ(1, cell_type.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, cell_type.getValueType());
+
+	Field constant_real3 = fm.findFieldByName("constant_real3");
+	EXPECT_TRUE(constant_real3.isValid());
+	EXPECT_EQ(3, constant_real3.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, constant_real3.getValueType());
+
+	Field indexed_real = fm.findFieldByName("indexed_real");
+	EXPECT_TRUE(indexed_real.isValid());
+	EXPECT_EQ(1, indexed_real.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_real.getValueType());
+
+	Field indexed_int2 = fm.findFieldByName("indexed_int2");
+	EXPECT_TRUE(indexed_int2.isValid());
+	EXPECT_EQ(2, indexed_int2.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_int2.getValueType());
+
+	Field constant_string = fm.findFieldByName("constant_string");
+	EXPECT_TRUE(constant_string.isValid());
+	EXPECT_EQ(1, constant_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, constant_string.getValueType());
+
+	Field indexed_string = fm.findFieldByName("indexed_string");
+	EXPECT_TRUE(indexed_string.isValid());
+	EXPECT_EQ(1, indexed_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, indexed_string.getValueType());
+
+	Field general_string = fm.findFieldByName("general_string");
+	EXPECT_TRUE(general_string.isValid());
+	EXPECT_EQ(1, general_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, general_string.getValueType());
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const int expected_cell_type[8] = { 1, 1, 1, 1, 2, 3, 2, 3 };
+	const double expected_constant_real3[3] = { 0.1, 0.2, 0.5 };
+	const double expected_indexed_real[3] = { 10.5, 15.5, 25.5 };
+	const double expected_indexed_int2[3][2] = { { 1, 7 }, { 2, 8 }, { 3, 9 } };
+	const char expected_constant_string[] = "\"Constant\" string";
+	const char *expected_indexed_string[3] = { "Cell type 1", "Cell type 2", "\"Type-3 Cell\"" };
+	const char *expected_general_string[8] = { "one", "two", "three", "four", "five", "six", "\'seven\'", "eight" };
+
+	for (int n = 0; n < 8; ++n)
+	{
+		Node node = nodeset.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+
+		double cell_type_out_double;
+		// don't have evaluateInteger yet:
+		EXPECT_EQ(RESULT_OK, cell_type.evaluateReal(cache, 1, &cell_type_out_double));
+		EXPECT_DOUBLE_EQ(static_cast<double>(expected_cell_type[n]), cell_type_out_double);
+		const int cell_type_out = static_cast<int>(cell_type_out_double + 0.5);
+		EXPECT_EQ(expected_cell_type[n], cell_type_out);
+
+		double constant_real3_out[3];
+		EXPECT_EQ(RESULT_OK, constant_real3.evaluateReal(cache, 3, constant_real3_out));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_DOUBLE_EQ(expected_constant_real3[c], constant_real3_out[c]);
+		}
+
+		const int cell_type_index = expected_cell_type[n] - 1;
+
+		double indexed_real_out;
+		EXPECT_EQ(RESULT_OK, indexed_real.evaluateReal(cache, 1, &indexed_real_out));
+		EXPECT_DOUBLE_EQ(expected_indexed_real[cell_type_index], indexed_real_out);
+
+		double indexed_int2_out_double[3];
+		EXPECT_EQ(RESULT_OK, indexed_int2.evaluateReal(cache, 3, indexed_int2_out_double));
+		for (int c = 0; c < 2; ++c)
+		{
+			EXPECT_DOUBLE_EQ(static_cast<double>(expected_indexed_int2[cell_type_index][c]), indexed_int2_out_double[c]);
+		}
+
+		char *constant_string_out = constant_string.evaluateString(cache);
+		EXPECT_STREQ(expected_constant_string, constant_string_out);
+		cmzn_deallocate(constant_string_out);
+
+		char *indexed_string_out = indexed_string.evaluateString(cache);
+		EXPECT_STREQ(expected_indexed_string[cell_type_index], indexed_string_out);
+		cmzn_deallocate(indexed_string_out);
+
+		char *general_string_out = general_string.evaluateString(cache);
+		EXPECT_STREQ(expected_general_string[n], general_string_out);
+		cmzn_deallocate(general_string_out);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exnode_formats
+TEST(FieldIO, ex_special_node_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_SPECIAL_NODE_FIELDS_RESOURCE)));
+	check_ex_special_node_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_special_node_fields(testFm1);
+}
+

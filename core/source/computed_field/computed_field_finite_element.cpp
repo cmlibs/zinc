@@ -705,6 +705,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		case STRING_VALUE:
 		case URL_VALUE:
 		{
+			return_code = 1;
 			FiniteElementStringFieldValueCache& feStringValueCache = FiniteElementStringFieldValueCache::cast(inValueCache);
 			if (feStringValueCache.stringValue)
 			{

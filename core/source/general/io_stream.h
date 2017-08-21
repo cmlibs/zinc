@@ -121,6 +121,10 @@ DESCRIPTION :
 Equivalent to a standard C fgetc on the stream.
 ==============================================================================*/
 
+/** @return  The next character in the stream without advancing stream location,
+  * EOF if at end of stream or invalid stream. */
+int IO_stream_peekc(struct IO_stream *stream);
+
 int IO_stream_read_string(struct IO_stream *stream,const char *format,char **string_read);
 /******************************************************************************
 LAST MODIFIED : 23 August 2004

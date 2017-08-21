@@ -644,6 +644,7 @@ private:
 	bool readBlankToEndOfLine();
 	bool readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator = 0);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
+	bool checkConsumeNextChar(char testChar);
 	char *readString();
 	FE_field *readField();
 	bool readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLabelsVersions);
@@ -947,6 +948,19 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 	return true;
 }
 
+/** @param testChar  A non white-space character.
+  * @return  True if the next character is testChar and advance stream past it.
+  * Otherwise return false with no change in stream location. */
+bool EXReader::checkConsumeNextChar(char testChar)
+{
+	if (IO_stream_peekc(this->input_file) == static_cast<int>(testChar))
+	{
+		IO_stream_getc(this->input_file);
+		return true;
+	}
+	return false;
+}
+
 /** 
  * Read a string from the stream after skipping initial whitespace.
  * Works in two modes:
@@ -965,12 +979,11 @@ char *EXReader::readString()
 	char *whitespaceString = 0;
 	IO_stream_read_string(this->input_file, "[ \n\r\t]", &whitespaceString);
 	DEALLOCATE(whitespaceString);
-	char *quoteString = 0;
-	IO_stream_read_string(this->input_file, "[\"\']", &quoteString);
-	if (!quoteString)
-		return 0;
-	const size_t quoteStringLength = strlen(quoteString);
-	if (0 == quoteStringLength)
+	const char quoteChar =
+		(this->checkConsumeNextChar('\"')) ? '\"' :
+		(this->checkConsumeNextChar('\'')) ? '\'' :
+		0;
+	if (!quoteChar)
 	{
 		if (!(IO_stream_read_string(this->input_file, "[^ ,;=\n\r\t]", &theString) && (theString)))
 		{
@@ -984,116 +997,107 @@ char *EXReader::readString()
 	}
 	else
 	{
-		const char quoteChar = quoteString[0];
-		if (quoteStringLength > 1)
+		const char *format = (quoteChar == '\"') ? "[^\"]" : "[^']";
+		size_t length = 0;
+		while (true)
 		{
-			if ((quoteString[1] != quoteChar) || (quoteStringLength > 2))
+			char *block = 0;
+			if (!(IO_stream_read_string(this->input_file, format, &block) && (block)))
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Invalid quoted string.  %s", this->getFileLocation());
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to read part of quoted string.  %s", this->getFileLocation());
+				if (theString)
+					DEALLOCATE(theString);
+				break;
 			}
-			else // empty quoted string "" or ''
+			int blockLength = static_cast<int>(strlen(block));
+			if (blockLength > 0)
 			{
-				theString = duplicate_string("");
-			}
-		}
-		else // quoted string
-		{
-			const char *format = (quoteChar == '"') ? "[^\"]" : "[^']";
-			size_t length = 0;
-			while (true)
-			{
-				char *block = 0;
-				if (!(IO_stream_read_string(this->input_file, format, &block) && (block)))
+				// process escaped characters
+				char *dest = block;
+				for (int i = 0; i < blockLength; ++i)
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read part of quoted string.  %s", this->getFileLocation());
+					if (block[i] == '\\')
+					{
+						++i;
+						if (i < blockLength)
+						{
+							if (block[i] == 'n')
+								*dest = '\n';
+							else if (block[i] == 't')
+								*dest = '\t';
+							else if (block[i] == 'r')
+								*dest = '\r';
+							else
+								*dest = block[i];
+						}
+						else
+						{
+							// last character is escape, so must be escaping quote_char, or end of file
+							const int this_char = IO_stream_getc(this->input_file);
+							if (this_char == (int)quoteChar)
+							{
+								*dest = quoteChar;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
+								DEALLOCATE(block);
+								break;
+							}
+						}
+					}
+					else
+					{
+						*dest = block[i];
+					}
+					++dest;
+				}
+				if (!block)
+				{
 					if (theString)
 						DEALLOCATE(theString);
 					break;
 				}
-				int blockLength = static_cast<int>(strlen(block));
-				if (blockLength > 0)
+				*dest = '\0';
+				char *tmp;
+				REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
+				if (tmp)
 				{
-					// process escaped characters
-					char *dest = block;
-					for (int i = 0; i < blockLength; ++i)
-					{
-						if (block[i] == '\\')
-						{
-							++i;
-							if (i < blockLength)
-							{
-								if (block[i] == 'n')
-									*dest = '\n';
-								else if (block[i] == 't')
-									*dest = '\t';
-								else if (block[i] == 'r')
-									*dest = '\r';
-								else
-									*dest = block[i];
-							}
-							else
-							{
-								// last character is escape, so must be escaping quote_char, or end of file
-								const int this_char = IO_stream_getc(this->input_file);
-								if (this_char == (int)quoteChar)
-								{
-									*dest = quoteChar;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
-									DEALLOCATE(block);
-									break;
-								}
-							}
-						}
-						else
-						{
-							*dest = block[i];
-						}
-						++dest;
-					}
-					if (!block)
-					{
-						if (theString)
-							DEALLOCATE(theString);
-						break;
-					}
-					*dest = '\0';
-					char *tmp;
-					REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
-					if (tmp)
-					{
-						theString = tmp;
-						strcpy(theString + length, block);
-					}
-					else
-					{
-						if (theString)
-							DEALLOCATE(theString);
-					}
+					theString = tmp;
+					strcpy(theString + length, block);
 				}
-				DEALLOCATE(block);
-				if (theString == 0)
-					break;
-				length = strlen(theString);
-				if ((blockLength == 0) || (theString[length - 1] != quoteChar))
-					break;
-			}
-			if (theString)
-			{
-				// now get the matching end quote
-				DEALLOCATE(quoteString);
-				IO_stream_read_string(this->input_file, (quoteChar == '"') ? "[\"]" : "[\']", &quoteString);
-				if ((!quoteString) || (1 != strlen(quoteString)))
+				else
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Missing or multiple end quotes on string.  %s", this->getFileLocation());
+					if (theString)
+						DEALLOCATE(theString);
+				}
+			}
+			DEALLOCATE(block);
+			if (theString == 0)
+				break;
+			length = strlen(theString);
+			if ((blockLength == 0) || (theString[length - 1] != quoteChar))
+				break;
+		}
+		if (theString)
+		{
+			// now get the matching end quote, and check only one
+			if (this->checkConsumeNextChar(quoteChar))
+			{
+				const int nextChar = IO_stream_peekc(this->input_file);
+				if (!(isspace(nextChar) || (EOF == nextChar)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Require whitespace or EOF after end quote on string.  %s", this->getFileLocation());
 					DEALLOCATE(theString);
 				}
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Missing end quote on string.  %s", this->getFileLocation());
+				DEALLOCATE(theString);
+			}
 		}
 	}
-	DEALLOCATE(quoteString);
 	return theString;
 }
 
@@ -1110,7 +1114,7 @@ bool EXReader::readCommentOrDirective()
 {
 	char test_string[5];
 	char nextChar;
-	const int input_result = IO_stream_scan(input_file, "%c", &nextChar);
+	const int input_result = IO_stream_scan(this->input_file, "%c", &nextChar);
 	if (1 != input_result)
 		return true; // last line
 	const bool hasDirectiveChar = (nextChar == '#');
@@ -1122,7 +1126,7 @@ bool EXReader::readCommentOrDirective()
 		if ((nextChar != '\n') && (nextChar != '\r'))
 		{
 			char *rest_of_line;
-			IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
+			IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line);
 			DEALLOCATE(rest_of_line);
 		}
 		return true;
@@ -1573,7 +1577,7 @@ FE_field *EXReader::readField()
 bool EXReader::readFieldValues()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(input_file, "alues %1[:] ", test_string)) // "V" has already been read
+	if (1 != IO_stream_scan(this->input_file, "alues %1[:] ", test_string)) // "V" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
@@ -1753,6 +1757,13 @@ bool EXReader::readNodeHeaderField()
 				get_FE_field_name(field), this->getFileLocation());
 			break;
 		}
+		const int nextChar = IO_stream_getc(this->input_file);
+		if (nextChar != static_cast<int>('.'))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing required '.' after component name.  %s",this->getFileLocation());
+			result = false;
+			break;
+		}
 		/* component name is sufficient for non-GENERAL_FE_FIELD */
 		if (GENERAL_FE_FIELD == fe_field_type)
 		{
@@ -1763,7 +1774,7 @@ bool EXReader::readNodeHeaderField()
 				// Note that all values and derivatives for a given version are consecutive in the legacy format, i.e. derivative cycles fastest
 				int number_of_derivatives, number_of_versions, temp_int;
 				/* ignore value index */
-				if (!((2 == IO_stream_scan(this->input_file, ".  Value index=%d, #Derivatives=%d ", &temp_int, &number_of_derivatives))
+				if (!((2 == IO_stream_scan(this->input_file, " Value index=%d, #Derivatives=%d ", &temp_int, &number_of_derivatives))
 					&& (0 <= number_of_derivatives)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
@@ -1818,7 +1829,7 @@ bool EXReader::readNodeHeaderField()
 				// EX Version 2+: supports variable number of versions per derivative.
 				// Note that parameters for versions of a given derivative are consecutive in the new format i.e. version cycles within derivative
 				int valuesCount = 0;
-				if (!((1 == IO_stream_scan(this->input_file, ". #Values=%d", &valuesCount))
+				if (!((1 == IO_stream_scan(this->input_file, " #Values=%d", &valuesCount))
 					&& (0 <= valuesCount)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read node field %s component %s #Values.  %s",
@@ -1859,11 +1870,11 @@ bool EXReader::readNodeHeaderField()
 			if (!result)
 				break;
 		}
-		if (this->exVersion >= 2)
+		if ((this->exVersion >= 2) || (GENERAL_FE_FIELD != fe_field_type))
 		{
 			// read and warn about any unused key=value data, which must be preceded by ,
 			KeyValueMap keyValueMap;
-			if (!this->readKeyValueMap(keyValueMap, (int)','))
+			if (!this->readKeyValueMap(keyValueMap, (GENERAL_FE_FIELD == fe_field_type) ? 0 : (int)','))
 			{
 				result = false;
 				break;
@@ -2275,7 +2286,7 @@ bool EXReader::readElementShape()
 	}
 	this->clearHeaderCache();
 	int dimension = -1;
-	if ((1 != IO_stream_scan(input_file, "hape. Dimension=%d", &dimension))
+	if ((1 != IO_stream_scan(this->input_file, "hape. Dimension=%d", &dimension))
 		|| (dimension < 0) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element shape dimension.  %s", this->getFileLocation());
@@ -2330,8 +2341,8 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EXReader::readElementShape.  Could not allocate shape type");
 		return false;
 	}
-	IO_stream_scan(input_file,",");
-	if ((!IO_stream_read_string(input_file, "[^\n\r]", &shape_description_string))
+	IO_stream_scan(this->input_file,",");
+	if ((!IO_stream_read_string(this->input_file, "[^\n\r]", &shape_description_string))
 		|| (!shape_description_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading shape description.  %s", this->getFileLocation());
@@ -2648,7 +2659,7 @@ bool EXReader::readElementShape()
 struct FE_basis *EXReader::readBasis()
 {
 	char *basis_description_string;
-	if (!IO_stream_read_string(input_file, "[^,]", &basis_description_string))
+	if (!IO_stream_read_string(this->input_file, "[^,]", &basis_description_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading basis description.  %s", this->getFileLocation());
 		return 0;
@@ -2732,7 +2743,7 @@ bool EXReader::readElementHeaderField()
 				get_FE_field_name(field), this->getFileLocation());
 			break;
 		}
-		IO_stream_scan(input_file, ". ");
+		IO_stream_scan(this->input_file, ". ");
 		FE_basis *basis = 0;
 		const int dimension = this->mesh->getDimension();
 		if (GENERAL_FE_FIELD == fe_field_type)
@@ -2755,11 +2766,11 @@ bool EXReader::readElementHeaderField()
 		}
 		else
 		{
-			IO_stream_scan(input_file, ", ");
+			IO_stream_scan(this->input_file, ", ");
 			// read the basis modify theta mode name
 			FE_basis_modify_theta_mode thetaModifyMode = FE_BASIS_MODIFY_THETA_MODE_INVALID;
 			char *modify_function_name = 0;
-			if (!IO_stream_read_string(input_file, "[^,]", &modify_function_name))
+			if (!IO_stream_read_string(this->input_file, "[^,]", &modify_function_name))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading modify function.  %s", this->getFileLocation());
 				result = false;
@@ -2798,18 +2809,18 @@ bool EXReader::readElementHeaderField()
 			if (!result)
 				break;
 
-			IO_stream_scan(input_file, ", ");
+			IO_stream_scan(this->input_file, ", ");
 			// read the global to element map type
 			cmzn_elementfieldtemplate_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID;
 			bool elementGridBased = false;
 			char *global_to_element_map_string = 0;
-			if (!IO_stream_read_string(input_file, "[^.]", &global_to_element_map_string))
+			if (!IO_stream_read_string(this->input_file, "[^.]", &global_to_element_map_string))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading global to element map type.  %s", this->getFileLocation());
 				result = false;
 				break;
 			}
-			IO_stream_scan(input_file, ".");
+			IO_stream_scan(this->input_file, ".");
 			if ((0 == strcmp("standard node based", global_to_element_map_string))
 				|| (0 == strcmp("node based", global_to_element_map_string)))
 			{
@@ -2876,7 +2887,7 @@ bool EXReader::readElementHeaderField()
 			{
 				// node to element map: includes standard and general
 				int nodeCount = 0;
-				if (1 != IO_stream_scan(input_file, " #Nodes=%d", &nodeCount))
+				if (1 != IO_stream_scan(this->input_file, " #Nodes=%d", &nodeCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading field %s component %s number of nodes.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
@@ -2984,7 +2995,7 @@ bool EXReader::readElementHeaderField()
 					while (true)
 					{
 						IO_stream_scan(this->input_file, " ");
-						if (!IO_stream_read_string(input_file, "[^.+]", &nodeIndexString))
+						if (!IO_stream_read_string(this->input_file, "[^.+]", &nodeIndexString))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Failed to read local node index expression.  %s", this->getFileLocation());
 							result = false;
@@ -3046,7 +3057,7 @@ bool EXReader::readElementHeaderField()
 						break;
 					}
 					int valueCount = 0;
-					if ((1 != IO_stream_scan(input_file, " #Values=%d", &valueCount)) || (valueCount < 1))
+					if ((1 != IO_stream_scan(this->input_file, " #Values=%d", &valueCount)) || (valueCount < 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Values.  %s", this->getFileLocation());
 						result = false;
@@ -3062,7 +3073,7 @@ bool EXReader::readElementHeaderField()
 					char *dofMappingTypeString = 0;
 					// old EX files use indices into nodal values
 					// new EX files use value labels e.g. value d/ds1(2) zero, now compulsory in EX version 2+
-					if (!IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
+					if (!IO_stream_read_string(this->input_file, "[^:]", &dofMappingTypeString))
 					{
 						result = false;
 						break;
@@ -3077,7 +3088,7 @@ bool EXReader::readElementHeaderField()
 						display_message(ERROR_MESSAGE, "Missing \"Value indices:\" or \"Value labels:\" token.  %s", this->getFileLocation());
 						break;
 					}
-					IO_stream_scan(input_file, ": ");
+					IO_stream_scan(this->input_file, ": ");
 					const int termLimit = (termCount) > 0 ? termCount : 1;
 					if (readValueIndices)
 					{
@@ -3090,7 +3101,7 @@ bool EXReader::readElementHeaderField()
 						for (int v = 0; v < valueCount; ++v)
 						{
 							int nodeValueIndex = 0;
-							if (1 != IO_stream_scan(input_file, "%d", &nodeValueIndex))
+							if (1 != IO_stream_scan(this->input_file, "%d", &nodeValueIndex))
 							{
 								display_message(ERROR_MESSAGE, "EX Reader.  Error reading nodal value index.  %s", this->getFileLocation());
 								result = false;
@@ -3114,7 +3125,7 @@ bool EXReader::readElementHeaderField()
 					{
 						char *rest_of_line = 0;
 						// read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2 zero d/ds1(2)+d/ds2(3) etc.
-						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
 							result = false;
@@ -3228,7 +3239,7 @@ bool EXReader::readElementHeaderField()
 					// read the scale factor indices, but only if using scaling in EX Version 2+
 					if ((scaleFactorCount > 0) || (this->exVersion < 2))
 					{
-						if (1 != IO_stream_scan(input_file, " Scale factor indices%1[:] ", test_string))
+						if (1 != IO_stream_scan(this->input_file, " Scale factor indices%1[:] ", test_string))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Scale factor indices:\" token.  %s", this->getFileLocation());
 							result = false;
@@ -3236,7 +3247,7 @@ bool EXReader::readElementHeaderField()
 						}
 						char *rest_of_line = 0;
 						// read scale factor index expressions e.g. 0 (for unscaled) 60 1*2 3*4+1*2*3 etc.
-						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
 							result = false;
@@ -3531,7 +3542,7 @@ bool EXReader::readElementHeader()
 
 	// read in the scale factor set information
 	int scaleFactorSetCount;
-	if ((1 != IO_stream_scan(input_file, "Scale factor sets=%d ", &scaleFactorSetCount))
+	if ((1 != IO_stream_scan(this->input_file, "Scale factor sets=%d ", &scaleFactorSetCount))
 		|| (scaleFactorSetCount < 0))
 	{
 		display_message(ERROR_MESSAGE,
@@ -3584,7 +3595,7 @@ bool EXReader::readElementHeader()
 
 	// read in the node information. This is the number of nodes in the template, indexed from element fields
 	int nodeCount;
-	if (1 != IO_stream_scan(input_file, " #Nodes=%d ", &nodeCount))
+	if (1 != IO_stream_scan(this->input_file, " #Nodes=%d ", &nodeCount))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading #Nodes.  %s", this->getFileLocation());
 		return false;
@@ -3675,7 +3686,7 @@ bool EXReader::readElementIdentifier(DsLabelIdentifier &elementIdentifier)
 	{
 		// legacy format: triple of ELEMENT_NUMBER FACE_NUMBER LINE_NUMBER
 		DsLabelIdentifier element_num, face_num, line_num;
-		if (3 != IO_stream_scan(input_file, " %d %d %d", &element_num, &face_num, &line_num))
+		if (3 != IO_stream_scan(this->input_file, " %d %d %d", &element_num, &face_num, &line_num))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error reading legacy element identifier.  %s", this->getFileLocation());
 			return false;
@@ -3724,7 +3735,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &(values[v])))
+			if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[v])))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid FE_value value.  %s", this->getFileLocation());
 				return false;
@@ -3747,7 +3758,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			if (1 != IO_stream_scan(input_file, "%d", &(values[v])))
+			if (1 != IO_stream_scan(this->input_file, "%d", &(values[v])))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid int value.  %s", this->getFileLocation());
 				return false;
@@ -3784,7 +3795,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 cmzn_element *EXReader::readElement()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(input_file, "ement %1[:] ", test_string)) // "El" has already been read
+	if (1 != IO_stream_scan(this->input_file, "ement %1[:] ", test_string)) // "El" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
 		return 0;
@@ -3839,7 +3850,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Faces: (optional)
-	if (1 == IO_stream_scan(input_file, " Faces %1[:]", test_string))
+	if (1 == IO_stream_scan(this->input_file, " Faces %1[:]", test_string))
 	{
 		const FE_element_shape *elementShape = this->mesh->getElementShape(element->getIndex());
 		const int faceCount = FE_element_shape_get_number_of_faces(elementShape);
@@ -3897,7 +3908,7 @@ cmzn_element *EXReader::readElement()
 	const size_t fieldCount = this->headerFields.size();
 	if (this->hasElementValues)
 	{
-		if (1 != IO_stream_scan(input_file, " Values %1[:] ", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Values %1[:] ", test_string))
 		{
 			display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of required \" Values :\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -3926,7 +3937,7 @@ cmzn_element *EXReader::readElement()
 	const int nodeCount = this->elementtemplate->getNumberOfNodes();
 	if (nodeCount > 0)
 	{
-		if (1 != IO_stream_scan(input_file, " Nodes %1[:]", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Nodes %1[:]", test_string))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Nodes:\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -3935,7 +3946,7 @@ cmzn_element *EXReader::readElement()
 		for (int n = 0; n < nodeCount; ++n)
 		{
 			DsLabelIdentifier nodeIdentifier;
-			if (1 != IO_stream_scan(input_file, "%d", &nodeIdentifier))
+			if (1 != IO_stream_scan(this->input_file, "%d", &nodeIdentifier))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading node identifier.  %s", this->getFileLocation());
 				cmzn_element::deaccess(element);
@@ -3969,7 +3980,7 @@ cmzn_element *EXReader::readElement()
 	const size_t sfSetCount = this->scaleFactorSets.size();
 	if (sfSetCount > 0)
 	{
-		if (1 != IO_stream_scan(input_file, " Scale factors %1[:]", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Scale factors %1[:]", test_string))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Scale factors:\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -3983,7 +3994,7 @@ cmzn_element *EXReader::readElement()
 			FE_value *scaleFactors = sfSet->values.data();
 			for (int sf = 0; sf < scaleFactorCount; ++sf)
 			{
-				if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
+				if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
 					cmzn_element::deaccess(element);

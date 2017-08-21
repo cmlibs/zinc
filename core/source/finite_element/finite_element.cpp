@@ -10292,7 +10292,7 @@ int cmzn_node_set_field_component_int_values(cmzn_node *node,
 	FE_field *field, int componentNumber, FE_value time, int valuesCount,
 	const int *valuesIn)
 {
-	if (!(field && (field->value_type == FE_VALUE_VALUE)))
+	if (!(field && (field->value_type == INT_VALUE)))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_int_values.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
