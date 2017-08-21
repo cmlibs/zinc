@@ -159,7 +159,7 @@ public:
 			if (result != CMZN_OK)
 			{
 				if (((numberOfVersions == 0) && (result != CMZN_ERROR_NOT_FOUND))
-					|| (numberOfVersions > 0) && (result != CMZN_ERROR_ALREADY_EXISTS))
+					|| ((numberOfVersions > 0) && (result != CMZN_ERROR_ALREADY_EXISTS)))
 				{
 					display_message(ERROR_MESSAGE, "Nodetemplate setValueNumberOfVersions.  Failed");
 					return result;

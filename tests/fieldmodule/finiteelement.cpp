@@ -989,7 +989,6 @@ TEST(ZincFieldFiniteElement, redefine_element_field)
 	EXPECT_TRUE(biquadraticBasis.isValid());
 
 	int biquadraticLocalNodeIndexes[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-	int bilinearLocalNodeIndexes[4] = { 1, 3, 7, 9 };
 	Elementtemplate elementtemplate1 = mesh.createElementtemplate();
 	EXPECT_EQ(OK, result = elementtemplate1.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
 	EXPECT_EQ(OK, result = elementtemplate1.setNumberOfNodes(9));
@@ -1033,11 +1032,11 @@ TEST(ZincFieldFiniteElement, redefine_element_field)
 
 	// redefine element 1 pressure interpolation to be bilinear
 
-	int bilinearLocalNodeIndexes2[4] = { 1, 2, 3, 4 };
+	const int bilinearLocalNodeIndexes[4] = { 1, 2, 3, 4 };
 	Elementtemplate elementtemplate2 = mesh.createElementtemplate();
 	EXPECT_EQ(OK, result = elementtemplate2.setElementShapeType(Element::SHAPE_TYPE_INVALID));
 	EXPECT_EQ(OK, result = elementtemplate2.setNumberOfNodes(4));
-	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, bilinearBasis, 4, bilinearLocalNodeIndexes2));
+	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, bilinearBasis, 4, bilinearLocalNodeIndexes));
 
 	EXPECT_EQ(OK, result = elementtemplate2.setNode(1, nodeset.findNodeByIdentifier(1)));
 	EXPECT_EQ(OK, result = elementtemplate2.setNode(2, nodeset.findNodeByIdentifier(3)));
@@ -1531,7 +1530,7 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/0));
 	EXPECT_EQ(0, eft.getTermNodeVersion(/*functionNumber*/1, /*term*/2));
 	EXPECT_EQ(-1, eft.getTermScaling(/*functionNumber*/1, /*term*/1, 0, 0)); // invalid with no local scale factors
-	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(1));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(1));
 	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(1));
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, eft.setNumberOfLocalScaleFactors(-1));
 
@@ -1562,8 +1561,8 @@ TEST(ZincElementfieldtemplate, node_based_bilinear)
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(4));
 	EXPECT_EQ(4, eft.getNumberOfLocalScaleFactors());
 	// invalid arguments:
-	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(0));
-	EXPECT_EQ(CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(5));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(0));
+	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_INVALID, eft.getScaleFactorType(5));
 	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(0));
 	EXPECT_EQ(-1, eft.getScaleFactorIdentifier(5));
 

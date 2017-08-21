@@ -13,6 +13,7 @@
 #include "opencmiss/zinc/status.h"
 #include "finite_element/node_field_template.hpp"
 #include "general/message.h"
+#include <cstring>
 #include <vector>
 
 
