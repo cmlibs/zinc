@@ -4229,37 +4229,64 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 					/* display field based information */
 					if (field->number_of_values)
 					{
-						int count;
-
+						const int valuePerComponent = field->number_of_values / field->number_of_components;
 						display_message(INFORMATION_MESSAGE,"field based values: ");
 						switch (field->value_type)
 						{
 							case FE_VALUE_VALUE:
 							{
-								display_message(INFORMATION_MESSAGE,"\n");
-								display_message(INFORMATION_MESSAGE,"    ");
+								display_message(INFORMATION_MESSAGE, "\n    ");
+								const FE_value *values = reinterpret_cast<FE_value *>(field->values_storage) + c*valuePerComponent;
 								/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-								for (count=0;count<field->number_of_values;count++)
+								for (int v = 0; v < valuePerComponent; ++v)
 								{
-									display_message(INFORMATION_MESSAGE," %" FE_VALUE_STRING,
-										*((FE_value *)(field->values_storage+
-											  count*sizeof(FE_value))));
-									if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-										(0==((count+1)%FE_VALUE_MAX_OUTPUT_COLUMNS)))
+									display_message(INFORMATION_MESSAGE, " %" FE_VALUE_STRING, values[v]);
+									if ((v == (valuePerComponent - 1)) ||
+										((0 < FE_VALUE_MAX_OUTPUT_COLUMNS) &&
+										(0 == ((v + 1) % FE_VALUE_MAX_OUTPUT_COLUMNS))))
 									{
-										display_message(INFORMATION_MESSAGE,"\n");
+										if (v < (valuePerComponent - 1))
+										{
+											display_message(INFORMATION_MESSAGE, "\n    ");
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE, "\n");
+										}
 									}
 								}
-								display_message(INFORMATION_MESSAGE,"\n");
+							} break;
+							case INT_VALUE:
+							{
+								display_message(INFORMATION_MESSAGE, "\n    ");
+								const int *values = reinterpret_cast<int *>(field->values_storage) + c*valuePerComponent;
+								/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+								for (int v = 0; v < valuePerComponent; ++v)
+								{
+									display_message(INFORMATION_MESSAGE, " %d", values[v]);
+									if ((v == (valuePerComponent - 1)) ||
+										((0 < FE_VALUE_MAX_OUTPUT_COLUMNS) &&
+										(0 == ((v + 1) % FE_VALUE_MAX_OUTPUT_COLUMNS))))
+									{
+										if (v < (valuePerComponent - 1))
+										{
+											display_message(INFORMATION_MESSAGE, "\n    ");
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE, "\n");
+										}
+									}
+								}
 							} break;
 							case STRING_VALUE:
 							{
 								display_message(INFORMATION_MESSAGE, "\n");
 								display_message(INFORMATION_MESSAGE, "    ");
-								for (count = 0; count < field->number_of_values; count++)
+								for (int v = 0; v < field->number_of_values; ++v)
 								{
 									char *string_value;
-									if (get_FE_field_string_value(field, count, &string_value))
+									if (get_FE_field_string_value(field, v, &string_value))
 									{
 										make_valid_token(&string_value);
 										display_message(INFORMATION_MESSAGE, " %s", string_value);
@@ -4381,8 +4408,11 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							{
 								display_message(INFORMATION_MESSAGE, ", ");
 							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE, "\n");
+							}
 						}
-						display_message(INFORMATION_MESSAGE,"\n");
 					}
 					else
 					{
