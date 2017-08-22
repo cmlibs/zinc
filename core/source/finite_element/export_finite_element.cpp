@@ -748,7 +748,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		}
 		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 		{
-			(*this->output_file) << ", standard node based."; // GRC change to "node based"
+			(*this->output_file) << ", standard node based.";
 			int scaleFactorOffset = 0;
 			// previously the scale factor set was identified by the basis, now it is explicitly named
 			if (eft->getNumberOfLocalScaleFactors() > 0)
@@ -1565,7 +1565,10 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
 				(*this->output_file) << " " << tmpString;
 			}
-			(*this->output_file) << "\n";
+			if (valuesCount)
+			{
+				(*this->output_file) << "\n";
+			}
 		}
 	} break;
 	case INT_VALUE:
@@ -1588,7 +1591,10 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 			{
 				(*this->output_file) << " " << values[v];
 			}
-			(*this->output_file) << "\n";
+			if (valuesCount)
+			{
+				(*this->output_file) << "\n";
+			}
 		}
 	} break;
 	case STRING_VALUE:
@@ -1673,7 +1679,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (!FE_field_is_defined_at_node(field, node))
+			if (!FE_field_has_parameters_at_node(field, node))
 				return false;
 		}
 	} break;
@@ -1683,7 +1689,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (FE_field_is_defined_at_node(field, node))
+			if (FE_field_has_parameters_at_node(field, node))
 				return true;
 		}
 		return false;
@@ -1769,7 +1775,7 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		if (FE_field_is_defined_at_node(field, node))
+		if (FE_field_has_parameters_at_node(field, node))
 			this->headerFields.push_back(field);
 	}
 

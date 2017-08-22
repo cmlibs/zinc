@@ -831,7 +831,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 
 	ENTER(free_value_storage_array);
 	if (values_storage&&(size=get_Value_storage_size(value_type, time_sequence))&&
-		(0<number_of_values))
+		(0<=number_of_values))
 	{
 		return_code=1;
 		the_values_storage = values_storage;
@@ -3051,6 +3051,25 @@ FE_node_field *FE_node_field::clone(const FE_node_field& source, int deltaValues
 	return node_field;
 }
 
+int FE_node_field::getValueMinimumVersionsCount(cmzn_node_value_label valueLabel) const
+{
+	int minimumVersionsCount = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int versionsCount = this->components[c].getValueNumberOfVersions(valueLabel);
+		if (versionsCount == 0)
+		{
+			return 0;
+		}
+		if ((c == 0) || (versionsCount < minimumVersionsCount))
+		{
+			minimumVersionsCount = versionsCount;
+		}
+	}
+	return minimumVersionsCount;
+}
+
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_node_field)
 {
 	if (object)
@@ -4226,9 +4245,9 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 						display_message(INFORMATION_MESSAGE,"    %s.  ", componentName);
 						DEALLOCATE(componentName);
 					}
-					/* display field based information */
 					if (field->number_of_values)
 					{
+						/* display field based information */
 						const int valuePerComponent = field->number_of_values / field->number_of_components;
 						display_message(INFORMATION_MESSAGE,"field based values: ");
 						switch (field->value_type)
@@ -4302,9 +4321,9 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							} break;
 						}
 					}
-					/* display node based information*/
-					if (node->values_storage)
+					else if (node->values_storage)
 					{
+						/* display node based information*/
 						Value_storage *values_storage = node->values_storage + component.getValuesOffset();
 						const int valueLabelsCount = component.getValueLabelsCount();
 						for (int d = 0; d < valueLabelsCount; ++d)
@@ -4408,11 +4427,8 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							{
 								display_message(INFORMATION_MESSAGE, ", ");
 							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE, "\n");
-							}
 						}
+						display_message(INFORMATION_MESSAGE, "\n");
 					}
 					else
 					{
@@ -4675,7 +4691,7 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 				display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 					"Parameter '%s' version %d not found for field %s component %d at node %d, used from element %d",
 					ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(eft->nodeValueLabels[tt])),
-					eft->nodeVersions[tt], field->name, componentNumber, node->getIdentifier(), element->getIdentifier());
+					eft->nodeVersions[tt] + 1, field->name, componentNumber + 1, node->getIdentifier(), element->getIdentifier());
 				return 0;
 			}
 			FE_value termValue;
@@ -15675,62 +15691,21 @@ either an element_xi value, or eventually a node.
 	return (return_code);
 } /* FE_field_is_embedded */
 
-int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns true if the <field> is defined for the <node>.
-==============================================================================*/
+bool FE_field_has_parameters_at_node(FE_field *field, cmzn_node *node)
 {
-	int return_code;
-
-	ENTER(FE_field_is_defined_at_node);
-	return_code=0;
-	if (field&&node&&(node->fields))
+	if ((field) && (node) && (node->fields))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			node->fields->node_field_list))
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field, node->fields->node_field_list))
 		{
-			return_code=1;
+			return true;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_is_defined_at_node.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_field_has_parameters_at_node.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_is_defined_at_node */
-
-int FE_node_field_is_not_defined(struct FE_node *node,void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 15 September 2000
-
-DESCRIPTION :
-FE_node iterator version of FE_field_is_defined_at_node.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(FE_node_field_is_not_defined);
-	if (node&&(field=(struct FE_field *)field_void))
-	{
-		return_code = !FE_field_is_defined_at_node(field,node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_is_not_defined.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_is_not_defined */
+	return false;
+}
 
 bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element)
@@ -16091,7 +16066,7 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 					node->getIdentifier(), element->getIdentifier());
 				return false;
 			}
-			if (!FE_field_is_defined_at_node(node_accumulate_fe_field, node))
+			if (!FE_field_has_parameters_at_node(node_accumulate_fe_field, node))
 			{
 				// define node_accumulate_fe_field and element_count_fe_field identically to fe_field at node
 				// note: node field DOFs are zeroed by define_FE_field_at_node

@@ -245,6 +245,9 @@ struct FE_node_field
 		return totalValuesCount;
 	}
 
+	/** @return  Minimum number of versions stored for valueLabel over all components */
+	int getValueMinimumVersionsCount(cmzn_node_value_label valueLabel) const;
+
 };
 
 DECLARE_LIST_TYPES(FE_node_field);

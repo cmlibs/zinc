@@ -1681,9 +1681,18 @@ bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLab
 		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &derivative_type_name))
 			return false;
 		trim_string_in_place(derivative_type_name);
+		if ((nodeValueLabelsVersions.getValueLabelsCount() == 0)
+			&& (0 == strlen(derivative_type_name))
+			&& this->checkConsumeNextChar(')'))
+		{
+			break; // empty list ()
+		}
 		FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
 		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &valueType))
 		{
+			next_char = this->readNextNonSpaceChar();
+			if (next_char == (int)')')
+				break; // finished
 			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
 			DEALLOCATE(derivative_type_name);
 			return false;
@@ -1712,7 +1721,10 @@ bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLab
 		if (next_char == (int)')')
 			break; // finished
 		else if (next_char != (int)',')
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid character in derivative/value versions list");
 			return false;
+		}
 	}
 	return true;
 }
@@ -2821,8 +2833,7 @@ bool EXReader::readElementHeaderField()
 				break;
 			}
 			IO_stream_scan(this->input_file, ".");
-			if ((0 == strcmp("standard node based", global_to_element_map_string))
-				|| (0 == strcmp("node based", global_to_element_map_string)))
+			if (0 == strcmp("standard node based", global_to_element_map_string))
 			{
 				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE;
 			}

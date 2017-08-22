@@ -1018,7 +1018,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 			{
 				// note after substituting node field info, we use the targetEmbeddedField
 				FE_field *targetEmbeddedField = data.targetEmbeddedFields[f];
-				if (FE_field_is_defined_at_node(targetEmbeddedField, node))
+				if (FE_field_has_parameters_at_node(targetEmbeddedField, node))
 				{
 					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
 					cmzn_element *sourceElement;

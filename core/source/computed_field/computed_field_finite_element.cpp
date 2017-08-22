@@ -303,10 +303,13 @@ public:
 		int valuesCount, double *valuesOut);
 
 	/** @param componentNumber  Component number >= 0 or negative to set all components
-	  *@param versionNumber  Version number >= 0 */
+	  * @param versionNumber  Version number >= 0 */
 		int setNodeParameters(cmzn_fieldcache& cache, int componentNumber,
 		cmzn_node_value_label valueLabel, int versionNumber,
 		int valuesCount, const double *valuesIn);
+
+	/** @return  True if any parameters stored at location in cache. */
+	bool hasParametersAtLocation(cmzn_fieldcache& cache);
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
 	{
@@ -577,7 +580,12 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 	}
 	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 	{
-		return (0 != FE_field_is_defined_at_node(fe_field, node_location->get_node()));
+		// true and able to be evaluated only if all components have a VALUE parameter
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node_location->get_node(), this->fe_field);
+		if (node_field)
+		{
+			return node_field->getValueMinimumVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE) > 0;
+		}
 	}
 	return false;
 }
@@ -943,6 +951,16 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 	FE_node *node = node_location->get_node();
 	FE_value time = node_location->get_time();
 	return set_FE_nodal_FE_value_value(node, this->fe_field, componentNumber, valueLabel, versionNumber, time, valuesIn);
+}
+
+bool Computed_field_finite_element::hasParametersAtLocation(cmzn_fieldcache& cache)
+{
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	if (node_location)
+	{
+		return FE_field_has_parameters_at_node(fe_field, node_location->get_node());
+	}
+	return false;
 }
 
 enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
@@ -1496,6 +1514,17 @@ int cmzn_field_finite_element_set_node_parameters(
 	}
 	display_message(ERROR_MESSAGE, "FieldFiniteElement setNodeParameters.  Invalid arguments");
 	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_field_finite_element_has_parameters_at_location(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache)
+{
+	if (finite_element_field && cache)
+	{
+		return cmzn_field_finite_element_core_cast(finite_element_field)->hasParametersAtLocation(*cache);
+	}
+	display_message(ERROR_MESSAGE, "FieldFiniteElement hasParametersAtLocation.  Invalid arguments");
+	return false;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(

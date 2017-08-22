@@ -138,6 +138,17 @@ ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	int version_number, int values_count, const double *values_in);
 
 /**
+ * Query whether any parameters are stored for field at the location specified
+ * in the field cache.
+ *
+ * @param field  The field to query.
+ * @param cache  Store of location to check, and intermediate field values.
+ * @return  True if field has parameters at location, otherwise false.
+ */
+ZINC_API bool cmzn_field_finite_element_has_parameters_at_location(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache);
+
+/**
  * Creates a field producing a value on 1-D line elements with as many
  * components as the source field, which gives the discontinuity of that field
  * between two adjacent surfaces by a chosen measure. An optional conditional

@@ -19,6 +19,7 @@
 #include "finite_element/finite_element.h"
 #include "general/block_array.hpp"
 #include "general/list.h"
+#include <algorithm>
 #include <list>
 #include <map>
 #include <set>
@@ -1623,9 +1624,21 @@ public:
 	/** @return  True if any element of any component uses a non-linear basis in any direction */
 	bool usesNonLinearBasis() const
 	{
-		for (int i = 0; i < this->componentCount; ++i)
-			if (this->components[0]->getMeshfieldtemplate()->usesNonLinearBasis())
+		// since this is expensive, cache already checked linear mfts
+		std::vector<const FE_mesh_field_template *> checkedMfts;
+		for (int c = 0; c < this->componentCount; ++c)
+		{
+			const FE_mesh_field_template *mft = this->components[c]->getMeshfieldtemplate();
+			if (std::find(checkedMfts.begin(), checkedMfts.end(), mft) != checkedMfts.end())
+			{
+				continue; // already checked
+			}
+			if (mft->usesNonLinearBasis())
+			{
 				return true;
+			}
+			checkedMfts.push_back(mft);
+		}
 		return false;
 	}
 };

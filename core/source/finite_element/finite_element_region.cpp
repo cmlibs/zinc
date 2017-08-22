@@ -1093,7 +1093,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				cmzn_node *node = 0;
 				while ((0 != (node = cmzn_nodeiterator_next_non_access(nodeIter))))
 				{
-					if (FE_field_is_defined_at_node(fe_field, node))
+					if (FE_field_has_parameters_at_node(fe_field, node))
 					{
 						if (FE_node_smooth_FE_field(node, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
 							fe_nodeset->nodeFieldChange(node, fe_field);

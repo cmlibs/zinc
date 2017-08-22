@@ -1797,21 +1797,8 @@ Returns true if the values returned by <field> are a location in an FE_region,
 either an element_xi value, or eventually a node.
 ==============================================================================*/
 
-int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 4 May 1999
-
-DESCRIPTION :
-Returns true if the <field> is defined for the <node>.
-==============================================================================*/
-
-int FE_node_field_is_not_defined(struct FE_node *node,void *field_void);
-/*******************************************************************************
-LAST MODIFIED : 15 September 2000
-
-DESCRIPTION :
-FE_node iterator version of FE_field_is_defined_at_node.
-==============================================================================*/
+/** @return  True if the field has parameters at the node. */
+bool FE_field_has_parameters_at_node(FE_field *field, cmzn_node *node);
 
 /** @return  True if the <field> is defined on the <element>, directly or
   * inherited from any parent element it is a face of.

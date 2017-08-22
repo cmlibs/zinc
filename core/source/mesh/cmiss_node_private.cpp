@@ -252,7 +252,7 @@ public:
 		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (!FE_field_is_defined_at_node(fe_field, node))
+		if (!FE_field_has_parameters_at_node(fe_field, node))
 		{
 			this->removeDefineField(fe_field);
 			this->removeUndefineField(fe_field);

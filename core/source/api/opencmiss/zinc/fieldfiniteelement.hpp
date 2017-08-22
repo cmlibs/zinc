@@ -53,6 +53,11 @@ public:
 			cache.getId(), componentNumber, static_cast<cmzn_node_value_label>(nodeValueLabel),
 			versionNumber, valuesCount, valuesIn);
 	}
+
+	bool hasParametersAtLocation(const Fieldcache& cache)
+	{
+		return cmzn_field_finite_element_has_parameters_at_location(this->getDerivedId(), cache.getId());
+	}
 };
 
 class FieldEdgeDiscontinuity : public Field
