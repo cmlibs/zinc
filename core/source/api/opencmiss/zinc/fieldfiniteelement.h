@@ -392,18 +392,22 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
 	enum cmzn_field_find_mesh_location_search_mode search_mode);
 
 /**
- * Creates a field which represents and returns node values/derivatives.
+ * Creates a field which represents and returns labelled node parameters,
+ * i.e. specific value/derivative versions.
+ * This field has as many components as the source field, and is defined if any
+ * component has the specified value/derivative version. Non-existent component
+ * parameters evaluate to zero, and are ignored on assignment.
  *
  * @param fieldmodule  Region field module which will own new field.
- * @param field  The field for which the nodal values are stored, this
- * 	must be a finite element field.
+ * @param source_field  The field for which the nodal values are stored, this
+ * must be a finite element field.
  * @param node_value_label  The label of the node value/derivative to return.
  * @param version_number  The version number of the value or derivative to
  * return, starting from 1.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
-	cmzn_fieldmodule_id fieldmodule, cmzn_field_id field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	enum cmzn_node_value_label node_value_label, int version_number);
 
 /**

@@ -1677,34 +1677,33 @@ bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLab
 		return false;
 	while (true)
 	{
-		char *derivative_type_name = 0;
-		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &derivative_type_name))
+		char *valueLabelName = 0;
+		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &valueLabelName))
 			return false;
-		trim_string_in_place(derivative_type_name);
+		trim_string_in_place(valueLabelName);
 		if ((nodeValueLabelsVersions.getValueLabelsCount() == 0)
-			&& (0 == strlen(derivative_type_name))
+			&& (0 == strlen(valueLabelName))
 			&& this->checkConsumeNextChar(')'))
 		{
 			break; // empty list ()
 		}
-		FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
-		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &valueType))
+		cmzn_node_value_label valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
+		if (!STRING_TO_ENUMERATOR(cmzn_node_value_label)(valueLabelName, &valueLabel))
 		{
 			next_char = this->readNextNonSpaceChar();
 			if (next_char == (int)')')
 				break; // finished
-			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
-			DEALLOCATE(derivative_type_name);
+			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised value/derivative label name %s", valueLabelName);
+			DEALLOCATE(valueLabelName);
 			return false;
 		}
-		DEALLOCATE(derivative_type_name);
-		cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
+		DEALLOCATE(valueLabelName);
 		int versionCount = 0;
 		if (1 == IO_stream_scan(this->input_file, "(%d)", &versionCount))
 		{
 			if (versionCount < 2)
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Derivative version count must be > 1 if specified");
+				display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative version count must be > 1 if specified");
 				return false;
 			}
 		}
@@ -1873,7 +1872,7 @@ bool EXReader::readNodeHeaderField()
 				if (CMZN_OK != componentNodefieldtemplates[component_number].setValueNumberOfVersions(valueLabel, versionsCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
-						ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(valueLabel)),
+						ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel),
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
@@ -3180,10 +3179,10 @@ bool EXReader::readElementHeaderField()
 								}
 								else
 								{
-									enum FE_nodal_value_type nodalValueType = FE_NODAL_UNKNOWN;
-									if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(token, &nodalValueType))
+									cmzn_node_value_label valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
+									if (!STRING_TO_ENUMERATOR(cmzn_node_value_label)(token, &valueLabel))
 									{
-										display_message(ERROR_MESSAGE, "EX Reader.  Invalid node value label '%s'.  %s", token, this->getFileLocation());
+										display_message(ERROR_MESSAGE, "EX Reader.  Invalid node value/derivative label '%s'.  %s", token, this->getFileLocation());
 										result = false;
 										break;
 									}
@@ -3205,8 +3204,7 @@ bool EXReader::readElementHeaderField()
 										if (nextchar == '+')
 											++s;
 									}
-									resultCode = eft->setTermNodeParameter(fn + v, t, termNodeIndexes[t - 1],
-										FE_nodal_value_type_to_cmzn_node_value_label(nodalValueType), version);
+									resultCode = eft->setTermNodeParameter(fn + v, t, termNodeIndexes[t - 1], valueLabel, version);
 									if (resultCode != CMZN_OK)
 									{
 										display_message(ERROR_MESSAGE, "EX Reader.  Failed to set function %d node parameter term %d.  %s",

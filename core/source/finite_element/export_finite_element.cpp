@@ -830,9 +830,8 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 							if (t > 0)
 								(*this->output_file) << "+";
 							const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(f2, t);
-							const char *valueTypeString = ENUMERATOR_STRING(FE_nodal_value_type)(
-								cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel));
-							(*this->output_file) << valueTypeString;
+							const char *valueLabelName = ENUMERATOR_STRING(cmzn_node_value_label)(nodeValueLabel);
+							(*this->output_file) << valueLabelName;
 							const int version = eft->getTermNodeVersion(f2, t);
 							if (version > 0)
 								(*this->output_file) << "(" << version + 1 << ")";
@@ -1487,7 +1486,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 			}
 			const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
 			const int versionsCount = nft.getVersionsCountAtIndex(d);
-			(*this->output_file) << ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(valueLabel));
+			(*this->output_file) << ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel);
 			if (versionsCount > 1)
 			{
 				(*this->output_file) << "(" << versionsCount << ")";

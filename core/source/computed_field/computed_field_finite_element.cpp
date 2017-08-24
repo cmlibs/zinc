@@ -1994,18 +1994,16 @@ const char computed_field_node_value_type_string[] = "node_value";
 class Computed_field_node_value : public Computed_field_core
 {
 public:
-	cmzn_field_id finite_element_field;
 	struct FE_field *fe_field;
-	enum FE_nodal_value_type nodal_value_type;
-	int version_number;
+	cmzn_node_value_label valueLabel;
+	int versionNumber; // starting at 0
 
 	Computed_field_node_value(cmzn_field_id finite_element_field,
-			enum FE_nodal_value_type nodal_value_type, int version_number) :
+			cmzn_node_value_label valueLabelIn, int versionNumberIn) :
 		Computed_field_core(),
-		finite_element_field(cmzn_field_access(finite_element_field)),
 		fe_field(0),
-		nodal_value_type(nodal_value_type),
-		version_number(version_number)
+		valueLabel(valueLabelIn),
+		versionNumber(versionNumberIn)
 	{
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field);
 		ACCESS(FE_field)(fe_field);
@@ -2068,43 +2066,14 @@ private:
 };
 
 Computed_field_node_value::~Computed_field_node_value()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
 {
-
-	ENTER(Computed_field_node_value::~Computed_field_node_value);
-	if (field)
-	{
-		DEACCESS(FE_field)(&(fe_field));
-		cmzn_field_destroy(&finite_element_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value::~Computed_field_node_value.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-
-} /* Computed_field_node_value::~Computed_field_node_value */
+	DEACCESS(FE_field)(&(this->fe_field));
+}
 
 Computed_field_core* Computed_field_node_value::copy()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
 {
-	Computed_field_node_value* core =
-		new Computed_field_node_value(finite_element_field, nodal_value_type, version_number);
-
-	return (core);
-} /* Computed_field_node_value::copy */
+	return new Computed_field_node_value(this->getSourceField(0), this->valueLabel, this->versionNumber);
+}
 
 int Computed_field_node_value::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -2120,9 +2089,9 @@ Compare the type specific data
 	ENTER(Computed_field_node_value::compare);
 	if (field && (other = dynamic_cast<Computed_field_node_value*>(other_core)))
 	{
-		return_code = ((fe_field == other->fe_field)
-			&& (nodal_value_type == other->nodal_value_type)
-			&& (version_number == other->version_number));
+		return_code = ((this->fe_field == other->fe_field)
+			&& (this->valueLabel == other->valueLabel)
+			&& (this->versionNumber == other->versionNumber));
 	}
 	else
 	{
@@ -2144,11 +2113,10 @@ bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 		{
 			// defined if at least one component has version of value label defined
 			const int componentCount = field->number_of_components;
-			const cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(this->nodal_value_type);
 			for (int c = 0; c < componentCount; ++c)
 			{
-				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(valueLabel);
-				if (this->version_number < versionsCount)
+				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(this->valueLabel);
+				if (this->versionNumber < versionsCount)
 				{
 					return true;
 				}
@@ -2196,14 +2164,13 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		cmzn_node *node = node_location->get_node();
 		FE_value time = node_location->get_time();
 		enum Value_type value_type = get_FE_field_value_type(fe_field);
-		const cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(this->nodal_value_type);
 		switch (value_type)
 		{
 		case DOUBLE_VALUE:
 		{
 			double *double_values = valueCache.double_values.data();
 			result = get_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, double_values);
+				this->valueLabel, this->versionNumber, time, double_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(double_values[c]);
@@ -2212,13 +2179,13 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		case FE_VALUE_VALUE:
 		{
 			result = get_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, valueCache.values);
+				this->valueLabel, this->versionNumber, time, valueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
 			float *float_values = valueCache.float_values.data();
 			result = get_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, float_values);
+				this->valueLabel, this->versionNumber, time, float_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(float_values[c]);
@@ -2228,7 +2195,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			int *int_values = valueCache.int_values.data();
 			result = get_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, int_values);
+				this->valueLabel, this->versionNumber, time, int_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(int_values[c]);
@@ -2238,7 +2205,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			short *short_values = valueCache.short_values.data();
 			result = get_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, short_values);
+				this->valueLabel, this->versionNumber, time, short_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(short_values[c]);
@@ -2277,7 +2244,6 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 		cmzn_node *node = node_location->get_node();
 		const FE_value time = node_location->get_time();
 		enum Value_type value_type = get_FE_field_value_type(fe_field);
-		const cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(this->nodal_value_type);
 		int return_code = CMZN_ERROR_GENERAL;
 		switch (value_type)
 		{
@@ -2289,12 +2255,12 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				double_values[c] = static_cast<double>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, double_values);
+				this->valueLabel, this->versionNumber, time, double_values);
 		} break;
 		case FE_VALUE_VALUE:
 		{
 			return_code = set_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, feValueCache.values);
+				this->valueLabel, this->versionNumber, time, feValueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
@@ -2304,7 +2270,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				float_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, float_values);
+				this->valueLabel, this->versionNumber, time, float_values);
 		} break;
 		case INT_VALUE:
 		{
@@ -2314,7 +2280,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				int_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, int_values);
+				this->valueLabel, this->versionNumber, time, int_values);
 		} break;
 		case SHORT_VALUE:
 		{
@@ -2324,7 +2290,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				short_values[c] = static_cast<short>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				valueLabel, this->version_number, time, short_values);
+				this->valueLabel, this->versionNumber, time, short_values);
 		} break;
 		default:
 		{
@@ -2363,9 +2329,8 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-				ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type));
-			display_message(INFORMATION_MESSAGE,"    version : %d\n",
-				version_number+1);
+				ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel));
+			display_message(INFORMATION_MESSAGE,"    version : %d\n", this->versionNumber + 1);
 			DEALLOCATE(field_name);
 		}
 		return_code = 1;
@@ -2408,8 +2373,8 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type), &error);
-		sprintf(temp_string, " version %d", version_number + 1);
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel), &error);
+		sprintf(temp_string, " version %d", this->versionNumber + 1);
 		append_string(&command_string, temp_string, &error);
 	}
 	else
@@ -2451,71 +2416,45 @@ Check the fe_field
 
 } //namespace
 
-/*****************************************************************************//**
- * Creates a field returning the values for the given <nodal_value_type> and
- * <version_number> of <fe_field> at a node.
- * Makes the number of components the same as in the <fe_field>.
- * Field automatically takes the coordinate system of the source fe_field.
- *
- * @param field_module  Region field module which will own new field.
- * @param fe_field  FE_field whose nodal parameters will be extracted
- * @param nodal_value_type  Parameter value type to extract
- * @param version_number  Version of parameter value to extract.
- * @return Newly created field
- */
-
-cmzn_field *Computed_field_create_node_value(
-	struct cmzn_fieldmodule *field_module,
-	cmzn_field_id finite_element_field, enum FE_nodal_value_type nodal_value_type,
-	int version_number)
+cmzn_field_id cmzn_fieldmodule_create_field_node_value(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
+	enum cmzn_node_value_label node_value_label, int version_number)
 {
 	cmzn_field *field = 0;
-	struct FE_field *fe_field = 0;
-	if (finite_element_field && finite_element_field->isNumerical() &&
-		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field)
+	FE_field *fe_field = 0;
+	if (fieldmodule && source_field && source_field->isNumerical()
+		&& Computed_field_get_type_finite_element(source_field, &fe_field)
+		&& ENUMERATOR_STRING(cmzn_node_value_label)(node_value_label)
+		&& (version_number > 0))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
-			/*number_of_source_fields*/1, &finite_element_field,
+			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_node_value(
-				finite_element_field, nodal_value_type, version_number));
+			new Computed_field_node_value(source_field, node_value_label, version_number - 1));
 	}
-	return (field);
+	return field;
 }
 
-int Computed_field_get_type_node_value(struct Computed_field *field,
-	cmzn_field_id *finite_element_field_address, enum FE_nodal_value_type *nodal_value_type,
-	int *version_number)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-==============================================================================*/
+cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
 {
-	Computed_field_node_value* core;
-	int return_code;
-
-	ENTER(Computed_field_get_type_node_value);
-	if (field&&(core = dynamic_cast<Computed_field_node_value*>(field->core)))
+	Computed_field_node_value *fieldNodeValue;
+	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
 	{
-		*finite_element_field_address=core->finite_element_field;
-		*nodal_value_type=core->nodal_value_type;
-		*version_number=core->version_number;
-		return_code=1;
+		return CMZN_NODE_VALUE_LABEL_INVALID;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_node_value.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return fieldNodeValue->valueLabel;
+}
 
-	return (return_code);
-} /* Computed_field_get_type_node_value */
+int cmzn_field_node_value_get_version_number(cmzn_field_id field)
+{
+	Computed_field_node_value *fieldNodeValue;
+	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
+	{
+		return CMZN_NODE_VALUE_LABEL_INVALID;
+	}
+	return fieldNodeValue->versionNumber + 1;
+}
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_edge_discontinuity_measure)
 {
@@ -4174,94 +4113,30 @@ cmzn_field_id cmzn_fieldmodule_create_field_basis_derivative(
 	return (field);
 }
 
-int Computed_field_contains_changed_FE_field(
-	struct Computed_field *field, void *fe_field_change_log_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
+namespace {
 
-DESCRIPTION :
-Returns true if <field> directly contains an FE_field and it is listed as
-changed, added or removed in <fe_field_change_log>.
-<fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
-==============================================================================*/
+/**
+ * If <field> has a source FE_field, ensures it is in <fe_field_list>.
+ * @param fe_field_list_void  Void pointer to LIST(FE_field)
+ */
+int cmzn_field_add_source_FE_field_to_list(cmzn_field *field, void *fe_field_list_void)
 {
-	int fe_field_change;
-	enum FE_nodal_value_type nodal_value_type;
-	int return_code, version_number;
-	struct CHANGE_LOG(FE_field) *fe_field_change_log;
-	struct FE_field *fe_field;
-
-	ENTER(Computed_field_contains_changed_FE_field);
-	if (field && (fe_field_change_log =
-		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void))
+	int return_code = 1;
+	struct LIST(FE_field) *fe_field_list = static_cast<struct LIST(FE_field) *>(fe_field_list_void);
+	if (field && fe_field_list)
 	{
-		if (dynamic_cast<Computed_field_finite_element*>(field->core))
+		FE_field *fe_field = 0;
+		Computed_field_finite_element *finite_element_core;
+		Computed_field_node_value *node_value_core;
+		if (finite_element_core = dynamic_cast<Computed_field_finite_element*>(field->core))
 		{
-			return_code = Computed_field_get_type_finite_element(field, &fe_field);
+			fe_field = finite_element_core->fe_field;
 		}
-		else if (dynamic_cast<Computed_field_node_value*>(field->core))
+		else if (node_value_core = dynamic_cast<Computed_field_node_value*>(field->core))
 		{
-			cmzn_field_id finite_element_field = 0;
-			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
-					&nodal_value_type, &version_number) &&
-				Computed_field_get_type_finite_element(field, &fe_field);
+			fe_field = node_value_core->fe_field;
 		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			return_code = CHANGE_LOG_QUERY(FE_field)(fe_field_change_log, fe_field,
-				&fe_field_change) &&
-				(fe_field_change != CHANGE_LOG_OBJECT_UNCHANGED(FE_field));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_contains_changed_FE_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_contains_changed_FE_field */
-
-int Computed_field_add_source_FE_field_to_list(
-	struct Computed_field *field, void *fe_field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If <field> has a source FE_field, ensures it is in <fe_field_list>.
-==============================================================================*/
-{
-	enum FE_nodal_value_type nodal_value_type;
-	int return_code, version_number;
-	struct FE_field *fe_field;
-	struct LIST(FE_field) *fe_field_list;
-
-	ENTER(Computed_field_add_source_FE_field_to_list);
-	if (field && (fe_field_list = (struct LIST(FE_field) *)fe_field_list_void))
-	{
-		fe_field = (struct FE_field *)NULL;
-		if (dynamic_cast<Computed_field_finite_element*>(field->core))
-		{
-			return_code = Computed_field_get_type_finite_element(field, &fe_field);
-		}
-		else if (dynamic_cast<Computed_field_node_value*>(field->core))
-		{
-			cmzn_field_id finite_element_field = 0;
-			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
-					&nodal_value_type, &version_number) &&
-				Computed_field_get_type_finite_element(field, &fe_field);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		if (return_code && fe_field)
+		if (fe_field)
 		{
 			if (!IS_OBJECT_IN_LIST(FE_field)(fe_field, fe_field_list))
 			{
@@ -4275,10 +4150,10 @@ If <field> has a source FE_field, ensures it is in <fe_field_list>.
 			"Computed_field_add_source_FE_field_to_list.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_add_source_FE_field_to_list */
+}
+
+}
 
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field)
@@ -4299,7 +4174,7 @@ Returns the list of FE_fields that <field> depends on.
 		if (fe_field_list)
 		{
 			if (!Computed_field_for_each_ancestor(field,
-				Computed_field_add_source_FE_field_to_list, (void *)fe_field_list))
+				cmzn_field_add_source_FE_field_to_list, (void *)fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_get_defining_FE_field_list.  Failed");
@@ -4598,44 +4473,6 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 
 	return (time_sequence);
 } /* Computed_field_get_FE_node_field_FE_time_sequence */
-
-enum cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
-{
-	enum cmzn_node_value_label value_label = CMZN_NODE_VALUE_LABEL_INVALID;
-	if (field && field->core)
-	{
-		Computed_field_node_value *fieldNodeValue= static_cast<Computed_field_node_value*>(
-			field->core);
-		value_label = FE_nodal_value_type_to_cmzn_node_value_label(
-			fieldNodeValue->nodal_value_type);
-	}
-	return value_label;
-}
-
-int cmzn_field_node_value_get_version(cmzn_field_id field)
-{
-	int version = 0;
-	if (field && field->core)
-	{
-		Computed_field_node_value *fieldNodeValue= static_cast<Computed_field_node_value*>(
-			field->core);
-		version = fieldNodeValue->version_number + 1;
-	}
-	return version;
-}
-
-cmzn_field_id cmzn_fieldmodule_create_field_node_value(
-	cmzn_fieldmodule_id field_module, cmzn_field_id field,
-	enum cmzn_node_value_label node_value_label, int version)
-{
-	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
-	{
-		FE_nodal_value_type fe_nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(node_value_label);
-		if (FE_NODAL_UNKNOWN != fe_nodal_value_type)
-			return Computed_field_create_node_value(field_module, field, fe_nodal_value_type, version - 1);
-	}
-	return 0;
-}
 
 namespace {
 

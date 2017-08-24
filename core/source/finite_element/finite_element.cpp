@@ -121,8 +121,6 @@ the point and the Xi coordinates of the point within the element.
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
 	Value_storage *values_storage;
-	/*???DB.  Have something like enum FE_nodal_value_type ? */
-	/*???DB.  Needs to be clarified for constant fields */
 	/* time series information.  If <number_of_times> is zero then constant in
 	 * time */
 	enum Value_type time_value_type;
@@ -4332,8 +4330,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							const int versionsCount = component.getVersionsCountAtIndex(d);
 							for (int v = 0; v < versionsCount; ++v)
 							{
-								display_message(INFORMATION_MESSAGE, "%s",
-									ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(valueLabel)));
+								display_message(INFORMATION_MESSAGE, "%s", ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel));
 								if (versionsCount > 1)
 								{
 									display_message(INFORMATION_MESSAGE, "(%d)", v + 1);
@@ -4690,8 +4687,8 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			{
 				display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 					"Parameter '%s' version %d not found for field %s component %d at node %d, used from element %d",
-					ENUMERATOR_STRING(FE_nodal_value_type)(cmzn_node_value_label_to_FE_nodal_value_type(eft->nodeValueLabels[tt])),
-					eft->nodeVersions[tt] + 1, field->name, componentNumber + 1, node->getIdentifier(), element->getIdentifier());
+					ENUMERATOR_STRING(cmzn_node_value_label)(eft->nodeValueLabels[tt]), eft->nodeVersions[tt] + 1,
+					field->name, componentNumber + 1, node->getIdentifier(), element->getIdentifier());
 				return 0;
 			}
 			FE_value termValue;
@@ -10116,60 +10113,50 @@ bool FE_node_can_merge(struct FE_node *targetNode, struct FE_node *sourceNode)
 	return false;
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_node_value_label)
 {
-	const char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(FE_nodal_value_type));
 	switch (enumerator_value)
 	{
-		case FE_NODAL_VALUE:
+		case CMZN_NODE_VALUE_LABEL_VALUE:
 		{
-			enumerator_string = "value";
+			return "value";
 		} break;
-		case FE_NODAL_D_DS1:
+		case CMZN_NODE_VALUE_LABEL_D_DS1:
 		{
-			enumerator_string = "d/ds1";
+			return "d/ds1";
 		} break;
-		case FE_NODAL_D_DS2:
+		case CMZN_NODE_VALUE_LABEL_D_DS2:
 		{
-			enumerator_string = "d/ds2";
+			return "d/ds2";
 		} break;
-		case FE_NODAL_D2_DS1DS2:
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 		{
-			enumerator_string = "d2/ds1ds2";
+			return "d2/ds1ds2";
 		} break;
-		case FE_NODAL_D_DS3:
+		case CMZN_NODE_VALUE_LABEL_D_DS3:
 		{
-			enumerator_string = "d/ds3";
+			return "d/ds3";
 		} break;
-		case FE_NODAL_D2_DS1DS3:
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 		{
-			enumerator_string = "d2/ds1ds3";
+			return "d2/ds1ds3";
 		} break;
-		case FE_NODAL_D2_DS2DS3:
+		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
 		{
-			enumerator_string = "d2/ds2ds3";
+			return "d2/ds2ds3";
 		} break;
-		case FE_NODAL_D3_DS1DS2DS3:
+		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 		{
-			enumerator_string = "d3/ds1ds2ds3";
+			return "d3/ds1ds2ds3";
 		} break;
-		case FE_NODAL_UNKNOWN:
+		case CMZN_NODE_VALUE_LABEL_INVALID:
 		{
-			enumerator_string = "unknown";
-		} break;
-		default:
-		{
-			enumerator_string = (const char *)NULL;
 		} break;
 	}
-	LEAVE;
+	return 0;
+}
 
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(FE_nodal_value_type) */
-
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_nodal_value_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_node_value_label)
 
 template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
@@ -15932,7 +15919,8 @@ public:
 	{
 		// basis functions for a local node are assumed to be in order of nodal value types:
 		const int basisNodeFunctionIndex =
-			((xiIndex == 0) ? FE_NODAL_D_DS1 : (xiIndex == 1) ? FE_NODAL_D_DS2 : FE_NODAL_D_DS3) - FE_NODAL_VALUE;
+			((xiIndex == 0) ? CMZN_NODE_VALUE_LABEL_D_DS1 : (xiIndex == 1) ? CMZN_NODE_VALUE_LABEL_D_DS2 : CMZN_NODE_VALUE_LABEL_D_DS3)
+			- CMZN_NODE_VALUE_LABEL_VALUE;
 		const FE_value delta = this->component_values[basisNode2] - this->component_values[basisNode1];
 		for (int n = 0; n < 2; ++n)
 		{

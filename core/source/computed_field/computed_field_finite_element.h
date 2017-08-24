@@ -64,17 +64,6 @@ int Computed_field_get_type_finite_element(struct Computed_field *field,
 int Computed_field_wraps_fe_field(struct Computed_field *field,
 	void *fe_field_void);
 
-int Computed_field_contains_changed_FE_field(
-	struct Computed_field *field, void *fe_field_change_log_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns true if <field> directly contains an FE_field and it is listed as
-changed, added or removed in <fe_field_change_log>.
-<fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
-==============================================================================*/
-
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field);
 /*******************************************************************************
@@ -175,9 +164,11 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
 
 enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field);
 
-enum cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
+/** If field is node_value type, return the value label, otherwise INVALID */
+cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
 
-int cmzn_field_node_value_get_version(cmzn_field_id field);
+/** If field is node_value type, return the version_number >= 1, otherwise 0 */
+int cmzn_field_node_value_get_version_number(cmzn_field_id field);
 
 enum cmzn_field_edge_discontinuity_measure
 cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string);

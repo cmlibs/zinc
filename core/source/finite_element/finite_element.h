@@ -98,47 +98,10 @@ DECLARE_LIST_TYPES(FE_field);
 
 DECLARE_CHANGE_LOG_TYPES(FE_field);
 
-/* API uses external type enum cmzn_node_value_label */
-enum FE_nodal_value_type
-/*******************************************************************************
-LAST MODIFIED : 27 January 1998
-
-DESCRIPTION :
-The type of a nodal value.
-Must add new enumerators and keep values in sync with functions
-ENUMERATOR_STRING, ENUMERATOR_GET_VALID_STRINGS and STRING_TO_ENUMERATOR.
-Note these functions expect the first enumerator to be number 1, and all
-subsequent enumerators to be sequential, unlike the default behaviour which
-starts at 0.
-==============================================================================*/
-{
-	FE_NODAL_UNKNOWN = CMZN_NODE_VALUE_LABEL_INVALID,
-	FE_NODAL_VALUE = CMZN_NODE_VALUE_LABEL_VALUE,
-	FE_NODAL_D_DS1 = CMZN_NODE_VALUE_LABEL_D_DS1,
-	FE_NODAL_D_DS2 = CMZN_NODE_VALUE_LABEL_D_DS2,
-	FE_NODAL_D2_DS1DS2 = CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
-	FE_NODAL_D_DS3 = CMZN_NODE_VALUE_LABEL_D_DS3,
-	FE_NODAL_D2_DS1DS3 = CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
-	FE_NODAL_D2_DS2DS3 = CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
-	FE_NODAL_D3_DS1DS2DS3 = CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
-}; /* enum FE_nodal_value_type */
-
-/** Convert external node value label to internal finite element value type. */
-inline FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
-	enum cmzn_node_value_label node_value_label)
-{
-	return static_cast<FE_nodal_value_type>(node_value_label);
-}
-
-/** Convert internal finite element value type to external node value label. */
-inline enum cmzn_node_value_label FE_nodal_value_type_to_cmzn_node_value_label(
-	FE_nodal_value_type nodal_value_type)
-{
-	return static_cast<cmzn_node_value_label>(nodal_value_type);
-}
-
 struct cmzn_node;
 #define FE_node cmzn_node
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_node_value_label);
 
 DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
 DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
@@ -466,8 +429,6 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *nodeset,
  */
 bool FE_node_can_merge(struct FE_node *targetNode, struct FE_node *sourceNode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_nodal_value_type);
-
 /**
  * Get all parameters for field component at node and time.
  * Parameter order cycles slowest for derivative / value label, with versions
@@ -567,7 +528,7 @@ int cmzn_node_set_field_component_int_values(cmzn_node *node,
  * @param componentsOffset  Offset in array to next component for same
  * derivative and version.
  * @param derivativesSize  Number of derivatives. Derivatives are indexed in
- * order of FE_nodal_value_type, index 0 = VALUE.
+ * order of cmzn_node_value_label, index 0 = VALUE.
  * @param derivativesOffset  Offset in array to next derivative for same
  * component and version.
  * @param versionsSize  Number of versions.

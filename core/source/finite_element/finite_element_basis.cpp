@@ -87,7 +87,7 @@ list.
 	// node index for n'th basis function dof: increasing from 0
 	int *parameterNodes;
 	// derivative type for n'th basis function dof
-	// same values as FE_nodal_value_type; bit 0=dxi1, bit 1=dxi2, bit 2=dxi3
+	// uses bits to indicate derivative: bit 0=dxi1, bit 1=dxi2, bit 2=dxi3
 	// will need development if significantly different bases are added
 	int *parameterDerivatives;
 
@@ -1687,7 +1687,7 @@ returned.
 			*blending_matrix=1;
 			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function
 				so that can order the basis functions (rows of the blending matrix) with
-				FE_nodal_value_type varying fastest, xi1 varying next fastest, xi2
+				node value label varying fastest, xi1 varying next fastest, xi2
 				varying next fastest and so on. These consist of a recorder per function:
 				0 #xi xi1node# xi1deriv# xi2node# xi2deriv# ... xiNnode# xiNderiv#
 				Later, sequential numbers are put in the first column and after sorting
