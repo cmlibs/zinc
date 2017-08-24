@@ -56,6 +56,24 @@ FE_node_field_template &FE_node_field_template::operator=(const FE_node_field_te
 	return *this;
 }
 
+bool FE_node_field_template::setLegacyAllValueVersionsCount(int versionsCount)
+{
+	if ((this->valueLabelsCount < 1)
+		|| (this->valueLabels[0] != CMZN_NODE_VALUE_LABEL_VALUE)
+		|| (versionsCount < 1)
+		|| (this->getMaximumVersionsCount() > 1))
+	{
+		display_message(ERROR_MESSAGE, "FE_node_field_template::setLegacyAllValueLabelsVersionCount.  Invalid argument(s)");
+		return false;
+	}
+	for (int d = 0; d < this->valueLabelsCount; ++d)
+	{
+		this->versionsCounts[d] = versionsCount;
+	}
+	this->totalValuesCount *= versionsCount;
+	return true;
+}
+
 bool FE_node_field_template::matches(const FE_node_field_template& other, bool compareValuesOffset) const
 {
 	if ((this->totalValuesCount != other.totalValuesCount)

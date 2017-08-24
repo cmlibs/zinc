@@ -67,6 +67,16 @@ public:
 
 	FE_node_field_template &operator=(const FE_node_field_template &source);
 
+	
+	/** Call once after all value labels added (with 1 version each) to set same number
+	  * of versions for all value labels. This is for EX version < 2.
+	  * Note this consistent number of versions is consistent with parameters listed
+	  * with value labels nested within version; see convertLegacyDOFIndexToValueLabelAndVersion
+	  * Note the first valueLabel must be VALUE!
+	  * @return  True on success, false if first valueLabel is not VALUE, if
+	  * more than one version already specified for any valueLabel or versionCount < 1 */
+	bool setLegacyAllValueVersionsCount(int versionsCount);
+
 	/** @param compareValuesOffset  If set, compare valuesOffset.
 	  * @return  True if this and other store the same parameters in the same order */
 	bool matches(const FE_node_field_template& other, bool compareValuesOffset = false) const;

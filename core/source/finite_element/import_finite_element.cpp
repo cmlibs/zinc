@@ -177,92 +177,6 @@ private:
 
 };
 
-
-class NodeValueLabelsVersions
-{
-	std::vector<cmzn_node_value_label> valueLabels;
-	std::vector<int> versionsCounts;
-
-public:
-
-	/** For exVersion < 2 only. Call once after all value labels added (with 1
-	  * version each) to set same number of versions for all value labels.
-	  * Remember that in the old format parameters are nested with value labels within versions.
-	  * Note the first valueLabel must have been VALUE!
-	  * @return  True on success, false if first valueLabel is not VALUE, if
-	  * more than one version already specified for any valueLabel or versionCount < 1 */
-	bool setLegacyAllValueLabelsVersionsCount(int versionCount)
-	{
-		if ((this->valueLabels.size() < 1)
-			|| (this->valueLabels[0] != CMZN_NODE_VALUE_LABEL_VALUE)
-			|| (versionCount < 1)
-			|| (this->getMaximumVersionsCount() > 1))
-		{
-			display_message(ERROR_MESSAGE, "NodeValueLabelsVersions::setLegacyAllValueLabelsVersionCount.  Invalid argument(s)");
-			return false;
-		}
-		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
-			*iter = versionCount;
-		return true;
-	}
-
-	/** @return  True if added, false if invalid valueLabel, versionCount < 1 or valueLabel already used */
-	bool setValueLabelVersionsCount(cmzn_node_value_label valueLabel, int versionCount)
-	{
-		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
-			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
-			|| (versionCount < 1)
-			|| (getValueLabelVersionsCount(valueLabel) > 0))
-			return false;
-		this->valueLabels.push_back(valueLabel);
-		this->versionsCounts.push_back(versionCount);
-		return true;
-	}
-
-	int getValueLabelVersionsCount(cmzn_node_value_label valueLabel)
-	{
-		const size_t valueLabelsCount = this->valueLabels.size();
-		for (size_t d = 0; d < valueLabelsCount; ++d)
-			if (this->valueLabels[d] == valueLabel)
-				return this->versionsCounts[d];
-		return 0;
-	}
-
-	int getMaximumVersionsCount() const
-	{
-		int maximumVersionsCount = 0;
-		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
-			if (*iter > maximumVersionsCount)
-				maximumVersionsCount = *iter;
-		return maximumVersionsCount;
-	}
-
-	/** @return  The number of value labels defined. */
-	int getValueLabelsCount() const
-	{
-		return static_cast<int>(this->valueLabels.size());
-	}
-
-	cmzn_node_value_label getValueLabelAtIndex(int index) const
-	{
-		return this->valueLabels[index];
-	}
-
-	int getVersionsCountAtIndex(int index) const
-	{
-		return this->versionsCounts[index];
-	}
-
-	/** @return  The sum of versionCounts for all value labels. */
-	int getTotalValuesCount() const
-	{
-		int valuesCount = 0;
-		for (auto iter = this->versionsCounts.begin(); iter != this->versionsCounts.end(); ++iter)
-			valuesCount += *iter;
-		return valuesCount;
-	}
-};
-
 } // anonymous namespace
 
 class EXReader
@@ -453,7 +367,6 @@ class EXReader
 	FE_element_shape* elementShape;
 	FE_node_template *node_template;
 	cmzn_elementtemplate *elementtemplate;
-	std::map<FE_field *, std::vector<NodeValueLabelsVersions> > nodeFieldComponentValueLabelsVersions;
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
 	std::vector<ScaleFactorSet *> scaleFactorSets;
@@ -584,7 +497,6 @@ private:
 	void clearHeaderCache(bool clearElementShape = true)
 	{
 		cmzn::Deaccess(this->node_template);
-		this->nodeFieldComponentValueLabelsVersions.clear();
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -647,7 +559,7 @@ private:
 	bool checkConsumeNextChar(char testChar);
 	char *readString();
 	FE_field *readField();
-	bool readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLabelsVersions);
+	bool readNodeValueLabelsVersions(FE_node_field_template& nft);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
 	struct FE_basis *readBasis();
@@ -1670,7 +1582,7 @@ bool EXReader::readFieldValues()
  * (value,d/ds1(2),d/ds2,d2/ds1ds2)
  * @return  True on success, false if not read correctly.
  */
-bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLabelsVersions)
+bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
 {
 	int next_char = this->readNextNonSpaceChar();
 	if (next_char != (int)'(')
@@ -1681,7 +1593,7 @@ bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLab
 		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &valueLabelName))
 			return false;
 		trim_string_in_place(valueLabelName);
-		if ((nodeValueLabelsVersions.getValueLabelsCount() == 0)
+		if ((nft.getValueLabelsCount() == 0)
 			&& (0 == strlen(valueLabelName))
 			&& this->checkConsumeNextChar(')'))
 		{
@@ -1711,7 +1623,7 @@ bool EXReader::readNodeValueLabelsVersions(NodeValueLabelsVersions& nodeValueLab
 		{
 			versionCount = 1;
 		}
-		if (!nodeValueLabelsVersions.setValueLabelVersionsCount(valueLabel, versionCount))
+		if (!nft.setValueNumberOfVersions(valueLabel, versionCount))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Invalid derivative, number of versions or repeated derivative");
 			return false;
@@ -1743,10 +1655,9 @@ bool EXReader::readNodeHeaderField()
 	bool result = true;
 	const int number_of_components = get_FE_field_number_of_components(field);
 	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
-	std::vector<FE_node_field_template> componentNodefieldtemplates(number_of_components);
+	std::vector<FE_node_field_template> componentNfts(number_of_components);
 	/* read the components */
 	char *componentName = 0;
-	std::vector<NodeValueLabelsVersions> nodeValueLabelsVersions(number_of_components);
 	for (int component_number = 0; component_number < number_of_components; ++component_number)
 	{
 		IO_stream_scan(this->input_file, " ");
@@ -1778,7 +1689,7 @@ bool EXReader::readNodeHeaderField()
 		/* component name is sufficient for non-GENERAL_FE_FIELD */
 		if (GENERAL_FE_FIELD == fe_field_type)
 		{
-			NodeValueLabelsVersions &componentNodeValueLabelsVersions = nodeValueLabelsVersions[component_number];
+			FE_node_field_template &nft = componentNfts[component_number];
 			if (this->exVersion < 2)
 			{
 				// legacy EX format had same number of versions for all derivatives and 'value' derivative was compulsory (and first)
@@ -1794,28 +1705,28 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// legacy EX format required value derivative, and it had to be first
-				if (!componentNodeValueLabelsVersions.setValueLabelVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE, 1))
+				if (!nft.setValueNumberOfVersions(CMZN_NODE_VALUE_LABEL_VALUE, 1))
 				{
 					result = false;
 					break;
 				}
 				if (0 < number_of_derivatives)
 				{
-					if (!this->readNodeValueLabelsVersions(componentNodeValueLabelsVersions))
+					if (!this->readNodeValueLabelsVersions(nft))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeValueLabelsVersions.getMaximumVersionsCount() != 1)
+					if (nft.getMaximumVersionsCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeValueLabelsVersions.getValueLabelsCount() != (number_of_derivatives + 1))
+					if (nft.getValueLabelsCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1826,7 +1737,7 @@ bool EXReader::readNodeHeaderField()
 				// read in the optional number of versions, applied to value and all derivatives
 				if (1 == IO_stream_scan(this->input_file, ", #Versions=%d", &number_of_versions))
 				{
-					if (!componentNodeValueLabelsVersions.setLegacyAllValueLabelsVersionsCount(number_of_versions))
+					if (!nft.setLegacyAllValueVersionsCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1849,30 +1760,16 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// follow with derivative names and versions, even if empty ()
-				if (!this->readNodeValueLabelsVersions(componentNodeValueLabelsVersions))
+				if (!this->readNodeValueLabelsVersions(nft))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
-				if (componentNodeValueLabelsVersions.getTotalValuesCount() != valuesCount)
+				if (nft.getTotalValuesCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
-					result = false;
-					break;
-				}
-			}
-			const int valueLabelsCount = componentNodeValueLabelsVersions.getValueLabelsCount();
-			for (int d = 0; d < valueLabelsCount; ++d)
-			{
-				const cmzn_node_value_label valueLabel = componentNodeValueLabelsVersions.getValueLabelAtIndex(d);
-				const int versionsCount = componentNodeValueLabelsVersions.getVersionsCountAtIndex(d);
-				if (CMZN_OK != componentNodefieldtemplates[component_number].setValueNumberOfVersions(valueLabel, versionsCount))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
-						ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel),
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
@@ -1937,11 +1834,9 @@ bool EXReader::readNodeHeaderField()
 		if (result)
 		{
 			if (define_FE_field_at_node(node_template->get_template_node(), field,
-				componentNodefieldtemplates.data(), fe_time_sequence))
+				componentNfts.data(), fe_time_sequence))
 			{
 				this->headerFields.push_back(field);
-				// must do following after field is merged otherwise can be different field object:
-				this->nodeFieldComponentValueLabelsVersions[field] = nodeValueLabelsVersions;
 			}
 			else
 			{
@@ -1960,8 +1855,6 @@ bool EXReader::readNodeHeaderField()
 /**
  * Creates a node template with the field information read from stream.
  * Fills list of header fields in read order.
- * Creates and fills nodeFieldComponentValueLabelsVersions to store
- * new format with variable versions per derivative.
  */
 bool EXReader::readNodeHeader()
 {
