@@ -1860,6 +1860,12 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 		{
 			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valueLabelsCount = nft.getValueLabelsCount();
+				if (valueLabelsCount == 0)
+				{
+					continue;
+				}
 				nodesFieldParametersMapIndexing->setEntryIndex(*componentsLabels, c);
 				// following will cease to compile if FE_value is not double:
 				if (!cmzn_node_get_field_component_FE_value_values(node, field, c, /*time*/0.0, maximumValuesCount, values))
@@ -1868,8 +1874,6 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 					break;
 				}
 				double *value = values;
-				const FE_node_field_template &nft = *(node_field->getComponent(0));
-				const int valueLabelsCount = nft.getValueLabelsCount();
 				for (int d = 0; d < valueLabelsCount; ++d)
 				{
 					const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);

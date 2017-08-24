@@ -2924,6 +2924,9 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 								cmzn_nodetemplate_destroy(&nodetemplate);
 								nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 								cmzn_nodetemplate_define_field(nodetemplate, field);
+								// don't want VALUE by default
+								cmzn_nodetemplate_set_value_number_of_versions(nodetemplate, field, /*component=all*/-1,
+									CMZN_NODE_VALUE_LABEL_VALUE, /*versionsCount*/0);
 								for (int c = 0; c < componentCount; ++c)
 								{
 									int *exists = valueExists + c*componentsOffset;
