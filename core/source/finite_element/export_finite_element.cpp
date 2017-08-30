@@ -21,6 +21,7 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
@@ -747,7 +748,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		}
 		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 		{
-			(*this->output_file) << ", standard node based."; // GRC change to "node based"
+			(*this->output_file) << ", standard node based.";
 			int scaleFactorOffset = 0;
 			// previously the scale factor set was identified by the basis, now it is explicitly named
 			if (eft->getNumberOfLocalScaleFactors() > 0)
@@ -829,9 +830,8 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 							if (t > 0)
 								(*this->output_file) << "+";
 							const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(f2, t);
-							const char *valueTypeString = ENUMERATOR_STRING(FE_nodal_value_type)(
-								cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel));
-							(*this->output_file) << valueTypeString;
+							const char *valueLabelName = ENUMERATOR_STRING(cmzn_node_value_label)(nodeValueLabel);
+							(*this->output_file) << valueLabelName;
 							const int version = eft->getTermNodeVersion(f2, t);
 							if (version > 0)
 								(*this->output_file) << "(" << version + 1 << ")";
@@ -1445,10 +1445,17 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field)
 {
 	if (!this->writeFieldHeader(fieldIndex, field))
+	{
 		return false;
-
+	}
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	const int componentCount = get_FE_field_number_of_components(field);
+	const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeNodeHeaderField.  Field is not defined at node");
+		return false;
+	}
 	for (int c = 0; c < componentCount; ++c)
 	{
 		char *componentName = get_FE_field_component_name(field, c);
@@ -1467,27 +1474,24 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 			(*this->output_file) << "\n";
 			continue;
 		}
-		// internally Zinc has number of versions for all derivatives, and 'value' derivative is compulsory
-		// new EX format assumes this will be fixed in the near future
-		const int valueLabelCount = get_FE_node_field_component_number_of_derivatives(node, field, c) + 1;
-		const int versionCount = get_FE_node_field_component_number_of_versions(node, field, c);
-		enum FE_nodal_value_type *nodalValueTypes = get_FE_node_field_component_nodal_value_types(node, field, c);
-		(*this->output_file) << " #Values=" << valueLabelCount*versionCount << " (";
-		if (!nodalValueTypes)
+		const FE_node_field_template& nft = *(node_field->getComponent(c));
+		const int valuesCount = nft.getTotalValuesCount();
+		(*this->output_file) << " #Values=" << valuesCount << " (";
+		const int valueLabelsCount = nft.getValueLabelsCount();
+		for (int d = 0; d < valueLabelsCount; ++d)
 		{
-			display_message(ERROR_MESSAGE,
-				"EXWriter::writeNodeHeaderField.  Could not get nodal value types");
-			return false;
-		}
-		for (int v = 0; v < valueLabelCount; ++v)
-		{
-			if (v > 0)
+			if (d > 0)
+			{
 				(*this->output_file) << ",";
-			(*this->output_file) << ENUMERATOR_STRING(FE_nodal_value_type)(nodalValueTypes[v]);
-			if (versionCount > 1)
-				(*this->output_file) << "(" << versionCount << ")";
+			}
+			const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
+			const int versionsCount = nft.getVersionsCountAtIndex(d);
+			(*this->output_file) << ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel);
+			if (versionsCount > 1)
+			{
+				(*this->output_file) << "(" << versionsCount << ")";
+			}
 		}
-		DEALLOCATE(nodalValueTypes);
 		(*this->output_file) << ")\n";
 	}
 	return true;
@@ -1495,13 +1499,21 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 
 /**
  * Writes out the nodal values. Each component starts on a new line.
- * In the new EX format, all versions for a given derivative are
+ * In the new EX2 format, all versions for a given derivative are
  * consecutively output.
  * Only call for general field defined on node - this is not checked.
  */
 bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 {
 	const int componentCount = get_FE_field_number_of_components(field);
+	const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Field %s not defined at node %d",
+			get_FE_field_name(field), get_FE_node_identifier(node));
+		return false;
+	}
+	const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
 	const enum Value_type valueType = get_FE_field_value_type(field);
 	switch (valueType)
 	{
@@ -1518,69 +1530,70 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 		// should only be one component, no derivatives and versions
 		for (int c = 0; c < componentCount; ++c)
 		{
-			if (!get_FE_nodal_element_xi_value(node, field, /*component_number*/c,
-				/*version*/0, FE_NODAL_VALUE, &element, xi))
+			if (!get_FE_nodal_element_xi_value(node, field, /*component_number*/c, &element, xi))
 			{
 				display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Could not get element_xi value");
 				return false;
 			}
 			if (!this->writeElementXiValue(hostMesh, element ? element->getIndex() : DS_LABEL_IDENTIFIER_INVALID, xi))
+			{
 				return false;
+			}
 			(*this->output_file) << "\n";
 		}
 	} break;
 	case FE_VALUE_VALUE:
 	{
-		FE_value *values;
-		int valueCount;
-		if (get_FE_nodal_field_FE_value_values(field, node, &valueCount, this->time, &values))
+		char tmpString[100];
+		std::vector<FE_value> valuesVector(maximumValuesCount);
+		FE_value *values = valuesVector.data();
+		for (int c = 0; c < componentCount; ++c)
 		{
-			char tmpString[100];
-			const FE_value *tmpValues = values;
-			for (int c = 0; c < componentCount; ++c)
+			const FE_node_field_template *nft = node_field->getComponent(c);
+			const int valuesCount = nft->getTotalValuesCount();
+			// EX2 format matches internal storage with versions consecutive for each value label
+			if (CMZN_OK != cmzn_node_get_field_component_FE_value_values(node, field, c, this->time, maximumValuesCount, values))
 			{
-				// note versions are now within derivatives, and in future will vary by derivative
-				const int derivativeCount = get_FE_node_field_component_number_of_derivatives(node, field, c) + 1;
-				const int versionCount = get_FE_node_field_component_number_of_versions(node, field, c);
-				const FE_value *componentValues = tmpValues;
-				tmpValues += derivativeCount*versionCount;
-				for (int d = 0; d < derivativeCount; ++d)
-				{
-					for (int v = 0; v < versionCount; ++v)
-					{
-						sprintf(tmpString, "%" FE_VALUE_STRING, componentValues[v*derivativeCount + d]);
-						(*this->output_file) << " " << tmpString;
-					}
-				}
+				display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
+					"Failed to get FE_value values for field %s component %d at node %d",
+					get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+				return false;
+			}
+			for (int v = 0; v < valuesCount; ++v)
+			{
+				sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
+				(*this->output_file) << " " << tmpString;
+			}
+			if (valuesCount)
+			{
 				(*this->output_file) << "\n";
 			}
-			DEALLOCATE(values);
 		}
 	} break;
 	case INT_VALUE:
 	{
-		int *values;
-		int valueCount;
-		if (get_FE_nodal_field_int_values(field, node, &valueCount, this->time, &values))
+		std::vector<int> valuesVector(maximumValuesCount);
+		int *values = valuesVector.data();
+		for (int c = 0; c < componentCount; ++c)
 		{
-			const int *tmpValues = values;
-			for (int c = 0; c < componentCount; ++c)
+			const FE_node_field_template *nft = node_field->getComponent(c);
+			const int valuesCount = nft->getTotalValuesCount();
+			// EX2 format matches internal storage with versions consecutive for each value label
+			if (CMZN_OK != cmzn_node_get_field_component_int_values(node, field, c, this->time, maximumValuesCount, values))
 			{
-				// note versions are now within derivatives, and in future will vary by derivative
-				const int derivativeCount = get_FE_node_field_component_number_of_derivatives(node, field, c) + 1;
-				const int versionCount = get_FE_node_field_component_number_of_versions(node, field, c);
-				const int *componentValues = tmpValues;
-				tmpValues += derivativeCount*versionCount;
-				for (int d = 0; d < derivativeCount; ++d)
-				{
-					for (int v = 0; v < versionCount; ++v)
-					{
-						(*this->output_file) << " " << componentValues[v*derivativeCount + d];
-					}
-				}
+				display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
+					"Failed to get FE_value values for field %s component %d at node %d",
+					get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+				return false;
+			}
+			for (int v = 0; v < valuesCount; ++v)
+			{
+				(*this->output_file) << " " << values[v];
+			}
+			if (valuesCount)
+			{
 				(*this->output_file) << "\n";
 			}
-			DEALLOCATE(values);
 		}
 	} break;
 	case STRING_VALUE:
@@ -1590,8 +1603,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 		// should only be one component, no derivatives and versions
 		for (int c = 0; c < componentCount; ++c)
 		{
-			if (get_FE_nodal_string_value(node, field, /*component_number*/c,
-				/*version*/0, FE_NODAL_VALUE, &the_string))
+			if (get_FE_nodal_string_value(node, field, /*component_number*/c, &the_string))
 			{
 				if (the_string)
 				{
@@ -1666,7 +1678,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (!FE_field_is_defined_at_node(field, node))
+			if (!FE_field_has_parameters_at_node(field, node))
 				return false;
 		}
 	} break;
@@ -1676,7 +1688,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (FE_field_is_defined_at_node(field, node))
+			if (FE_field_has_parameters_at_node(field, node))
 				return true;
 		}
 		return false;
@@ -1762,7 +1774,7 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		if (FE_field_is_defined_at_node(field, node))
+		if (FE_field_has_parameters_at_node(field, node))
 			this->headerFields.push_back(field);
 	}
 

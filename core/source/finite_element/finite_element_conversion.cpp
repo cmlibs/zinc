@@ -448,7 +448,6 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 				cmzn_field_id source_field = this->source_fields[f];
 				cmzn_field_finite_element_id destination_field = this->destination_fields[f];
 				const int number_of_components = cmzn_field_get_number_of_components(source_field);
-				const int number_of_values = number_of_components;
 				values = temporary_values;
 				for (int n = 0; n < this->number_of_local_nodes; ++n)
 				{
@@ -555,7 +554,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 {
-	const char *enumerator_string;
+	const char *enumerator_string = 0;
 
 	ENTER(ENUMERATOR_STRING(Convert_finite_elements_mode));
 	switch (enumerator_value)

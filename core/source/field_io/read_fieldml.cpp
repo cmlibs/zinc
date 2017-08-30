@@ -2916,12 +2916,17 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 				{
 					if (0 < valuesRead)
 					{
+						// try to reuse template if you can
 						for (int i = 0; i < valuesSize; ++i)
+						{
 							if (valueExists[i] != lastValueExists[i])
 							{
 								cmzn_nodetemplate_destroy(&nodetemplate);
 								nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 								cmzn_nodetemplate_define_field(nodetemplate, field);
+								// don't want VALUE by default
+								cmzn_nodetemplate_set_value_number_of_versions(nodetemplate, field, /*component=all*/-1,
+									CMZN_NODE_VALUE_LABEL_VALUE, /*versionsCount*/0);
 								for (int c = 0; c < componentCount; ++c)
 								{
 									int *exists = valueExists + c*componentsOffset;
@@ -2939,6 +2944,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 								}
 								break;
 							}
+						}
 						const int nodeIdentifier = nodesLabelIterator->getIdentifier();
 						cmzn_node *node = feNodeset->findNodeByIdentifier(nodeIdentifier);
 						if (!cmzn_node_merge(node, nodetemplate) ||

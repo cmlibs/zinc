@@ -93,9 +93,10 @@ Evaluates the <field> into the <fitting_field_values>.
 		number_of_components = get_FE_field_number_of_components(field);
 		for (i = 0; (i < number_of_components) && return_code; i++)
 		{
-			if (get_FE_nodal_FE_value_value(accumulate_data->current_node,
-				field, /*component_number*/i, /*version*/0,
-				FE_NODAL_VALUE, /*time*/0, accumulate_data->fitting_field_values))
+			const int result = get_FE_nodal_FE_value_value(accumulate_data->current_node,
+				field, /*component_number*/i, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0,
+				/*time*/0, accumulate_data->fitting_field_values);
+			if (CMZN_OK == result)
 			{
 				accumulate_data->fitting_field_values++;
 			}
@@ -369,8 +370,6 @@ int create_FE_element_snake_from_data_points(
 	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors = NULL, phi[4], phi_m, *pos, *stiffness_matrix  = NULL,
 		*stiffness_offset, weight;
-	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
-		{FE_NODAL_D_DS1};
 	FE_value *coordinates = NULL, *fitting_field_values = NULL, density_multiplier,
 		length_multiplier, *lengths = NULL, *value, *weights = NULL, xi;
 	int component, element_number, i, *indx = NULL, j, m, n, 

@@ -3086,7 +3086,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 		}
 		// working space for storing node field components
 		const int localNodeCount = eft->getNumberOfLocalNodes();
-		std::vector<const FE_node_field_component *> nodeFieldComponents(localNodeCount);
+		std::vector<const FE_node_field_template *> nodeFieldTemplates(localNodeCount);
 
 		bool first = true;
 		for (int f = 0; f < fieldCount; ++f)
@@ -3126,13 +3126,15 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 								fieldName, c + 1, this->getElementIdentifier(elementIndex), n + 1);
 							return false;
 						}
-						const FE_node_field *nodeField = FE_node_get_FE_node_field(node, field);
+						const FE_node_field *nodeField = cmzn_node_get_FE_node_field(node, field);
 						if (!nodeField)
 						{
 							DsLabelIdentifier nodeIdentifier = nodeset->getNodeIdentifier(nodeIndexes[n]);
 							cmzn_node *targetNode = (targetNodeset) ? targetNodeset->findNodeByIdentifier(nodeIdentifier) : 0;
 							if ((targetNode) && (targetField))
-								nodeField = FE_node_get_FE_node_field(targetNode, targetField);
+							{
+								nodeField = cmzn_node_get_FE_node_field(targetNode, targetField);
+							}
 							if (!nodeField)
 							{
 								display_message(ERROR_MESSAGE, "No parameters defined for field %s at element %d local node %d (global node %d). "
@@ -3141,8 +3143,8 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 								return false;
 							}
 						}
-						nodeFieldComponents[n] = nodeField->getComponent(c);
-						if (!nodeFieldComponents[n])
+						nodeFieldTemplates[n] = nodeField->getComponent(c);
+						if (!nodeFieldTemplates[n])
 						{
 							display_message(ERROR_MESSAGE, "No parameters for field %s component %d at element %d local node %d (global node %d)."
 								"PROBABLE FIX: Read correct nodes before elements with legacy element parameter maps.",
@@ -3152,7 +3154,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 					}
 					if (first)
 					{
-						if (!eft->convertNodeParameterLegacyIndexes(legacyDOFIndexes, nodeFieldComponents))
+						if (!eft->convertNodeParameterLegacyIndexes(legacyDOFIndexes, nodeFieldTemplates))
 						{
 							display_message(ERROR_MESSAGE, "Field %s component %d element %d.  Failed to convert legacy DOF indexes."
 								"POSSIBLE FIX: Read correct nodes before elements with legacy element parameter maps.",
@@ -3161,7 +3163,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 						}
 						first = false;
 					}
-					else if (!eft->checkNodeParameterLegacyIndexes(legacyDOFIndexes, nodeFieldComponents))
+					else if (!eft->checkNodeParameterLegacyIndexes(legacyDOFIndexes, nodeFieldTemplates))
 					{
 						display_message(ERROR_MESSAGE, "Field %s component %d element %d.  Failed to convert legacy DOF indexes, or these mapped to different node value labels or versions."
 							"THIS CASE IS NOT IMPLEMENTED! Talk to developers, or manually change problem elements to use new value labels style in input file.",

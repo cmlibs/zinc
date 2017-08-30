@@ -778,8 +778,8 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 				typeSettings["NodeValueLabel"] = enumString;
 				DEALLOCATE(enumString);
 			}
-			int versioNumber = cmzn_field_node_value_get_version(field.getId());
-			typeSettings["VersionNumber"] = versioNumber;
+			int versionNumber = cmzn_field_node_value_get_version_number(field.getId());
+			typeSettings["VersionNumber"] = versionNumber;
 		} break;
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
 		{

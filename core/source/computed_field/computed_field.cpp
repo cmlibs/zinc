@@ -1366,6 +1366,7 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 			}
 			return CMZN_OK;
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1399,6 +1400,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 				return CMZN_OK;
 			}
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1448,6 +1450,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 						return CMZN_OK;
 					}
 				}
+				return CMZN_ERROR_GENERAL;
 			}
 		}
 	}

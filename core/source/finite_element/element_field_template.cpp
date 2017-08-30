@@ -15,6 +15,7 @@
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_private.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
@@ -194,22 +195,20 @@ void FE_element_field_template::setIndexInMesh(FE_mesh *meshIn, int indexInMeshI
   * @param nodeFieldComponents  Definitions of node fields at the local nodes, where
   * node value labels and versions are described for DOF indexes. */
 bool FE_element_field_template::convertNodeParameterLegacyIndexes(
-	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_component*> &nodeFieldComponents)
+	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_template*> &nodeFieldTemplates)
 {
 	for (int tt = 0; tt < this->totalTermCount; ++tt)
 	{
-		const FE_node_field_component *nodeFieldComponent = nodeFieldComponents[this->localNodeIndexes[tt]];
+		const FE_node_field_template *nodeFieldComponent = nodeFieldTemplates[this->localNodeIndexes[tt]];
 		const int dofIndex = legacyDOFIndexes[tt];
 		if (0 <= dofIndex) // negative values mean new-style maps: no check
 		{
-			FE_nodal_value_type valueType;
-			if (!nodeFieldComponent->convertLegacyDOFIndexToValueTypeAndVersion(dofIndex, valueType, this->nodeVersions[tt]))
+			if (!nodeFieldComponent->convertLegacyDOFIndexToValueLabelAndVersion(dofIndex, this->nodeValueLabels[tt], this->nodeVersions[tt]))
 			{
 				display_message(ERROR_MESSAGE, "Element field template:  Failed to convert legacy node "
 					"DOF index %d for term %d into value label and version.", dofIndex + 1, tt + 1);
 				return false;
 			}
-			this->nodeValueLabels[tt] = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
 		}
 	}
 	return true;
@@ -221,23 +220,22 @@ bool FE_element_field_template::convertNodeParameterLegacyIndexes(
   * @param nodeFieldComponents  Definitions of node fields at the local nodes, where
   * node value labels and versions are described for DOF indexes. */
 bool FE_element_field_template::checkNodeParameterLegacyIndexes(
-	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_component*> &nodeFieldComponents)
+	std::vector<int> &legacyDOFIndexes, std::vector<const FE_node_field_template*> &nodeFieldTemplates)
 {
 	for (int tt = 0; tt < this->totalTermCount; ++tt)
 	{
-		const FE_node_field_component *nodeFieldComponent = nodeFieldComponents[this->localNodeIndexes[tt]];
+		const FE_node_field_template *nodeFieldComponent = nodeFieldTemplates[this->localNodeIndexes[tt]];
 		const int dofIndex = legacyDOFIndexes[tt];
 		if (0 <= dofIndex) // negative values mean new-style maps: no check
 		{
-			FE_nodal_value_type valueType;
+			cmzn_node_value_label valueLabel;
 			int version;
-			if (!nodeFieldComponent->convertLegacyDOFIndexToValueTypeAndVersion(dofIndex, valueType, version))
+			if (!nodeFieldComponent->convertLegacyDOFIndexToValueLabelAndVersion(dofIndex, valueLabel, version))
 			{
 				display_message(ERROR_MESSAGE, "Element field template:  Failed to convert legacy node "
 					"DOF index %d for term %d into value label and version.", dofIndex + 1, tt + 1);
 				return false;
 			}
-			cmzn_node_value_label valueLabel = FE_nodal_value_type_to_cmzn_node_value_label(valueType);
 			if ((this->nodeValueLabels[tt] != valueLabel) || (this->nodeVersions[tt] != version))
 			{
 				display_message(ERROR_MESSAGE, "Element field template:  Value label and/or version for legacy node "

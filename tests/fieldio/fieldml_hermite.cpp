@@ -309,40 +309,44 @@ Bifurcation::Bifurcation(Fieldmodule& fmIn, int maxGenerationIn) :
 	EXPECT_EQ(OK, result = nodetemplate3.defineField(coordinates));
 	EXPECT_EQ(OK, result = nodetemplate3.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS1, 3));
 	EXPECT_EQ(OK, result = nodetemplate3.defineField(radius));
-	EXPECT_EQ(OK, result = nodetemplate3.setValueNumberOfVersions(radius, -1, Node::VALUE_LABEL_VALUE, 3));
+	EXPECT_EQ(OK, result = nodetemplate3.setValueNumberOfVersions(radius, -1, Node::VALUE_LABEL_VALUE, 2));
 
 	mesh1d = fm.findMeshByDimension(1);
 	EXPECT_TRUE(mesh1d.isValid());
 
-	Elementbasis linearBasis = fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
-	EXPECT_TRUE(linearBasis.isValid());
 	Elementbasis cubicHermiteBasis = fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE);
 	EXPECT_TRUE(cubicHermiteBasis.isValid());
+	Elementfieldtemplate eftHermite1 = mesh1d.createElementfieldtemplate(cubicHermiteBasis);
+	EXPECT_TRUE(eftHermite1.isValid());
+	Elementfieldtemplate eftHermite2 = mesh1d.createElementfieldtemplate(cubicHermiteBasis);
+	EXPECT_TRUE(eftHermite2.isValid());
+	EXPECT_EQ(OK, eftHermite2.setTermNodeParameter(/*function*/2, /*term*/1, /*localNodeIndex*/1, Node::VALUE_LABEL_D_DS1, /*version*/2));
+	Elementfieldtemplate eftHermite3 = mesh1d.createElementfieldtemplate(cubicHermiteBasis);
+	EXPECT_TRUE(eftHermite3.isValid());
+	EXPECT_EQ(OK, eftHermite3.setTermNodeParameter(/*function*/2, /*term*/1, /*localNodeIndex*/1, Node::VALUE_LABEL_D_DS1, /*version*/3));
 
-	const int localNodeIndexes[2] = { 1, 2 };
-	elementtemplate1 = mesh1d.createElementtemplate();
-	EXPECT_EQ(OK, result = elementtemplate1.setElementShapeType(Element::SHAPE_TYPE_LINE));
-	EXPECT_EQ(OK, result = elementtemplate1.setNumberOfNodes(2));
-	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
-	EXPECT_EQ(OK, result = elementtemplate1.setMapNodeValueLabel(coordinates, -1, /*node*/1, /*function*/2, Node::VALUE_LABEL_D_DS1));
-	EXPECT_EQ(OK, result = elementtemplate1.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 1));
-	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
-	elementtemplate2 = mesh1d.createElementtemplate();
-	EXPECT_EQ(OK, result = elementtemplate2.setElementShapeType(Element::SHAPE_TYPE_LINE));
-	EXPECT_EQ(OK, result = elementtemplate2.setNumberOfNodes(2));
-	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
-	EXPECT_EQ(OK, result = elementtemplate2.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 2));
-	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
-	EXPECT_EQ(OK, result = elementtemplate2.setMapNodeVersion(radius, -1, /*node*/1, /*function*/1, 2));
-	elementtemplate3 = mesh1d.createElementtemplate();
-	EXPECT_EQ(OK, result = elementtemplate3.setElementShapeType(Element::SHAPE_TYPE_LINE));
-	EXPECT_EQ(OK, result = elementtemplate3.setNumberOfNodes(2));
-	EXPECT_EQ(OK, result = elementtemplate3.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
-	EXPECT_EQ(OK, result = elementtemplate3.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 3));
-	EXPECT_EQ(OK, result = elementtemplate3.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
-	EXPECT_EQ(OK, result = elementtemplate3.setMapNodeVersion(radius, -1, /*node*/1, /*function*/1, 3));
+	Elementbasis linearBasis = fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(linearBasis.isValid());
+	Elementfieldtemplate eftLinear1 = mesh1d.createElementfieldtemplate(linearBasis);
+	EXPECT_TRUE(eftLinear1.isValid());
+	Elementfieldtemplate eftLinear2 = mesh1d.createElementfieldtemplate(linearBasis);
+	EXPECT_TRUE(eftLinear2.isValid());
+	EXPECT_EQ(OK, eftLinear2.setTermNodeParameter(/*function*/1, /*term*/1, /*localNodeIndex*/1, Node::VALUE_LABEL_VALUE, /*version*/2));
 
-	fieldcache = fm.createFieldcache();
+	this->elementtemplate1 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, this->elementtemplate1.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, this->elementtemplate1.defineField(coordinates, /*componentNumber=all*/-1, eftHermite1));
+	EXPECT_EQ(OK, this->elementtemplate1.defineField(radius, /*componentNumber=all*/-1, eftLinear1));
+	this->elementtemplate2 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, this->elementtemplate2.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, this->elementtemplate2.defineField(coordinates, /*componentNumber=all*/-1, eftHermite2));
+	EXPECT_EQ(OK, this->elementtemplate2.defineField(radius, /*componentNumber=all*/-1, eftLinear2));
+	this->elementtemplate3 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, this->elementtemplate3.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, this->elementtemplate3.defineField(coordinates, /*componentNumber=all*/-1, eftHermite3));
+	EXPECT_EQ(OK, this->elementtemplate3.defineField(radius, /*componentNumber=all*/-1, eftLinear2));
+
+	this->fieldcache = fm.createFieldcache();
 
 	int generation = 1;
 	const int nodeIdentifier = 1;
@@ -350,8 +354,13 @@ Bifurcation::Bifurcation(Fieldmodule& fmIn, int maxGenerationIn) :
 	EXPECT_TRUE(node1.isValid());
 	const double coordinates1[3] = { 0.0, 0.0, 0.0 };
 	const double direction1[3] = { 0.0, 0.0, 1.0 };
-	const double radius = 0.1;
-	addElement(generation, node1, coordinates1, direction1, radius, /*version1*/1, direction1);
+	const double radius1 = 0.1;
+	EXPECT_EQ(OK, fieldcache.setNode(node1));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinates1));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, direction1));
+	EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 1, &radius1));
+
+	addElement(generation, node1, coordinates1, direction1, radius1, /*version1*/1, direction1);
 	fm.endChange();
 }
 
@@ -359,13 +368,6 @@ void Bifurcation::addElement(int generation, const Node& node1,
 	const double *coordinates1, const double *direction1, double radius1, int version1,
 	const double *direction2)
 {
-	EXPECT_EQ(OK, fieldcache.setNode(node1));
-	const double zeroCoordinates[3] = { 0.0, 0.0, 0.0 };
-	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 3,
-		(version1 == 1) ? coordinates1 : zeroCoordinates));
-	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, version1, 3, direction1));
-	EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 1, &radius1));
-
 	double coordinates2[3];
 	for (int i = 0; i < 3; ++i)
 		coordinates2[i] = coordinates1[i] + 0.5*direction1[i] + 0.4*direction2[i];
@@ -381,8 +383,6 @@ void Bifurcation::addElement(int generation, const Node& node1,
 	Elementtemplate elementtemplate =
 		(version1 == 1) ? elementtemplate1 :
 		(version1 == 2) ? elementtemplate2 : elementtemplate3;
-	EXPECT_EQ(OK, elementtemplate.setNode(1, node1));
-	EXPECT_EQ(OK, elementtemplate.setNode(2, node2));
 	int elementIdentifier = nextElementIdentifier[generation];
 	// keep different versions together to reduce EX file size
 	if (version1 == 3)
@@ -391,6 +391,16 @@ void Bifurcation::addElement(int generation, const Node& node1,
 		++(nextElementIdentifier[generation]);
 	Element element = mesh1d.createElement(elementIdentifier, elementtemplate);
 	EXPECT_TRUE(element.isValid());
+
+	// each eft has independent local-to-global nodes so must set for each
+	Elementfieldtemplate coordinatesEft = element.getElementfieldtemplate(coordinates, /*component*/-1);
+	EXPECT_TRUE(coordinatesEft.isValid());
+	element.setNode(coordinatesEft, 1, node1);
+	element.setNode(coordinatesEft, 2, node2);
+	Elementfieldtemplate radiusEft = element.getElementfieldtemplate(radius, /*component*/-1);
+	EXPECT_TRUE(radiusEft.isValid());
+	element.setNode(radiusEft, 1, node1);
+	element.setNode(radiusEft, 2, node2);
 
 	if (generation < maxGeneration)
 	{
@@ -431,6 +441,9 @@ void Bifurcation::addElement(int generation, const Node& node1,
 			direction2Child2[i] = 0.4*direction2[i] + 0.65*normal[i];
 		}
 		double radiusChild = sqrt(0.5*radius2*radius2)/0.8;
+		EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, /*version*/2, 3, direction1Child1));
+		EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, /*version*/3, 3, direction1Child2));
+		EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, /*version*/2, 1, &radiusChild));
 		addElement(generation + 1, node2, coordinates2, direction1Child1, radiusChild, /*version1*/2, direction2Child1);
 		addElement(generation + 1, node2, coordinates2, direction1Child2, radiusChild, /*version1*/3, direction2Child2);
 	}

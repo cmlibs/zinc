@@ -31,6 +31,7 @@
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/debug.h"
@@ -1800,105 +1801,106 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 	HDsMapIndexing nodesFieldParametersMapIndexing(nodesFieldParametersMap->createIndexing());
 	HDsLabelIterator nodesLabelsIterator(nodeLabels.createLabelIterator());
 	int return_code = CMZN_OK;
-	double *homogeneousValues = new double[componentCount];
-	int *componentParameterCounts = new int[componentCount];
-	int **componentDerivatives = new int*[componentCount];
-	int **componentVersions = new int*[componentCount];
-	const int maximumValueCount = highestNodeDerivative*highestNodeVersion;
-	for (int c = 0; c < componentCount; ++c)
+	// make array big enough to fit all node parameters
+	const int maximumValuesCount = highestNodeDerivative*highestNodeVersion;
+	std::vector<double> valuesVector(componentCount*maximumValuesCount);
+	double *values = valuesVector.data();
+	while (nodesLabelsIterator->increment() && (CMZN_OK == return_code))
 	{
-		componentDerivatives[c] = new int[maximumValueCount];
-		componentVersions[c] = new int[maximumValueCount];
-	}
-
-	cmzn_node *lastNode = 0;
-	cmzn_node *node;
-	bool isHomogeneous;
-	while (nodesLabelsIterator->increment())
-	{
-		node = nodeset->findNodeByIdentifier(nodesLabelsIterator->getIdentifier());
+		cmzn_node *node = nodeset->findNodeByIdentifier(nodesLabelsIterator->getIdentifier());
 		if (!node)
 		{
 			return_code = CMZN_ERROR_GENERAL;
 			break;
 		}
-		int result = FE_field_get_node_parameter_labels(field, node, /*time*/0.0, lastNode,
-			componentParameterCounts, componentDerivatives, componentVersions, isHomogeneous);
-		if (result == CMZN_ERROR_NOT_FOUND)
-			continue;
-		if (result != CMZN_OK)
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+		if (!node_field)
 		{
-			return_code = result;
-			break;
-		}
-		lastNode = node;
-		int parametersCount = 0;
-		FE_value *parameters = 0;
-		if (!get_FE_nodal_field_FE_value_values(field, node, &parametersCount, /*time*/0.0, &parameters))
-		{
-			return_code = CMZN_ERROR_GENERAL;
-			break;
+			continue; // field not defined at node
 		}
 		nodesFieldParametersMapIndexing->setEntry(*nodesLabelsIterator);
-		if (isHomogeneous)
+		if (node_field->isHomogeneousMultiComponent())
 		{
+			// set all components simultaneously
 			nodesFieldParametersMapIndexing->setAllLabels(*componentsLabels);
-			int *derivatives = componentDerivatives[0];
-			int *versions = componentVersions[0];
-			const int parameterCount = componentParameterCounts[0];
-			for (int p = 0; p < parameterCount; ++p)
+			const FE_node_field_template &nft = *(node_field->getComponent(0));
+			const int valueLabelsCount = nft.getValueLabelsCount();
+			for (int d = 0; d < valueLabelsCount; ++d)
 			{
-				for (int c = 0; c < componentCount; ++c)
-					homogeneousValues[c] = parameters[c*parameterCount + p];
+				const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
 				if (derivativesLabels)
-					nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, *(derivatives++));
-				if (versionsLabels)
-					nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, *(versions++));
-				if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, componentCount, homogeneousValues))
 				{
-					return_code = CMZN_ERROR_GENERAL;
-					break;
+					nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, valueLabel - (CMZN_NODE_VALUE_LABEL_VALUE - 1));
 				}
-			}
-		}
-		else
-		{
-			FE_value *parameter = parameters;
-			for (int c = 0; c < componentCount; ++c)
-			{
-				nodesFieldParametersMapIndexing->setEntryIndex(*componentsLabels, c);
-				int *derivatives = componentDerivatives[c];
-				int *versions = componentVersions[c];
-				const int parameterCount = componentParameterCounts[c];
-				for (int p = 0; p < parameterCount; ++p)
+				const int versionsCount = nft.getVersionsCountAtIndex(d);
+				for (int v = 0; v < versionsCount; ++v)
 				{
-					if (derivativesLabels)
-						nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, *(derivatives++));
 					if (versionsLabels)
-						nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, *(versions++));
-					if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, 1, parameter++))
+					{
+						nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, v + 1);
+					}
+					// following will cease to compile if FE_value is not double:
+					if (CMZN_OK != get_FE_nodal_FE_value_value(node, field, /*componentNumber=all*/-1,
+						valueLabel, v, /*time*/0.0, values))
 					{
 						return_code = CMZN_ERROR_GENERAL;
-						c = componentCount;
+						d = valueLabelsCount;
+						break;
+					}
+					if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, componentCount, values))
+					{
+						return_code = CMZN_ERROR_GENERAL;
+						d = valueLabelsCount;
 						break;
 					}
 				}
 			}
 		}
-		DEALLOCATE(parameters);
-		if (CMZN_OK != return_code)
-			break;
+		else
+		{
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valueLabelsCount = nft.getValueLabelsCount();
+				if (valueLabelsCount == 0)
+				{
+					continue;
+				}
+				nodesFieldParametersMapIndexing->setEntryIndex(*componentsLabels, c);
+				// following will cease to compile if FE_value is not double:
+				if (!cmzn_node_get_field_component_FE_value_values(node, field, c, /*time*/0.0, maximumValuesCount, values))
+				{
+					return_code = CMZN_ERROR_GENERAL;
+					break;
+				}
+				double *value = values;
+				for (int d = 0; d < valueLabelsCount; ++d)
+				{
+					const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
+					if (derivativesLabels)
+					{
+						nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, valueLabel - (CMZN_NODE_VALUE_LABEL_VALUE - 1));
+					}
+					const int versionsCount = nft.getVersionsCountAtIndex(d);
+					for (int v = 0; v < versionsCount; ++v)
+					{
+						if (versionsLabels)
+						{
+							nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, v + 1);
+						}
+						if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, 1, value))
+						{
+							return_code = CMZN_ERROR_GENERAL;
+							d = valueLabelsCount;
+							c = componentCount;
+							break;
+						}
+						++value;
+					}
+				}
+			}
+		}
 	}
-	delete[] homogeneousValues;
-	delete[] componentParameterCounts;
-	for (int c = 0; c < componentCount; ++c)
-	{
-		delete[] componentDerivatives[c];
-		delete[] componentVersions[c];
-	}
-	delete[] componentDerivatives;
-	delete[] componentVersions;
-
 	if (CMZN_OK != return_code)
 	{
 		display_message(ERROR_MESSAGE, "FieldMLWriter: Can't get nodal parameters for field %s", get_FE_field_name(field));

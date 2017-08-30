@@ -20,9 +20,11 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/debug.h"
 #include "general/math.h"
 #include "general/io_stream.h"
@@ -173,117 +175,6 @@ private:
 		return -1;
 	}
 
-};
-
-
-class NodeDerivativesVersions
-{
-	std::vector<FE_nodal_value_type> derivatives;
-	std::vector<int> versionCounts;
-	// mapping from derivative index to Zinc internal storage index, with value first
-	std::vector<int> derivativeOffsets;
-
-public:
-
-	/** For exVersion < 2 only. Call once after all derivatives added with 1
-	* version each) to set same number of versions for all derivatives.
-	* Remember than in the old format parameters are nested by derivatives within versions.
-	* Note the first derivative must have been value!
-	* @return  True on success, false if first derivative is not value, if
-	* more than one version already specified for derivatives or versionCount < 1 */
-	bool setLegacyAllDerivativesVersionCount(int versionCount)
-	{
-		if ((this->derivatives.size() < 1)
-			|| (this->derivatives[0] != FE_NODAL_VALUE)
-			|| (versionCount < 1)
-			|| (this->getMaximumVersionCount() > 1))
-			return false;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
-			*iter = versionCount;
-		return true;
-	}
-
-	/** @return  True if added, false if invalid derivative, versionCount < 1 or derivative already used */
-	bool addDerivative(FE_nodal_value_type derivative, int versionCount)
-	{
-		if ((derivative < FE_NODAL_VALUE)
-			|| (derivative > FE_NODAL_D3_DS1DS2DS3)
-			|| (versionCount < 1)
-			|| (getDerivativeVersionCount(derivative) > 0))
-			return false;
-		this->derivatives.push_back(derivative);
-		this->versionCounts.push_back(versionCount);
-		return true;
-	}
-
-	int getDerivativeVersionCount(FE_nodal_value_type derivative)
-	{
-		const size_t derivativesCount = this->derivatives.size();
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] == derivative)
-				return this->versionCounts[d];
-		return 0;
-	}
-
-	int getMaximumVersionCount() const
-	{
-		int maximumVersionCount = 0;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
-			if (*iter > maximumVersionCount)
-				maximumVersionCount = *iter;
-		return maximumVersionCount;
-	}
-
-	/** @return  The number of derivatives/value types. */
-	int getDerivativeTypeCount() const
-	{
-		return static_cast<int>(this->derivatives.size());
-	}
-
-	FE_nodal_value_type getDerivativeTypeAtIndex(int index) const
-	{
-		return this->derivatives[index];
-	}
-
-	int getDerivativeVersionCountAtIndex(int index) const
-	{
-		return this->versionCounts[index];
-	}
-
-	/** @return  The sum of versionCounts for all derivative types. */
-	int getValueCount() const
-	{
-		int valueCount = 0;
-		for (auto iter = this->versionCounts.begin(); iter != this->versionCounts.end(); ++iter)
-			valueCount += *iter;
-		return valueCount;
-	}
-
-	/** Call after fully set up to calculate legacy internal offsets for storing derivatives, with value first */
-	void calculateDerivativeOffsets()
-	{
-		const size_t derivativesCount = this->derivatives.size();
-		this->derivativeOffsets.resize(derivativesCount);
-		int offset = 0;
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] == FE_NODAL_VALUE)
-			{
-				this->derivativeOffsets[d] = 0;
-				++offset;
-				break;
-			}
-		for (size_t d = 0; d < derivativesCount; ++d)
-			if (this->derivatives[d] != FE_NODAL_VALUE)
-			{
-				this->derivativeOffsets[d] = offset;
-				++offset;
-			}
-	}
-
-	int getDerivativeOffsetAtIndex(int index) const
-	{
-		return this->derivativeOffsets[index];
-	}
 };
 
 } // anonymous namespace
@@ -476,7 +367,6 @@ class EXReader
 	FE_element_shape* elementShape;
 	FE_node_template *node_template;
 	cmzn_elementtemplate *elementtemplate;
-	std::map<FE_field *, std::vector<NodeDerivativesVersions> > nodeFieldComponentDerivativeVersions;
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
 	std::vector<ScaleFactorSet *> scaleFactorSets;
@@ -607,7 +497,6 @@ private:
 	void clearHeaderCache(bool clearElementShape = true)
 	{
 		cmzn::Deaccess(this->node_template);
-		this->nodeFieldComponentDerivativeVersions.clear();
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -667,9 +556,10 @@ private:
 	bool readBlankToEndOfLine();
 	bool readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator = 0);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
+	bool checkConsumeNextChar(char testChar);
 	char *readString();
 	FE_field *readField();
-	bool readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions);
+	bool readNodeValueLabelsVersions(FE_node_field_template& nft);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
 	struct FE_basis *readBasis();
@@ -970,6 +860,19 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 	return true;
 }
 
+/** @param testChar  A non white-space character.
+  * @return  True if the next character is testChar and advance stream past it.
+  * Otherwise return false with no change in stream location. */
+bool EXReader::checkConsumeNextChar(char testChar)
+{
+	if (IO_stream_peekc(this->input_file) == static_cast<int>(testChar))
+	{
+		IO_stream_getc(this->input_file);
+		return true;
+	}
+	return false;
+}
+
 /** 
  * Read a string from the stream after skipping initial whitespace.
  * Works in two modes:
@@ -988,12 +891,11 @@ char *EXReader::readString()
 	char *whitespaceString = 0;
 	IO_stream_read_string(this->input_file, "[ \n\r\t]", &whitespaceString);
 	DEALLOCATE(whitespaceString);
-	char *quoteString = 0;
-	IO_stream_read_string(this->input_file, "[\"\']", &quoteString);
-	if (!quoteString)
-		return 0;
-	const size_t quoteStringLength = strlen(quoteString);
-	if (0 == quoteStringLength)
+	const char quoteChar =
+		(this->checkConsumeNextChar('\"')) ? '\"' :
+		(this->checkConsumeNextChar('\'')) ? '\'' :
+		0;
+	if (!quoteChar)
 	{
 		if (!(IO_stream_read_string(this->input_file, "[^ ,;=\n\r\t]", &theString) && (theString)))
 		{
@@ -1007,116 +909,107 @@ char *EXReader::readString()
 	}
 	else
 	{
-		const char quoteChar = quoteString[0];
-		if (quoteStringLength > 1)
+		const char *format = (quoteChar == '\"') ? "[^\"]" : "[^']";
+		size_t length = 0;
+		while (true)
 		{
-			if ((quoteString[1] != quoteChar) || (quoteStringLength > 2))
+			char *block = 0;
+			if (!(IO_stream_read_string(this->input_file, format, &block) && (block)))
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Invalid quoted string.  %s", this->getFileLocation());
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to read part of quoted string.  %s", this->getFileLocation());
+				if (theString)
+					DEALLOCATE(theString);
+				break;
 			}
-			else // empty quoted string "" or ''
+			int blockLength = static_cast<int>(strlen(block));
+			if (blockLength > 0)
 			{
-				theString = duplicate_string("");
-			}
-		}
-		else // quoted string
-		{
-			const char *format = (quoteChar == '"') ? "[^\"]" : "[^']";
-			size_t length = 0;
-			while (true)
-			{
-				char *block = 0;
-				if (!(IO_stream_read_string(this->input_file, format, &block) && (block)))
+				// process escaped characters
+				char *dest = block;
+				for (int i = 0; i < blockLength; ++i)
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read part of quoted string.  %s", this->getFileLocation());
+					if (block[i] == '\\')
+					{
+						++i;
+						if (i < blockLength)
+						{
+							if (block[i] == 'n')
+								*dest = '\n';
+							else if (block[i] == 't')
+								*dest = '\t';
+							else if (block[i] == 'r')
+								*dest = '\r';
+							else
+								*dest = block[i];
+						}
+						else
+						{
+							// last character is escape, so must be escaping quote_char, or end of file
+							const int this_char = IO_stream_getc(this->input_file);
+							if (this_char == (int)quoteChar)
+							{
+								*dest = quoteChar;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
+								DEALLOCATE(block);
+								break;
+							}
+						}
+					}
+					else
+					{
+						*dest = block[i];
+					}
+					++dest;
+				}
+				if (!block)
+				{
 					if (theString)
 						DEALLOCATE(theString);
 					break;
 				}
-				int blockLength = static_cast<int>(strlen(block));
-				if (blockLength > 0)
+				*dest = '\0';
+				char *tmp;
+				REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
+				if (tmp)
 				{
-					// process escaped characters
-					char *dest = block;
-					for (int i = 0; i < blockLength; ++i)
-					{
-						if (block[i] == '\\')
-						{
-							++i;
-							if (i < blockLength)
-							{
-								if (block[i] == 'n')
-									*dest = '\n';
-								else if (block[i] == 't')
-									*dest = '\t';
-								else if (block[i] == 'r')
-									*dest = '\r';
-								else
-									*dest = block[i];
-							}
-							else
-							{
-								// last character is escape, so must be escaping quote_char, or end of file
-								const int this_char = IO_stream_getc(this->input_file);
-								if (this_char == (int)quoteChar)
-								{
-									*dest = quoteChar;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
-									DEALLOCATE(block);
-									break;
-								}
-							}
-						}
-						else
-						{
-							*dest = block[i];
-						}
-						++dest;
-					}
-					if (!block)
-					{
-						if (theString)
-							DEALLOCATE(theString);
-						break;
-					}
-					*dest = '\0';
-					char *tmp;
-					REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
-					if (tmp)
-					{
-						theString = tmp;
-						strcpy(theString + length, block);
-					}
-					else
-					{
-						if (theString)
-							DEALLOCATE(theString);
-					}
+					theString = tmp;
+					strcpy(theString + length, block);
 				}
-				DEALLOCATE(block);
-				if (theString == 0)
-					break;
-				length = strlen(theString);
-				if ((blockLength == 0) || (theString[length - 1] != quoteChar))
-					break;
-			}
-			if (theString)
-			{
-				// now get the matching end quote
-				DEALLOCATE(quoteString);
-				IO_stream_read_string(this->input_file, (quoteChar == '"') ? "[\"]" : "[\']", &quoteString);
-				if ((!quoteString) || (1 != strlen(quoteString)))
+				else
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Missing or multiple end quotes on string.  %s", this->getFileLocation());
+					if (theString)
+						DEALLOCATE(theString);
+				}
+			}
+			DEALLOCATE(block);
+			if (theString == 0)
+				break;
+			length = strlen(theString);
+			if ((blockLength == 0) || (theString[length - 1] != quoteChar))
+				break;
+		}
+		if (theString)
+		{
+			// now get the matching end quote, and check only one
+			if (this->checkConsumeNextChar(quoteChar))
+			{
+				const int nextChar = IO_stream_peekc(this->input_file);
+				if (!(isspace(nextChar) || (EOF == nextChar)))
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Require whitespace or EOF after end quote on string.  %s", this->getFileLocation());
 					DEALLOCATE(theString);
 				}
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Missing end quote on string.  %s", this->getFileLocation());
+				DEALLOCATE(theString);
+			}
 		}
 	}
-	DEALLOCATE(quoteString);
 	return theString;
 }
 
@@ -1133,7 +1026,7 @@ bool EXReader::readCommentOrDirective()
 {
 	char test_string[5];
 	char nextChar;
-	const int input_result = IO_stream_scan(input_file, "%c", &nextChar);
+	const int input_result = IO_stream_scan(this->input_file, "%c", &nextChar);
 	if (1 != input_result)
 		return true; // last line
 	const bool hasDirectiveChar = (nextChar == '#');
@@ -1145,7 +1038,7 @@ bool EXReader::readCommentOrDirective()
 		if ((nextChar != '\n') && (nextChar != '\r'))
 		{
 			char *rest_of_line;
-			IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
+			IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line);
 			DEALLOCATE(rest_of_line);
 		}
 		return true;
@@ -1596,7 +1489,7 @@ FE_field *EXReader::readField()
 bool EXReader::readFieldValues()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(input_file, "alues %1[:] ", test_string)) // "V" has already been read
+	if (1 != IO_stream_scan(this->input_file, "alues %1[:] ", test_string)) // "V" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
@@ -1689,31 +1582,40 @@ bool EXReader::readFieldValues()
  * (value,d/ds1(2),d/ds2,d2/ds1ds2)
  * @return  True on success, false if not read correctly.
  */
-bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivativesVersions)
+bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
 {
 	int next_char = this->readNextNonSpaceChar();
 	if (next_char != (int)'(')
 		return false;
 	while (true)
 	{
-		char *derivative_type_name = 0;
-		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &derivative_type_name))
+		char *valueLabelName = 0;
+		if (!IO_stream_read_string(this->input_file, "[^,()\n\r]", &valueLabelName))
 			return false;
-		trim_string_in_place(derivative_type_name);
-		enum FE_nodal_value_type derivative_type = FE_NODAL_UNKNOWN;
-		if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(derivative_type_name, &derivative_type))
+		trim_string_in_place(valueLabelName);
+		if ((nft.getValueLabelsCount() == 0)
+			&& (0 == strlen(valueLabelName))
+			&& this->checkConsumeNextChar(')'))
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised derivative type name %s", derivative_type_name);
-			DEALLOCATE(derivative_type_name);
+			break; // empty list ()
+		}
+		cmzn_node_value_label valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
+		if (!STRING_TO_ENUMERATOR(cmzn_node_value_label)(valueLabelName, &valueLabel))
+		{
+			next_char = this->readNextNonSpaceChar();
+			if (next_char == (int)')')
+				break; // finished
+			display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised value/derivative label name %s", valueLabelName);
+			DEALLOCATE(valueLabelName);
 			return false;
 		}
-		DEALLOCATE(derivative_type_name);
+		DEALLOCATE(valueLabelName);
 		int versionCount = 0;
 		if (1 == IO_stream_scan(this->input_file, "(%d)", &versionCount))
 		{
 			if (versionCount < 2)
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Derivative version count must be > 1 if specified");
+				display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative version count must be > 1 if specified");
 				return false;
 			}
 		}
@@ -1721,7 +1623,7 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		{
 			versionCount = 1;
 		}
-		if (!nodeDerivativesVersions.addDerivative(derivative_type, versionCount))
+		if (!nft.setValueNumberOfVersions(valueLabel, versionCount))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Invalid derivative, number of versions or repeated derivative");
 			return false;
@@ -1730,7 +1632,10 @@ bool EXReader::readNodeDerivativesVersions(NodeDerivativesVersions& nodeDerivati
 		if (next_char == (int)')')
 			break; // finished
 		else if (next_char != (int)',')
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid character in derivative/value versions list");
 			return false;
+		}
 	}
 	return true;
 }
@@ -1750,10 +1655,9 @@ bool EXReader::readNodeHeaderField()
 	bool result = true;
 	const int number_of_components = get_FE_field_number_of_components(field);
 	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
-	struct FE_node_field_creator *node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
+	std::vector<FE_node_field_template> componentNfts(number_of_components);
 	/* read the components */
 	char *componentName = 0;
-	std::vector<NodeDerivativesVersions> nodeDerivativesVersions(number_of_components);
 	for (int component_number = 0; component_number < number_of_components; ++component_number)
 	{
 		IO_stream_scan(this->input_file, " ");
@@ -1775,17 +1679,24 @@ bool EXReader::readNodeHeaderField()
 				get_FE_field_name(field), this->getFileLocation());
 			break;
 		}
+		const int nextChar = IO_stream_getc(this->input_file);
+		if (nextChar != static_cast<int>('.'))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing required '.' after component name.  %s",this->getFileLocation());
+			result = false;
+			break;
+		}
 		/* component name is sufficient for non-GENERAL_FE_FIELD */
 		if (GENERAL_FE_FIELD == fe_field_type)
 		{
-			NodeDerivativesVersions &componentNodeDerivativesVersions = nodeDerivativesVersions[component_number];
+			FE_node_field_template &nft = componentNfts[component_number];
 			if (this->exVersion < 2)
 			{
 				// legacy EX format had same number of versions for all derivatives and 'value' derivative was compulsory (and first)
 				// Note that all values and derivatives for a given version are consecutive in the legacy format, i.e. derivative cycles fastest
 				int number_of_derivatives, number_of_versions, temp_int;
 				/* ignore value index */
-				if (!((2 == IO_stream_scan(this->input_file, ".  Value index=%d, #Derivatives=%d ", &temp_int, &number_of_derivatives))
+				if (!((2 == IO_stream_scan(this->input_file, " Value index=%d, #Derivatives=%d ", &temp_int, &number_of_derivatives))
 					&& (0 <= number_of_derivatives)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read legacy node field %s component %s #Derivatives.  %s",
@@ -1794,28 +1705,28 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// legacy EX format required value derivative, and it had to be first
-				if (!componentNodeDerivativesVersions.addDerivative(FE_NODAL_VALUE, 1))
+				if (!nft.setValueNumberOfVersions(CMZN_NODE_VALUE_LABEL_VALUE, 1))
 				{
 					result = false;
 					break;
 				}
 				if (0 < number_of_derivatives)
 				{
-					if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
+					if (!this->readNodeValueLabelsVersions(nft))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Legacy derivative types missing or invalid for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeDerivativesVersions.getMaximumVersionCount() != 1)
+					if (nft.getMaximumVersionsCount() != 1)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Per-derivative versions are only supported from EX Version 2, for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
 						result = false;
 						break;
 					}
-					if (componentNodeDerivativesVersions.getDerivativeTypeCount() != (number_of_derivatives + 1))
+					if (nft.getValueLabelsCount() != (number_of_derivatives + 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Count of derivative types listed did not match number specified for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1826,7 +1737,7 @@ bool EXReader::readNodeHeaderField()
 				// read in the optional number of versions, applied to value and all derivatives
 				if (1 == IO_stream_scan(this->input_file, ", #Versions=%d", &number_of_versions))
 				{
-					if (!componentNodeDerivativesVersions.setLegacyAllDerivativesVersionCount(number_of_versions))
+					if (!nft.setLegacyAllValueVersionsCount(number_of_versions))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Versions for node field %s component %s.  %s",
 							get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1837,10 +1748,10 @@ bool EXReader::readNodeHeaderField()
 			}
 			else
 			{
-				// EX Version 2+: supports variable number of versions per derivative. parameters
+				// EX Version 2+: supports variable number of versions per derivative.
 				// Note that parameters for versions of a given derivative are consecutive in the new format i.e. version cycles within derivative
 				int valuesCount = 0;
-				if (!((1 == IO_stream_scan(this->input_file, ". #Values=%d", &valuesCount))
+				if (!((1 == IO_stream_scan(this->input_file, " #Values=%d", &valuesCount))
 					&& (0 <= valuesCount)))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Failed to read node field %s component %s #Values.  %s",
@@ -1849,14 +1760,14 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 				// follow with derivative names and versions, even if empty ()
-				if (!this->readNodeDerivativesVersions(componentNodeDerivativesVersions))
+				if (!this->readNodeValueLabelsVersions(nft))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Value/derivative types and versions missing or invalid for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
 					result = false;
 					break;
 				}
-				if (componentNodeDerivativesVersions.getValueCount() != valuesCount)
+				if (nft.getTotalValuesCount() != valuesCount)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Count of value/derivative versions did not match number specified for field %s component %s.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
@@ -1864,43 +1775,14 @@ bool EXReader::readNodeHeaderField()
 					break;
 				}
 			}
-			componentNodeDerivativesVersions.calculateDerivativeOffsets();
-			// Zinc cannot yet handle per-derivative versions nor having no value parameters, so define in the old way
-			const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-			for (int d = 0; d < derivativeTypeCount; ++d)
-			{
-				const FE_nodal_value_type derivativeType = componentNodeDerivativesVersions.getDerivativeTypeAtIndex(d);
-				if (derivativeType != FE_NODAL_VALUE) // value is currently always already set as the first entry
-				{
-					if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, component_number, derivativeType))
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Failed to set derivative type %s for field %s component %s.  %s",
-							ENUMERATOR_STRING(FE_nodal_value_type)(derivativeType), get_FE_field_name(field), componentName, this->getFileLocation());
-						result = false;
-						break;
-					}
-				}
-			}
 			if (!result)
 				break;
-			const int maximumVersionCount = componentNodeDerivativesVersions.getMaximumVersionCount();
-			// version count can be 0 in field, but must have at least 1 value version
-			if (maximumVersionCount > 1)
-			{
-				if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, component_number, maximumVersionCount))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of versions for field %s component %s.  %s",
-						get_FE_field_name(field), componentName, this->getFileLocation());
-					result = false;
-					break;
-				}
-			}
 		}
-		if (this->exVersion >= 2)
+		if ((this->exVersion >= 2) || (GENERAL_FE_FIELD != fe_field_type))
 		{
 			// read and warn about any unused key=value data, which must be preceded by ,
 			KeyValueMap keyValueMap;
-			if (!this->readKeyValueMap(keyValueMap, (int)','))
+			if (!this->readKeyValueMap(keyValueMap, (GENERAL_FE_FIELD == fe_field_type) ? 0 : (int)','))
 			{
 				result = false;
 				break;
@@ -1951,12 +1833,10 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (result)
 		{
-			if (define_FE_field_at_node(node_template->get_template_node(), field, fe_time_sequence,
-				node_field_creator))
+			if (define_FE_field_at_node(node_template->get_template_node(), field,
+				componentNfts.data(), fe_time_sequence))
 			{
 				this->headerFields.push_back(field);
-				// must do following after field is merged otherwise can be different field object:
-				this->nodeFieldComponentDerivativeVersions[field] = nodeDerivativesVersions;
 			}
 			else
 			{
@@ -1966,7 +1846,6 @@ bool EXReader::readNodeHeaderField()
 			}
 		}
 	}
-	DESTROY(FE_node_field_creator)(&node_field_creator);
 	if (componentName)
 		DEALLOCATE(componentName);
 	DEACCESS(FE_field)(&field);
@@ -1976,8 +1855,6 @@ bool EXReader::readNodeHeaderField()
 /**
  * Creates a node template with the field information read from stream.
  * Fills list of header fields in read order.
- * Creates and fills nodeFieldComponentDerivativeVersions to store
- * new format with variable versions per derivative.
  */
 bool EXReader::readNodeHeader()
 {
@@ -2062,15 +1939,17 @@ cmzn_node *EXReader::readNode()
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
-		int number_of_values = 0;
-		for (int c = 0; c < componentCount; ++c)
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+		if (!node_field)
 		{
-			number_of_values += get_FE_node_field_component_number_of_versions(node, field, c)*
-				(1 + get_FE_node_field_component_number_of_derivatives(node, field, c));
+			display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
+			result = false;
+			break;
 		}
+		const int number_of_values = node_field->getTotalValuesCount();
 		if (number_of_values <= 0)
 		{
-			display_message(ERROR_MESSAGE, "No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
+			display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
 			result = false;
 			break;
 		}
@@ -2086,8 +1965,7 @@ cmzn_node *EXReader::readNode()
 				for (int k = 0; k < number_of_values; ++k)
 				{
 					if (!(this->readElementXiValue(field, element, xi)
-						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, /*version*/0,
-							FE_NODAL_VALUE, element, xi)))
+						&& set_FE_nodal_element_xi_value(node, field, /*component_number*/k, element, xi)))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Error reading element_xi value for field %s at node %d.  %s",
 							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
@@ -2105,160 +1983,111 @@ cmzn_node *EXReader::readNode()
 		} break;
 		case FE_VALUE_VALUE:
 		{
-			FE_value *values;
-			if (ALLOCATE(values, FE_value, number_of_values))
+			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			std::vector<FE_value> valuesVector(maximumValuesCount);
+			FE_value *values = valuesVector.data();
+			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valuesCount = nft.getTotalValuesCount();
+				for (int k = 0; k < valuesCount; ++k)
+				{
+					if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+					if (!finite(values[k]))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+				if (!result)
+				{
+					break;
+				}
 				if (this->exVersion < 2)
 				{
-					// before EX version 2, derivatives were nested within versions, hence need separate code to read
-					for (int k = 0; k < number_of_values; ++k)
+					// all derivatives / value labels had same number of versions in old format
+					const int versionsCount = nft.getVersionsCountAtIndex(0);
+					if (versionsCount > 1)
 					{
-						if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+						std::vector<FE_value> tmpValuesVector(valuesVector);
+						FE_value *tmpValues = tmpValuesVector.data();
+						const int valueLabelsCount = nft.getValueLabelsCount();
+						for (int d = 0; d < valueLabelsCount; ++d)
 						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-				}
-				else
-				{
-					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
-					// initialise values to 0.0 to clear versions that are not read
-					for (int k = 0; k < number_of_values; ++k)
-						values[k] = 0.0;
-					FE_value *componentValues = values;
-					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
-					for (int c = 0; (c < componentCount) && result; ++c)
-					{
-						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
-						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
-						{
-							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
-							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
-							for (int v = 0; v < versionCount; ++v)
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING,
-									componentValues + derivativeTypeCount*v + derivativeOffset))
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-									result = false;
-									break;
-								}
+								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
 							}
 						}
-						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
-				if (result)
+				if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
+					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
 				{
-					for (int k = 0; k < number_of_values; ++k)
-					{
-						if (!finite(values[k]))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
+						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+					result = false;
 				}
-				if (result)
-				{
-					int length;
-					if (!set_FE_nodal_field_FE_value_values(field, node, values, &length, (this->timeIndex) ? this->timeIndex->time : 0.0))
-					{
-						result = false;
-					}
-					else if (length != number_of_values)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
-							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
-						result = false;
-					}
-				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"EXReader::readNode.  Insufficient memory for FE_value_values");
-				result = false;
 			}
 		} break;
 		case INT_VALUE:
 		{
-			int *values;
-			if (ALLOCATE(values, int, number_of_values))
+			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			std::vector<int> valuesVector(maximumValuesCount);
+			int *values = valuesVector.data();
+			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template &nft = *(node_field->getComponent(c));
+				const int valuesCount = nft.getTotalValuesCount();
+				for (int k = 0; k < valuesCount; ++k)
+				{
+					if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+						result = false;
+						break;
+					}
+				}
+				if (!result)
+				{
+					break;
+				}
 				if (this->exVersion < 2)
 				{
-					// before EX version 2, derivatives were nested within versions, hence need separate code to read
-					for (int k = 0; k < number_of_values; ++k)
+					// all derivatives / value labels had same number of versions in old format
+					const int versionsCount = nft.getVersionsCountAtIndex(0);
+					if (versionsCount > 1)
 					{
-						if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+						std::vector<int> tmpValuesVector(valuesVector);
+						int *tmpValues = tmpValuesVector.data();
+						const int valueLabelsCount = nft.getValueLabelsCount();
+						for (int d = 0; d < valueLabelsCount; ++d)
 						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-							result = false;
-							break;
-						}
-					}
-				}
-				else
-				{
-					// from EX Version 2, the value derivative is not necessarily first, and versions are nested within derivatives
-					// initialise values to 0.0 to clear versions that are not read
-					for (int k = 0; k < number_of_values; ++k)
-						values[k] = 0.0;
-					int *componentValues = values;
-					const std::vector<NodeDerivativesVersions> &nodeDerivativesVersions = this->nodeFieldComponentDerivativeVersions[field];
-					for (int c = 0; (c < componentCount) && result; ++c)
-					{
-						const NodeDerivativesVersions& componentNodeDerivativesVersions = nodeDerivativesVersions[c];
-						const int derivativeTypeCount = componentNodeDerivativesVersions.getDerivativeTypeCount();
-						for (int d = 0; (d < derivativeTypeCount) && result; ++d)
-						{
-							const int versionCount = componentNodeDerivativesVersions.getDerivativeVersionCountAtIndex(d);
-							const int derivativeOffset = componentNodeDerivativesVersions.getDerivativeOffsetAtIndex(d);
-							for (int v = 0; v < versionCount; ++v)
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								if (1 != IO_stream_scan(this->input_file, "%d",
-									componentValues + derivativeTypeCount*v + derivativeOffset))
-								{
-									display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-										get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-									result = false;
-									break;
-								}
+								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
 							}
 						}
-						componentValues += derivativeTypeCount*componentNodeDerivativesVersions.getMaximumVersionCount();
 					}
 				}
-				if (result)
+				if (!cmzn_node_set_field_component_int_values(node, field, c,
+					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
 				{
-					int length;
-					// time is not supported by int. Add in future?
-					if (!set_FE_nodal_field_int_values(field, node, values, &length))
-					{
-						result = false;
-					}
-					else if (length != number_of_values)
-					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Set %d values for field %s node %d, expected %d.  %s",
-							length, get_FE_field_name(field), nodeIdentifier, number_of_values, this->getFileLocation());
-						result = false;
-					}
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
+						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+					result = false;
 				}
-				DEALLOCATE(values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "EXReader::readNode.  Insufficient memory for int values");
-				result = false;
 			}
 		} break;
 		case STRING_VALUE:
@@ -2270,7 +2099,7 @@ cmzn_node *EXReader::readNode()
 					char *theString = this->readString();
 					if (theString)
 					{
-						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, /*version*/0, FE_NODAL_VALUE, theString))
+						if (!set_FE_nodal_string_value(node, field, /*component_number*/k, theString))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Error setting string value for field %s at node %d.  %s",
 								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
@@ -2361,7 +2190,7 @@ bool EXReader::readElementShape()
 	}
 	this->clearHeaderCache();
 	int dimension = -1;
-	if ((1 != IO_stream_scan(input_file, "hape. Dimension=%d", &dimension))
+	if ((1 != IO_stream_scan(this->input_file, "hape. Dimension=%d", &dimension))
 		|| (dimension < 0) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element shape dimension.  %s", this->getFileLocation());
@@ -2416,8 +2245,8 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EXReader::readElementShape.  Could not allocate shape type");
 		return false;
 	}
-	IO_stream_scan(input_file,",");
-	if ((!IO_stream_read_string(input_file, "[^\n\r]", &shape_description_string))
+	IO_stream_scan(this->input_file,",");
+	if ((!IO_stream_read_string(this->input_file, "[^\n\r]", &shape_description_string))
 		|| (!shape_description_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading shape description.  %s", this->getFileLocation());
@@ -2734,7 +2563,7 @@ bool EXReader::readElementShape()
 struct FE_basis *EXReader::readBasis()
 {
 	char *basis_description_string;
-	if (!IO_stream_read_string(input_file, "[^,]", &basis_description_string))
+	if (!IO_stream_read_string(this->input_file, "[^,]", &basis_description_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading basis description.  %s", this->getFileLocation());
 		return 0;
@@ -2818,7 +2647,7 @@ bool EXReader::readElementHeaderField()
 				get_FE_field_name(field), this->getFileLocation());
 			break;
 		}
-		IO_stream_scan(input_file, ". ");
+		IO_stream_scan(this->input_file, ". ");
 		FE_basis *basis = 0;
 		const int dimension = this->mesh->getDimension();
 		if (GENERAL_FE_FIELD == fe_field_type)
@@ -2841,11 +2670,11 @@ bool EXReader::readElementHeaderField()
 		}
 		else
 		{
-			IO_stream_scan(input_file, ", ");
+			IO_stream_scan(this->input_file, ", ");
 			// read the basis modify theta mode name
 			FE_basis_modify_theta_mode thetaModifyMode = FE_BASIS_MODIFY_THETA_MODE_INVALID;
 			char *modify_function_name = 0;
-			if (!IO_stream_read_string(input_file, "[^,]", &modify_function_name))
+			if (!IO_stream_read_string(this->input_file, "[^,]", &modify_function_name))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading modify function.  %s", this->getFileLocation());
 				result = false;
@@ -2884,20 +2713,19 @@ bool EXReader::readElementHeaderField()
 			if (!result)
 				break;
 
-			IO_stream_scan(input_file, ", ");
+			IO_stream_scan(this->input_file, ", ");
 			// read the global to element map type
 			cmzn_elementfieldtemplate_parameter_mapping_mode elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID;
 			bool elementGridBased = false;
 			char *global_to_element_map_string = 0;
-			if (!IO_stream_read_string(input_file, "[^.]", &global_to_element_map_string))
+			if (!IO_stream_read_string(this->input_file, "[^.]", &global_to_element_map_string))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading global to element map type.  %s", this->getFileLocation());
 				result = false;
 				break;
 			}
-			IO_stream_scan(input_file, ".");
-			if ((0 == strcmp("standard node based", global_to_element_map_string))
-				|| (0 == strcmp("node based", global_to_element_map_string)))
+			IO_stream_scan(this->input_file, ".");
+			if (0 == strcmp("standard node based", global_to_element_map_string))
 			{
 				elementParameterMappingMode = CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE;
 			}
@@ -2962,7 +2790,7 @@ bool EXReader::readElementHeaderField()
 			{
 				// node to element map: includes standard and general
 				int nodeCount = 0;
-				if (1 != IO_stream_scan(input_file, " #Nodes=%d", &nodeCount))
+				if (1 != IO_stream_scan(this->input_file, " #Nodes=%d", &nodeCount))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading field %s component %s number of nodes.  %s",
 						get_FE_field_name(field), componentName, this->getFileLocation());
@@ -3070,7 +2898,7 @@ bool EXReader::readElementHeaderField()
 					while (true)
 					{
 						IO_stream_scan(this->input_file, " ");
-						if (!IO_stream_read_string(input_file, "[^.+]", &nodeIndexString))
+						if (!IO_stream_read_string(this->input_file, "[^.+]", &nodeIndexString))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Failed to read local node index expression.  %s", this->getFileLocation());
 							result = false;
@@ -3132,7 +2960,7 @@ bool EXReader::readElementHeaderField()
 						break;
 					}
 					int valueCount = 0;
-					if ((1 != IO_stream_scan(input_file, " #Values=%d", &valueCount)) || (valueCount < 1))
+					if ((1 != IO_stream_scan(this->input_file, " #Values=%d", &valueCount)) || (valueCount < 1))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Invalid #Values.  %s", this->getFileLocation());
 						result = false;
@@ -3148,7 +2976,7 @@ bool EXReader::readElementHeaderField()
 					char *dofMappingTypeString = 0;
 					// old EX files use indices into nodal values
 					// new EX files use value labels e.g. value d/ds1(2) zero, now compulsory in EX version 2+
-					if (!IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
+					if (!IO_stream_read_string(this->input_file, "[^:]", &dofMappingTypeString))
 					{
 						result = false;
 						break;
@@ -3163,7 +2991,7 @@ bool EXReader::readElementHeaderField()
 						display_message(ERROR_MESSAGE, "Missing \"Value indices:\" or \"Value labels:\" token.  %s", this->getFileLocation());
 						break;
 					}
-					IO_stream_scan(input_file, ": ");
+					IO_stream_scan(this->input_file, ": ");
 					const int termLimit = (termCount) > 0 ? termCount : 1;
 					if (readValueIndices)
 					{
@@ -3176,7 +3004,7 @@ bool EXReader::readElementHeaderField()
 						for (int v = 0; v < valueCount; ++v)
 						{
 							int nodeValueIndex = 0;
-							if (1 != IO_stream_scan(input_file, "%d", &nodeValueIndex))
+							if (1 != IO_stream_scan(this->input_file, "%d", &nodeValueIndex))
 							{
 								display_message(ERROR_MESSAGE, "EX Reader.  Error reading nodal value index.  %s", this->getFileLocation());
 								result = false;
@@ -3200,7 +3028,7 @@ bool EXReader::readElementHeaderField()
 					{
 						char *rest_of_line = 0;
 						// read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2 zero d/ds1(2)+d/ds2(3) etc.
-						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
 							result = false;
@@ -3244,10 +3072,10 @@ bool EXReader::readElementHeaderField()
 								}
 								else
 								{
-									enum FE_nodal_value_type nodalValueType = FE_NODAL_UNKNOWN;
-									if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(token, &nodalValueType))
+									cmzn_node_value_label valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
+									if (!STRING_TO_ENUMERATOR(cmzn_node_value_label)(token, &valueLabel))
 									{
-										display_message(ERROR_MESSAGE, "EX Reader.  Invalid node value label '%s'.  %s", token, this->getFileLocation());
+										display_message(ERROR_MESSAGE, "EX Reader.  Invalid node value/derivative label '%s'.  %s", token, this->getFileLocation());
 										result = false;
 										break;
 									}
@@ -3269,8 +3097,7 @@ bool EXReader::readElementHeaderField()
 										if (nextchar == '+')
 											++s;
 									}
-									resultCode = eft->setTermNodeParameter(fn + v, t, termNodeIndexes[t - 1],
-										FE_nodal_value_type_to_cmzn_node_value_label(nodalValueType), version);
+									resultCode = eft->setTermNodeParameter(fn + v, t, termNodeIndexes[t - 1], valueLabel, version);
 									if (resultCode != CMZN_OK)
 									{
 										display_message(ERROR_MESSAGE, "EX Reader.  Failed to set function %d node parameter term %d.  %s",
@@ -3314,7 +3141,7 @@ bool EXReader::readElementHeaderField()
 					// read the scale factor indices, but only if using scaling in EX Version 2+
 					if ((scaleFactorCount > 0) || (this->exVersion < 2))
 					{
-						if (1 != IO_stream_scan(input_file, " Scale factor indices%1[:] ", test_string))
+						if (1 != IO_stream_scan(this->input_file, " Scale factor indices%1[:] ", test_string))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Scale factor indices:\" token.  %s", this->getFileLocation());
 							result = false;
@@ -3322,7 +3149,7 @@ bool EXReader::readElementHeaderField()
 						}
 						char *rest_of_line = 0;
 						// read scale factor index expressions e.g. 0 (for unscaled) 60 1*2 3*4+1*2*3 etc.
-						if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+						if (!IO_stream_read_string(this->input_file, "[^\n\r]", &rest_of_line))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing node value label expressions.  %s", this->getFileLocation());
 							result = false;
@@ -3617,7 +3444,7 @@ bool EXReader::readElementHeader()
 
 	// read in the scale factor set information
 	int scaleFactorSetCount;
-	if ((1 != IO_stream_scan(input_file, "Scale factor sets=%d ", &scaleFactorSetCount))
+	if ((1 != IO_stream_scan(this->input_file, "Scale factor sets=%d ", &scaleFactorSetCount))
 		|| (scaleFactorSetCount < 0))
 	{
 		display_message(ERROR_MESSAGE,
@@ -3670,7 +3497,7 @@ bool EXReader::readElementHeader()
 
 	// read in the node information. This is the number of nodes in the template, indexed from element fields
 	int nodeCount;
-	if (1 != IO_stream_scan(input_file, " #Nodes=%d ", &nodeCount))
+	if (1 != IO_stream_scan(this->input_file, " #Nodes=%d ", &nodeCount))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading #Nodes.  %s", this->getFileLocation());
 		return false;
@@ -3761,7 +3588,7 @@ bool EXReader::readElementIdentifier(DsLabelIdentifier &elementIdentifier)
 	{
 		// legacy format: triple of ELEMENT_NUMBER FACE_NUMBER LINE_NUMBER
 		DsLabelIdentifier element_num, face_num, line_num;
-		if (3 != IO_stream_scan(input_file, " %d %d %d", &element_num, &face_num, &line_num))
+		if (3 != IO_stream_scan(this->input_file, " %d %d %d", &element_num, &face_num, &line_num))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error reading legacy element identifier.  %s", this->getFileLocation());
 			return false;
@@ -3810,7 +3637,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &(values[v])))
+			if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[v])))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid FE_value value.  %s", this->getFileLocation());
 				return false;
@@ -3833,7 +3660,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			if (1 != IO_stream_scan(input_file, "%d", &(values[v])))
+			if (1 != IO_stream_scan(this->input_file, "%d", &(values[v])))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid int value.  %s", this->getFileLocation());
 				return false;
@@ -3870,7 +3697,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 cmzn_element *EXReader::readElement()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(input_file, "ement %1[:] ", test_string)) // "El" has already been read
+	if (1 != IO_stream_scan(this->input_file, "ement %1[:] ", test_string)) // "El" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
 		return 0;
@@ -3925,7 +3752,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Faces: (optional)
-	if (1 == IO_stream_scan(input_file, " Faces %1[:]", test_string))
+	if (1 == IO_stream_scan(this->input_file, " Faces %1[:]", test_string))
 	{
 		const FE_element_shape *elementShape = this->mesh->getElementShape(element->getIndex());
 		const int faceCount = FE_element_shape_get_number_of_faces(elementShape);
@@ -3983,7 +3810,7 @@ cmzn_element *EXReader::readElement()
 	const size_t fieldCount = this->headerFields.size();
 	if (this->hasElementValues)
 	{
-		if (1 != IO_stream_scan(input_file, " Values %1[:] ", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Values %1[:] ", test_string))
 		{
 			display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of required \" Values :\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -4012,7 +3839,7 @@ cmzn_element *EXReader::readElement()
 	const int nodeCount = this->elementtemplate->getNumberOfNodes();
 	if (nodeCount > 0)
 	{
-		if (1 != IO_stream_scan(input_file, " Nodes %1[:]", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Nodes %1[:]", test_string))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Nodes:\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -4021,7 +3848,7 @@ cmzn_element *EXReader::readElement()
 		for (int n = 0; n < nodeCount; ++n)
 		{
 			DsLabelIdentifier nodeIdentifier;
-			if (1 != IO_stream_scan(input_file, "%d", &nodeIdentifier))
+			if (1 != IO_stream_scan(this->input_file, "%d", &nodeIdentifier))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading node identifier.  %s", this->getFileLocation());
 				cmzn_element::deaccess(element);
@@ -4055,7 +3882,7 @@ cmzn_element *EXReader::readElement()
 	const size_t sfSetCount = this->scaleFactorSets.size();
 	if (sfSetCount > 0)
 	{
-		if (1 != IO_stream_scan(input_file, " Scale factors %1[:]", test_string))
+		if (1 != IO_stream_scan(this->input_file, " Scale factors %1[:]", test_string))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Truncated read of required \" Scale factors:\" token in element.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -4069,7 +3896,7 @@ cmzn_element *EXReader::readElement()
 			FE_value *scaleFactors = sfSet->values.data();
 			for (int sf = 0; sf < scaleFactorCount; ++sf)
 			{
-				if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
+				if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &scaleFactors[sf]))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Error reading scale factor.  %s", this->getFileLocation());
 					cmzn_element::deaccess(element);

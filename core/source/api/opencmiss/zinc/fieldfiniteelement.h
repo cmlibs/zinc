@@ -79,6 +79,8 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * Get parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, absent
+ * parameters are set to zero, and WARNING_PART_DONE is returned.
  * @see cmzn_fieldcache_set_node
  *
  * @param finite_element_field  The finite element field to get parameters for.
@@ -94,7 +96,10 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_out  Array of real values to be set from the parameters.
- * @return  Result OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were obtained), ERROR_NOT_FOUND if
+ * field not defined or none of the requested components have parameters,
+ * otherwise any other error code.
  */
 ZINC_API int cmzn_field_finite_element_get_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -105,6 +110,8 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * Set parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, sets
+ * those that do exist and returns WARNING_PART_DONE.
  * @see cmzn_fieldcache_set_node
  *
  * @param finite_element_field  The finite element field to set parameters for.
@@ -120,12 +127,26 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_in  Array of real values to be assigned to the parameters.
- * @return  Result OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were set), ERROR_NOT_FOUND if field
+ * not defined or none of the requested components have parameters, otherwise
+ * any other error code.
  */
 ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
 	int component_number, enum cmzn_node_value_label node_value_label,
 	int version_number, int values_count, const double *values_in);
+
+/**
+ * Query whether any parameters are stored for field at the location specified
+ * in the field cache.
+ *
+ * @param field  The field to query.
+ * @param cache  Store of location to check, and intermediate field values.
+ * @return  True if field has parameters at location, otherwise false.
+ */
+ZINC_API bool cmzn_field_finite_element_has_parameters_at_location(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache);
 
 /**
  * Creates a field producing a value on 1-D line elements with as many
@@ -371,18 +392,22 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
 	enum cmzn_field_find_mesh_location_search_mode search_mode);
 
 /**
- * Creates a field which represents and returns node values/derivatives.
+ * Creates a field which represents and returns labelled node parameters,
+ * i.e. specific value/derivative versions.
+ * This field has as many components as the source field, and is defined if any
+ * component has the specified value/derivative version. Non-existent component
+ * parameters evaluate to zero, and are ignored on assignment.
  *
  * @param fieldmodule  Region field module which will own new field.
- * @param field  The field for which the nodal values are stored, this
- * 	must be a finite element field.
+ * @param source_field  The field for which the nodal values are stored, this
+ * must be a finite element field.
  * @param node_value_label  The label of the node value/derivative to return.
  * @param version_number  The version number of the value or derivative to
  * return, starting from 1.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
-	cmzn_fieldmodule_id fieldmodule, cmzn_field_id field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	enum cmzn_node_value_label node_value_label, int version_number);
 
 /**

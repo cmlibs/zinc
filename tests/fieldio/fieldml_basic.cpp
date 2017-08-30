@@ -36,6 +36,12 @@ ManageOutputFolder manageOutputFolderFieldML(FIELDML_OUTPUT_FOLDER);
 
 namespace {
 
+	const double PI = 3.14159265358979323846;
+
+}
+
+namespace {
+
 void check_cube_model(Fieldmodule& fm)
 {
 	int result;
@@ -959,3 +965,413 @@ TEST(FieldIO, ex_element_grid_constant_indexed_fields)
 	check_ex_element_grid_constant_indexed_fields(testFm1);
 }
 
+namespace {
+
+void check_ex_special_node_fields(Fieldmodule& fm)
+{
+	Field cell_type = fm.findFieldByName("cell_type");
+	EXPECT_TRUE(cell_type.isValid());
+	EXPECT_EQ(1, cell_type.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, cell_type.getValueType());
+
+	Field constant_real3 = fm.findFieldByName("constant_real3");
+	EXPECT_TRUE(constant_real3.isValid());
+	EXPECT_EQ(3, constant_real3.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, constant_real3.getValueType());
+
+	Field indexed_real = fm.findFieldByName("indexed_real");
+	EXPECT_TRUE(indexed_real.isValid());
+	EXPECT_EQ(1, indexed_real.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_real.getValueType());
+
+	Field indexed_int2 = fm.findFieldByName("indexed_int2");
+	EXPECT_TRUE(indexed_int2.isValid());
+	EXPECT_EQ(2, indexed_int2.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_int2.getValueType());
+
+	Field constant_string = fm.findFieldByName("constant_string");
+	EXPECT_TRUE(constant_string.isValid());
+	EXPECT_EQ(1, constant_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, constant_string.getValueType());
+
+	Field indexed_string = fm.findFieldByName("indexed_string");
+	EXPECT_TRUE(indexed_string.isValid());
+	EXPECT_EQ(1, indexed_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, indexed_string.getValueType());
+
+	Field general_string = fm.findFieldByName("general_string");
+	EXPECT_TRUE(general_string.isValid());
+	EXPECT_EQ(1, general_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, general_string.getValueType());
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const int expected_cell_type[8] = { 1, 1, 1, 1, 2, 3, 2, 3 };
+	const double expected_constant_real3[3] = { 0.1, 0.2, 0.5 };
+	const double expected_indexed_real[3] = { 10.5, 15.5, 25.5 };
+	const double expected_indexed_int2[3][2] = { { 1, 7 }, { 2, 8 }, { 3, 9 } };
+	const char expected_constant_string[] = "\"Constant\" string";
+	const char *expected_indexed_string[3] = { "Cell type 1", "Cell type 2", "\"Type-3 Cell\"" };
+	const char *expected_general_string[8] = { "one", "two", "three", "four", "five", "six", "\'seven\'", "eight" };
+
+	for (int n = 0; n < 8; ++n)
+	{
+		Node node = nodeset.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+
+		double cell_type_out_double;
+		// don't have evaluateInteger yet:
+		EXPECT_EQ(RESULT_OK, cell_type.evaluateReal(cache, 1, &cell_type_out_double));
+		EXPECT_DOUBLE_EQ(static_cast<double>(expected_cell_type[n]), cell_type_out_double);
+		const int cell_type_out = static_cast<int>(cell_type_out_double + 0.5);
+		EXPECT_EQ(expected_cell_type[n], cell_type_out);
+
+		double constant_real3_out[3];
+		EXPECT_EQ(RESULT_OK, constant_real3.evaluateReal(cache, 3, constant_real3_out));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_DOUBLE_EQ(expected_constant_real3[c], constant_real3_out[c]);
+		}
+
+		const int cell_type_index = expected_cell_type[n] - 1;
+
+		double indexed_real_out;
+		EXPECT_EQ(RESULT_OK, indexed_real.evaluateReal(cache, 1, &indexed_real_out));
+		EXPECT_DOUBLE_EQ(expected_indexed_real[cell_type_index], indexed_real_out);
+
+		double indexed_int2_out_double[3];
+		EXPECT_EQ(RESULT_OK, indexed_int2.evaluateReal(cache, 3, indexed_int2_out_double));
+		for (int c = 0; c < 2; ++c)
+		{
+			EXPECT_DOUBLE_EQ(static_cast<double>(expected_indexed_int2[cell_type_index][c]), indexed_int2_out_double[c]);
+		}
+
+		char *constant_string_out = constant_string.evaluateString(cache);
+		EXPECT_STREQ(expected_constant_string, constant_string_out);
+		cmzn_deallocate(constant_string_out);
+
+		char *indexed_string_out = indexed_string.evaluateString(cache);
+		EXPECT_STREQ(expected_indexed_string[cell_type_index], indexed_string_out);
+		cmzn_deallocate(indexed_string_out);
+
+		char *general_string_out = general_string.evaluateString(cache);
+		EXPECT_STREQ(expected_general_string[n], general_string_out);
+		cmzn_deallocate(general_string_out);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exnode_formats
+TEST(FieldIO, ex_special_node_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_SPECIAL_NODE_FIELDS_RESOURCE)));
+	check_ex_special_node_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_special_node_fields(testFm1);
+}
+
+namespace {
+
+void createVariableNodeVersionsWithTime2d(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	const double times[3] = { 0.0, 1.0, 2.0 };
+	Timesequence timesequence = fm.getMatchingTimesequence(3, times);
+	EXPECT_TRUE(timesequence.isValid());
+
+	// corner nodes have all 3 components defined
+	Nodetemplate nodetemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplate.setTimesequence(coordinates, timesequence));
+	Timesequence tmpTimesequence = nodetemplate.getTimesequence(coordinates);
+	EXPECT_EQ(timesequence, tmpTimesequence);
+
+	// midside and centre nodes only have z defined:
+	Nodetemplate nodetemplatez = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplatez.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplatez.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setValueNumberOfVersions(coordinates, /*componentNumber*/1, Node::VALUE_LABEL_VALUE, 0));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setValueNumberOfVersions(coordinates, /*componentNumber*/2, Node::VALUE_LABEL_VALUE, 0));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setTimesequence(coordinates, timesequence));
+	EXPECT_EQ(0, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(0, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/2, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(1, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/3, Node::VALUE_LABEL_VALUE));
+	tmpTimesequence = nodetemplatez.getTimesequence(coordinates);
+	EXPECT_EQ(timesequence, tmpTimesequence);
+
+	Elementbasis bilinearBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementbasis biquadraticBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_QUADRATIC_LAGRANGE);
+	EXPECT_TRUE(biquadraticBasis.isValid());
+
+	Mesh mesh = fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+
+	// x and y will use bilinear basis:
+	Elementfieldtemplate bilinearEft = mesh.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(bilinearEft.isValid());
+	// z will use biquadratic basis:
+	Elementfieldtemplate biquadraticEft = mesh.createElementfieldtemplate(biquadraticBasis);
+	EXPECT_TRUE(biquadraticEft.isValid());
+
+	Elementtemplate elementtemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/1, bilinearEft));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/2, bilinearEft));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/3, biquadraticEft));
+
+	// create model
+	const int elementCount1 = 2;
+	const int elementCount2 = 1;
+	const int nodeCount1 = elementCount1*2 + 1;
+	const int nodeCount2 = elementCount2*2 + 1;
+	const double nodeCount1Radians = PI / static_cast<double>(nodeCount1 - 2);
+
+	fm.beginChange();
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	// create nodes
+	int nodeIdentifier = 1;
+	for (int n2 = 0; n2 < nodeCount2; ++n2)
+	{
+		for (int n1 = 0; n1 < nodeCount1; ++n1)
+		{
+			bool zOnly = ((n1 % 2) != 0) || ((n2 % 2) != 0);
+			Node node = nodeset.createNode(nodeIdentifier++, zOnly ? nodetemplatez : nodetemplate);
+			EXPECT_TRUE(node.isValid());
+			EXPECT_EQ(RESULT_OK, cache.setNode(node));
+			for (int ti = 0; ti < 2; ++ti)
+			{
+				const double time = static_cast<double>(ti);
+				cache.setTime(time);
+				const double c[3] =
+				{
+					n1*(5.0 + time),
+					n2*(5.0) + 0.5*n1*n1*(n2 - 1)*time,
+					sin(nodeCount1Radians*n1)*time*4.0*cos(n2 - 1)
+				};
+				const int result = coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, c);
+				if (zOnly)
+				{
+					EXPECT_EQ(RESULT_WARNING_PART_DONE, result);
+					// test setting individual parameters
+					EXPECT_EQ(RESULT_ERROR_NOT_FOUND, coordinates.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c));
+					EXPECT_EQ(RESULT_ERROR_NOT_FOUND, coordinates.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c + 1));
+					EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c + 2));
+				}
+				else
+				{
+					EXPECT_EQ(RESULT_OK, result);
+				}
+			}
+		}
+	}
+
+	// create elements
+	int elementIdentifier = 1;
+	for (int e2 = 0; e2 < elementCount2; ++e2)
+	{
+		for (int e1 = 0; e1 < elementCount1; ++e1)
+		{
+			Element element = mesh.createElement(elementIdentifier++, elementtemplate);
+			EXPECT_TRUE(element.isValid());
+			const int ni = e2*nodeCount1 + e1*2 + 1;
+			const int biquadraticNodeIdentifiers[9] =
+			{
+				ni, ni + 1, ni + 2,
+				ni + nodeCount1, ni + nodeCount1 + 1, ni + nodeCount1 + 2,
+				ni + 2*nodeCount1, ni + 2*nodeCount1 + 1, ni + 2*nodeCount1 + 2,
+			};
+			const int bilinearNodeIdentifiers[4] =
+			{
+				ni, ni + 2, ni + 2*nodeCount1, ni + 2*nodeCount1 + 2
+			};
+			EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(biquadraticEft, 9, biquadraticNodeIdentifiers));
+			EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(bilinearEft, 4, bilinearNodeIdentifiers));
+		}
+	}
+
+	fm.endChange();
+}
+
+void checkVariableNodeVersionsWithTime2d(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	const int elementCount1 = 2;
+	const int elementCount2 = 1;
+	const int nodeCount1 = elementCount1*2 + 1;
+	const int nodeCount2 = elementCount2*2 + 1;
+	const double tolerance = 1.0E-6;
+
+	EXPECT_EQ(RESULT_OK, fm.defineAllFaces());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(elementCount1*elementCount2, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ((elementCount1 + 1)*elementCount2 + elementCount1*(elementCount2 + 1), mesh1d.getSize());
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(nodeCount1*nodeCount2, nodeset.getSize());
+
+	FieldNodeValue nodeValue = fm.createFieldNodeValue(coordinates, Node::VALUE_LABEL_VALUE, /*version*/1);
+	EXPECT_TRUE(nodeValue.isValid());
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral area = fm.createFieldMeshIntegral(one, coordinates, mesh2d);
+	EXPECT_TRUE(area.isValid());
+	const int numGaussPoints = 4;
+	EXPECT_EQ(RESULT_OK, area.setNumbersOfPoints(1, &numGaussPoints));
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	Node node15 = nodeset.findNodeByIdentifier(15);
+	EXPECT_TRUE(node15.isValid());
+	EXPECT_EQ(RESULT_OK, cache.setNode(node15));
+	EXPECT_TRUE(coordinates.isDefinedAtLocation(cache));
+	EXPECT_TRUE(coordinates.hasParametersAtLocation(cache));
+	EXPECT_TRUE(nodeValue.isDefinedAtLocation(cache));
+	const double expected_coordinates_node15[3][3] =
+	{
+		{ 20.0, 10.0, 0.0 },
+		{ 22.0, 14.0, -0.93583104521023752 },
+		{ 24.0, 18.0, -1.8716620904204750 }
+	};
+	const double expected_area[3] =
+	{
+		200.0,
+		296.07757780219970,
+		427.23042426514678
+	};
+	double areaOut, coordinatesOut[3];
+	for (int ti = 0; ti < 3; ++ti)
+	{
+		const double time = 0.5*ti;
+		EXPECT_EQ(RESULT_OK, cache.setTime(time));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, nodeValue.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, /*components=all*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, area.evaluateReal(cache, 1, &areaOut));
+		EXPECT_NEAR(expected_area[ti], areaOut, tolerance);
+	}
+
+	Node node12 = nodeset.findNodeByIdentifier(12);
+	EXPECT_TRUE(node12.isValid());
+	EXPECT_EQ(RESULT_OK, cache.setNode(node12));
+	// coordinates has parameters at node 12, but is not defined and
+	// can't be evaluated since not all components exist
+	EXPECT_FALSE(coordinates.isDefinedAtLocation(cache));
+	EXPECT_TRUE(coordinates.hasParametersAtLocation(cache));
+	// nodeValue silently ignores missing components
+	EXPECT_TRUE(nodeValue.isDefinedAtLocation(cache));
+	const double expected_coordinates_node12[5][3] =
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 0.0, 0.0, 0.93583104521023774 },
+		{ 0.0, 0.0, 1.871662090420475 }
+	};
+	for (int ti = 0; ti < 3; ++ti)
+	{
+		const double time = 0.5*ti;
+		EXPECT_EQ(RESULT_OK, cache.setTime(time));
+		EXPECT_EQ(RESULT_ERROR_GENERAL, coordinates.evaluateReal(cache, 3, coordinatesOut));
+		EXPECT_EQ(RESULT_OK, nodeValue.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node12[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_WARNING_PART_DONE, coordinates.getNodeParameters(cache, /*components=all*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node12[ti][c], coordinatesOut[c], tolerance);
+		}
+	}
+}
+
+}
+
+/** @return  Result of region write operation */
+int writeNodesAtTime(Region& region, double time, const char *filename)
+{
+	StreaminformationRegion sir = region.createStreaminformationRegion();
+	StreamresourceFile srf = sir.createStreamresourceFile(filename);
+	sir.setResourceAttributeReal(srf, StreaminformationRegion::ATTRIBUTE_TIME, time);
+	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_NODES);
+	return region.write(sir);
+}
+
+// Test a model mixing 2-D bilinear and biquadratic bases for different
+// components of coordinate field, testing evaluation of midside nodes which
+// don't have all components.
+TEST(FieldIO, variableNodeVersionsWithTime2d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	createVariableNodeVersionsWithTime2d(zinc.fm);
+	checkVariableNodeVersionsWithTime2d(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 0.0, FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time0.ex2"));
+	EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 1.0, FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time1.ex2"));
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	StreamresourceFile srf = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_elements.ex2");
+	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_MESH1D | Field::DOMAIN_TYPE_MESH2D);
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	sir = testRegion1.createStreaminformationRegion();
+	StreamresourceFile srf_nodes_time0 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time0.ex2");
+	sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
+	StreamresourceFile srf_nodes_time1 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time1.ex2");
+	sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+	StreamresourceFile srf_elements = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_elements.ex2");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.read(sir));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkVariableNodeVersionsWithTime2d(testFm1);
+}
