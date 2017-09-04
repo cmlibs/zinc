@@ -65,6 +65,12 @@
 	delete[] $2;
 }
 
+%apply (int valuesCount, const int *valuesIn) { (int identifiersCount, const int *identifiersIn) }
+%apply (int valuesCount, const int *valuesIn) { (int indexesCount, const int *indexesIn) }
+%apply (int valuesCount, const int *valuesIn) { (int nodeIndexesCount, const int *nodeIndexesIn) }
+%apply (int valuesCount, const int *valuesIn) { (int radiusSizesCount, const int *radiusSizesIn) }
+%apply (int valuesCount, const int *valuesIn) { (int sourceComponentIndexesCount, const int *sourceComponentIndexesIn) }
+
 // array getter in-handler expects an integer array size only
 // and allocates array to accept output; see argout-handler
 %typemap(in, numinputs=1) (int valuesCount, int *valuesOut)
@@ -126,14 +132,7 @@
 	delete[] $2;
 }
 
-%typemap(in) (int radiusSizesCount, const int *radiusSizesIn) = (int valuesCount, const int *valuesIn);
-%typemap(freearg) (int radiusSizesCount, const int *radiusSizesIn) = (int valuesCount, const int *valuesIn);
-%typemap(in) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
-%typemap(freearg) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
-%typemap(in) (int sourceComponentIndexesCount, const int *sourceComponentIndexesIn) = (int valuesCount, const int *valuesIn);
-%typemap(freearg) (int sourceComponentIndexesCount, const int *sourceComponentIndexesIn) = (int valuesCount, const int *valuesIn);
-%typemap(in) (int identifiersCount, const int *identifiersIn) = (int valuesCount, const int *valuesIn);
-%typemap(freearg) (int identifiersCount, const int *identifiersIn) = (int valuesCount, const int *valuesIn);
+%apply (int valuesCount, int *valuesOut) { (int indexesCount, int *indexesOut)};
 
 // ignore int *valuesOut3 on input; it's an output argument only
 %typemap(in, numinputs=0) int *valuesOut3

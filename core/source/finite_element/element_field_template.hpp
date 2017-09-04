@@ -370,13 +370,13 @@ public:
 
 	/** @param startIndex  Set to 1 to offset to external indexes which start at 1
 	  * @return  The actual number of scaling indexes for term, or -1 on error. */
-	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex = 0) const;
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexesOut, int startIndex = 0) const;
 
 	/** Set scaling of the function term by the product of scale factors at the
 	  * given local scale factor indexes. Only valid in node mapping mode.
 	  * Must have set positive number of local scale factors.
 	  * @param startIndex  Set to 1 to offset from external indexes which start at 1 */
-	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex = 0);
+	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexesIn, int startIndex = 0);
 
 	/** Remap local node indexes to map extNodeIndexes when sorted from lowest to highest.
 	  * @param extNodeIndexes  Array of unique, non-negative indexes for current EFT local indexes.
@@ -611,15 +611,15 @@ public:
 		return this->impl->setScaleFactorIdentifier(localScaleFactorIndex - 1, identifier);
 	}
 
-	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexesOut) const
 	{
-		return this->impl->getTermScaling(functionNumber - 1, term - 1, indexesCount, indexes, /*startIndex*/1);
+		return this->impl->getTermScaling(functionNumber - 1, term - 1, indexesCount, indexesOut, /*startIndex*/1);
 	}
 
-	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes)
+	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexesIn)
 	{
 		this->copyOnWrite();
-		return this->impl->setTermScaling(functionNumber - 1, term - 1, indexesCount, indexes, /*startIndex*/1);
+		return this->impl->setTermScaling(functionNumber - 1, term - 1, indexesCount, indexesIn, /*startIndex*/1);
 	}
 
 	int sortNodeIndexes(std::vector<int>& extNodeIndexes)

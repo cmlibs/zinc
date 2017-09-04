@@ -176,14 +176,14 @@ public:
 			localNodeIndex, static_cast<cmzn_node_value_label>(nodeValueLabel), version);
 	}
 
-	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexes) const
+	int getTermScaling(int functionNumber, int term, int indexesCount, int *indexesOut) const
 	{
-		return cmzn_elementfieldtemplate_get_term_scaling(this->id, functionNumber, term, indexesCount, indexes);
+		return cmzn_elementfieldtemplate_get_term_scaling(this->id, functionNumber, term, indexesCount, indexesOut);
 	}
 
-	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes)
+	int setTermScaling(int functionNumber, int term, int indexesCount, const int *indexesIn)
 	{
-		return cmzn_elementfieldtemplate_set_term_scaling(this->id, functionNumber, term, indexesCount, indexes);
+		return cmzn_elementfieldtemplate_set_term_scaling(this->id, functionNumber, term, indexesCount, indexesIn);
 	}
 
 	bool validate()

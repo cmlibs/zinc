@@ -311,13 +311,13 @@ ZINC_API int cmzn_elementfieldtemplate_set_term_node_parameter(
  * @param term  The term number, from 1 to function number of terms.
  * @param indexesCount  The size of the indexes array; can be more or less than
  * the number of indexes in use.
- * @param indexes  Array to store indexesCount indexes. Can be NULL if
+ * @param indexesOut  Array to store indexesCount indexes. Can be NULL if
  * indexesCount is zero.
  * @return  The actual number of scaling indexes >= 0 for term, or -1 on error.
  */
 ZINC_API int cmzn_elementfieldtemplate_get_term_scaling(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
-	int term, int indexesCount, int *indexes);
+	int term, int indexesCount, int *indexesOut);
 
 /**
  * Set scaling of the function term by the product of scale factors at the
@@ -330,13 +330,13 @@ ZINC_API int cmzn_elementfieldtemplate_get_term_scaling(
  * @param term  The term number, from 1 to function number of terms.
  * @param indexesCount  The size of the indexes array; can be more or less than
  * the number of indexes in use.
- * @param indexes  Array of indexesCount indexes, each from 1 to number of
+ * @param indexesIn  Array of indexesCount indexes, each from 1 to number of
  * local scale factors. Can be NULL if indexesCount is zero.
  * @return  Result OK on success, otherwise an error code.
  */
 ZINC_API int cmzn_elementfieldtemplate_set_term_scaling(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
-	int term, int indexesCount, const int *indexes);
+	int term, int indexesCount, const int *indexesIn);
 
 /**
  * Query whether element field template passes validation. Failure typically
