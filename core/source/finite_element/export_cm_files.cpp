@@ -965,7 +965,7 @@ static int write_cm_FE_element(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
 	int return_code;
-	if (element && data)
+	if (element && element->getMesh() && data)
 	{
 		return_code = 1;
 		FE_mesh *mesh = element->getMesh();

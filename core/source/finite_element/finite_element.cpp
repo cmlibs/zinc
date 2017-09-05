@@ -16015,6 +16015,11 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 	if (!FE_element_shape_is_line(element_shape))
 		return true; // not implemented for these shapes, or nothing to do
 	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Invalid element");
+		return false;
+	}
 	FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
 	{
