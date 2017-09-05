@@ -473,9 +473,12 @@ int merge_FE_node(cmzn_node *destination, cmzn_node *source);
  * returned structure accesses the supplied element. It is assumed this is
  * only used when creating new faces, and the face should be set as soon as
  * created.
+ * @param result  Result OK on success, otherwise ERROR_NOT_FOUND if
+ * nodes not obtainable, otherwise any other error.
+ * @return  On success, newly created sequence.
  */
 struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
-	struct FE_element *element, int face_number = -1);
+	int &result, struct FE_element *element, int face_number = -1);
 
 int DESTROY(FE_element_type_node_sequence)(
 	struct FE_element_type_node_sequence **element_type_node_sequence_address);

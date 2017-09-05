@@ -57,7 +57,7 @@ class FE_element_field_template
 
 	friend int global_to_element_map_nodes(FE_field *field, int componentNumber,
 		const FE_element_field_template *eft, cmzn_element *element,
-		DsLabelIndex *&basisNodeIndexes);
+		int &basisNodeCount, DsLabelIndex *&basisNodeIndexes);
 
 private:
 

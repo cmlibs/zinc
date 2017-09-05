@@ -3854,10 +3854,20 @@ cmzn_element *EXReader::readElement()
 				cmzn_element::deaccess(element);
 				return 0;
 			}
-			cmzn_node *node = this->nodeset->get_or_create_FE_node_with_identifier(nodeIdentifier);
-			if (!node)
+			cmzn_node *node = 0;
+			if (nodeIdentifier >= 0)
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Failed to get or create node with identifier %d.  %s", nodeIdentifier, this->getFileLocation());
+				node = this->nodeset->get_or_create_FE_node_with_identifier(nodeIdentifier);
+				if (!node)
+				{
+					display_message(ERROR_MESSAGE, "EX Reader.  Failed to get or create node with identifier %d.  %s", nodeIdentifier, this->getFileLocation());
+					cmzn_element::deaccess(element);
+					return 0;
+				}
+			}
+			else if (nodeIdentifier < -1)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Invalid node identifier %d.  %s", nodeIdentifier, this->getFileLocation());
 				cmzn_element::deaccess(element);
 				return 0;
 			}
@@ -3928,11 +3938,20 @@ cmzn_element *EXReader::readElement()
 					cmzn_element::deaccess(element);
 					return 0;
 				}
-				if (CMZN_OK != meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors))
+				const int result = meshEftData->setElementScaleFactors(element->getIndex(), scaleFactors);
+				if (CMZN_OK != result)
 				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element scale factors.  %s", this->getFileLocation());
-					cmzn_element::deaccess(element);
-					return 0;
+					if (CMZN_ERROR_NOT_FOUND == result)
+					{
+						display_message(WARNING_MESSAGE, "EX Reader.  Can't set element scale factors, "
+							"likely reason: using node type scale factors with missing nodes.  %s", this->getFileLocation());
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element scale factors.  %s", this->getFileLocation());
+						cmzn_element::deaccess(element);
+						return 0;
+					}
 				}
 			}
 		}

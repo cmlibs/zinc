@@ -626,11 +626,12 @@ int FE_mesh_element_field_template_data::getElementScaleFactor(DsLabelIndex elem
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
 		return CMZN_ERROR_ARGUMENT;
-	const DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(elementIndex);
+	int result = CMZN_OK;
+	const DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Element has no scale factors");
-		return CMZN_ERROR_NOT_FOUND;
+		return result;
 	}
 	value = mesh->getScaleFactor(scaleFactorIndexes[localScaleFactorIndex]);
 	return CMZN_OK;
@@ -643,11 +644,12 @@ int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elem
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
 		return CMZN_ERROR_ARGUMENT;
-	DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(elementIndex);
+	int result = CMZN_OK;
+	DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Element has no scale factors");
-		return CMZN_ERROR_NOT_FOUND;
+		return result;
 	}
 	mesh->setScaleFactor(scaleFactorIndexes[localScaleFactorIndex], value);
 	// conservatively mark all fields as changed as they may share scale factors
@@ -665,11 +667,12 @@ int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex ele
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
 		return CMZN_ERROR_ARGUMENT;
-	DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(elementIndex);
+	int result = CMZN_OK;
+	const DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element has no scale factors");
-		return CMZN_ERROR_NOT_FOUND;
+		return result;
 	}
 	const int count = this->eft->getNumberOfLocalScaleFactors();
 	for (int i = 0; i < count; ++i)
@@ -686,11 +689,12 @@ int FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex ele
 	FE_mesh *mesh = this->eft->getMesh();
 	if (!mesh)
 		return CMZN_ERROR_ARGUMENT;
-	DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(elementIndex);
+	int result = CMZN_OK;
+	DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Element has no scale factors");
-		return CMZN_ERROR_NOT_FOUND;
+		return result;
 	}
 	const int count = this->eft->getNumberOfLocalScaleFactors();
 	for (int i = 0; i < count; ++i)
@@ -825,21 +829,23 @@ bool FE_mesh_element_field_template_data::mergeElementVaryingData(const FE_mesh_
 			const DsLabelIndex *sourceScaleFactorIndexes = source.localToGlobalScaleFactors.getArray(sourceElementIndex);
 			if (!sourceScaleFactorIndexes)
 			{
-				display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
+				display_message(WARNING_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
 					"Missing source local scale factors for element %d", elementIdentifier);
-				return false;
 			}
-			std::vector<FE_value> scaleFactorsVector(this->localScaleFactorCount);
-			FE_value *scaleFactors = scaleFactorsVector.data();
-			for (int s = 0; s < this->localScaleFactorCount; ++s)
+			else
 			{
-				scaleFactors[s] = sourceMesh->getScaleFactor(sourceScaleFactorIndexes[s]);
-			}
-			if (CMZN_OK != this->setElementScaleFactors(targetElementIndex, scaleFactors))
-			{
-				display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
-					"Failed to set scale factors for element %d", elementIdentifier);
-				return false;
+				std::vector<FE_value> scaleFactorsVector(this->localScaleFactorCount);
+				FE_value *scaleFactors = scaleFactorsVector.data();
+				for (int s = 0; s < this->localScaleFactorCount; ++s)
+				{
+					scaleFactors[s] = sourceMesh->getScaleFactor(sourceScaleFactorIndexes[s]);
+				}
+				if (CMZN_OK != this->setElementScaleFactors(targetElementIndex, scaleFactors))
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::mergeElementVaryingData.  "
+						"Failed to set scale factors for element %d", elementIdentifier);
+					return false;
+				}
 			}
 		}
 	}
@@ -851,11 +857,12 @@ bool FE_mesh_element_field_template_data::mergeElementVaryingData(const FE_mesh_
 	return true;
 }
 
-DsLabelIndex *FE_mesh_element_field_template_data::createElementScaleFactorIndexes(DsLabelIndex elementIndex)
+DsLabelIndex *FE_mesh_element_field_template_data::createElementScaleFactorIndexes(int &result, DsLabelIndex elementIndex)
 {
 	if ((this->localScaleFactorCount == 0) || (elementIndex < 0))
 	{
 		display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::createElementScaleFactorIndexes.  Invalid argument(s)");
+		result = CMZN_ERROR_ARGUMENT;
 		return 0;
 	}
 	const DsLabelIndex *nodeIndexes = 0;
@@ -866,6 +873,7 @@ DsLabelIndex *FE_mesh_element_field_template_data::createElementScaleFactorIndex
 		{
 			display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::createElementScaleFactorIndexes.  "
 				"Can't create node type scale factors before local nodes are set");
+			result = CMZN_ERROR_NOT_FOUND;
 			return 0;
 		}
 	}
@@ -886,13 +894,15 @@ DsLabelIndex *FE_mesh_element_field_template_data::createElementScaleFactorIndex
 			scaleFactorIndexes[s] = mesh->getOrCreateScaleFactorIndex(scaleFactorType, objectIndex, this->eft->getScaleFactorIdentifier(s));
 			if (scaleFactorIndexes[s] < 0)
 			{
+				result = (isScaleFactorTypeNode(scaleFactorType) && (objectIndex < 0)) ? CMZN_ERROR_NOT_FOUND : CMZN_ERROR_GENERAL;
 				this->destroyElementScaleFactorIndexes(elementIndex);
 				display_message(ERROR_MESSAGE, "FE_mesh_element_field_template_data::createElementScaleFactorIndexes.  "
-					"Failed to create scale factor%s", (nodeIndexes) ? ", probably because local nodes have not been set yet" : ".");
+					"Failed to create scale factor%s", (result == CMZN_ERROR_NOT_FOUND) ? ", because local node not set for node-based scale factor" : ".");
 				return 0;
 			}
 		}
 	}
+	result = CMZN_OK;
 	return scaleFactorIndexes;
 }
 
@@ -2446,18 +2456,21 @@ DsLabelIndex FE_mesh::getElementFirstNeighbour(DsLabelIndex elementIndex, int fa
  * @param faceIndex  On successful return, set to new faceIndex or
  * DS_LABEL_INDEX_INVALID if no face needed (for collapsed element face).
  * @return  Index of new face or DS_LABEL_INDEX_INVALID if failed.
- * @return  CMZN_OK on success, any other error on failure.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no nodes available
+ * for defining faces, otherwise any other error.
  */
 int FE_mesh::findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex)
 {
 	faceIndex = DS_LABEL_INDEX_INVALID;
 	cmzn_element *parentElement = this->parentMesh->getElement(parentIndex);
-	FE_element_type_node_sequence *element_type_node_sequence =
-		CREATE(FE_element_type_node_sequence)(parentElement, faceNumber);
-	if (!element_type_node_sequence)
-		return CMZN_ERROR_GENERAL;
-
 	int return_code = CMZN_OK;
+	FE_element_type_node_sequence *element_type_node_sequence =
+		CREATE(FE_element_type_node_sequence)(return_code, parentElement, faceNumber);
+	if (!element_type_node_sequence)
+	{
+		return return_code;
+	}
+
 	ACCESS(FE_element_type_node_sequence)(element_type_node_sequence);
 	if (!FE_element_type_node_sequence_is_collapsed(element_type_node_sequence))
 	{
@@ -2541,7 +2554,13 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
 		{
 			return_code = this->faceMesh->findOrCreateFace(elementIndex, faceNumber, faceIndex);
 			if (CMZN_OK != return_code)
+			{
+				if (CMZN_ERROR_NOT_FOUND == return_code)
+				{
+					continue;
+				}
 				break;
+			}
 			if (faceIndex >= 0)
 				++newFaceCount;
 		}
@@ -2550,7 +2569,9 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
 			// recursively add faces of faces, whether existing or new
 			return_code = this->faceMesh->defineElementFaces(faceIndex);
 			if (CMZN_OK != return_code)
+			{
 				break;
+			}
 		}
 	}
 	if (newFaceCount)
@@ -2562,8 +2583,10 @@ int FE_mesh::defineElementFaces(DsLabelIndex elementIndex)
 			fe_region->update();
 		}
 	}
-	if (CMZN_OK != return_code)
+	if ((CMZN_OK != return_code) && (CMZN_ERROR_NOT_FOUND != return_code))
+	{
 		display_message(ERROR_MESSAGE, "FE_mesh::defineElementFaces.  Failed");
+	}
 	return (return_code);
 }
 
@@ -2594,13 +2617,17 @@ int FE_mesh::begin_define_faces()
 		FE_element_type_node_sequence *element_type_node_sequence;
 		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 		{
-			element_type_node_sequence = CREATE(FE_element_type_node_sequence)(element);
+			element_type_node_sequence = CREATE(FE_element_type_node_sequence)(return_code, element);
 			if (!element_type_node_sequence)
 			{
+				if (CMZN_ERROR_NOT_FOUND == return_code)
+				{
+					return_code = CMZN_OK;
+					continue;
+				}
 				display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  "
 					"Could not create FE_element_type_node_sequence for %d-D element %d",
 					this->dimension, get_FE_element_identifier(element));
-				return_code = CMZN_ERROR_GENERAL;
 				break;
 			}
 			if (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
@@ -2648,11 +2675,26 @@ int FE_mesh::define_faces()
 		return CMZN_ERROR_GENERAL;
 	int return_code = CMZN_OK;
 	DsLabelIndex elementIndex;
-	while (((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID) && (CMZN_OK == return_code))
+	int successCount = 0;
+	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
-		return_code = this->defineElementFaces(elementIndex);
+		const int result = this->defineElementFaces(elementIndex);
+		if (result != CMZN_OK)
+		{
+			return_code = result;
+			if (result == CMZN_ERROR_NOT_FOUND)
+			{
+				continue;
+			}
+			break;
+		}
+		++successCount;
 	}
 	cmzn::Deaccess(iter);
+	if ((return_code == CMZN_ERROR_NOT_FOUND) && successCount)
+	{
+		return_code = CMZN_WARNING_PART_DONE;
+	}
 	return return_code;
 }
 

@@ -1375,3 +1375,106 @@ TEST(FieldIO, variableNodeVersionsWithTime2d)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	checkVariableNodeVersionsWithTime2d(testFm1);
 }
+
+namespace {
+
+void createPartElementsModel(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	Elementbasis trilinearBasis = fm.createElementbasis(3, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(trilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(trilinearBasis);
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(8));
+	EXPECT_TRUE(eft.isValid());
+	for (int f = 1; f <= 8; ++f)
+	{
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(f, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(f, 1));
+		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &f));
+	}
+
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	int nodeIdentifier = 1;
+	for (int i = 0; i < 8; ++i)
+	{
+		const double x[3] = { static_cast<double>(i%2), static_cast<double>(i%4/2), static_cast<double>(i/4) };
+		Node node = nodes.createNode(nodeIdentifier++, nodetemplate);
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, x));
+	}
+
+	const int nodeIdentifiers[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+	const int nodeIdentifiersError[8] = { 1, 2, 3, 4, 5, 6, 17, 8 };
+	const double scaleFactors[8] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+	Element element1 = mesh3d.createElement(1, elementtemplate);
+	// following fails because node 17 doesn't exist, leaving element without nodes
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, element1.setNodesByIdentifier(eft, 8, nodeIdentifiersError));
+	// setScaleFactors fails because nodes have not been set with node-based scale factors
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, element1.setScaleFactors(eft, 8, scaleFactors));
+
+	Element element2 = mesh3d.createElement(2, elementtemplate);
+	EXPECT_EQ(RESULT_OK, element2.setNodesByIdentifier(eft, 8, nodeIdentifiers));
+	EXPECT_EQ(RESULT_OK, element2.setScaleFactors(eft, 8, scaleFactors));
+
+	EXPECT_EQ(RESULT_WARNING_PART_DONE, fm.defineAllFaces());
+}
+
+void checkPartElementsModel(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(2, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(6, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(12, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+}
+
+}
+
+// test can write and read elements with local nodes and scale factors not yet set
+TEST(FieldIO, partElements)
+{
+	ZincTestSetupCpp zinc;
+
+	createPartElementsModel(zinc.fm);
+	checkPartElementsModel(zinc.fm);
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/part_elements.ex2"));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/part_elements.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkPartElementsModel(testFm1);
+}

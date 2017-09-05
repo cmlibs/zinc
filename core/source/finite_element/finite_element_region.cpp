@@ -938,7 +938,7 @@ int FE_region_end_define_faces(struct FE_region *fe_region)
 
 int FE_region_define_faces(struct FE_region *fe_region)
 {
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	if (fe_region)
 	{
 		if (FE_region_get_highest_dimension(fe_region) > 1)
@@ -947,9 +947,14 @@ int FE_region_define_faces(struct FE_region *fe_region)
 			FE_region_begin_define_faces(fe_region);
 			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 2 <= dimension; --dimension)
 			{
-				if (CMZN_OK != fe_region->meshes[dimension - 1]->define_faces())
+				const int result = fe_region->meshes[dimension - 1]->define_faces();
+				if (result != CMZN_OK)
 				{
-					return_code = 0;
+					return_code = result;
+					if (result == CMZN_WARNING_PART_DONE)
+					{
+						continue;
+					}
 					break;
 				}
 			}
@@ -960,7 +965,7 @@ int FE_region_define_faces(struct FE_region *fe_region)
 	else
 	{
 		display_message(ERROR_MESSAGE, "FE_region_define_faces.  Invalid argument(s)");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return return_code;
 }

@@ -732,6 +732,8 @@ derivatives.
  * @param field  The field to calculate nodes for, or pass NULL to calculate
  * nodes for the first coordinate field defined at element, provided it can
  * be inherited from the optional top_level_element.
+ * @return  Result OK on success, ERROR_NOT_FOUND if element has no field or
+ * no nodes so cannot be found, otherwise any other error.
  */
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	int face_number, struct FE_field *field,

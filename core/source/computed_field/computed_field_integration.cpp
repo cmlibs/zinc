@@ -695,10 +695,10 @@ time is supplied in the workingCache.
 		shape = get_FE_element_shape(mapping_item->element);
 		if (node_mapping
 			&& FE_element_shape_is_line(shape)
-			&& calculate_FE_element_field_nodes(mapping_item->element,
+			&& (CMZN_OK == calculate_FE_element_field_nodes(mapping_item->element,
 				/*inherit_face_number*/-1,
 				fe_field, &number_of_element_field_nodes,
-				&element_field_nodes_array, mapping_item->element))
+				&element_field_nodes_array, mapping_item->element)))
 		{
 			/* Make assumptions about the distribution of the nodes */
 			if (number_of_element_field_nodes == pow(2.0, element_dimension))
