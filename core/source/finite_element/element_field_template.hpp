@@ -432,6 +432,10 @@ private:
 		}
 	}
 
+	/** Tries to substitute implementation with equivalent merged EFT.
+	  * @return  True if merged EFT is substituted, otherwise false if no match found.*/
+	bool findMergedInMesh();
+
 public:
 
 	static cmzn_elementfieldtemplate *create(FE_mesh *meshIn, FE_basis *basisIn)
@@ -490,9 +494,13 @@ public:
 		return this->impl->setParameterMappingMode(mode);
 	}
 
-	/** get handle to implementation, needed for internal use */
+	/** get handle to implementation, first trying to substitute merged equivalent */
 	FE_element_field_template *get_FE_element_field_template()
 	{
+		if (!this->impl->isMergedInMesh())
+		{
+			this->findMergedInMesh();
+		}
 		return this->impl;
 	}
 

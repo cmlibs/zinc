@@ -1964,3 +1964,101 @@ TEST(ZincMesh, destroyElement)
 	summaryNodeChanges = nodesetchanges.getSummaryNodeChangeFlags();
 	EXPECT_EQ(Node::CHANGE_FLAG_REMOVE, summaryNodeChanges);
 }
+
+namespace {
+
+Elementfieldtemplate makeScaledTrilinearEft(Fieldmodule& fm)
+{
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	Elementbasis trilinearBasis = fm.createElementbasis(3, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(trilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(trilinearBasis);
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(8));
+	EXPECT_TRUE(eft.isValid());
+	for (int f = 1; f <= 8; ++f)
+	{
+		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &f));
+	}
+	return eft;
+}
+
+}
+
+// test that when a newly created Elementfieldtemplate is used to get/set element nodes or
+// scale factors, it is automatically merged to get matching internal EFT, if it exists
+TEST(ZincElementfieldtemplate, mergeExternalElementfieldtemplate)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement coordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Elementfieldtemplate eft = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_TRUE(eft.isValid());
+
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	int nodeIdentifier = 1;
+	for (int i = 0; i < 8; ++i)
+	{
+		const double x[3] = { static_cast<double>(i%2), static_cast<double>(i%4/2), static_cast<double>(i/4) };
+		Node node = nodes.createNode(nodeIdentifier++, nodetemplate);
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, x));
+	}
+
+	const int nodeIdentifiers[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+	const double scaleFactors[8] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 };
+
+	Element element1 = mesh3d.createElement(1, elementtemplate);
+	EXPECT_EQ(RESULT_OK, element1.setNodesByIdentifier(eft, 8, nodeIdentifiers));
+	EXPECT_EQ(RESULT_OK, element1.setScaleFactors(eft, 8, scaleFactors));
+
+	// test newly created element field template is properly merged
+	Node node1 = element1.getNode(eft, 1);
+	EXPECT_TRUE(node1.isValid());
+	EXPECT_EQ(RESULT_OK, element1.setNode(eft, 1, node1));
+	Elementfieldtemplate efta = makeScaledTrilinearEft(zinc.fm);
+	Node node1a = element1.getNode(efta, 1);
+	EXPECT_EQ(node1, node1a);
+	Elementfieldtemplate eftb = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.setNode(eftb, 1, node1));
+	Elementfieldtemplate eftc = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.setNodesByIdentifier(eftc, 8, nodeIdentifiers));
+
+	double scaleFactorOut, scaleFactorsOut[8];
+	Elementfieldtemplate eftd = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.getScaleFactor(eftd, 1, &scaleFactorOut));
+	EXPECT_DOUBLE_EQ(1.0, scaleFactorOut);
+	Elementfieldtemplate efte = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.setScaleFactor(efte, 1, scaleFactors[0]));
+	Elementfieldtemplate eftf = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.getScaleFactors(eftf, 8, scaleFactorsOut));
+	Elementfieldtemplate eftg = makeScaledTrilinearEft(zinc.fm);
+	EXPECT_EQ(RESULT_OK, element1.setScaleFactors(eftg, 8, scaleFactors));
+	for (int s = 0; s < 8; ++s)
+	{
+		EXPECT_DOUBLE_EQ(scaleFactors[s], scaleFactorsOut[s]);
+	}
+}

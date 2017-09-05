@@ -1326,6 +1326,32 @@ int FE_mesh::removeElementfieldtemplate(FE_element_field_template *eft)
 
 /**
  * @return  On success accessed element field template which is "in-use" by
+ * the mesh, either an existing in-use template matching eftIn or, eftIn.
+ * Return 0 if eftIn does not match any EFT in use.
+ * @param  eftIn  The element field template to merge. Need not be locked, but must be for this mesh.
+ */
+FE_element_field_template *FE_mesh::findMergedElementfieldtemplate(FE_element_field_template *eftIn)
+{
+	if (!eftIn)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::findMergedElementfieldtemplate.  Missing template");
+		return 0;
+	}
+	// try to find a match
+	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
+	{
+		if (this->elementFieldTemplateData[i])
+		{
+			FE_element_field_template *eft = this->elementFieldTemplateData[i]->getElementfieldtemplate();
+			if (eft->matches(*eftIn))
+				return eft->access();
+		}
+	}
+	return 0;
+}
+
+/**
+ * @return  On success accessed element field template which is "in-use" by
  * the mesh, either an existing in-use template matching eftIn or, eftIn
  * merged for internal use. On failure returns 0.
  * @param  eftIn  The element field template to merge. Must be locked and for this mesh.

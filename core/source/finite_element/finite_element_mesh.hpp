@@ -841,6 +841,8 @@ public:
 		return 0;
 	}
 
+	FE_element_field_template *findMergedElementfieldtemplate(FE_element_field_template *eftIn);
+
 	FE_element_field_template *mergeElementfieldtemplate(FE_element_field_template *eftIn);
 
 	FE_mesh_field_template *createBlankMeshFieldTemplate();

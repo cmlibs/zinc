@@ -940,6 +940,22 @@ bool FE_element_field_template::validateAndLock()
 	return valid;
 }
 
+bool cmzn_elementfieldtemplate::findMergedInMesh()
+{
+	if (!this->impl->getMesh())
+	{
+		return false;
+	}
+	FE_element_field_template *newEft = this->impl->getMesh()->findMergedElementfieldtemplate(this->impl);
+	if (!newEft)
+	{
+		return false;
+	}
+	FE_element_field_template::deaccess(this->impl);
+	this->impl = newEft;
+	return true;
+}
+
 cmzn_elementbasis *cmzn_elementfieldtemplate::getElementbasis() const
 {
 	return cmzn_elementbasis::create(this->getMesh()->get_FE_region(), this->getBasis());
