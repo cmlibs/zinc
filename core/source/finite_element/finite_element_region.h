@@ -405,6 +405,8 @@ int FE_region_end_define_faces(struct FE_region *fe_region);
  * Ensures for elements of every dimension > 1 that there are face and line
  * elements of lower dimension in the region.
  * Requires a coordinate field to be defined to work.
+ * @return  Result OK on success, WARNING_PART_DONE if failed for some
+ * elements due to absent nodes, otherwise any other error.
  */
 int FE_region_define_faces(struct FE_region *fe_region);
 

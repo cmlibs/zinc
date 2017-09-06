@@ -728,32 +728,32 @@ int FE_element_field_template::getTermScaleFactorIndex(int functionNumber, int t
 	return this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + termScaleFactorIndex];
 }
 
-int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexes, int startIndex) const
+int FE_element_field_template::getTermScaling(int functionNumber, int term, int indexesCount, int *indexesOut, int startIndex) const
 {
 	if ((CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term))
-		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexes)))
+		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexesOut)))
 		return -1;
 	const int termOffset = this->termOffsets[functionNumber] + term;
 	const int termScaleFactorCount = this->termScaleFactorCounts[termOffset];
 	const int termLocalScaleFactorIndexesOffset = this->termLocalScaleFactorIndexesOffsets[termOffset];
 	const int copyCount = (indexesCount < termScaleFactorCount) ? indexesCount : termScaleFactorCount;
 	for (int i = 0; i < copyCount; ++i)
-		indexes[i] = this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] + startIndex;
+		indexesOut[i] = this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] + startIndex;
 	return termScaleFactorCount;
 }
 
-int FE_element_field_template::setTermScaling(int functionNumber, int term, int indexesCount, const int *indexes, int startIndex)
+int FE_element_field_template::setTermScaling(int functionNumber, int term, int indexesCount, const int *indexesIn, int startIndex)
 {
 	if (this->locked
 		|| (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE != this->mappingMode)
 		|| (0 == this->numberOfLocalScaleFactors)
 		|| (!this->validTerm(functionNumber, term))
-		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexes)))
+		|| (indexesCount < 0) || ((0 < indexesCount) && (!indexesIn)))
 		return CMZN_ERROR_ARGUMENT;
 	for (int i = 0; i < indexesCount; ++i)
-		if ((indexes[i] < startIndex) || (indexes[i] >= (this->numberOfLocalScaleFactors + startIndex)))
+		if ((indexesIn[i] < startIndex) || (indexesIn[i] >= (this->numberOfLocalScaleFactors + startIndex)))
 			return CMZN_ERROR_ARGUMENT;
 	const int termOffset = this->termOffsets[functionNumber] + term;
 	const int oldTermScaleFactorCount = this->termScaleFactorCounts[termOffset];
@@ -772,7 +772,7 @@ int FE_element_field_template::setTermScaling(int functionNumber, int term, int 
 			this->termLocalScaleFactorIndexesOffsets[tt] += deltaScaleFactorCount;
 	}
 	for (int i = 0; i < indexesCount; ++i)
-		this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] = indexes[i] - startIndex;
+		this->localScaleFactorIndexes[termLocalScaleFactorIndexesOffset + i] = indexesIn[i] - startIndex;
 	return CMZN_OK;
 }
 
@@ -938,6 +938,22 @@ bool FE_element_field_template::validateAndLock()
 		this->scaleFactorLocalNodeIndexes = 0;
 	}
 	return valid;
+}
+
+bool cmzn_elementfieldtemplate::findMergedInMesh()
+{
+	if (!this->impl->getMesh())
+	{
+		return false;
+	}
+	FE_element_field_template *newEft = this->impl->getMesh()->findMergedElementfieldtemplate(this->impl);
+	if (!newEft)
+	{
+		return false;
+	}
+	FE_element_field_template::deaccess(this->impl);
+	this->impl = newEft;
+	return true;
 }
 
 cmzn_elementbasis *cmzn_elementfieldtemplate::getElementbasis() const
@@ -1118,19 +1134,19 @@ int cmzn_elementfieldtemplate_set_term_node_parameter(
 
 int cmzn_elementfieldtemplate_get_term_scaling(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
-	int term, int indexesCount, int *indexes)
+	int term, int indexesCount, int *indexesOut)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->getTermScaling(functionNumber, term, indexesCount, indexes);
+		return elementfieldtemplate->getTermScaling(functionNumber, term, indexesCount, indexesOut);
 	return -1;
 }
 
 int cmzn_elementfieldtemplate_set_term_scaling(
 	cmzn_elementfieldtemplate_id elementfieldtemplate, int functionNumber,
-	int term, int indexesCount, const int *indexes)
+	int term, int indexesCount, const int *indexesIn)
 {
 	if (elementfieldtemplate)
-		return elementfieldtemplate->setTermScaling(functionNumber, term, indexesCount, indexes);
+		return elementfieldtemplate->setTermScaling(functionNumber, term, indexesCount, indexesIn);
 	return CMZN_ERROR_ARGUMENT;
 }
 

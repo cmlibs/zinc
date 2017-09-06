@@ -59,7 +59,7 @@ class ElementNodePacking
 		int offset;  // actually constant, but can't make const to use default assignment and copy constructor
 		int count;  // actually constant, but can't make const to use default assignment and copy constructor
 		std::vector<const FE_element_field_template *> efts;
-		const DsLabelIndex *nodeIndexes;
+		const DsLabelIndex *nodeIndexes;  // can be NULL if no eft nodes set yet
 
 		EftNodes(int offsetIn, const FE_element_field_template *eft, const DsLabelIndex *nodeIndexesIn) :
 			offset(offsetIn),
@@ -74,7 +74,7 @@ class ElementNodePacking
 
 public:
 
-	/** Assumes eft has nodes, and arguments are valid. Don't call if not! */
+	/** @param  nodeIndexesIn  The node indexes for eft; can be NULL if not set */
 	void packEftNodes(const FE_element_field_template *eft, const DsLabelIndex *nodeIndexesIn)
 	{
 		const size_t eftNodesCount = this->eftNodes.size();
@@ -90,7 +90,8 @@ public:
 					if (thisEftNodes.efts[e] == eft)
 						return;  // already packed this EFT's nodes
 				}
-				if (0 == memcmp(thisEftNodes.nodeIndexes, nodeIndexesIn, sizeof(DsLabelIndex)*thisEftNodes.count))
+				if ((nodeIndexesIn) && (thisEftNodes.nodeIndexes)
+					&& (0 == memcmp(thisEftNodes.nodeIndexes, nodeIndexesIn, sizeof(DsLabelIndex)*thisEftNodes.count)))
 				{
 					thisEftNodes.efts.push_back(eft);
 					return;
@@ -918,9 +919,7 @@ ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
 					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 					if (!nodeIndexes)
 					{
-						display_message(ERROR_MESSAGE, "EXWriter::createElementNodePacking.  Missing node indexes");
-						delete elementNodePacking;
-						return 0;
+						display_message(WARNING_MESSAGE, "EXWriter::createElementNodePacking.  Missing node indexes");
 					}
 					elementNodePacking->packEftNodes(eft, nodeIndexes);
 				}
@@ -1039,8 +1038,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 					if (!nodeIndexes)
 					{
-						display_message(ERROR_MESSAGE, "EXWriter::writeElementHeader.  Missing node indexes");
-						return false;
+						display_message(WARNING_MESSAGE, "EXWriter::writeElementHeader.  Missing node indexes");
 					}
 					this->headerElementNodePacking->packEftNodes(eft, nodeIndexes);
 				}
@@ -1249,10 +1247,22 @@ bool EXWriter::writeElement(cmzn_element *element)
 		while (0 != (eft = this->headerElementNodePacking->getFirstEftAtIndex(index)))
 		{
 			const FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
-			const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 			const int nodeCount = eft->getNumberOfLocalNodes();
-			for (int n = 0; n < nodeCount; ++n)
-				(*this->output_file) << " " << nodeset->getNodeIdentifier(nodeIndexes[n]);
+			const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
+			if (nodeIndexes)
+			{
+				for (int n = 0; n < nodeCount; ++n)
+				{
+					(*this->output_file) << " " << nodeset->getNodeIdentifier(nodeIndexes[n]);
+				}
+			}
+			else
+			{
+				for (int n = 0; n < nodeCount; ++n)
+				{
+					(*this->output_file) << " -1";
+				}
+			}
 			++index;
 		}
 		(*this->output_file) << "\n";
@@ -1268,17 +1278,17 @@ bool EXWriter::writeElement(cmzn_element *element)
 		{
 			const FE_element_field_template *eft = *eftIter;
 			FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
-			const DsLabelIndex *scaleFactorIndexes = meshEftData->getOrCreateElementScaleFactorIndexes(element->getIndex());
+			const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+			int result = CMZN_OK;
+			const DsLabelIndex *scaleFactorIndexes = meshEftData->getOrCreateElementScaleFactorIndexes(result, element->getIndex());
 			if (!scaleFactorIndexes)
 			{
-				display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing scale factors for element %d", element->getIdentifier());
-				return false;
+				display_message(WARNING_MESSAGE, "EXWriter::writeElement.  Missing scale factors for element %d", element->getIdentifier());
 			}
-			const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
 			for (int s = 0; s < scaleFactorCount; ++s)
 			{
 				++scaleFactorNumber;
-				sprintf(tmpString, "%" FE_VALUE_STRING, mesh->getScaleFactor(scaleFactorIndexes[s]));
+				sprintf(tmpString, "%" FE_VALUE_STRING, (scaleFactorIndexes) ? mesh->getScaleFactor(scaleFactorIndexes[s]) : 0.0);
 				(*this->output_file) << " " << tmpString;
 				if ((0 < FE_VALUE_MAX_OUTPUT_COLUMNS)
 					&& (0 == (scaleFactorNumber % FE_VALUE_MAX_OUTPUT_COLUMNS)))

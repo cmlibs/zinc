@@ -413,16 +413,19 @@ public:
 	  * is needed and the respective local node has not been set.
 	  * Discovered existing scale factors keep their current values. New scale factors are set to 0.
 	  * Fails if eft has no local scale factors.
+	  * @param result  Result OK on success, ERROR_NOT_FOUND if cannot create due to absent
+	  * nodes or other data, otherwise any other error.
 	  * @param elementIndex  Label index for element. Not checked.
 	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
-	DsLabelIndex *getOrCreateElementScaleFactorIndexes(DsLabelIndex elementIndex)
+	DsLabelIndex *getOrCreateElementScaleFactorIndexes(int &result, DsLabelIndex elementIndex)
 	{
 		DsLabelIndex *scaleFactorIndexes = this->localToGlobalScaleFactors.getArray(elementIndex);
 		if (scaleFactorIndexes)
 		{
+			result = CMZN_OK;
 			return scaleFactorIndexes;
 		}
-		return this->createElementScaleFactorIndexes(elementIndex);
+		return this->createElementScaleFactorIndexes(result, elementIndex);
 	}
 
 	void incrementMeshfieldtemplateUsageCount(DsLabelIndex elementIndex);
@@ -451,9 +454,11 @@ private:
 	  * and freeing the array. Most common reason for failure is that node-based scale factor
 	  * is needed and the respective local node has not been set.
 	  * Only call if no scale factor indexes array exists.
+	  * @param result  Result OK on success, ERROR_NOT_FOUND if cannot create due to absent
+	  * nodes or other data, otherwise any other error.
 	  * @param elementIndex  Label index for element. Checked to be non-negative.
 	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
-	DsLabelIndex *createElementScaleFactorIndexes(DsLabelIndex elementIndex);
+	DsLabelIndex *createElementScaleFactorIndexes(int &result, DsLabelIndex elementIndex);
 
 	/**  Releases usage counts and maps for element scale factor indexes, and removes array.
 	  * @param elementIndex  Label index for element. Checked to be non-negative. */
@@ -835,6 +840,8 @@ public:
 			return this->elementFieldTemplateData[eft->getIndexInMesh()];
 		return 0;
 	}
+
+	FE_element_field_template *findMergedElementfieldtemplate(FE_element_field_template *eftIn);
 
 	FE_element_field_template *mergeElementfieldtemplate(FE_element_field_template *eftIn);
 

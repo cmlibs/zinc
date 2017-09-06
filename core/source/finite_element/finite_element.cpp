@@ -3788,19 +3788,20 @@ static int compare_FE_element_type_node_sequence_identifier(
 }
 
 struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
-	struct FE_element *element, int face_number)
+	int &result, struct FE_element *element, int face_number)
 {
+	result = CMZN_OK;
 	int i,node_number,*node_numbers,number_of_nodes,placed,j,k;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
 	struct FE_node **nodes_in_element;
 
-	ENTER(CREATE(FE_element_type_node_sequence));
 	if (element)
 	{
 		/* get list of nodes used by default coordinate field in element/face */
-		if (calculate_FE_element_field_nodes(element, face_number,
+		result = calculate_FE_element_field_nodes(element, face_number,
 			(struct FE_field *)NULL, &number_of_nodes, &nodes_in_element,
-			/*top_level_element*/(struct FE_element *)NULL) && (0 < number_of_nodes))
+			/*top_level_element*/(struct FE_element *)NULL);
+		if ((CMZN_OK == result) && (0 < number_of_nodes))
 		{
 			if (ALLOCATE(element_type_node_sequence, struct FE_element_type_node_sequence, 1) &&
 				ALLOCATE(node_numbers, int, number_of_nodes))
@@ -3869,8 +3870,10 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CREATE(FE_element_type_node_sequence).  "
-				"Could not get nodes in element");
+			if (CMZN_ERROR_NOT_FOUND != result)
+			{
+				display_message(ERROR_MESSAGE, "CREATE(FE_element_type_node_sequence).  Failed to get nodes in element");
+			}
 			element_type_node_sequence=(struct FE_element_type_node_sequence *)NULL;
 		}
 	}
@@ -3879,11 +3882,10 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 		display_message(ERROR_MESSAGE,
 			"CREATE(FE_element_type_node_sequence).  Invalid argument(s)");
 		element_type_node_sequence=(struct FE_element_type_node_sequence *)NULL;
+		result = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
-
 	return (element_type_node_sequence);
-} /* CREATE(FE_element_type_node_sequence) */
+}
 
 int DESTROY(FE_element_type_node_sequence)(
 	struct FE_element_type_node_sequence **element_type_node_sequence_address)
@@ -4753,20 +4755,22 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
  * @param eft  Element field template describing parameter mapping and basis.
  * @param element  The element to get values for.
  * @param nodeset  The nodeset owning any node indexes mapped.
+ * @param basisNodeCount  On success, the number of node indexes returned.
  * @param basisNodeIndexes  On successful return, allocated to indexes of nodes.
  * Up to caller to deallocate.
- * @return  Number of nodes calculated or 0 if error.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no nodes found, otherwise
+ * any other error code.
  */
 int global_to_element_map_nodes(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element,
-	DsLabelIndex *&basisNodeIndexes)
+	int &basisNodeCount, DsLabelIndex *&basisNodeIndexes)
 {
 	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
 		display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
 			"Only implemented for node parameter, first found on field %s component %d at element %d.",
 			field->name, componentNumber + 1, element->getIdentifier());
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	}
 	const FE_mesh *mesh = element->getMesh();
 	const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
@@ -4775,15 +4779,17 @@ int global_to_element_map_nodes(FE_field *field, int componentNumber,
 	const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(elementIndex);
 	if (!nodeIndexes)
 	{
-		display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
-			"Missing local-to-global node map for field %s component %d at element %d.",
-			field->name, componentNumber + 1, element->getIdentifier());
-		return 0;
+		//display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
+		//	"Missing local-to-global node map for field %s component %d at element %d.",
+		//	field->name, componentNumber + 1, element->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
 	}
 	const int basisFunctionCount = eft->getNumberOfFunctions();
 	basisNodeIndexes = new DsLabelIndex[basisFunctionCount];
 	if (!basisNodeIndexes)
-		return 0;
+	{
+		return CMZN_ERROR_MEMORY;
+	}
 	int tt = 0; // total term, increments up to eft->totalTermCount
 	for (int f = 0; f < basisFunctionCount; ++f)
 	{
@@ -4798,7 +4804,8 @@ int global_to_element_map_nodes(FE_field *field, int componentNumber,
 			basisNodeIndexes[f] = DS_LABEL_INDEX_INVALID; // no terms = 'zero' parameter
 		}
 	}
-	return basisFunctionCount;
+	basisNodeCount = basisFunctionCount;
+	return CMZN_OK;
 }
 
 static int for_FE_field_at_node_iterator(struct FE_node_field *node_field,
@@ -13840,7 +13847,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 		(element_field_nodes_array_address)))
 	{
 		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Invalid argument(s)");
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	}
 	if (!field)
 	{
@@ -13848,7 +13855,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 		if (!field)
 		{
 			display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  No default coordinate field");
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		}
 	}
 	// retrieve the field element from which this element inherits the field
@@ -13871,22 +13878,22 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 				"calculate_FE_element_field_nodes.  No coordinate fields defined for %d-D element %d",
 				element->getDimension(), element->getIdentifier());
 		}
-		return 0;
+		return CMZN_ERROR_NOT_FOUND;
 	}
 	const FE_mesh *mesh = fieldElement->getMesh();
 	if (!mesh)
 	{
 		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Invalid element");
-		return 0;
+		return CMZN_ERROR_NOT_FOUND;
 	}
 	const FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
 	{
 		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  No nodeset, invalid mesh");
-		return 0;
+		return CMZN_ERROR_NOT_FOUND;
 	}
 
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	FE_value *blending_matrix, *combined_blending_matrix, *transformation;
 	int i, *inherited_basis_arguments, j, k,
 		number_of_inherited_values, number_of_blended_values;
@@ -13904,19 +13911,25 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	DsLabelIndex *element_value, *element_values = 0;
 	DsLabelIndex *previous_element_values = 0;
 	const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
-	for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
+	for (int component_number = 0; (component_number < number_of_components) && (return_code == CMZN_OK); ++component_number)
 	{
 		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
 		if (componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 		{
-			const int number_of_element_values = global_to_element_map_nodes(field, component_number,
-				componentEFT, fieldElement, element_values);
+			int number_of_element_values = 0;
+			return_code = global_to_element_map_nodes(field, component_number,
+				componentEFT, fieldElement, number_of_element_values, element_values);
+			if (CMZN_OK != return_code)
+			{
+				if (CMZN_ERROR_NOT_FOUND != return_code)
+				{
+					display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Failed to map element nodes");
+				}
+				break;
+			}
 			if (0 == number_of_element_values)
 			{
-				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix");
-				return_code = 0;
-				break;
+				continue;
 			}
 			FE_basis *basis = componentEFT->getBasis();
 			if ((i=number_of_element_values)==
@@ -13956,20 +13969,20 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 						{
 							display_message(ERROR_MESSAGE,
 								"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix");
-							return_code = 0;
+							return_code = CMZN_ERROR_MEMORY;
 						}
 					}
 				}
 				else
 				{
-					return_code = 0;
+					return_code = CMZN_ERROR_GENERAL;
 				}
-				if (return_code)
+				if (CMZN_OK == return_code)
 				{
 					transformation=blending_matrix;
 					element_value=element_values;
 					i=number_of_element_values;
-					while (return_code&&(i>0))
+					while ((i > 0) && (CMZN_OK == return_code))
 					{
 						bool add;
 						if (transformation)
@@ -14019,7 +14032,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 										display_message(ERROR_MESSAGE,
 											"calculate_FE_element_field_nodes.  "
 											"Could not REALLOCATE element_field_nodes_array");
-										return_code = 0;
+										return_code = CMZN_ERROR_MEMORY;
 									}
 								}
 							}
@@ -14040,13 +14053,24 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 		}
 	}
 	DEALLOCATE(previous_element_values);
-	if (return_code)
+	if (CMZN_OK == return_code)
 	{
 		*number_of_element_field_nodes_address=number_of_element_field_nodes;
-		*element_field_nodes_array_address=element_field_nodes_array;
+		if (number_of_element_field_nodes)
+		{
+			*element_field_nodes_array_address = element_field_nodes_array;
+		}
+		else
+		{
+			DEALLOCATE(element_field_nodes_array);
+			*element_field_nodes_array_address = 0;
+			return_code = CMZN_ERROR_NOT_FOUND;
+		}
 	}
 	else
 	{
+		*number_of_element_field_nodes_address = 0;
+		*element_field_nodes_array_address = 0;
 		for (i=0;i<number_of_element_field_nodes;i++)
 		{
 			DEACCESS(FE_node)(element_field_nodes_array+i);
@@ -15515,9 +15539,10 @@ int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup 
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
+		return_code = calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
 			&number_of_element_field_nodes, &element_field_nodes_array,
-			/*top_level_element*/(struct FE_element *)NULL))
+			/*top_level_element*/(struct FE_element *)NULL);
+		if (return_code == CMZN_OK)
 		{
 			for (int i = 0; i < number_of_element_field_nodes; i++)
 			{
@@ -15532,8 +15557,10 @@ int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup 
 			}
 			DEALLOCATE(element_field_nodes_array);
 		}
-		else
-			return_code = CMZN_ERROR_GENERAL;
+		else if (return_code == CMZN_ERROR_NOT_FOUND)
+		{
+			return_code = CMZN_OK;
+		}
 	}
 	return return_code;
 }
@@ -15549,9 +15576,10 @@ int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsG
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
+		return_code = calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
 			&number_of_element_field_nodes, &element_field_nodes_array,
-			/*top_level_element*/(struct FE_element *)NULL))
+			/*top_level_element*/(struct FE_element *)NULL);
+		if (return_code == CMZN_OK)
 		{
 			for (int i = 0; i < number_of_element_field_nodes; i++)
 			{
@@ -15566,8 +15594,10 @@ int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsG
 			}
 			DEALLOCATE(element_field_nodes_array);
 		}
-		else
-			return_code = CMZN_ERROR_GENERAL;
+		else if (return_code == CMZN_ERROR_NOT_FOUND)
+		{
+			return_code = CMZN_OK;
+		}
 	}
 	return return_code;
 }
@@ -15985,6 +16015,11 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 	if (!FE_element_shape_is_line(element_shape))
 		return true; // not implemented for these shapes, or nothing to do
 	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Invalid element");
+		return false;
+	}
 	FE_nodeset *nodeset = mesh->getNodeset();
 	if (!nodeset)
 	{

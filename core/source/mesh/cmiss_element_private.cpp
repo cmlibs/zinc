@@ -1881,10 +1881,15 @@ cmzn_node_id cmzn_element_get_node(cmzn_element_id element,
 		return 0;
 	}
 	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element getNode.  Invalid element");
+		return 0;
+	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element getNode.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element getNode.  Element field template is not used by element's mesh");
 		return 0;
 	}
 	const DsLabelIndex nodeIndex = eftData->getElementLocalNode(element->getIndex(), localNodeIndex - 1);
@@ -1900,14 +1905,19 @@ int cmzn_element_set_node(cmzn_element_id element,
 {
 	if (!((element) && (eft) && (0 < localNodeIndex) && (localNodeIndex <= eft->getNumberOfLocalNodes())))
 	{
-		display_message(ERROR_MESSAGE, "Element getNode.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "Element setNode.  Invalid argument(s)");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element setNode.  Invalid element");
+		return CMZN_ERROR_ARGUMENT;
+	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element getNode.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element setNode.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID);
@@ -1923,10 +1933,15 @@ int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Invalid element");
+		return CMZN_ERROR_ARGUMENT;
+	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element setNodesByIdentifier.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	const int result = eftData->setElementLocalNodesByIdentifier(element->getIndex(), identifiersIn);
@@ -1941,18 +1956,22 @@ int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
 int cmzn_element_get_scale_factor(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int localScaleFactorIndex, double *valueOut)
 {
-	FE_mesh *mesh;
 	if (!((element) && (eft) && (0 < localScaleFactorIndex)
-		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors()) && (valueOut)
-		&& (mesh = element->getMesh())))
+		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors()) && (valueOut)))
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Invalid element");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element getScaleFactor.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return eftData->getElementScaleFactor(element->getIndex(), localScaleFactorIndex - 1, *valueOut);
@@ -1961,18 +1980,22 @@ int cmzn_element_get_scale_factor(cmzn_element_id element,
 int cmzn_element_set_scale_factor(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int localScaleFactorIndex, double value)
 {
-	FE_mesh *mesh;
 	if (!((element) && (eft) && (0 < localScaleFactorIndex)
-		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors())
-		&& (mesh = element->getMesh())))
+		&& (localScaleFactorIndex <= eft->getNumberOfLocalScaleFactors())))
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Invalid element");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element setScaleFactor.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return eftData->setElementScaleFactor(element->getIndex(), localScaleFactorIndex - 1, value);
@@ -1981,17 +2004,21 @@ int cmzn_element_set_scale_factor(cmzn_element_id element,
 int cmzn_element_get_scale_factors(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int valuesCount, double *valuesOut)
 {
-	FE_mesh *mesh;
-	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesOut)
-		&& (mesh = element->getMesh())))
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesOut)))
 	{
 		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Invalid element");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return eftData->getElementScaleFactors(element->getIndex(), valuesOut);
@@ -2000,17 +2027,21 @@ int cmzn_element_get_scale_factors(cmzn_element_id element,
 int cmzn_element_set_scale_factors(cmzn_element_id element,
 	cmzn_elementfieldtemplate_id eft, int valuesCount, const double *valuesIn)
 {
-	FE_mesh *mesh;
-	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesIn)
-		&& (mesh = element->getMesh())))
+	if (!((element) && (eft) && (valuesCount == eft->getNumberOfLocalScaleFactors()) && (valuesIn)))
 	{
 		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Invalid element");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_mesh_element_field_template_data *eftData = mesh->getElementfieldtemplateData(eft->get_FE_element_field_template());
 	if (!eftData)
 	{
-		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Element field template is not from element's mesh");
+		display_message(ERROR_MESSAGE, "Element setScaleFactors.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return eftData->setElementScaleFactors(element->getIndex(), valuesIn);
@@ -2022,9 +2053,15 @@ enum cmzn_element_shape_type cmzn_element_get_shape_type(
 	cmzn_element_shape_type shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
-		FE_mesh *fe_mesh = element->getMesh();
-		if (fe_mesh)
-			shape_type = fe_mesh->getElementShapeType(get_FE_element_index(element));
+		FE_mesh *mesh = element->getMesh();
+		if (!mesh)
+		{
+			display_message(ERROR_MESSAGE, "Element getShapeType.  Invalid element");
+		}
+		else
+		{
+			shape_type = mesh->getElementShapeType(get_FE_element_index(element));
+		}
 	}
 	return shape_type;
 }

@@ -125,7 +125,8 @@ ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier
  *
  * @param fieldmodule  Handle to the field module owning the meshes to define
  * faces for.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, WARNING_PART_DONE if failed on some elements
+ * due to not having nodes set, otherwise any other error.
  */
 ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
 
