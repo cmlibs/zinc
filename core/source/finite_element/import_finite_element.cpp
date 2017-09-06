@@ -3251,8 +3251,13 @@ bool EXReader::readElementHeaderField()
 				if (!result)
 					break;
 				const int packedCount = static_cast<int>(packedNodeIndexes.size());
-				if ((packedCount < nodeCount) && (this->exVersion < 2))
+				if (packedCount < nodeCount)
 				{
+					if (this->exVersion >= 2)
+					{
+						display_message(WARNING_MESSAGE, "EX Reader.  Reducing component number of nodes from %d to the number in use, %d.  %s",
+							nodeCount, packedCount, this->getFileLocation());
+					}
 					resultCode = eft->setNumberOfLocalNodes(packedCount);
 					if (resultCode != CMZN_OK)
 					{
@@ -3343,6 +3348,13 @@ bool EXReader::readElementHeaderField()
 			}
 			if (!result)
 				break;
+		}
+		if (!eft->validateAndLock())
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Field %s component %s template is not valid.  %s",
+				get_FE_field_name(field), componentName, this->getFileLocation());
+			result = false;
+			break;
 		}
 	}
 	if (componentName)
