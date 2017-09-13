@@ -457,8 +457,11 @@ const FE_node_field *cmzn_node_get_FE_node_field(cmzn_node *node,
  * <source>, values from <source> take precedence, but the node field structure
  * remains unchanged.
  * Function is atomic; <destination> is unchanged if <source> cannot be merged.
+ * @param optimised_merge  If non-zero, time arrays are allowed to be
+ * transferred from source instead of copying. Use ONLY for external region merge
+ * during I/O.
  */
-int merge_FE_node(cmzn_node *destination, cmzn_node *source);
+int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge = 0);
 
 /**
  * Create structure storing an element with its identifier being its cm_type

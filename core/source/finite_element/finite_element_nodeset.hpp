@@ -89,8 +89,6 @@ class FE_nodeset
 
 	int remove_FE_node_private(struct FE_node *node);
 
-	int merge_FE_node_existing(struct FE_node *destination, struct FE_node *source);
-
 	struct Merge_FE_node_external_data;
 	int merge_FE_node_external(struct FE_node *node,
 		Merge_FE_node_external_data &data);

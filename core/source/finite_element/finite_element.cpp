@@ -1688,11 +1688,14 @@ Reallocate an array of type value_type with number_of_values.  If
 <previous_number_of_values> + 1 to <new_number_of_values> are set to zero.
 The routine will potentially overallocate the array to accelerate when
 these arrays are expanded out one value at a time, many times over.
+Warning: reallocates previous array and moves to new_array. Use only when
+appending values to existing time array, when merging nodes from
+temporary region.
 =======================================================================*/
 {
 	int allocate_number_of_values, j, return_code;
 
-	ENTER(allocate_time_values_storage_array);
+	ENTER(reallocate_time_values_storage_array);
 	if (new_array && previous_array)
 	{
 		return_code = 1;
@@ -1718,7 +1721,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -1739,7 +1742,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -1760,7 +1763,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -1781,7 +1784,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -1802,33 +1805,32 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
 			case STRING_VALUE:
 			{
 				display_message(ERROR_MESSAGE,
-					"allocate_time_values_storage_array. String type not implemented for multiple times yet.");
+					"reallocate_time_values_storage_array. String type not implemented for multiple times yet.");
 				return_code = 0;
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"allocate_time_values_storage_array. Invalid type");
+					"reallocate_time_values_storage_array. Invalid type");
 				return_code = 0;
 			} break;
 		} /*switch (the_value_type) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"allocate_time_values_storage_array."
+		display_message(ERROR_MESSAGE,"reallocate_time_values_storage_array."
 			"Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
 	return (return_code);
-} /* allocate_time_values_storage_array */
+}
 
 static int copy_value_storage_array(Value_storage *destination,
 	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
@@ -1920,7 +1922,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"copy_value_storage_array.  Copying time values to or from non"
+					"copy_value_storage_array.  Copying time values to or from "
 					"non time based values not implemented");
 			}
 		}
@@ -10460,7 +10462,7 @@ const FE_node_field *cmzn_node_get_FE_node_field(cmzn_node *node,
 	return 0;
 }
 
-int merge_FE_node(cmzn_node *destination, cmzn_node *source)
+int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge)
 {
 	int number_of_values, values_storage_size, return_code;
 	struct FE_node_field_info *destination_fields, *source_fields;
@@ -10504,7 +10506,7 @@ int merge_FE_node(cmzn_node *destination, cmzn_node *source)
 						/* Don't need to reallocate memory as we are only overwriting
 							existing values */
 						merge_FE_node_values_storage(destination, (Value_storage *)NULL,
-							node_field_list, source, /*optimised_merge*/1);
+							node_field_list, source, optimised_merge);
 					}
 					else
 					{
@@ -10517,7 +10519,7 @@ int merge_FE_node(cmzn_node *destination, cmzn_node *source)
 						if ((0 == values_storage_size) ||
 							(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
 								merge_FE_node_values_storage(destination, values_storage,
-									node_field_list, source, /*optimised_merge*/1)))
+									node_field_list, source, optimised_merge)))
 						{
 							/* create a node field info for the combined list */
 							struct FE_node_field_info *fe_node_field_info =
