@@ -1603,3 +1603,51 @@ TEST(FieldIO, unusedLocalNodes)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	checkUnusedLocalNodesModel(testFm1, false);
 }
+
+/* test fix of bug where elements were read into same stream information
+   before time-varying nodes; node merge crashed due to invalid optimisation
+   tranferring time array from template node to actual node */
+TEST(FieldIO, read_elements_before_time_varying_nodes)
+{
+	ZincTestSetupCpp zinc;
+
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_ELEMENT_RESOURCE));
+	StreamresourceFile fr1 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE1_RESOURCE));
+	sir.setResourceAttributeReal(fr1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+	StreamresourceFile fr3 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE3_RESOURCE));
+	sir.setResourceAttributeReal(fr3, StreaminformationRegion::ATTRIBUTE_TIME, 3.0);
+	// deliberately merge out-of-order
+	StreamresourceFile fr2 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE2_RESOURCE));
+	sir.setResourceAttributeReal(fr2, StreaminformationRegion::ATTRIBUTE_TIME, 2.0);
+	const double times[5] = { 1.0, 1.5, 2.0, 2.5, 3.0 };
+	const double xi[3] = { 0.5, 0.5, 0.5 };
+	const double xExpected[5][3] = {
+		{ 0.50, 0.50, 0.50 },
+		{ 0.75, 0.75, 0.75 },
+		{ 1.00, 1.00, 1.00 },
+		{ 1.25, 1.25, 1.25 },
+		{ 1.50, 1.50, 1.50 }
+	};
+	double xOut[3];
+	// test reading twice
+	const double tol = 1.0E-7;
+	for (int i = 0; i < 2; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, zinc.root_region.read(sir));
+		Field coordinates = zinc.fm.findFieldByName("coordinates");
+		EXPECT_TRUE(coordinates.isValid());
+		Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+		EXPECT_TRUE(mesh3d.isValid());
+		Element element1 = mesh3d.findElementByIdentifier(1);
+		EXPECT_TRUE(element1.isValid());
+		Fieldcache cache = zinc.fm.createFieldcache();
+		EXPECT_TRUE(mesh3d.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element1, 3, xi));
+		EXPECT_EQ(RESULT_OK, cache.setTime(times[i]));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, xOut));
+		EXPECT_NEAR(xExpected[i][0], xOut[0], tol);
+		EXPECT_NEAR(xExpected[i][1], xOut[1], tol);
+		EXPECT_NEAR(xExpected[i][2], xOut[2], tol);
+	}
+}

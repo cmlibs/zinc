@@ -1,0 +1,107 @@
+EX Version: 2
+Region: /
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element: 1
+Element: 2
+Element: 3
+Element: 4
+Element: 5
+Element: 6
+Element: 7
+Element: 8
+Element: 9
+Element: 10
+Element: 11
+Element: 12
+!#mesh mesh2d, dimension=2, face mesh=mesh1d, nodeset=nodes
+Shape. Dimension=2, line*line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element: 1
+ Faces:
+ 3 7 2 10
+Element: 2
+ Faces:
+ 5 8 4 11
+Element: 3
+ Faces:
+ 1 9 3 5
+Element: 4
+ Faces:
+ 6 12 7 8
+Element: 5
+ Faces:
+ 2 4 1 6
+Element: 6
+ Faces:
+ 10 11 9 12
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Shape. Dimension=3, line*line*line
+#Scale factor sets=0
+#Nodes=8
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+Element: 1
+ Faces:
+ 1 2 3 4 5 6
+ Nodes:
+ 1 2 3 4 5 6 7 8

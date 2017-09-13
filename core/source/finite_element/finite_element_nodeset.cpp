@@ -614,38 +614,20 @@ FE_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_templa
 	return (new_node);
 }
 
-/**
- * Merge fields and other data from source node into destination.
- * Both nodes must be of this nodeset.
- * @return  Status code.
- */
-int FE_nodeset::merge_FE_node_existing(struct FE_node *destination, struct FE_node *source)
-{
-	if (destination && source)
-	{
-		if ((FE_node_get_FE_nodeset(destination) == this) &&
-			(FE_node_get_FE_nodeset(source) == this))
-		{
-			if (::merge_FE_node(destination, source))
-			{
-				this->nodeChange(get_FE_node_index(destination), DS_LABEL_CHANGE_TYPE_RELATED, source);
-				return CMZN_OK;
-			}
-			return CMZN_ERROR_GENERAL;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_existing.  "
-				"Source and/or destination nodes are not from nodeset");
-		}
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
 int FE_nodeset::merge_FE_node_template(struct FE_node *destination, FE_node_template *fe_node_template)
 {
-	if (fe_node_template)
-		return this->merge_FE_node_existing(destination, fe_node_template->get_template_node());
+	if (fe_node_template
+		&& (fe_node_template->nodeset == this)
+		&& (FE_node_get_FE_nodeset(destination) == this))
+	{
+		if (::merge_FE_node(destination, fe_node_template->get_template_node()))
+		{
+			this->nodeChange(get_FE_node_index(destination), DS_LABEL_CHANGE_TYPE_RELATED, fe_node_template->get_template_node());
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_GENERAL;
+	}
+	display_message(ERROR_MESSAGE, "Node merge.  Invalid argument(s)");
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1062,8 +1044,14 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 				set_FE_node_index(node, newNodeIndex);
 				if (global_node)
 				{
-					if (this->merge_FE_node_existing(global_node, node) != CMZN_OK)
+					if (::merge_FE_node(global_node, node, /*optimised_merge*/1))
+					{
+						this->nodeChange(get_FE_node_index(global_node), DS_LABEL_CHANGE_TYPE_RELATED, node);
+					}
+					else
+					{
 						return_code = 0;
+					}
 					// must restore the previous information for clean-up
 					FE_node_set_FE_node_field_info(node, old_node_field_info);
 					DEACCESS(FE_node_field_info)(&old_node_field_info);
