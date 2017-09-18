@@ -2645,6 +2645,8 @@ MeshElementEvaluator* FieldMLReader::readMeshElementEvaluator(FmlObjectHandle fm
 
 	// Future: read scale factors
 
+	// store in map so quick to find next time:
+	this->meshElementEvaluatorMap[fmlEvaluator] = meshElementEvaluator;
 	return meshElementEvaluator;
 }
 
