@@ -1,0 +1,51 @@
+EX Version: 2
+Region: /
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Shape. Dimension=3, simplex(2)*simplex*line
+#Scale factor sets=0
+#Nodes=0
+#Fields=1
+1) temperature, field, rectangular cartesian, real, #Components=1
+ value. constant*constant*constant, no modify, element based.
+Element: 1
+ Values :
+  4.800000000000000e+01
+Element: 2
+ Values :
+  4.200000000000000e+01
+Shape. Dimension=3, simplex(3)*line*simplex
+#Scale factor sets=0
+#Nodes=0
+#Fields=1
+1) temperature, field, rectangular cartesian, real, #Components=1
+ value. constant*constant*constant, no modify, element based.
+Element: 3
+ Values :
+  1.900000000000000e+01
+Shape. Dimension=3, line*simplex(3)*simplex
+#Scale factor sets=0
+#Nodes=0
+#Fields=1
+1) temperature, field, rectangular cartesian, real, #Components=1
+ value. constant*constant*constant, no modify, element based.
+Element: 4
+ Values :
+  3.740000000000000e+01
+Shape. Dimension=3, line*line*line
+#Scale factor sets=0
+#Nodes=0
+#Fields=1
+1) temperature, field, rectangular cartesian, real, #Components=1
+ value. constant*constant*constant, no modify, element based.
+Element: 5
+ Values :
+  1.150000000000000e+01
+Shape. Dimension=3, simplex(2;3)*simplex*simplex
+#Scale factor sets=0
+#Nodes=0
+#Fields=1
+1) temperature, field, rectangular cartesian, real, #Components=1
+ value. constant*constant*constant, no modify, element based.
+Element: 6
+ Values :
+  3.030000000000000e+01

@@ -1651,3 +1651,74 @@ TEST(FieldIO, read_elements_before_time_varying_nodes)
 		EXPECT_NEAR(xExpected[i][2], xOut[2], tol);
 	}
 }
+
+namespace {
+
+void checkAllShapesElementConstantModel(Fieldmodule& fm, double factor)
+{
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Field temperature = fm.findFieldByName("temperature");
+	EXPECT_TRUE(temperature.isValid());
+	EXPECT_EQ(1, temperature.getNumberOfComponents());
+	EXPECT_FALSE(temperature.isTypeCoordinate());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(6, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(24, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(33, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(16, nodes.getSize());
+
+	const Element::ShapeType expectedShapeTypes[6] = {
+		Element::SHAPE_TYPE_WEDGE12,
+		Element::SHAPE_TYPE_WEDGE12,
+		Element::SHAPE_TYPE_WEDGE13,
+		Element::SHAPE_TYPE_WEDGE23,
+		Element::SHAPE_TYPE_CUBE,
+		Element::SHAPE_TYPE_TETRAHEDRON
+	};
+	const double expectedTemperature[6] = { 48.0, 42.0, 19.0, 37.4, 11.5, 30.3 };
+	double temperatureOut;
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+	for (int i = 0; i < 6; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i + 1);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(expectedShapeTypes[i], element.getShapeType());
+		EXPECT_EQ(RESULT_OK, cache.setElement(element));
+		EXPECT_EQ(RESULT_OK, temperature.evaluateReal(cache, 3, &temperatureOut));
+		EXPECT_NEAR(factor*expectedTemperature[i], temperatureOut, 1.0E-6);
+		const double temperatureIn = expectedTemperature[i]*2.0;
+		EXPECT_EQ(RESULT_OK, temperature.assignReal(cache, 3, &temperatureIn));
+		EXPECT_EQ(RESULT_OK, temperature.evaluateReal(cache, 3, &temperatureOut));
+		EXPECT_NEAR(temperatureIn, temperatureOut, 1.0E-6);
+	}
+}
+
+}
+
+TEST(FieldIO, allShapesElementConstant)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_ALLSHAPES_ELEMENT_CONSTANT_RESOURCE)));
+	checkAllShapesElementConstantModel(zinc.fm, 1.0);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(OK, zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/allshapes_element_constant.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(OK, testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/allshapes_element_constant.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkAllShapesElementConstantModel(testFm1, 2.0);
+}
+
