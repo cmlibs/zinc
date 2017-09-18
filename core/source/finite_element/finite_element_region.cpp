@@ -960,6 +960,10 @@ int FE_region_define_faces(struct FE_region *fe_region)
 			}
 			FE_region_end_define_faces(fe_region);
 			FE_region_end_change(fe_region);
+			if (return_code == CMZN_WARNING_PART_DONE)
+			{
+				display_message(WARNING_MESSAGE, "Fieldmodule defineAllFaces.  Could not define faces for some elements due to missing field or nodes");
+			}
 		}
 	}
 	else
