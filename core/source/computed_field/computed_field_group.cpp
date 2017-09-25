@@ -447,7 +447,11 @@ int Computed_field_group::setSubelementHandlingMode(
 {
 	if (modeIn == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_INVALID)
 		return CMZN_ERROR_ARGUMENT;
-	this->subelementHandlingMode = modeIn;
+	if (modeIn != this->subelementHandlingMode)
+	{
+		this->subelementHandlingMode = modeIn;
+		this->setChanged();
+	}
 	// propagate down subregion group tree
 	for (Region_field_map_iterator iter = this->subregion_group_map.begin();
 		iter != this->subregion_group_map.end(); iter++)
@@ -585,13 +589,13 @@ cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id su
 				if (!subregion_group)
 				{
 					cmzn_fieldmodule_begin_change(fieldmodule);
-					cmzn_fieldmodule_set_field_name(fieldmodule, this->getField()->name);
 					subregion_group = reinterpret_cast<cmzn_field_group_id>(cmzn_fieldmodule_create_field_group(fieldmodule));
+					cmzn_field_set_name(cmzn_field_group_base_cast(subregion_group), this->getField()->name);
 					cmzn_field_group_set_subelement_handling_mode(subregion_group, this->subelementHandlingMode);
 					cmzn_fieldmodule_end_change(fieldmodule);
 				}
 				cmzn_fieldmodule_destroy(&fieldmodule);
-				ACCESS(Computed_field)(cmzn_field_group_base_cast(subregion_group));
+				cmzn_field_access(cmzn_field_group_base_cast(subregion_group));
 				subregion_group_map.insert(std::make_pair(subregion, subregion_group));
 			}
 			// else already exists: fail
