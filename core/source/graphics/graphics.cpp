@@ -3452,6 +3452,13 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
+			DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(domainDimension);
+			if (elementChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_ADD)
+			{
+				// partial rebuild is buggy when new elements are added; workaround is to force full rebuild
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
 			bool partialUpdate = (0 != (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT));
 			if (!partialUpdate)
 			{
@@ -3461,8 +3468,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				// complexity of checking such a field is being used, so always partial update.
 				// Also for the future this allows us to send an identifiers all-change
 				// message if reclaimed memory from DsLabels and maps (all indexes changed).
-				DsLabelsChangeLog *elementChanges = feRegionChanges->getElementChangeLog(domainDimension);
-				if ((elementChanges) && (elementChanges->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
+				if (elementChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER)
 					partialUpdate = true;
 			}
 			if (partialUpdate)
@@ -3474,7 +3480,6 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					return 1;
 				}
 				feRegionChanges->propagateToDimension(domainDimension);
-				DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(domainDimension);
 				if (elementChangeLog->isAllChange() || (elementChangeLog->getChangeCount()*2 >
 					FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(graphics->scene->region), domainDimension)->getSize()))
 				{

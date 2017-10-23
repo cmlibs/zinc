@@ -1991,6 +1991,8 @@ cmzn_element *FE_mesh::createElementObject(DsLabelIdentifier identifier)
 		cmzn_element::deaccess(element);
 		this->labels.removeLabel(elementIndex);
 	}
+	// record element added
+	this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_ADD);
 	return element;
 }
 
@@ -2019,7 +2021,6 @@ cmzn_element *FE_mesh::create_FE_element(int identifier, FE_element_template *el
 					&& this->mergeFieldsFromElementTemplate(elementIndex, elementTemplate))
 				{
 					element->access();
-					this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_ADD);
 					return element;
 				}
 				else
@@ -2187,8 +2188,6 @@ void FE_mesh::clearElementParents(DsLabelIndex elementIndex)
 		const int faceNumber = this->parentMesh->getElementFaceNumber(parents[0], elementIndex);
 		if (CMZN_OK != this->parentMesh->setElementFace(parents[0], faceNumber, DS_LABEL_INDEX_INVALID))
 			return;
-		if (parentsCount == 1)
-			this->parentMesh->changeLog->setIndexChange(parents[0], DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 }
 
@@ -2212,7 +2211,9 @@ void FE_mesh::clearElementFaces(DsLabelIndex elementIndex)
 		DsLabelIndex faceIndex = faces[i]; // must put in local variable since cleared by setElementFace
 		if (faceIndex >= 0)
 		{
-			this->setElementFace(elementIndex, i, DS_LABEL_INDEX_INVALID); // could be more efficient; finds faces again
+			// don't notify parent modified since only called from removeElementPrivate or on shape change
+			this->faceMesh->removeElementParent(faceIndex, elementIndex);
+			faces[i] = DS_LABEL_INDEX_INVALID;
 			const DsLabelIndex *parents;
 			if (0 == this->faceMesh->getElementParents(faceIndex, parents))
 				this->faceMesh->removeElementPrivate(faceIndex);
@@ -2243,6 +2244,7 @@ int FE_mesh::setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIn
 			this->faceMesh->removeElementParent(oldFaceIndex, elementIndex);
 		if (faceIndex >= 0)
 			return this->faceMesh->addElementParent(faceIndex, elementIndex);
+		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 	return CMZN_OK;
 }

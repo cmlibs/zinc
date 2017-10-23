@@ -20,10 +20,11 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
 #include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/font.hpp"
+#include "opencmiss/zinc/graphics.hpp"
+#include "opencmiss/zinc/result.hpp"
 
 #include "test_resources.h"
 
@@ -1667,4 +1668,55 @@ TEST(ZincGraphics, fieldWrappers)
 	// check no issues with setting fields while removed
 	EXPECT_EQ(RESULT_OK, streamlines.setCoordinateField(rc_coordinates));
 	EXPECT_EQ(RESULT_OK, streamlines.setStreamVectorField(rc_vector));
+}
+
+/* test adding to faces or lines adds part graphics to existing */
+TEST(ZincGraphics, partialEdit)
+{
+	ZincTestSetupCpp zinc;
+
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
+	Tessellation tess = tm.getDefaultTessellation();
+	const int one = 1;
+	EXPECT_EQ(RESULT_OK, tess.setRefinementFactors(1, &one));
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_EX2_PART_SURFACES_RESOURCE)));
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	const int sizeBefore = mesh2d.getSize();
+	EXPECT_EQ(27, sizeBefore);
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Scene scene = zinc.root_region.getScene();
+	EXPECT_TRUE(scene.isValid());
+	GraphicsSurfaces surfaces = scene.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+	EXPECT_EQ(RESULT_OK, surfaces.setCoordinateField(coordinates));
+
+	Scenefilter noFilter;
+	double minimums[3], maximums[3];
+	const double expectedMinimums1[3] = { 358.10479736328125, 113.21965789794922, 819.45043945312500 };
+	const double expectedMaximums1[3] = { 607.03845214843750, 469.98535156250000, 862.77233886718750 };
+	const double tol = 1.0E-5;
+	EXPECT_EQ(RESULT_OK, scene.getCoordinatesRange(noFilter, minimums, maximums));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_NEAR(expectedMinimums1[i], minimums[i], tol);
+		EXPECT_NEAR(expectedMaximums1[i], maximums[i], tol);
+	}
+	// second row of elements has no faces; define these
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+
+	const double expectedMinimums2[3] = { 357.17501831054688, 113.21965789794922, 819.45043945312500 };
+	const double expectedMaximums2[3] = { 607.03845214843750, 469.98535156250000, 905.54608154296875 };
+	const int sizeAfter = mesh2d.getSize();
+	EXPECT_EQ(32, sizeAfter);
+	// surfaces should automatically be added for new faces
+	EXPECT_EQ(RESULT_OK, scene.getCoordinatesRange(noFilter, minimums, maximums));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_NEAR(expectedMinimums2[i], minimums[i], tol);
+		EXPECT_NEAR(expectedMaximums2[i], maximums[i], tol);
+	}
 }

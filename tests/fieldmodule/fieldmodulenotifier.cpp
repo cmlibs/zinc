@@ -411,3 +411,102 @@ TEST(ZincFieldmodulenotifier, partial_mesh_change)
 
 	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
 }
+
+
+/* test defining faces correctly notifies for new faces, and changes to parents */
+TEST(ZincFieldmodulenotifier, defineFaces)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_PART_SURFACES_RESOURCE)));
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(6, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	const int mesh2dSizeBefore = mesh2d.getSize();
+	EXPECT_EQ(27, mesh2dSizeBefore);
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	const int mesh1dSizeBefore = mesh1d.getSize();
+	EXPECT_EQ(48, mesh1dSizeBefore);
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(recordChange));
+
+	// element 267 has no faces; define these
+	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
+	// test correct face and line additions
+	const int mesh2dSizeAfter = mesh2d.getSize();
+	EXPECT_EQ(32, mesh2dSizeAfter);
+	const int mesh1dSizeAfter = mesh1d.getSize();
+	EXPECT_EQ(56, mesh1dSizeAfter);
+
+	// test correct notifications
+	Element element;
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+
+	Meshchanges meshchanges3d = recordChange.lastEvent.getMeshchanges(mesh3d);
+	result = meshchanges3d.getSummaryElementChangeFlags();
+	EXPECT_EQ(Element::CHANGE_FLAG_DEFINITION, result);
+	Elementiterator iter = mesh3d.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	while ((element = iter.next()).isValid())
+	{
+		result = meshchanges3d.getElementChangeFlags(element);
+		if (element.getIdentifier() == 267)
+		{
+			EXPECT_EQ(Element::CHANGE_FLAG_DEFINITION, result);
+		}
+		else
+		{
+			EXPECT_EQ(Element::CHANGE_FLAG_NONE, result);
+		}
+	}
+
+	Meshchanges meshchanges2d = recordChange.lastEvent.getMeshchanges(mesh2d);
+	const int expectedresult2d = Element::CHANGE_FLAG_ADD | Element::CHANGE_FLAG_DEFINITION | Element::CHANGE_FLAG_FIELD;
+	result = meshchanges2d.getSummaryElementChangeFlags();
+	EXPECT_EQ(expectedresult2d, result);
+	iter = mesh2d.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	while ((element = iter.next()).isValid())
+	{
+		result = meshchanges2d.getElementChangeFlags(element);
+		const int identifier = element.getIdentifier();
+		// faces 1-5 are new; 1 existing face has parent change propagated to it
+		if ((identifier <= 5) || (identifier == 1019))
+		{
+			EXPECT_EQ(expectedresult2d, result);
+		}
+		else
+		{
+			EXPECT_EQ(Element::CHANGE_FLAG_NONE, result);
+		}
+	}
+
+	Meshchanges meshchanges1d = recordChange.lastEvent.getMeshchanges(mesh1d);
+	result = meshchanges1d.getSummaryElementChangeFlags();
+	const int expectedresult1d = Element::CHANGE_FLAG_ADD | Element::CHANGE_FLAG_FIELD;
+	EXPECT_EQ(expectedresult1d, result);
+	iter = mesh1d.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	while ((element = iter.next()).isValid())
+	{
+		result = meshchanges1d.getElementChangeFlags(element);
+		const int identifier = element.getIdentifier();
+		// faces 1-8 are new; 4 existing lines have parent change propagated to them
+		if ((identifier <= 8)
+			|| (identifier == 1297)
+			|| (identifier == 1302)
+			|| (identifier == 1305)
+			|| (identifier == 1306))
+		{
+			EXPECT_EQ(expectedresult1d, result);
+		}
+		else
+		{
+			EXPECT_EQ(Element::CHANGE_FLAG_NONE, result);
+		}
+	}
+}
