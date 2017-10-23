@@ -324,3 +324,81 @@ TEST(ZincSelectionnotifier, changeCallback)
 
 	EXPECT_EQ(OK, result = selectionnotifier.clearCallback());
 }
+
+
+class SelectioncallbackReentrantAdd : public Selectioncallback
+{
+	Scene scene;
+	Selectionnotifier selectionnotifier;
+
+	virtual void operator()(const Selectionevent &selectionevent)
+	{
+		this->selectionnotifier = this->scene.createSelectionnotifier();
+		EXPECT_TRUE(this->selectionnotifier.isValid());
+	}
+
+public:
+	SelectioncallbackReentrantAdd(Scene &sceneIn) :
+		scene(sceneIn)
+	{
+	}
+};
+
+class SelectioncallbackReentrantRemove : public Selectioncallback
+{
+	Selectionnotifier selectionnotifier;
+
+	virtual void operator()(const Selectionevent &selectionevent)
+	{
+		Selectionnotifier noSelectionnotifier;
+		this->selectionnotifier = noSelectionnotifier;
+	}
+
+public:
+	SelectioncallbackReentrantRemove(Selectionnotifier &selectionnotifierIn) :
+		selectionnotifier(selectionnotifierIn)
+	{
+	}
+};
+
+TEST(ZincSelectionnotifier, reentrancy)
+{
+	ZincTestSetupCpp zinc;
+
+	addSomeNodes(zinc.fm.getId());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node node1 = nodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	FieldNodeGroup fieldNodeGroup = group.createFieldNodeGroup(nodes);
+	EXPECT_TRUE(fieldNodeGroup.isValid());
+	NodesetGroup nodesetGroup = fieldNodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.scene.setSelectionField(group));
+
+	{
+		Selectionnotifier selectionnotifier = zinc.scene.createSelectionnotifier();
+		EXPECT_TRUE(selectionnotifier.isValid());
+
+		SelectioncallbackReentrantAdd callback(zinc.scene);
+		EXPECT_EQ(RESULT_OK, selectionnotifier.setCallback(callback));
+
+		EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(node1));
+	}
+
+	{
+		Selectionnotifier selectionnotifier = zinc.scene.createSelectionnotifier();
+		EXPECT_TRUE(selectionnotifier.isValid());
+
+		SelectioncallbackReentrantRemove callback(selectionnotifier);
+		EXPECT_EQ(RESULT_OK, selectionnotifier.setCallback(callback));
+
+		Selectionnotifier noSelectionnotifier;
+		selectionnotifier = noSelectionnotifier;
+
+		EXPECT_EQ(RESULT_OK, nodesetGroup.removeNode(node1));
+	}
+
+}
