@@ -17,6 +17,7 @@
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/glyph.hpp>
 #include <opencmiss/zinc/scene.hpp>
+#include <opencmiss/zinc/result.hpp>
 
 using namespace OpenCMISS::Zinc;
 

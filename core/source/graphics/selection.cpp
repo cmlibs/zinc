@@ -68,14 +68,7 @@ void cmzn_selectionnotifier::clearCallback()
 void cmzn_selectionnotifier::sceneDestroyed()
 {
 	this->scene = 0;
-	if (this->function)
-	{
-		cmzn_selectionevent_id event = new cmzn_selectionevent();
-		event->changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL;
-		(this->function)(event, this->user_data);
-		cmzn_selectionevent_destroy(&event);
-		this->clearCallback();
-	}
+	this->clearCallback();
 }
 
 void *cmzn_selectionnotifier_get_callback_user_data(

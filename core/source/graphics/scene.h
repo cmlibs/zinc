@@ -208,6 +208,8 @@ public:
 			this->notifyClients();
 	}
 
+	void notifySelectionevent(cmzn_selectionevent_id selectionevent);
+
 	void processFieldmoduleevent(cmzn_fieldmoduleevent *event);
 
 }; /* struct cmzn_scene */

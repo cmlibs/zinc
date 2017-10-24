@@ -147,7 +147,11 @@ void cmzn_scene::detachFromOwner()
 	// first notify selection clients as they call some scene APIs
 	if (this->selectionnotifier_list)
 	{
-		for (cmzn_selectionnotifier_list::iterator iter = this->selectionnotifier_list->begin();
+		cmzn_selectionevent *selectionevent = new cmzn_selectionevent();
+		selectionevent->changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL;
+		this->notifySelectionevent(selectionevent);
+		cmzn_selectionevent_destroy(&selectionevent);
+		for (auto iter = this->selectionnotifier_list->begin();
 			iter != this->selectionnotifier_list->end(); ++iter)
 		{
 			cmzn_selectionnotifier_id selectionnotifier = *iter;
@@ -698,6 +702,24 @@ int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
 	return 0;
 }
 
+void cmzn_scene::notifySelectionevent(cmzn_selectionevent_id selectionevent)
+{
+	if (this->selectionnotifier_list && (this->selectionnotifier_list->size() > 0))
+	{
+		// to reduce issues with reentrant code, copy selection notifier list, and temporarily access
+		auto copyList(*(this->selectionnotifier_list));
+		for (auto iter = copyList.begin(); iter != copyList.end(); ++iter)
+		{
+			(*iter)->access();
+		}
+		for (auto iter = copyList.begin(); iter != copyList.end(); ++iter)
+		{
+			(*iter)->notify(selectionevent);
+			cmzn_selectionnotifier::deaccess(*iter);
+		}
+	}
+}
+
 void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 {
 	bool local_selection_changed = false;
@@ -717,17 +739,13 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 				if (group_local_change != CMZN_FIELD_GROUP_CHANGE_NONE)
 					local_selection_changed = true;
 				int group_nonlocal_change = group_change_detail->getNonlocalChangeSummary();
-				if (this->selectionnotifier_list && (0 < this->selectionnotifier_list->size()))
+				if (this->selectionnotifier_list)
 				{
-					cmzn_selectionevent_id event = new cmzn_selectionevent();
-					event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
+					cmzn_selectionevent_id selectionevent = new cmzn_selectionevent();
+					selectionevent->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
 						| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
-					for (cmzn_selectionnotifier_list::iterator iter = this->selectionnotifier_list->begin();
-						iter != this->selectionnotifier_list->end(); ++iter)
-					{
-						(*iter)->notify(event);
-					}
-					cmzn_selectionevent_destroy(&event);
+					this->notifySelectionevent(selectionevent);
+					cmzn_selectionevent_destroy(&selectionevent);
 				}
 			}
 			// ensure child scene selection_group matches the appropriate subgroup or none if none
@@ -2432,18 +2450,13 @@ int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 			{
 				if (scene->selectionnotifier_list)
 				{
-					// notify clients of changed selection
-					cmzn_selectionevent *event = new cmzn_selectionevent();
+					cmzn_selectionevent *selectionevent = new cmzn_selectionevent();
 					if (!wasEmpty)
-						event->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
+						selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
 					if (!isEmpty)
-						event->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
-					for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
-						iter != scene->selectionnotifier_list->end(); ++iter)
-					{
-						(*iter)->notify(event);
-					}
-					cmzn_selectionevent_destroy(&event);
+						selectionevent->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
+					scene->notifySelectionevent(selectionevent);
+					cmzn_selectionevent_destroy(&selectionevent);
 				}
 				FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 					cmzn_graphics_update_selected, NULL, scene->list_of_graphics);
