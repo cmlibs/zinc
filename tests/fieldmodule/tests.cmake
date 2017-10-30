@@ -15,6 +15,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/region_io.cpp
 	${CURRENT_TEST}/create_image_processing.cpp
 	${CURRENT_TEST}/create_fibre_axes.cpp
+	${CURRENT_TEST}/fieldassignment.cpp
 	${CURRENT_TEST}/fieldconstant.cpp
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp

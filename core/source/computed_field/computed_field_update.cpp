@@ -32,7 +32,7 @@ int cmzn_nodeset_assign_field_from_source(
 	cmzn_field_id source_field, cmzn_field_id conditional_field,
 	FE_value time)
 {
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	if (nodeset && destination_field && source_field)
 	{
 		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
@@ -44,7 +44,7 @@ int cmzn_nodeset_assign_field_from_source(
 			const int result = cmzn_field_discover_element_xi_host_mesh_from_source(destination_field, source_field);
 			if (CMZN_OK != result)
 			{
-				return 0;
+				return result;
 			}
 		}
 		const int number_of_components =
@@ -69,7 +69,7 @@ int cmzn_nodeset_assign_field_from_source(
 				cmzn_fieldcache_set_node(field_cache, node);
 				if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, field_cache))
 				{
-					if ((CMZN_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
+					if ((cmzn_field_is_defined_at_location(destination_field, field_cache)))
 					{
 						switch (value_type)
 						{
@@ -112,7 +112,7 @@ int cmzn_nodeset_assign_field_from_source(
 							{
 								display_message(ERROR_MESSAGE,
 									"cmzn_nodeset_assign_field_from_source.  Unsupported value type.");
-								return_code = 0;
+								return_code = CMZN_ERROR_NOT_IMPLEMENTED;
 							} break;
 						}
 					}
@@ -129,6 +129,14 @@ int cmzn_nodeset_assign_field_from_source(
 					"  Either source field isn't defined at node "
 					"or destination field could not be set.",
 					success_count, selected_count);
+				if (success_count > 0)
+				{
+					return_code = CMZN_WARNING_PART_DONE;
+				}
+				else
+				{
+					return_code = CMZN_ERROR_NOT_FOUND;
+				}
 			}
 			delete[] values;
 			cmzn_fieldcache_destroy(&field_cache);
@@ -140,14 +148,14 @@ int cmzn_nodeset_assign_field_from_source(
 			display_message(ERROR_MESSAGE,
 				"cmzn_nodeset_assign_field_from_source.  "
 				"Value type and number of components in source and destination fields must match.");
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"cmzn_nodeset_assign_field_from_source.  Invalid argument(s)");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return (return_code);
 }

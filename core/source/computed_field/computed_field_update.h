@@ -35,7 +35,8 @@ Global types
  * @param conditional_field  If supplied, only assigns to nodes for which this
  * field evaluates to true. If NULL, assigns to all nodes in nodeset.
  * @param time  The time to assign values at
- * @return  1 on success, 0 on error.
+ * @return  Result OK on success, WARNING_PART_DONE if only some values assigned,
+ * otherwise any other error.
  */
 int cmzn_nodeset_assign_field_from_source(
 	cmzn_nodeset_id nodeset, cmzn_field_id destination_field,

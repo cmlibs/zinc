@@ -67,6 +67,7 @@ set(INTERFACE_SRCS
     ../interface/field.i
     ../interface/fieldmodule.i
     ../interface/fieldcache.i
+    ../interface/fieldassignment.i
     ../interface/fieldsmoothing.i
     ../interface/font.i
     ../interface/glyph.i
