@@ -1275,8 +1275,10 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	else // if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation()))) // should work with any location now
 	{
 		// small efficiency gain can be made by allocating following in valueCache:
-		FE_value *down_values = new FE_value[source_number_of_components];
-		FE_value *coordinate_values = new FE_value[coordinate_number_of_components];
+		FE_value *down_values = new FE_value[source_number_of_components*2];
+		FE_value *up_values = down_values + source_number_of_components;
+		FE_value *coordinate_values = new FE_value[coordinate_number_of_components*2];
+		FE_value *original_coordinate_values = coordinate_values + coordinate_number_of_components;
 
 		cmzn_fieldcache& extraCache = *valueCache.getOrCreateExtraCache(cache);
 		Field_location *location = cache.cloneLocation();
@@ -1290,37 +1292,24 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		if (coordinateValueCache)
 		{
 			return_code = 1;
-			for (j = 0 ; j < coordinate_number_of_components ; j++)
+			for (j = 0; j < coordinate_number_of_components; j++)
 			{
-				coordinate_values[j] = coordinateValueCache->values[j];
+				original_coordinate_values[j] = coordinate_values[j] = coordinateValueCache->values[j];
 			}
 			for (i = 0 ; i < coordinate_number_of_components ; i++)
 			{
 				for (k = 0 ; k < 2 ; k++)
 				{
-					double sign;
 					FE_value *field_values;
 					if (k == 0)
 					{
-						sign = -1;
+						coordinate_values[i] -= perturb_scale;
 						field_values = down_values;
 					}
 					else
 					{
-						sign = 1;
-						field_values = valueCache.values + i * source_number_of_components;
-					}
-					for (j = 0 ; j < coordinate_number_of_components ; j++)
-					{
-						if (i == j + 1)
-						{
-							// Set back the perturbed value from last time
-							coordinate_values[j] = coordinateValueCache->values[j];
-						}
-						if (i == j)
-						{
-							coordinate_values[j] += sign * perturb_scale * coordinate_values[j];
-						}
+						coordinate_values[i] += perturb_scale;
+						field_values = up_values;
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
 					extraCache.setAssignInCacheOnly(true);
@@ -1341,6 +1330,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 								"Computed_field_gradient::evaluate.  "
 								"Unable to evaluate source field when evaluating nodal finite difference.");
 							return_code = 0;
+							break;
 						}
 					}
 					else
@@ -1349,15 +1339,18 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 							"Computed_field_gradient::evaluate.  "
 							"Unable to set coordinate field when evaluating nodal finite difference.");
 						return_code = 0;
+						break;
 					}
-					extraCache.setAssignInCacheOnly(false);
+					// restore original coordinate
+					coordinate_values[i] = original_coordinate_values[i];
 				}
 				for (j = 0 ; j < source_number_of_components ; j++)
 				{
-					valueCache.values[i * source_number_of_components + j] =
-						(valueCache.values[i * source_number_of_components + j] - down_values[j]) / (2.0 * perturb_scale);
+					valueCache.values[j*coordinate_number_of_components + i] =
+						(up_values[j] - down_values[j]) / (2.0 * perturb_scale);
 				}
 			}
+			extraCache.setAssignInCacheOnly(false);
 		}
 		delete[] down_values;
 		delete[] coordinate_values;

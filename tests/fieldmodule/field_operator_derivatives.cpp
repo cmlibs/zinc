@@ -10,10 +10,14 @@
 
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldcomposite.hpp>
-#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmatrixoperators.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
 
 #include "zinctestsetupcpp.hpp"
 
@@ -594,4 +598,59 @@ TEST(ZincField, field_operator_derivatives_3d)
 	compare_double_array("expected_subtract_deformed_temperature_derivatives1", expected_subtract_deformed_temperature_derivatives1, subtract_deformed_temperature_derivatives1, 12, 3, temperatureDerivatives1Tol);
 	compare_double_array("expected_multiply_deformed_temperature_derivatives1", expected_multiply_deformed_temperature_derivatives1, multiply_deformed_temperature_derivatives1, 12, 3, temperatureDerivatives1Tol);
 	compare_double_array("expected_divide_deformed_temperature_derivatives1", expected_divide_deformed_temperature_derivatives1, divide_deformed_temperature_derivatives1, 12, 3, temperatureDerivatives1Tol);
+}
+
+/** Test evaluation of gradient at nodes which uses a finite different approximation */
+TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	// first scale coordinates so not unit cube
+	const double scaleValues[3] = { 1.2, 2.3, 3.4 };
+	Field scale = zinc.fm.createFieldConstant(3, scaleValues);
+	Field scaleCoordinates = coordinates*scale;
+	Fieldassignment fieldassignment = coordinates.createFieldassignment(scaleCoordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	const double matrixValues[9] =
+	{
+		 1.1, -0.1,  0.5,
+		 0.2,  0.7, -0.2,
+		-0.3,  0.1, -1.6
+	};
+	Field matrix = zinc.fm.createFieldConstant(9, matrixValues);
+	EXPECT_TRUE(matrix.isValid());
+	Field transCoordinates = zinc.fm.createFieldMatrixMultiply(3, matrix, coordinates);
+	EXPECT_TRUE(transCoordinates.isValid());
+	Field dx_dX = zinc.fm.createFieldGradient(transCoordinates, coordinates);
+	EXPECT_TRUE(dx_dX.isValid());
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(dx_dX.isValid());
+
+	double values[9];
+	EXPECT_EQ(RESULT_OK, matrix.evaluateReal(cache, 9, values));
+	for (int c = 0; c < 9; ++c)
+	{
+		EXPECT_DOUBLE_EQ(matrixValues[c], values[c]);
+	}
+	const double tolerance = 1.0E-6;
+	for (int n = 0; n < 8; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, dx_dX.evaluateReal(cache, 9, values));
+		for (int c = 0; c < 9; ++c)
+		{
+			EXPECT_NEAR(matrixValues[c], values[c], tolerance);
+		}
+	}
 }

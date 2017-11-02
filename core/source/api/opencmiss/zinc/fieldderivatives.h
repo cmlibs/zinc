@@ -74,14 +74,17 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
  * of components in the <source_field> and <coordinate_field>.
  * Note the <source_field> does not have to be a scalar. If it has more than 1
  * component, all the derivatives of its first component w.r.t. the components
- * of <coordinate_field> will be returned first, followed by those of the second
+ * of <coordinate_field> will be returned first, followed by the second
  * component, etc. Hence, this function can return the standard gradient of a
  * scalar source_field, and the deformation gradient if a deformed coordinate
  * field is passed as the source_field.
+ * The gradient can also be calculated at nodes, albeit approximately using a
+ * finite difference approach by perturbing the coordinate field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to calculate gradients for.
- * @param coordinate_field  Field supplying location.
+ * @param coordinate_field  Field supplying coordinate location over which
+ * the source field is expected to vary.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
