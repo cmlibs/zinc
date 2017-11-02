@@ -12,8 +12,12 @@
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
+#include <opencmiss/zinc/fieldcoordinatetransformation.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
 #include <opencmiss/zinc/status.hpp>
 
@@ -143,6 +147,187 @@ TEST(ZincFieldassignment, cubeOffsetScale)
 		for (int c = 0; c < 3; ++c)
 		{
 			EXPECT_EQ(expectedCoordinates[n][c]*scaleValues[c] + offsetValues[c], x[c]);
+		}
+	}
+}
+
+TEST(ZincFieldassignment, transformDerivatives)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	// offset radius and scale coordinates
+	const double offsetValues[3] = { 1.0, 0.0, 0.0 };
+	Field offset = zinc.fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	const double scaleValues[3] = { 2.0, 0.78539816339744830961566084581988, 0.5 };
+	Field scale = zinc.fm.createFieldConstant(3, scaleValues);
+	EXPECT_TRUE(scale.isValid());
+	Field offsetScaleCoordinates = (coordinates + offset)*scale;
+	EXPECT_TRUE(offsetScaleCoordinates.isValid());
+
+	// cast coordinates to spherical polar coordinate system and convert to RC; this is target coordinates
+	Field sphericalCoordinates = zinc.fm.createFieldIdentity(offsetScaleCoordinates);
+	EXPECT_TRUE(sphericalCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, sphericalCoordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	Field newCoordinates = zinc.fm.createFieldCoordinateTransformation(sphericalCoordinates);
+	EXPECT_TRUE(newCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, newCoordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	const double oneValue = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &oneValue);
+	EXPECT_TRUE(one.isValid());
+
+	const int numberOfGaussPoints = 4;
+	FieldMeshIntegral targetVolume = zinc.fm.createFieldMeshIntegral(one, newCoordinates, mesh3d);
+	EXPECT_TRUE(targetVolume.isValid());
+	EXPECT_EQ(RESULT_OK, targetVolume.setNumbersOfPoints(1, &numberOfGaussPoints));
+	FieldMeshIntegral actualVolume = zinc.fm.createFieldMeshIntegral(one, coordinates, mesh3d);
+	EXPECT_TRUE(actualVolume.isValid());
+	EXPECT_EQ(RESULT_OK, actualVolume.setNumbersOfPoints(1, &numberOfGaussPoints));
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	double actualVolumeValue, targetVolumeValue;
+	const double volumeTolerance = 1.0E-6;
+	EXPECT_EQ(RESULT_OK, actualVolume.evaluateReal(cache, 1, &actualVolumeValue));
+	EXPECT_NEAR(2.0, actualVolumeValue, volumeTolerance);
+	EXPECT_EQ(RESULT_OK, targetVolume.evaluateReal(cache, 1, &targetVolumeValue));
+	EXPECT_NEAR(26.106769000328580, targetVolumeValue, volumeTolerance);
+
+	Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+
+	// compute expected derivatives from spherical polar vector coordinate transformation
+	const double d1Values[3] = { 2.0, 0.0, 0.0 };
+	Field d1 = zinc.fm.createFieldConstant(3, d1Values);
+	EXPECT_TRUE(d1.isValid());
+	EXPECT_EQ(RESULT_OK, d1.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	const double d2Values[3] = { 0.0, 0.78539816339744830961566084581988, 0.0 };
+	Field d2 = zinc.fm.createFieldConstant(3, d2Values);
+	EXPECT_TRUE(d2.isValid());
+	EXPECT_EQ(RESULT_OK, d2.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	const double d3Values[3] = { 0.0, 0.0, 0.5 };
+	Field d3 = zinc.fm.createFieldConstant(3, d3Values);
+	EXPECT_TRUE(d3.isValid());
+	EXPECT_EQ(RESULT_OK, d3.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	Field v1 = zinc.fm.createFieldVectorCoordinateTransformation(d1, sphericalCoordinates);
+	EXPECT_TRUE(v1.isValid());
+	EXPECT_EQ(RESULT_OK, v1.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	Field v2 = zinc.fm.createFieldVectorCoordinateTransformation(d2, sphericalCoordinates);
+	EXPECT_TRUE(v2.isValid());
+	EXPECT_EQ(RESULT_OK, v2.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	Field v3 = zinc.fm.createFieldVectorCoordinateTransformation(d3, sphericalCoordinates);
+	EXPECT_TRUE(v3.isValid());
+	EXPECT_EQ(RESULT_OK, v3.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	// Verify the computed values which are stored here:
+	const double v1ValuesExpected[12][3] = {
+		{ 2.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
+		{ 2.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
+		{ 2.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
+		{ 1.4142135623730951, 1.4142135623730951, 0.00000000000000000 },
+		{ 1.4142135623730951, 1.4142135623730951, 0.00000000000000000 },
+		{ 1.4142135623730951, 1.4142135623730951, 0.00000000000000000 },
+		{ 1.7551651237807455, 0.00000000000000000, 0.95885107720840601 },
+		{ 1.7551651237807455, 0.00000000000000000, 0.95885107720840601 },
+		{ 1.7551651237807455, 0.00000000000000000, 0.95885107720840601 },
+		{ 1.2410891611274912, 1.2410891611274912, 0.95885107720840601 },
+		{ 1.2410891611274912, 1.2410891611274912, 0.95885107720840601 },
+		{ 1.2410891611274912, 1.2410891611274912, 0.95885107720840601 }
+	};
+	const double v2ValuesExpected[12][3] = {
+		{ 0.00000000000000000, 1.5707963267948966, 0.00000000000000000 },
+		{ 0.00000000000000000, 3.1415926535897931, 0.00000000000000000 },
+		{ 0.00000000000000000, 4.7123889803846897, 0.00000000000000000 },
+		{ -1.1107207345395915, 1.1107207345395915, 0.00000000000000000 },
+		{ -2.2214414690791831, 2.2214414690791831, 0.00000000000000000 },
+		{ -3.3321622036187750, 3.3321622036187750, 0.00000000000000000 },
+		{ 0.00000000000000000, 1.3785034646766525, 0.00000000000000000 },
+		{ 0.00000000000000000, 2.7570069293533050, 0.00000000000000000 },
+		{ 0.00000000000000000, 4.1355103940299571, 0.00000000000000000 },
+		{ -0.97474914776201138, 0.97474914776201138, 0.00000000000000000 },
+		{ -1.9494982955240228, 1.9494982955240228, 0.00000000000000000 },
+		{ -2.9242474432860339, 2.9242474432860339, 0.00000000000000000 }
+	};
+	const double v3ValuesExpected[12][3] = {
+		{ 0.00000000000000000, 0.00000000000000000, 1.0000000000000000 },
+		{ 0.00000000000000000, 0.00000000000000000, 2.0000000000000000 },
+		{ 0.00000000000000000, 0.00000000000000000, 3.0000000000000000 },
+		{ 0.00000000000000000, 0.00000000000000000, 1.0000000000000000 },
+		{ 0.00000000000000000, 0.00000000000000000, 2.0000000000000000 },
+		{ 0.00000000000000000, 0.00000000000000000, 3.0000000000000000 },
+		{ -0.47942553860420301, 0.00000000000000000, 0.87758256189037276 },
+		{ -0.95885107720840601, 0.00000000000000000, 1.7551651237807455 },
+		{ -1.4382766158126090, 0.00000000000000000, 2.6327476856711183 },
+		{ -0.33900504942104487, -0.33900504942104487, 0.87758256189037276 },
+		{ -0.67801009884208974, -0.67801009884208974, 1.7551651237807455 },
+		{ -1.0170151482631347, -1.0170151482631347, 2.6327476856711183 }
+	};
+
+	const double derivativeToleranceFine = 1.0E-8;
+	double v1Values[12][3];
+	double v2Values[12][3];
+	double v3Values[12][3];
+	for (int n = 0; n < 12; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, v1.evaluateReal(cache, 3, v1Values[n]));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v1ValuesExpected[n][c], v1Values[n][c], derivativeToleranceFine);
+		}
+		EXPECT_EQ(RESULT_OK, v2.evaluateReal(cache, 3, v2Values[n]));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v2ValuesExpected[n][c], v2Values[n][c], derivativeToleranceFine);
+		}
+		EXPECT_EQ(RESULT_OK, v3.evaluateReal(cache, 3, v3Values[n]));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v3ValuesExpected[n][c], v3Values[n][c], derivativeToleranceFine);
+		}
+	}
+
+	// assign the coordinates to their new values on the spheroid
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+
+	EXPECT_EQ(RESULT_OK, actualVolume.evaluateReal(cache, 1, &actualVolumeValue));
+	EXPECT_NEAR(26.010465708524421, actualVolumeValue, volumeTolerance);
+
+	// verify the nodal derivatives are close enough to the expected values
+	// use coarser tolerance since derivatives are calculated using finite differences
+	const double derivativeToleranceCoarse = 1.0E-6;
+	double dx_ds1[3], dx_ds2[3], dx_ds3[3];
+	for (int n = 0; n < 12; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, dx_ds1));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v1ValuesExpected[n][c], dx_ds1[c], derivativeToleranceCoarse);
+		}
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS2, /*version*/1, 3, dx_ds2));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v2ValuesExpected[n][c], dx_ds2[c], derivativeToleranceCoarse);
+		}
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS3, /*version*/1, 3, dx_ds3));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v3ValuesExpected[n][c], dx_ds3[c], derivativeToleranceFine);
 		}
 	}
 }
