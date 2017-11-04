@@ -332,13 +332,24 @@ file(WRITE ${DEPFILE}
 	"include(CMakeFindDependencyMacro)\n"
 	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\n"
 )
+file(APPEND ${DEPFILE} "
+if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
+    if (TARGET ${ZINC_STATIC_TARGET})
+        target_include_directories(${ZINC_STATIC_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/core)
+    endif ()
+endif ()
+"
+)
+file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
 foreach(ZINCDEP ${ZINC_DEPS})
     if (${ZINCDEP}_FOUND)
-        file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\n")
-	else ()
+        file(APPEND ${DEPFILE} "set(${ZINCDEP}_FIND_SYSTEM ${${ZINCDEP}_FIND_SYSTEM})\nfind_dependency(${ZINCDEP})\n")
+    else ()
         message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
     endif ()
 endforeach()
+file(APPEND ${DEPFILE} "endif ()\n")
+
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
 install(FILES
         ${DEPFILE}
