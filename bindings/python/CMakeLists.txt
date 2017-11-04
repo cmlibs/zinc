@@ -9,14 +9,12 @@ mark_as_advanced(VIRTUALENV_EXEC)
 
 # Bindings options
 set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
-if (DEFINED ZN_VIRTUALENV_INSTALL_PREFIX)
-    set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZN_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
-endif ()
 
-set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment.")
-if (DEFINED ZN_USE_VIRTUALENV)
-    set(ZINC_USE_VIRTUALENV ${ZN_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
+if (NOT DEFINED ZINC_USE_VIRTUALENV)
+    set(ZINC_USE_VIRTUALENV TRUE)
 endif ()
+set(ZINC_USE_VIRTUALENV ${ZINC_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment.")
+
 if (NOT EXISTS "${VIRTUALENV_EXEC}")
     set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
     message(STATUS "The program virtualenv was not found disabling it's use.")
