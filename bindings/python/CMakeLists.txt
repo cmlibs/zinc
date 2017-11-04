@@ -107,8 +107,14 @@ set(SETUP_PY_PACKAGE_FILES )
 foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     get_filename_component(MODULE_NAME ${SWIG_INTERFACE} NAME_WE)
     list(APPEND MODULE_PY_FILES ${MODULE_NAME}.py)
-    SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
-    SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
+    if (CMAKE_VERSION VERSION_GREATER 3.7.2)
+        swig_add_library(${MODULE_NAME}
+          LANGUAGE python
+          SOURCES ${SWIG_INTERFACE})
+    else ()
+        swig_add_module(${MODULE_NAME} python ${SWIG_INTERFACE})
+    endif ()
+    swig_link_libraries(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
     set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
     # Disable use of Debug Python libraries when not present on Windows
     # See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
