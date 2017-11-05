@@ -14,16 +14,18 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/node.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_private.hpp"
-#include "image_processing/computed_field_image_filter.h"
 #include "computed_field/computed_field_coordinate.h"
+#include "computed_field/computed_field_derivatives.h"
+#include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
+#include "finite_element/finite_element_nodeset.hpp"
+#include "image_processing/computed_field_image_filter.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/message.h"
-#include "computed_field/computed_field_derivatives.h"
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkDerivativeImageFilter.h"
@@ -1113,6 +1115,120 @@ namespace {
 
 const char computed_field_gradient_type_string[] = "gradient";
 
+/** Derived value cache which computes perturbation size from range of
+  * coordinate field, and has storage for temporary arrays. */
+class GradientRealFieldValueCache : public RealFieldValueCache
+{
+public:
+	bool needEvaluatePerturbationSize;
+	FE_value perturbationSize;
+	std::vector<FE_value> cacheValues;
+
+	GradientRealFieldValueCache(int sourceComponentCount, int coordinateComponentCount) :
+		RealFieldValueCache(sourceComponentCount*coordinateComponentCount),
+		needEvaluatePerturbationSize(true),
+		perturbationSize(1.0E-5),
+		cacheValues(sourceComponentCount*2 + coordinateComponentCount*3)  // large enough for evaluate and getNodePerturbationSize
+	{
+	}
+
+	virtual ~GradientRealFieldValueCache()
+	{
+	}
+
+	FE_value getPerturbationSize(cmzn_fieldcache& cache, cmzn_field *coordinateField, Field_location *location)
+	{
+		if (this->needEvaluatePerturbationSize)
+		{
+			this->needEvaluatePerturbationSize = false;
+			this->perturbationSize = 1.0E-5;
+			Field_node_location *nodeLocation = dynamic_cast<Field_node_location*>(location);
+			if (nodeLocation)
+			{
+				const int componentCount = coordinateField->number_of_components;
+				FE_value *minimums = this->cacheValues.data();
+				FE_value *maximums = minimums + componentCount;
+				FE_value *values = maximums + componentCount;
+				FE_nodeset *feNodeset = FE_node_get_FE_nodeset(nodeLocation->get_node());
+				// get range of coordinate field over nodeset
+				cmzn_nodeiterator *iter = feNodeset->createNodeiterator();
+				if (iter)
+				{
+					cmzn_node *node;
+					bool first = true;
+					while ((node = iter->nextNode()))
+					{
+						cache.setNode(node);
+						if (CMZN_OK == cmzn_field_evaluate_real(coordinateField, &cache, componentCount, values))
+						{
+							if (first)
+							{
+								for (int c = 0; c < componentCount; ++c)
+								{
+									minimums[c] = maximums[c] = values[c];
+								}
+								first = false;
+							}
+							else
+							{
+								for (int c = 0; c < componentCount; ++c)
+								{
+									if (values[c] < minimums[c])
+									{
+										minimums[c] = values[c];
+									}
+									else if (values[c] > maximums[c])
+									{
+										maximums[c] = values[c];
+									}
+								}
+							}
+						}
+					}
+					cmzn_nodeiterator_destroy(&iter);
+					if (!first)
+					{
+						first = true;
+						FE_value maximumRange = 0.0;
+						for (int c = 0; c < componentCount; ++c)
+						{
+							values[c] = maximums[c] - minimums[c];
+							if (values[c] > 0.0)
+							{
+								if (first)
+								{
+									maximumRange = values[c];
+									first = false;
+								}
+								else if (values[c] > maximumRange)
+								{
+									maximumRange = values[c];
+								}
+							}
+						}
+						if (maximumRange > 0.0)
+						{
+							this->perturbationSize = maximumRange*1.0E-6;
+						}
+					}
+				}
+			}
+		}
+		return this->perturbationSize;
+	}
+
+	static GradientRealFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<GradientRealFieldValueCache*>(valueCache);
+	}
+
+	static GradientRealFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<GradientRealFieldValueCache&>(valueCache);
+	}
+
+};
+
 class Computed_field_gradient : public Computed_field_core
 {
 public:
@@ -1152,7 +1268,12 @@ private:
 		}
 	}
 
-	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	{
+		return new GradientRealFieldValueCache(
+			getSourceField(0)->number_of_components,
+			getSourceField(1)->number_of_components);
+	}
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
@@ -1161,26 +1282,16 @@ private:
 	char* get_command_string();
 };
 
-/***************************************************************************//**
- * Implemented for element_xi and node locations
- */
-bool Computed_field_gradient::is_defined_at_location(cmzn_fieldcache& cache)
-{
-	return ((0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation())) ||
-		(0 != dynamic_cast<Field_node_location*>(cache.getLocation()))) &&
-		Computed_field_core::is_defined_at_location(cache);
-}
-
 int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	GradientRealFieldValueCache& valueCache = GradientRealFieldValueCache::cast(inValueCache);
 	Field_element_xi_location* element_xi_location;
 	//Field_node_location* node_location;
 	cmzn_field_id source_field = getSourceField(0);
 	cmzn_field_id coordinate_field = getSourceField(1);
-	int source_number_of_components = source_field->number_of_components;
-	int coordinate_number_of_components = coordinate_field->number_of_components;
+	const int source_number_of_components = source_field->number_of_components;
+	const int coordinate_number_of_components = coordinate_field->number_of_components;
 	/* cannot calculate derivatives for gradient yet */
 	valueCache.derivatives_valid = 0;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
@@ -1272,43 +1383,40 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			}
 		}
 	}
-	else // if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation()))) // should work with any location now
+	else // Do a finite difference calculation varying the coordinate field: should work with any location
 	{
-		// small efficiency gain can be made by allocating following in valueCache:
-		FE_value *down_values = new FE_value[source_number_of_components*2];
+		// temporary arrays are packed in GradientRealFieldValueCache::cacheValues:
+		FE_value *down_values = valueCache.cacheValues.data();
 		FE_value *up_values = down_values + source_number_of_components;
-		FE_value *coordinate_values = new FE_value[coordinate_number_of_components*2];
+		FE_value *coordinate_values = up_values + source_number_of_components;
 		FE_value *original_coordinate_values = coordinate_values + coordinate_number_of_components;
 
 		cmzn_fieldcache& extraCache = *valueCache.getOrCreateExtraCache(cache);
+		const FE_value perturbationSize = valueCache.getPerturbationSize(extraCache, coordinate_field, cache.getLocation());
 		Field_location *location = cache.cloneLocation();
 		extraCache.setLocation(location);
-
-		/* Do a finite difference calculation varying the coordinate field */
-		int i, j, k;
-		const FE_value perturb_scale = 1e-5;
 
 		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(extraCache));
 		if (coordinateValueCache)
 		{
 			return_code = 1;
-			for (j = 0; j < coordinate_number_of_components; j++)
+			for (int i = 0; i < coordinate_number_of_components; ++i)
 			{
-				original_coordinate_values[j] = coordinate_values[j] = coordinateValueCache->values[j];
+				original_coordinate_values[i] = coordinate_values[i] = coordinateValueCache->values[i];
 			}
-			for (i = 0 ; i < coordinate_number_of_components ; i++)
+			for (int i = 0 ; i < coordinate_number_of_components ; ++i)
 			{
-				for (k = 0 ; k < 2 ; k++)
+				for (int k = 0 ; k < 2 ; ++k)
 				{
 					FE_value *field_values;
 					if (k == 0)
 					{
-						coordinate_values[i] -= perturb_scale;
+						coordinate_values[i] -= perturbationSize;
 						field_values = down_values;
 					}
 					else
 					{
-						coordinate_values[i] += perturb_scale;
+						coordinate_values[i] += perturbationSize;
 						field_values = up_values;
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
@@ -1344,16 +1452,14 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					// restore original coordinate
 					coordinate_values[i] = original_coordinate_values[i];
 				}
-				for (j = 0 ; j < source_number_of_components ; j++)
+				for (int j = 0 ; j < source_number_of_components ; ++j)
 				{
 					valueCache.values[j*coordinate_number_of_components + i] =
-						(up_values[j] - down_values[j]) / (2.0 * perturb_scale);
+						(up_values[j] - down_values[j]) / (2.0*perturbationSize);
 				}
 			}
 			extraCache.setAssignInCacheOnly(false);
 		}
-		delete[] down_values;
-		delete[] coordinate_values;
 	}
 	return (return_code);
 }
