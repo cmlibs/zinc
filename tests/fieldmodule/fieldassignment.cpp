@@ -155,7 +155,11 @@ TEST(ZincFieldassignment, transformDerivatives)
 {
 	ZincTestSetupCpp zinc;
 
+	// read coordinates and save a copy
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+	FieldFiniteElement copyCoordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(copyCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, copyCoordinates.setName("copyCoordinates"));
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
 	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
@@ -230,6 +234,20 @@ TEST(ZincFieldassignment, transformDerivatives)
 	EXPECT_TRUE(v3.isValid());
 	EXPECT_EQ(RESULT_OK, v3.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
 	// Verify the computed values which are stored here:
+	const double xValuesExpected[12][3] = {
+		{2.0000000000000000, 0.00000000000000000, 0.00000000000000000},
+		{ 4.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
+		{ 6.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
+		{ 1.4142135623730951, 1.4142135623730951, 0.00000000000000000 },
+		{ 2.8284271247461903, 2.8284271247461903, 0.00000000000000000 },
+		{ 4.2426406871192857, 4.2426406871192857, 0.00000000000000000 },
+		{ 1.7551651237807455, 0.00000000000000000, 0.95885107720840601 },
+		{ 3.5103302475614910, 0.00000000000000000, 1.9177021544168120 },
+		{ 5.2654953713422366, 0.00000000000000000, 2.8765532316252180 },
+		{ 1.2410891611274912, 1.2410891611274912, 0.95885107720840601 },
+		{ 2.4821783222549825, 2.4821783222549825, 1.9177021544168120 },
+		{ 3.7232674833824739, 3.7232674833824739, 2.8765532316252180 }
+	};
 	const double v1ValuesExpected[12][3] = {
 		{ 2.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
 		{ 2.0000000000000000, 0.00000000000000000, 0.00000000000000000 },
@@ -274,6 +292,7 @@ TEST(ZincFieldassignment, transformDerivatives)
 	};
 
 	const double derivativeToleranceFine = 1.0E-8;
+	double xValues[12][3];
 	double v1Values[12][3];
 	double v2Values[12][3];
 	double v3Values[12][3];
@@ -282,6 +301,11 @@ TEST(ZincFieldassignment, transformDerivatives)
 		Node node = nodes.findNodeByIdentifier(n + 1);
 		EXPECT_TRUE(node.isValid());
 		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, newCoordinates.evaluateReal(cache, 3, xValues[n]));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(xValuesExpected[n][c], xValues[n][c], derivativeToleranceFine);
+		}
 		EXPECT_EQ(RESULT_OK, v1.evaluateReal(cache, 3, v1Values[n]));
 		for (int c = 0; c < 3; ++c)
 		{
@@ -308,12 +332,17 @@ TEST(ZincFieldassignment, transformDerivatives)
 	// verify the nodal derivatives are close enough to the expected values
 	// use coarser tolerance since derivatives are calculated using finite differences
 	const double derivativeToleranceCoarse = 1.0E-6;
-	double dx_ds1[3], dx_ds2[3], dx_ds3[3];
+	double x[3], dx_ds1[3], dx_ds2[3], dx_ds3[3];
 	for (int n = 0; n < 12; ++n)
 	{
 		Node node = nodes.findNodeByIdentifier(n + 1);
 		EXPECT_TRUE(node.isValid());
 		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, x));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(xValuesExpected[n][c], x[c], derivativeToleranceFine);
+		}
 		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, dx_ds1));
 		for (int c = 0; c < 3; ++c)
 		{
@@ -325,6 +354,38 @@ TEST(ZincFieldassignment, transformDerivatives)
 			EXPECT_NEAR(v2ValuesExpected[n][c], dx_ds2[c], derivativeToleranceCoarse);
 		}
 		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS3, /*version*/1, 3, dx_ds3));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v3ValuesExpected[n][c], dx_ds3[c], derivativeToleranceFine);
+		}
+	}
+
+	// check that assignment of coordinates into indentically defined
+	// finite element field copyCoordinates copies all derivatives
+	Fieldassignment fieldassignment2 = copyCoordinates.createFieldassignment(coordinates);
+	EXPECT_TRUE(fieldassignment2.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment2.assign());
+	for (int n = 0; n < 12; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, copyCoordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, x));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(xValuesExpected[n][c], x[c], derivativeToleranceFine);
+		}
+		EXPECT_EQ(RESULT_OK, copyCoordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, dx_ds1));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v1ValuesExpected[n][c], dx_ds1[c], derivativeToleranceCoarse);
+		}
+		EXPECT_EQ(RESULT_OK, copyCoordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS2, /*version*/1, 3, dx_ds2));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(v2ValuesExpected[n][c], dx_ds2[c], derivativeToleranceCoarse);
+		}
+		EXPECT_EQ(RESULT_OK, copyCoordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS3, /*version*/1, 3, dx_ds3));
 		for (int c = 0; c < 3; ++c)
 		{
 			EXPECT_NEAR(v3ValuesExpected[n][c], dx_ds3[c], derivativeToleranceFine);
