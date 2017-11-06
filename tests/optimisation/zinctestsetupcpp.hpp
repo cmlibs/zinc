@@ -11,10 +11,11 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.hpp>
 #include <opencmiss/zinc/context.hpp>
-#include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
+#include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/result.hpp>
+#include <opencmiss/zinc/status.hpp>
 
 using namespace OpenCMISS::Zinc;
 

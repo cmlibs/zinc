@@ -17,6 +17,7 @@
 #include "zinctestsetupcpp.hpp"
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
@@ -253,5 +254,127 @@ TEST(ZincOptimisation, tricubicFit)
 	EXPECT_EQ(OK, result = volume.evaluateReal(cache, 1, &volumeValue));
 	EXPECT_NEAR(expectedVolumeValue, volumeValue, tolerance);
 
+	cmzn_deallocate(solutionReport);
+}
+
+// Optimise z displacement of nodes on top of a linear cube to double
+// its volume using optimisation with partial field assignment
+TEST(ZincOptimisation, addFieldassignment)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	// read twice to get copy of coordiantes in 'reference_coordiantes'
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(referenceCoordinates.isValid());
+	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+
+	const double zeroValue = 0.0;
+	Field zero = zinc.fm.createFieldConstant(1, &zeroValue);
+	EXPECT_TRUE(zero.isValid());
+	Field zOffset = zinc.fm.createFieldConstant(1, &zeroValue);
+	EXPECT_TRUE(zOffset.isValid());
+	Field offsetComponentFields[] = { zero, zero, zOffset };
+	Field offset = zinc.fm.createFieldConcatenate(3, offsetComponentFields);
+	EXPECT_TRUE(offset.isValid());
+
+	Field newCoordinates = referenceCoordinates + offset;
+	EXPECT_TRUE(newCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, newCoordinates.setName("newCoordinates"));
+
+	const double oneValue = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &oneValue);
+	EXPECT_TRUE(one.isValid());
+	FieldMeshIntegral volume = zinc.fm.createFieldMeshIntegral(one, coordinates, mesh3d);
+	const int numberOfGaussPoints = 1;
+	EXPECT_EQ(RESULT_OK, volume.setNumbersOfPoints(1, &numberOfGaussPoints));
+	const double twoValue = 2.0;
+	Field two = zinc.fm.createFieldConstant(1, &twoValue);
+	EXPECT_TRUE(two.isValid());
+	Field diff = volume - two;
+	Field objective = diff*diff;
+	EXPECT_TRUE(objective.isValid());
+	EXPECT_EQ(RESULT_OK, objective.setName("objective"));
+
+	// make the set of nodes we wish to offset
+	FieldNodeGroup nodeGroupField = zinc.fm.createFieldNodeGroup(nodes);
+	EXPECT_TRUE(nodeGroupField.isValid());
+	NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	const int optimiseNodeIdentifiers[] = { 6, 8 };
+	const int iCount = sizeof(optimiseNodeIdentifiers)/sizeof(int);
+	for (int i = 0; i < iCount; ++i)
+	{
+		Node node = nodes.findNodeByIdentifier(optimiseNodeIdentifiers[i]);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, nodesetGroup.addNode(node));
+	}
+	EXPECT_EQ(iCount, nodesetGroup.getSize());
+
+	Fieldassignment fieldassignment = coordinates.createFieldassignment(newCoordinates);
+	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(nodesetGroup));
+	EXPECT_TRUE(fieldassignment.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	double volumeValueOut;
+	const double tolerance = 1.0E-6;
+	EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
+	EXPECT_NEAR(1.0, volumeValueOut, tolerance);
+
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addIndependentField(zOffset));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignment));
+	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
+
+	EXPECT_EQ(RESULT_OK, result = optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s\n", solutionReport);
+
+	EXPECT_EQ(RESULT_OK, volume.evaluateReal(cache, 1, &volumeValueOut));
+	EXPECT_NEAR(2.0, volumeValueOut, tolerance);
+	double zOffsetOut;
+	EXPECT_EQ(RESULT_OK, zOffset.evaluateReal(cache, 1, &zOffsetOut));
+	EXPECT_NEAR(2.0, zOffsetOut, tolerance);
+
+	double x[3];
+	const double expectedX[8][3] =
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 1.0, 0.0 },
+		{ 1.0, 1.0, 0.0 },
+		{ 0.0, 0.0, 1.0 },
+		{ 1.0, 0.0, 3.0 },
+		{ 0.0, 1.0, 1.0 },
+		{ 1.0, 1.0, 3.0 }
+	};
+	for (int n = 0; n < 8; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, x));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expectedX[n][c], x[c], tolerance);
+		}
+	}
 	cmzn_deallocate(solutionReport);
 }

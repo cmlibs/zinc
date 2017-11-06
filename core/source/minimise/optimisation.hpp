@@ -116,6 +116,8 @@ public:
 
 	void invalidate_independent_field_caches();
 
+	void do_fieldassignments();
+
 	/** @return  1 on success, 0 on failure */
 	int evaluate_objective_function(FE_value *valueAddress);
 
