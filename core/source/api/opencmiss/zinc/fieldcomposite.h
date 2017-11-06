@@ -145,13 +145,15 @@ ZINC_API int cmzn_field_component_destroy(cmzn_field_component_id *component_add
  * Creates a field which concatenates the components of all source fields, in
  * order, into a single vector.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param number_of_source_fields  The number of source fields in the array.
- * @param source_fields  The array of fields to be concatenating together.
+ * @param source_fields  The array of fields to be concatenated together.
+ * The implementation consolidates repeated fields into common source fields.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
-	int number_of_source_fields, cmzn_field_id *source_fields);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
+	cmzn_fieldmodule_id fieldmodule, int number_of_source_fields,
+	cmzn_field_id *source_fields);
 
 #ifdef __cplusplus
 }
