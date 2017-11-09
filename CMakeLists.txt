@@ -5,8 +5,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.0)
-cmake_policy(VERSION 3.9.3)
+cmake_minimum_required(VERSION 3.4.0)
+cmake_policy(VERSION 3.4.0)
 
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.1.2 LANGUAGES C CXX)
