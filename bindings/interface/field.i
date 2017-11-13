@@ -24,6 +24,7 @@
 
 %import "differentialoperator.i"
 %import "element.i"
+%import "fieldassignment.i"
 %import "fieldcache.i"
 %import "fieldmodule.i"
 %import "fieldsmoothing.i"
