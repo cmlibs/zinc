@@ -5,8 +5,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.0)
-cmake_policy(VERSION 3.9.3)
+cmake_minimum_required(VERSION 3.4.0)
+cmake_policy(VERSION 3.4.0)
 
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.1.2 LANGUAGES C CXX)
@@ -334,8 +334,8 @@ file(WRITE ${DEPFILE}
 )
 file(APPEND ${DEPFILE} "
 if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
-    if (TARGET ${ZINC_STATIC_TARGET})
-        target_include_directories(${ZINC_STATIC_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/core)
+    if (TARGET ${ZINC_STATIC_TARGET_NAME})
+        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
     endif ()
 endif ()
 "
