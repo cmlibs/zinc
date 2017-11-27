@@ -226,8 +226,9 @@ public:
 
 	Computed_field_derivative_image_filter *derivative_image_filter;
 
-	Computed_field_derivative(int xi_index) :
-		Computed_field_core(), xi_index(xi_index - 1)
+	/** @param xi_indexIn  Internal xi index starting at 0. */
+	Computed_field_derivative(int xi_indexIn) :
+		Computed_field_core(), xi_index(xi_indexIn)
 	{
 		/* Only construct the image filter version if it is required */
 		derivative_image_filter = (Computed_field_derivative_image_filter *)NULL;
@@ -242,7 +243,10 @@ public:
 	}
 
 private:
-	Computed_field_core *copy();
+	Computed_field_core *copy()
+	{
+		return new Computed_field_derivative(this->xi_index);
+	}
 
 	const char *get_type_string()
 	{
@@ -265,19 +269,6 @@ private:
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 };
-
-Computed_field_core* Computed_field_derivative::copy()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
-{
-	Computed_field_derivative* core = new Computed_field_derivative(xi_index);
-
-	return (core);
-} /* Computed_field_derivative::copy */
 
 int Computed_field_derivative::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -497,7 +488,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_derivative(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_derivative(xi_index));
+			new Computed_field_derivative(xi_index - 1));
 	}
 	else
 	{
