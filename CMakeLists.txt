@@ -5,7 +5,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.4.0)
+cmake_policy(VERSION 3.4.0)
 
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.1.2 LANGUAGES C CXX)
@@ -16,24 +17,40 @@ option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
 
-# Check bare minimum configuration
-set(ZINC_CMAKE_MODULE_PATH "" CACHE STRING "Location of OpenCMISS CMake modules.")
-if (DEFINED OPENCMISS_CMAKE_MODULE_PATH)
-    set(ZINC_CMAKE_MODULE_PATH "${OPENCMISS_CMAKE_MODULE_PATH}" CACHE STRING "Location of OpenCMISS CMake modules." FORCE)
-endif ()
-if (NOT EXISTS "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS/OCMiscFunctions.cmake")
-    message(FATAL_ERROR "'${ZINC_CMAKE_MODULE_PATH}/OpenCMISS/OCMiscFunctions.cmake' does not exists.  The OpenCMISS CMake modules may not be installed/available.")
+set(_CORRECT_CMAKE_MODULE_PATH FALSE)
+# First check if the CMAKE_MODULE_PATH is already set properly.
+foreach(_PATH ${CMAKE_MODULE_PATH})
+    if (EXISTS "${_PATH}/OCMiscFunctions.cmake")
+        set(_CORRECT_CMAKE_MODULE_PATH TRUE)
+        break()
+    endif ()
+endforeach()
+
+if (NOT _CORRECT_CMAKE_MODULE_PATH)
+    # Check bare minimum configuration
+    set(ZINC_CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}" CACHE STRING "Location of OpenCMISS CMake modules.")
+    if (EXISTS "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS/OCMiscFunctions.cmake")
+        list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/FindModuleWrappers")
+        list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}")
+        list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS")
+        set(_CORRECT_CMAKE_MODULE_PATH TRUE)
+    endif ()
 endif ()
 
-list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/FindModuleWrappers")
-list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}")
-list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS")
-
-set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
-if (DEFINED OPENCMISS_PACKAGE_CONFIG_DIR)
-    set(ZINC_PACKAGE_CONFIG_DIR "${OPENCMISS_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path)." FORCE)
+if (NOT _CORRECT_CMAKE_MODULE_PATH)
+    message(STATUS "CMAKE_MODULE_PATH: '${CMAKE_MODULE_PATH}'")
+    message(STATUS "ZINC_CMAKE_MODULE_PATH: '${ZINC_CMAKE_MODULE_PATH}'")
+    message(FATAL_ERROR "'OCMiscFunctions.cmake' was not found on the module path.  Check the value of CMAKE_MODULE_PATH and/or ZINC_CMAKE_MODULE_PATH.")
 endif ()
+
+if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
+    list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+endif ()
+
+if (NOT DEFINED ZINC_PACKAGE_CONFIG_DIR)
+    set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake")
+endif ()
+set(ZINC_PACKAGE_CONFIG_DIR "${ZINC_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
 
 if(ZINC_BUILD_BINDINGS)
     option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
@@ -315,13 +332,25 @@ file(WRITE ${DEPFILE}
 	"include(CMakeFindDependencyMacro)\n"
 	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\n"
 )
+file(APPEND ${DEPFILE} "
+if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
+    if (TARGET ${ZINC_STATIC_TARGET_NAME})
+        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
+    endif ()
+endif ()
+"
+)
+file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
 foreach(ZINCDEP ${ZINC_DEPS})
     if (${ZINCDEP}_FOUND)
-        file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\n")
-	else ()
+        string(TOUPPER ${ZINCDEP} ZINCDEP_UPPER)
+        file(APPEND ${DEPFILE} "    set(${ZINCDEP_UPPER}_FIND_SYSTEM ${${ZINCDEP_UPPER}_FIND_SYSTEM})\n    find_dependency(${ZINCDEP})\n")
+    else ()
         message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
     endif ()
 endforeach()
+file(APPEND ${DEPFILE} "endif ()\n")
+
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
 install(FILES
         ${DEPFILE}

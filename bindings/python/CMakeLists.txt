@@ -9,14 +9,12 @@ mark_as_advanced(VIRTUALENV_EXEC)
 
 # Bindings options
 set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
-if (DEFINED ZN_VIRTUALENV_INSTALL_PREFIX)
-    set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZN_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library." FORCE)
-endif ()
 
-set(ZINC_USE_VIRTUALENV TRUE CACHE BOOL "Install Zinc into virtual environment.")
-if (DEFINED ZN_USE_VIRTUALENV)
-    set(ZINC_USE_VIRTUALENV ${ZN_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment." FORCE)
+if (NOT DEFINED ZINC_USE_VIRTUALENV)
+    set(ZINC_USE_VIRTUALENV TRUE)
 endif ()
+set(ZINC_USE_VIRTUALENV ${ZINC_USE_VIRTUALENV} CACHE BOOL "Install Zinc into virtual environment.")
+
 if (NOT EXISTS "${VIRTUALENV_EXEC}")
     set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
     message(STATUS "The program virtualenv was not found disabling it's use.")
@@ -110,8 +108,14 @@ set(SETUP_PY_PACKAGE_FILES )
 foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     get_filename_component(MODULE_NAME ${SWIG_INTERFACE} NAME_WE)
     list(APPEND MODULE_PY_FILES ${MODULE_NAME}.py)
-    SWIG_ADD_MODULE(${MODULE_NAME} python ${SWIG_INTERFACE})
-    SWIG_LINK_LIBRARIES(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
+    if (CMAKE_VERSION VERSION_GREATER 3.7.2)
+        swig_add_library(${MODULE_NAME}
+          LANGUAGE python
+          SOURCES ${SWIG_INTERFACE})
+    else ()
+        swig_add_module(${MODULE_NAME} python ${SWIG_INTERFACE})
+    endif ()
+    swig_link_libraries(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
     set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
     # Disable use of Debug Python libraries when not present on Windows
     # See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
