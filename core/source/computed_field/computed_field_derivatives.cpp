@@ -1380,20 +1380,22 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		FE_value *down_values = valueCache.cacheValues.data();
 		FE_value *up_values = down_values + source_number_of_components;
 		FE_value *coordinate_values = up_values + source_number_of_components;
-		FE_value *original_coordinate_values = coordinate_values + coordinate_number_of_components;
 
-		cmzn_fieldcache& extraCache = *valueCache.getOrCreateExtraCache(cache);
-		const FE_value perturbationSize = valueCache.getPerturbationSize(extraCache, coordinate_field, cache.getLocation());
-		Field_location *location = cache.cloneLocation();
-		extraCache.setLocation(location);
-
-		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(extraCache));
-		if (coordinateValueCache)
+		// evaluate current coordinates in original cache; allows in-cache values to be picked up
+		// see field assignment / computed_field_update
+		RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(cache));
+		// do finite difference calculations in extraCache:
+		cmzn_fieldcache *extraCache = valueCache.getOrCreateExtraCache(cache);
+		if ((originalCoordinateValueCache) && (extraCache))
 		{
+			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinate_field, cache.getLocation());
+			Field_location *location = cache.cloneLocation();
+			extraCache->setLocation(location);
+			const FE_value *original_coordinate_values = originalCoordinateValueCache->values;
 			return_code = 1;
 			for (int i = 0; i < coordinate_number_of_components; ++i)
 			{
-				original_coordinate_values[i] = coordinate_values[i] = coordinateValueCache->values[i];
+				coordinate_values[i] = original_coordinate_values[i];
 			}
 			for (int i = 0 ; i < coordinate_number_of_components ; ++i)
 			{
@@ -1411,11 +1413,11 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 						field_values = up_values;
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
-					extraCache.setAssignInCacheOnly(true);
-					if (CMZN_OK == cmzn_field_assign_real(coordinate_field, &extraCache,
+					extraCache->setAssignInCacheOnly(true);
+					if (CMZN_OK == cmzn_field_assign_real(coordinate_field, extraCache,
 						coordinate_number_of_components, coordinate_values))
 					{
-						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(extraCache));
+						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(*extraCache));
 						if (sourceValueCache)
 						{
 							for (int m = 0; m < source_number_of_components; ++m)
@@ -1449,7 +1451,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 						(up_values[j] - down_values[j]) / (2.0*perturbationSize);
 				}
 			}
-			extraCache.setAssignInCacheOnly(false);
+			extraCache->setAssignInCacheOnly(false);
 		}
 	}
 	return (return_code);

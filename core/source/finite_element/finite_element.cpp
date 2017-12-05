@@ -4109,6 +4109,7 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 		{
 			if (!existing_node_field->getComponent(c)->matches(*node_field->getComponent(c)))
 			{
+				display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  Node field does not match");
 				return_code = 0;
 				break;
 			}

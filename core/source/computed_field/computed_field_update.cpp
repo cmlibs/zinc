@@ -21,6 +21,7 @@ Functions for updating values of one computed field from those of another.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -65,14 +66,12 @@ int cmzn_nodeset_assign_field_from_source(
 			// if source and destination are both finite element fields, can efficiently transfer parameters
 			FE_field *sourceFeField = 0;
 			Computed_field_get_type_finite_element(source_field, &sourceFeField);
-			if (!sourceFeField)
+			if ((feField) && (!sourceFeField) && (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
+				&& (1 < componentCount) && (componentCount <= 3)) // 1-3 coordinate components is current restriction on gradient field
 			{
-				// otherwise, if source field is a function of destination feField, can numerically calculate derivatives
+				// if source field is a function of destination feField, can numerically calculate derivatives
 				struct LIST(FE_field) *definingFeFieldlist = Computed_field_get_defining_FE_field_list(source_field);
-				if ((feField) && (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
-					&& (1 < componentCount) && (componentCount <= 3) &&
-					cmzn_field_is_type_coordinate(destination_field) &&
-					IS_OBJECT_IN_LIST(FE_field)(feField, definingFeFieldlist))
+				if (IS_OBJECT_IN_LIST(FE_field)(feField, definingFeFieldlist))
 				{
 					// gradient field works by finite different at nodes; use this to get F = dx/dX to transform derivatives
 					dx_dX = cmzn_fieldmodule_create_field_gradient(fieldmodule, source_field, destination_field);
@@ -83,21 +82,21 @@ int cmzn_nodeset_assign_field_from_source(
 				}
 				DESTROY(LIST(FE_field))(&definingFeFieldlist);
 			}
-			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
-			FE_value *values = new FE_value[componentCount];
-			FE_value *values2 = new FE_value[componentCount];
+			cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+			FE_value *values = new FE_value[componentCount*2];
+			FE_value *values2 = values + componentCount;
 			// all fields evaluated at same time so set once
-			cmzn_fieldcache_set_time(field_cache, time);
+			cmzn_fieldcache_set_time(fieldcache, time);
 			cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 			cmzn_node_id node = 0;
 			int selected_count = 0;
 			int success_count = 0;
-			while (return_code && (0 != (node = cmzn_nodeiterator_next_non_access(iterator))))
+			while ((return_code == CMZN_OK) && (0 != (node = cmzn_nodeiterator_next_non_access(iterator))))
 			{
-				cmzn_fieldcache_set_node(field_cache, node);
-				if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, field_cache))
+				cmzn_fieldcache_set_node(fieldcache, node);
+				if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, fieldcache))
 				{
-					if ((cmzn_field_is_defined_at_location(destination_field, field_cache)))
+					if ((cmzn_field_is_defined_at_location(destination_field, fieldcache)))
 					{
 						switch (value_type)
 						{
@@ -105,10 +104,10 @@ int cmzn_nodeset_assign_field_from_source(
 							{
 								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 								cmzn_element_id element = cmzn_field_evaluate_mesh_location(
-									source_field, field_cache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+									source_field, fieldcache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 								if (element)
 								{
-									if ((CMZN_OK == cmzn_field_assign_mesh_location(destination_field, field_cache,
+									if ((CMZN_OK == cmzn_field_assign_mesh_location(destination_field, fieldcache,
 										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)))
 									{
 										++success_count;
@@ -139,15 +138,7 @@ int cmzn_nodeset_assign_field_from_source(
 													for (int v = 0; v < versionsCount; ++v)
 													{
 														result = get_FE_nodal_FE_value_value(node, sourceFeField, /*componentNumber*/-1, valueLabel, v, time, values);
-														if (result == CMZN_ERROR_NOT_FOUND)
-														{
-															for (int c = 0; c < componentCount; ++c)
-															{
-																values[c] = 0.0;
-															}
-															result = CMZN_OK;
-														}
-														if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
+														if (result == CMZN_OK)
 														{
 															result = set_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1, valueLabel, v, time, values);
 															if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
@@ -164,73 +155,29 @@ int cmzn_nodeset_assign_field_from_source(
 																break;
 															}
 														}
-													}
-													if (result != CMZN_OK)
-													{
-														break;
-													}
-												}
-											}
-										}
-										else
-										{
-											double F[9];
-											bool transformDerivatives = false;
-											// MUST evaluate dx_dX before assigning value as it is used in finite difference calculation
-											if ((maximumDerivativeNumber > 0) && (dx_dX))
-											{
-												transformDerivatives = (CMZN_OK == cmzn_field_evaluate_real(dx_dX, field_cache, 9, F));
-											}
-											int versionsCount = node_field->getValueMaximumVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE);
-											if (versionsCount > 0)
-											{
-												// assign same value to all VALUE parameter versions
-												if (CMZN_OK == cmzn_field_evaluate_real(source_field, field_cache, componentCount, values))
-												{
-													for (int v = 0; v < versionsCount; ++v)
-													{
-														result = set_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1, CMZN_NODE_VALUE_LABEL_VALUE, v, time, values);
-														if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
+														else if (result == CMZN_WARNING_PART_DONE)
 														{
-															result = CMZN_OK;
-															++assign_count;
-														}
-														else
-														{
-															break;
-														}
-													}
-												}
-											}
-											if (transformDerivatives && (result == CMZN_OK))
-											{
-												for (int d = 1; d <= maximumDerivativeNumber; ++d)
-												{
-													const cmzn_node_value_label valueLabel = static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + d);
-													versionsCount = node_field->getValueMaximumVersionsCount(valueLabel);
-													for (int v = 0; v < versionsCount; ++v)
-													{
-														result = get_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1, valueLabel, v, time, values);
-														if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
-														{
-															// transform derivative by F = dx/dX
-															for (int c2 = 0; c2 < componentCount; ++c2)
+															// assign components individually
+															for (int c = 0; c < componentCount; ++c)
 															{
-																const double *f = F + c2*componentCount;
-																double sum = 0.0;
-																for (int c = 0; c < componentCount; ++c)
+																if (v < source_node_field->getComponent(c)->getValueNumberOfVersions(valueLabel))
 																{
-																	sum += f[c]*values[c];
+																	result = set_FE_nodal_FE_value_value(node, feField, c, valueLabel, v, time, values + c);
+																	if (result == CMZN_OK)
+																	{
+																		++assign_count;
+																	}
+																	else if (result == CMZN_ERROR_NOT_FOUND)
+																	{
+																		result = CMZN_OK;
+																	}
+																	else
+																	{
+																		break;
+																	}
 																}
-																values2[c2] = sum;
 															}
-															result = set_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1, valueLabel, v, time, values2);
-															if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
-															{
-																result = CMZN_OK;
-																++assign_count;
-															}
-															else
+															if (result != CMZN_OK)
 															{
 																break;
 															}
@@ -241,7 +188,141 @@ int cmzn_nodeset_assign_field_from_source(
 														break;
 													}
 												}
+												if (result != CMZN_OK)
+												{
+													display_message(ERROR_MESSAGE,
+														"cmzn_nodeset_assign_field_from_source.  Failed to evaluate or assign from finite element node field.");
+													return_code = result;
+												}
 											}
+										}
+										else
+										{
+											const int FSize = componentCount*componentCount;
+											int valueVersionsCount = node_field->getValueMaximumVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE);
+											// buffer for storing values for all versions for value and F = dx/dX for transforming derivatives
+											FE_value *valuesBuffer = new double[(componentCount*2 + FSize)*valueVersionsCount];
+											FE_value *coordinateArrays = valuesBuffer;
+											FE_value *sourceArrays = coordinateArrays + componentCount*valueVersionsCount;
+											FE_value *FArrays = sourceArrays + componentCount*valueVersionsCount;
+											if (!valuesBuffer)
+											{
+												display_message(ERROR_MESSAGE,
+													"cmzn_nodeset_assign_field_from_source.  Failed to allocate real valuesBuffer.");
+												return_code = result = CMZN_ERROR_MEMORY;
+											}
+											int evaluateValueVersionsCount = 0;
+											if (return_code == CMZN_OK)
+											{
+												// get destination coordinate value versions
+												for (int v = 0; v < valueVersionsCount; ++v)
+												{
+													result = get_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1,
+														CMZN_NODE_VALUE_LABEL_VALUE, v, time, coordinateArrays + v*componentCount);
+													if ((result == CMZN_WARNING_PART_DONE) && (v > 0))
+													{
+														// fall back to version 1 for undefined components
+														for (int c = 0; c < componentCount; ++c)
+														{
+															const FE_node_field_template *component = node_field->getComponent(c);
+															if (component->getValueNumberOfVersions(CMZN_NODE_VALUE_LABEL_VALUE) < (v + 1))
+															{
+																(coordinateArrays + v*componentCount)[c] = coordinateArrays[c];
+															}
+														}
+													}
+													else if (result != CMZN_OK)
+													{
+														break;
+													}
+													++evaluateValueVersionsCount;
+												}
+											}
+											int FCount = 0;
+											const bool evaluateDerivatives = (maximumDerivativeNumber > 0) && (dx_dX);
+											if ((evaluateValueVersionsCount > 0) && (return_code == CMZN_OK))
+											{
+												// evaluate dx_dX before assigning value as original value is used in finite difference calculation
+												for (int v = 0; v < evaluateValueVersionsCount; ++v)
+												{
+													if (v > 0)
+													{
+														fieldcache->setAssignInCacheOnly(true);
+														cmzn_field_assign_real(destination_field, fieldcache, componentCount, coordinateArrays + v*componentCount);
+													}
+													if (CMZN_OK != cmzn_field_evaluate_real(source_field, fieldcache, componentCount, sourceArrays + v*componentCount))
+													{
+														evaluateValueVersionsCount = v;
+														break;
+													}
+													if (evaluateDerivatives && (CMZN_OK == cmzn_field_evaluate_real(dx_dX, fieldcache, FSize, FArrays + v*FSize)))
+													{
+														++FCount;
+													}
+												}
+												fieldcache->setAssignInCacheOnly(false);
+												// evaluate source values and assign to destination
+												for (int v = 0; v < valueVersionsCount; ++v)
+												{
+													const FE_value *sourceValues = (v < evaluateValueVersionsCount) ? sourceArrays + v*componentCount : sourceArrays;
+													result = set_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1,
+														CMZN_NODE_VALUE_LABEL_VALUE, v, time, sourceValues);
+													if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
+													{
+														result = CMZN_OK;
+														++assign_count;
+													}
+													else
+													{
+														break;
+													}
+												}
+												if ((FCount > 0) && (result == CMZN_OK))
+												{
+													for (int d = 1; d <= maximumDerivativeNumber; ++d)
+													{
+														const cmzn_node_value_label valueLabel = static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + d);
+														const int derivativeVersionsCount = node_field->getValueMaximumVersionsCount(valueLabel);
+														for (int v = 0; v < derivativeVersionsCount; ++v)
+														{
+															result = get_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1, valueLabel, v, time, values);
+															if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
+															{
+																// transform derivative by F = dx/dX
+																// assume same version of value & F as derivative, falling back to version 1
+																// may need to provide control in future
+																const FE_value *F = (v < FCount) ? FArrays + v*FSize : FArrays;
+																for (int c2 = 0; c2 < componentCount; ++c2)
+																{
+																	const FE_value *f = F + c2*componentCount;
+																	double sum = 0.0;
+																	for (int c = 0; c < componentCount; ++c)
+																	{
+																		sum += f[c]*values[c];
+																	}
+																	values2[c2] = sum;
+																}
+																result = set_FE_nodal_FE_value_value(node, feField, /*componentNumber*/-1,
+																	valueLabel, v, time, values2);
+																if ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE))
+																{
+																	result = CMZN_OK;
+																	++assign_count;
+																}
+																else
+																{
+																	break;
+																}
+															}
+														}
+														if (result != CMZN_OK)
+														{
+															break;
+														}
+													}
+												}
+											}
+											delete[] valuesBuffer;
 										}
 										if ((assign_count > 0) && (result == CMZN_OK))
 										{
@@ -249,18 +330,18 @@ int cmzn_nodeset_assign_field_from_source(
 										}
 									}
 								}
-								else if ((CMZN_OK == cmzn_field_evaluate_real(source_field, field_cache, componentCount, values))
-									&& (CMZN_OK == cmzn_field_assign_real(destination_field, field_cache, componentCount, values)))
+								else if ((CMZN_OK == cmzn_field_evaluate_real(source_field, fieldcache, componentCount, values))
+									&& (CMZN_OK == cmzn_field_assign_real(destination_field, fieldcache, componentCount, values)))
 								{
 									++success_count;
 								}
 							} break;
 						case CMZN_FIELD_VALUE_TYPE_STRING:
 							{
-								char *string_value = cmzn_field_evaluate_string(source_field, field_cache);
+								char *string_value = cmzn_field_evaluate_string(source_field, fieldcache);
 								if (string_value)
 								{
-									if ((CMZN_OK == cmzn_field_assign_string(destination_field, field_cache, string_value)))
+									if ((CMZN_OK == cmzn_field_assign_string(destination_field, fieldcache, string_value)))
 									{
 										++success_count;
 									}
@@ -297,8 +378,7 @@ int cmzn_nodeset_assign_field_from_source(
 				}
 			}
 			delete[] values;
-			delete[] values2;
-			cmzn_fieldcache_destroy(&field_cache);
+			cmzn_fieldcache_destroy(&fieldcache);
 			if (dx_dX)
 			{
 				cmzn_field_destroy(&dx_dX);

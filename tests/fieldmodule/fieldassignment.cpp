@@ -392,3 +392,159 @@ TEST(ZincFieldassignment, transformDerivatives)
 		}
 	}
 }
+
+namespace {
+
+void checkAssignNodeValueVersions(Fieldmodule& fm, const double *offset, const double *scale, bool squared = false)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	FieldFiniteElement texture_coordinates = fm.findFieldByName("texture_coordinates").castFiniteElement();
+	EXPECT_TRUE(texture_coordinates.isValid());
+	const int componentCount = texture_coordinates.getNumberOfComponents();
+	EXPECT_EQ(3, componentCount);
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	// check current texture_coordinates in elements and nodes
+	const int numberInXi = squared ? 1 : 4;
+	const double xiScale = 1.0 / static_cast<double>(numberInXi);
+	double xi[3], tex1[3], tex2, dtex1, dtex2;
+	const double tolerance = 1.0E-9;
+	for (int e = 0; e < 2; ++e)
+	{
+		Element element = mesh3d.findElementByIdentifier(e + 1);
+		EXPECT_TRUE(element.isValid());
+		for (int k = 0; k <= numberInXi; ++k)
+		{
+			xi[2] = k*xiScale;
+			for (int j = 0; j <= numberInXi; ++j)
+			{
+				xi[1] = j*xiScale;
+				for (int i = 0; i <= numberInXi; ++i)
+				{
+					xi[0] = i*xiScale;
+					EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element, 3, xi));
+					EXPECT_EQ(RESULT_OK, texture_coordinates.evaluateReal(cache, 3, tex1));
+					double expectedValues[3] =
+					{
+						scale[0]*(offset[0] + (e + xi[0])*0.5),
+						scale[1]*(offset[1] + xi[1]),
+						scale[2]*(offset[2] + xi[2])
+					};
+					if (squared)
+					{
+						for (int c = 0; c < 3; ++c)
+						{
+							expectedValues[c] *= expectedValues[c];
+						}
+					}
+					EXPECT_NEAR(expectedValues[0], tex1[0], tolerance);
+					EXPECT_NEAR(expectedValues[1], tex1[1], tolerance);
+					EXPECT_NEAR(expectedValues[2], tex1[2], tolerance);
+				}
+			}
+		}
+	}
+
+	const int versionedNodeIds[4] = { 1, 3, 5, 7 };
+	const double expected_tex1[4][3] = {
+		{ 0.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 1.0, 1.0 }
+	};
+	for (int n = 0; n < 4; ++n)
+	{
+		Node node = nodes.findNodeByIdentifier(versionedNodeIds[n]);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, texture_coordinates.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, tex1));
+		EXPECT_EQ(RESULT_OK, texture_coordinates.getNodeParameters(cache, 1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, &dtex1));
+		EXPECT_EQ(RESULT_OK, texture_coordinates.getNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, /*version*/2, 3, &tex2));
+		EXPECT_EQ(RESULT_OK, texture_coordinates.getNodeParameters(cache, 1, Node::VALUE_LABEL_D_DS1, /*version*/2, 3, &dtex2));
+		double expectedValues[4] =
+		{
+			scale[0]*(offset[0] + expected_tex1[n][0]),
+			scale[1]*(offset[1] + expected_tex1[n][1]),
+			scale[2]*(offset[2] + expected_tex1[n][2]),
+			scale[0]*(offset[0] + 1.0)
+		};
+		double expectedDerivativeValues1 = 0.5*scale[0];
+		double expectedDerivativeValues2 = 0.5*scale[0];
+		if (squared)
+		{
+			expectedDerivativeValues1 *= 2.0*expectedValues[0];
+			expectedDerivativeValues2 *= 2.0*expectedValues[3];
+			for (int c = 0; c < 4; ++c)
+			{
+				expectedValues[c] *= expectedValues[c];
+			}
+		}
+		EXPECT_NEAR(expectedValues[0], tex1[0], tolerance);
+		EXPECT_NEAR(expectedValues[1], tex1[1], tolerance);
+		EXPECT_NEAR(expectedValues[2], tex1[2], tolerance);
+		EXPECT_NEAR(expectedValues[3], tex2, tolerance);
+		EXPECT_NEAR(expectedDerivativeValues1, dtex1, tolerance);
+		EXPECT_NEAR(expectedDerivativeValues2, dtex2, tolerance);
+	}
+}
+
+}
+
+// test that field assignment on finite element fields with multiple value versions
+// evaluates source field as a function of the correct version, and assigns to that version
+TEST(ZincFieldassignment, assignNodeValueVersions)
+{
+	ZincTestSetupCpp zinc;
+
+	// read texture_coordinates and save a copy to assign back from later
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CYLINDER_TEXTURE_RESOURCE)));
+	Field orig_texture_coordinates = zinc.fm.findFieldByName("texture_coordinates");
+	EXPECT_TRUE(orig_texture_coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, orig_texture_coordinates.setName("orig_texture_coordinates"));
+	// reload to get texture_coordinates to modify
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CYLINDER_TEXTURE_RESOURCE)));
+	FieldFiniteElement texture_coordinates = zinc.fm.findFieldByName("texture_coordinates").castFiniteElement();
+	EXPECT_TRUE(texture_coordinates.isValid());
+
+	const double offsetZero[3] = { 0.0, 0.0, 0.0 };
+	const double scaleOne[3] = { 1.0, 1.0, 1.0 };
+	checkAssignNodeValueVersions(zinc.fm, offsetZero, scaleOne);
+
+	const double offsetValues[3] = { 1.0, 0.1, 0.2 };
+	Field offset = zinc.fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	Field offset_texture_coordinates = zinc.fm.createFieldAdd(texture_coordinates, offset);
+	EXPECT_TRUE(offset_texture_coordinates.isValid());
+	Fieldassignment fieldassignment = texture_coordinates.createFieldassignment(offset_texture_coordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	checkAssignNodeValueVersions(zinc.fm, offsetValues, scaleOne);
+
+	const double scaleValues[3] = { 2.0, 1.5, 0.75 };
+	Field scale = zinc.fm.createFieldConstant(3, scaleValues);
+	EXPECT_TRUE(scale.isValid());
+	Field scale_texture_coordinates = zinc.fm.createFieldMultiply(texture_coordinates, scale);
+	EXPECT_TRUE(scale_texture_coordinates.isValid());
+	fieldassignment = texture_coordinates.createFieldassignment(scale_texture_coordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	checkAssignNodeValueVersions(zinc.fm, offsetValues, scaleValues);
+
+	Field squared_texture_coordinates = zinc.fm.createFieldMultiply(texture_coordinates, texture_coordinates);
+	EXPECT_TRUE(squared_texture_coordinates.isValid());
+	fieldassignment = texture_coordinates.createFieldassignment(squared_texture_coordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	checkAssignNodeValueVersions(zinc.fm, offsetValues, scaleValues, true);
+
+	// assign back from orig_texture_coordinates to test finite element to finite element assignment
+	fieldassignment = texture_coordinates.createFieldassignment(orig_texture_coordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	checkAssignNodeValueVersions(zinc.fm, offsetZero, scaleOne);
+}
