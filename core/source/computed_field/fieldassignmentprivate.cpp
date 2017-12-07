@@ -57,6 +57,12 @@ int cmzn_fieldassignment::assign()
 		: cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	const int result = cmzn_nodeset_assign_field_from_source(useNodeset,
 		this->targetField, this->sourceField, this->conditionalField, /*time*/0.0);
+	if ((result != CMZN_RESULT_OK)
+		&& (result != CMZN_RESULT_WARNING_PART_DONE)
+		&& (result != CMZN_RESULT_ERROR_NOT_FOUND))
+	{
+		display_message(ERROR_MESSAGE, "Fieldassignment assign:  Error assigning source field");
+	}
 	cmzn_nodeset_destroy(&useNodeset);
 	cmzn_fieldmodule_destroy(&fm);
 	return result;
