@@ -23,6 +23,7 @@
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/fieldassignmentprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -149,6 +150,7 @@ int Minimisation::runOptimisation()
 	}
 	touch_independent_fields();
 	cmzn_fieldmodule_end_change(field_module);
+	this->do_fieldassignments();
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
@@ -356,6 +358,16 @@ void Minimisation::invalidate_independent_field_caches()
 	}
 }
 
+// Perform any field assignments; called before evaluating objective function(s)
+// but after dependent DOFs have been set. Also call at completion of optimisation.
+void Minimisation::do_fieldassignments()
+{
+	for (auto iter = this->optimisation.fieldassignments.begin(); iter != this->optimisation.fieldassignments.end(); ++iter)
+	{
+		(*iter)->assign();
+	}
+}
+
 /***************************************************************************//**
  * Evaluates the scalar objective function value given the current DOF values.
  * Equals sum of all objective field components.
@@ -416,6 +428,7 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 		minimisation->set_dof_value(i, x(i + 1));
 	}
 	//minimisation->list_dof_values();
+	minimisation->do_fieldassignments();
 
 	FE_value objectiveFunctionValue = 0.0;
 	minimisation->evaluate_objective_function(&objectiveFunctionValue);
@@ -483,6 +496,8 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	}
 	//minimisation->list_dof_values();
 	minimisation->invalidate_independent_field_caches();
+	minimisation->do_fieldassignments();
+
 	int return_code = 1;
 	Field_time_location location;
 	// NEWMAT::ColumnVector::element(int m) is 0-based, not 1 as are other interfaces

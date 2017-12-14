@@ -22,7 +22,6 @@ and real values in any order into a single vector field.
 #define Computed_field_create_constant cmzn_fieldmodule_create_field_constant
 #define Computed_field_create_identity cmzn_fieldmodule_create_field_identity
 #define Computed_field_create_component cmzn_fieldmodule_create_field_component
-#define Computed_field_create_concatenate cmzn_fieldmodule_create_field_concatenate
 
 struct Computed_field_composite_source_data
 /*******************************************************************************
@@ -134,18 +133,5 @@ struct Computed_field *Computed_field_create_composite(
 	int number_of_source_fields, struct Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	const int *source_field_numbers, const int *source_value_numbers);
-
-/**
- * Creates a field which concatenates the components of all source fields, in
- * order, into a single vector.
- *
- * @param field_module  Region field module which will own new field.
- * @param number_of_source_fields  The number of source fields in the array.
- * @param source_fields  The array of fields to be concatenating together.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_concatenate(
-	struct cmzn_fieldmodule *field_module,
-	int number_of_source_fields, struct Computed_field **source_fields);
 
 #endif /* !defined (COMPUTED_FIELD_COMPOSITE_H) */

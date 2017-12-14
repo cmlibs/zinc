@@ -3051,6 +3051,21 @@ FE_node_field *FE_node_field::clone(const FE_node_field& source, int deltaValues
 	return node_field;
 }
 
+int FE_node_field::getValueMaximumVersionsCount(cmzn_node_value_label valueLabel) const
+{
+	int maximumVersionsCount = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int versionsCount = this->components[c].getValueNumberOfVersions(valueLabel);
+		if (versionsCount > maximumVersionsCount)
+		{
+			maximumVersionsCount = versionsCount;
+		}
+	}
+	return maximumVersionsCount;
+}
+
 int FE_node_field::getValueMinimumVersionsCount(cmzn_node_value_label valueLabel) const
 {
 	int minimumVersionsCount = 0;
@@ -3068,6 +3083,21 @@ int FE_node_field::getValueMinimumVersionsCount(cmzn_node_value_label valueLabel
 		}
 	}
 	return minimumVersionsCount;
+}
+
+int FE_node_field::getMaximumDerivativeNumber() const
+{
+	int maximumDerivativeNumber = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int componentMaximumDerivativeNumber = this->components[c].getMaximumDerivativeNumber();
+		if (componentMaximumDerivativeNumber > maximumDerivativeNumber)
+		{
+			maximumDerivativeNumber = componentMaximumDerivativeNumber;
+		}
+	}
+	return maximumDerivativeNumber;
 }
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_node_field)
@@ -4079,6 +4109,7 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 		{
 			if (!existing_node_field->getComponent(c)->matches(*node_field->getComponent(c)))
 			{
+				display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  Node field does not match");
 				return_code = 0;
 				break;
 			}

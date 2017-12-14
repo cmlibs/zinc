@@ -245,9 +245,14 @@ struct FE_node_field
 		return totalValuesCount;
 	}
 
+	/** @return  Maximum number of versions stored for valueLabel in any component */
+	int getValueMaximumVersionsCount(cmzn_node_value_label valueLabel) const;
+
 	/** @return  Minimum number of versions stored for valueLabel over all components */
 	int getValueMinimumVersionsCount(cmzn_node_value_label valueLabel) const;
 
+	/** @return  Highest numerical value of value label above VALUE for any component */
+	int getMaximumDerivativeNumber() const;
 };
 
 DECLARE_LIST_TYPES(FE_node_field);

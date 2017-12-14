@@ -18,6 +18,7 @@
 
 #include <list>
 #include <sstream>
+#include "opencmiss/zinc/types/fieldassignmentid.h"
 #include "opencmiss/zinc/optimisation.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/field_module.hpp"
@@ -39,6 +40,7 @@ private:
 	cmzn_optimisation_method method;
 	IndependentAndConditionalFieldsList independentFields;
 	FieldList objectiveFields;
+	std::list<cmzn_fieldassignment *> fieldassignments;
 	int access_count;
 public:
 	// Opt++ stopping tolerances
@@ -106,6 +108,8 @@ public:
 	cmzn_field_id getConditionalField(cmzn_field_id independentField) const;
 
 	int setConditionalField(cmzn_field_id independentField, cmzn_field_id conditionalField);
+
+	int addFieldassignment(cmzn_fieldassignment *fieldassignment);
 
 	cmzn_field_id getFirstIndependentField() const;
 
