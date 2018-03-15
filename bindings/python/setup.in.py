@@ -31,6 +31,7 @@ setup(
 	author='H. Sorby',
 	author_email='h.sorby@auckland.ac.nz',
 	packages=['opencmiss', 'opencmiss.zinc'],
+	namespace_packages=['opencmiss'],
 	package_data={'opencmiss.zinc': [@SETUP_PY_PACKAGE_FILES_STR@]},
 	platforms=['any'],
 	url='http://pypi.python.org/pypi/PyZinc/',
