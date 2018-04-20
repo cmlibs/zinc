@@ -21,33 +21,20 @@ if (NOT EXISTS "${VIRTUALENV_EXEC}")
 endif ()
 
 # Create Python bindings for the Zinc library.
-set(PYTHON_PREFERRED_VERSION "" CACHE STRING "Identify your preferred version of Python to locate, if not set the first available Python is used. [2.6, 2.7, 3.0, 3.3, ...]")
+set(ZINC_PYTHON_PREFERRED_VERSION "" CACHE STRING "Identify your preferred version of Python to locate, if not set the first available Python is used. [2.6, 2.7, 3.0, 3.3, ...]")
 
 # SWIG has already been found at this point.
 include(${SWIG_USE_FILE})
 
-set(Python_ADDITIONAL_VERSIONS ${PYTHON_PREFERRED_VERSION})
-# Force the finding of the python library always incase the desired PYTHON_PREFERRED_VERSION has changed.
-unset(PYTHONLIBS_FOUND CACHE)
-# I hate this masking of variables
-unset(PYTHON_LIBRARY CACHE)
-unset(PYTHON_LIBRARY)
-unset(PYTHON_DEBUG_LIBRARY CACHE)
-unset(PYTHON_DEBUG_LIBRARY)
-unset(PYTHON_INCLUDE_DIR CACHE)
-unset(PYTHONINTERP_FOUND CACHE)
-unset(PYTHON_EXECUTABLE CACHE)
-unset(PYTHONLIBS_VERSION_STRING)
-find_package(PythonInterp QUIET)
-find_package(PythonLibs QUIET)
+findpython_clear_cache_variables()
+find_package(Python ${ZINC_PYTHON_PREFERRED_VERSION} COMPONENTS Interpreter Development QUIET)
 
-three_part_version_to_vars(${PYTHONLIBS_VERSION_STRING} PYTHONLIBS_MAJOR_VERSION PYTHONLIBS_MINOR_VERSION PYTHONLIBS_PATCH_VERSION)
-if("${PYTHONLIBS_MAJOR_VERSION}" STREQUAL "3")
+if("${Python_VERSION_MAJOR}" STREQUAL "3")
     set(PYTHONLIBS_SWIG_FLAGS -py3)
 endif()
 
 # Find relative path between zinc library install directory and the python module dynamic libraries.
-set(PYTHON_DESTINATION_PREFIX lib/python${PYTHONLIBS_MAJOR_VERSION}.${PYTHONLIBS_MINOR_VERSION}/$<CONFIG>/opencmiss.zinc)
+set(PYTHON_DESTINATION_PREFIX lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/$<CONFIG>/opencmiss.zinc)
 set(PYTHON_MODULE_TARGETS_DESTINATION_PREFIX "${PYTHON_DESTINATION_PREFIX}/opencmiss/zinc")
 file(RELATIVE_PATH _REL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_MODULE_TARGETS_DESTINATION_PREFIX} ${CMAKE_INSTALL_PREFIX}/${ZINC_INSTALL_LIB_DIR})
 
@@ -115,7 +102,7 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     else ()
         swig_add_module(${MODULE_NAME} python ${SWIG_INTERFACE})
     endif ()
-    swig_link_libraries(${MODULE_NAME} ${PYTHON_LIBRARIES} zinc)
+    swig_link_libraries(${MODULE_NAME} Python::Python zinc)
     set(MODULE_TARGET ${SWIG_MODULE_${MODULE_NAME}_REAL_NAME})
     # Disable use of Debug Python libraries when not present on Windows
     # See http://stackoverflow.com/questions/11311877/creating-a-dll-from-a-wrapped-cpp-file-with-swig
@@ -131,10 +118,10 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     )
     if (APPLE)
         set_target_properties(${MODULE_TARGET} PROPERTIES
-            INSTALL_RPATH "@loader_path/${_REL_INSTALL_PATH}")
+            INSTALL_RPATH "@loader_path/${_REL_INSTALL_PATH};@loader_path/")
     elseif (UNIX)
         set_target_properties(${MODULE_TARGET} PROPERTIES
-            INSTALL_RPATH "\$ORIGIN/${_REL_INSTALL_PATH}")
+            INSTALL_RPATH "\$ORIGIN/${_REL_INSTALL_PATH};\$ORIGIN/")
     endif ()
     list(APPEND SWIG_MODULE_TARGETS ${MODULE_TARGET})
     list(APPEND SETUP_PY_PACKAGE_FILES "'$<TARGET_FILE_NAME:${MODULE_TARGET}>'")
@@ -159,12 +146,10 @@ if(APPLE)
     set(PYZINC_ARCHITECTURE universal)
 endif()
 
-string(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION)
-
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
 string(TOLOWER ${PROJECT_NAME} PYPI_PACKAGE_NAME)
-set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${PYTHONLIBS_MAJOR_MINOR_VERSION}")
+set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python-${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
 
 ################################################################
 # Generate the required package files
