@@ -96,7 +96,7 @@ free($1);
 		Py_ssize_t length = PyString_Size(utf8_obj);
 %#else
 		Py_ssize_t length;
-		char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+		const char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
 %#endif
 		if (temp_string != NULL)
 		{
@@ -133,7 +133,7 @@ free($1);
 				Py_ssize_t length = PyString_Size(utf8_obj);
 %#else
 				Py_ssize_t length;
-				char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+				const char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
 %#endif
 				if (temp_string != NULL)
 				{
@@ -197,7 +197,7 @@ free($1);
 		Py_ssize_t length = PyString_Size(utf8_obj);
 %#else
 		Py_ssize_t length;
-		char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
+		const char* temp_string = PyUnicode_AsUTF8AndSize(o, &length);
 %#endif
 		if (temp_string != NULL)
 		{
