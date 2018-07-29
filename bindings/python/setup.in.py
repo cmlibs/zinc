@@ -27,14 +27,13 @@ doclines = __doc__.split("\n")
 
 setup(
 	name='@PYPI_PACKAGE_NAME@',
-	version='@PYPI_SOURCE_TARGZ_VERSION@',
+	version='@Zinc_VERSION@@ZINC_DEVELOPER_VERSION@',
 	author='H. Sorby',
 	author_email='h.sorby@auckland.ac.nz',
 	packages=['opencmiss', 'opencmiss.zinc'],
 	package_data={'opencmiss.zinc': [@SETUP_PY_PACKAGE_FILES_STR@]},
-	platforms=['any'],
-	url='http://pypi.python.org/pypi/PyZinc/',
-	license='LICENSE.txt',
+	url='http://opencmiss.org',
+	license='Mozilla Public License 2.0 (MPL 2.0)',
 	description=doclines[0],
 	classifiers = filter(None, classifiers.split("\n")),
 	long_description=open('README.txt').read()

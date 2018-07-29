@@ -92,7 +92,7 @@ set(ZINC_RELEASE FALSE)
 if(ZINC_RELEASE)
     set(ZINC_DEVELOPER_VERSION "")
 else()
-    set(ZINC_DEVELOPER_VERSION ".r${ZINC_REVISION}")
+    set(ZINC_DEVELOPER_VERSION ".dev${ZINC_REVISION}")
 endif()
 
 # Make relative paths absolute (needed later on)
