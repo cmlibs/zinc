@@ -22,8 +22,18 @@ Topic :: Software Development :: Libraries :: Python Modules
 """
 
 from setuptools import setup
+from setuptools.dist import Distribution
 
 doclines = __doc__.split("\n")
+
+
+class BinaryDistribution(Distribution):
+    def is_pure(self):
+        return False
+
+    def has_ext_modules(self):
+        return True
+
 
 setup(
 	name='@PYPI_PACKAGE_NAME@',
@@ -36,5 +46,7 @@ setup(
 	license='Mozilla Public License 2.0 (MPL 2.0)',
 	description=doclines[0],
 	classifiers = filter(None, classifiers.split("\n")),
-	long_description=open('README.txt').read()
+	long_description=open('README.txt').read(),
+	distclass=BinaryDistribution,
+	include_package_data=True,
 )
