@@ -34,7 +34,7 @@ setup(
 	namespace_packages=['opencmiss'],
 	package_data={'opencmiss.zinc': [@SETUP_PY_PACKAGE_FILES_STR@]},
 	platforms=['any'],
-	url='http://pypi.python.org/pypi/PyZinc/',
+	url='http://opencmiss.org',
 	license='LICENSE.txt',
 	description=doclines[0],
 	classifiers = filter(None, classifiers.split("\n")),
