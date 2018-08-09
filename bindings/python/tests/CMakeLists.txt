@@ -9,14 +9,14 @@ set(PYTHON_TESTDIRS import_tests region_tests
 foreach(TESTDIR ${PYTHON_TESTDIRS})
     string(REPLACE "_" "" TESTNAME ${TESTDIR})
     add_test(NAME Python_Bindings_${TESTNAME}
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${TESTDIR}/${TESTNAME}.py
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${TESTDIR}/${TESTNAME}.py
     )
     list(APPEND PYTHONTESTS Python_Bindings_${TESTNAME})
 endforeach()
 
 # Also add a test to see if simple importing of the libraries works
 add_test(NAME Python_Bindings_Import
-    COMMAND ${PYTHON_EXECUTABLE} -c "from opencmiss.zinc.context import Context"
+    COMMAND ${Python_EXECUTABLE} -c "from opencmiss.zinc.context import Context"
 )
 list(APPEND PYTHONTESTS Python_Bindings_Import)
 
