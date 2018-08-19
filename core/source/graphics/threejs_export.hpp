@@ -144,10 +144,12 @@ private:
 
 	void exportGlyphsTransformation(struct GT_object *glyph,  int time_step);
 
+	void exportGlyphsLabel(struct GT_object *glyph);
+
 	void writeGlyphIndexBuffer(struct GT_object *object, int typeMask);
 
 	Json::Value metadata, positions_json, axis1_json, axis2_json, axis3_json,
-		scale_json, color_json;
+		scale_json, color_json, label_json;
 
 	std::string glyphTransformationString;
 
