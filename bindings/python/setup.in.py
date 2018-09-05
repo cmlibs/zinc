@@ -49,4 +49,5 @@ setup(
     long_description=open('README.txt').read(),
     distclass=BinaryDistribution,
     include_package_data=True,
+    zip_safe=False,
 )

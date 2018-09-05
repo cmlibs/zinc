@@ -7,6 +7,9 @@
 find_program(VIRTUALENV_EXEC virtualenv)
 mark_as_advanced(VIRTUALENV_EXEC)
 
+if (CMAKE_CONFIGURATION_TYPES)
+    set(CFG_DIR /$<CONFIG>)
+endif ()
 # Bindings options
 set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
 
@@ -34,7 +37,7 @@ if("${Python_VERSION_MAJOR}" STREQUAL "3")
 endif()
 
 # Find relative path between zinc library install directory and the python module dynamic libraries.
-set(PYTHON_DESTINATION_PREFIX lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/$<CONFIG>/opencmiss.zinc)
+set(PYTHON_DESTINATION_PREFIX lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}${CFG_DIR}/opencmiss.zinc)
 set(PYTHON_MODULE_TARGETS_DESTINATION_PREFIX "${PYTHON_DESTINATION_PREFIX}/opencmiss/zinc")
 file(RELATIVE_PATH _REL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_MODULE_TARGETS_DESTINATION_PREFIX} ${CMAKE_INSTALL_PREFIX}/${ZINC_INSTALL_LIB_DIR})
 
@@ -84,7 +87,7 @@ set(INTERFACE_SRCS
 
 set_source_files_properties(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)
 
-set(BASE_PYTHON_PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+set(BASE_PYTHON_PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}")
 set(OPENCMISS_PYTHON_PACKAGE_DIR "${BASE_PYTHON_PACKAGE_DIR}/opencmiss")
 set(ZINC_PYTHON_PACKAGE_DIR "${OPENCMISS_PYTHON_PACKAGE_DIR}/zinc")
 set(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/modules_python_files")
@@ -131,7 +134,8 @@ foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
 endforeach()
 
 add_custom_target(collect_python_binding_files ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/opencmiss/zinc
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/opencmiss/zinc
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:zinc> ${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/opencmiss/zinc
 )
 add_dependencies(collect_python_binding_files ${SWIG_MODULE_TARGETS})
 
@@ -199,7 +203,7 @@ endforeach()
 
 #################################
 # Create tarball
-set(PYPI_SOURCE_TARGZ "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${PYPI_PACKAGE_NAME}-${PYPI_SOURCE_TARGZ_VERSION}.tar.gz")
+set(PYPI_SOURCE_TARGZ "${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/${PYPI_PACKAGE_NAME}-${PYPI_SOURCE_TARGZ_VERSION}.tar.gz")
 add_custom_target(python_bindings_tarball
     COMMAND ${CMAKE_COMMAND} -E tar czf ${PYPI_SOURCE_TARGZ} -- $<CONFIG>/opencmiss setup.py ${ADDITIONAL_PACKAGE_FILES}
 )

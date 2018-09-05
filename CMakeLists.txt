@@ -412,6 +412,3 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "=====================================================")
     message(STATUS "")
 endif()
-
-
-

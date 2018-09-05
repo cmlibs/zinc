@@ -1,16 +1,10 @@
 # Always install to install tree - packaging requires this even if virtualenv is used.
-#install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/opencmiss
-#        DESTINATION python/$<CONFIG>
-#        COMPONENT PythonBindings
-#        FILES_MATCHING PATTERN ${ZINC_SHARED_OBJECT_GLOB}
-#)
-
 
 install(TARGETS ${SWIG_MODULE_TARGETS} ${ZINC_SHARED_TARGET}
     DESTINATION ${PYTHON_MODULE_TARGETS_DESTINATION_PREFIX}
     COMPONENT PythonBindings
 )
-install(FILES $<TARGET_FILE:zinc> $<TARGET_SONAME_FILE:zinc>
+install(FILES $<TARGET_FILE:zinc> $<IF:$<PLATFORM_ID:Windows>,,TARGET_SONAME_FILE:zinc>
     DESTINATION ${PYTHON_MODULE_TARGETS_DESTINATION_PREFIX}
     COMPONENT PythonBindings
 )
