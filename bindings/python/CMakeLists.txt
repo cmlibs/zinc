@@ -97,6 +97,7 @@ set(MODULE_PY_FILES )
 set(SETUP_PY_PACKAGE_FILES "'$<TARGET_FILE_NAME:zinc>'")
 if (NOT WIN32)
     list(APPEND SETUP_PY_PACKAGE_FILES "'$<TARGET_SONAME_FILE_NAME:zinc>'")
+    set(_GENERATOR_EXPRESSION_ZINC_SONAME $<TARGET_SONAME_FILE:zinc>)
 endif ()
 foreach(SWIG_INTERFACE ${INTERFACE_SRCS})
     get_filename_component(MODULE_NAME ${SWIG_INTERFACE} NAME_WE)
@@ -135,7 +136,7 @@ endforeach()
 
 add_custom_target(collect_python_binding_files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SWIG_OUTDIR} ${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/opencmiss/zinc
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:zinc> ${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/opencmiss/zinc
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:zinc> ${_GENERATOR_EXPRESSION_ZINC_SONAME} ${CMAKE_CURRENT_BINARY_DIR}${CFG_DIR}/opencmiss/zinc
 )
 add_dependencies(collect_python_binding_files ${SWIG_MODULE_TARGETS})
 
@@ -169,7 +170,8 @@ set(ADDITIONAL_PACKAGE_FILES
 # 1. Configure stage
 set(SETUP_PY_PACKAGE_FILES_STR "${SETUP_PY_PACKAGE_FILES}")
 string(REPLACE ";" "," SETUP_PY_PACKAGE_FILES_STR "${SETUP_PY_PACKAGE_FILES_STR}")
-configure_file(setup.in.py "${CMAKE_CURRENT_BINARY_DIR}/setup.py" @ONLY)
+set(SETUP_PRE_GEN_PY_FILE "${CMAKE_CURRENT_BINARY_DIR}/setup.pre_gen.py")
+configure_file(setup.in.py ${SETUP_PRE_GEN_PY_FILE} @ONLY)
 
 if (WIN32)
     file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/${ZINC_INSTALL_BIN_DIR}" NATIVE_PATH)
@@ -186,7 +188,7 @@ endforeach()
 
 # 2. Generate stage - takes care of all the build types (think of multiconf environment like VS)
 file(GENERATE OUTPUT "${BASE_PYTHON_PACKAGE_DIR}/setup.py"
-    INPUT "${CMAKE_CURRENT_BINARY_DIR}/setup.py"
+    INPUT "${SETUP_PRE_GEN_PY_FILE}"
 )
 # opencmiss __init__.py does not need to be configured (yet)
 file(GENERATE OUTPUT "${OPENCMISS_PYTHON_PACKAGE_DIR}/__init__.py"
