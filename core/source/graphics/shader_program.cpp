@@ -16,25 +16,25 @@
 Module types
 ------------
 */
-FULL_DECLARE_INDEXED_LIST_TYPE(Material_program_uniform);
+FULL_DECLARE_INDEXED_LIST_TYPE(Shader_program_uniform);
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
+FULL_DECLARE_INDEXED_LIST_TYPE(Shader_program);
 
 
 #if defined (OPENGL_API)
-int Material_program_compile(struct Material_program *material_program,
+int Shader_program_compile(struct Shader_program *shader_program,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2007
 
 DESCRIPTION :
-Compiles the material program objects.  These are separate objects so they can
+Compiles the shader program objects.  These are separate objects so they can
 be shared by multiple materials using the same program.
 ==============================================================================*/
 {
 	 int return_code;
-	ENTER(Material_program_compile);
-	if (material_program)
+	ENTER(Shader_program_compile);
+	if (shader_program)
 	{
 #if defined (OPENGL_API)
 		/* #define TESTING_PROGRAM_STRINGS */
@@ -46,35 +46,35 @@ be shared by multiple materials using the same program.
 		return_code = 1;
 #if defined (TESTING_PROGRAM_STRINGS)
 		/* If testing always recompile */
-		material_program->compiled = 0;
+		shader_program->compiled = 0;
 #endif /* defined (TESTING_PROGRAM_STRINGS) */
-		if (!material_program->compiled)
+		if (!shader_program->compiled)
 		{
 #if (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program) || defined GL_VERSION_2_0
 #if defined (GL_VERSION_2_0)
-			 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
+			 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_ARB)
 			 {
 				 if (Graphics_library_check_extension(GL_shading_language))
 				 {
-					 material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
+					 shader_program->shader_type=SHADER_PROGRAM_SHADER_GLSL;
 				 }
 			 }
 #endif
 #if defined GL_ARB_fragment_program && defined GL_ARB_vertex_program
-			 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+			 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 			 {
 				 if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
 				 Graphics_library_check_extension(GL_ARB_vertex_program))
 				 {
-					 material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
+					 shader_program->shader_type=SHADER_PROGRAM_SHADER_ARB;
 				 }
 			 }
 #endif
-			 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL ||
-					 material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
+			 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL ||
+					 shader_program->shader_type==SHADER_PROGRAM_SHADER_ARB)
 			 {
 #if defined DEBUG_CODE
-				printf ("Compiling program type:%x\n", material_program->type);
+				printf ("Compiling program type:%x\n", shader_program->type);
 #endif /* defined DEBUG_CODE */
 #if defined GL_VERSION_2_0
 				const char *vv, *ff, *gg;
@@ -91,22 +91,22 @@ be shared by multiple materials using the same program.
 				error = 0;
 				fragment_program_string = NULL;
 
-				if (0 == material_program->type)
+				if (0 == shader_program->type)
 				{
-					vertex_program_string = duplicate_string(material_program->vertex_program_string);
-					fragment_program_string = duplicate_string(material_program->fragment_program_string);
-					if (material_program->geometry_program_string)
+					vertex_program_string = duplicate_string(shader_program->vertex_program_string);
+					fragment_program_string = duplicate_string(shader_program->fragment_program_string);
+					if (shader_program->geometry_program_string)
 					{
-						geometry_program_string = duplicate_string(material_program->geometry_program_string);
+						geometry_program_string = duplicate_string(shader_program->geometry_program_string);
 					}
 					if (vertex_program_string && strstr(vertex_program_string, "!!ARBvp"))
 					{
-						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
+						if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_ARB)
 						{
 							if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
 								Graphics_library_check_extension(GL_ARB_vertex_program))
 							{
-								material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
+								shader_program->shader_type=SHADER_PROGRAM_SHADER_ARB;
 							}
 							else
 							{
@@ -121,11 +121,11 @@ be shared by multiple materials using the same program.
 					}
 					else if (vertex_program_string && strstr(vertex_program_string, "void main("))
 					{
-						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+						if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 						{
 							if (Graphics_library_check_extension(GL_shading_language))
 							{
-								material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
+								shader_program->shader_type=SHADER_PROGRAM_SHADER_GLSL;
 							}
 							else
 							{
@@ -141,21 +141,21 @@ be shared by multiple materials using the same program.
 				}
 
 #if defined DEBUG_CODE
-				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+				if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 				{
 					display_message(INFORMATION_MESSAGE,
 							"OpenGL 2.0 or higher supported, GLSL supported\n");
 				}
-				else if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
+				else if (shader_program->shader_type==SHADER_PROGRAM_SHADER_ARB)
 				{
 					 display_message(INFORMATION_MESSAGE,
 							"ARB shading program supported\n");
 				}
 #endif  /* defined DEBUG_CODE */
 
-				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
+				if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & shader_program->type)
 				{
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							vertex_program_string = duplicate_string("//GOURAUDSHADING_VERTEX_SHADER\n"
 								 "\n"
@@ -177,10 +177,10 @@ be shared by multiple materials using the same program.
 								 "PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
 																											 );
 					 }
-					 if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
-							& material_program->type)
+					 if ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE | SHADER_PROGRAM_CLASS_SECOND_TEXTURE)
+							& shader_program->type)
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"PARAM texture_scaling = program.env[0];\n"
@@ -194,7 +194,7 @@ be shared by multiple materials using the same program.
 							}
 					 }
 
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
 								 "\n"
@@ -308,10 +308,10 @@ be shared by multiple materials using the same program.
 								 , &error);
 					 }
 
-					 if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
-							& material_program->type)
+					 if ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE | SHADER_PROGRAM_CLASS_SECOND_TEXTURE)
+							& shader_program->type)
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"MUL result.texcoord[0], texture_scaling, vertex.texcoord[0];\n"
@@ -325,7 +325,7 @@ be shared by multiple materials using the same program.
 							}
 					 }
 
-					 if(material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if(shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
 								 "  gl_FrontColor = finalCol;\n"
@@ -356,13 +356,13 @@ be shared by multiple materials using the same program.
 								 , &error);
 					 }
 
-					 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 					 {
 							/* Set the colour texture dimension here so that I can use it when
 							 defining uniform variable in GLSL*/
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 & shader_program->type)
 							{
-								 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+								 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2 & shader_program->type)
 								 {
 										colour_texture_dimension = 3;
 								 }
@@ -376,7 +376,7 @@ be shared by multiple materials using the same program.
 								 colour_texture_dimension = 2;
 							}
 					 }
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							fragment_program_string = duplicate_string("//fragment shader\n");
 					 }
@@ -385,9 +385,9 @@ be shared by multiple materials using the same program.
 							fragment_program_string = duplicate_string("!!ARBfp1.0\n");
 					 }
 
-					 if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & shader_program->type)
 					 {
-							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&fragment_program_string,
 										"#extension GL_ARB_texture_rectangle : enable\n"
@@ -421,9 +421,9 @@ be shared by multiple materials using the same program.
 							}
 					 }
 
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 							{
 								 char temp_string[100];
 								 sprintf(temp_string,
@@ -463,9 +463,9 @@ be shared by multiple materials using the same program.
 								 , &error);
 					 }
 
-					 if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & shader_program->type)
 					 {
-							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 if (Graphics_library_vendor_mesa == vendor_id)
 								 {
@@ -547,10 +547,10 @@ be shared by multiple materials using the same program.
 								 }
 							}
 					 }
-					 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 					 {
 							char tex_string[100];
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 /* Load the colour texture */
 								 sprintf(tex_string,
@@ -578,9 +578,9 @@ be shared by multiple materials using the same program.
 							colour_texture_dimension = 0;
 					 }
 
-					 if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type))
+					 if (!(SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type))
 					 {
-							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 							{
 								append_string(&fragment_program_string,
 									 "  gl_FragColor = finalCol;\n"
@@ -596,15 +596,15 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
+							if (!(SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & shader_program->type))
 							{
 								 /* Modulate */
-								 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+								 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
 								 {
-										if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+										if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 										{
 											 /* RGB texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color, tex;\n"
@@ -622,7 +622,7 @@ be shared by multiple materials using the same program.
 										else
 										{
 											 /* grayscale texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
@@ -640,10 +640,10 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+										if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 										{
 											 /* grayscale alpha texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
@@ -661,7 +661,7 @@ be shared by multiple materials using the same program.
 										else
 										{
 											 /* RGBA texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MUL		result.color, fragment.color, tex;\n"
@@ -678,12 +678,12 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+								 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
 								 {
-										if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+										if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 										{
 											 /* RGB texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex;\n"
@@ -699,7 +699,7 @@ be shared by multiple materials using the same program.
 										else
 										{
 											 /* grayscale texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex.x;\n"
@@ -712,7 +712,7 @@ be shared by multiple materials using the same program.
 														 , &error);
 											 }
 										}
-										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+										if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 										{
 											 append_string(&fragment_program_string,
 													"MOV		result.color.w, state.material.diffuse.w;\n"
@@ -727,10 +727,10 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+										if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 										{
 											 /* grayscale alpha texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MOV		result.color.xyz, tex.x;\n"
@@ -748,7 +748,7 @@ be shared by multiple materials using the same program.
 										else
 										{
 											 /* RGBA texture */
-											 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+											 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 											 {
 													append_string(&fragment_program_string,
 														 "MOV		result.color, tex;\n"
@@ -764,7 +764,7 @@ be shared by multiple materials using the same program.
 								 }
 							}
 					 }
-					 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&fragment_program_string,
 								 "MOV		 result.depth.z, eyespaceCoord.z;\n"
@@ -780,9 +780,9 @@ be shared by multiple materials using the same program.
 								 , &error);
 					 }
 				}
-				else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material_program->type)
+				else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & shader_program->type)
 				{
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							vertex_program_string = duplicate_string("//Vertex Shader\n"
 																											 "#version 110\n");
@@ -798,10 +798,10 @@ be shared by multiple materials using the same program.
 								 "ATTRIB position = vertex.position;\n"
 								 , &error);
 					 }
-					 if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
-							& material_program->type)
+					 if ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE | SHADER_PROGRAM_CLASS_SECOND_TEXTURE)
+							& shader_program->type)
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"PARAM texture_scaling = program.env[0];\n"
@@ -814,16 +814,16 @@ be shared by multiple materials using the same program.
 								 , &error);
 							}
 					 }
-					 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & shader_program->type)
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"ATTRIB tangent = vertex.texcoord[1];\n"
 										, &error);
 							}
 					 }
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
 								 "\nvoid main()\n"
@@ -843,9 +843,9 @@ be shared by multiple materials using the same program.
 								 "TEMP viewVec;\n"
 								 , &error);
 					 }
-					 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
+					 if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & shader_program->type)
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
@@ -859,7 +859,7 @@ be shared by multiple materials using the same program.
 					 }
 					 else
 					 {
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 
 							{
 								 append_string(&vertex_program_string,
@@ -869,7 +869,7 @@ be shared by multiple materials using the same program.
 							}
 					 }
 
-					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					 if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					 {
 							append_string(&vertex_program_string,
 								 "  diffuse = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;\n"
@@ -889,10 +889,10 @@ be shared by multiple materials using the same program.
 								 , &error);
 					 }
 
-					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
-						& material_program->type)
+					if ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE | SHADER_PROGRAM_CLASS_SECOND_TEXTURE)
+						& shader_program->type)
 					{
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"MUL result.texcoord[0], texture_scaling, vertex.texcoord[0];\n"
@@ -906,9 +906,9 @@ be shared by multiple materials using the same program.
 							}
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
+					if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & shader_program->type)
 					{
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
@@ -949,7 +949,7 @@ be shared by multiple materials using the same program.
 					}
 					else
 					{
-							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
 										"  gl_TexCoord[3].xyz = normalize((gl_ModelViewMatrixInverseTranspose * vec4(gl_Normal,0.0)).xyz);\n"
@@ -979,7 +979,7 @@ be shared by multiple materials using the same program.
 							}
 					}
 
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 						 append_string(&vertex_program_string,
 								"  gl_FrontColor = gl_Color;\n"
@@ -1007,15 +1007,15 @@ be shared by multiple materials using the same program.
 								"END\n"
 								, &error);
 					}
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 						 fragment_program_string = duplicate_string("//fragment shader\n"
 																												"#version 110\n");
-						 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+						 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 						 {
-								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+								if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 & shader_program->type)
 								{
-									 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+									 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2 & shader_program->type)
 									 {
 											append_string(&fragment_program_string,
 												 "uniform sampler3D texture0;\n"
@@ -1036,12 +1036,12 @@ be shared by multiple materials using the same program.
 								}
 						 }
 
-						 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE & material_program->type)
+						 if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE & shader_program->type)
 						 {
 								/* Load the second texture using the same texture coordinates as the colour texture */
-								if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 & material_program->type)
+								if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_1 & shader_program->type)
 								{
-									 if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2 & material_program->type)
+									 if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_2 & shader_program->type)
 									 {
 											append_string(&fragment_program_string,
 												 "uniform sampler3D texture1;\n"
@@ -1062,38 +1062,38 @@ be shared by multiple materials using the same program.
 								}
 						 }
 
-						 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & material_program->type)
+						 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & shader_program->type)
 						 {
 							 append_string(&fragment_program_string,
 								 "uniform sampler1D texture1;\n"
 								 , &error);
 						 }
 
-						 if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
-									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
-									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
-									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
+						 if ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+									 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+									 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
+									 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & shader_program->type)
 						 {
-								if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & material_program->type)
+								if ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+											SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & shader_program->type)
 								{									 number_of_inputs = 0;
-									 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
-											& material_program->type)
+									 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+											& shader_program->type)
 									 {
 											number_of_inputs++;
 									 }
-									 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
-									 & material_program->type)
+									 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+									 & shader_program->type)
 									 {
 											number_of_inputs++;
 									 }
-									 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
-											& material_program->type)
+									 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+											& shader_program->type)
 									 {
 											number_of_inputs++;
 									 }
-									 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
-									 & material_program->type)
+									 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+									 & shader_program->type)
 									 {
 											number_of_inputs++;
 									 }
@@ -1111,9 +1111,9 @@ be shared by multiple materials using the same program.
 									 , &error);
 						 }
 
-						 if ((MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
-									 MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL) &
-								material_program->type)
+						 if ((SHADER_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
+									 SHADER_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL) &
+								shader_program->type)
 						 {
 								append_string(&fragment_program_string,
 									 "uniform vec4 texture_scaling, normal_scaling;\n"
@@ -1141,12 +1141,12 @@ be shared by multiple materials using the same program.
 								, &error);
 					}
 
-					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
+					if ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & shader_program->type)
 					{
-						 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+						 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 						 {
 								append_string(&fragment_program_string,
 									 "PARAM lookup_offsets = program.env[1];\n"
@@ -1155,7 +1155,7 @@ be shared by multiple materials using the same program.
 						 }
 					}
 
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 						 append_string(&fragment_program_string,
 								"  n = normalize(gl_TexCoord[3].xyz);\n"
@@ -1169,15 +1169,15 @@ be shared by multiple materials using the same program.
 								, &error);
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 					{
 						int colour_texture_string_index = 0;
 						char tex_string[100];
-						if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+						if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
-							 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+							 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
 							 {
-									if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 									{
 										 colour_texture_string_index = 2;
 									}
@@ -1188,7 +1188,7 @@ be shared by multiple materials using the same program.
 							 }
 							 else
 							 {
-									if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 									{
 										 colour_texture_string_index = 1;
 									}
@@ -1199,9 +1199,9 @@ be shared by multiple materials using the same program.
 							 }
 						}
 						/* Load the colour texture */
-						if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+						if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 & shader_program->type)
 						{
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2 & shader_program->type)
 							{
 								 /* RGB texture */
 								 colour_texture_dimension = 3;
@@ -1218,7 +1218,7 @@ be shared by multiple materials using the same program.
 							 colour_texture_dimension = 2;
 
 						}
-						if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+						if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
 							 sprintf(tex_string,
 									"  %s tex = %s(texture%dD(texture0, %s(gl_TexCoord[0])));\n",
@@ -1241,14 +1241,14 @@ be shared by multiple materials using the same program.
 						colour_texture_dimension = 0;
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE & material_program->type)
+					if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE & shader_program->type)
 					{
 						/* Load the second texture using the same texture coordinates as the colour texture */
-						if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 & material_program->type)
+						if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_1 & shader_program->type)
 						{
-							if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_2 & shader_program->type)
 							{
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										append_string(&fragment_program_string,
 											 "TEX		tex2, fragment.texcoord[0], texture[1], 3D;\n"
@@ -1263,7 +1263,7 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										append_string(&fragment_program_string,
 											 "TEX		tex2, fragment.texcoord[0], texture[1], 1D;\n"
@@ -1279,7 +1279,7 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
@@ -1293,11 +1293,11 @@ be shared by multiple materials using the same program.
 							 }
 						}
 					}
-					if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
+					if (!(SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & shader_program->type))
 					{
-						if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
+						if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & shader_program->type)
 						{
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "#Expand the range of the normal texture\n"
@@ -1322,7 +1322,7 @@ be shared by multiple materials using the same program.
 						else
 						{
 							/* Normal is stored in texcoord[3] */
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "#Normalize the normal.\n"
@@ -1336,7 +1336,7 @@ be shared by multiple materials using the same program.
 							 }
 						}
 						/* Usual lighting calculations */
-						if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+						if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
 							 append_string(&fragment_program_string,
 									"  color = gl_Color * gl_LightModel.ambient + gl_FrontMaterial.emission;\n"
@@ -1407,14 +1407,14 @@ be shared by multiple materials using the same program.
 							is derived from the diffuse component rather than the ambient one.
 							Should probably pass the ambient material colour through as a different
 							colour */
-						if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+						if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE & shader_program->type)
 						{
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
 							{
-								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 								{
 									/* RGB texture */
-									 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+									 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 									 {
 											append_string(&fragment_program_string,
 												 "MUL		finalCol.xyz, finalCol, tex;\n"
@@ -1429,7 +1429,7 @@ be shared by multiple materials using the same program.
 								}
 								else
 								{
-									 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+									 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 									 {
 											/* grayscale texture */
 											append_string(&fragment_program_string,
@@ -1447,9 +1447,9 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								 if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 								 {
-										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+										if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 										{
 											 /* grayscale alpha texture */
 											 append_string(&fragment_program_string,
@@ -1467,7 +1467,7 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+										if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 										{
 											 /* RGBA texture */
 											 append_string(&fragment_program_string,
@@ -1487,12 +1487,12 @@ be shared by multiple materials using the same program.
 					else
 					{
 						/* No lighting calculations are required for a decal texture */
-						if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+						if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & shader_program->type)
 						{
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 							{
 								/* RGB texture */
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										append_string(&fragment_program_string,
 											 "MOV		finalCol.xyz, tex;\n"
@@ -1508,7 +1508,7 @@ be shared by multiple materials using the same program.
 							else
 							{
 								/* grayscale texture */
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										append_string(&fragment_program_string,
 											 "MOV		finalCol.xyz, tex.x;\n"
@@ -1522,7 +1522,7 @@ be shared by multiple materials using the same program.
 											 , &error);
 								 }
 							}
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&fragment_program_string,
 										"MOV		finalCol.w, state.material.diffuse.w;\n"
@@ -1537,9 +1537,9 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & shader_program->type)
 							{
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										/* grayscale alpha texture */
 										append_string(&fragment_program_string,
@@ -1557,7 +1557,7 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 										/* RGBA texture */
 										append_string(&fragment_program_string,
@@ -1573,16 +1573,16 @@ be shared by multiple materials using the same program.
 							}
 						}
 					}
-					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
+					if ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & shader_program->type)
 					{
-						if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+						if ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & material_program->type)
+							SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & shader_program->type)
 						{
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "TEMP dependentlookup;\n"
@@ -1591,23 +1591,23 @@ be shared by multiple materials using the same program.
 							 }
 							 components_string = (char *)NULL;
 							 components_error = 0;
-							 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
-									& material_program->type)
+							 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+									& shader_program->type)
 							 {
 									append_string(&components_string, "r", &components_error);
 							 }
-							 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
-									& material_program->type)
+							 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+									& shader_program->type)
 							 {
 									append_string(&components_string, "g", &components_error);
 							 }
-							 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
-									& material_program->type)
+							 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+									& shader_program->type)
 							 {
 									append_string(&components_string, "b", &components_error);
 							 }
-							 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
-									& material_program->type)
+							 if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+									& shader_program->type)
 							 {
 									append_string(&components_string, "a", &components_error);
 							 }
@@ -1619,7 +1619,7 @@ be shared by multiple materials using the same program.
 							 if (!components_error)
 							 {
 									char tex_string[1000];
-									if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+									if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 									{
 										 sprintf(tex_string,
 												"#Offset and scale to counteract effect of linear interpolation\n"
@@ -1660,27 +1660,27 @@ be shared by multiple materials using the same program.
 								DEALLOCATE(components_string);
 
 							}
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
-								 switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
-										& material_program->type)
+								 switch ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+											 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
+										& shader_program->type)
 								 {
-										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
+										case SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
 										{
 											 /* Don't touch alpha */
 											 append_string(&fragment_program_string,
 													"MOV		finalCol.rgb, dependentlookup;\n"
 													, &error);
 										} break;
-										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
+										case SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
 										{
 											 append_string(&fragment_program_string,
 													"MUL		finalCol.w, finalCol.w, dependentlookup.r;\n"
 													, &error);
 										} break;
-										case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
+										case (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+											 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
 											 {
 													append_string(&fragment_program_string,
 														 "MOV		finalCol, dependentlookup;\n"
@@ -1690,25 +1690,25 @@ be shared by multiple materials using the same program.
 							}
 							else
 							{
-								 switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
-										& material_program->type)
+								 switch ((SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+											 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA)
+										& shader_program->type)
 								 {
-										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
+										case SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
 										{
 											 /* Don't touch alpha */
 											 append_string(&fragment_program_string,
 													" 	color.rgb = dependentlookup.rgb;\n"
 													, &error);
 										} break;
-										case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
+										case SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
 										{
 											 append_string(&fragment_program_string,
 													"  color.w = color.w * dependentlookup.r;\n"
 													, &error);
 										} break;
-										case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-											 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
+										case (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+											 SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
 											 {
 													append_string(&fragment_program_string,
 														 "  color = dependentlookup;\n"
@@ -1718,10 +1718,10 @@ be shared by multiple materials using the same program.
 								 }
 							}
 						}
-						else if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & material_program->type)
+						else if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & shader_program->type)
 						{
 							 char tex_string[1000];
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									char lookup_one_component_string[] =
 										 "#Offset and scale to counteract effect of linear interpolation\n"
@@ -1734,32 +1734,32 @@ be shared by multiple materials using the same program.
 										 "TEMP dependentlookup;\n"
 										 "TEMP offsetcolour;\n"
 										 , &error);
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"rrrr", "r");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"gggg", "g");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"bbbb", "b");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"aaaa", "a");
@@ -1779,32 +1779,32 @@ be shared by multiple materials using the same program.
 										 "  offsetcolour = color.%s * lookup_scales.x + lookup_offsets.x;\n"
 										 "  dependentlookup = texture1D(texture1, offsetcolour);\n"
 										 "  color.%s = dependentlookup.r;\n";
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"r", "r");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"g", "g");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"b", "b");
 										 append_string(&fragment_program_string,
 												tex_string, &error);
 									}
-									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
-										 & material_program->type)
+									if (SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+										 & shader_program->type)
 									{
 										 sprintf(tex_string, lookup_one_component_string,
 												"a", "a");
@@ -1815,15 +1815,15 @@ be shared by multiple materials using the same program.
 						}
 					}
 
-					if ((MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
-						MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL) &
-						material_program->type)
+					if ((SHADER_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
+						SHADER_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL) &
+						shader_program->type)
 					{
 						/* I think with some rearrangement we could consolidate
 							this with the per pixel lighting above assuming that we
 							don't want to light using the fragment normals and
 							then do this lighting too. */
-						 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+						 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 						 {
 								append_string(&fragment_program_string,
 									 "TEMP unlitColour;\n"
@@ -1837,12 +1837,12 @@ be shared by multiple materials using the same program.
 									 , &error);
 						 }
 
-						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
-							material_program->type)
+						if (SHADER_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
+							shader_program->type)
 						{
 							 /* Normal comes from the texture */
 
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "#Expand the range of the normal texture\n"
@@ -1865,7 +1865,7 @@ be shared by multiple materials using the same program.
 
 							/* Normal is calculated from the red intensity,
 								may want colour magnitude or alpha value. */
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&fragment_program_string,
 										"#Calculate a finite difference normal based on the magnitude of texture components used.\n"
@@ -1883,9 +1883,9 @@ be shared by multiple materials using the same program.
 										, &error);
 							}
 
-							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+							if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 & shader_program->type)
 							{
-								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+								if (SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2 & shader_program->type)
 								{
 									colour_texture_dimension = 3;
 								}
@@ -1902,7 +1902,7 @@ be shared by multiple materials using the same program.
 
 							for (i = 0 ; i < colour_texture_dimension ; i++)
 							{
-								 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+								 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 								 {
 									 sprintf(tex_string,
 											 "PARAM stencil_%sup = {%d, %d, %d, %d};\n"
@@ -1922,11 +1922,11 @@ be shared by multiple materials using the same program.
 										append_string(&fragment_program_string,
 											 tex_string, &error);
 
-										switch ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
-													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & material_program->type)
+										switch ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+													| SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & shader_program->type)
 										{
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
-													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+													| SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 case 0:
 											 {
 													/* RGB or RGBA texture
@@ -1940,8 +1940,8 @@ be shared by multiple materials using the same program.
 													append_string(&fragment_program_string,
 														 tex_string, &error);
 											 } break;
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1:
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 {
 													/* Intensity or IntensityAlpha texture */
 													sprintf(tex_string,
@@ -1975,11 +1975,11 @@ be shared by multiple materials using the same program.
 										append_string(&fragment_program_string,
 											 tex_string, &error);
 
-										switch ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
-													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & material_program->type)
+										switch ((SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+													| SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & shader_program->type)
 										{
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
-													| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+													| SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 case 0:
 											 {
 													/* RGB or RGBA texture
@@ -1990,8 +1990,8 @@ be shared by multiple materials using the same program.
 													append_string(&fragment_program_string,
 														 tex_string, &error);
 											 } break;
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1:
-											 case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1:
+											 case SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
 											 {
 													/* Intensity or IntensityAlpha texture */
 													sprintf(tex_string,
@@ -2003,7 +2003,7 @@ be shared by multiple materials using the same program.
 										}
 								 }
 							}
-							if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&fragment_program_string,
 										"MUL  normal, normal, normal_scaling;\n"
@@ -2017,7 +2017,7 @@ be shared by multiple materials using the same program.
 							}
 						}
 
-						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+						if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 						{
 							 append_string(&fragment_program_string,
 									/* Normalise the normal but keep the squared
@@ -2096,10 +2096,10 @@ be shared by multiple materials using the same program.
 									, &error);
 						}
 
-						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA &
-							material_program->type)
+						if (SHADER_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA &
+							shader_program->type)
 						{
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "#Alpha value;\n"
@@ -2116,7 +2116,7 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
-							 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+							 if (shader_program->shader_type!=SHADER_PROGRAM_SHADER_GLSL)
 							 {
 									append_string(&fragment_program_string,
 										 "#Alpha value;\n"
@@ -2132,7 +2132,7 @@ be shared by multiple materials using the same program.
 							 }
 						}
 					}
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 						 append_string(&fragment_program_string,
 								"  gl_FragColor = color;\n"
@@ -2152,7 +2152,7 @@ be shared by multiple materials using the same program.
 				}
 				if (vertex_program_string && fragment_program_string)
 				{
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 #if defined (WRITE_STRING)
 						FILE *program_file;
@@ -2173,27 +2173,27 @@ be shared by multiple materials using the same program.
 						}
 #endif /* defined (WRITE_STRING) */
 #if defined (GL_VERSION_2_0)
-						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
-						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						shader_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
+						shader_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
 						{
-							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
+							shader_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
 						}
 #endif /* defined (GL_VERSION_2_0) */
 					}
 					else
 					{
-						if (!material_program->vertex_program)
+						if (!shader_program->vertex_program)
 						{
-							glGenProgramsARB(1, &material_program->vertex_program);
+							glGenProgramsARB(1, &shader_program->vertex_program);
 						}
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, shader_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							static_cast<GLsizei>(strlen(vertex_program_string)), vertex_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
-							"Material_program_compile.  Vertex Result: %s\n", error_msg);
+							"Shader_program_compile.  Vertex Result: %s\n", error_msg);
 #endif /* defined (DEBUG_CODE) */
 #if defined (WRITE_STRING)
 						FILE *program_file;
@@ -2204,17 +2204,17 @@ be shared by multiple materials using the same program.
 						}
 #endif /* defined (WRITE_STRING) */
 						DEALLOCATE(vertex_program_string);
-						if (!material_program->fragment_program)
+						if (!shader_program->fragment_program)
 						{
-							glGenProgramsARB(1, &material_program->fragment_program);
+							glGenProgramsARB(1, &shader_program->fragment_program);
 						}
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, shader_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							static_cast<GLsizei>(strlen(fragment_program_string)), fragment_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
-							"Material_program_compile.  Fragment Result: %s\n", error_msg);
+							"Shader_program_compile.  Fragment Result: %s\n", error_msg);
 #endif /* defined (DEBUG_CODE) */
 #if defined (WRITE_STRING)
 						if (fragment_program_string && (program_file = fopen("out.fp", "w")))
@@ -2238,14 +2238,14 @@ be shared by multiple materials using the same program.
 							vertex_program_string[count] = 0;
 							if (count > MAX_PROGRAM - 2)
 							{
-								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+								display_message(ERROR_MESSAGE, "Shader_program_compile.  "
 									"Short read on test.vp, need to increase MAX_PROGRAM.");
 							}
 							fclose (program_file);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Material_program_compile.  "
+							display_message(ERROR_MESSAGE, "Shader_program_compile.  "
 								"Unable to open file test.vp.");
 						}
 
@@ -2255,84 +2255,84 @@ be shared by multiple materials using the same program.
 							fragment_program_string[count] = 0;
 							if (count > MAX_PROGRAM - 2)
 							{
-								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+								display_message(ERROR_MESSAGE, "Shader_program_compile.  "
 									"Short read on test.fp, need to increase MAX_PROGRAM.");
 							}
 							fclose (program_file);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Material_program_compile.  "
+							display_message(ERROR_MESSAGE, "Shader_program_compile.  "
 								"Unable to open file test.fp.");
 						}
 					}
-					if (material_program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type == SHADER_PROGRAM_SHADER_GLSL)
 					{
 #if defined (GL_VERSION_2_0)
-						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
-						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						shader_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
+						shader_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 						if (geometry_program_string && Graphics_library_load_extension("GL_EXT_geometry_shader4"))
 						{
-							material_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
+							shader_program->geometry_program = glCreateShader(GL_GEOMETRY_SHADER_EXT);
 						}
 #endif /* defined (GL_VERSION_2_0) */
 					}
 					else
 					{
-						if (!material_program->vertex_program)
+						if (!shader_program->vertex_program)
 						{
-							glGenProgramsARB(1, &material_program->vertex_program);
+							glGenProgramsARB(1, &shader_program->vertex_program);
 						}
 
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, shader_program->vertex_program);
 						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
-							"Material_program_compile.  test.vp Vertex Result: %s", error_msg);
+							"Shader_program_compile.  test.vp Vertex Result: %s", error_msg);
 #endif /* defined (DEBUG_CODE) */
 
-						if (!material_program->fragment_program)
+						if (!shader_program->fragment_program)
 						{
-							glGenProgramsARB(1, &material_program->fragment_program);
+							glGenProgramsARB(1, &shader_program->fragment_program);
 						}
 
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, shader_program->fragment_program);
 						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(fragment_program_string), fragment_program_string);
 #if defined (DEBUG_CODE)
 						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 						display_message(WARNING_MESSAGE,
-							"Material_program_compile.  test.fp Fragment Result: %s", error_msg);
+							"Shader_program_compile.  test.fp Fragment Result: %s", error_msg);
 #endif /* defined (DEBUG_CODE) */
 					}
-					material_program->compiled = 1;
+					shader_program->compiled = 1;
 #endif /* ! defined (TESTING_PROGRAM_STRINGS) */
-					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 					{
 						GLint vertexShaderCompiled, fragmentShaderCompiled, geometryShaderCompiled;
 
-						material_program->glsl_current_program = glCreateProgram();
+						shader_program->glsl_current_program = glCreateProgram();
 
 						vv = vertex_program_string;
-						glShaderSource(material_program->vertex_program,1, &vv, NULL);
-						glCompileShader(material_program->vertex_program);
-						glGetShaderiv(material_program->vertex_program, GL_COMPILE_STATUS, &vertexShaderCompiled);
-						glAttachShader(material_program->glsl_current_program,material_program->vertex_program);
+						glShaderSource(shader_program->vertex_program,1, &vv, NULL);
+						glCompileShader(shader_program->vertex_program);
+						glGetShaderiv(shader_program->vertex_program, GL_COMPILE_STATUS, &vertexShaderCompiled);
+						glAttachShader(shader_program->glsl_current_program,shader_program->vertex_program);
 						DEALLOCATE(vertex_program_string);
-						if (material_program->geometry_program)
+						if (shader_program->geometry_program)
 						{
 							gg = geometry_program_string;
-							glShaderSource(material_program->geometry_program,1, &gg, NULL);
-							glCompileShader(material_program->geometry_program);
-							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_INPUT_TYPE_EXT, GL_TRIANGLES);
-							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_TRIANGLE_STRIP);
-							glGetShaderiv(material_program->geometry_program, GL_COMPILE_STATUS, &geometryShaderCompiled);
-							glAttachShader(material_program->glsl_current_program,material_program->geometry_program);
+							glShaderSource(shader_program->geometry_program,1, &gg, NULL);
+							glCompileShader(shader_program->geometry_program);
+							glProgramParameteriEXT(shader_program->glsl_current_program, GL_GEOMETRY_INPUT_TYPE_EXT, GL_TRIANGLES);
+							glProgramParameteriEXT(shader_program->glsl_current_program, GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_TRIANGLE_STRIP);
+							glGetShaderiv(shader_program->geometry_program, GL_COMPILE_STATUS, &geometryShaderCompiled);
+							glAttachShader(shader_program->glsl_current_program,shader_program->geometry_program);
 							int geom_ouput_max_vertices = 0;
 							glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, &geom_ouput_max_vertices);
-							glProgramParameteriEXT(material_program->glsl_current_program, GL_GEOMETRY_VERTICES_OUT_EXT, geom_ouput_max_vertices);
+							glProgramParameteriEXT(shader_program->glsl_current_program, GL_GEOMETRY_VERTICES_OUT_EXT, geom_ouput_max_vertices);
 							DEALLOCATE(geometry_program_string);
 						}
 						else
@@ -2341,10 +2341,10 @@ be shared by multiple materials using the same program.
 						}
 
 						ff = fragment_program_string;
-						glShaderSource(material_program->fragment_program,1, &ff, NULL);
-						glCompileShader(material_program->fragment_program);
-						glGetShaderiv(material_program->fragment_program, GL_COMPILE_STATUS, &fragmentShaderCompiled);
-						glAttachShader(material_program->glsl_current_program,material_program->fragment_program);
+						glShaderSource(shader_program->fragment_program,1, &ff, NULL);
+						glCompileShader(shader_program->fragment_program);
+						glGetShaderiv(shader_program->fragment_program, GL_COMPILE_STATUS, &fragmentShaderCompiled);
+						glAttachShader(shader_program->glsl_current_program,shader_program->fragment_program);
 						DEALLOCATE(fragment_program_string);
 
 #if !defined (DEBUG_CODE)
@@ -2356,32 +2356,32 @@ be shared by multiple materials using the same program.
 							int infologLength = 0;
 							int charsWritten  = 0;
 							char *infoLog;
-							glGetShaderiv(material_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
+							glGetShaderiv(shader_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
 							if (infologLength > 0)
 							{
 								infoLog = (char *)malloc(infologLength);
-								glGetShaderInfoLog(material_program->vertex_program,
+								glGetShaderInfoLog(shader_program->vertex_program,
 									infologLength, &charsWritten, infoLog);
 								display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
 								free(infoLog);
 							}
-							if (material_program->geometry_program)
+							if (shader_program->geometry_program)
 							{
-								glGetShaderiv(material_program->geometry_program, GL_INFO_LOG_LENGTH,&infologLength);
+								glGetShaderiv(shader_program->geometry_program, GL_INFO_LOG_LENGTH,&infologLength);
 								if (infologLength > 0)
 								{
 									infoLog = (char *)malloc(infologLength);
-									glGetShaderInfoLog(material_program->geometry_program,
+									glGetShaderInfoLog(shader_program->geometry_program,
 										infologLength, &charsWritten, infoLog);
 									display_message(INFORMATION_MESSAGE,"Geometry program info:\n%s\n",infoLog);
 									free(infoLog);
 								}
 							}
-							glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
+							glGetShaderiv(shader_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
 							if (infologLength > 0)
 							{
 								infoLog = (char *)malloc(infologLength);
-								glGetShaderInfoLog(material_program->fragment_program,
+								glGetShaderInfoLog(shader_program->fragment_program,
 									infologLength, &charsWritten, infoLog);
 								display_message(INFORMATION_MESSAGE,"Fragment program info:\n%s\n",infoLog);
 								free(infoLog);
@@ -2389,13 +2389,13 @@ be shared by multiple materials using the same program.
 						}
 						if (renderer->use_display_list)
 						{
-							if (!material_program->display_list)
+							if (!shader_program->display_list)
 							{
-								material_program->display_list = glGenLists(1);
+								shader_program->display_list = glGenLists(1);
 							}
-							glNewList(material_program->display_list, GL_COMPILE);
-							glLinkProgram(material_program->glsl_current_program);
-							glUseProgram(material_program->glsl_current_program);
+							glNewList(shader_program->display_list, GL_COMPILE);
+							glLinkProgram(shader_program->glsl_current_program);
+							glUseProgram(shader_program->glsl_current_program);
 							glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
 							glEndList();
 						}
@@ -2404,20 +2404,20 @@ be shared by multiple materials using the same program.
 					{
 						if (renderer->use_display_list)
 						{
-							if (!material_program->display_list)
+							if (!shader_program->display_list)
 							{
-								material_program->display_list = glGenLists(/*number_of_lists*/1);
+								shader_program->display_list = glGenLists(/*number_of_lists*/1);
 							}
 
-							glNewList(material_program->display_list, GL_COMPILE);
+							glNewList(shader_program->display_list, GL_COMPILE);
 
 							glEnable(GL_VERTEX_PROGRAM_ARB);
 							glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-									material_program->vertex_program);
+									shader_program->vertex_program);
 
 							glEnable(GL_FRAGMENT_PROGRAM_ARB);
 							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-									material_program->fragment_program);
+									shader_program->fragment_program);
 
 							glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
 
@@ -2425,7 +2425,7 @@ be shared by multiple materials using the same program.
 						}
 					}
 				}
-				material_program->compiled = 1;
+				shader_program->compiled = 1;
 			 }
 			 else
 			 {
@@ -2443,22 +2443,22 @@ be shared by multiple materials using the same program.
 		}
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
-			"Material_program_compile.  Not defined for this graphics API.");
+			"Shader_program_compile.  Not defined for this graphics API.");
 		return_code=0;
 #endif /* defined (OPENGL_API) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Material_program_compile.  Missing material_program");
+			"Shader_program_compile.  Missing shader_program");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Material_program_compile */
+} /* Shader_program_compile */
 
-int Material_program_execute(struct Material_program *material_program,
+int Shader_program_execute(struct Shader_program *shader_program,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
@@ -2468,48 +2468,48 @@ DESCRIPTION :
 {
 	int return_code;
 
-	if (material_program)
+	if (shader_program)
 	{
-		if (material_program->compiled)
+		if (shader_program->compiled)
 		{
 			if (renderer->use_display_list)
 			{
-				if (material_program->display_list)
+				if (shader_program->display_list)
 				{
-					glCallList(material_program->display_list);
+					glCallList(shader_program->display_list);
 				}
 			}
 			else
 			{
-				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+				if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 				{
-					if (material_program->glsl_current_program)
+					if (shader_program->glsl_current_program)
 					{
 						GLint linked= 0;
-						glGetProgramiv(material_program->glsl_current_program, GL_LINK_STATUS, &linked);
+						glGetProgramiv(shader_program->glsl_current_program, GL_LINK_STATUS, &linked);
 						if (linked)
 						{
-							glUseProgram(material_program->glsl_current_program);
+							glUseProgram(shader_program->glsl_current_program);
 						}
 						else
 						{
-							glLinkProgram(material_program->glsl_current_program);
-							glUseProgram(material_program->glsl_current_program);
+							glLinkProgram(shader_program->glsl_current_program);
+							glUseProgram(shader_program->glsl_current_program);
 						}
 						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
 					}
 				}
 				else
 				{
-					if (material_program->vertex_program && material_program->fragment_program)
+					if (shader_program->vertex_program && shader_program->fragment_program)
 					{
 						glEnable(GL_VERTEX_PROGRAM_ARB);
 						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-								material_program->vertex_program);
+								shader_program->vertex_program);
 
 						glEnable(GL_FRAGMENT_PROGRAM_ARB);
 						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-								material_program->fragment_program);
+								shader_program->fragment_program);
 						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
 					}
 				}
@@ -2524,57 +2524,57 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Material_program_execute.  Missing material_program object.");
+			"Shader_program_execute.  Missing shader_program object.");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Material_program_execute */
+} /* Shader_program_execute */
 
-int Material_program_execute_textures(struct Material_program *material_program,
+int Shader_program_execute_textures(struct Shader_program *shader_program,
 	struct Texture *texture, struct Texture *second_texture,
 	struct Texture *third_texture)
 {
 #if defined (GL_VERSION_2_0)
-	if (material_program && material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL &&
-			material_program->glsl_current_program)
+	if (shader_program && shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL &&
+			shader_program->glsl_current_program)
 	{
 		 if (texture)
 		 {
 			Texture_execute_vertex_program_environment(texture,
-					material_program->glsl_current_program);
+					shader_program->glsl_current_program);
 		 }
 		 if (second_texture)
 		 {
 			Texture_execute_vertex_program_environment(second_texture,
-					material_program->glsl_current_program);
+					shader_program->glsl_current_program);
 
 		 }
 		 if (third_texture)
 		 {
 			Texture_execute_vertex_program_environment(third_texture,
-				 material_program->glsl_current_program);
+				 shader_program->glsl_current_program);
 		 }
 		 return 1;
 	}
 #endif
 	return 0;
 }
-static int Material_program_uniform_write_glsl_values(Material_program_uniform *uniform,
-	void *material_program_void)
+static int Shader_program_uniform_write_glsl_values(Shader_program_uniform *uniform,
+	void *shader_program_void)
 {
 #if defined (GL_VERSION_2_0)
 	int return_code;
-	struct Material_program *material_program;
-	if (uniform && (material_program = static_cast<Material_program*>(material_program_void)))
+	struct Shader_program *shader_program;
+	if (uniform && (shader_program = static_cast<Shader_program*>(shader_program_void)))
 	{
-		GLint location = glGetUniformLocation(material_program->glsl_current_program,
+		GLint location = glGetUniformLocation(shader_program->glsl_current_program,
 			uniform->name);
 		if (location != (GLint)-1)
 		{
 			switch(uniform->type)
 			{
-				case MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT:
+				case SHADER_PROGRAM_UNIFORM_TYPE_FLOAT:
 				{
 					switch(uniform->number_of_defined_values)
 					{
@@ -2608,29 +2608,29 @@ static int Material_program_uniform_write_glsl_values(Material_program_uniform *
 }
 
 
-int Material_program_execute_uniforms(struct Material_program *material_program,
-		LIST(Material_program_uniform) *material_program_uniforms)
+int Shader_program_execute_uniforms(struct Shader_program *shader_program,
+		LIST(Shader_program_uniform) *shader_program_uniforms)
 {
 #if defined (GL_VERSION_2_0)
-	if (material_program && material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL &&
-			material_program->glsl_current_program && material_program_uniforms)
+	if (shader_program && shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL &&
+			shader_program->glsl_current_program && shader_program_uniforms)
 	{
-	 if (glIsProgram(material_program->glsl_current_program))
+	 if (glIsProgram(shader_program->glsl_current_program))
 	 {
 		GLint loc1 = -1;
-		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture2");
+		loc1 = glGetUniformLocation(shader_program->glsl_current_program,"texture2");
 		if (loc1 != (GLint)-1)
 			 glUniform1i(loc1,2);
-		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture1");
+		loc1 = glGetUniformLocation(shader_program->glsl_current_program,"texture1");
 		if (loc1 != (GLint)-1)
 			 glUniform1i(loc1,1);
-		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture0");
+		loc1 = glGetUniformLocation(shader_program->glsl_current_program,"texture0");
 		if (loc1 != (GLint)-1)
 			 glUniform1i(loc1, 0);
-		if (material_program_uniforms)
-			FOR_EACH_OBJECT_IN_LIST(Material_program_uniform)(
-					Material_program_uniform_write_glsl_values, material_program,
-					material_program_uniforms);
+		if (shader_program_uniforms)
+			FOR_EACH_OBJECT_IN_LIST(Shader_program_uniform)(
+					Shader_program_uniform_write_glsl_values, shader_program,
+					shader_program_uniforms);
 		return 1;
 	 }
 
@@ -2646,14 +2646,14 @@ int Material_program_execute_uniforms(struct Material_program *material_program,
  * array of doubles and I don't see the need to copy and pass floats.
  * It isn't called double_vector then because we are going to use it with Uniform?f
  */
-int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
+int Shader_program_uniform_set_float_vector(Shader_program_uniform *uniform,
 	unsigned int number_of_values, double *values)
 {
 	int return_code;
 	unsigned int i;
 	if (uniform && (number_of_values <= 4))
 	{
-		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT;
+		uniform->type = SHADER_PROGRAM_UNIFORM_TYPE_FLOAT;
 		uniform->number_of_defined_values = number_of_values;
 		for (i = 0 ; i < number_of_values; i++)
 		{
@@ -2664,64 +2664,64 @@ int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Material_program_uniform_set_float_vector.  Invalid arguments");
+			"Shader_program_uniform_set_float_vector.  Invalid arguments");
 		return_code = 0;
 	}
 	return (return_code);
 }
 
-struct Material_program *CREATE(Material_program)(enum Material_program_type type)
+struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Material_program *material_program;
+	struct Shader_program *shader_program;
 
-	if (ALLOCATE(material_program ,struct Material_program, 1))
+	if (ALLOCATE(shader_program ,struct Shader_program, 1))
 	{
-		material_program->type = type;
+		shader_program->type = type;
 #if defined (OPENGL_API)
 #if defined GL_ARB_vertex_program &&defined GL_ARB_fragment_program
-		material_program->vertex_program = 0;
-		material_program->fragment_program = 0;
-		material_program->geometry_program = 0;
+		shader_program->vertex_program = 0;
+		shader_program->fragment_program = 0;
+		shader_program->geometry_program = 0;
 #endif
-		material_program->shader_type=MATERIAL_PROGRAM_SHADER_NONE;
-		material_program->glsl_current_program = 0;
-		material_program->vertex_program_string = (char *)NULL;
-		material_program->geometry_program_string = (char *)NULL;
-		material_program->fragment_program_string = (char *)NULL;
-		material_program->display_list = 0;
+		shader_program->shader_type=SHADER_PROGRAM_SHADER_NONE;
+		shader_program->glsl_current_program = 0;
+		shader_program->vertex_program_string = (char *)NULL;
+		shader_program->geometry_program_string = (char *)NULL;
+		shader_program->fragment_program_string = (char *)NULL;
+		shader_program->display_list = 0;
 #endif /* defined (OPENGL_API) */
-		material_program->compiled = 0;
-		material_program->access_count = 0;
+		shader_program->compiled = 0;
+		shader_program->access_count = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Material_program).  Not enough memory");
+			"CREATE(Shader_program).  Not enough memory");
 	}
 
-	return (material_program);
-} /* CREATE(Material_program) */
+	return (shader_program);
+} /* CREATE(Shader_program) */
 
-struct Material_program *Material_program_create_from_program_strings(
+struct Shader_program *Shader_program_create_from_program_strings(
 	const char *vertex_program_string, const char *fragment_program_string,
 	const char *geometry_program_string)
 {
-	struct Material_program *material_program;
+	struct Shader_program *shader_program;
 
-	material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS);
-	if (material_program)
+	shader_program = CREATE(Shader_program)(SHADER_PROGRAM_SPECIFIED_STRINGS);
+	if (shader_program)
 	{
 #if defined (OPENGL_API)
-		Material_program_set_vertex_string(material_program, vertex_program_string);
+		Shader_program_set_vertex_string(shader_program, vertex_program_string);
 
-		Material_program_set_fragment_string(material_program,fragment_program_string);
+		Shader_program_set_fragment_string(shader_program,fragment_program_string);
 
-		Material_program_set_geometry_string(material_program, geometry_program_string);
+		Shader_program_set_geometry_string(shader_program, geometry_program_string);
 
 #else /* defined (OPENGL_API) */
 		USE_PARAMETER(vertex_program_string);
@@ -2732,251 +2732,251 @@ struct Material_program *Material_program_create_from_program_strings(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Material_program_create_from_program_strings.  Not enough memory");
+			"Shader_program_create_from_program_strings.  Not enough memory");
 	}
 
-	return (material_program);
+	return (shader_program);
 }
 
-static int DESTROY(Material_program)(struct Material_program **material_program_address)
+static int DESTROY(Shader_program)(struct Shader_program **shader_program_address)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
 
 DESCRIPTION :
-Frees the memory for the material_program.
+Frees the memory for the shader_program.
 ==============================================================================*/
 {
 	int return_code;
-	struct Material_program *material_program;
+	struct Shader_program *shader_program;
 
-	if (material_program_address &&
-		(material_program = *material_program_address))
+	if (shader_program_address &&
+		(shader_program = *shader_program_address))
 	{
-		if (0==material_program->access_count)
+		if (0==shader_program->access_count)
 		{
 #if defined (OPENGL_API)
-			if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+			if (shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 			{
 				glUseProgram(0);
-				if (material_program->vertex_program)
+				if (shader_program->vertex_program)
 				{
-					glDeleteShader(material_program->vertex_program);
+					glDeleteShader(shader_program->vertex_program);
 				}
-				if (material_program->fragment_program)
+				if (shader_program->fragment_program)
 				{
-					glDeleteShader(material_program->fragment_program);
+					glDeleteShader(shader_program->fragment_program);
 				}
-				if (material_program->geometry_program)
+				if (shader_program->geometry_program)
 				{
-					glDeleteShader(material_program->geometry_program);
+					glDeleteShader(shader_program->geometry_program);
 				}
-				if (material_program->glsl_current_program)
+				if (shader_program->glsl_current_program)
 				{
-					glDeleteProgram(material_program->glsl_current_program);
-				}
-			}
-			else if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
-			{
-				if (material_program->vertex_program)
-				{
-					glDeleteProgramsARB(1, &material_program->vertex_program);
-				}
-				if (material_program->fragment_program)
-				{
-					glDeleteProgramsARB(1, &material_program->fragment_program);
+					glDeleteProgram(shader_program->glsl_current_program);
 				}
 			}
-			if (material_program->display_list)
+			else if (shader_program->shader_type==SHADER_PROGRAM_SHADER_ARB)
 			{
-				glDeleteLists(material_program->display_list, 1);
+				if (shader_program->vertex_program)
+				{
+					glDeleteProgramsARB(1, &shader_program->vertex_program);
+				}
+				if (shader_program->fragment_program)
+				{
+					glDeleteProgramsARB(1, &shader_program->fragment_program);
+				}
 			}
-			if (material_program->vertex_program_string)
+			if (shader_program->display_list)
 			{
-				DEALLOCATE(material_program->vertex_program_string);
-				material_program->vertex_program_string = NULL;
+				glDeleteLists(shader_program->display_list, 1);
 			}
-			if (material_program->geometry_program_string)
+			if (shader_program->vertex_program_string)
 			{
-				DEALLOCATE(material_program->geometry_program_string);
-				material_program->geometry_program_string = NULL;
+				DEALLOCATE(shader_program->vertex_program_string);
+				shader_program->vertex_program_string = NULL;
 			}
-			if (material_program->fragment_program_string)
+			if (shader_program->geometry_program_string)
 			{
-				DEALLOCATE(material_program->fragment_program_string);
-				material_program->fragment_program_string = NULL;
+				DEALLOCATE(shader_program->geometry_program_string);
+				shader_program->geometry_program_string = NULL;
+			}
+			if (shader_program->fragment_program_string)
+			{
+				DEALLOCATE(shader_program->fragment_program_string);
+				shader_program->fragment_program_string = NULL;
 			}
 #endif /* defined (OPENGL_API) */
-			DEALLOCATE(*material_program_address);
+			DEALLOCATE(*shader_program_address);
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(Material_program).  Material program has non-zero access count");
+				"DESTROY(Shader_program).  Shader program has non-zero access count");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Material_program).  Missing material");
+			"DESTROY(Shader_program).  Missing material");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* DESTROY(Material_program) */
+} /* DESTROY(Shader_program) */
 
 
-DECLARE_OBJECT_FUNCTIONS(Material_program)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Material_program, type, \
-	enum Material_program_type, compare_int)
-DECLARE_INDEXED_LIST_FUNCTIONS(Material_program)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
-	enum Material_program_type, compare_int)
+DECLARE_OBJECT_FUNCTIONS(Shader_program)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program, type, \
+	enum Shader_program_type, compare_int)
+DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program, type,
+	enum Shader_program_type, compare_int)
 
-struct Material_program_uniform *CREATE(Material_program_uniform)(char *name)
+struct Shader_program_uniform *CREATE(Shader_program_uniform)(char *name)
 /*******************************************************************************
 ==============================================================================*/
 {
-	struct Material_program_uniform *uniform;
+	struct Shader_program_uniform *uniform;
 
-	ENTER(CREATE(Material_program_uniform));
+	ENTER(CREATE(Shader_program_uniform));
 
-	if (ALLOCATE(uniform, Material_program_uniform, 1))
+	if (ALLOCATE(uniform, Shader_program_uniform, 1))
 	{
 		uniform->name = duplicate_string(name);
-		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_UNDEFINED;
+		uniform->type = SHADER_PROGRAM_UNIFORM_TYPE_UNDEFINED;
 		uniform->number_of_defined_values = 0;
 		uniform->access_count = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Material_program).  Not enough memory");
+			"CREATE(Shader_program).  Not enough memory");
 	}
 	LEAVE;
 
 	return (uniform);
-} /* CREATE(Material_program_uniform) */
+} /* CREATE(Shader_program_uniform) */
 
-static int DESTROY(Material_program_uniform)(struct Material_program_uniform **material_program_uniform_address)
+static int DESTROY(Shader_program_uniform)(struct Shader_program_uniform **shader_program_uniform_address)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
 
 DESCRIPTION :
-Frees the memory for the material_program.
+Frees the memory for the shader_program.
 ==============================================================================*/
 {
 	int return_code;
-	Material_program_uniform *uniform;
+	Shader_program_uniform *uniform;
 
-	ENTER(DESTROY(Material_program_uniform));
-	if (material_program_uniform_address &&
-			(uniform = *material_program_uniform_address))
+	ENTER(DESTROY(Shader_program_uniform));
+	if (shader_program_uniform_address &&
+			(uniform = *shader_program_uniform_address))
 	{
 		if (0==uniform->access_count)
 		{
 			if (uniform->name)
 				DEALLOCATE(uniform->name)
 
-			DEALLOCATE(*material_program_uniform_address);
+			DEALLOCATE(*shader_program_uniform_address);
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(Material_program_uniform).  Material program uniform has non-zero access count");
+				"DESTROY(Shader_program_uniform).  Shader program uniform has non-zero access count");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Material_program_uniform).  Missing address");
+			"DESTROY(Shader_program_uniform).  Missing address");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Material_program_uniform) */
+} /* DESTROY(Shader_program_uniform) */
 
-DECLARE_OBJECT_FUNCTIONS(Material_program_uniform)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Material_program_uniform, name, \
+DECLARE_OBJECT_FUNCTIONS(Shader_program_uniform)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program_uniform, name, \
 	const char *, strcmp)
-DECLARE_INDEXED_LIST_FUNCTIONS(Material_program_uniform)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program_uniform, name,
+DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program_uniform)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program_uniform, name,
 	const char *, strcmp)
 
-int cmzn_material_program_uniform_destroy(struct Material_program_uniform **material_program_uniform_address)
+int cmzn_shader_program_uniform_destroy(struct Shader_program_uniform **shader_program_uniform_address)
 {
-	if (material_program_uniform_address && *material_program_uniform_address)
+	if (shader_program_uniform_address && *shader_program_uniform_address)
 	{
-		DEACCESS(Material_program_uniform)(material_program_uniform_address);
+		DEACCESS(Shader_program_uniform)(shader_program_uniform_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Material_program *cmzn_material_program_access(struct Material_program *material_program)
+struct Shader_program *cmzn_shader_program_access(struct Shader_program *shader_program)
 {
-	if (material_program)
-		return ACCESS(Material_program)(material_program);
+	if (shader_program)
+		return ACCESS(Shader_program)(shader_program);
 	return 0;
 }
 
-int cmzn_material_program_destroy(struct Material_program **material_program_address)
+int cmzn_shader_program_destroy(struct Shader_program **shader_program_address)
 {
-	if (material_program_address && *material_program_address)
+	if (shader_program_address && *shader_program_address)
 	{
-		DEACCESS(Material_program)(material_program_address);
+		DEACCESS(Shader_program)(shader_program_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
 
-int Material_program_set_vertex_string(Material_program *material_program_to_be_modified,
+int Shader_program_set_vertex_string(Shader_program *shader_program_to_be_modified,
 	const char *vertex_program_string)
 {
-	if (material_program_to_be_modified && vertex_program_string)
+	if (shader_program_to_be_modified && vertex_program_string)
 	{
-		if (material_program_to_be_modified->vertex_program_string)
+		if (shader_program_to_be_modified->vertex_program_string)
 		{
-			DEALLOCATE(material_program_to_be_modified->vertex_program_string);
+			DEALLOCATE(shader_program_to_be_modified->vertex_program_string);
 		}
-		material_program_to_be_modified->vertex_program_string = duplicate_string(vertex_program_string);
+		shader_program_to_be_modified->vertex_program_string = duplicate_string(vertex_program_string);
 		return CMZN_OK;
 	}
 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Material_program_set_fragment_string(Material_program *material_program_to_be_modified,
+int Shader_program_set_fragment_string(Shader_program *shader_program_to_be_modified,
 	const char *fragment_program_string)
 {
-	if (material_program_to_be_modified && fragment_program_string)
+	if (shader_program_to_be_modified && fragment_program_string)
 	{
-		if (material_program_to_be_modified->fragment_program_string)
+		if (shader_program_to_be_modified->fragment_program_string)
 		{
-			DEALLOCATE(material_program_to_be_modified->fragment_program_string);
+			DEALLOCATE(shader_program_to_be_modified->fragment_program_string);
 		}
-		material_program_to_be_modified->fragment_program_string = duplicate_string(fragment_program_string);
+		shader_program_to_be_modified->fragment_program_string = duplicate_string(fragment_program_string);
 		return CMZN_OK;
 	}
 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Material_program_set_geometry_string(Material_program *material_program_to_be_modified,
+int Shader_program_set_geometry_string(Shader_program *shader_program_to_be_modified,
 	const char *geometry_program_string)
 {
-	if (material_program_to_be_modified && geometry_program_string)
+	if (shader_program_to_be_modified && geometry_program_string)
 	{
-		if (material_program_to_be_modified->geometry_program_string)
+		if (shader_program_to_be_modified->geometry_program_string)
 		{
-			DEALLOCATE(material_program_to_be_modified->geometry_program_string);
+			DEALLOCATE(shader_program_to_be_modified->geometry_program_string);
 		}
-		material_program_to_be_modified->geometry_program_string = duplicate_string(geometry_program_string);
+		shader_program_to_be_modified->geometry_program_string = duplicate_string(geometry_program_string);
 		return CMZN_OK;
 	}
 

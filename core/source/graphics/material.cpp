@@ -373,10 +373,10 @@ material results.
 
 		if (material->program)
 		{
-			 Material_program_execute(material->program, renderer);
-			 Material_program_execute_textures(material->program, material->image_texture.texture,
+			 Shader_program_execute(material->program, renderer);
+			 Shader_program_execute_textures(material->program, material->image_texture.texture,
 				material->second_image_texture.texture, material->third_image_texture.texture);
-			 Material_program_execute_uniforms(material->program, material->program_uniforms);
+			 Shader_program_execute_uniforms(material->program, material->program_uniforms);
 			if (material->image_texture.texture)
 			{
 #if defined(GL_VERSION_2_0) || (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program)
@@ -425,7 +425,7 @@ material results.
 							normal_scaling[2] = 1.0;
 						}
 						normal_scaling[3] = 0.0;
-						if (material->program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+						if (material->program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
 						{
 							if (glIsProgram(material->program->glsl_current_program))
 							{
@@ -435,7 +435,7 @@ material results.
 										normal_scaling[2], normal_scaling[3]);
 							}
 						}
-						else if (material->program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
+						else if (material->program->shader_type==SHADER_PROGRAM_SHADER_ARB)
 						{
 							glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
 								normal_scaling);
@@ -538,7 +538,7 @@ private:
 	cmzn_material *defaultSelectedMaterial;
 	cmzn_material *defaultSurfaceMaterial;
 	struct MANAGER(cmzn_spectrum) *spectrumManager;
-	struct LIST(Material_program) *materialProgramList;
+	struct LIST(Shader_program) *shaderProgramList;
 	int access_count;
 
 	cmzn_materialmodule() :
@@ -547,7 +547,7 @@ private:
 		defaultSelectedMaterial(0),
 		defaultSurfaceMaterial(0),
 		spectrumManager(0),
-		materialProgramList(CREATE(LIST(Material_program))()),
+		shaderProgramList(CREATE(LIST(Shader_program))()),
 		access_count(1)
 	{
 	}
@@ -560,7 +560,7 @@ private:
 			cmzn_material_destroy(&this->defaultSelectedMaterial);
 		if (this->defaultSurfaceMaterial)
 			cmzn_material_destroy(&this->defaultSurfaceMaterial);
-		DESTROY(LIST(Material_program))(&materialProgramList);
+		DESTROY(LIST(Shader_program))(&shaderProgramList);
 		/* Make sure each material no longer points at this module */
 		FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 			Graphical_material_remove_module_if_matching, (void *)this,
@@ -602,9 +602,9 @@ public:
 		spectrumManager = spectrum_manager;
 	}
 
-	struct LIST(Material_program) *getMaterialProgramList()
+	struct LIST(Shader_program) *getMaterialProgramList()
 	{
-		return materialProgramList;
+		return shaderProgramList;
 	}
 
 	struct MANAGER(cmzn_spectrum) *getSpectrumManager()
@@ -1128,13 +1128,13 @@ cmzn_material *cmzn_material_create_private()
 		material->lit_volume_normal_scaling[1] = 1.0;
 		material->lit_volume_normal_scaling[2] = 1.0;
 		material->lit_volume_normal_scaling[3] = 1.0;
-		material->program = (struct Material_program *)NULL;
-		material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
+		material->program = (struct Shader_program *)NULL;
+		material->program_uniforms = (LIST(Shader_program_uniform) *)NULL;
 		material->isManagedFlag = false;
 		material->manager = (struct MANAGER(cmzn_material) *)NULL;
 		material->manager_change_status = MANAGER_CHANGE_NONE(cmzn_material);
 		material->executed_as_order_independent = 0;
-		material->order_program = (struct Material_program *)NULL;
+		material->order_program = (struct Shader_program *)NULL;
 #if defined (OPENGL_API)
 				material->display_list=0;
 				material->brightness_texture_id=0;
@@ -1219,15 +1219,15 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			Material_image_texture_reset(&(material->fourth_image_texture));
 			if (material->program)
 			{
-				cmzn_material_program_destroy(&(material->program));
+				cmzn_shader_program_destroy(&(material->program));
 			}
 			if (material->order_program)
 			{
-				cmzn_material_program_destroy(&(material->order_program));
+				cmzn_shader_program_destroy(&(material->order_program));
 			}
 			if (material->program_uniforms)
 			{
-				DESTROY(LIST(Material_program_uniform))(&material->program_uniforms);
+				DESTROY(LIST(Shader_program_uniform))(&material->program_uniforms);
 			}
 			DEALLOCATE(*material_address);
 			return_code=1;
@@ -1422,7 +1422,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_material,name)
 		{
 			destination->module = (struct cmzn_materialmodule *)NULL;
 		}
-		REACCESS(Material_program)(&destination->program, source->program);
+		REACCESS(Shader_program)(&destination->program, source->program);
 		destination->lit_volume_normal_scaling[0] =
 			source->lit_volume_normal_scaling[0];
 		destination->lit_volume_normal_scaling[1] =
@@ -1461,20 +1461,20 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_material,name)
 		{
 			if (destination->program_uniforms)
 			{
-				REMOVE_ALL_OBJECTS_FROM_LIST(Material_program_uniform)(destination->program_uniforms);
+				REMOVE_ALL_OBJECTS_FROM_LIST(Shader_program_uniform)(destination->program_uniforms);
 			}
 			else
 			{
-				destination->program_uniforms = CREATE(LIST(Material_program_uniform))();
+				destination->program_uniforms = CREATE(LIST(Shader_program_uniform))();
 			}
-			COPY_LIST(Material_program_uniform)(destination->program_uniforms,
+			COPY_LIST(Shader_program_uniform)(destination->program_uniforms,
 				source->program_uniforms);
 		}
 		else
 		{
 			if (destination->program_uniforms)
 			{
-				DESTROY(LIST(Material_program_uniform))(&destination->program_uniforms);
+				DESTROY(LIST(Shader_program_uniform))(&destination->program_uniforms);
 			}
 		}
 		/* flag destination display list as no longer current */
@@ -2276,12 +2276,12 @@ int cmzn_material_set_texture_field(cmzn_material_id material,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int set_material_program_type_texture_mode(cmzn_material *material_to_be_modified,
+int set_shader_program_type_texture_mode(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 {
 	 int dimension;
 
-	 ENTER(set_material_program_type_texture_mode);
+	 ENTER(set_shader_program_type_texture_mode);
 	 if (material_to_be_modified->image_texture.texture)
 	 {
 			Texture_get_dimension(material_to_be_modified->image_texture.texture, &dimension);
@@ -2289,16 +2289,16 @@ int set_material_program_type_texture_mode(cmzn_material *material_to_be_modifie
 			{
 				 case 1:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1;
 				 } break;
 				 case 2:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2;
 				 } break;
 				 case 3:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
-							 MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
+							 SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2;
 				 } break;
 				 default:
 				 {
@@ -2311,16 +2311,16 @@ int set_material_program_type_texture_mode(cmzn_material *material_to_be_modifie
 			{
 				 case 1:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
 				 } break;
 				 case 2:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
 				 } break;
 				 case 3:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
-							 MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
+							 SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
 				 } break;
 				 case 4:
 				 {
@@ -2336,7 +2336,7 @@ int set_material_program_type_texture_mode(cmzn_material *material_to_be_modifie
 			{
 				 case TEXTURE_DECAL:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
+						*type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
 				 }
 				 default:
 				 {
@@ -2349,19 +2349,19 @@ int set_material_program_type_texture_mode(cmzn_material *material_to_be_modifie
 	 return return_code;
 }
 
-int set_material_program_type_second_texture(cmzn_material *material_to_be_modified,
+int set_shader_program_type_second_texture(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Set up the material program second texture type
+DESCRIPTION : Set up the shader program second texture type
 for using the vertex and fragment program. This and following
 functions are orginally from the modify_graphical_materil.
 ==============================================================================*/
 {
 	 int dimension;
 
-	 ENTER(set_material_program_type_second_texture);
+	 ENTER(set_shader_program_type_second_texture);
 	 if (material_to_be_modified->second_image_texture.texture)
 	 {
 			Texture_get_dimension(material_to_be_modified->second_image_texture.texture, &dimension);
@@ -2369,16 +2369,16 @@ functions are orginally from the modify_graphical_materil.
 			{
 				 case 1:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1;
+						*type |= SHADER_PROGRAM_CLASS_SECOND_TEXTURE_1;
 				 } break;
 				 case 2:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
+						*type |= SHADER_PROGRAM_CLASS_SECOND_TEXTURE_2;
 				 } break;
 				 case 3:
 				 {
-						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 |
-							 MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
+						*type |= SHADER_PROGRAM_CLASS_SECOND_TEXTURE_1 |
+							 SHADER_PROGRAM_CLASS_SECOND_TEXTURE_2;
 				 } break;
 				 default:
 				 {
@@ -2393,20 +2393,20 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int set_material_program_type_bump_mapping(cmzn_material *material_to_be_modified,
+int set_shader_program_type_bump_mapping(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Set up the material program bump mapping type
+DESCRIPTION : Set up the shader program bump mapping type
 for using the vertex and fragment program. This and following
 functions are orginally from the modify_graphical_materil.
 ==============================================================================*/
 {
-	 ENTER(set_material_program_type_bump_mapping);
+	 ENTER(set_shader_program_type_bump_mapping);
 	 if (material_to_be_modified->second_image_texture.texture)
 	 {
-			*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
+			*type |= SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
 			material_to_be_modified->bump_mapping_flag = 1;
 	 }
 	 else
@@ -2421,13 +2421,13 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int set_material_program_type_spectrum(cmzn_material *material_to_be_modified,
+int set_shader_program_type_spectrum(cmzn_material *material_to_be_modified,
 	 int *type, int red_flag, int green_flag, int blue_flag,
 	 int alpha_flag, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Set up the material program spectrum type
+DESCRIPTION : Set up the shader program spectrum type
 for using the vertex and fragment program. This and following
 functions are orginally from the modify_graphical_materil.
 ==============================================================================*/
@@ -2435,7 +2435,7 @@ functions are orginally from the modify_graphical_materil.
 	 enum Spectrum_colour_components spectrum_colour_components;
 	 int number_of_spectrum_components;
 
-	 ENTER(set_material_program_type_spectrum);
+	 ENTER(set_shader_program_type_spectrum);
 	 if (material_to_be_modified->spectrum)
 	 {
 			/* Cannot just rely on the COPY functions as when
@@ -2451,19 +2451,19 @@ functions are orginally from the modify_graphical_materil.
 			/* Specify the input colours */
 			if (red_flag)
 			{
-				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
+				 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
 			}
 			if (green_flag)
 			{
-				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
+				 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
 			}
 			if (blue_flag)
 			{
-				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3;
+				 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_3;
 			}
 			if (alpha_flag)
 			{
-				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
+				 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
 			}
 
 			number_of_spectrum_components =
@@ -2479,25 +2479,25 @@ functions are orginally from the modify_graphical_materil.
 						if (spectrum_colour_components == SPECTRUM_COMPONENT_ALPHA)
 						{
 							 /* Alpha only */
-							 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+							 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
 						}
 						else
 						{
 							 /* Colour and alpha */
-							 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
-									| MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+							 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
+									| SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
 						}
 				 }
 				 else
 				 {
 						/* Colour only */
-						*type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
+						*type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
 				 }
 			}
 			else if (1 == number_of_spectrum_components)
 			{
 				 /* Lookup each component specified in the 1D spectra only */
-				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP;
+				 *type |= SHADER_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP;
 			}
 	 }
 	 else
@@ -2516,35 +2516,35 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int material_update_material_program(cmzn_material *material_to_be_modified,
-	 struct cmzn_materialmodule *materialmodule, enum Material_program_type type, int return_code)
+int material_update_shader_program(cmzn_material *material_to_be_modified,
+	 struct cmzn_materialmodule *materialmodule, enum Shader_program_type type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Check the material program and renew it if necessary.
+DESCRIPTION : Check the shader program and renew it if necessary.
 ==============================================================================*/
 {
-	 ENTER(material_update_material_program);
+	 ENTER(material_update_shader_program);
 	 if (!material_to_be_modified->program ||
 			(material_to_be_modified->program->type != type))
 	 {
 			if (material_to_be_modified->program)
 			{
-				 cmzn_material_program_destroy(&material_to_be_modified->program);
+				 cmzn_shader_program_destroy(&material_to_be_modified->program);
 			}
-			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
+			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Shader_program,type)(
 				type, materialmodule->getMaterialProgramList());
 			if (material_to_be_modified->program)
 			{
-				 cmzn_material_program_access(material_to_be_modified->program);
+				 cmzn_shader_program_access(material_to_be_modified->program);
 			}
 			else
 			{
-				material_to_be_modified->program = cmzn_material_program_access(
-					CREATE(Material_program)(type));
+				material_to_be_modified->program = cmzn_shader_program_access(
+					CREATE(Shader_program)(type));
 				 if (material_to_be_modified->program)
 				 {
-						ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified->program,
+						ADD_OBJECT_TO_LIST(Shader_program)(material_to_be_modified->program,
 							 materialmodule->getMaterialProgramList());
 				 }
 				 else
@@ -2558,7 +2558,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 	 return return_code;
 }
 
-int set_material_program_type(cmzn_material *material_to_be_modified,
+int set_shader_program_type(cmzn_material *material_to_be_modified,
 	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
 	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
 	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
@@ -2566,7 +2566,7 @@ int set_material_program_type(cmzn_material *material_to_be_modified,
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Set up the material program type for using the vertex
+DESCRIPTION : Set up the shader program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
 NOTE: I use the pointer to the materialmodule from the material.
@@ -2574,18 +2574,18 @@ NOTE: I use the pointer to the materialmodule from the material.
 {
 	 int type;
 
-	 ENTER(set_material_program_type);
+	 ENTER(set_shader_program_type);
 
-	 type = MATERIAL_PROGRAM_PER_PIXEL_LIGHTING;
+	 type = SHADER_PROGRAM_PER_PIXEL_LIGHTING;
 	 material_to_be_modified->per_pixel_lighting_flag = 1;
 
-	 return_code = set_material_program_type_texture_mode(material_to_be_modified,
+	 return_code = set_shader_program_type_texture_mode(material_to_be_modified,
 			&type, return_code);
-	 return_code = set_material_program_type_second_texture(material_to_be_modified,
+	 return_code = set_shader_program_type_second_texture(material_to_be_modified,
 			&type, return_code);
 	 if (bump_mapping_flag)
 	 {
-			return_code = set_material_program_type_bump_mapping(material_to_be_modified,
+			return_code = set_shader_program_type_bump_mapping(material_to_be_modified,
 				 &type, return_code);
 	 }
 	 else
@@ -2593,27 +2593,27 @@ NOTE: I use the pointer to the materialmodule from the material.
 			material_to_be_modified->bump_mapping_flag = 0;
 	 }
 
-	 return_code = set_material_program_type_spectrum(material_to_be_modified,
+	 return_code = set_shader_program_type_spectrum(material_to_be_modified,
 			&type, colour_lookup_red_flag, colour_lookup_green_flag, colour_lookup_blue_flag,
 			colour_lookup_alpha_flag, return_code);
 
 	 if (lit_volume_intensity_normal_texture_flag)
 	 {
-			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE;
+			type |= SHADER_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE;
 	 }
 	 if (lit_volume_finite_difference_normal_flag)
 	 {
-			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL;
+			type |= SHADER_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL;
 	 }
 	 if (lit_volume_scale_alpha_flag)
 	 {
-			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA;
+			type |= SHADER_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA;
 	 }
 
 	 material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 
-	 return_code = material_update_material_program(material_to_be_modified,
-			material_to_be_modified->module, (Material_program_type)type, return_code);
+	 return_code = material_update_shader_program(material_to_be_modified,
+			material_to_be_modified->module, (Shader_program_type)type, return_code);
 
 	 return return_code;
 }
@@ -2640,7 +2640,7 @@ the one in material, it is used for setting up the GUI.
 	 else
 	 {
 			display_message(ERROR_MESSAGE,
-				 "material_copy_bump_mapping_and_per_pixel_lighting_flag.  Missing material_program");
+				 "material_copy_bump_mapping_and_per_pixel_lighting_flag.  Missing shader_program");
 			return_code = 0;
 	 }
 
@@ -2648,16 +2648,16 @@ the one in material, it is used for setting up the GUI.
 }
 
 /**************************************************************************//**
- * Sets the material to use a #Material_program with user specified strings
+ * Sets the material to use a #Shader_program with user specified strings
  * for the vertex_program and fragment_program.
  */
-int Material_set_material_program_strings(cmzn_material *material_to_be_modified,
+int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
 	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string)
 {
 	int return_code;
-	struct Material_program *old_program;
+	struct Shader_program *old_program;
 
-	ENTER(Material_set_material_program_strings);
+	ENTER(Material_set_shader_program_strings);
 
 	old_program = material_to_be_modified->program;
 	if (old_program)
@@ -2677,8 +2677,8 @@ int Material_set_material_program_strings(cmzn_material *material_to_be_modified
 		}
 #endif /* defined (OPENGL_API) */
 	}
-	material_to_be_modified->program = cmzn_material_program_access(
-		Material_program_create_from_program_strings(
+	material_to_be_modified->program = cmzn_shader_program_access(
+		Shader_program_create_from_program_strings(
 			vertex_program_string, fragment_program_string, geometry_program_string));
 	if (material_to_be_modified->program)
 	{
@@ -2690,7 +2690,7 @@ int Material_set_material_program_strings(cmzn_material *material_to_be_modified
 	}
 	if (old_program)
 	{
-		cmzn_material_program_destroy(&old_program);
+		cmzn_shader_program_destroy(&old_program);
 	}
 	LEAVE;
 
@@ -2719,15 +2719,15 @@ Writes the properties of the <material> to the command window.
 		sprintf(line,"  access count = %i\n",material->access_count);
 		if (material->program)
 		{
-			if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Standard Gouraud Shading (program)\n");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Shading\n");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Bump map Shading\n");
 			}
@@ -2832,15 +2832,15 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE," normal_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -2945,15 +2945,15 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
 			{
 				 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -3164,7 +3164,7 @@ int Material_compile_members_opengl(cmzn_material *material,
 	if (material)
 	{
 		material->executed_as_order_independent = 0;
-		cmzn_material_program_destroy(&material->order_program);
+		cmzn_shader_program_destroy(&material->order_program);
 		return_code = 1;
 		if (GRAPHICS_COMPILED != material->compile_status)
 		{
@@ -3212,7 +3212,7 @@ int Material_compile_members_opengl(cmzn_material *material,
 
 			if (material->program)
 			{
-				Material_program_compile(material->program, renderer);
+				Shader_program_compile(material->program, renderer);
 			}
 			material->compile_status = GRAPHICS_COMPILED;
 		}
@@ -3297,7 +3297,7 @@ will work with order_independent_transparency.
 	int dimension;
 	struct Material_order_independent_transparency *data;
 	struct cmzn_materialmodule *materialmodule;
-	struct Material_program *unmodified_program;
+	struct Shader_program *unmodified_program;
 
 	ENTER(compile_Graphical_material_for_order_independent_transparency);
 
@@ -3318,7 +3318,7 @@ will work with order_independent_transparency.
 			}
 			else
 			{
-				modified_type = MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING;
+				modified_type = SHADER_PROGRAM_CLASS_GOURAUD_SHADING;
 				if (material->image_texture.texture)
 				{
 					/* Texture should have already been compiled when the
@@ -3332,16 +3332,16 @@ will work with order_independent_transparency.
 					{
 						case 1:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1;
 						} break;
 						case 2:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2;
 						} break;
 						case 3:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
-								MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
+								SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_2;
 						} break;
 						default:
 						{
@@ -3354,16 +3354,16 @@ will work with order_independent_transparency.
 					{
 						case 1:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
 						} break;
 						case 2:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
 						} break;
 						case 3:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
-								MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
+								SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
 						} break;
 						case 4:
 						{
@@ -3379,7 +3379,7 @@ will work with order_independent_transparency.
 					{
 						case TEXTURE_DECAL:
 						{
-							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
+							modified_type |= SHADER_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
 						}
 						default:
 						{
@@ -3392,12 +3392,12 @@ will work with order_independent_transparency.
 			if (data->layer == 1)
 			{
 				/* The first layer does not peel */
-				modified_type |= MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER;
+				modified_type |= SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER;
 			}
 			else if (data->layer > 1)
 			{
 				/* The rest of the layers should peel */
-				modified_type |= MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER;
+				modified_type |= SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER;
 			}
 			/*
 			else
@@ -3408,17 +3408,17 @@ will work with order_independent_transparency.
 					compilation states then.
 			} */
 
-			if (modified_type != MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING)
+			if (modified_type != SHADER_PROGRAM_CLASS_GOURAUD_SHADING)
 			{
 				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
-					Material_program,type)((Material_program_type)modified_type,
+					Shader_program,type)((Shader_program_type)modified_type,
 						materialmodule->getMaterialProgramList())))
 				{
-					material->program = cmzn_material_program_access(
-						CREATE(Material_program)((Material_program_type)modified_type));
+					material->program = cmzn_shader_program_access(
+						CREATE(Shader_program)((Shader_program_type)modified_type));
 					if (material->program)
 					{
-						ADD_OBJECT_TO_LIST(Material_program)(material->program,
+						ADD_OBJECT_TO_LIST(Shader_program)(material->program,
 							materialmodule->getMaterialProgramList());
 					}
 					else
@@ -3428,7 +3428,7 @@ will work with order_independent_transparency.
 				}
 				if (!material->program->compiled)
 				{
-					Material_program_compile(material->program, data->renderer);
+					Shader_program_compile(material->program, data->renderer);
 				}
 			}
 
@@ -3436,7 +3436,7 @@ will work with order_independent_transparency.
 			{
 				glNewList(material->display_list,GL_COMPILE);
 				if (material->program &&
-						material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+						material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
 				{
 					if (material->image_texture.texture)
 					{
@@ -3446,7 +3446,7 @@ will work with order_independent_transparency.
 				}
 				direct_render_Graphical_material(material,data->renderer);
 				if (material->program &&
-						material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
+						material->program->shader_type == SHADER_PROGRAM_SHADER_GLSL)
 				{
 					GLint loc1;
 					if (data && data->renderer)
@@ -3472,7 +3472,7 @@ will work with order_independent_transparency.
 			else
 			{
 				material->executed_as_order_independent = 1;
-				REACCESS(Material_program)(&material->order_program, material->program);
+				REACCESS(Shader_program)(&material->order_program, material->program);
 			}
 			material->program = unmodified_program;
 		}
@@ -3522,7 +3522,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				if (material->image_texture.texture)
 				{
-					if (material->order_program->shader_type != MATERIAL_PROGRAM_SHADER_ARB &&
+					if (material->order_program->shader_type != SHADER_PROGRAM_SHADER_ARB &&
 							material->order_program->glsl_current_program)
 					{
 						Texture_execute_vertex_program_environment(material->image_texture.texture,
@@ -3538,14 +3538,14 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					}
 				}
 			}
-			struct Material_program *temp_program = material->program;
+			struct Shader_program *temp_program = material->program;
 			if (material->order_program)
 				material->program = material->order_program;
 			return_code = direct_render_Graphical_material(material, renderer);
 			material->program = temp_program;
 			if (material->order_program)
 			{
-				if (material->order_program->shader_type != MATERIAL_PROGRAM_SHADER_ARB)
+				if (material->order_program->shader_type != SHADER_PROGRAM_SHADER_ARB)
 				{
 					GLint loc1=-1;
 					loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"texturesize");
@@ -3592,8 +3592,8 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				}
 #if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
 				if (material->spectrum && (
-					material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
-					material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
+					material->program->shader_type == SHADER_PROGRAM_SHADER_ARB ||
+					material->program->shader_type == SHADER_PROGRAM_SHADER_GLSL))
 				{
 					int i, lookup_dimensions, *lookup_sizes;
 					GLfloat values[4];
@@ -3609,7 +3609,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					{
 						values[i] = 0.0;
 					}
-					if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+					if (material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
 					{
 						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
 							values[0], values[1], values[2], values[3]);
@@ -3636,7 +3636,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					{
 						values[i] = 1.0;
 					}
-					if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+					if (material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
 					{
 						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
 							values[0], values[1], values[2], values[3]);
@@ -3730,19 +3730,19 @@ direct_render_Graphical_material.
 } /* execute_Graphical_material */
 #endif /* defined (OPENGL_API) */
 
-int material_deaccess_material_program(cmzn_material *material_to_be_modified)
+int material_deaccess_shader_program(cmzn_material *material_to_be_modified)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
 DESCRIPTION : This function is to allow the material editor to
-deaccess the material program from the material.
+deaccess the shader program from the material.
 ==============================================================================*/
 {
 	 int return_code;
 
 	 if (material_to_be_modified && material_to_be_modified->program)
 	 {
-			cmzn_material_program_destroy(&material_to_be_modified->program);
+			cmzn_shader_program_destroy(&material_to_be_modified->program);
 			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 			material_to_be_modified->per_pixel_lighting_flag = 0;
 			material_to_be_modified->bump_mapping_flag = 0;

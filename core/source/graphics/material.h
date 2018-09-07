@@ -99,7 +99,7 @@ The properties of a material.
 	/* callback if the spectrum changes */
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
-	   Material_programs */
+	   Shader_programs */
 	struct cmzn_materialmodule *module;
 	/* The normal calculated from the volume texture needs to be
 		scaled similarly to how it is scaled into coordinate space,
@@ -107,16 +107,16 @@ The properties of a material.
 		Four components as that is what ProgramEnvParameter4fvARB wants. */
 	ZnReal lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
-	struct Material_program *program;
+	struct Shader_program *program;
 	/* user defined uniforms used by the program */
-	LIST(Material_program_uniform) *program_uniforms;
+	LIST(Shader_program_uniform) *program_uniforms;
 	int access_count, per_pixel_lighting_flag, bump_mapping_flag;
 	/* this flag is for external API uses. If a material is set to be persistent
 		 then this material will not be removed from the manager after destroy.
 	 */
 	bool isManagedFlag;
 	int executed_as_order_independent;
-	struct Material_program *order_program;
+	struct Shader_program *order_program;
 
 public:
 
@@ -405,7 +405,7 @@ with the specified name.  If one is not found a new one is created with the
 specified name and the default properties.
 ==============================================================================*/
 
-int set_material_program_type(cmzn_material *material_to_be_modified,
+int set_shader_program_type(cmzn_material *material_to_be_modified,
 	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
 	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
 	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
@@ -413,7 +413,7 @@ int set_material_program_type(cmzn_material *material_to_be_modified,
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
-DESCRIPTION : Set up the material program type for using the vertex
+DESCRIPTION : Set up the shader program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
 NOTE: I use the pointer to the materialmodule from the material.
@@ -460,15 +460,15 @@ int Material_set_program_uniform_qualifier_variable_value(
 int Material_manager_set_owner(struct MANAGER(cmzn_material) *manager,
 	struct cmzn_materialmodule *materialmodule);
 
-int material_deaccess_material_program(cmzn_material *material_to_be_modified);
+int material_deaccess_shader_program(cmzn_material *material_to_be_modified);
 
-int Material_set_material_program_strings(cmzn_material *material_to_be_modified,
+int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
 	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string);
 
 
 struct cmzn_materialmodule *manager_get_owner_cmzn_material(manager_cmzn_material *manager);
 
-//struct Material_program_uniform *list_find_by_identifier_Material_program_uniformname(const char *name, list_Material_program_uniform *list);
+//struct Shader_program_uniform *list_find_by_identifier_Shader_program_uniformname(const char *name, list_Shader_program_uniform *list);
 
 /** non-accessing private variant of cmzn_materialiterator_next */
 cmzn_material_id cmzn_materialiterator_next_non_access(cmzn_materialiterator_id iterator);
