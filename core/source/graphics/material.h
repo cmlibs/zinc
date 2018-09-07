@@ -26,7 +26,7 @@ The data structures used for representing graphical materials.
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/shader_program.h"
+#include "graphics/shader_program.hpp"
 /*
 Global types
 ------------

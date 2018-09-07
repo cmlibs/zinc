@@ -8,6 +8,7 @@
 #include "graphics/auxiliary_graphics_types.h"
 
 struct Render_graphics_opengl;
+struct Texture;
 
 enum Material_program_type
 /*****************************************************************************//**
@@ -168,7 +169,14 @@ struct Material_program_uniform *CREATE(Material_program_uniform)(char *name);
 
 struct Material_program *CREATE(Material_program)(enum Material_program_type type);
 
-//int DESTROY(Material_program)(struct Material_program **material_program_address);
+
+/***************************************************************************//**
+ * An alternative Material_program constructor that takes explicit program
+ * strings.
+ */
+struct Material_program *Material_program_create_from_program_strings(
+	const char *vertex_program_string, const char *fragment_program_string,
+	const char *geometry_program_string);
 
 #if defined (OPENGL_API)
 int Material_program_compile(struct Material_program *material_program,
@@ -176,7 +184,17 @@ int Material_program_compile(struct Material_program *material_program,
 
 int Material_program_execute(struct Material_program *material_program,
 	Render_graphics_opengl *renderer);
+
+int Material_program_execute_textures(struct Material_program *material_program,
+	struct Texture *texture, struct Texture *second_texture,
+	struct Texture *third_texture);
+
+int Material_program_execute_uniforms(struct Material_program *program,
+	LIST(Material_program_uniform) *material_program_uniforms);
 #endif
+
+int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
+	unsigned int number_of_values, double *values);
 
 int cmzn_material_program_uniform_destroy(struct Material_program_uniform **material_program_uniform_address);
 

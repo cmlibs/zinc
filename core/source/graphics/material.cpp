@@ -54,7 +54,7 @@ return to direct rendering, as described with these routines.
 #include "graphics/render_gl.h"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
-#include "graphics/shader_program.h"
+#include "graphics/shader_program.hpp"
 
 struct Startup_material_definition
 {
@@ -205,132 +205,6 @@ int cmzn_material::setName(const char *newName)
 		MANAGED_OBJECT_CHANGE(cmzn_material)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_material));
 	return CMZN_OK;
 }
-
-
-/***************************************************************************//**
- * An alternative Material_program constructor that takes explicit program
- * strings.
- */
-static struct Material_program *Material_program_create_from_program_strings(
-	const char *vertex_program_string, const char *fragment_program_string,
-	const char *geometry_program_string)
-{
-	struct Material_program *material_program;
-
-	material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS);
-	if (material_program)
-	{
-#if defined (OPENGL_API)
-		material_program->vertex_program_string =
-			duplicate_string(vertex_program_string);
-		material_program->fragment_program_string =
-			duplicate_string(fragment_program_string);
-		if (geometry_program_string)
-		{
-			material_program->geometry_program_string =
-				duplicate_string(geometry_program_string);
-		}
-#else /* defined (OPENGL_API) */
-		USE_PARAMETER(vertex_program_string);
-		USE_PARAMETER(fragment_program_string);
-		USE_PARAMETER(geometry_program_string);
-#endif /* defined (OPENGL_API) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_program_create_from_program_strings.  Not enough memory");
-	}
-
-	return (material_program);
-} /* Material_program_create_from_program_strings */
-
-
-/*
- * Misusing the double array here as the vector parser function gives us an
- * array of doubles and I don't see the need to copy and pass floats.
- * It isn't called double_vector then because we are going to use it with Uniform?f
- */
-int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
-	unsigned int number_of_values, double *values)
-{
-	int return_code;
-	unsigned int i;
-	if (uniform && (number_of_values <= 4))
-	{
-		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT;
-		uniform->number_of_defined_values = number_of_values;
-		for (i = 0 ; i < number_of_values; i++)
-		{
-			uniform->values[i] = values[i];
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_program_uniform_set_float_vector.  Invalid arguments");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-#if defined (OPENGL_API)
-#  if defined (GL_VERSION_2_0)
-static int Material_program_uniform_write_glsl_values(Material_program_uniform *uniform,
-	void *material_void)
-{
-	int return_code;
-	cmzn_material *material;
-	if (uniform && (material = static_cast<cmzn_material*>(material_void)))
-	{
-		GLint location = glGetUniformLocation(material->program->glsl_current_program,
-			uniform->name);
-		if (location != (GLint)-1)
-		{
-			switch(uniform->type)
-			{
-				case MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT:
-				{
-					switch(uniform->number_of_defined_values)
-					{
-						case 1:
-						{
-							glUniform1f(location, uniform->values[0]);
-						} break;
-						case 2:
-						{
-							glUniform2f(location, uniform->values[0], uniform->values[1]);
-						} break;
-						case 3:
-						{
-							glUniform3f(location, uniform->values[0], uniform->values[1], uniform->values[2]);
-						} break;
-						case 4:
-						{
-							glUniform4f(location, uniform->values[0], uniform->values[1], uniform->values[2], uniform->values[3]);
-						} break;
-					}
-				} break;
-				default:
-				{
-				} break;
-			}
-		}
-
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_program_uniform_set_float_vector.  Invalid arguments");
-		return_code = 0;
-	}
-	return (return_code);
-}
-#  endif // defined (GL_VERSION_2_0)
-#endif // defined (OPENGL_API)
-
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_material)
 {
@@ -500,46 +374,9 @@ material results.
 		if (material->program)
 		{
 			 Material_program_execute(material->program, renderer);
-#if defined (GL_VERSION_2_0)
-			 if (material->program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
-			 {
-					if (material->program->glsl_current_program)
-					{
-						 if (material->image_texture.texture)
-						 {
-								Texture_execute_vertex_program_environment(material->image_texture.texture,
-									 material->program->glsl_current_program);
-						 }
-						 if (material->second_image_texture.texture)
-						 {
-								Texture_execute_vertex_program_environment(material->second_image_texture.texture,
-									 material->program->glsl_current_program);
-
-						 }
-						 if (material->third_image_texture.texture)
-						 {
-								Texture_execute_vertex_program_environment(material->third_image_texture.texture,
-									 material->program->glsl_current_program);
-						 }
-						 if (glIsProgram(material->program->glsl_current_program))
-						 {
-								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture2");
-								if (loc1 != (GLint)-1)
-									 glUniform1i(loc1,2);
-								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture1");
-								if (loc1 != (GLint)-1)
-									 glUniform1i(loc1,1);
-								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture0");
-								if (loc1 != (GLint)-1)
-									 glUniform1i(loc1, 0);
-								if (material->program_uniforms)
-									FOR_EACH_OBJECT_IN_LIST(Material_program_uniform)(
-											Material_program_uniform_write_glsl_values, material,
-											material->program_uniforms);
-						 }
-					}
-			 }
-#endif /* defined (GL_VERSION_2_0) */
+			 Material_program_execute_textures(material->program, material->image_texture.texture,
+				material->second_image_texture.texture, material->third_image_texture.texture);
+			 Material_program_execute_uniforms(material->program, material->program_uniforms);
 			if (material->image_texture.texture)
 			{
 #if defined(GL_VERSION_2_0) || (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program)

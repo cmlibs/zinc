@@ -2,8 +2,9 @@
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "graphics/shader_program.h"
+#include "graphics/shader_program.hpp"
 #include "graphics/graphics_library.h"
+#include "graphics/texture.h"
 #include "three_d_drawing/abstract_graphics_buffer.h"
 #include "graphics/render_gl.h"
 #include "general/compare.h"
@@ -2529,8 +2530,145 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Material_program_execute */
+
+int Material_program_execute_textures(struct Material_program *material_program,
+	struct Texture *texture, struct Texture *second_texture,
+	struct Texture *third_texture)
+{
+#if defined (GL_VERSION_2_0)
+	if (material_program && material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL &&
+			material_program->glsl_current_program)
+	{
+		 if (texture)
+		 {
+			Texture_execute_vertex_program_environment(texture,
+					material_program->glsl_current_program);
+		 }
+		 if (second_texture)
+		 {
+			Texture_execute_vertex_program_environment(second_texture,
+					material_program->glsl_current_program);
+
+		 }
+		 if (third_texture)
+		 {
+			Texture_execute_vertex_program_environment(third_texture,
+				 material_program->glsl_current_program);
+		 }
+		 return 1;
+	}
+#endif
+	return 0;
+}
+static int Material_program_uniform_write_glsl_values(Material_program_uniform *uniform,
+	void *material_program_void)
+{
+#if defined (GL_VERSION_2_0)
+	int return_code;
+	struct Material_program *material_program;
+	if (uniform && (material_program = static_cast<Material_program*>(material_program_void)))
+	{
+		GLint location = glGetUniformLocation(material_program->glsl_current_program,
+			uniform->name);
+		if (location != (GLint)-1)
+		{
+			switch(uniform->type)
+			{
+				case MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT:
+				{
+					switch(uniform->number_of_defined_values)
+					{
+						case 1:
+						{
+							glUniform1f(location, uniform->values[0]);
+						} break;
+						case 2:
+						{
+							glUniform2f(location, uniform->values[0], uniform->values[1]);
+						} break;
+						case 3:
+						{
+							glUniform3f(location, uniform->values[0], uniform->values[1], uniform->values[2]);
+						} break;
+						case 4:
+						{
+							glUniform4f(location, uniform->values[0], uniform->values[1], uniform->values[2], uniform->values[3]);
+						} break;
+					}
+				} break;
+				default:
+				{
+				} break;
+			}
+		}
+		return 1;
+	}
+#  endif // defined (GL_VERSION_2_0)
+	return 0;
+}
+
+
+int Material_program_execute_uniforms(struct Material_program *material_program,
+		LIST(Material_program_uniform) *material_program_uniforms)
+{
+#if defined (GL_VERSION_2_0)
+	if (material_program && material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL &&
+			material_program->glsl_current_program && material_program_uniforms)
+	{
+	 if (glIsProgram(material_program->glsl_current_program))
+	 {
+		GLint loc1 = -1;
+		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture2");
+		if (loc1 != (GLint)-1)
+			 glUniform1i(loc1,2);
+		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture1");
+		if (loc1 != (GLint)-1)
+			 glUniform1i(loc1,1);
+		loc1 = glGetUniformLocation(material_program->glsl_current_program,"texture0");
+		if (loc1 != (GLint)-1)
+			 glUniform1i(loc1, 0);
+		if (material_program_uniforms)
+			FOR_EACH_OBJECT_IN_LIST(Material_program_uniform)(
+					Material_program_uniform_write_glsl_values, material_program,
+					material_program_uniforms);
+		return 1;
+	 }
+
+	}
+#endif
+	return 0;
+}
+
 #endif /* defined (OPENGL_API) */
 
+/*
+ * Misusing the double array here as the vector parser function gives us an
+ * array of doubles and I don't see the need to copy and pass floats.
+ * It isn't called double_vector then because we are going to use it with Uniform?f
+ */
+int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
+	unsigned int number_of_values, double *values)
+{
+	int return_code;
+	unsigned int i;
+	if (uniform && (number_of_values <= 4))
+	{
+		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT;
+		uniform->number_of_defined_values = number_of_values;
+		for (i = 0 ; i < number_of_values; i++)
+		{
+			uniform->values[i] = values[i];
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_uniform_set_float_vector.  Invalid arguments");
+		return_code = 0;
+	}
+	return (return_code);
+}
 
 struct Material_program *CREATE(Material_program)(enum Material_program_type type)
 /*******************************************************************************
@@ -2540,8 +2678,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Material_program *material_program;
-
-	ENTER(CREATE(Material_program));
 
 	if (ALLOCATE(material_program ,struct Material_program, 1))
 	{
@@ -2567,11 +2703,40 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"CREATE(Material_program).  Not enough memory");
 	}
-	LEAVE;
 
 	return (material_program);
 } /* CREATE(Material_program) */
 
+struct Material_program *Material_program_create_from_program_strings(
+	const char *vertex_program_string, const char *fragment_program_string,
+	const char *geometry_program_string)
+{
+	struct Material_program *material_program;
+
+	material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS);
+	if (material_program)
+	{
+#if defined (OPENGL_API)
+		Material_program_set_vertex_string(material_program, vertex_program_string);
+
+		Material_program_set_fragment_string(material_program,fragment_program_string);
+
+		Material_program_set_geometry_string(material_program, geometry_program_string);
+
+#else /* defined (OPENGL_API) */
+		USE_PARAMETER(vertex_program_string);
+		USE_PARAMETER(fragment_program_string);
+		USE_PARAMETER(geometry_program_string);
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_create_from_program_strings.  Not enough memory");
+	}
+
+	return (material_program);
+}
 
 static int DESTROY(Material_program)(struct Material_program **material_program_address)
 /*******************************************************************************

@@ -69,7 +69,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphics_module.h
 	source/graphics/scene.h
 	source/graphics/scene.hpp
-	source/graphics/shader_program.h
 	source/stream/scene_stream.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h
@@ -104,6 +103,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/scenefilter.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selection.hpp
+	source/graphics/shader_program.hpp
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
 	source/graphics/spectrum_component.h
