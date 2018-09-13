@@ -320,6 +320,22 @@ cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
 	return 0;
 }
 
+cmzn_shadermodule_id cmzn_context_get_shadermodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_shadermodule_id shadermodule =
+			cmzn_graphics_module_get_shadermodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return shadermodule;
+	}
+
+	return 0;
+}
+
 cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
 	cmzn_context_id context)
 {

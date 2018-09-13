@@ -2,10 +2,12 @@
 #define SHADER_PROGRAM_H
 
 #include "opencmiss/zinc/zincconfigure.h"
+#include "opencmiss/zinc/shader.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
+
 
 struct Render_graphics_opengl;
 struct Texture;
@@ -137,38 +139,7 @@ DECLARE_LIST_TYPES(Shader_program);
 PROTOTYPE_LIST_FUNCTIONS(Shader_program);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Shader_program,type,Shader_program_type);
 
-enum Shader_program_uniform_type
-{
-	SHADER_PROGRAM_UNIFORM_TYPE_UNDEFINED,
-	SHADER_PROGRAM_UNIFORM_TYPE_FLOAT
-};
-
-/*****************************************************************************//**
-Store a uniform parameter value used by a Shader_program.
-These values are not stored in the program as a particular material may
-use the same program with different values for these parameters.
-Currently only the FLOAT type is implemented.
-The object currently always stores the values in a double 4 array for simplicity.
-==============================================================================*/
-struct Shader_program_uniform
-{
-	char *name;
-	unsigned int number_of_defined_values;
-	enum Shader_program_uniform_type type;
-	double values[4];
-	int access_count;
-}; /* struct Shader_program_uniform */
-
-DECLARE_LIST_TYPES(Shader_program_uniform);
-PROTOTYPE_LIST_FUNCTIONS(Shader_program_uniform);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Shader_program_uniform,name,const char *);
-
-PROTOTYPE_OBJECT_FUNCTIONS(Shader_program_uniform);
-
-struct Shader_program_uniform *CREATE(Shader_program_uniform)(char *name);
-
 struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type);
-
 
 /***************************************************************************//**
  * An alternative Shader_program constructor that takes explicit program
@@ -190,13 +161,8 @@ int Shader_program_execute_textures(struct Shader_program *shader_program,
 	struct Texture *third_texture);
 
 int Shader_program_execute_uniforms(struct Shader_program *program,
-	LIST(Shader_program_uniform) *shader_program_uniforms);
+	cmzn_shaderuniforms_id uniforms);
 #endif
-
-int Shader_program_uniform_set_float_vector(Shader_program_uniform *uniform,
-	unsigned int number_of_values, double *values);
-
-int cmzn_shader_program_uniform_destroy(struct Shader_program_uniform **shader_program_uniform_address);
 
 int cmzn_shader_program_destroy(struct Shader_program **shader_program_address);
 

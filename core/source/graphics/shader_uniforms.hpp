@@ -22,6 +22,9 @@ struct cmzn_shaderuniforms;
 
 struct cmzn_shaderuniforms *cmzn_shaderuniforms_create_private();
 
+void cmzn_shaderuniforms_write_to_shaders(cmzn_shaderuniforms_id shaderuniforms,
+	unsigned int glsl_program);
+
 DECLARE_LIST_TYPES(cmzn_shaderuniforms);
 DECLARE_MANAGER_TYPES(cmzn_shaderuniforms);
 

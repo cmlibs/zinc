@@ -20,10 +20,10 @@
 struct cmzn_graphics_module;
 
 /**
- * Create and return a handle to a new tessellation module.
+ * Create and return a handle to a new shader module.
  * Private; only to be called from graphics_module.
  *
- * @return  Handle to the newly created tessellation module if successful,
+ * @return  Handle to the newly created shader module if successful,
  * otherwise NULL.
  */
 cmzn_shadermodule_id cmzn_shadermodule_create();

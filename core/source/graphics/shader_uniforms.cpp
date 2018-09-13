@@ -39,7 +39,9 @@ public:
 	{
 	}
 
-	virtual ~cmzn_shaderuniform() = 0;
+	virtual ~cmzn_shaderuniform()
+	{
+	}
 
 	virtual int writeToShaders(unsigned int currentProgram) = 0;
 };
@@ -206,6 +208,13 @@ public:
 	}
 };
 
+struct cmzn_shaderuniforms_change_detail
+{
+	virtual ~cmzn_shaderuniforms_change_detail()
+	{
+	}
+};
+
 
 struct cmzn_shaderuniforms
 {
@@ -271,6 +280,25 @@ public:
 			shaderuniforms = 0;
 			return CMZN_OK;
 		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int removeUniform(const char*name)
+	{
+		if (name)
+		{
+			std::list<cmzn_shaderuniform *>::iterator pos;
+			for (pos = uniforms.begin(); pos != uniforms.end(); ++pos)
+			{
+				if (strcmp((*pos)->name.c_str(), name) == 0)
+				{
+					delete (*pos);
+					uniforms.remove((*pos));
+					return CMZN_OK;
+				}
+			}
+		}
+
 		return CMZN_ERROR_ARGUMENT;
 	}
 
@@ -414,6 +442,15 @@ public:
 
 		return CMZN_OK;
 	}
+
+	/** clones and clears type-specific change detail, if any.
+	 * override for classes with type-specific change detail
+	 * @return  change detail prior to clearing, or NULL if none.
+	 */
+	virtual cmzn_shaderuniforms_change_detail *extract_change_detail()
+	{
+		return NULL;
+	}
 };
 
 
@@ -451,9 +488,21 @@ struct cmzn_shaderuniforms_compare_name
 
 typedef cmzn_set<cmzn_shaderuniforms *,cmzn_shaderuniforms_compare_name> cmzn_set_cmzn_shaderuniforms;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderuniforms, cmzn_shadermodule, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderuniforms, cmzn_shadermodule, struct cmzn_shaderuniforms_change_detail *);
 
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_shaderuniforms);
+
+inline struct cmzn_shaderuniforms_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderuniforms)(
+		cmzn_shaderuniforms *uniforms)
+{
+	return uniforms->extract_change_detail();
+}
+
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_shaderuniforms)(
+		cmzn_shaderuniforms_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
 
 DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_shaderuniforms)
 
@@ -551,6 +600,17 @@ int cmzn_shaderuniforms_set_managed(cmzn_shaderuniforms_id shaderuniforms,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_shaderuniforms_remove_uniform(cmzn_shaderuniforms_id shaderuniforms,
+	const char *name)
+{
+	if (shaderuniforms && name)
+	{
+		return shaderuniforms->removeUniform(name);
+	}
+	return CMZN_ERROR_ARGUMENT;
+
+}
+
 int cmzn_shaderuniforms_get_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, int *valuesOut)
 {
@@ -643,6 +703,15 @@ char *cmzn_shaderuniforms_get_name(cmzn_shaderuniforms_id shaderuniforms)
 		name = duplicate_string(shaderuniforms->name);
 	}
 	return name;
+}
+
+void cmzn_shaderuniforms_write_to_shaders(cmzn_shaderuniforms_id shaderuniforms,
+	unsigned int glsl_program)
+{
+	if (shaderuniforms)
+	{
+		shaderuniforms->writeToShaders(glsl_program);
+	}
 }
 
 int cmzn_shaderuniforms_set_name(cmzn_shaderuniforms_id shaderuniforms, const char *name)

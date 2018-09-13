@@ -19,6 +19,7 @@ The data structures used for representing graphical materials.
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldimage.h"
 #include "opencmiss/zinc/material.h"
+#include "opencmiss/zinc/shader.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -108,8 +109,6 @@ The properties of a material.
 	ZnReal lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
 	struct Shader_program *program;
-	/* user defined uniforms used by the program */
-	LIST(Shader_program_uniform) *program_uniforms;
 	int access_count, per_pixel_lighting_flag, bump_mapping_flag;
 	/* this flag is for external API uses. If a material is set to be persistent
 		 then this material will not be removed from the manager after destroy.
@@ -117,6 +116,7 @@ The properties of a material.
 	bool isManagedFlag;
 	int executed_as_order_independent;
 	struct Shader_program *order_program;
+	cmzn_shaderuniforms_id uniforms;
 
 public:
 
@@ -440,17 +440,6 @@ will work with order_independent_transparency.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Set a value to the uniform qualified variable used in an arbitrary shader.
- *
- * @param material  Graphical material with the arbitrary shaders program.
- * @param uniform_name  Name of the uniform_qualifier variable.
- * @param value  Value to be set to the uniform varaible.
- * @return 1 on success, 0 on failure
- */
-int Material_set_program_uniform_qualifier_variable_value(
-	cmzn_material* material, const char *uniform_name, ZnReal value);
-
-/***************************************************************************//**
  * Sets the Graphics_module object which will own this manager.
  * Private! Only to be called only from Graphics_module object.
  *
@@ -467,8 +456,6 @@ int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
 
 
 struct cmzn_materialmodule *manager_get_owner_cmzn_material(manager_cmzn_material *manager);
-
-//struct Shader_program_uniform *list_find_by_identifier_Shader_program_uniformname(const char *name, list_Shader_program_uniform *list);
 
 /** non-accessing private variant of cmzn_materialiterator_next */
 cmzn_material_id cmzn_materialiterator_next_non_access(cmzn_materialiterator_id iterator);

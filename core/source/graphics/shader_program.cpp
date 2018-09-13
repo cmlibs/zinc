@@ -8,6 +8,7 @@
 #include "three_d_drawing/abstract_graphics_buffer.h"
 #include "graphics/render_gl.h"
 #include "general/compare.h"
+#include "graphics/shader_uniforms.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
@@ -16,8 +17,6 @@
 Module types
 ------------
 */
-FULL_DECLARE_INDEXED_LIST_TYPE(Shader_program_uniform);
-
 FULL_DECLARE_INDEXED_LIST_TYPE(Shader_program);
 
 
@@ -2560,60 +2559,13 @@ int Shader_program_execute_textures(struct Shader_program *shader_program,
 #endif
 	return 0;
 }
-static int Shader_program_uniform_write_glsl_values(Shader_program_uniform *uniform,
-	void *shader_program_void)
-{
-#if defined (GL_VERSION_2_0)
-	int return_code;
-	struct Shader_program *shader_program;
-	if (uniform && (shader_program = static_cast<Shader_program*>(shader_program_void)))
-	{
-		GLint location = glGetUniformLocation(shader_program->glsl_current_program,
-			uniform->name);
-		if (location != (GLint)-1)
-		{
-			switch(uniform->type)
-			{
-				case SHADER_PROGRAM_UNIFORM_TYPE_FLOAT:
-				{
-					switch(uniform->number_of_defined_values)
-					{
-						case 1:
-						{
-							glUniform1f(location, uniform->values[0]);
-						} break;
-						case 2:
-						{
-							glUniform2f(location, uniform->values[0], uniform->values[1]);
-						} break;
-						case 3:
-						{
-							glUniform3f(location, uniform->values[0], uniform->values[1], uniform->values[2]);
-						} break;
-						case 4:
-						{
-							glUniform4f(location, uniform->values[0], uniform->values[1], uniform->values[2], uniform->values[3]);
-						} break;
-					}
-				} break;
-				default:
-				{
-				} break;
-			}
-		}
-		return 1;
-	}
-#  endif // defined (GL_VERSION_2_0)
-	return 0;
-}
-
 
 int Shader_program_execute_uniforms(struct Shader_program *shader_program,
-		LIST(Shader_program_uniform) *shader_program_uniforms)
+	cmzn_shaderuniforms_id uniforms)
 {
 #if defined (GL_VERSION_2_0)
 	if (shader_program && shader_program->shader_type==SHADER_PROGRAM_SHADER_GLSL &&
-			shader_program->glsl_current_program && shader_program_uniforms)
+			shader_program->glsl_current_program)
 	{
 	 if (glIsProgram(shader_program->glsl_current_program))
 	 {
@@ -2627,10 +2579,8 @@ int Shader_program_execute_uniforms(struct Shader_program *shader_program,
 		loc1 = glGetUniformLocation(shader_program->glsl_current_program,"texture0");
 		if (loc1 != (GLint)-1)
 			 glUniform1i(loc1, 0);
-		if (shader_program_uniforms)
-			FOR_EACH_OBJECT_IN_LIST(Shader_program_uniform)(
-					Shader_program_uniform_write_glsl_values, shader_program,
-					shader_program_uniforms);
+		if (uniforms)
+			cmzn_shaderuniforms_write_to_shaders(uniforms, shader_program->glsl_current_program);;
 		return 1;
 	 }
 
@@ -2640,35 +2590,6 @@ int Shader_program_execute_uniforms(struct Shader_program *shader_program,
 }
 
 #endif /* defined (OPENGL_API) */
-
-/*
- * Misusing the double array here as the vector parser function gives us an
- * array of doubles and I don't see the need to copy and pass floats.
- * It isn't called double_vector then because we are going to use it with Uniform?f
- */
-int Shader_program_uniform_set_float_vector(Shader_program_uniform *uniform,
-	unsigned int number_of_values, double *values)
-{
-	int return_code;
-	unsigned int i;
-	if (uniform && (number_of_values <= 4))
-	{
-		uniform->type = SHADER_PROGRAM_UNIFORM_TYPE_FLOAT;
-		uniform->number_of_defined_values = number_of_values;
-		for (i = 0 ; i < number_of_values; i++)
-		{
-			uniform->values[i] = values[i];
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Shader_program_uniform_set_float_vector.  Invalid arguments");
-		return_code = 0;
-	}
-	return (return_code);
-}
 
 struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type)
 /*******************************************************************************
@@ -2833,89 +2754,6 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program, type, \
 DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program, type,
 	enum Shader_program_type, compare_int)
-
-struct Shader_program_uniform *CREATE(Shader_program_uniform)(char *name)
-/*******************************************************************************
-==============================================================================*/
-{
-	struct Shader_program_uniform *uniform;
-
-	ENTER(CREATE(Shader_program_uniform));
-
-	if (ALLOCATE(uniform, Shader_program_uniform, 1))
-	{
-		uniform->name = duplicate_string(name);
-		uniform->type = SHADER_PROGRAM_UNIFORM_TYPE_UNDEFINED;
-		uniform->number_of_defined_values = 0;
-		uniform->access_count = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Shader_program).  Not enough memory");
-	}
-	LEAVE;
-
-	return (uniform);
-} /* CREATE(Shader_program_uniform) */
-
-static int DESTROY(Shader_program_uniform)(struct Shader_program_uniform **shader_program_uniform_address)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2003
-
-DESCRIPTION :
-Frees the memory for the shader_program.
-==============================================================================*/
-{
-	int return_code;
-	Shader_program_uniform *uniform;
-
-	ENTER(DESTROY(Shader_program_uniform));
-	if (shader_program_uniform_address &&
-			(uniform = *shader_program_uniform_address))
-	{
-		if (0==uniform->access_count)
-		{
-			if (uniform->name)
-				DEALLOCATE(uniform->name)
-
-			DEALLOCATE(*shader_program_uniform_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Shader_program_uniform).  Shader program uniform has non-zero access count");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Shader_program_uniform).  Missing address");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Shader_program_uniform) */
-
-DECLARE_OBJECT_FUNCTIONS(Shader_program_uniform)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program_uniform, name, \
-	const char *, strcmp)
-DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program_uniform)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program_uniform, name,
-	const char *, strcmp)
-
-int cmzn_shader_program_uniform_destroy(struct Shader_program_uniform **shader_program_uniform_address)
-{
-	if (shader_program_uniform_address && *shader_program_uniform_address)
-	{
-		DEACCESS(Shader_program_uniform)(shader_program_uniform_address);
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
 
 struct Shader_program *cmzn_shader_program_access(struct Shader_program *shader_program)
 {

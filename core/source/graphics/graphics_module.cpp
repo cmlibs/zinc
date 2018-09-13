@@ -20,6 +20,7 @@
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
+#include "graphics/shader.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scenefilter.hpp"
@@ -44,6 +45,7 @@ struct cmzn_graphics_module
 	cmzn_spectrummodule_id spectrummodule;
 	void *spectrum_manager_callback_id;
 	cmzn_tessellationmodule_id tessellationmodule;
+	cmzn_shadermodule_id shadermodule;
 	void *tessellation_manager_callback_id;
 	cmzn_timekeepermodule *timekeepermodule;
 	int access_count;
@@ -218,6 +220,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->sceneviewermodule = NULL;
 			module->spectrummodule=cmzn_spectrummodule_create();
 			module->scenefiltermodule=cmzn_scenefiltermodule_create();
+			module->shadermodule = cmzn_shadermodule_create();
 			module->fontmodule = cmzn_fontmodule_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
@@ -339,6 +342,8 @@ int cmzn_graphics_module_destroy(
 			cmzn_glyphmodule_destroy(&graphics_module->glyphmodule);
 			if (graphics_module->lightmodule)
 				cmzn_lightmodule_destroy(&graphics_module->lightmodule);
+			if (graphics_module->shadermodule)
+				cmzn_shadermodule_destroy(&graphics_module->shadermodule);
 			if (graphics_module->spectrummodule)
 				cmzn_spectrummodule_destroy(&graphics_module->spectrummodule);
 			if (graphics_module->fontmodule)
@@ -511,6 +516,16 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 			"Missing context");
 	}
 	return sceneviewermodule;
+}
+
+cmzn_shadermodule_id cmzn_graphics_module_get_shadermodule(
+	struct cmzn_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->shadermodule)
+	{
+		return cmzn_shadermodule_access(graphics_module->shadermodule);
+	}
+	return 0;
 }
 
 cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(

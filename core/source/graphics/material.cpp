@@ -55,6 +55,7 @@ return to direct rendering, as described with these routines.
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
 #include "graphics/shader_program.hpp"
+#include "graphics/shader_uniforms.hpp"
 
 struct Startup_material_definition
 {
@@ -376,7 +377,7 @@ material results.
 			 Shader_program_execute(material->program, renderer);
 			 Shader_program_execute_textures(material->program, material->image_texture.texture,
 				material->second_image_texture.texture, material->third_image_texture.texture);
-			 Shader_program_execute_uniforms(material->program, material->program_uniforms);
+			 Shader_program_execute_uniforms(material->program, material->uniforms);
 			if (material->image_texture.texture)
 			{
 #if defined(GL_VERSION_2_0) || (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program)
@@ -1129,7 +1130,7 @@ cmzn_material *cmzn_material_create_private()
 		material->lit_volume_normal_scaling[2] = 1.0;
 		material->lit_volume_normal_scaling[3] = 1.0;
 		material->program = (struct Shader_program *)NULL;
-		material->program_uniforms = (LIST(Shader_program_uniform) *)NULL;
+		material->uniforms = 0;
 		material->isManagedFlag = false;
 		material->manager = (struct MANAGER(cmzn_material) *)NULL;
 		material->manager_change_status = MANAGER_CHANGE_NONE(cmzn_material);
@@ -1225,9 +1226,9 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			{
 				cmzn_shader_program_destroy(&(material->order_program));
 			}
-			if (material->program_uniforms)
+			if (material->uniforms)
 			{
-				DESTROY(LIST(Shader_program_uniform))(&material->program_uniforms);
+				cmzn_shaderuniforms_destroy(&material->uniforms);
 			}
 			DEALLOCATE(*material_address);
 			return_code=1;
@@ -1457,26 +1458,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_material,name)
 		Material_image_texture_set_field(&(destination->second_image_texture), source->second_image_texture.field);
 		Material_image_texture_set_field(&(destination->third_image_texture), source->third_image_texture.field);
 		Material_image_texture_set_field(&(destination->fourth_image_texture), source->fourth_image_texture.field);
-		if (source->program_uniforms)
-		{
-			if (destination->program_uniforms)
-			{
-				REMOVE_ALL_OBJECTS_FROM_LIST(Shader_program_uniform)(destination->program_uniforms);
-			}
-			else
-			{
-				destination->program_uniforms = CREATE(LIST(Shader_program_uniform))();
-			}
-			COPY_LIST(Shader_program_uniform)(destination->program_uniforms,
-				source->program_uniforms);
-		}
-		else
-		{
-			if (destination->program_uniforms)
-			{
-				DESTROY(LIST(Shader_program_uniform))(&destination->program_uniforms);
-			}
-		}
+		REACCESS(cmzn_shaderuniforms)(&(destination->uniforms), source->uniforms);
 		/* flag destination display list as no longer current */
 		destination->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -3972,6 +3954,32 @@ int cmzn_material_set_attribute_real3(cmzn_material_id material,
 		}
 	}
 	return return_code;
+}
+
+cmzn_shaderuniforms_id cmzn_material_get_shaderuniforms(cmzn_material_id material)
+{
+	if (material)
+	{
+		if (material->uniforms)
+			return cmzn_shaderuniforms_access(material->uniforms);
+	}
+	return 0;
+}
+
+int cmzn_material_set_shaderuniforms(cmzn_material_id material,
+	cmzn_shaderuniforms_id shaderuniforms)
+{
+	if (material)
+	{
+		REACCESS(cmzn_shaderuniforms)(&(material->uniforms), shaderuniforms);
+		if (material->manager)
+		{
+			Graphical_material_changed(material);
+		}
+		return CMZN_OK;
+	}
+
+	return CMZN_ERROR_ARGUMENT;
 }
 
 class cmzn_material_attribute_conversion

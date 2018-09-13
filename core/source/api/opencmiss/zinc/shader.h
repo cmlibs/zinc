@@ -132,6 +132,16 @@ ZINC_API int cmzn_shaderuniforms_set_managed(cmzn_shaderuniforms_id shaderunifor
     bool value);
 
 /**
+ * Remove a set of uniform from the uniforms object,
+ *
+ * @param shaderuniforms  The shaderuniforms to modify.
+ * @param name  uniform with the matching name will be removed
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_shaderuniforms_remove_uniform(cmzn_shaderuniforms_id shaderuniforms,
+	const char *name);
+
+/**
  * Return the size and values of the specified uniform if present.
  *
  * @param shaderuniforms  The shaderuniforms to query.

@@ -12,6 +12,7 @@
 
 #include "types/fieldid.h"
 #include "types/materialid.h"
+#include "types/shaderid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
 
@@ -287,6 +288,27 @@ ZINC_API int cmzn_material_get_attribute_real3(cmzn_material_id material,
  */
 ZINC_API int cmzn_material_set_attribute_real3(cmzn_material_id material,
 	enum cmzn_material_attribute attribute, const double *values);
+
+/**
+ * Get the shaderuniforms object currently in used by the material.
+ *
+ * @param material  The material to query.
+ *
+ * @return  Handle to the shaderuniforms, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_shaderuniforms_id cmzn_material_get_shaderuniforms(cmzn_material_id material);
+
+/**
+ * Set shaderuniforms object which contains uniforms to be used by the shader program
+ * for the material.
+ *
+ * @param material  The material to modify.
+ * @param shaderuniforms  The shaderuniforms to be set for this material.
+ *
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_material_set_shaderuniforms(cmzn_material_id material,
+	cmzn_shaderuniforms_id shaderuniforms);
 
 /**
  * Return an allocated string containing material name.
