@@ -45,7 +45,9 @@ SET( GRAPHICS_SRCS
 	source/graphics/scene_coordinate_system.cpp
 	source/graphics/scene_viewer.cpp
 	source/graphics/selection.cpp
+	source/graphics/shader.cpp
 	source/graphics/shader_program.cpp
+	source/graphics/shader_uniforms.cpp
 	source/graphics/spectrum.cpp
 	source/graphics/spectrum_component.cpp
 	source/graphics/tessellation.cpp
@@ -103,7 +105,9 @@ SET( GRAPHICS_HDRS
 	source/graphics/scenefilter.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selection.hpp
+	source/graphics/shader.hpp
 	source/graphics/shader_program.hpp
+	source/graphics/shader_uniforms.hpp
 	source/graphics/spectrum.h
 	source/graphics/spectrum.hpp
 	source/graphics/spectrum_component.h

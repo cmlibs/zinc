@@ -58,6 +58,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenefilter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenepicker.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/selection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/shader.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/spectrum.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/status.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/stream.h
@@ -108,6 +109,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/scenepickerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/selectionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/shaderid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/spectrumid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/streamid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/tessellationid.h
