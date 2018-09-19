@@ -31,10 +31,7 @@ cmzn_shadermodule_id cmzn_shadermodule_create();
 struct MANAGER(cmzn_shaderuniforms) *cmzn_shadermodule_get_uniforms_manager(
 		cmzn_shadermodule_id shadermodule);
 
-/***************************************************************************//**
- * Private; only to be called from graphics_module.
- */
-int cmzn_shaderuniforms_manager_set_owner_private(struct MANAGER(cmzn_shaderuniforms) *manager,
-	struct cmzn_shadernmodule *shadermodule);
+struct MANAGER(Shader_program) *Shader_program_get_program_manager(
+		Shader_program *program);
 
 #endif

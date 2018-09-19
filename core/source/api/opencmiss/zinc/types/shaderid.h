@@ -22,7 +22,8 @@ struct cmzn_shadermodule;
 typedef struct cmzn_shadermodule * cmzn_shadermodule_id;
 
 /**
- * @brief Zinc shader uniforms specify opengl shaders uniforms.
+ * @brief Zinc shader uniforms provide an object to wor with
+ * opengl shaders uniforms.
  *
  * Zinc shader uniforms specify uniforms that will pass into the shaders
  * and used by vertex/fragment shaders if a variable with mataching name
@@ -30,5 +31,15 @@ typedef struct cmzn_shadermodule * cmzn_shadermodule_id;
  */
 struct cmzn_shaderuniforms;
 typedef struct cmzn_shaderuniforms * cmzn_shaderuniforms_id;
+
+/**
+ * @brief Zinc shader program provide an object to set opengl shaders.
+ *
+ * Zinc shader program provide an object to pass opengl shaders to the
+ * GPU and visualisations pipeline, currently support vertex shader and
+ * fragment shader.
+ */
+struct cmzn_shaderprogram;
+typedef struct cmzn_shaderprogram * cmzn_shaderprogram_id;
 
 #endif

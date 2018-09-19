@@ -426,17 +426,20 @@ material results.
 							normal_scaling[2] = 1.0;
 						}
 						normal_scaling[3] = 0.0;
-						if (material->program->shader_type==SHADER_PROGRAM_SHADER_GLSL)
+						enum Shader_program_shader_type shader_type =
+							Shader_program_get_shader_type(material->program);
+						if (shader_type)
 						{
-							if (glIsProgram(material->program->glsl_current_program))
+							GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
+							if (glIsProgram(currentProgram))
 							{
-								loc1 = glGetUniformLocation(material->program->glsl_current_program,"normal_scaling");
+								loc1 = glGetUniformLocation(currentProgram,"normal_scaling");
 								if (loc1 != (GLint)-1)
 									glUniform4f(loc1, normal_scaling[0], normal_scaling[1],
 										normal_scaling[2], normal_scaling[3]);
 							}
 						}
-						else if (material->program->shader_type==SHADER_PROGRAM_SHADER_ARB)
+						else if (shader_type)
 						{
 							glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
 								normal_scaling);
@@ -2508,7 +2511,7 @@ DESCRIPTION : Check the shader program and renew it if necessary.
 {
 	 ENTER(material_update_shader_program);
 	 if (!material_to_be_modified->program ||
-			(material_to_be_modified->program->type != type))
+			(Shader_program_get_type(material_to_be_modified->program) != type))
 	 {
 			if (material_to_be_modified->program)
 			{
@@ -2647,21 +2650,33 @@ int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
 #if defined (OPENGL_API)
 		if (!vertex_program_string)
 		{
-			vertex_program_string = old_program->vertex_program_string;
+			vertex_program_string = Shader_program_get_vertex_string(old_program);
 		}
 		if (!fragment_program_string)
 		{
-			fragment_program_string = old_program->fragment_program_string;
+			fragment_program_string = Shader_program_get_fragment_string(old_program);
 		}
 		if (!geometry_program_string)
 		{
-			geometry_program_string = old_program->geometry_program_string;
+			geometry_program_string = Shader_program_get_geometry_string(old_program);
 		}
 #endif /* defined (OPENGL_API) */
 	}
 	material_to_be_modified->program = cmzn_shader_program_access(
 		Shader_program_create_from_program_strings(
 			vertex_program_string, fragment_program_string, geometry_program_string));
+	if (vertex_program_string)
+	{
+		DEALLOCATE(vertex_program_string);
+	}
+	if (fragment_program_string)
+	{
+		DEALLOCATE(fragment_program_string);
+	}
+	if (geometry_program_string)
+	{
+		DEALLOCATE(geometry_program_string);
+	}
 	if (material_to_be_modified->program)
 	{
 		return_code = 1;
@@ -2701,15 +2716,16 @@ Writes the properties of the <material> to the command window.
 		sprintf(line,"  access count = %i\n",material->access_count);
 		if (material->program)
 		{
-			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			enum Shader_program_type type = Shader_program_get_type(material->program);
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Standard Gouraud Shading (program)\n");
 			}
-			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Shading\n");
 			}
-			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Bump map Shading\n");
 			}
@@ -2814,15 +2830,16 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			enum Shader_program_type type = Shader_program_get_type(material->program);
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				display_message(INFORMATION_MESSAGE," normal_mode");
 			}
-			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & type)
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & type)
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -2927,15 +2944,16 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			enum Shader_program_type type = Shader_program_get_type(material->program);
+			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
 			}
-			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_PER_PIXEL_LIGHTING & type)
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
+			else if (SHADER_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & type)
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -3296,7 +3314,7 @@ will work with order_independent_transparency.
 			unmodified_program = material->program;
 			if (material->program)
 			{
-				modified_type = material->program->type;
+				modified_type = Shader_program_get_type(material->program);
 			}
 			else
 			{
@@ -3408,17 +3426,14 @@ will work with order_independent_transparency.
 						return_code = 0;
 					}
 				}
-				if (!material->program->compiled)
-				{
-					Shader_program_compile(material->program, data->renderer);
-				}
+				Shader_program_compile(material->program, data->renderer);
 			}
 
 			if (data->renderer->use_display_list)
 			{
 				glNewList(material->display_list,GL_COMPILE);
 				if (material->program &&
-						material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
+						(Shader_program_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_ARB))
 				{
 					if (material->image_texture.texture)
 					{
@@ -3428,20 +3443,21 @@ will work with order_independent_transparency.
 				}
 				direct_render_Graphical_material(material,data->renderer);
 				if (material->program &&
-						material->program->shader_type == SHADER_PROGRAM_SHADER_GLSL)
+						(Shader_program_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_GLSL))
 				{
 					GLint loc1;
 					if (data && data->renderer)
 					{
-						if (glIsProgram(material->program->glsl_current_program))
+						GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
+						if (glIsProgram(currentProgram))
 						{
-							loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
+							loc1 = glGetUniformLocation(currentProgram,"texturesize");
 							if (loc1>-1)
 							{
 								glUniform4f(loc1, static_cast<GLfloat>(data->renderer->viewport_width),
 										static_cast<GLfloat>(data->renderer->viewport_height), 1.0, 1.0);
 							}
-							loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
+							loc1 = glGetUniformLocation(currentProgram,"samplertex");
 							if (loc1 != (GLint)-1)
 							{
 								glUniform1i(loc1, 3);
@@ -3504,12 +3520,12 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				if (material->image_texture.texture)
 				{
-					if (material->order_program->shader_type != SHADER_PROGRAM_SHADER_ARB &&
-							material->order_program->glsl_current_program)
+					if (Shader_program_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
 					{
+						GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->order_program);
 						Texture_execute_vertex_program_environment(material->image_texture.texture,
-							material->order_program->glsl_current_program);
-						GLint loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"texture0");
+							currentProgram);
+						GLint loc1 = glGetUniformLocation(currentProgram,"texture0");
 						if (loc1 != (GLint)-1)
 							 glUniform1i(loc1, 0);
 					}
@@ -3527,16 +3543,17 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			material->program = temp_program;
 			if (material->order_program)
 			{
-				if (material->order_program->shader_type != SHADER_PROGRAM_SHADER_ARB)
+				if (Shader_program_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
 				{
+					GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->order_program);
 					GLint loc1=-1;
-					loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"texturesize");
+					loc1 = glGetUniformLocation(currentProgram,"texturesize");
 					if (loc1>-1)
 					{
 						glUniform4f(loc1, static_cast<GLfloat>(renderer->viewport_width),
 								static_cast<GLfloat>(renderer->viewport_height), 1.0, 1.0);
 					}
-					loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"samplertex");
+					loc1 = glGetUniformLocation(currentProgram,"samplertex");
 					if (loc1 != (GLint)-1)
 					{
 
@@ -3573,13 +3590,13 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						0);
 				}
 #if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
-				if (material->spectrum && (
-					material->program->shader_type == SHADER_PROGRAM_SHADER_ARB ||
-					material->program->shader_type == SHADER_PROGRAM_SHADER_GLSL))
+				enum Shader_program_shader_type shader_type =
+					Shader_program_get_shader_type(material->program);
+				if (material->spectrum && (shader_type != SHADER_PROGRAM_SHADER_NONE))
 				{
 					int i, lookup_dimensions, *lookup_sizes;
 					GLfloat values[4];
-
+					GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
 					Spectrum_get_colour_lookup_sizes(material->spectrum,
 						&lookup_dimensions, &lookup_sizes);
 					/* Set the offsets = 0.5 / size */
@@ -3591,7 +3608,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					{
 						values[i] = 0.0;
 					}
-					if (material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
+					if (shader_type == SHADER_PROGRAM_SHADER_ARB)
 					{
 						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
 							values[0], values[1], values[2], values[3]);
@@ -3599,9 +3616,9 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					else
 					{
 						GLint loc1=-1;
-						if (glIsProgram(material->program->glsl_current_program))
+						if (glIsProgram(currentProgram))
 						{
-							loc1 = glGetUniformLocation(material->program->glsl_current_program,"lookup_offsets");
+							loc1 = glGetUniformLocation(currentProgram,"lookup_offsets");
 							if (loc1 != (GLint)-1)
 							{
 								glUniform4f(loc1, values[0], values[1],
@@ -3618,7 +3635,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					{
 						values[i] = 1.0;
 					}
-					if (material->program->shader_type == SHADER_PROGRAM_SHADER_ARB)
+					if (shader_type == SHADER_PROGRAM_SHADER_ARB)
 					{
 						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
 							values[0], values[1], values[2], values[3]);
@@ -3626,9 +3643,9 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					else
 					{
 						GLint loc2=-1;
-						if (glIsProgram(material->program->glsl_current_program))
+						if (glIsProgram(currentProgram))
 						{
-							loc2 = glGetUniformLocation(material->program->glsl_current_program,"lookup_scales");
+							loc2 = glGetUniformLocation(currentProgram,"lookup_scales");
 							if (loc2 != (GLint)-1)
 							{
 								glUniform4f(loc2, values[0], values[1],

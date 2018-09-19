@@ -18,6 +18,7 @@
 #include "general/enumerator_conversion.hpp"
 #include "graphics/shader.hpp"
 #include "graphics/shader_uniforms.hpp"
+#include "graphics/shader_program.hpp"
 #include "general/message.h"
 
 struct cmzn_shadermodule
@@ -27,10 +28,12 @@ private:
 
 	//void *manager_callback_id;
 	struct MANAGER(cmzn_shaderuniforms) *uniformsManager;
+	struct MANAGER(Shader_program) *programManager;
 	int access_count;
 
 	cmzn_shadermodule() :
 		uniformsManager(CREATE(MANAGER(cmzn_shaderuniforms))()),
+		programManager(CREATE(MANAGER(Shader_program))()),
 		access_count(1)
 	{
 		//manager_callback_id = MANAGER_REGISTER(cmzn_tessellation)(
@@ -40,6 +43,7 @@ private:
 	~cmzn_shadermodule()
 	{
 		DESTROY(MANAGER(cmzn_shaderuniforms))(&(this->uniformsManager));
+		DESTROY(MANAGER(Shader_program))(&(this->programManager));
 	}
 
 public:
@@ -74,6 +78,11 @@ public:
 	struct MANAGER(cmzn_shaderuniforms) *getUniformsManager()
 	{
 		return this->uniformsManager;
+	}
+
+	struct MANAGER(Shader_program) *getProgramManager()
+	{
+		return this->programManager;
 	}
 
 	int beginChange()
@@ -114,6 +123,38 @@ public:
 		if (uniforms)
 		{
 			return ACCESS(cmzn_shaderuniforms)(uniforms);
+		}
+		return 0;
+	}
+
+	Shader_program *createShaderprogram()
+	{
+		Shader_program *program = NULL;
+		char temp_name[20];
+		int i = NUMBER_IN_MANAGER(Shader_program)(this->programManager);
+		do
+		{
+			i++;
+			sprintf(temp_name, "temp%d",i);
+		}
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(Shader_program,name)(temp_name,
+			this->programManager));
+		program = Shader_program_create_private();
+		Shader_program_set_name(program, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(Shader_program)(program, this->programManager))
+		{
+			DEACCESS(Shader_program)(&program);
+		}
+		return program;
+	}
+
+	Shader_program *findShaderprogramByName(const char *name)
+	{
+		Shader_program *uniforms = FIND_BY_IDENTIFIER_IN_MANAGER(Shader_program,name)(name,
+			this->programManager);
+		if (uniforms)
+		{
+			return ACCESS(Shader_program)(uniforms);
 		}
 		return 0;
 	}
@@ -175,5 +216,29 @@ cmzn_shaderuniforms_id cmzn_shadermodule_find_shaderuniforms_by_name(
 {
 	if (shadermodule)
 		return shadermodule->findShaderuniformsByName(name);
+   return 0;
+}
+
+Shader_program *cmzn_shadermodule_create_shaderprogram(
+	cmzn_shadermodule_id shadermodule)
+{
+	if (shadermodule)
+		return shadermodule->createShaderprogram();
+	return 0;
+}
+
+struct MANAGER(Shader_program) *cmzn_shadermodule_get_program_manager(
+	cmzn_shadermodule_id shadermodule)
+{
+	if (shadermodule)
+		return shadermodule->getProgramManager();
+	return 0;
+}
+
+Shader_program *cmzn_shadermodule_find_shaderprogram_by_name(
+	cmzn_shadermodule_id shadermodule, const char *name)
+{
+	if (shadermodule)
+		return shadermodule->findShaderprogramByName(name);
    return 0;
 }

@@ -17,7 +17,267 @@
 Module types
 ------------
 */
-FULL_DECLARE_INDEXED_LIST_TYPE(Shader_program);
+
+struct Shader_program
+{
+public:
+	/*! Specifies the type of the Material Program
+	 * These should be unique for each differing program as the materials
+	 * will only generate one program for each value of type.
+	 * As a special case, type == 0, specifies a predefined arbitrary string
+	 * is used and so these should never be shared. */
+	enum Shader_program_type type;
+#if defined (OPENGL_API)
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+	GLuint vertex_program;
+	GLuint fragment_program;
+	GLuint geometry_program;
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+	GLuint glsl_current_program;
+	char *vertex_program_string;
+	char *geometry_program_string;
+	char *fragment_program_string;
+	enum Shader_program_shader_type shader_type;
+	/*! Display list which enables the correct state for this program */
+	GLuint display_list;
+#endif /* defined (OPENGL_API) */
+	/*! Flag indicating whether the program is compiled or not */
+	int compiled;
+
+	const char *name;
+	struct MANAGER(Shader_program) *manager;
+	bool is_managed_flag;
+	int manager_change_status;
+	int access_count;
+
+
+	Shader_program() :
+		type(0),
+#if defined (OPENGL_API)
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+		vertex_program(0),
+		fragment_program(0),
+		geometry_program(0),
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+		glsl_current_program(0),
+		vertex_program_string(0),
+		geometry_program_string(0),
+		fragment_program_string(0),
+		shader_type(SHADER_PROGRAM_SHADER_NONE),
+	/*! Display list which enables the correct state for this program */
+		display_list(0),
+#endif /* defined (OPENGL_API) */
+		name(NULL),
+		manager(NULL),
+		is_managed_flag(false),
+		manager_change_status(MANAGER_CHANGE_NONE(Shader_program)),
+		access_count(1)
+
+	{
+	}
+
+	~Shader_program()
+	{
+		if (name)
+		{
+			DEALLOCATE(name);
+		}
+	#if defined (OPENGL_API)
+		if (shader_type==SHADER_PROGRAM_SHADER_GLSL)
+		{
+			glUseProgram(0);
+			if (vertex_program)
+			{
+				glDeleteShader(vertex_program);
+			}
+			if (fragment_program)
+			{
+				glDeleteShader(fragment_program);
+			}
+			if (geometry_program)
+			{
+				glDeleteShader(geometry_program);
+			}
+			if (glsl_current_program)
+			{
+				glDeleteProgram(glsl_current_program);
+			}
+		}
+		else if (shader_type==SHADER_PROGRAM_SHADER_ARB)
+		{
+			if (vertex_program)
+			{
+				glDeleteProgramsARB(1, &vertex_program);
+			}
+			if (fragment_program)
+			{
+				glDeleteProgramsARB(1, &fragment_program);
+			}
+		}
+		if (display_list)
+		{
+			glDeleteLists(display_list, 1);
+		}
+		if (vertex_program_string)
+		{
+			DEALLOCATE(vertex_program_string);
+			vertex_program_string = NULL;
+		}
+		if (geometry_program_string)
+		{
+			DEALLOCATE(geometry_program_string);
+			geometry_program_string = NULL;
+		}
+		if (fragment_program_string)
+		{
+			DEALLOCATE(fragment_program_string);
+			fragment_program_string = NULL;
+		}
+	#endif /* defined (OPENGL_API) */
+	}
+
+	/** must construct on the heap with this function */
+	static Shader_program *create()
+	{
+		return new Shader_program();
+	}
+
+	Shader_program *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static inline int deaccess(Shader_program **object_address)
+	{
+		Shader_program *program;
+
+		if (object_address && (program = *object_address))
+		{
+			--(program->access_count);
+			if (program->access_count <= 0)
+			{
+				delete program;
+			}
+			program = 0;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	/** clones and clears type-specific change detail, if any.
+	 * override for classes with type-specific change detail
+	 * @return  change detail prior to clearing, or NULL if none.
+	 */
+	virtual Shader_program_change_detail *extract_change_detail()
+	{
+		return 0;
+	}
+};
+
+
+}; /* struct Shader_program */
+
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with cmzn_set.
+ */
+class Shader_program_identifier : private Shader_program
+{
+public:
+	Shader_program_identifier(const char *name)
+	{
+		Shader_program::name = name;
+	}
+
+	~Shader_program_identifier()
+	{
+		Shader_program::name = NULL;
+	}
+
+	Shader_program *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering cmzn_set<Shader_program> by name */
+struct Shader_program_compare_name
+{
+	bool operator() (const Shader_program* program1, const Shader_program* program2) const
+	{
+		return strcmp(program1->name, program2->name) < 0;
+	}
+};
+
+typedef cmzn_set<Shader_program *,Shader_program_compare_name> cmzn_set_Shader_program;
+
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Shader_program, cmzn_shadermodule, struct Shader_program_change_detail *);
+
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(Shader_program);
+
+inline struct Shader_program_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Shader_program)(
+		Shader_program *program)
+{
+	return program->extract_change_detail();
+}
+
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(Shader_program)(
+		Shader_program_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
+
+DECLARE_MANAGER_UPDATE_FUNCTION(Shader_program)
+
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Shader_program)
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Shader_program)
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(Shader_program)
+{
+	if (object)
+		return object->access();
+	return 0;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Shader_program)
+{
+	return Shader_program::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Shader_program)
+{
+	if (object_address)
+	{
+		if (new_object)
+		{
+			new_object->access();
+		}
+		if (*object_address)
+		{
+			Shader_program::deaccess(object_address);
+		}
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Shader_program)
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(Shader_program)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Shader_program,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(Shader_program,name)
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program, type, enum Shader_program_type, compare_int)
+DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program, type, enum Shader_program_type, compare_int)
+
+DECLARE_MANAGER_FUNCTIONS(Shader_program,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Shader_program,manager)
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Shader_program,name,const char *,manager)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Shader_program, struct cmzn_shadermodule)
 
 
 #if defined (OPENGL_API)
@@ -2747,22 +3007,26 @@ Frees the memory for the shader_program.
 	return (return_code);
 } /* DESTROY(Shader_program) */
 
+int Shader_program_manager_set_owner_private(struct MANAGER(Shader_program) *manager,
+	struct cmzn_shadermodule *shadermodule)
+{
+	return MANAGER_SET_OWNER(Shader_program)(manager, shadermodule);
+}
 
-DECLARE_OBJECT_FUNCTIONS(Shader_program)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Shader_program, type, \
-	enum Shader_program_type, compare_int)
-DECLARE_INDEXED_LIST_FUNCTIONS(Shader_program)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Shader_program, type,
-	enum Shader_program_type, compare_int)
+struct Shader_program *Shader_program_create_private()
+{
+	return Shader_program::create();
+}
 
-struct Shader_program *cmzn_shader_program_access(struct Shader_program *shader_program)
+
+struct Shader_program *Shader_program_access(struct Shader_program *shader_program)
 {
 	if (shader_program)
 		return ACCESS(Shader_program)(shader_program);
 	return 0;
 }
 
-int cmzn_shader_program_destroy(struct Shader_program **shader_program_address)
+int Shader_program_destroy(struct Shader_program **shader_program_address)
 {
 	if (shader_program_address && *shader_program_address)
 	{
@@ -2772,51 +3036,112 @@ int cmzn_shader_program_destroy(struct Shader_program **shader_program_address)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+char *Shader_program_get_vertex_string(Shader_program *program)
+{
+	if (program && program->vertex_program_string)
+	{
+		return duplicate_string(program->vertex_program_string);
+	}
 
-int Shader_program_set_vertex_string(Shader_program *shader_program_to_be_modified,
+	return 0;
+}
+
+char *Shader_program_get_fragment_string(Shader_program *program)
+{
+	if (program && program->fragment_program_string)
+	{
+		return duplicate_string(program->fragment_program_string);
+	}
+
+	return 0;
+}
+
+char *Shader_program_get_geometry_string(Shader_program *program)
+{
+	if (program && program->geometry_program_string)
+	{
+		return duplicate_string(program->geometry_program_string);
+	}
+
+	return 0;
+}
+
+int Shader_program_set_vertex_string(Shader_program *program,
 	const char *vertex_program_string)
 {
-	if (shader_program_to_be_modified && vertex_program_string)
+	if (program && vertex_program_string)
 	{
-		if (shader_program_to_be_modified->vertex_program_string)
+		if (program->vertex_program_string)
 		{
-			DEALLOCATE(shader_program_to_be_modified->vertex_program_string);
+			DEALLOCATE(program->vertex_program_string);
 		}
-		shader_program_to_be_modified->vertex_program_string = duplicate_string(vertex_program_string);
+		program->vertex_program_string = duplicate_string(vertex_program_string);
 		return CMZN_OK;
 	}
 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Shader_program_set_fragment_string(Shader_program *shader_program_to_be_modified,
+int Shader_program_set_fragment_string(Shader_program *program,
 	const char *fragment_program_string)
 {
-	if (shader_program_to_be_modified && fragment_program_string)
+	if (program && fragment_program_string)
 	{
-		if (shader_program_to_be_modified->fragment_program_string)
+		if (program->fragment_program_string)
 		{
-			DEALLOCATE(shader_program_to_be_modified->fragment_program_string);
+			DEALLOCATE(program->fragment_program_string);
 		}
-		shader_program_to_be_modified->fragment_program_string = duplicate_string(fragment_program_string);
+		program->fragment_program_string = duplicate_string(fragment_program_string);
 		return CMZN_OK;
 	}
 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Shader_program_set_geometry_string(Shader_program *shader_program_to_be_modified,
+int Shader_program_set_geometry_string(Shader_program *program,
 	const char *geometry_program_string)
 {
-	if (shader_program_to_be_modified && geometry_program_string)
+	if (program && geometry_program_string)
 	{
-		if (shader_program_to_be_modified->geometry_program_string)
+		if (program->geometry_program_string)
 		{
-			DEALLOCATE(shader_program_to_be_modified->geometry_program_string);
+			DEALLOCATE(program->geometry_program_string);
 		}
-		shader_program_to_be_modified->geometry_program_string = duplicate_string(geometry_program_string);
+		program->geometry_program_string = duplicate_string(geometry_program_string);
 		return CMZN_OK;
 	}
 
 	return CMZN_ERROR_ARGUMENT;
 }
+
+unsigned int Shader_program_get_glslprogram(struct Shader_program *program)
+{
+#if defined (OPENGL_API)
+	if (program)
+	{
+		return (unsigned int)program->glsl_current_program;
+	}
+#endif
+	return 0;
+}
+
+enum Shader_program_shader_type Shader_program_get_shader_type(struct Shader_program *program)
+{
+#if defined (OPENGL_API)
+	if (program)
+	{
+		return program->shader_type;
+	}
+#endif
+	return SHADER_PROGRAM_SHADER_NONE;
+}
+
+enum Shader_program_type Shader_program_get_type(struct Shader_program *program)
+{
+	if (program)
+	{
+		return program->type;
+	}
+	return 	SHADER_PROGRAM_SPECIFIED_STRINGS;
+}
+

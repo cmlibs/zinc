@@ -90,54 +90,31 @@ Enumerates the main different types of vertex/fragment program for materials
 
 enum Shader_program_shader_type
 {
-	SHADER_PROGRAM_SHADER_NONE,
-	SHADER_PROGRAM_SHADER_ARB,
-	SHADER_PROGRAM_SHADER_GLSL
+	SHADER_PROGRAM_SHADER_NONE = 0,
+	SHADER_PROGRAM_SHADER_ARB = 1,
+	SHADER_PROGRAM_SHADER_GLSL = 2
 };
 
 
-
-/*****************************************************************************//**
-@date LAST MODIFIED : 20 June 2008
-
-Stores a display list which sets up the correct state for a particular
-material state.  This allows vertex/fragment programs to be used per material
-but shared between different materials with the same state.
-==============================================================================*/
-struct Shader_program
-{
-	/*! Specifies the type of the Material Program
-	 * These should be unique for each differing program as the materials
-	 * will only generate one program for each value of type.
-	 * As a special case, type == 0, specifies a predefined arbitrary string
-	 * is used and so these should never be shared. */
-	enum Shader_program_type type;
-#if defined (OPENGL_API)
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-	GLuint vertex_program;
-	GLuint fragment_program;
-	GLuint geometry_program;
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-	GLuint glsl_current_program;
-	char *vertex_program_string;
-	char *geometry_program_string;
-	char *fragment_program_string;
-	enum Shader_program_shader_type shader_type;
-	/*! Display list which enables the correct state for this program */
-	GLuint display_list;
-#endif /* defined (OPENGL_API) */
-
-	/*! Flag indicating whether the program is compiled or not */
-	int compiled;
-
-	int access_count;
-}; /* struct Shader_program */
-
-PROTOTYPE_OBJECT_FUNCTIONS(Shader_program);
+/**
+ * Stores a display list which sets up the correct state for a particular
+ * material state.  This allows vertex/fragment programs to be used per material
+ * but shared between different materials with the same state.
+ */
+struct Shader_program;
 
 DECLARE_LIST_TYPES(Shader_program);
+DECLARE_MANAGER_TYPES(Shader_program);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Shader_program);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Shader_program);
+
 PROTOTYPE_LIST_FUNCTIONS(Shader_program);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Shader_program,type,Shader_program_type);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_shaderuniforms,name,const char *);
+
+PROTOTYPE_MANAGER_FUNCTIONS(Shader_program);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Shader_program,name,const char *);
 
 struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type);
 
@@ -148,6 +125,14 @@ struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type);
 struct Shader_program *Shader_program_create_from_program_strings(
 	const char *vertex_program_string, const char *fragment_program_string,
 	const char *geometry_program_string);
+
+struct Shader_program *Shader_program_create_private();
+
+/***************************************************************************//**
+ * Private; only to be called from graphics_module.
+ */
+int Shader_program_manager_set_owner_private(struct MANAGER(Shader_program) *manager,
+	struct cmzn_shadernmodule *shadermodule);
 
 #if defined (OPENGL_API)
 int Shader_program_compile(struct Shader_program *shader_program,
@@ -164,6 +149,12 @@ int Shader_program_execute_uniforms(struct Shader_program *program,
 	cmzn_shaderuniforms_id uniforms);
 #endif
 
+unsigned int Shader_program_get_glslprogram(struct Shader_program *program);
+
+enum Shader_program_shader_type Shader_program_get_shader_type(struct Shader_program *program);
+
+enum Shader_program_type Shader_program_get_type(struct Shader_program *program);
+
 int cmzn_shader_program_destroy(struct Shader_program **shader_program_address);
 
 struct Shader_program *cmzn_shader_program_access(struct Shader_program *shader_program);
@@ -176,5 +167,11 @@ int Shader_program_set_fragment_string(Shader_program *shader_program_to_be_modi
 
 int Shader_program_set_geometry_string(Shader_program *shader_program_to_be_modified,
 	const char *geometry_program_string);
+
+char *Shader_program_get_vertex_string(Shader_program *program);
+
+char *Shader_program_get_fragment_string(Shader_program *program);
+
+char *Shader_program_get_geometry_string(Shader_program *program);
 
 #endif

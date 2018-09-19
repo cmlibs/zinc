@@ -25,6 +25,12 @@ struct cmzn_shaderuniforms *cmzn_shaderuniforms_create_private();
 void cmzn_shaderuniforms_write_to_shaders(cmzn_shaderuniforms_id shaderuniforms,
 	unsigned int glsl_program);
 
+/***************************************************************************//**
+ * Private; only to be called from graphics_module.
+ */
+int cmzn_shaderuniforms_manager_set_owner_private(struct MANAGER(cmzn_shaderuniforms) *manager,
+	struct cmzn_shadernmodule *shadermodule);
+
 DECLARE_LIST_TYPES(cmzn_shaderuniforms);
 DECLARE_MANAGER_TYPES(cmzn_shaderuniforms);
 
