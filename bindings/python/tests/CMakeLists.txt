@@ -29,7 +29,7 @@ else()
 endif()
 
 # Set the correct python path to have it find the opencmiss package
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../$<CONFIG>" NATIVE_PYTHON_BINDINGS_DIR)
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/..${CFG_DIR}" NATIVE_PYTHON_BINDINGS_DIR)
 # This is just needed by imageprocessing_tests and field_tests (they need a pythonpath at the python/tests dir)
 file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" NATIVE_TEST_BASE_DIR)
 foreach(_TEST ${PYTHONTESTS})
