@@ -9,17 +9,44 @@
 #include "graphics/auxiliary_graphics_types.h"
 
 
+class cmzn_shaderprogram_change_detail
+{
+	bool programChanged;
+
+public:
+
+	cmzn_shaderprogram_change_detail() :
+		programChanged(false)
+	{ }
+
+	void clear()
+	{
+		programChanged = false;
+	}
+
+	bool isProgramChanged() const
+	{
+		return programChanged;
+	}
+
+	void setProgramChanged()
+	{
+		programChanged = true;
+	}
+
+};
+
 struct Render_graphics_opengl;
 struct Texture;
 
-enum Shader_program_type
+enum cmzn_shaderprogram_type
 /*****************************************************************************//**
 @date LAST MODIFIED : 4 July 2007
 
 Enumerates the main different types of vertex/fragment program for materials
 ==============================================================================*/
 {
-	/* This type is for Shader_programs which have arbitrary specified strings
+	/* This type is for cmzn_shaderprograms which have arbitrary specified strings
 	 * rather than the program being generated based on this type value.
 	 */
 	SHADER_PROGRAM_SPECIFIED_STRINGS = 0,
@@ -86,9 +113,9 @@ Enumerates the main different types of vertex/fragment program for materials
    /* Order independent transparency passes */
 	SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<20),
 	SHADER_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<21)
-}; /* enum Shader_program_type */
+}; /* enum cmzn_shaderprogram_type */
 
-enum Shader_program_shader_type
+enum cmzn_shaderprogram_shader_type
 {
 	SHADER_PROGRAM_SHADER_NONE = 0,
 	SHADER_PROGRAM_SHADER_ARB = 1,
@@ -101,77 +128,76 @@ enum Shader_program_shader_type
  * material state.  This allows vertex/fragment programs to be used per material
  * but shared between different materials with the same state.
  */
-struct Shader_program;
+struct cmzn_shaderprogram;
 
-DECLARE_LIST_TYPES(Shader_program);
-DECLARE_MANAGER_TYPES(Shader_program);
+DECLARE_LIST_TYPES(cmzn_shaderprogram);
+DECLARE_MANAGER_TYPES(cmzn_shaderprogram);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Shader_program);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Shader_program);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_shaderprogram);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_shaderprogram);
 
-PROTOTYPE_LIST_FUNCTIONS(Shader_program);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Shader_program,type,Shader_program_type);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_shaderprogram);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_shaderprogram,type,cmzn_shaderprogram_type);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_shaderuniforms,name,const char *);
 
-PROTOTYPE_MANAGER_FUNCTIONS(Shader_program);
-PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Shader_program,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_shaderprogram);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_shaderprogram,name,const char *);
 
-struct Shader_program *CREATE(Shader_program)(enum Shader_program_type type);
-
-/***************************************************************************//**
- * An alternative Shader_program constructor that takes explicit program
- * strings.
- */
-struct Shader_program *Shader_program_create_from_program_strings(
-	const char *vertex_program_string, const char *fragment_program_string,
-	const char *geometry_program_string);
-
-struct Shader_program *Shader_program_create_private();
+cmzn_shaderprogram_id cmzn_shaderprogram_create_private();
 
 /***************************************************************************//**
  * Private; only to be called from graphics_module.
  */
-int Shader_program_manager_set_owner_private(struct MANAGER(Shader_program) *manager,
+int cmzn_shaderprogram_manager_set_owner_private(struct MANAGER(cmzn_shaderprogram) *manager,
 	struct cmzn_shadernmodule *shadermodule);
 
+
+/**
+ * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_shaderprogram) but also returns
+ * change_detail for shaderprogram, if any.
+ *
+ * @param message  The shaderprogram manager change message.
+ * @param shaderprogram  The shaderprogram to query about.
+ * @param change_detail_address  Address to put const change detail in.
+ * @return  manager change flags for the object.
+ */
+int cmzn_shaderprogram_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(cmzn_shaderprogram) *message, cmzn_shaderprogram *shaderprogram,
+	const cmzn_shaderprogram_change_detail **change_detail_address);
+
+
 #if defined (OPENGL_API)
-int Shader_program_compile(struct Shader_program *shader_program,
+int cmzn_shaderprogram_compile(cmzn_shaderprogram_id shader_program,
 	Render_graphics_opengl *renderer);
 
-int Shader_program_execute(struct Shader_program *shader_program,
+int cmzn_shaderprogram_execute(cmzn_shaderprogram_id shader_program,
 	Render_graphics_opengl *renderer);
 
-int Shader_program_execute_textures(struct Shader_program *shader_program,
+int cmzn_shaderprogram_execute_textures(cmzn_shaderprogram_id shader_program,
 	struct Texture *texture, struct Texture *second_texture,
 	struct Texture *third_texture);
 
-int Shader_program_execute_uniforms(struct Shader_program *program,
+int cmzn_shaderprogram_execute_uniforms(cmzn_shaderprogram_id program,
 	cmzn_shaderuniforms_id uniforms);
 #endif
 
-unsigned int Shader_program_get_glslprogram(struct Shader_program *program);
+unsigned int cmzn_shaderprogram_get_glslprogram(cmzn_shaderprogram_id program);
 
-enum Shader_program_shader_type Shader_program_get_shader_type(struct Shader_program *program);
+enum cmzn_shaderprogram_shader_type cmzn_shaderprogram_get_shader_type(cmzn_shaderprogram_id program);
 
-enum Shader_program_type Shader_program_get_type(struct Shader_program *program);
+enum cmzn_shaderprogram_type cmzn_shaderprogram_get_type(cmzn_shaderprogram_id program);
 
-int cmzn_shader_program_destroy(struct Shader_program **shader_program_address);
+int cmzn_shaderprogram_set_type(cmzn_shaderprogram_id shaderprogram,
+	enum cmzn_shaderprogram_type type);
 
-struct Shader_program *cmzn_shader_program_access(struct Shader_program *shader_program);
+int cmzn_shader_program_destroy(cmzn_shaderprogram_id *shader_program_address);
 
-int Shader_program_set_vertex_string(Shader_program *shader_program_to_be_modified,
-	const char *vertex_program_string);
+cmzn_shaderprogram_id cmzn_shader_program_access(cmzn_shaderprogram_id shader_program);
 
-int Shader_program_set_fragment_string(Shader_program *shader_program_to_be_modified,
-	const char *fragment_program_string);
-
-int Shader_program_set_geometry_string(Shader_program *shader_program_to_be_modified,
+int cmzn_shaderprogram_set_geometry_string(cmzn_shaderprogram_id shader_program_to_be_modified,
 	const char *geometry_program_string);
 
-char *Shader_program_get_vertex_string(Shader_program *program);
+char *cmzn_shaderprogram_get_geometry_string(cmzn_shaderprogram_id program);
 
-char *Shader_program_get_fragment_string(Shader_program *program);
-
-char *Shader_program_get_geometry_string(Shader_program *program);
 
 #endif

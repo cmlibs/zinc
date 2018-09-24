@@ -54,6 +54,7 @@ return to direct rendering, as described with these routines.
 #include "graphics/render_gl.h"
 #include "graphics/material.hpp"
 #include "graphics/spectrum.hpp"
+#include "graphics/shader.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/shader_uniforms.hpp"
 
@@ -374,10 +375,10 @@ material results.
 
 		if (material->program)
 		{
-			 Shader_program_execute(material->program, renderer);
-			 Shader_program_execute_textures(material->program, material->image_texture.texture,
+			 cmzn_shaderprogram_execute(material->program, renderer);
+			 cmzn_shaderprogram_execute_textures(material->program, material->image_texture.texture,
 				material->second_image_texture.texture, material->third_image_texture.texture);
-			 Shader_program_execute_uniforms(material->program, material->uniforms);
+			 cmzn_shaderprogram_execute_uniforms(material->program, material->uniforms);
 			if (material->image_texture.texture)
 			{
 #if defined(GL_VERSION_2_0) || (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program)
@@ -426,11 +427,11 @@ material results.
 							normal_scaling[2] = 1.0;
 						}
 						normal_scaling[3] = 0.0;
-						enum Shader_program_shader_type shader_type =
-							Shader_program_get_shader_type(material->program);
+						enum cmzn_shaderprogram_shader_type shader_type =
+							cmzn_shaderprogram_get_shader_type(material->program);
 						if (shader_type)
 						{
-							GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
+							GLuint currentProgram = (GLuint)cmzn_shaderprogram_get_glslprogram(material->program);
 							if (glIsProgram(currentProgram))
 							{
 								loc1 = glGetUniformLocation(currentProgram,"normal_scaling");
@@ -542,7 +543,6 @@ private:
 	cmzn_material *defaultSelectedMaterial;
 	cmzn_material *defaultSurfaceMaterial;
 	struct MANAGER(cmzn_spectrum) *spectrumManager;
-	struct LIST(Shader_program) *shaderProgramList;
 	int access_count;
 
 	cmzn_materialmodule() :
@@ -551,7 +551,6 @@ private:
 		defaultSelectedMaterial(0),
 		defaultSurfaceMaterial(0),
 		spectrumManager(0),
-		shaderProgramList(CREATE(LIST(Shader_program))()),
 		access_count(1)
 	{
 	}
@@ -564,7 +563,6 @@ private:
 			cmzn_material_destroy(&this->defaultSelectedMaterial);
 		if (this->defaultSurfaceMaterial)
 			cmzn_material_destroy(&this->defaultSurfaceMaterial);
-		DESTROY(LIST(Shader_program))(&shaderProgramList);
 		/* Make sure each material no longer points at this module */
 		FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 			Graphical_material_remove_module_if_matching, (void *)this,
@@ -604,11 +602,6 @@ public:
 	void setSpectrumManager(struct MANAGER(cmzn_spectrum) *spectrum_manager)
 	{
 		spectrumManager = spectrum_manager;
-	}
-
-	struct LIST(Shader_program) *getMaterialProgramList()
-	{
-		return shaderProgramList;
 	}
 
 	struct MANAGER(cmzn_spectrum) *getSpectrumManager()
@@ -1132,13 +1125,13 @@ cmzn_material *cmzn_material_create_private()
 		material->lit_volume_normal_scaling[1] = 1.0;
 		material->lit_volume_normal_scaling[2] = 1.0;
 		material->lit_volume_normal_scaling[3] = 1.0;
-		material->program = (struct Shader_program *)NULL;
+		material->program = (cmzn_shaderprogram_id )NULL;
 		material->uniforms = 0;
 		material->isManagedFlag = false;
 		material->manager = (struct MANAGER(cmzn_material) *)NULL;
 		material->manager_change_status = MANAGER_CHANGE_NONE(cmzn_material);
 		material->executed_as_order_independent = 0;
-		material->order_program = (struct Shader_program *)NULL;
+		material->order_program = (cmzn_shaderprogram_id )NULL;
 #if defined (OPENGL_API)
 				material->display_list=0;
 				material->brightness_texture_id=0;
@@ -1223,11 +1216,11 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			Material_image_texture_reset(&(material->fourth_image_texture));
 			if (material->program)
 			{
-				cmzn_shader_program_destroy(&(material->program));
+				cmzn_shaderprogram_destroy(&(material->program));
 			}
 			if (material->order_program)
 			{
-				cmzn_shader_program_destroy(&(material->order_program));
+				cmzn_shaderprogram_destroy(&(material->order_program));
 			}
 			if (material->uniforms)
 			{
@@ -1426,7 +1419,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_material,name)
 		{
 			destination->module = (struct cmzn_materialmodule *)NULL;
 		}
-		REACCESS(Shader_program)(&destination->program, source->program);
+		REACCESS(cmzn_shaderprogram)(&destination->program, source->program);
 		destination->lit_volume_normal_scaling[0] =
 			source->lit_volume_normal_scaling[0];
 		destination->lit_volume_normal_scaling[1] =
@@ -2501,49 +2494,42 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int material_update_shader_program(cmzn_material *material_to_be_modified,
-	 struct cmzn_materialmodule *materialmodule, enum Shader_program_type type, int return_code)
+int material_update_shader_program(cmzn_shadermodule_id shadermodule, cmzn_material *material_to_be_modified,
+	 struct cmzn_materialmodule *materialmodule, enum cmzn_shaderprogram_type type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
 DESCRIPTION : Check the shader program and renew it if necessary.
 ==============================================================================*/
 {
-	 ENTER(material_update_shader_program);
 	 if (!material_to_be_modified->program ||
-			(Shader_program_get_type(material_to_be_modified->program) != type))
+			(cmzn_shaderprogram_get_type(material_to_be_modified->program) != type))
 	 {
-			if (material_to_be_modified->program)
-			{
-				 cmzn_shader_program_destroy(&material_to_be_modified->program);
-			}
-			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Shader_program,type)(
-				type, materialmodule->getMaterialProgramList());
-			if (material_to_be_modified->program)
-			{
-				 cmzn_shader_program_access(material_to_be_modified->program);
-			}
-			else
-			{
-				material_to_be_modified->program = cmzn_shader_program_access(
-					CREATE(Shader_program)(type));
-				 if (material_to_be_modified->program)
-				 {
-						ADD_OBJECT_TO_LIST(Shader_program)(material_to_be_modified->program,
-							 materialmodule->getMaterialProgramList());
-				 }
-				 else
-				 {
-						return_code = 0;
-				 }
-			}
+		if (material_to_be_modified->program)
+		{
+			 cmzn_shaderprogram_destroy(&material_to_be_modified->program);
+		}
+		material_to_be_modified->program = cmzn_shadermodule_find_shaderprogram_by_type(
+			shadermodule, type);
+		if (!material_to_be_modified->program)
+		{
+			material_to_be_modified->program = cmzn_shadermodule_create_shaderprogram(shadermodule);
+
+			 if (material_to_be_modified->program)
+			 {
+				 cmzn_shaderprogram_set_type(material_to_be_modified->program, type);
+			 }
+			 else
+			 {
+					return_code = 0;
+			 }
+		}
 	 }
-	 LEAVE;
 
 	 return return_code;
 }
 
-int set_shader_program_type(cmzn_material *material_to_be_modified,
+int set_shader_program_type(cmzn_shadermodule_id shadermodule, cmzn_material *material_to_be_modified,
 	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
 	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
 	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
@@ -2597,8 +2583,8 @@ NOTE: I use the pointer to the materialmodule from the material.
 
 	 material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 
-	 return_code = material_update_shader_program(material_to_be_modified,
-			material_to_be_modified->module, (Shader_program_type)type, return_code);
+	 return_code = material_update_shader_program(shadermodule, material_to_be_modified,
+			material_to_be_modified->module, (cmzn_shaderprogram_type)type, return_code);
 
 	 return return_code;
 }
@@ -2633,65 +2619,92 @@ the one in material, it is used for setting up the GUI.
 }
 
 /**************************************************************************//**
- * Sets the material to use a #Shader_program with user specified strings
+ * Sets the material to use a #cmzn_shaderprogram with user specified strings
  * for the vertex_program and fragment_program.
  */
-int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
-	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string)
+int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
+	cmzn_material *material_to_be_modified,	char *vertex_program_string,
+	char *fragment_program_string, char *geometry_program_string)
 {
-	int return_code;
-	struct Shader_program *old_program;
-
-	ENTER(Material_set_shader_program_strings);
-
-	old_program = material_to_be_modified->program;
-	if (old_program)
+	if (shadermodule && material_to_be_modified)
 	{
-#if defined (OPENGL_API)
-		if (!vertex_program_string)
+		cmzn_shaderprogram_id old_program;
+		old_program = material_to_be_modified->program;
+		char *vs = 0, *fs = 0, *gs = 0;
+		if (old_program)
 		{
-			vertex_program_string = Shader_program_get_vertex_string(old_program);
+	#if defined (OPENGL_API)
+			if (!vertex_program_string)
+			{
+				vs = cmzn_shaderprogram_get_vertex_string(old_program);
+			}
+			else
+			{
+				vs = duplicate_string(vertex_program_string);
+			}
+			if (!fragment_program_string)
+			{
+				fs = cmzn_shaderprogram_get_fragment_string(old_program);
+			}
+			else
+			{
+				fs = duplicate_string(fragment_program_string);
+			}
+			if (!geometry_program_string)
+			{
+				gs = cmzn_shaderprogram_get_geometry_string(old_program);
+			}
+			else
+			{
+				gs = duplicate_string(geometry_program_string);
+			}
+	#endif /* defined (OPENGL_API) */
 		}
-		if (!fragment_program_string)
+		else
 		{
-			fragment_program_string = Shader_program_get_fragment_string(old_program);
+			if (vertex_program_string)
+				vs = duplicate_string(vertex_program_string);
+			if (fragment_program_string)
+			{
+				fs = duplicate_string(fragment_program_string);
+			}
+			if (geometry_program_string)
+			{
+				gs = duplicate_string(geometry_program_string);
+			}
 		}
-		if (!geometry_program_string)
-		{
-			geometry_program_string = Shader_program_get_geometry_string(old_program);
-		}
-#endif /* defined (OPENGL_API) */
-	}
-	material_to_be_modified->program = cmzn_shader_program_access(
-		Shader_program_create_from_program_strings(
-			vertex_program_string, fragment_program_string, geometry_program_string));
-	if (vertex_program_string)
-	{
-		DEALLOCATE(vertex_program_string);
-	}
-	if (fragment_program_string)
-	{
-		DEALLOCATE(fragment_program_string);
-	}
-	if (geometry_program_string)
-	{
-		DEALLOCATE(geometry_program_string);
-	}
-	if (material_to_be_modified->program)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	if (old_program)
-	{
-		cmzn_shader_program_destroy(&old_program);
-	}
-	LEAVE;
 
-	return return_code;
+		material_to_be_modified->program = cmzn_shadermodule_create_shaderprogram(shadermodule);
+		if (material_to_be_modified->program)
+		{
+			if (vs)
+			{
+				cmzn_shaderprogram_set_vertex_string(material_to_be_modified->program, vs);
+				DEALLOCATE(vs);
+			}
+			if (fs)
+			{
+				cmzn_shaderprogram_set_fragment_string(material_to_be_modified->program, fs);
+				DEALLOCATE(fs);
+			}
+			if (gs)
+			{
+				cmzn_shaderprogram_set_geometry_string(material_to_be_modified->program, gs);
+				DEALLOCATE(gs);
+			}
+		}
+		if (old_program)
+		{
+			cmzn_shaderprogram_destroy(&old_program);
+		}
+		if (material_to_be_modified->program)
+		{
+			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int list_Graphical_material(cmzn_material *material,void *dummy)
@@ -2716,7 +2729,7 @@ Writes the properties of the <material> to the command window.
 		sprintf(line,"  access count = %i\n",material->access_count);
 		if (material->program)
 		{
-			enum Shader_program_type type = Shader_program_get_type(material->program);
+			enum cmzn_shaderprogram_type type = cmzn_shaderprogram_get_type(material->program);
 			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Standard Gouraud Shading (program)\n");
@@ -2830,7 +2843,7 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			enum Shader_program_type type = Shader_program_get_type(material->program);
+			enum cmzn_shaderprogram_type type = cmzn_shaderprogram_get_type(material->program);
 			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				display_message(INFORMATION_MESSAGE," normal_mode");
@@ -2944,7 +2957,7 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		if (material->program)
 		{
-			enum Shader_program_type type = Shader_program_get_type(material->program);
+			enum cmzn_shaderprogram_type type = cmzn_shaderprogram_get_type(material->program);
 			if (SHADER_PROGRAM_CLASS_GOURAUD_SHADING & type)
 			{
 				 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
@@ -3164,7 +3177,7 @@ int Material_compile_members_opengl(cmzn_material *material,
 	if (material)
 	{
 		material->executed_as_order_independent = 0;
-		cmzn_shader_program_destroy(&material->order_program);
+		cmzn_shaderprogram_destroy(&material->order_program);
 		return_code = 1;
 		if (GRAPHICS_COMPILED != material->compile_status)
 		{
@@ -3212,7 +3225,7 @@ int Material_compile_members_opengl(cmzn_material *material,
 
 			if (material->program)
 			{
-				Shader_program_compile(material->program, renderer);
+				cmzn_shaderprogram_compile(material->program, renderer);
 			}
 			material->compile_status = GRAPHICS_COMPILED;
 		}
@@ -3297,7 +3310,7 @@ will work with order_independent_transparency.
 	int dimension;
 	struct Material_order_independent_transparency *data;
 	struct cmzn_materialmodule *materialmodule;
-	struct Shader_program *unmodified_program;
+	cmzn_shaderprogram_id unmodified_program;
 
 	ENTER(compile_Graphical_material_for_order_independent_transparency);
 
@@ -3314,7 +3327,7 @@ will work with order_independent_transparency.
 			unmodified_program = material->program;
 			if (material->program)
 			{
-				modified_type = Shader_program_get_type(material->program);
+				modified_type = cmzn_shaderprogram_get_type(material->program);
 			}
 			else
 			{
@@ -3407,33 +3420,21 @@ will work with order_independent_transparency.
 					with order_independent_transparency again but need more
 					compilation states then.
 			} */
+			cmzn_shaderprogram_id orderProgram = 0;
 
 			if (modified_type != SHADER_PROGRAM_CLASS_GOURAUD_SHADING)
 			{
-				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
-					Shader_program,type)((Shader_program_type)modified_type,
-						materialmodule->getMaterialProgramList())))
-				{
-					material->program = cmzn_shader_program_access(
-						CREATE(Shader_program)((Shader_program_type)modified_type));
-					if (material->program)
-					{
-						ADD_OBJECT_TO_LIST(Shader_program)(material->program,
-							materialmodule->getMaterialProgramList());
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				Shader_program_compile(material->program, data->renderer);
+				orderProgram = cmzn_shaderprogram_create_private();
+				material->program = orderProgram;
+				cmzn_shaderprogram_set_type(material->program, (cmzn_shaderprogram_type)modified_type);
+				cmzn_shaderprogram_compile(material->program, data->renderer);
 			}
 
 			if (data->renderer->use_display_list)
 			{
 				glNewList(material->display_list,GL_COMPILE);
 				if (material->program &&
-						(Shader_program_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_ARB))
+						(cmzn_shaderprogram_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_ARB))
 				{
 					if (material->image_texture.texture)
 					{
@@ -3443,12 +3444,12 @@ will work with order_independent_transparency.
 				}
 				direct_render_Graphical_material(material,data->renderer);
 				if (material->program &&
-						(Shader_program_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_GLSL))
+						(cmzn_shaderprogram_get_shader_type(material->program) == SHADER_PROGRAM_SHADER_GLSL))
 				{
 					GLint loc1;
 					if (data && data->renderer)
 					{
-						GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
+						GLuint currentProgram = (GLuint)cmzn_shaderprogram_get_glslprogram(material->program);
 						if (glIsProgram(currentProgram))
 						{
 							loc1 = glGetUniformLocation(currentProgram,"texturesize");
@@ -3470,9 +3471,11 @@ will work with order_independent_transparency.
 			else
 			{
 				material->executed_as_order_independent = 1;
-				REACCESS(Shader_program)(&material->order_program, material->program);
+				REACCESS(cmzn_shaderprogram)(&material->order_program, material->program);
 			}
 			material->program = unmodified_program;
+			if (orderProgram)
+				cmzn_shaderprogram_destroy(&orderProgram);
 		}
 	}
 	else
@@ -3520,9 +3523,9 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				if (material->image_texture.texture)
 				{
-					if (Shader_program_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
+					if (cmzn_shaderprogram_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
 					{
-						GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->order_program);
+						GLuint currentProgram = (GLuint)cmzn_shaderprogram_get_glslprogram(material->order_program);
 						Texture_execute_vertex_program_environment(material->image_texture.texture,
 							currentProgram);
 						GLint loc1 = glGetUniformLocation(currentProgram,"texture0");
@@ -3536,16 +3539,16 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					}
 				}
 			}
-			struct Shader_program *temp_program = material->program;
+			cmzn_shaderprogram_id temp_program = material->program;
 			if (material->order_program)
 				material->program = material->order_program;
 			return_code = direct_render_Graphical_material(material, renderer);
 			material->program = temp_program;
 			if (material->order_program)
 			{
-				if (Shader_program_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
+				if (cmzn_shaderprogram_get_shader_type(material->order_program) == SHADER_PROGRAM_SHADER_GLSL)
 				{
-					GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->order_program);
+					GLuint currentProgram = (GLuint)cmzn_shaderprogram_get_glslprogram(material->order_program);
 					GLint loc1=-1;
 					loc1 = glGetUniformLocation(currentProgram,"texturesize");
 					if (loc1>-1)
@@ -3590,13 +3593,13 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						0);
 				}
 #if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
-				enum Shader_program_shader_type shader_type =
-					Shader_program_get_shader_type(material->program);
+				enum cmzn_shaderprogram_shader_type shader_type =
+					cmzn_shaderprogram_get_shader_type(material->program);
 				if (material->spectrum && (shader_type != SHADER_PROGRAM_SHADER_NONE))
 				{
 					int i, lookup_dimensions, *lookup_sizes;
 					GLfloat values[4];
-					GLuint currentProgram = (GLuint)Shader_program_get_glslprogram(material->program);
+					GLuint currentProgram = (GLuint)cmzn_shaderprogram_get_glslprogram(material->program);
 					Spectrum_get_colour_lookup_sizes(material->spectrum,
 						&lookup_dimensions, &lookup_sizes);
 					/* Set the offsets = 0.5 / size */
@@ -3729,6 +3732,25 @@ direct_render_Graphical_material.
 } /* execute_Graphical_material */
 #endif /* defined (OPENGL_API) */
 
+int cmzn_material_shaderprogram_changed(cmzn_material *material, void *message_void)
+{
+	struct MANAGER_MESSAGE(cmzn_shaderprogram) *message =
+		(struct MANAGER_MESSAGE(cmzn_shaderprogram) *)message_void;
+	int return_code = 0;
+
+	if (material && message)
+	{
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_shaderprogram)(message, material->program);
+		if (change & MANAGER_CHANGE_RESULT(cmzn_shaderprogram))
+		{
+			material->compile_status = GRAPHICS_NOT_COMPILED;
+		}
+		return_code = 1;
+	}
+
+	return return_code;
+}
+
 int material_deaccess_shader_program(cmzn_material *material_to_be_modified)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
@@ -3741,7 +3763,7 @@ deaccess the shader program from the material.
 
 	 if (material_to_be_modified && material_to_be_modified->program)
 	 {
-			cmzn_shader_program_destroy(&material_to_be_modified->program);
+			cmzn_shaderprogram_destroy(&material_to_be_modified->program);
 			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 			material_to_be_modified->per_pixel_lighting_flag = 0;
 			material_to_be_modified->bump_mapping_flag = 0;
@@ -3998,6 +4020,34 @@ int cmzn_material_set_shaderuniforms(cmzn_material_id material,
 
 	return CMZN_ERROR_ARGUMENT;
 }
+
+cmzn_shaderprogram_id cmzn_material_get_shaderprogram(cmzn_material_id material)
+{
+	if (material)
+	{
+		if (material->program)
+			return cmzn_shaderprogram_access(material->program);
+	}
+	return 0;
+}
+
+int cmzn_material_set_shaderprogram(cmzn_material_id material,
+	cmzn_shaderprogram_id shaderprogram)
+{
+	if (material)
+	{
+		REACCESS(cmzn_shaderprogram)(&(material->program), shaderprogram);
+		if (material->manager)
+		{
+			Graphical_material_changed(material);
+		}
+		material->compile_status = GRAPHICS_NOT_COMPILED;
+		return CMZN_OK;
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}
+
 
 class cmzn_material_attribute_conversion
 {

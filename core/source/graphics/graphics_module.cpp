@@ -47,6 +47,7 @@ struct cmzn_graphics_module
 	cmzn_tessellationmodule_id tessellationmodule;
 	cmzn_shadermodule_id shadermodule;
 	void *tessellation_manager_callback_id;
+	void *shaderprogram_manager_callback_id;
 	cmzn_timekeepermodule *timekeepermodule;
 	int access_count;
 	std::list<cmzn_region*> *member_regions_list;
@@ -147,6 +148,23 @@ void cmzn_graphics_module_spectrum_manager_callback(
 	}
 }
 
+void cmzn_graphics_module_shaderprogram_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_shaderprogram) *message, void *graphics_module_void)
+{
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
+	if (message && graphics_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_shaderprogram)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_shaderprogram))
+		{
+			FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
+				cmzn_material_shaderprogram_changed, (void *)message,
+				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+		}
+	}
+}
+
+
 /**
  * Callback for changes in the tessellation manager.
  * Informs all scenes about the changes.
@@ -243,6 +261,9 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->tessellation_manager_callback_id =
 				MANAGER_REGISTER(cmzn_tessellation)(cmzn_graphics_module_tessellation_manager_callback,
 					(void *)module, cmzn_tessellationmodule_get_manager(module->tessellationmodule));
+			module->shaderprogram_manager_callback_id =
+				MANAGER_REGISTER(cmzn_shaderprogram)(cmzn_graphics_module_shaderprogram_manager_callback,
+					(void *)module, cmzn_shadermodule_get_program_manager(module->shadermodule));
 			module->access_count = 1;
 		}
 		else
@@ -330,6 +351,9 @@ int cmzn_graphics_module_destroy(
 			MANAGER_DEREGISTER(cmzn_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+			MANAGER_DEREGISTER(cmzn_shaderprogram)(
+				graphics_module->shaderprogram_manager_callback_id,
+				cmzn_shadermodule_get_program_manager(graphics_module->shadermodule));
 			MANAGER_DEREGISTER(cmzn_spectrum)(
 				graphics_module->spectrum_manager_callback_id, cmzn_spectrummodule_get_manager(graphics_module->spectrummodule));
 			MANAGER_DEREGISTER(cmzn_tessellation)(

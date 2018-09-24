@@ -31,7 +31,10 @@ cmzn_shadermodule_id cmzn_shadermodule_create();
 struct MANAGER(cmzn_shaderuniforms) *cmzn_shadermodule_get_uniforms_manager(
 		cmzn_shadermodule_id shadermodule);
 
-struct MANAGER(Shader_program) *Shader_program_get_program_manager(
-		Shader_program *program);
+struct MANAGER(cmzn_shaderprogram) *cmzn_shadermodule_get_program_manager(
+		cmzn_shadermodule_id shadermodule);
+
+cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_type(
+		cmzn_shadermodule_id shadermodule, int type);
 
 #endif

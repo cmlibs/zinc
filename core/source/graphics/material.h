@@ -100,7 +100,7 @@ The properties of a material.
 	/* callback if the spectrum changes */
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
-	   Shader_programs */
+	   cmzn_shaderprograms */
 	struct cmzn_materialmodule *module;
 	/* The normal calculated from the volume texture needs to be
 		scaled similarly to how it is scaled into coordinate space,
@@ -108,14 +108,14 @@ The properties of a material.
 		Four components as that is what ProgramEnvParameter4fvARB wants. */
 	ZnReal lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
-	struct Shader_program *program;
+	cmzn_shaderprogram_id program;
 	int access_count, per_pixel_lighting_flag, bump_mapping_flag;
 	/* this flag is for external API uses. If a material is set to be persistent
 		 then this material will not be removed from the manager after destroy.
 	 */
 	bool isManagedFlag;
 	int executed_as_order_independent;
-	struct Shader_program *order_program;
+	cmzn_shaderprogram_id order_program;
 	cmzn_shaderuniforms_id uniforms;
 
 public:
@@ -405,7 +405,7 @@ with the specified name.  If one is not found a new one is created with the
 specified name and the default properties.
 ==============================================================================*/
 
-int set_shader_program_type(cmzn_material *material_to_be_modified,
+int set_shader_program_type(cmzn_shadermodule_id shadermodule, cmzn_material *material_to_be_modified,
 	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
 	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
 	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
@@ -439,6 +439,8 @@ Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency.
 ==============================================================================*/
 
+int cmzn_material_shaderprogram_changed(cmzn_material *material, void *message_void);
+
 /***************************************************************************//**
  * Sets the Graphics_module object which will own this manager.
  * Private! Only to be called only from Graphics_module object.
@@ -451,9 +453,9 @@ int Material_manager_set_owner(struct MANAGER(cmzn_material) *manager,
 
 int material_deaccess_shader_program(cmzn_material *material_to_be_modified);
 
-int Material_set_shader_program_strings(cmzn_material *material_to_be_modified,
-	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string);
-
+int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
+	cmzn_material *material_to_be_modified, char *vertex_program_string,
+	char *fragment_program_string, char *geometry_program_string);
 
 struct cmzn_materialmodule *manager_get_owner_cmzn_material(manager_cmzn_material *manager);
 

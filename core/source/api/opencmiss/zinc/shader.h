@@ -45,16 +45,6 @@ ZINC_API int cmzn_shadermodule_destroy(
     cmzn_shadermodule_id *shadermodule_address);
 
 /**
- * Create and return a new shader uniforms.
- *
- * @param shadermodule  The handle to the shader module the
- * shader will belong to.
- * @return  Handle to new shader program, or NULL/invalid handle on failure.
- */
-ZINC_API cmzn_shaderuniforms_id cmzn_shadermodule_create_shaderuniforms(
-    cmzn_shadermodule_id shadermodule);
-
-/**
  * Begin caching or increment cache level for this shader module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
@@ -79,11 +69,22 @@ ZINC_API int cmzn_shadermodule_begin_change(cmzn_shadermodule_id shadermodule);
 ZINC_API int cmzn_shadermodule_end_change(cmzn_shadermodule_id shadermodule);
 
 /**
+ * Create and return a new shader uniforms.
+ *
+ * @param shadermodule  The handle to the shader module the
+ * shader will belong to.
+ * @return  Handle to new shader uniforms, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shaderuniforms_id cmzn_shadermodule_create_shaderuniforms(
+    cmzn_shadermodule_id shadermodule);
+
+
+/**
  * Find the shader uniforms with the specified name, if any.
  *
  * @param shadermodule  Shader module to search.
  * @param name  The name of the shader uniforms.
- * @return  Handle to shader, or NULL/invalid handle if not found or failed.
+ * @return  Handle to shader uniforms, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_shaderuniforms_id cmzn_shadermodule_find_shaderuniforms_by_name(
     cmzn_shadermodule_id shadermodule, const char *name);
@@ -239,6 +240,154 @@ ZINC_API char *cmzn_shaderuniforms_get_name(cmzn_shaderuniforms_id shaderuniform
  * any other value on failure.
  */
 ZINC_API int cmzn_shaderuniforms_set_name(cmzn_shaderuniforms_id shaderuniforms, const char *name);
+
+/**
+ * Create and return a new shader program.
+ *
+ * @param shadermodule  The handle to the shader module the
+ * shader will belong to.
+ * @return  Handle to new shader program, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_create_shaderprogram(
+    cmzn_shadermodule_id shadermodule);
+
+/**
+ * Find the shader program with the specified name, if any.
+ *
+ * @param shadermodule  Shader module to search.
+ * @param name  The name of the shader uniforms.
+ * @return  Handle to shader program, or NULL/invalid handle if not found or failed.
+ */
+ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_name(
+    cmzn_shadermodule_id shadermodule, const char *name);
+
+
+/**
+ * Create and return a new shader uniforms.
+ *
+ * @param shadermodule  The handle to the shader module the
+ * shader will belong to.
+ * @return  Handle to new shader program, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_create_shaderprogram(
+    cmzn_shadermodule_id shadermodule);
+
+
+/**
+ * Find the shader uniforms with the specified name, if any.
+ *
+ * @param shadermodule  Shader module to search.
+ * @param name  The name of the shader uniforms.
+ * @return  Handle to shader program, or NULL/invalid handle if not found or failed.
+ */
+ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_name(
+    cmzn_shadermodule_id shadermodule, const char *name);
+
+/**
+ * Returns a new handle to the shader program with reference count incremented.
+ *
+ * @param shaderprogram  Handle to shaderprogram.
+ * @return  New handle to shader program, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shaderprogram_id cmzn_shaderprogram_access(
+	cmzn_shaderprogram_id shaderprogram);
+
+/**
+ * Destroys handle to the shader program (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param shaderprogram_address  The address to the handle of the shader program
+ *    to be destroyed.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_shaderprogram_destroy(cmzn_shaderprogram_id *shaderprogram_address);
+
+/**
+ * Get managed status of shader program in its owning shader module.
+ * @see cmzn_shaderprogram_set_managed
+ *
+ * @param shaderprogram  The shader program to query.
+ * @return  1 (true) if shader program is managed, otherwise 0 (false).
+ */
+ZINC_API bool cmzn_shaderprogram_is_managed(cmzn_shaderprogram_id shaderprogram);
+
+/**
+ * Set managed status of shader program in its owning shader module.
+ * If set (managed) the shader program will remain indefinitely in the shader program
+ * module even if no external references are held.
+ * If not set (unmanaged) the shader program will be automatically removed from the
+ * module when no longer referenced externally, effectively marking it as
+ * pending destruction.
+ * All new objects are unmanaged unless stated otherwise.
+ *
+ * @param shaderprogram  The shader program to modify.
+ * @param value  The new value for the managed flag: true or false.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_shaderprogram_set_managed(cmzn_shaderprogram_id shaderprogram,
+    bool value);
+
+/**
+ * Return an allocated string containing shader program name.
+ *
+ * @param shaderprogram  handle to the zinc shader program.
+ * @return  allocated string containing shader program name, or NULL on failure.
+ * Up to caller to free using cmzn_deallocate().
+ */
+ZINC_API char *cmzn_shaderprogram_get_name(cmzn_shaderprogram_id shaderprogram);
+
+/**
+ * Set/change name for shader program. Must be unique in the shader program module.
+ *
+ * @param shaderprogram  The handle to zinc shader program.
+ * @param name  name to be set to the shader program
+ * @return  status CMZN_OK if successfully set/change name for shader program,
+ * any other value on failure.
+ */
+ZINC_API int cmzn_shaderprogram_set_name(cmzn_shaderprogram_id shaderprogram, const char *name);
+
+/**
+ * Get the vertex shader that has been set for this program.
+ *
+ * @param shaderprogram  The handle to zinc shader program.
+ * @return  allocated string of the vertex shader this should be freed afterward,
+ * 0 on failure.
+ */
+char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id shaderprogram);
+
+/**
+ * Set/change the vertex shader to be compiled for shader program. The provided
+ * string will be compiled at run time if no error is encounter.
+ *
+ * @param shaderprogram  The handle to zinc shader program.
+ * @param vertex_program_string  string for the vertex shader to be compiled
+ * @return  status CMZN_OK if successfully set/change vertex string for shader program,
+ * any other value on failure.
+ */
+int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderprogram,
+	const char *vertex_program_string);
+
+/**
+ * Get the fragment shader that has been set for this program.
+ *
+ * @param shaderprogram  The handle to zinc shader program.
+ * @return  allocated string of the fragment shader this should be freed afterward,
+ * 0 on failure.
+ */
+char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id shaderprogram);
+
+/**
+ * Set/change the fragment shader to be compiled for shader program. The provided
+ * string will be compiled at run time if no error is encounter.
+ *
+ * @param shaderprogram  The handle to zinc shader program.
+ * @param fragment_program_string  string for the fragment shader to be compiled
+ * @return  status CMZN_OK if successfully set/change vertex string for shader program,
+ * any other value on failure.
+ */
+int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id shaderprogram,
+	const char *fragment_program_string);
+
 
 #ifdef __cplusplus
 }
