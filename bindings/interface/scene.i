@@ -18,6 +18,7 @@
 %import "selection.i"
 %import "timekeeper.i"
 %import "scenepicker.i"
+%import "shader.i"
 %import "spectrum.i"
 %import "streamscene.i"
 
@@ -31,6 +32,7 @@
 %{
 #include "opencmiss/zinc/scene.hpp"
 #include "opencmiss/zinc/scenepicker.hpp"
+#include "opencmiss/zinc/shader.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 #include "opencmiss/zinc/streamscene.hpp"
 #include "opencmiss/zinc/sceneviewer.hpp"
