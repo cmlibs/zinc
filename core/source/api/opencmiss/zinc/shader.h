@@ -353,7 +353,7 @@ ZINC_API int cmzn_shaderprogram_set_name(cmzn_shaderprogram_id shaderprogram, co
  * @return  allocated string of the vertex shader this should be freed afterward,
  * 0 on failure.
  */
-char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id shaderprogram);
+ZINC_API char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id shaderprogram);
 
 /**
  * Set/change the vertex shader to be compiled for shader program. The provided
@@ -364,7 +364,7 @@ char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id shaderprogram);
  * @return  status CMZN_OK if successfully set/change vertex string for shader program,
  * any other value on failure.
  */
-int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderprogram,
+ZINC_API int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderprogram,
 	const char *vertex_program_string);
 
 /**
@@ -374,7 +374,7 @@ int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderprogram,
  * @return  allocated string of the fragment shader this should be freed afterward,
  * 0 on failure.
  */
-char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id shaderprogram);
+ZINC_API char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id shaderprogram);
 
 /**
  * Set/change the fragment shader to be compiled for shader program. The provided
@@ -385,7 +385,7 @@ char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id shaderprogram
  * @return  status CMZN_OK if successfully set/change vertex string for shader program,
  * any other value on failure.
  */
-int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id shaderprogram,
+ZINC_API int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id shaderprogram,
 	const char *fragment_program_string);
 
 
