@@ -159,7 +159,7 @@ public:
 		return 0;
 	}
 
-	int setValues(int numberOfComponent, int *valuesIn)
+	int setValues(int numberOfComponent, const int *valuesIn)
 	{
 		if (values)
 		{
@@ -387,7 +387,7 @@ public:
 		return 0;
 	}
 
-	int addUniformInteger(const char *name, int numberOfComponents, int *values)
+	int addUniformInteger(const char *name, int numberOfComponents, const int *values)
 	{
 		if (name && ((numberOfComponents > 0) && (numberOfComponents < 4)) && values)
 		{
@@ -408,7 +408,7 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int setUniformInteger(const char *name, int numberOfComponents, int *values)
+	int setUniformInteger(const char *name, int numberOfComponents, const int *values)
 	{
 		if (name && ((numberOfComponents > 0) && (numberOfComponents < 4)) && values)
 		{
@@ -622,7 +622,7 @@ int cmzn_shaderuniforms_get_uniform_integer(cmzn_shaderuniforms_id shaderuniform
 }
 
 int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, int *valuesIn)
+	const char *name, int valuesCount, const int *valuesIn)
 {
 	if (shaderuniforms)
 	{
@@ -633,7 +633,7 @@ int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shaderuniform
 }
 
 int cmzn_shaderuniforms_set_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, int *valuesIn)
+	const char *name, int valuesCount, const int *valuesIn)
 {
 	if (shaderuniforms)
 	{
@@ -661,7 +661,7 @@ int cmzn_shaderuniforms_get_uniform_double(cmzn_shaderuniforms_id shaderuniforms
 }
 
 int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, double *valuesIn)
+	const char *name, int valuesCount, const double *valuesIn)
 {
 	if (shaderuniforms)
 	{
@@ -678,7 +678,7 @@ int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms
 }
 
 int cmzn_shaderuniforms_set_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, double *valuesIn)
+	const char *name, int valuesCount, const double *valuesIn)
 {
 	if (shaderuniforms)
 	{

@@ -191,13 +191,13 @@ public:
 			name, valuesCount, valuesOut);
 	}
 
-	int addUniformDouble(const char *name, int valuesCount, double *valuesIn)
+	int addUniformDouble(const char *name, int valuesCount, const double *valuesIn)
 	{
 		return cmzn_shaderuniforms_add_uniform_double(id,
 			name, valuesCount, valuesIn);
 	}
 
-	int setUniformDouble(const char *name, int valuesCount, double *valuesIn)
+	int setUniformDouble(const char *name, int valuesCount, const double *valuesIn)
 	{
 		return cmzn_shaderuniforms_set_uniform_double(id,
 			name, valuesCount, valuesIn);
@@ -209,13 +209,13 @@ public:
 			name, valuesCount, valuesOut);
 	}
 
-	int addUniformInteger(const char *name, int valuesCount, int *valuesIn)
+	int addUniformInteger(const char *name, int valuesCount, const int *valuesIn)
 	{
 		return cmzn_shaderuniforms_add_uniform_integer(id,
 			name, valuesCount, valuesIn);
 	}
 
-	int setUniformInteger(const char *name, int valuesCount, int *valuesIn)
+	int setUniformInteger(const char *name, int valuesCount, const int *valuesIn)
 	{
 		return cmzn_shaderuniforms_set_uniform_integer(id,
 			name, valuesCount, valuesIn);

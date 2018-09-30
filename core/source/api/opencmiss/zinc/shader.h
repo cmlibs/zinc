@@ -167,7 +167,7 @@ ZINC_API int cmzn_shaderuniforms_get_uniform_double(cmzn_shaderuniforms_id shade
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, double *valuesIn);
+	const char *name, int valuesCount, const double *valuesIn);
 
 /**
  * Set values of the specified uniform if it is found with
@@ -180,7 +180,7 @@ ZINC_API int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shade
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_set_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, double *valuesIn);
+	const char *name, int valuesCount, const double *valuesIn);
 
 /**
  * Return the size and values of the specified uniform if present.
@@ -207,7 +207,7 @@ ZINC_API int cmzn_shaderuniforms_get_uniform_integer(cmzn_shaderuniforms_id shad
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, int *valuesIn);
+	const char *name, int valuesCount, const int *valuesIn);
 
 /**
  * Set values of the specified uniform if it is found with
@@ -220,7 +220,7 @@ ZINC_API int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shad
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_set_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
-	const char *name, int valuesCount, int *valuesIn);
+	const char *name, int valuesCount, const int *valuesIn);
 
 /**
  * Return an allocated string containing shaderuniforms name.
