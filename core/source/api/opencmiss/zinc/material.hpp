@@ -10,9 +10,9 @@
 #define CMZN_MATERIAL_HPP__
 
 #include "opencmiss/zinc/material.h"
-#include "opencmiss/zinc/shader.h"
 #include "opencmiss/zinc/context.hpp"
 #include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/shader.hpp"
 
 namespace OpenCMISS
 {
