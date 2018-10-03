@@ -441,6 +441,8 @@ will work with order_independent_transparency.
 
 int cmzn_material_shaderprogram_changed(cmzn_material *material, void *message_void);
 
+int cmzn_material_shaderuniforms_changed(cmzn_material *material, void *message_void);
+
 /***************************************************************************//**
  * Sets the Graphics_module object which will own this manager.
  * Private! Only to be called only from Graphics_module object.

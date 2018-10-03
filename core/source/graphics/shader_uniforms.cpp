@@ -208,14 +208,6 @@ public:
 	}
 };
 
-struct cmzn_shaderuniforms_change_detail
-{
-	virtual ~cmzn_shaderuniforms_change_detail()
-	{
-	}
-};
-
-
 struct cmzn_shaderuniforms
 {
 private:
@@ -224,6 +216,7 @@ private:
 public:
 	const char *name;
 	struct MANAGER(cmzn_shaderuniforms) *manager;
+	cmzn_shaderuniforms_change_detail changeDetail;
 	bool is_managed_flag;
 	int manager_change_status;
 	int access_count;
@@ -339,6 +332,7 @@ public:
 			cmzn_shaderuniform_float *uniform = new cmzn_shaderuniform_float(name, numberOfComponents);
 			uniform->setValues(numberOfComponents, values);
 			uniforms.push_back(uniform);
+			this->uniformsChanged();
 			return CMZN_OK;
 		}
 
@@ -356,7 +350,11 @@ public:
 				{
 					cmzn_shaderuniform_float *uniform = dynamic_cast<cmzn_shaderuniform_float *>(*pos);
 					if (uniform)
-						return uniform->setValues(numberOfComponents, values);
+					{
+						int return_code = uniform->setValues(numberOfComponents, values);
+						this->uniformsChanged();
+						return return_code;
+					}
 					else
 						return CMZN_ERROR_ARGUMENT;
 				}
@@ -402,6 +400,7 @@ public:
 			cmzn_shaderuniform_integer *uniform = new cmzn_shaderuniform_integer(name, numberOfComponents);
 			uniform->setValues(numberOfComponents, values);
 			uniforms.push_back(uniform);
+			this->uniformsChanged();
 			return CMZN_OK;
 		}
 
@@ -419,7 +418,11 @@ public:
 				{
 					cmzn_shaderuniform_integer *uniform = dynamic_cast<cmzn_shaderuniform_integer *>(*pos);
 					if (uniform)
-						return uniform->setValues(numberOfComponents, values);
+					{
+						int return_code = uniform->setValues(numberOfComponents, values);
+						this->uniformsChanged();
+						return return_code;
+					}
 					else
 						return CMZN_ERROR_ARGUMENT;
 				}
@@ -443,13 +446,22 @@ public:
 		return CMZN_OK;
 	}
 
+	void uniformsChanged()
+	{
+		this->changeDetail.setUniformsChanged();
+		MANAGED_OBJECT_CHANGE(cmzn_shaderuniforms)(this,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_shaderuniforms));
+	}
+
 	/** clones and clears type-specific change detail, if any.
 	 * override for classes with type-specific change detail
 	 * @return  change detail prior to clearing, or NULL if none.
 	 */
-	virtual cmzn_shaderuniforms_change_detail *extract_change_detail()
+	cmzn_shaderuniforms_change_detail *extractChangeDetail()
 	{
-		return NULL;
+		cmzn_shaderuniforms_change_detail *change_detail = new cmzn_shaderuniforms_change_detail(this->changeDetail);
+		this->changeDetail.clear();
+		return change_detail;
 	}
 };
 
@@ -495,7 +507,7 @@ DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_shaderuniforms);
 inline struct cmzn_shaderuniforms_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderuniforms)(
 		cmzn_shaderuniforms *uniforms)
 {
-	return uniforms->extract_change_detail();
+	return uniforms->extractChangeDetail();
 }
 
 inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_shaderuniforms)(
@@ -555,6 +567,17 @@ int cmzn_shaderuniforms_manager_set_owner_private(struct MANAGER(cmzn_shaderunif
 	struct cmzn_shadermodule *shadermodule)
 {
 	return MANAGER_SET_OWNER(cmzn_shaderuniforms)(manager, shadermodule);
+}
+
+int cmzn_shaderuniforms_manager_message_get_object_change_and_detail(
+	struct MANAGER_MESSAGE(cmzn_shaderuniforms) *message, cmzn_shaderuniforms *shaderuniforms,
+	const cmzn_shaderuniforms_change_detail **change_detail_address)
+{
+	if (message)
+		return message->getObjectChangeFlagsAndDetail(shaderuniforms, change_detail_address);
+	if (change_detail_address)
+		*change_detail_address = 0;
+	return (MANAGER_CHANGE_NONE(cmzn_shaderuniforms));
 }
 
 struct cmzn_shaderuniforms *cmzn_shaderuniforms_create_private()

@@ -3744,6 +3744,27 @@ int cmzn_material_shaderprogram_changed(cmzn_material *material, void *message_v
 		if (change & MANAGER_CHANGE_RESULT(cmzn_shaderprogram))
 		{
 			material->compile_status = GRAPHICS_NOT_COMPILED;
+			Graphical_material_changed(material);
+		}
+		return_code = 1;
+	}
+
+	return return_code;
+}
+
+int cmzn_material_shaderuniforms_changed(cmzn_material *material, void *message_void)
+{
+	struct MANAGER_MESSAGE(cmzn_shaderuniforms) *message =
+		(struct MANAGER_MESSAGE(cmzn_shaderuniforms) *)message_void;
+	int return_code = 0;
+
+	if (material && message)
+	{
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_shaderuniforms)(message, material->uniforms);
+		if (change & MANAGER_CHANGE_RESULT(cmzn_shaderuniforms))
+		{
+			material->compile_status = GRAPHICS_NOT_COMPILED;
+			Graphical_material_changed(material);
 		}
 		return_code = 1;
 	}
@@ -4011,6 +4032,7 @@ int cmzn_material_set_shaderuniforms(cmzn_material_id material,
 	if (material)
 	{
 		REACCESS(cmzn_shaderuniforms)(&(material->uniforms), shaderuniforms);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		if (material->manager)
 		{
 			Graphical_material_changed(material);
@@ -4037,11 +4059,11 @@ int cmzn_material_set_shaderprogram(cmzn_material_id material,
 	if (material)
 	{
 		REACCESS(cmzn_shaderprogram)(&(material->program), shaderprogram);
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		if (material->manager)
 		{
 			Graphical_material_changed(material);
 		}
-		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return CMZN_OK;
 	}
 

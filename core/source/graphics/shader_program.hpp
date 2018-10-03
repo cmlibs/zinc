@@ -165,7 +165,6 @@ int cmzn_shaderprogram_manager_message_get_object_change_and_detail(
 	struct MANAGER_MESSAGE(cmzn_shaderprogram) *message, cmzn_shaderprogram *shaderprogram,
 	const cmzn_shaderprogram_change_detail **change_detail_address);
 
-
 #if defined (OPENGL_API)
 int cmzn_shaderprogram_compile(cmzn_shaderprogram_id shader_program,
 	Render_graphics_opengl *renderer);
