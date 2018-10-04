@@ -13,6 +13,56 @@
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
 
+const char *defaultVertex = "varying vec3 lightPos, eyeVertex, eyeNormal;\n"
+							"varying vec4 diffuse;\n"
+							"varying float qAttenuation, cAttenuation, lAttenuation;\n"
+							"\n"
+							"void main()\n"
+							"{\n"
+							"    gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+							"    eyeVertex = vec3(gl_ModelViewMatrix * gl_Vertex);\n"
+							"    lightPos = gl_LightSource[0].position.xyz ;\n"
+							"    eyeNormal = vec3(gl_NormalMatrix * gl_Normal);\n"
+							"    diffuse = gl_Color;\n"
+							"    qAttenuation = gl_LightSource[0].quadraticAttenuation;\n"
+							"    cAttenuation = gl_LightSource[0].constantAttenuation;\n"
+							"    lAttenuation = gl_LightSource[0].linearAttenuation;\n"
+							"    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+							"}\n";
+
+const char *defaultFragment =   "uniform int shadingMode;\n"
+								"uniform sampler2D texture0;\n"
+								"varying vec3 lightPos, eyeVertex, eyeNormal;\n"
+								"varying vec4 diffuse;\n"
+								"varying float qAttenuation, cAttenuation, lAttenuation;\n"
+								"\n"
+								"// calculate texture color based on the texture coordinates\n"
+								"vec4 showTexture() {\n"
+								"    return texture2D(texture0, vec2(gl_TexCoord[0]));\n"
+								"}\n"
+								"// per pixel lighting\n"
+								"vec3 lightingColor(vec3 inputColor) {\n"
+								"    float Len = length(lightPos - eyeVertex);\n"
+								"    vec3 lightVector = normalize(lightPos - eyeVertex);\n"
+								"    float NdotH = max(dot(eyeNormal, lightVector), 0.1);\n"
+								"    float attenuation = 1.0 / (qAttenuation * Len * Len + cAttenuation + Len * lAttenuation);\n"
+								"    return inputColor * attenuation * NdotH;\n"
+								"}\n"
+								"// main loop, calculate the shading differently depending on the mode\n"
+								"void main() {\n"
+								"    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+								"    if (shadingMode == 1)\n"
+								"    {\n"
+								"        finalColor = showTexture();\n"
+								"    }\n"
+								"    else\n"
+								"    {\n"
+								"        finalColor = diffuse;\n"
+								"    }\n"
+								"    gl_FragColor = vec4(lightingColor(vec3(finalColor)), 1.0);\n"
+								"}\n";
+
+
 /*
 Module types
 ------------
@@ -61,13 +111,14 @@ public:
 		geometry_program(0),
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		glsl_current_program(0),
-		vertex_program_string(0),
+		vertex_program_string(duplicate_string(defaultVertex)),
 		geometry_program_string(0),
-		fragment_program_string(0),
+		fragment_program_string(duplicate_string(defaultFragment)),
 		shader_type(SHADER_PROGRAM_SHADER_NONE),
 	/*! Display list which enables the correct state for this program */
 		display_list(0),
 #endif /* defined (OPENGL_API) */
+		compiled(0),
 		name(NULL),
 		manager(NULL),
 		is_managed_flag(false),
