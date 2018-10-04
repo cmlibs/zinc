@@ -1,5 +1,5 @@
 /**
- * tessellation.i
+ * shader.i
  *
  */
 /*
