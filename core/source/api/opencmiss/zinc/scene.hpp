@@ -17,6 +17,7 @@
 #include "opencmiss/zinc/region.hpp"
 #include "opencmiss/zinc/scenefilter.hpp"
 #include "opencmiss/zinc/selection.hpp"
+#include "opencmiss/zinc/shader.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 #include "opencmiss/zinc/timekeeper.hpp"
 
@@ -211,6 +212,11 @@ public:
 	}
 
 	inline Sceneviewermodule getSceneviewermodule();
+
+	inline Shadermodule getShadermodule()
+	{
+		return Shadermodule(cmzn_scene_get_shadermodule(id));
+	}
 
 	inline Spectrummodule getSpectrummodule()
 	{

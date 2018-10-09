@@ -24,6 +24,7 @@
 #include "types/sceneviewerid.h"
 #include "types/sceneid.h"
 #include "types/scenepickerid.h"
+#include "types/shaderid.h"
 #include "types/selectionid.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
@@ -335,6 +336,16 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(
  * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
+	cmzn_scene_id scene);
+
+/**
+ * Get the shader module which manages material shader objects
+ * for custom shading for objects in scene using OpenGL.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the shader module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shadermodule_id cmzn_scene_get_shadermodule(
 	cmzn_scene_id scene);
 
 /**

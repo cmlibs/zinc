@@ -72,6 +72,7 @@ set(INTERFACE_SRCS
     ../interface/sceneviewer.i
     ../interface/sceneviewerinput.i
     ../interface/selection.i
+    ../interface/shader.i
     ../interface/spectrum.i
     ../interface/region.i
     ../interface/result.i
