@@ -2636,7 +2636,7 @@ int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
 	#if defined (OPENGL_API)
 			if (!vertex_program_string)
 			{
-				vs = cmzn_shaderprogram_get_vertex_string(old_program);
+				vs = cmzn_shaderprogram_get_vertex_shader(old_program);
 			}
 			else
 			{
@@ -2644,7 +2644,7 @@ int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
 			}
 			if (!fragment_program_string)
 			{
-				fs = cmzn_shaderprogram_get_fragment_string(old_program);
+				fs = cmzn_shaderprogram_get_fragment_shader(old_program);
 			}
 			else
 			{
@@ -2652,7 +2652,7 @@ int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
 			}
 			if (!geometry_program_string)
 			{
-				gs = cmzn_shaderprogram_get_geometry_string(old_program);
+				gs = cmzn_shaderprogram_get_geometry_shader(old_program);
 			}
 			else
 			{
@@ -2679,17 +2679,17 @@ int Material_set_shader_program_strings(cmzn_shadermodule_id shadermodule,
 		{
 			if (vs)
 			{
-				cmzn_shaderprogram_set_vertex_string(material_to_be_modified->program, vs);
+				cmzn_shaderprogram_set_vertex_shader(material_to_be_modified->program, vs);
 				DEALLOCATE(vs);
 			}
 			if (fs)
 			{
-				cmzn_shaderprogram_set_fragment_string(material_to_be_modified->program, fs);
+				cmzn_shaderprogram_set_fragment_shader(material_to_be_modified->program, fs);
 				DEALLOCATE(fs);
 			}
 			if (gs)
 			{
-				cmzn_shaderprogram_set_geometry_string(material_to_be_modified->program, gs);
+				cmzn_shaderprogram_set_geometry_shader(material_to_be_modified->program, gs);
 				DEALLOCATE(gs);
 			}
 		}

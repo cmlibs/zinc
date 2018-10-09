@@ -666,7 +666,7 @@ int cmzn_shaderuniforms_set_uniform_integer(cmzn_shaderuniforms_id shaderuniform
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_shaderuniforms_get_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+int cmzn_shaderuniforms_get_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, double *valuesOut)
 {
 	if (shaderuniforms)
@@ -683,7 +683,7 @@ int cmzn_shaderuniforms_get_uniform_double(cmzn_shaderuniforms_id shaderuniforms
 	return 0;
 }
 
-int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+int cmzn_shaderuniforms_add_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, const double *valuesIn)
 {
 	if (shaderuniforms)
@@ -700,7 +700,7 @@ int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_shaderuniforms_set_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+int cmzn_shaderuniforms_set_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, const double *valuesIn)
 {
 	if (shaderuniforms)

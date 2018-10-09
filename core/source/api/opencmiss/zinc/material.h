@@ -290,7 +290,7 @@ ZINC_API int cmzn_material_set_attribute_real3(cmzn_material_id material,
 	enum cmzn_material_attribute attribute, const double *values);
 
 /**
- * Get the shaderuniforms object currently in used by the material.
+ * Get the shader uniforms object currently in use by the material.
  *
  * @param material  The material to query.
  *
@@ -311,11 +311,11 @@ ZINC_API int cmzn_material_set_shaderuniforms(cmzn_material_id material,
 	cmzn_shaderuniforms_id shaderuniforms);
 
 /**
- * Get the shaderprogram object currently in used by the material.
+ * Get the shaderprogram object currently in use by the material.
  *
  * @param material  The material to query.
  *
- * @return  Handle to the shaderprogram, or NULL/invalid handle if none or failed.
+ * @return  Handle to the shader program, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_shaderprogram_id cmzn_material_get_shaderprogram(cmzn_material_id material);
 
@@ -323,7 +323,7 @@ ZINC_API cmzn_shaderprogram_id cmzn_material_get_shaderprogram(cmzn_material_id 
  * Set shaderprogram object which contains program to be used by the material.
  *
  * @param material  The material to modify.
- * @param shaderprogram  The shaderprogram to be set for this material.
+ * @param shaderprogram  The shader program to be set for this material.
  *
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */

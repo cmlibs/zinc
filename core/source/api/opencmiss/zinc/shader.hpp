@@ -85,24 +85,24 @@ public:
 		return cmzn_shaderprogram_set_name(id, name);
 	}
 
-	char *getVertexString()
+	char *getVertexShader()
 	{
-		return cmzn_shaderprogram_get_vertex_string(id);
+		return cmzn_shaderprogram_get_vertex_shader(id);
 	}
 
-	int setVertexString(const char *vertex_string)
+	int setVertexShader(const char *vertex_shader_string)
 	{
-		return cmzn_shaderprogram_set_vertex_string(id, vertex_string);
+		return cmzn_shaderprogram_set_vertex_shader(id, vertex_shader_string);
 	}
 
-	char *getFragmentString()
+	char *getFragmentShader()
 	{
-		return cmzn_shaderprogram_get_fragment_string(id);
+		return cmzn_shaderprogram_get_fragment_shader(id);
 	}
 
-	int setFragmentString(const char *fragment_string)
+	int setFragmentShader(const char *fragment_shader_string)
 	{
-		return cmzn_shaderprogram_set_fragment_string(id, fragment_string);
+		return cmzn_shaderprogram_set_fragment_shader(id, fragment_shader_string);
 	}
 
 };
@@ -185,21 +185,21 @@ public:
 		return cmzn_shaderuniforms_remove_uniform(id, name);
 	}
 
-	int getUniformDouble(const char *name, int valuesCount, double *valuesOut)
+	int getUniformReal(const char *name, int valuesCount, double *valuesOut)
 	{
-		return cmzn_shaderuniforms_get_uniform_double(id,
+		return cmzn_shaderuniforms_get_uniform_real(id,
 			name, valuesCount, valuesOut);
 	}
 
-	int addUniformDouble(const char *name, int valuesCount, const double *valuesIn)
+	int addUniformReal(const char *name, int valuesCount, const double *valuesIn)
 	{
-		return cmzn_shaderuniforms_add_uniform_double(id,
+		return cmzn_shaderuniforms_add_uniform_real(id,
 			name, valuesCount, valuesIn);
 	}
 
-	int setUniformDouble(const char *name, int valuesCount, const double *valuesIn)
+	int setUniformReal(const char *name, int valuesCount, const double *valuesIn)
 	{
-		return cmzn_shaderuniforms_set_uniform_double(id,
+		return cmzn_shaderuniforms_set_uniform_real(id,
 			name, valuesCount, valuesIn);
 	}
 

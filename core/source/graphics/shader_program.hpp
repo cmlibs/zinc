@@ -193,10 +193,10 @@ int cmzn_shader_program_destroy(cmzn_shaderprogram_id *shader_program_address);
 
 cmzn_shaderprogram_id cmzn_shader_program_access(cmzn_shaderprogram_id shader_program);
 
-int cmzn_shaderprogram_set_geometry_string(cmzn_shaderprogram_id shader_program_to_be_modified,
-	const char *geometry_program_string);
+int cmzn_shaderprogram_set_geometry_shader(cmzn_shaderprogram_id shader_program_to_be_modified,
+	const char *geometry_shader_string);
 
-char *cmzn_shaderprogram_get_geometry_string(cmzn_shaderprogram_id program);
+char *cmzn_shaderprogram_get_geometry_shader(cmzn_shaderprogram_id program);
 
 
 #endif

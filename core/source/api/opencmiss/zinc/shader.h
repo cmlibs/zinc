@@ -69,7 +69,7 @@ ZINC_API int cmzn_shadermodule_begin_change(cmzn_shadermodule_id shadermodule);
 ZINC_API int cmzn_shadermodule_end_change(cmzn_shadermodule_id shadermodule);
 
 /**
- * Create and return a new shader uniforms.
+ * Create and return shader uniforms.
  *
  * @param shadermodule  The handle to the shader module the
  * shader will belong to.
@@ -90,10 +90,10 @@ ZINC_API cmzn_shaderuniforms_id cmzn_shadermodule_find_shaderuniforms_by_name(
     cmzn_shadermodule_id shadermodule, const char *name);
 
 /**
- * Returns a new handle to the shaderuniforms with reference count incremented.
+ * Returns a new handle to the shader uniforms with reference count incremented.
  *
- * @param shaderuniforms  Handle to shaderuniforms.
- * @return  New handle to shaderuniforms, or NULL/invalid handle on failure.
+ * @param shaderuniforms  Handle to shader uniforms.
+ * @return  New handle to shader uniforms, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_shaderuniforms_id cmzn_shaderuniforms_access(cmzn_shaderuniforms_id shaderuniforms);
 
@@ -108,24 +108,24 @@ ZINC_API cmzn_shaderuniforms_id cmzn_shaderuniforms_access(cmzn_shaderuniforms_i
 ZINC_API int cmzn_shaderuniforms_destroy(cmzn_shaderuniforms_id *shaderuniforms_address);
 
 /**
- * Get managed status of shaderuniforms in its owning shader module.
+ * Get managed status of shader uniforms in its owning shader module.
  * @see cmzn_shaderuniforms_set_managed
  *
- * @param shaderuniforms  The shaderuniforms to query.
- * @return  1 (true) if shaderuniforms is managed, otherwise 0 (false).
+ * @param shaderuniforms  The shader uniforms to query.
+ * @return  1 (true) if shader uniforms is managed, otherwise 0 (false).
  */
 ZINC_API bool cmzn_shaderuniforms_is_managed(cmzn_shaderuniforms_id shaderuniforms);
 
 /**
- * Set managed status of shaderuniforms in its owning shader module.
- * If set (managed) the shaderuniforms will remain indefinitely in the shaderuniforms
+ * Set managed status of shader uniforms in its owning shader module.
+ * If set (managed) the shader uniforms will remain indefinitely in the shader uniforms
  * module even if no external references are held.
- * If not set (unmanaged) the shaderuniforms will be automatically removed from the
+ * If not set (unmanaged) the shader uniforms will be automatically removed from the
  * module when no longer referenced externally, effectively marking it as
  * pending destruction.
  * All new objects are unmanaged unless stated otherwise.
  *
- * @param shaderuniforms  The shaderuniforms to modify.
+ * @param shaderuniforms  The shader uniforms to modify.
  * @param value  The new value for the managed flag: true or false.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
@@ -133,10 +133,10 @@ ZINC_API int cmzn_shaderuniforms_set_managed(cmzn_shaderuniforms_id shaderunifor
     bool value);
 
 /**
- * Remove a set of uniform from the uniforms object,
+ * Remove a set of uniform values from the uniforms object,
  *
- * @param shaderuniforms  The shaderuniforms to modify.
- * @param name  uniform with the matching name will be removed
+ * @param shaderuniforms  The shader uniforms to modify.
+ * @param name  Name of uniform to be removed.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_remove_uniform(cmzn_shaderuniforms_id shaderuniforms,
@@ -145,33 +145,37 @@ ZINC_API int cmzn_shaderuniforms_remove_uniform(cmzn_shaderuniforms_id shaderuni
 /**
  * Return the size and values of the specified uniform if present.
  *
- * @param shaderuniforms  The shaderuniforms to query.
+ * @param shaderuniforms  The shader uniforms to query.
  * @param valuesCount  The size of the valuesOut array to fill, from 1 to 4.
  * @param valuesOut  Array to receive uniform values.
- * @return  The size of unifomr , or 0 on error.
+ * @return  The actual number of values in the uniform, or 0 on error.
  */
-ZINC_API int cmzn_shaderuniforms_get_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+ZINC_API int cmzn_shaderuniforms_get_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, double *valuesOut);
 
 /**
- * Add a new set of double precision uniform to the uniforms object,
- * this set of values will be written into the shaders at runtime
+ * Add a new set of double precision uniform to the uniforms object.
+ * This set of values will be written into the shaders at runtime
  * when it is used by the shader program.
  * If an uniform with the same name already exist, nothing will be added to the
  * uniforms object.
  *
- * @param shaderuniforms  The shaderuniforms to modify.
+ * @param shaderuniforms  The shader uniforms to modify.
  * @param name  name of the uniform to add
  * @param valuesCount  The size of the valuesIn array to fill, from 1 to 4.
- * @param values  Initial values to be set for the uniform.
+ * @param valuesIn  Initial values to be set for the uniform.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+ZINC_API int cmzn_shaderuniforms_add_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, const double *valuesIn);
 
 /**
  * Set values of the specified uniform if it is found with
- * the specified name. This will not change the size of the uniform.
+ * the specified name. This will not change the size nor type of the uniform
+ * values.
+ * If valuesCount is not the same as the size of the uniforms value found,
+ * it will only set the minimal number of values possible. The operation
+ * fails when an uniform with the same name and value type is not found.
  *
  * @param shaderuniforms  The shaderuniforms to modify.
  * @param name  name of the uniform to set.
@@ -179,7 +183,7 @@ ZINC_API int cmzn_shaderuniforms_add_uniform_double(cmzn_shaderuniforms_id shade
  * @param values  Array containing values to be set for the uniform.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_shaderuniforms_set_uniform_double(cmzn_shaderuniforms_id shaderuniforms,
+ZINC_API int cmzn_shaderuniforms_set_uniform_real(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, const double *valuesIn);
 
 /**
@@ -188,22 +192,22 @@ ZINC_API int cmzn_shaderuniforms_set_uniform_double(cmzn_shaderuniforms_id shade
  * @param shaderuniforms  The shaderuniforms to query.
  * @param valuesCount  The size of the valuesOut array to fill, from 1 to 4.
  * @param valuesOut  Array to receive uniform values.
- * @return  The size of unifomr , or 0 on error.
+ * @return  The actual number of values in the uniform, or 0 on error.
  */
 ZINC_API int cmzn_shaderuniforms_get_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
 	const char *name, int valuesCount, int *valuesOut);
 
 /**
- * Add a new set of double precision uniform to the uniforms object,
- * this set of values will be written into the shaders at runtime
+ * Add a new set of integer uniform to the uniforms object.
+ * This set of values will be written into the shaders at runtime
  * when it is used by the shader program.
- * If an uniform with the same name already exist, nothing will be added to the
+ * If an uniform with the same name already exists, nothing will be added to the
  * uniforms object.
  *
  * @param shaderuniforms  The shaderuniforms to modify.
  * @param name  name of the uniform to add
  * @param valuesCount  The size of the valuesIn array to fill, from 1 to 4.
- * @param values  Initial values to be set for the uniform.
+ * @param valuesIn  Initial values to be set for the uniform.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shaderuniforms,
@@ -211,7 +215,11 @@ ZINC_API int cmzn_shaderuniforms_add_uniform_integer(cmzn_shaderuniforms_id shad
 
 /**
  * Set values of the specified uniform if it is found with
- * the specified name. This will not change the size of the uniform.
+ * the specified name. This will not change the size nor type of the uniform
+ * values.
+ * If valuesCount is not the same as the size of the uniforms value found,
+ * it will only set the minimal number of values possible. The operation
+ * fails when an uniform with the same name and value type is not found.
  *
  * @param shaderuniforms  The shaderuniforms to modify.
  * @param name  name of the uniform to set.
@@ -255,7 +263,7 @@ ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_create_shaderprogram(
  * Find the shader program with the specified name, if any.
  *
  * @param shadermodule  Shader module to search.
- * @param name  The name of the shader uniforms.
+ * @param name  The name of the shader program.
  * @return  Handle to shader program, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_name(
@@ -263,7 +271,7 @@ ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_name(
 
 
 /**
- * Create and return a new shader uniforms.
+ * Create and return a new shader program.
  *
  * @param shadermodule  The handle to the shader module the
  * shader will belong to.
@@ -271,7 +279,6 @@ ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_find_shaderprogram_by_name(
  */
 ZINC_API cmzn_shaderprogram_id cmzn_shadermodule_create_shaderprogram(
     cmzn_shadermodule_id shadermodule);
-
 
 /**
  * Find the shader uniforms with the specified name, if any.
@@ -353,19 +360,20 @@ ZINC_API int cmzn_shaderprogram_set_name(cmzn_shaderprogram_id shaderprogram, co
  * @return  allocated string of the vertex shader this should be freed afterward,
  * 0 on failure.
  */
-ZINC_API char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id shaderprogram);
+ZINC_API char *cmzn_shaderprogram_get_vertex_shader(cmzn_shaderprogram_id shaderprogram);
 
 /**
  * Set/change the vertex shader to be compiled for shader program. The provided
- * string will be compiled at run time if no error is encounter.
+ * string will be compiled at run time if no error is encountered.
+ * Only GLSL is currently supported.
  *
  * @param shaderprogram  The handle to zinc shader program.
  * @param vertex_program_string  string for the vertex shader to be compiled
  * @return  status CMZN_OK if successfully set/change vertex string for shader program,
  * any other value on failure.
  */
-ZINC_API int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderprogram,
-	const char *vertex_program_string);
+ZINC_API int cmzn_shaderprogram_set_vertex_shader(cmzn_shaderprogram_id shaderprogram,
+	const char *vertex_shader_string);
 
 /**
  * Get the fragment shader that has been set for this program.
@@ -374,19 +382,20 @@ ZINC_API int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id shaderpr
  * @return  allocated string of the fragment shader this should be freed afterward,
  * 0 on failure.
  */
-ZINC_API char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id shaderprogram);
+ZINC_API char *cmzn_shaderprogram_get_fragment_shader(cmzn_shaderprogram_id shaderprogram);
 
 /**
  * Set/change the fragment shader to be compiled for shader program. The provided
- * string will be compiled at run time if no error is encounter.
+ * string will be compiled at run time if no error is encountered.
+ * Only GLSL is currently supported.
  *
  * @param shaderprogram  The handle to zinc shader program.
  * @param fragment_program_string  string for the fragment shader to be compiled
  * @return  status CMZN_OK if successfully set/change vertex string for shader program,
  * any other value on failure.
  */
-ZINC_API int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id shaderprogram,
-	const char *fragment_program_string);
+ZINC_API int cmzn_shaderprogram_set_fragment_shader(cmzn_shaderprogram_id shaderprogram,
+	const char *fragment_shader_string);
 
 
 #ifdef __cplusplus

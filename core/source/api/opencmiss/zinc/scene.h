@@ -339,7 +339,7 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
 	cmzn_scene_id scene);
 
 /**
- * Returns a handle to a shader module which manages shader objects
+ * Get the shader module which manages material shader objects
  * for custom shading for objects in secne using OpenGL.
  *
  * @param scene  The scene to request the module from.

@@ -2973,7 +2973,7 @@ int cmzn_shaderprogram_set_managed(cmzn_shaderprogram_id shaderprogram,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id program)
+char *cmzn_shaderprogram_get_vertex_shader(cmzn_shaderprogram_id program)
 {
 	if (program && program->vertex_program_string)
 	{
@@ -2983,7 +2983,7 @@ char *cmzn_shaderprogram_get_vertex_string(cmzn_shaderprogram_id program)
 	return 0;
 }
 
-char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id program)
+char *cmzn_shaderprogram_get_fragment_shader(cmzn_shaderprogram_id program)
 {
 	if (program && program->fragment_program_string)
 	{
@@ -2993,7 +2993,7 @@ char *cmzn_shaderprogram_get_fragment_string(cmzn_shaderprogram_id program)
 	return 0;
 }
 
-char *cmzn_shaderprogram_get_geometry_string(cmzn_shaderprogram_id program)
+char *cmzn_shaderprogram_get_geometry_shader(cmzn_shaderprogram_id program)
 {
 	if (program && program->geometry_program_string)
 	{
@@ -3003,16 +3003,16 @@ char *cmzn_shaderprogram_get_geometry_string(cmzn_shaderprogram_id program)
 	return 0;
 }
 
-int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id program,
-	const char *vertex_program_string)
+int cmzn_shaderprogram_set_vertex_shader(cmzn_shaderprogram_id program,
+	const char *vertex_shader_string)
 {
-	if (program && vertex_program_string)
+	if (program && vertex_shader_string)
 	{
 		if (program->vertex_program_string)
 		{
 			DEALLOCATE(program->vertex_program_string);
 		}
-		program->vertex_program_string = duplicate_string(vertex_program_string);
+		program->vertex_program_string = duplicate_string(vertex_shader_string);
 		program->programChanged();
 		return CMZN_OK;
 	}
@@ -3020,16 +3020,16 @@ int cmzn_shaderprogram_set_vertex_string(cmzn_shaderprogram_id program,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id program,
-	const char *fragment_program_string)
+int cmzn_shaderprogram_set_fragment_shader(cmzn_shaderprogram_id program,
+	const char *fragment_shader_string)
 {
-	if (program && fragment_program_string)
+	if (program && fragment_shader_string)
 	{
 		if (program->fragment_program_string)
 		{
 			DEALLOCATE(program->fragment_program_string);
 		}
-		program->fragment_program_string = duplicate_string(fragment_program_string);
+		program->fragment_program_string = duplicate_string(fragment_shader_string);
 		program->programChanged();
 		return CMZN_OK;
 	}
@@ -3037,16 +3037,16 @@ int cmzn_shaderprogram_set_fragment_string(cmzn_shaderprogram_id program,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_shaderprogram_set_geometry_string(cmzn_shaderprogram_id program,
-	const char *geometry_program_string)
+int cmzn_shaderprogram_set_geometry_shader(cmzn_shaderprogram_id program,
+	const char *geometry_shader_string)
 {
-	if (program && geometry_program_string)
+	if (program && geometry_shader_string)
 	{
 		if (program->geometry_program_string)
 		{
 			DEALLOCATE(program->geometry_program_string);
 		}
-		program->geometry_program_string = duplicate_string(geometry_program_string);
+		program->geometry_program_string = duplicate_string(geometry_shader_string);
 		program->programChanged();
 		return CMZN_OK;
 	}
