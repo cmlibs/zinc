@@ -21,6 +21,7 @@
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
 #include "types/sceneviewerid.h"
+#include "types/shaderid.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
 #include "types/timekeeperid.h"
@@ -156,6 +157,15 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
  * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
+	cmzn_context_id context);
+
+/**
+ * Get the shader module which manages objects controlling shading of materials.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the shader module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_shadermodule_id cmzn_context_get_shadermodule(
 	cmzn_context_id context);
 
 /**

@@ -34,6 +34,7 @@ class Materialmodule;
 class Region;
 class Scenefiltermodule;
 class Sceneviewermodule;
+class Shadermodule;
 class Spectrummodule;
 class Tessellationmodule;
 class Timekeepermodule;
@@ -125,6 +126,8 @@ public:
 	inline Scenefiltermodule getScenefiltermodule();
 
 	inline Sceneviewermodule getSceneviewermodule();
+
+	inline Shadermodule getShadermodule();
 
 	inline Spectrummodule getSpectrummodule();
 
