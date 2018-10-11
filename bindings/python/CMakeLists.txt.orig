@@ -9,7 +9,6 @@ mark_as_advanced(VIRTUALENV_EXEC)
 
 if (CMAKE_CONFIGURATION_TYPES)
     set(CFG_DIR /$<CONFIG>)
-    set(CFG_INSTALL_DIR /\${CMAKE_INSTALL_CONFIG_NAME})
 endif ()
 # Bindings options
 set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
