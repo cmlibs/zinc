@@ -235,7 +235,7 @@ public:
 		return change_detail;
 	}
 
-}; /* cmzn_shaderprogram_id /
+}; /* cmzn_shaderprogram_id */
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
