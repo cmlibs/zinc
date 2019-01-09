@@ -2513,6 +2513,13 @@ cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(cmzn_scene_id scene)
 	return 0;
 }
 
+cmzn_shadermodule_id cmzn_scene_get_shadermodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_shadermodule(scene->graphics_module);
+	return 0;
+}
+
 cmzn_spectrummodule_id cmzn_scene_get_spectrummodule(cmzn_scene_id scene)
 {
 	if (scene)
