@@ -948,9 +948,35 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 	delete[] uvs;
 }
 
+void Threejs_export_glyph::exportGlyphsLabel(struct GT_object *object)
+{
+	GT_glyphset_vertex_buffers *glyph_set = NULL;
+	if (object->primitive_lists)
+		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+	cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+	unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
+		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+	if (number_of_vertices > 0)
+	{
+		unsigned int label_per_vertex = 0, label_count = 0;
+		std::string *label_buffer = 0;
+		object->vertex_array->get_string_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL,
+			&label_buffer, &label_per_vertex, &label_count);
+		std::string *label = label_buffer;
+		if (label)
+		{
+			for (unsigned int i = 0; i < number_of_vertices; i++)
+			{
+				label_json.append(label->c_str());
+				label++;
+			}
+		}
+	}
+}
+
 void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, int time_step)
 {
-
 	GT_glyphset_vertex_buffers *glyph_set = NULL;
 	if (object->primitive_lists)
 		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
@@ -1078,6 +1104,7 @@ int Threejs_export_glyph::exportGraphicsObject(struct GT_object *object, int tim
 				{
 					/* first time step, export both glyph primitives and transformation */
 					exportStaticGlyphs(glyph_set->glyph);
+					exportGlyphsLabel(object);
 					exportGlyphsTransformation(object, time_step);
 				}
 			}
@@ -1112,6 +1139,8 @@ std::string *Threejs_export_glyph::getGlyphTransformationExportString()
 	root["scale"] = scale_json;
 	if (color_json.size() > 0)
 		root["colors"] = color_json;
+	if (label_json.size() > 0)
+		root["label"] = label_json;
 	root["GlyphGeometriesURL"] = glyphGeometriesURLName;
 	glyphTransformationString = Json::StyledWriter().write(root);
 
