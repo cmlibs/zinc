@@ -121,9 +121,6 @@ enum Texture_storage_type
 	TEXTURE_RGBA,
 	TEXTURE_ABGR,
 	TEXTURE_BGR,
-	/* The last two types are special and are not user-selectable */
-	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER,
 	TEXTURE_STORAGE_TYPE_INVALID
 }; /* enum Texture_storage_type */
 
@@ -469,27 +466,7 @@ DESCRIPTION :
 Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 
-struct X3d_movie;
 struct Graphics_buffer_package;
-
-struct X3d_movie *Texture_get_movie(struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 3 February 2000
-
-DESCRIPTION :
-Gets the current X3d_movie from the texture.
-==============================================================================*/
-
-int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
-	struct Graphics_buffer_package *graphics_buffer_package, char *image_file_name);
-/*******************************************************************************
-LAST MODIFIED : 27 May 2004
-
-DESCRIPTION :
-Puts the <image> in the texture. The image is left unchanged by this function.
-The <image_file_name> is specified purely so that it may be recorded with the
-texture, and must be given a value.
-==============================================================================*/
 
 int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values);
