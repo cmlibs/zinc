@@ -409,6 +409,8 @@ int Texture_allocate_image(struct Texture *texture,
  */
 enum Texture_storage_type Texture_get_storage_type(struct Texture *texture);
 
+int Texture_set_storage_type(struct Texture *texture, enum Texture_storage_type storage_type);
+
 struct Cmgui_image *Texture_get_image(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 1 March 2002
@@ -455,6 +457,13 @@ The <source_width_bytes> is the offset between row data in <source_pixels>
 and must be at least width*number_of_components*number_of_bytes_per_component
 in size.
 ==============================================================================*/
+
+/**
+ * Similar to Texture_set_image_block but this function assumes the source_pixels hold
+ * enough buffer to fill the whole texture block.
+ */
+int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
+	unsigned int buffer_length);
 
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
@@ -539,6 +548,8 @@ LAST MODIFIED : 11 March 2002
 DESCRIPTION :
 Returns the number bytes in each component of the texture: 1 or 2.
 ==============================================================================*/
+
+int Texture_set_number_of_bytes_per_component(struct Texture *texture, int number_of_bytes);
 
 int Texture_get_number_of_components(struct Texture *texture);
 /*******************************************************************************

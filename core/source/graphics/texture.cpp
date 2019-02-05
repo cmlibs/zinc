@@ -396,6 +396,7 @@ DESCRIPTION :
 
 DECLARE_OBJECT_FUNCTIONS(Texture_tiling)
 
+
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage)
 /*******************************************************************************
@@ -482,6 +483,10 @@ DESCRIPTION :
 		case TEXTURE_RGB:
 		{
 			*format=GL_RGB;
+		} break;
+		case TEXTURE_BGR:
+		{
+			*format=GL_BGR;
 		} break;
 		case TEXTURE_RGBA:
 		{
@@ -3087,7 +3092,6 @@ of all textures.
 			texture->start_file_number = 0;
 			texture->stop_file_number = 0;
 			texture->file_number_increment = 0;
-
 			texture->storage=TEXTURE_RGBA;
 			texture->number_of_bytes_per_component=1;
 			texture->depth_texels=1;
@@ -3924,6 +3928,16 @@ enum Texture_storage_type Texture_get_storage_type(struct Texture *texture)
 	return TEXTURE_STORAGE_TYPE_INVALID;
 }
 
+
+int Texture_set_storage_type(struct Texture *texture, enum Texture_storage_type storage_type)
+{
+	if (texture && (0 == texture->image_file_name))
+	{
+		texture->storage = storage_type;
+	}
+	return 0;
+}
+
 struct Cmgui_image *Texture_get_image(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -4209,7 +4223,6 @@ in size.
 	int bytes_per_pixel, copy_width, i, number_of_components, return_code,
 		width_bytes;
 	unsigned char *destination, *source;
-
 	ENTER(Texture_set_image_block);
 	if (texture && (0 <= left) && (0 < width) &&
 		(left + width <= texture->width_texels) &&
@@ -4249,6 +4262,46 @@ in size.
 
 	return (return_code);
 } /* Texture_set_image_block */
+
+int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
+	unsigned int buffer_length)
+{
+	int bytes_per_pixel = 0, number_of_components = 0;
+	if (source_pixels && texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
+		(texture->depth_texels > 0) &&
+		(0 < (number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage))) &&
+		(0 < (bytes_per_pixel =
+			number_of_components*texture->number_of_bytes_per_component)))
+	{
+		int source_width_bytes = texture->width_texels * bytes_per_pixel;
+		int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
+		if (total_size == (int)buffer_length)
+		{
+			// Only set the image if image_file_name is not set as the iamge is not from source
+			// or files/memory.
+			if (texture->image_file_name == 0)
+			{
+				Texture_allocate_image(texture,
+					texture->width_texels, texture->height_texels, texture->depth_texels,
+					texture->storage, texture->number_of_bytes_per_component, "user_buffer");
+			}
+			if (strcmp(texture->image_file_name, "user_buffer") == 0)
+			{
+				memcpy(texture->image, source_pixels, buffer_length);
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
+				return 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_fill_image_block.  Invalid argument(s)");
+		return 0;
+	}
+	return 0;
+}
 
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
@@ -5044,6 +5097,18 @@ Returns the number bytes in each component of the texture: 1 or 2.
 
 	return (return_code);
 } /* Texture_get_number_of_bytes_per_component */
+
+int Texture_set_number_of_bytes_per_component(struct Texture *texture,
+	int number_of_bytes)
+{
+	if ((texture && (0 == texture->image_file_name)) &&
+			((number_of_bytes == 1) || (number_of_bytes ==2 )))
+	{
+		texture->number_of_bytes_per_component = number_of_bytes;
+		return 1;
+	}
+	return 0;
+}
 
 int Texture_get_number_of_components(struct Texture *texture)
 /*******************************************************************************

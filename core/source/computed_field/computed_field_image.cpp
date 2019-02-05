@@ -785,18 +785,6 @@ int cmzn_field_image_set_output_range(cmzn_field_image_id image_field, double mi
 	return return_code;
 }
 
-int cmzn_field_image_set_number_of_bytes_per_component(cmzn_field_image_id image_field, int number_of_bytes_per_component)
-{
-	int return_code = 0;
-	if (image_field)
-	{
-		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
-		return_code = image_core->set_number_of_bytes_per_component(number_of_bytes_per_component);
-	}
-
-	return return_code;
-}
-
 cmzn_texture *cmzn_field_image_get_texture(cmzn_field_image_id image_field)
 {
 	cmzn_texture *cmiss_texture = 0;
@@ -975,7 +963,7 @@ int cmzn_field_image_set_size_in_pixels(cmzn_field_image_id image,
 		const int image_depth = (valuesCount > 2) ? valuesIn[2] : 1;
 		const enum Texture_storage_type storage = Texture_get_storage_type(image_core->texture);
 		if (Texture_allocate_image(image_core->texture, image_width, image_height, image_depth,
-			storage, image_core->number_of_bytes_per_component, field->name))
+			storage, image_core->number_of_bytes_per_component, 0))
 		{
 			image_core->use_source_resolution = false;
 			image_core->texture_buffer_changed();
@@ -1966,3 +1954,131 @@ char *cmzn_field_image_wrap_mode_enum_to_string(enum cmzn_field_image_wrap_mode 
 	const char *mode_string = cmzn_field_image_wrap_mode_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
+
+int cmzn_field_image_get_number_of_bytes_per_component(
+	cmzn_field_image_id image_field)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			return Texture_get_number_of_bytes_per_component (texture);
+		}
+	}
+	return 0;
+}
+
+int cmzn_field_image_set_number_of_bytes_per_component(
+	cmzn_field_image_id image_field, int number_of_bytes)
+{
+	if (image_field && (number_of_bytes > 0 || number_of_bytes <=2))
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		int return_code = image_core->set_number_of_bytes_per_component(number_of_bytes);
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			return Texture_set_number_of_bytes_per_component(texture, number_of_bytes);
+		}
+		return return_code;
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+cmzn_streaminformation_image_pixel_format cmzn_field_image_get_pixel_format(
+	cmzn_field_image_id image_field)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			enum Texture_storage_type storage_type = Texture_get_storage_type(texture);
+			enum cmzn_streaminformation_image_pixel_format pixel_format =
+				CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_INVALID;
+			switch (storage_type)
+			{
+				case TEXTURE_LUMINANCE:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE;
+					break;
+				case TEXTURE_LUMINANCE_ALPHA:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA;
+					break;
+				case TEXTURE_RGB:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGB;
+					break;
+				case TEXTURE_RGBA:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGBA;
+					break;
+				case TEXTURE_ABGR:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_ABGR;
+					break;
+				case TEXTURE_BGR:
+					pixel_format = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_BGR;
+					break;
+				default:
+					break;
+			}
+			return pixel_format;
+		}
+	}
+	return CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_INVALID;
+}
+
+int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
+	enum cmzn_streaminformation_image_pixel_format pixel_format)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			enum Texture_storage_type storage_type = TEXTURE_STORAGE_TYPE_INVALID;
+			switch (pixel_format)
+			{
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+					storage_type = TEXTURE_LUMINANCE;
+					break;
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+					storage_type = TEXTURE_LUMINANCE_ALPHA;
+					break;
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+					storage_type = TEXTURE_RGB;
+					break;
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+					storage_type = TEXTURE_RGBA;
+					break;
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
+					storage_type = TEXTURE_ABGR;
+					break;
+				case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_BGR:
+					storage_type = TEXTURE_BGR;
+					break;
+				default:
+					return CMZN_RESULT_ERROR_ARGUMENT;
+					break;
+			}
+			Texture_set_storage_type(texture, storage_type);
+		}
+	}
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_set_buffer(cmzn_field_image_id image_field, const void *buffer,
+	unsigned int buffer_length)
+{
+	if (image_field && buffer && (buffer_length > 0))
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			return Texture_fill_image_block(texture, (unsigned char *)buffer,
+				buffer_length);
+		}
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+

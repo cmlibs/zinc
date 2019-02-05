@@ -481,13 +481,73 @@ ZINC_API int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
  * Gets the property named in the given property string from the given field image.
  * The returned string must be deallocated by the receiver.
  *
- * @param	image   	The image field.
+ * @param	image_field   	The image field.
  * @param	property	The property to retrieve.
  *
  * @return	null if it fails, else an allocated string containing the properties value.
  */
-ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image,
+ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image_field,
 	const char* property);
+
+/**
+ * Get the number of bytes per component of this image field.
+ *
+ * @param image_field 	The image field.
+ *
+ * @return  number of bytes of this image field.
+ */
+ZINC_API int cmzn_field_image_get_number_of_bytes_per_component(
+	cmzn_field_image_id image_field);
+
+/**
+ * Set the number of component of the image. The number of bytes will only be set
+ *  if no image has been set into this image field.
+ *
+ * @param image_field 	The image field.
+ * @param number_of_bytes  Number of bytes to be set for this field image.
+ *
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_image_set_number_of_bytes_per_component(
+	cmzn_field_image_id image_field, int number_of_bytes);
+
+/**
+ * Get the pixel format per componentof this image field.
+ *
+ * @param image_field 	The image field.
+ *
+ * @return  pixel format of this image field.
+ */
+ZINC_API enum cmzn_streaminformation_image_pixel_format
+	cmzn_field_image_get_pixel_format(cmzn_field_image_id image_field);
+
+/**
+ * Set the pixel format of the image. The pixel format will only be set
+ *  if no image has been set into this image field.
+ *
+ * @param image_field 	The image field.
+ * @param number_of_bytes  Number of bytes to be set for this field image.
+ *
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
+	enum cmzn_streaminformation_image_pixel_format pixel_format);
+
+/**
+ * Fills the image buffer without changing any other image properties. The image field
+ * should not have dependency on external file/fields.
+ * In order to optimise the performance, only buffer with the same size can be set in the
+ * same field once a buffer has been successfully set.
+ *
+ * @param image_field 	The image field.
+ * @param buffer  The buffer to be copied into the image buffer.
+ *
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_image_set_buffer(cmzn_field_image_id image_field,
+	const void *buffer, unsigned int buffer_length);
+
+
 
 #ifdef __cplusplus
 }
