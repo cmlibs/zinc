@@ -465,6 +465,9 @@ in size.
 int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
 	unsigned int buffer_length);
 
+int Texture_get_image_block(struct Texture *texture,
+	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
+
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
 	int crop_left, int crop_bottom, int crop_width, int crop_height);

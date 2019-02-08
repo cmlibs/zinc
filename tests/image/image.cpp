@@ -84,7 +84,35 @@ TEST(ZincFieldImage, read_png)
 	Streamresource sr = si.createStreamresourceFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
 	EXPECT_TRUE(sr.isValid());
 
-	EXPECT_EQ(OK, im.read(si));
+	EXPECT_EQ(CMZN_OK, im.read(si));
+}
+
+TEST(ZincFieldImage, set_get_buffer)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+
+	EXPECT_EQ(CMZN_OK, im.setPixelFormat(FieldImage::PIXEL_FORMAT_LUMINANCE));
+	EXPECT_EQ(FieldImage::PIXEL_FORMAT_LUMINANCE, im.getPixelFormat());
+
+
+	EXPECT_EQ(CMZN_OK, im.setNumberOfBitsPerComponent(16));
+	EXPECT_EQ(16, im.getNumberOfBitsPerComponent());
+
+	unsigned char *buffer = new unsigned char[2];
+	buffer[0] = 0xBB;
+	buffer[1] = 0xDD;
+	void *returnedBuffer = 0;
+	unsigned int length = 0;
+	EXPECT_EQ(CMZN_OK, im.setBuffer((void *)buffer, 2));
+	EXPECT_EQ(CMZN_OK, im.getBuffer(&returnedBuffer, &length));
+	unsigned char *myBuffer = (unsigned char *)returnedBuffer;
+	EXPECT_EQ(buffer[0], myBuffer[0]);
+	EXPECT_EQ(buffer[1], myBuffer[1]);
+	EXPECT_EQ(2, length);
+	delete[] buffer;
 }
 
 // Issue 3707: Image filter, wrap and other modes should not be reset after

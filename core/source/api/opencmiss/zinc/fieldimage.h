@@ -490,26 +490,26 @@ ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image_field,
 	const char* property);
 
 /**
- * Get the number of bytes per component of this image field.
+ * Get the number of bits per component of this image field.
  *
  * @param image_field 	The image field.
  *
- * @return  number of bytes of this image field.
+ * @return  number of bits of this image field.
  */
-ZINC_API int cmzn_field_image_get_number_of_bytes_per_component(
+ZINC_API int cmzn_field_image_get_number_of_bits_per_component(
 	cmzn_field_image_id image_field);
 
 /**
- * Set the number of component of the image. The number of bytes will only be set
- *  if no image has been set into this image field.
+ * Set the number of bits per component of the image. The number of bits will only be set
+ *  if no image has been set into this image field. Valid value is 8 or 16.
  *
  * @param image_field 	The image field.
- * @param number_of_bytes  Number of bytes to be set for this field image.
+ * @param number_of_bits  Number of bits to be set for this field image.
  *
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_image_set_number_of_bytes_per_component(
-	cmzn_field_image_id image_field, int number_of_bytes);
+ZINC_API int cmzn_field_image_set_number_of_bits_per_component(
+	cmzn_field_image_id image_field, int number_of_bits);
 
 /**
  * Get the pixel format per componentof this image field.
@@ -518,7 +518,7 @@ ZINC_API int cmzn_field_image_set_number_of_bytes_per_component(
  *
  * @return  pixel format of this image field.
  */
-ZINC_API enum cmzn_streaminformation_image_pixel_format
+ZINC_API enum cmzn_field_image_pixel_format
 	cmzn_field_image_get_pixel_format(cmzn_field_image_id image_field);
 
 /**
@@ -531,7 +531,21 @@ ZINC_API enum cmzn_streaminformation_image_pixel_format
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
-	enum cmzn_streaminformation_image_pixel_format pixel_format);
+	enum cmzn_field_image_pixel_format pixel_format);
+
+/**
+ * Get the image buffer  currently in the image field texture. This is not a safe
+ * copy of the buffer and editing this buffer may result in error.
+ *
+ * @param image_field 	Handle to the image field.
+ * @param memory_buffer_reference  Will be set to point to the allocated
+ * 	memory block.
+ * @param memory_buffer_size  Will be set to the length of
+ * 	the returned memory block.
+ * @return  Status CMZN_OK on success, any other value on failure.
+  */
+ZINC_API int cmzn_field_image_get_buffer(cmzn_field_image_id image_field,
+	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
 
 /**
  * Fills the image buffer without changing any other image properties. The image field
@@ -541,13 +555,12 @@ ZINC_API int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
  *
  * @param image_field 	The image field.
  * @param buffer  The buffer to be copied into the image buffer.
+ * @param buffer_length  Length of the buffer in the number of bytes.
  *
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_image_set_buffer(cmzn_field_image_id image_field,
 	const void *buffer, unsigned int buffer_length);
-
-
 
 #ifdef __cplusplus
 }

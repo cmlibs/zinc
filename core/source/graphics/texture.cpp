@@ -3934,8 +3934,9 @@ int Texture_set_storage_type(struct Texture *texture, enum Texture_storage_type 
 	if (texture && (0 == texture->image_file_name))
 	{
 		texture->storage = storage_type;
+		return CMZN_OK;
 	}
-	return 0;
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 struct Cmgui_image *Texture_get_image(struct Texture *texture)
@@ -4263,6 +4264,27 @@ in size.
 	return (return_code);
 } /* Texture_set_image_block */
 
+int Texture_get_image_block(struct Texture *texture,
+	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+{
+	int bytes_per_pixel = 0, number_of_components = 0;
+	if (texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
+		(texture->depth_texels > 0) &&
+		(0 < (number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage))) &&
+		(0 < (bytes_per_pixel =
+			number_of_components*texture->number_of_bytes_per_component)))
+	{
+		int source_width_bytes = texture->width_texels * bytes_per_pixel;
+		int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
+		*memory_buffer_references = static_cast<void *>(texture->image);
+		*memory_buffer_sizes = (unsigned int)total_size;
+		return CMZN_OK;
+	}
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
 int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
 	unsigned int buffer_length)
 {
@@ -4290,17 +4312,12 @@ int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixe
 			{
 				memcpy(texture->image, source_pixels, buffer_length);
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
-				return 1;
+				return CMZN_OK;
 			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Texture_fill_image_block.  Invalid argument(s)");
-		return 0;
-	}
-	return 0;
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 int Texture_add_image(struct Texture *texture,
@@ -5082,7 +5099,6 @@ Returns the number bytes in each component of the texture: 1 or 2.
 {
 	int return_code;
 
-	ENTER(Texture_get_number_of_bytes_per_component);
 	if (texture)
 	{
 		return_code = texture->number_of_bytes_per_component;
@@ -5093,7 +5109,6 @@ Returns the number bytes in each component of the texture: 1 or 2.
 			"Texture_get_number_of_bytes_per_component.  Missing texture");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Texture_get_number_of_bytes_per_component */

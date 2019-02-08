@@ -71,7 +71,11 @@ free($1);
 	const char *mystring = (char *)(*$1);
 	PyObject *o = Py_None;
 	if (mystring)
-		o = PyString_FromString(mystring);
+	{
+	   o = PyBytes_FromString(mystring);
+	   if (o == 0)
+	       o = PyString_FromString(mystring);
+	}
 	if ((!$result) || ($result == Py_None))
 	{
 		$result = o;
