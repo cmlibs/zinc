@@ -215,6 +215,7 @@ ZINC_API int cmzn_field_image_get_size_in_pixels(cmzn_field_image_id image,
  * For images from source: after successful call to this function the image
  * field maintains an independent resolution from any source image; up until
  * then it maintains the same resolution as the source image.
+ * The default value is {1, 1, 1}.
  *
  * @param image  The image to modify.
  * @param valuesCount  The size of the sizes array, giving the dimension of the
