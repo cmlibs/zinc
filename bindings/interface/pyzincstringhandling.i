@@ -58,7 +58,7 @@ free($1);
     }
 }
 
-%typemap(in, numinputs=0) (void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+%typemap(in, numinputs=0) (const void **buffer_out, unsigned int *buffer_length_out)
 {
 	char *memoryBuffer = 0;
 	$1 = (void **)&memoryBuffer;
@@ -66,7 +66,7 @@ free($1);
 	$2 = &size;
 };
 
-%typemap(argout)(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+%typemap(argout)(const void **buffer_out, unsigned int *buffer_length_out)
 {
 	const char *mystring = (char *)(*$1);
 	PyObject *o = Py_None;

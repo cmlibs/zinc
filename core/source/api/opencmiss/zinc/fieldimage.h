@@ -534,18 +534,18 @@ ZINC_API int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
 	enum cmzn_field_image_pixel_format pixel_format);
 
 /**
- * Get the image buffer  currently in the image field texture. This is not a safe
- * copy of the buffer and editing this buffer may result in error.
+ * Get the image buffer currently in the image field. This buffer should not be
+ * edited.
  *
  * @param image_field 	Handle to the image field.
- * @param memory_buffer_reference  Will be set to point to the allocated
- * 	memory block.
- * @param memory_buffer_size  Will be set to the length of
- * 	the returned memory block.
+ * @param buffer_out  Will be set to the pointer of the allocated buffer on successful
+ * 	 return of the function.
+ * @param buffer_length_out  Will be set to the length of the returned buffer
+ * 	in number of bytes.
  * @return  Status CMZN_OK on success, any other value on failure.
   */
 ZINC_API int cmzn_field_image_get_buffer(cmzn_field_image_id image_field,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
+	const void **buffer_out, unsigned int *buffer_length_out);
 
 /**
  * Fills the image buffer without changing any other image properties. The image field

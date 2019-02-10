@@ -258,10 +258,10 @@ public:
 			static_cast<cmzn_field_image_pixel_format>(imagePixelFormat));
 	}
 
-	int getBuffer(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
 	{
-		return cmzn_field_image_get_buffer(getDerivedId(), memory_buffer_references,
-			memory_buffer_sizes);
+		return cmzn_field_image_get_buffer(getDerivedId(), buffer_out,
+			buffer_length_out);
 	}
 
 	int setBuffer(const void *buffer, unsigned int buffer_length)

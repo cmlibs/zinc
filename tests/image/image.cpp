@@ -104,11 +104,11 @@ TEST(ZincFieldImage, set_get_buffer)
 	unsigned char *buffer = new unsigned char[2];
 	buffer[0] = 0xBB;
 	buffer[1] = 0xDD;
-	void *returnedBuffer = 0;
+	const void *returnedBuffer = 0;
 	unsigned int length = 0;
 	EXPECT_EQ(CMZN_OK, im.setBuffer((void *)buffer, 2));
 	EXPECT_EQ(CMZN_OK, im.getBuffer(&returnedBuffer, &length));
-	unsigned char *myBuffer = (unsigned char *)returnedBuffer;
+	const unsigned char *myBuffer = (const unsigned char *)returnedBuffer;
 	EXPECT_EQ(buffer[0], myBuffer[0]);
 	EXPECT_EQ(buffer[1], myBuffer[1]);
 	EXPECT_EQ(2, length);

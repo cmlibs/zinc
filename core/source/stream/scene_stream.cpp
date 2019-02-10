@@ -212,14 +212,14 @@ int cmzn_scene_read(cmzn_scene_id scene,
 				}
 				else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 				{
-					void *memory_block = NULL;
+					const void *memory_block = NULL;
 					unsigned int buffer_size = 0;
 					memory_resource->getBuffer(&memory_block, &buffer_size);
 					cmzn_streamresource_memory_destroy(&memory_resource);
 					if (memory_block)
 					{
 						SceneJsonImport sceneImport(scene, overwrite);
-						char *jsonString = static_cast<char *>(memory_block);
+						const char *jsonString = static_cast<const char *>(memory_block);
 						std::string inputString(jsonString);
 						return_code = sceneImport.import(inputString);
 						overwrite = 0;

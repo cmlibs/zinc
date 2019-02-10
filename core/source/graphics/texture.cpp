@@ -4265,21 +4265,29 @@ in size.
 } /* Texture_set_image_block */
 
 int Texture_get_image_block(struct Texture *texture,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	const void **buffer_out, unsigned int *buffer_length_out)
 {
 	int bytes_per_pixel = 0, number_of_components = 0;
-	if (texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
-		(texture->depth_texels > 0) &&
-		(0 < (number_of_components =
-			Texture_storage_type_get_number_of_components(texture->storage))) &&
-		(0 < (bytes_per_pixel =
-			number_of_components*texture->number_of_bytes_per_component)))
+	if (buffer_out)
 	{
-		int source_width_bytes = texture->width_texels * bytes_per_pixel;
-		int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
-		*memory_buffer_references = static_cast<void *>(texture->image);
-		*memory_buffer_sizes = (unsigned int)total_size;
-		return CMZN_OK;
+		if (texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
+			(texture->depth_texels > 0) &&
+			(0 < (number_of_components =
+				Texture_storage_type_get_number_of_components(texture->storage))) &&
+			(0 < (bytes_per_pixel =
+				number_of_components*texture->number_of_bytes_per_component)))
+		{
+			int source_width_bytes = texture->width_texels * bytes_per_pixel;
+			int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
+			*buffer_out = static_cast<void *>(texture->image);
+			*buffer_length_out = (unsigned int)total_size;
+			return CMZN_OK;
+		}
+		else
+		{
+			*buffer_out = 0;
+			*buffer_length_out = 0;
+		}
 	}
 
 	return CMZN_RESULT_ERROR_ARGUMENT;

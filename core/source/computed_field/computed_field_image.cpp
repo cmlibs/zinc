@@ -2085,14 +2085,19 @@ int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
 }
 
 int cmzn_field_image_get_buffer(cmzn_field_image_id image_field,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	const void **buffer_out, unsigned int *buffer_length_out)
 {
 	if (image_field)
 	{
 		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
 		if (texture)
 		{
-			return Texture_get_image_block(texture, memory_buffer_references, memory_buffer_sizes);
+			return Texture_get_image_block(texture, buffer_out, buffer_length_out);
+		}
+		else
+		{
+			*buffer_out = 0;
+			*buffer_length_out = 0;
 		}
 	}
 	return CMZN_RESULT_ERROR_ARGUMENT;

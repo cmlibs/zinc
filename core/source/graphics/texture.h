@@ -466,7 +466,7 @@ int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixe
 	unsigned int buffer_length);
 
 int Texture_get_image_block(struct Texture *texture,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
+		const void **buffer_out, unsigned int *buffer_length_out);
 
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
