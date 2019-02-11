@@ -226,19 +226,20 @@ ZINC_C_INLINE cmzn_streamresource_id cmzn_streamresource_memory_base_cast(
 }
 
 /**
- * Return the memory block currently in the stream resource object.
+ * Return the memory block currently in the stream resource object. The returned buffer
+ * should not be modified.
  * @see cmzn_region_write
  * @see cmzn_field_image_write
  *
  * @param resource  Handle to the memory stream resource.
- * @param memory_buffer_reference  Will be set to point to the allocated
- * 	memory block.
- * @param memory_buffer_size  Will be set to the length of
- * 	the returned memory block.
+ * @param buffer_out  Will be set to the pointer to the internal buffer on successful return of
+ * 	the function.
+ * @param buffer_length_out  Will be set to the length of
+ * 	the returned buffer in number of bytes.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id resource,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
+	const void **buffer_out, unsigned int *buffer_length_out);
 
 /**
  * Similar to stream resource memory get buffer method but this function returns
@@ -251,15 +252,15 @@ ZINC_API int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id
  * @see cmzn_deallocate
  *
  * @param resource  Handle to the memory stream resource.
- * @param memory_buffer_reference  Will be set to point to the allocated
+ * @param buffer_out  Will be set to point to the allocated
  * 	memory block.
- * @param memory_buffer_size  Will be set to the length of
- * 	the returned memory block.
+ * @param buffer_length_out  Will be set to the length of
+ * 	the returned buffer in number of bytes.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_streamresource_memory_get_buffer_copy(
-	cmzn_streamresource_memory_id resource, void **memory_buffer_references,
-	unsigned int *memory_buffer_sizes);
+	cmzn_streamresource_memory_id resource, void **buffer_out,
+	unsigned int *buffer_length_out);
 
 /**
  * Get the specified data compression for a specified streamresource in

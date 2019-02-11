@@ -173,7 +173,7 @@ int cmzn_region_read(cmzn_region_id region,
 					cmzn_streaminformation_region_get_file_format(streaminformation_region);
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
-				void *memory_block = NULL;
+				const void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int readData = 0;
 				int domain_type = cmzn_streaminformation_region_get_resource_domain_types(

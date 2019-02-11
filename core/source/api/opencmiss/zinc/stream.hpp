@@ -104,11 +104,11 @@ public:
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_memory_id))
 	{ }
 
-	int getBuffer(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
 	{
 		return cmzn_streamresource_memory_get_buffer(
-			reinterpret_cast<cmzn_streamresource_memory_id>(id), memory_buffer_references,
-			memory_buffer_sizes);
+			reinterpret_cast<cmzn_streamresource_memory_id>(id), buffer_out,
+			buffer_length_out);
 	}
 
 };

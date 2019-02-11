@@ -218,7 +218,7 @@ TEST(ZincRegion, fieldml_figure8)
 	StreamresourceMemory resource = sir.createStreamresourceMemory();
 	EXPECT_TRUE(resource.isValid());
 	EXPECT_EQ(OK, result = zinc.root_region.write(sir));
-	void *buffer;
+	const void *buffer;
 	unsigned int bufferSize;
 	EXPECT_EQ(OK, result = resource.getBuffer(&buffer, &bufferSize));
 

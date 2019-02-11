@@ -27,10 +27,38 @@ free($1);
 
 %newobject *::getSolutionReport();
 
-/* the following line handle binary data */
-%apply (char *STRING, size_t LENGTH) { (const void *buffer, unsigned int buffer_length) }
+%typemap(in) (const void *buffer, unsigned int buffer_length)
+{
+    if (PyBytes_Check($input))
+    {
+        $1 = PyBytes_AsString($input);
+        $2 = PyBytes_Size($input);
+    }
+    else if (PyString_Check($input))
+    {
+        $1 = PyString_AsString($input);
+        $2 = PyString_Size($input);
+    }
+    else if (PyUnicode_Check($input))
+    {
+%#if PY_VERSION_HEX < 0x03030000
+        PyObject *utf8_obj = PyUnicode_AsUTF8String($input);
+        $1 = PyString_AsString(utf8_obj);
+        $2 = PyString_Size(utf8_obj);
+%#else
+        Py_ssize_t len = 0;
+        $1 = PyUnicode_AsUTF8AndSize($input, &len);
+        $2 = (int)len;
+%#endif
+    }
+    else
+    {
+        PyErr_SetString(PyExc_TypeError,"List may only contain string");
+        return NULL;
+    }
+}
 
-%typemap(in, numinputs=0) (void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+%typemap(in, numinputs=0) (const void **buffer_out, unsigned int *buffer_length_out)
 {
 	char *memoryBuffer = 0;
 	$1 = (void **)&memoryBuffer;
@@ -38,12 +66,16 @@ free($1);
 	$2 = &size;
 };
 
-%typemap(argout)(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+%typemap(argout)(const void **buffer_out, unsigned int *buffer_length_out)
 {
 	const char *mystring = (char *)(*$1);
 	PyObject *o = Py_None;
 	if (mystring)
-		o = PyString_FromString(mystring);
+	{
+	   o = PyBytes_FromString(mystring);
+	   if (o == 0)
+	       o = PyString_FromString(mystring);
+	}
 	if ((!$result) || ($result == Py_None))
 	{
 		$result = o;

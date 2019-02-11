@@ -77,6 +77,17 @@ public:
 			/*!< Allow the hardware to choose the compression */
 	};
 
+	enum PixelFormat
+	{
+		PIXEL_FORMAT_INVALID = CMZN_FIELD_IMAGE_PIXEL_FORMAT_INVALID,
+		PIXEL_FORMAT_LUMINANCE = CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE,
+		PIXEL_FORMAT_LUMINANCE_ALPHA = CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
+		PIXEL_FORMAT_RGB = CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGB,
+		PIXEL_FORMAT_RGBA = CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGBA,
+		PIXEL_FORMAT_ABGR = CMZN_FIELD_IMAGE_PIXEL_FORMAT_ABGR,
+		PIXEL_FORMAT_BGR = CMZN_FIELD_IMAGE_PIXEL_FORMAT_BGR
+	};
+
 	enum WrapMode
 	{
 		WRAP_MODE_INVALID = CMZN_FIELD_IMAGE_WRAP_MODE_INVALID,
@@ -222,6 +233,40 @@ public:
 	char *getProperty(const char* property)
 	{
 		return cmzn_field_image_get_property(getDerivedId(), property);
+	}
+
+	int getNumberOfBitsPerComponent()
+	{
+		return cmzn_field_image_get_number_of_bits_per_component(
+			getDerivedId());
+	}
+
+	int setNumberOfBitsPerComponent(int numberOfBits)
+	{
+		return cmzn_field_image_set_number_of_bits_per_component(
+			getDerivedId(), numberOfBits);
+	}
+
+	PixelFormat getPixelFormat()
+	{
+		return static_cast<enum PixelFormat>(cmzn_field_image_get_pixel_format(getDerivedId()));
+	}
+
+	int setPixelFormat(PixelFormat imagePixelFormat)
+	{
+		return cmzn_field_image_set_pixel_format(getDerivedId(),
+			static_cast<cmzn_field_image_pixel_format>(imagePixelFormat));
+	}
+
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
+	{
+		return cmzn_field_image_get_buffer(getDerivedId(), buffer_out,
+			buffer_length_out);
+	}
+
+	int setBuffer(const void *buffer, unsigned int buffer_length)
+	{
+		return cmzn_field_image_set_buffer(getDerivedId(), buffer, buffer_length);
 	}
 
 	inline StreaminformationImage createStreaminformationImage();
