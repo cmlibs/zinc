@@ -226,13 +226,14 @@ ZINC_C_INLINE cmzn_streamresource_id cmzn_streamresource_memory_base_cast(
 }
 
 /**
- * Return the memory block currently in the stream resource object.
+ * Return the memory block currently in the stream resource object. The returned buffer
+ * should not be modified.
  * @see cmzn_region_write
  * @see cmzn_field_image_write
  *
  * @param resource  Handle to the memory stream resource.
- * @param buffer_out  Will be set to point to the allocated
- * 	memory block.
+ * @param buffer_out  Will be set to the pointer to the internal buffer on successful return of
+ * 	the function.
  * @param buffer_length_out  Will be set to the length of
  * 	the returned buffer in number of bytes.
  * @return  Status CMZN_OK on success, any other value on failure.

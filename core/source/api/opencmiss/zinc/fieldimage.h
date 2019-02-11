@@ -535,11 +535,11 @@ ZINC_API int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
 	enum cmzn_field_image_pixel_format pixel_format);
 
 /**
- * Get the image buffer currently in the image field. This buffer should not be
- * edited.
+ * Get the image buffer currently in the image field. The returned buffer should not be
+ * modified.
  *
  * @param image_field 	Handle to the image field.
- * @param buffer_out  Will be set to the pointer of the allocated buffer on successful
+ * @param buffer_out  Will be set to the pointer to the internal buffer on successful
  * 	 return of the function.
  * @param buffer_length_out  Will be set to the length of the returned buffer
  * 	in number of bytes.
