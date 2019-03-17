@@ -45,9 +45,13 @@ free($1);
         PyObject *utf8_obj = PyUnicode_AsUTF8String($input);
         $1 = PyString_AsString(utf8_obj);
         $2 = PyString_Size(utf8_obj);
-%#else
+%#elif PY_VERSION_HEX < 0x03070000
         Py_ssize_t len = 0;
         $1 = PyUnicode_AsUTF8AndSize($input, &len);
+        $2 = (int)len;
+%#else
+        Py_ssize_t len = 0;
+        $1 = const_cast<char *>(PyUnicode_AsUTF8AndSize($input, &len));
         $2 = (int)len;
 %#endif
     }
