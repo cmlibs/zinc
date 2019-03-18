@@ -79,7 +79,7 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 				{
 					if (!texture_file_name)
 						texture_file_name = duplicate_string(field_name);
-					void *memory_block = NULL;
+					const void *memory_block = NULL;
 					unsigned int buffer_size = 0;
 					memory_resource->getBuffer(&memory_block, &buffer_size);
 					if (memory_block)
@@ -87,7 +87,7 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 						memoryStream = 1;
 						if (!fileStream)
 						{
-							Cmgui_image_information_add_memory_block(image_information, memory_block,
+							Cmgui_image_information_add_memory_block(image_information, const_cast<void *>(memory_block),
 								buffer_size);
 						}
 						else

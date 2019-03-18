@@ -119,6 +119,33 @@ enum cmzn_field_image_combine_mode
 };
 
 /**
+ * Optional information used to describe the binary data supplied to the images.
+ */
+enum cmzn_field_image_pixel_format
+{
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_INVALID = 0,
+	/*!< Unspecified image pixel format. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE = 1,
+	/*!< Specify the binary data of image to be single component
+	 * grey scale. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA = 2,
+	/*!< Specify the binary data of image to be two components:
+	 * grey scale and alpha. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGB = 3,
+	/*!< Specify the binary data of image to be three components:
+	 * red, green and blue. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGBA = 4,
+	/*!< Specify the binary data of image to be four components:
+	 * red, green, blue and alpha. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_ABGR = 5,
+	/*!< Specify the binary data of image to be four components:
+	 * alpha, blue, green and red. */
+	CMZN_FIELD_IMAGE_PIXEL_FORMAT_BGR = 6
+	/*!< Specify the binary data of image to be three components:
+	 * blue, green and red */
+};
+
+/**
  * Specifies how the graphics hardware rasterises the texture onto the screen,
  * mainly its interpolation mode.
  */

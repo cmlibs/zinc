@@ -159,7 +159,6 @@ The properties of a graphical texture.
 	/* following controls how a texture is downsampled to fit texture hardware */
 	enum Texture_resize_filter_mode resize_filter_mode;
 
-	struct X3d_movie *movie;
 	struct Graphics_buffer *graphics_buffer;
 
 #if defined (OPENGL_API)
@@ -397,6 +396,7 @@ DESCRIPTION :
 
 DECLARE_OBJECT_FUNCTIONS(Texture_tiling)
 
+
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage)
 /*******************************************************************************
@@ -426,11 +426,6 @@ Returns the number of components used per texel for <storage> type.
 		} break;
 		case TEXTURE_RGBA:
 		case TEXTURE_ABGR:
-		{
-			return_code = 4;
-		} break;
-		case TEXTURE_DMBUFFER:
-		case TEXTURE_PBUFFER:
 		{
 			return_code = 4;
 		} break;
@@ -489,6 +484,10 @@ DESCRIPTION :
 		{
 			*format=GL_RGB;
 		} break;
+		case TEXTURE_BGR:
+		{
+			*format=GL_BGR;
+		} break;
 		case TEXTURE_RGBA:
 		{
 			*format=GL_RGBA;
@@ -501,11 +500,6 @@ DESCRIPTION :
 			display_message(ERROR_MESSAGE,"Texture_get_type_and_format_from_storage_type.  abgr storage not supported in this compilation");
 			return_code=0;
 #endif /* defined (GL_EXT_abgr) */
-		} break;
-		case TEXTURE_DMBUFFER:
-		case TEXTURE_PBUFFER:
-		{
-			*format=GL_RGBA;
 		} break;
 		default:
 		{
@@ -2529,326 +2523,245 @@ Directly outputs the commands setting up the <texture>.
 		glEnable(texture_target);
 		Texture_activate_texture_target_environment(texture,
 			texture_target);
-		switch(texture->storage)
+#if defined (GL_ARB_texture_non_power_of_two)
+		if (!Graphics_library_check_extension(GL_ARB_texture_non_power_of_two))
 		{
-			case TEXTURE_DMBUFFER:
-			{
-#if defined (SGI_DIGITAL_MEDIA)
-				if (texture->dimension == 2)
-				{
-					Texture_get_type_and_format_from_storage_type(texture->storage,
-						texture->number_of_bytes_per_component, &type, &format);
-					glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-						GL_RGBA8_EXT,
-						(GLint)(texture->width_texels),
-						(GLint)(texture->height_texels),(GLint)0,
-						format,type, NULL);
-					glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-						texture->width_texels, texture->height_texels);
-#if defined (DEBUG_CODE)
-					glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA8_EXT, 0, 0,
-						256, 256, 0);
-					glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-						256, 256);
-					{
-						unsigned char test_pixels[262144];
-						memset(test_pixels, 120, 262144);
-						/*glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-							256, 256,
-							GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);*/
-						glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-							GL_RGBA8_EXT,
-							256,
-							256,(GLint)0,
-							GL_RGBA,GL_UNSIGNED_BYTE, test_pixels);
-					}
-#endif /* defined (DEBUG_CODE) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Only 2-D textures supported with DMBUFFER");
-					return_code = 0;
-				}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-				display_message(ERROR_MESSAGE,"direct_render_Texture."
-					"  Texture has type DMBUFFER but DIGITAL_MEDIA unavailable");
-				return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-			} break;
-			case TEXTURE_PBUFFER:
-			{
-#if defined (SGI_DIGITAL_MEDIA)
-				if (texture->dimension == 2)
-				{
-					glPushAttrib(GL_PIXEL_MODE_BIT);
-					Texture_get_type_and_format_from_storage_type(texture->storage,
-						texture->number_of_bytes_per_component, &type, &format);
-					glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-						GL_RGBA8_EXT,
-						(GLint)(texture->width_texels),
-						(GLint)(texture->height_texels),(GLint)0,
-						format,type, NULL);
-					glPixelTransferf(GL_ALPHA_BIAS, 1.0);
-					glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-						texture->width_texels, texture->height_texels);
-					glPopAttrib();
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Only 2-D textures supported with PBUFFER");
-					return_code = 0;
-				}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-				display_message(ERROR_MESSAGE,"direct_render_Texture."
-					"  Texture has type PBUFFER but DIGITAL_MEDIA unavailable");
-				return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-			} break;
-			default:
-			{
-#if defined (GL_ARB_texture_non_power_of_two)
-				if (!Graphics_library_check_extension(GL_ARB_texture_non_power_of_two))
-				{
 #endif /* defined (GL_ARB_texture_non_power_of_two) */
-					Texture_expand_to_power_of_two(texture);
+			Texture_expand_to_power_of_two(texture);
 #if defined (GL_ARB_texture_non_power_of_two)
-				}
+		}
 #endif /* defined (GL_ARB_texture_non_power_of_two) */
 
-				/* make each row of the image start on a 4-byte boundary */
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-				Texture_get_type_and_format_from_storage_type(texture->storage,
-					texture->number_of_bytes_per_component, &type, &format);
-				number_of_components =
-					Texture_storage_type_get_number_of_components(texture->storage);
-				hardware_storage_format = Texture_get_hardware_storage_format
-					(texture->compression_mode, number_of_components,
-					texture->number_of_bytes_per_component);
+		/* make each row of the image start on a 4-byte boundary */
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		Texture_get_type_and_format_from_storage_type(texture->storage,
+			texture->number_of_bytes_per_component, &type, &format);
+		number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage);
+		hardware_storage_format = Texture_get_hardware_storage_format
+			(texture->compression_mode, number_of_components,
+			texture->number_of_bytes_per_component);
 
-				if (0 < (reduction_flag = Texture_get_hardware_reduction_or_tiling(texture,
-					 reductions, renderer->allow_texture_tiling, &renderer->texture_tiling)))
+		if (0 < (reduction_flag = Texture_get_hardware_reduction_or_tiling(texture,
+			 reductions, renderer->allow_texture_tiling, &renderer->texture_tiling)))
+		{
+			reduced_image = (unsigned char *)NULL;
+			switch(reduction_flag)
+			{
+				case 1:
 				{
-					reduced_image = (unsigned char *)NULL;
-					switch(reduction_flag)
+					rendered_image = texture->image;
+					texture->rendered_width_texels = texture->width_texels;
+					texture->rendered_height_texels = texture->height_texels;
+					texture->rendered_depth_texels = texture->depth_texels;
+					render_tile_width = texture->width_texels;
+					render_tile_height = texture->height_texels;
+					render_tile_depth = texture->depth_texels;
+					number_of_tiles = 1;
+				} break;
+				case 2:
+				{
+					switch (texture->dimension)
 					{
 						case 1:
 						{
-							rendered_image = texture->image;
-							texture->rendered_width_texels = texture->width_texels;
-							texture->rendered_height_texels = texture->height_texels;
-							texture->rendered_depth_texels = texture->depth_texels;
-							render_tile_width = texture->width_texels;
-							render_tile_height = texture->height_texels;
-							render_tile_depth = texture->depth_texels;
-							number_of_tiles = 1;
+							texture->rendered_width_texels =
+								texture->width_texels / reductions[0];
+							texture->rendered_height_texels = 1;
+							texture->rendered_depth_texels = 1;
+							display_message(WARNING_MESSAGE,
+								"1-D image %s is too large for this display.  "
+								"Reducing width from %d to %d for display only",
+								texture->name,
+								texture->width_texels,
+								texture->rendered_width_texels);
 						} break;
 						case 2:
 						{
-							switch (texture->dimension)
-							{
-								case 1:
-								{
-									texture->rendered_width_texels =
-										texture->width_texels / reductions[0];
-									texture->rendered_height_texels = 1;
-									texture->rendered_depth_texels = 1;
-									display_message(WARNING_MESSAGE,
-										"1-D image %s is too large for this display.  "
-										"Reducing width from %d to %d for display only",
-										texture->name,
-										texture->width_texels,
-										texture->rendered_width_texels);
-								} break;
-								case 2:
-								{
-									texture->rendered_width_texels =
-										texture->width_texels / reductions[0];
-									texture->rendered_height_texels =
-										texture->height_texels / reductions[1];
-									texture->rendered_depth_texels = 1;
-									display_message(WARNING_MESSAGE,
-										"Image %s is too large for this display.  "
-										"Reducing (%d,%d) to (%d,%d) for display only",
-										texture->name,
-										texture->width_texels, texture->height_texels,
-										texture->rendered_width_texels,
-										texture->rendered_height_texels);
-								} break;
-								case 3:
-								{
-									texture->rendered_width_texels =
-										texture->width_texels / reductions[0];
-									texture->rendered_height_texels =
-										texture->height_texels / reductions[1];
-									texture->rendered_depth_texels =
-										texture->depth_texels / reductions[2];
-									display_message(WARNING_MESSAGE,
-										"3-D image %s is too large for this display.  "
-										"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
-										texture->name,
-										texture->width_texels, texture->height_texels,
-										texture->depth_texels,
-										texture->rendered_width_texels,
-										texture->rendered_height_texels,
-										texture->rendered_depth_texels);
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"direct_render_Texture.  Invalid texture dimension");
-									return_code = 0;
-								}
-							}
-							if (return_code)
-							{
-								reduced_image = Texture_get_resized_image(texture,
-									texture->image, texture->width_texels, texture->height_texels, texture->depth_texels,
-									texture->rendered_width_texels, texture->rendered_height_texels,
-									texture->rendered_depth_texels, texture->resize_filter_mode);
-								if (reduced_image)
-								{
-									rendered_image = reduced_image;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-										"Could not reduce texture size for display");
-									return_code = 0;
-								}
-								render_tile_width = texture->rendered_width_texels;
-								render_tile_height = texture->rendered_height_texels;
-								render_tile_depth = texture->rendered_depth_texels;
-							}
-							number_of_tiles = 1;
+							texture->rendered_width_texels =
+								texture->width_texels / reductions[0];
+							texture->rendered_height_texels =
+								texture->height_texels / reductions[1];
+							texture->rendered_depth_texels = 1;
+							display_message(WARNING_MESSAGE,
+								"Image %s is too large for this display.  "
+								"Reducing (%d,%d) to (%d,%d) for display only",
+								texture->name,
+								texture->width_texels, texture->height_texels,
+								texture->rendered_width_texels,
+								texture->rendered_height_texels);
 						} break;
 						case 3:
 						{
-							number_of_tiles = 1;
-							for (i = 0 ; i < renderer->texture_tiling->dimension ; i++)
-							{
-								number_of_tiles *= renderer->texture_tiling->texture_tiles[i];
-							}
-							render_tile_width = renderer->texture_tiling->tile_size[0];
-							if (texture->dimension > 1)
-							{
-								render_tile_height = renderer->texture_tiling->tile_size[1];
-							}
-							else
-							{
-								render_tile_height = 1;
-							}
-							if (texture->dimension > 2)
-							{
-								render_tile_depth = renderer->texture_tiling->tile_size[2];
-							}
-							else
-							{
-								render_tile_depth = 1;
-							}
+							texture->rendered_width_texels =
+								texture->width_texels / reductions[0];
+							texture->rendered_height_texels =
+								texture->height_texels / reductions[1];
+							texture->rendered_depth_texels =
+								texture->depth_texels / reductions[2];
+							display_message(WARNING_MESSAGE,
+								"3-D image %s is too large for this display.  "
+								"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
+								texture->name,
+								texture->width_texels, texture->height_texels,
+								texture->depth_texels,
+								texture->rendered_width_texels,
+								texture->rendered_height_texels,
+								texture->rendered_depth_texels);
 						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"direct_render_Texture.  Invalid texture dimension");
+							return_code = 0;
+						}
 					}
 					if (return_code)
 					{
-						for (i = 0 ; return_code && (i < number_of_tiles) ; i++)
+						reduced_image = Texture_get_resized_image(texture,
+							texture->image, texture->width_texels, texture->height_texels, texture->depth_texels,
+							texture->rendered_width_texels, texture->rendered_height_texels,
+							texture->rendered_depth_texels, texture->resize_filter_mode);
+						if (reduced_image)
 						{
-							if (3 == reduction_flag)
-							{
-								Texture_get_image_tile(texture, &reduced_image,
-									renderer->texture_tiling, /*tile_number*/i);
-								glBindTexture(texture_target,
-									renderer->texture_tiling->texture_ids[i]);
-								rendered_image = reduced_image;
-								glEnable(texture_target);
+							rendered_image = reduced_image;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+								"Could not reduce texture size for display");
+							return_code = 0;
+						}
+						render_tile_width = texture->rendered_width_texels;
+						render_tile_height = texture->rendered_height_texels;
+						render_tile_depth = texture->rendered_depth_texels;
+					}
+					number_of_tiles = 1;
+				} break;
+				case 3:
+				{
+					number_of_tiles = 1;
+					for (i = 0 ; i < renderer->texture_tiling->dimension ; i++)
+					{
+						number_of_tiles *= renderer->texture_tiling->texture_tiles[i];
+					}
+					render_tile_width = renderer->texture_tiling->tile_size[0];
+					if (texture->dimension > 1)
+					{
+						render_tile_height = renderer->texture_tiling->tile_size[1];
+					}
+					else
+					{
+						render_tile_height = 1;
+					}
+					if (texture->dimension > 2)
+					{
+						render_tile_depth = renderer->texture_tiling->tile_size[2];
+					}
+					else
+					{
+						render_tile_depth = 1;
+					}
+				} break;
+			}
+			if (return_code)
+			{
+				for (i = 0 ; return_code && (i < number_of_tiles) ; i++)
+				{
+					if (3 == reduction_flag)
+					{
+						Texture_get_image_tile(texture, &reduced_image,
+							renderer->texture_tiling, /*tile_number*/i);
+						glBindTexture(texture_target,
+							renderer->texture_tiling->texture_ids[i]);
+						rendered_image = reduced_image;
+						glEnable(texture_target);
 
-								Texture_activate_texture_target_environment(texture,
-									texture_target);
-							}
-							switch (texture->dimension)
-							{
-								case 1:
-								{
-									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)render_tile_width, (GLint)0,
-										format, type, (GLvoid *)rendered_image);
-								} break;
-								case 2:
-								{
-									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)render_tile_width,
-										(GLint)render_tile_height, (GLint)0,
-										format, type, (GLvoid *)rendered_image);
-								} break;
-								case 3:
-								{
+						Texture_activate_texture_target_environment(texture,
+							texture_target);
+					}
+					switch (texture->dimension)
+					{
+						case 1:
+						{
+							glTexImage1D(GL_TEXTURE_1D, (GLint)0,
+								(GLint)hardware_storage_format,
+								(GLint)render_tile_width, (GLint)0,
+								format, type, (GLvoid *)rendered_image);
+						} break;
+						case 2:
+						{
+							glTexImage2D(GL_TEXTURE_2D, (GLint)0,
+								(GLint)hardware_storage_format,
+								(GLint)render_tile_width,
+								(GLint)render_tile_height, (GLint)0,
+								format, type, (GLvoid *)rendered_image);
+						} break;
+						case 3:
+						{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-									if (
+							if (
 #  if defined (GL_VERSION_1_2)
-										Graphics_library_check_extension(GL_VERSION_1_2)
+								Graphics_library_check_extension(GL_VERSION_1_2)
 #    if defined (GL_EXT_texture3D)
-										||
+								||
 #    endif /* defined (GL_EXT_texture3D) */
 #  endif /* defined (GL_VERSION_1_2) */
 #  if defined (GL_EXT_texture3D)
-										Graphics_library_check_extension(GL_EXT_texture3D)
+								Graphics_library_check_extension(GL_EXT_texture3D)
 #  endif /* defined (GL_EXT_texture3D) */
-										)
-									{
-										glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-											(GLint)hardware_storage_format,
-											(GLint)render_tile_width,
-											(GLint)render_tile_height,
-											(GLint)render_tile_depth, (GLint)0,
-											format, type, (GLvoid *)rendered_image);
-									}
-									else
-									{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-										display_message(ERROR_MESSAGE,"direct_render_Texture.  "
-											"3D textures not supported on this display.");
-										return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-									}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-								} break;
-							}
-#if defined (GL_VERSION_1_4)
-							switch (texture->filter_mode)
+								)
 							{
-								case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
-								case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
-								{
-									if (!Graphics_library_check_extension(GL_SGIS_generate_mipmap))
-									{
-										Texture_generate_software_mipmaps(texture, renderer, rendered_image,
-											render_tile_width, render_tile_height, render_tile_depth,
-											hardware_storage_format, format, type);
-									}
-								} break;
-								default:
-								{
-									/* Do nothing */
-								}
+								glTexImage3D(GL_TEXTURE_3D, (GLint)0,
+									(GLint)hardware_storage_format,
+									(GLint)render_tile_width,
+									(GLint)render_tile_height,
+									(GLint)render_tile_depth, (GLint)0,
+									format, type, (GLvoid *)rendered_image);
 							}
-#endif /* defined (GL_VERSION_1_4) */
+							else
+							{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+								display_message(ERROR_MESSAGE,"direct_render_Texture.  "
+									"3D textures not supported on this display.");
+								return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+							}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+						} break;
+					}
+#if defined (GL_VERSION_1_4)
+					switch (texture->filter_mode)
+					{
+						case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+						case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
+						{
+							if (!Graphics_library_check_extension(GL_SGIS_generate_mipmap))
+							{
+								Texture_generate_software_mipmaps(texture, renderer, rendered_image,
+									render_tile_width, render_tile_height, render_tile_depth,
+									hardware_storage_format, format, type);
+							}
+						} break;
+						default:
+						{
+							/* Do nothing */
 						}
 					}
-					if (reduced_image)
-					{
-						DEALLOCATE(reduced_image);
-					}
+#endif /* defined (GL_VERSION_1_4) */
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Not enough hardware memory resources for texture %s",
-						texture->name);
-					return_code = 0;
-				}
-			} break;
+			}
+			if (reduced_image)
+			{
+				DEALLOCATE(reduced_image);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Not enough hardware memory resources for texture %s",
+				texture->name);
+			return_code = 0;
 		}
 	}
 	else
@@ -2861,131 +2774,6 @@ Directly outputs the commands setting up the <texture>.
 	return (return_code);
 } /* direct_render_Texture */
 #endif /* defined (OPENGL_API) */
-
-#if defined (SGI_MOVIE_FILE)
-static int Texture_refresh(struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Tells the texture it has changed, forcing it to send the manager message
-MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
-Don't want to copy the texture when we are doing intensive things like
-playing movies.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Texture_refresh);
-	if (texture)
-	{
-		return_code = MANAGED_OBJECT_CHANGE(Texture)(texture,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Texture_refresh.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_refresh */
-#endif /* defined (SGI_MOVIE_FILE) */
-
-#if defined (SGI_MOVIE_FILE)
-static int Texture_movie_callback(struct X3d_movie *movie,
-	int time, int time_scale, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 8 September 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(Texture_movie_callback);
-	USE_PARAMETER(time);
-	USE_PARAMETER(time_scale);
-	return_code=0;
-	if (movie&&(texture=(struct Texture *)user_data))
-	{
-		return_code=1;
-		switch(texture->storage)
-		{
-			case TEXTURE_DMBUFFER:
-			case TEXTURE_PBUFFER:
-			case TEXTURE_ABGR:
-			{
-				/* The buffers should be bound */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Texture_movie_callback.  Invalid movie texture type");
-				return_code=0;
-			} break;
-		}
-		if (texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED)
-		{
-			/* If something else has made the whole list invalid keep that state,
-				otherwise we can set our special display_list_current state */
-			texture->display_list_current=TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED;
-		}
-		Texture_refresh(texture);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Texture_movie_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_movie_callback */
-#endif /* defined (SGI_MOVIE_FILE) */
-
-#if defined (SGI_MOVIE_FILE)
-static int Texture_movie_destroy_callback(struct X3d_movie *movie,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 18 September 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(Texture_movie_destroy_callback);
-	return_code=0;
-	if (movie&&(texture=(struct Texture *)user_data))
-	{
-		if (texture->movie == movie)
-		{
-			texture->movie = (struct X3d_movie *)NULL;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Texture_movie_destroy_callback.  "
-				"The movie given isn't the current movie texture");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Texture_movie_destroy_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_movie_destroy_callback */
-#endif /* defined (SGI_MOVIE_FILE) */
 
 /*
 Global functions
@@ -3207,14 +2995,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_storage_type)
 		{
 			enumerator_string = "abgr";
 		} break;
-		case TEXTURE_DMBUFFER:
-		{
-			enumerator_string = "dmbuffer";
-		} break;
-		case TEXTURE_PBUFFER:
-		{
-			enumerator_string = "pbuffer";
-		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -3312,7 +3092,6 @@ of all textures.
 			texture->start_file_number = 0;
 			texture->stop_file_number = 0;
 			texture->file_number_increment = 0;
-
 			texture->storage=TEXTURE_RGBA;
 			texture->number_of_bytes_per_component=1;
 			texture->depth_texels=1;
@@ -3341,7 +3120,6 @@ of all textures.
 			(texture->combine_colour).blue=0.;
 			texture->combine_alpha=0.;
 			texture->mipmap_level_of_detail_bias=0.;
-			texture->movie = (struct X3d_movie *)NULL;
 			texture->graphics_buffer = (struct Graphics_buffer *)NULL;
 #if defined (OPENGL_API)
 			texture->display_list=0;
@@ -3392,33 +3170,6 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 		{
 			if (texture->access_count<=0)
 			{
-				if(texture->movie)
-				{
-#if defined (SGI_MOVIE_FILE)
-					switch(texture->storage)
-					{
-						case TEXTURE_PBUFFER:
-						case TEXTURE_DMBUFFER:
-						{
-							if(texture->graphics_buffer)
-							{
-								X3d_movie_unbind_from_graphics_buffer(texture->movie);
-							}
-						} break;
-						case TEXTURE_ABGR:
-						{
-							X3d_movie_unbind_from_image_buffer(texture->movie);
-						} break;
-					}
-					X3d_movie_remove_callback(texture->movie,
-						Texture_movie_callback, (void *)texture);
-					X3d_movie_remove_destroy_callback(texture->movie,
-						Texture_movie_destroy_callback, (void *)texture);
-#else /* defined (SGI_MOVIE_FILE) */
-					display_message(ERROR_MESSAGE,"DESTROY(Texture).  Movie unavailable but movie pointer found");
-					return_code=0;
-#endif /* defined (SGI_MOVIE_FILE) */
-				}
 				if (texture->texture_tiling)
 				{
 					DEACCESS(Texture_tiling)(&texture->texture_tiling);
@@ -3563,47 +3314,19 @@ int Texture_copy_image(const struct Texture *source, struct Texture *destination
 		const int image_size = source->depth_texels * source->height_texels * 4 *
 			((source->width_texels * number_of_components *
 				source->number_of_bytes_per_component + 3)/4);
-		switch(source->storage)
+		unsigned char *destination_image;
+		if ((0 < image_size) && REALLOCATE(destination_image,
+			destination->image, unsigned char, image_size))
 		{
-			case TEXTURE_DMBUFFER:
-			case TEXTURE_PBUFFER:
-			{
-#if defined (GRAPHICS_BUFFER_USE_BUFFERS)
-				ACCESS(Graphics_buffer)(source->graphics_buffer);
-				if (destination->graphics_buffer)
-				{
-					DEACCESS(Graphics_buffer)(&(destination->graphics_buffer));
-				}
-				destination->graphics_buffer = source->graphics_buffer;
-#endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
-#if defined (SGI_DIGITAL_MEDIA)
-				if (destination->image)
-				{
-					DEALLOCATE(destination->image)
-				}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-				display_message(ERROR_MESSAGE,
-					"Texture_copy_image.  Digital Media unavailable but source has type DM_BUFFER or PBUFFER");
-				result = CMZN_RESULT_ERROR_GENERAL;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-			} break;
-			default:
-			{
-				unsigned char *destination_image;
-				if ((0 < image_size) && REALLOCATE(destination_image,
-					destination->image, unsigned char, image_size))
-				{
-					destination->image = destination_image;
-					/* use memcpy to copy the image data - should be fastest method */
-					memcpy((void *)destination->image, (void *)source->image, image_size);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Texture_copy_image.  Insufficient memory for image");
-					result = CMZN_RESULT_ERROR_MEMORY;
-				}
-			} break;
+			destination->image = destination_image;
+			/* use memcpy to copy the image data - should be fastest method */
+			memcpy((void *)destination->image, (void *)source->image, image_size);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_copy_image.  Insufficient memory for image");
+			result = CMZN_RESULT_ERROR_MEMORY;
 		}
 		if (result == CMZN_RESULT_OK)
 		{
@@ -4205,6 +3928,17 @@ enum Texture_storage_type Texture_get_storage_type(struct Texture *texture)
 	return TEXTURE_STORAGE_TYPE_INVALID;
 }
 
+
+int Texture_set_storage_type(struct Texture *texture, enum Texture_storage_type storage_type)
+{
+	if (texture && (0 == texture->image_file_name))
+	{
+		texture->storage = storage_type;
+		return CMZN_OK;
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
 struct Cmgui_image *Texture_get_image(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -4490,7 +4224,6 @@ in size.
 	int bytes_per_pixel, copy_width, i, number_of_components, return_code,
 		width_bytes;
 	unsigned char *destination, *source;
-
 	ENTER(Texture_set_image_block);
 	if (texture && (0 <= left) && (0 < width) &&
 		(left + width <= texture->width_texels) &&
@@ -4530,6 +4263,70 @@ in size.
 
 	return (return_code);
 } /* Texture_set_image_block */
+
+int Texture_get_image_block(struct Texture *texture,
+	const void **buffer_out, unsigned int *buffer_length_out)
+{
+	int bytes_per_pixel = 0, number_of_components = 0;
+	if (buffer_out)
+	{
+		if (texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
+			(texture->depth_texels > 0) &&
+			(0 < (number_of_components =
+				Texture_storage_type_get_number_of_components(texture->storage))) &&
+			(0 < (bytes_per_pixel =
+				number_of_components*texture->number_of_bytes_per_component)))
+		{
+			int source_width_bytes = texture->width_texels * bytes_per_pixel;
+			int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
+			*buffer_out = static_cast<void *>(texture->image);
+			*buffer_length_out = (unsigned int)total_size;
+			return CMZN_OK;
+		}
+		else
+		{
+			*buffer_out = 0;
+			*buffer_length_out = 0;
+		}
+	}
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
+	unsigned int buffer_length)
+{
+	int bytes_per_pixel = 0, number_of_components = 0;
+	if (source_pixels && texture && (texture->width_texels > 0) &&  (texture->height_texels > 0) &&
+		(texture->depth_texels > 0) &&
+		(0 < (number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage))) &&
+		(0 < (bytes_per_pixel =
+			number_of_components*texture->number_of_bytes_per_component)))
+	{
+		int source_width_bytes = texture->width_texels * bytes_per_pixel;
+		int total_size = texture->depth_texels*texture->height_texels*source_width_bytes;
+		if (total_size == (int)buffer_length)
+		{
+			// Only set the image if image_file_name is not set as the iamge is not from source
+			// or files/memory.
+			if (texture->image_file_name == 0)
+			{
+				Texture_allocate_image(texture,
+					texture->width_texels, texture->height_texels, texture->depth_texels,
+					texture->storage, texture->number_of_bytes_per_component, "user_buffer");
+			}
+			if (strcmp(texture->image_file_name, "user_buffer") == 0)
+			{
+				memcpy(texture->image, source_pixels, buffer_length);
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
+				return CMZN_OK;
+			}
+		}
+	}
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
 
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
@@ -4680,263 +4477,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 
 	return (return_code);
 } /* Texture_add_image */
-
-struct X3d_movie *Texture_get_movie(struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 3 February 2000
-
-DESCRIPTION :
-Gets the current X3d_movie from the texture.
-==============================================================================*/
-{
-	struct X3d_movie *movie;
-	ENTER(Texture_get_movie);
-	if (texture)
-	{
-		movie=texture->movie;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Texture_get_movie.  Invalid argument");
-		movie=(struct X3d_movie *)NULL;
-	}
-	LEAVE;
-
-	return (movie);
-} /* Texture_get_movie */
-
-int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
-	struct Graphics_buffer_package *graphics_buffer_package, char *image_file_name)
-/*******************************************************************************
-LAST MODIFIED : 27 May 2004
-
-DESCRIPTION :
-Puts the <image> in the texture. The image is left unchanged by this function.
-The <image_file_name> is specified purely so that it may be recorded with the
-texture, and must be given a value.
-==============================================================================*/
-{
-	int return_code;
-#if defined (SGI_MOVIE_FILE)
-	char *temp_file_name;
-	unsigned char *texture_image;
-	enum Graphics_buffer_type graphics_buffer_type;
-	enum Texture_storage_type storage;
-	int destination_row_width_bytes, dimension, i, image_height, image_width,
-		number_of_components;
-	long int texture_height,texture_width;
-	struct Graphics_buffer *graphics_buffer;
-#endif /* defined (SGI_MOVIE_FILE) */
-
-	ENTER(Texture_set_movie);
-#if defined (SGI_MOVIE_FILE)
-	if (texture&&movie&&image_file_name)
-	{
-		/* only 2-D movie textures supported */
-		dimension = 2;
-		X3d_movie_get_bounding_rectangle(movie, (int *)NULL, (int *)NULL,
-			&image_width, &image_height);
-
-		/* width and height must be powers of 2 */
-		i=image_width;
-		texture_width=1;
-		while (i>1)
-		{
-			texture_width *= 2;
-			i /= 2;
-		}
-		if (texture_width<image_width)
-		{
-			texture_width *= 2;
-		}
-		i=image_height;
-		texture_height=1;
-		while (i>1)
-		{
-			texture_height *= 2;
-			i /= 2;
-		}
-		if (texture_height<image_height)
-		{
-			texture_height *= 2;
-		}
-		if ((image_width != texture_width)||(image_height != texture_height))
-		{
-			display_message(WARNING_MESSAGE,
-				"movie width and/or height not powers of 2.  "
-				"Extending (%d,%d) to (%d,%d)",image_width,image_height,texture_width,
-				texture_height);
-		}
-#if defined (GRAPHICS_BUFFER_USE_BUFFERS)
-		if(texture->graphics_buffer)
-		{
-			DEACCESS(Graphics_buffer)(&(texture->graphics_buffer));
-		}
-#endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
-#if defined (SGI_DIGITAL_MEDIA)
-		/* If dm_buffers are available then use them,
-		 otherwise default to normal texture storage*/
-		graphics_buffer = create_Graphics_buffer_shared_offscreen(
-			graphics_buffer_package, texture_width, texture_height,
-			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-			/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/0,
-			/*minimum_accumulation_buffer_depth*/0);
-		if(graphics_buffer && (ACCESS(Graphics_buffer)(graphics_buffer))
-			&& (GRAPHICS_BUFFER_INVALID_TYPE != (graphics_buffer_type =
-			Graphics_buffer_get_type(graphics_buffer))))
-		{
-			texture->graphics_buffer = graphics_buffer;
-			texture->movie = movie;
-			DEALLOCATE(texture->image);
-			texture->image = (void *)NULL;
-
-			X3d_movie_bind_to_graphics_buffer(movie,
-				texture->graphics_buffer);
-
-			switch(graphics_buffer_type)
-			{
-				case GRAPHICS_BUFFER_GLX_DM_PBUFFER_TYPE:
-				{
-					texture->storage = TEXTURE_DMBUFFER;
-				} break;
-				case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-				{
-					texture->storage = TEXTURE_PBUFFER;
-				} break;
-			}
-
-			Graphics_buffer_make_current(texture->graphics_buffer);
-			glClearColor(0.0,0.0,0.0,1.0);
-			glClearDepth(1.0);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-			X3d_movie_render_to_glx(movie, 0, 15);
-			/* X3dThreeDDrawingRemakeCurrent(); */
-
-			X3d_movie_add_callback(movie, Texture_movie_callback, (void *)texture);
-			X3d_movie_add_destroy_callback(movie,
-				Texture_movie_destroy_callback, (void *)texture);
-
-			if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
-			{
-				texture->dimension = dimension;
-				texture->original_width_texels=image_width;
-				texture->original_height_texels=image_height;
-				texture->height_texels=texture_height;
-				texture->width_texels=texture_width;
-				strcpy(temp_file_name,image_file_name);
-				texture->image_file_name=temp_file_name;
-				texture->crop_left_margin=0;
-				texture->crop_bottom_margin=0;
-				texture->crop_width=image_width;
-				texture->crop_height=image_width;
-				/* display list needs to be compiled again */
-				texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Texture_set_movie.  Could not allocate image_file_name");
-				return_code=0;
-			}
-		}
-		else
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-		{
-			if (Graphics_library_check_extension(GL_EXT_abgr))
-			{
-				texture->movie = movie;
-				storage = TEXTURE_ABGR; /* This is the default format for frames from
-																	 the movie library */
-				number_of_components = 4;
-
-				/* ensure texture images row aligned to 4-byte boundary */
-				destination_row_width_bytes =
-					4*((int)((texture_width*number_of_components+3)/4));
-				if (ALLOCATE(texture_image, unsigned char,
-					texture_height*destination_row_width_bytes))
-				{
-					X3d_movie_bind_to_image_buffer(movie, texture_image,
-						image_width, image_height, texture_width - image_width);
-
-					memset((void *)texture_image,0x00,
-						destination_row_width_bytes*texture_height);
-					X3d_movie_render_to_image_buffer(movie, texture_image,
-						image_width, image_height, texture_width - image_width,
-						0, 15);
-
-					X3d_movie_add_callback(movie, Texture_movie_callback, (void *)texture);
-					X3d_movie_add_destroy_callback(movie,
-						Texture_movie_destroy_callback, (void *)texture);
-
-					if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
-					{
-						strcpy(temp_file_name,image_file_name);
-						/* assign values */
-						texture->dimension = dimension;
-						texture->storage = storage;
-						/* original size is intended to specify useful part of texture */
-						texture->original_width_texels=image_width;
-						texture->original_height_texels=image_height;
-						texture->height_texels=texture_height;
-						texture->width_texels=texture_width;
-						DEALLOCATE(texture->image);
-						texture->image=texture_image;
-						if (texture->image_file_name)
-						{
-							DEALLOCATE(texture->image_file_name);
-						}
-						texture->image_file_name=temp_file_name;
-						texture->crop_left_margin=0;
-						texture->crop_bottom_margin=0;
-						texture->crop_width=image_width;
-						texture->crop_height=image_width;
-						/* display list needs to be compiled again */
-						texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Texture_set_movie.  Could not allocate image_file_name");
-						DEALLOCATE(texture_image);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Texture_set_movie.  Could not allocate texture image");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Texture_set_movie.  ABGR format not supported in this OpenGL");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Texture_set_movie.  Invalid argument(s)");
-		return_code=0;
-	}
-#else /* defined (SGI_MOVIE_FILE) */
-	USE_PARAMETER(texture);
-	USE_PARAMETER(movie);
-	USE_PARAMETER(graphics_buffer_package);
-	USE_PARAMETER(image_file_name);
-	display_message(ERROR_MESSAGE,
-		"Texture_set_movie.  Movie textures not available");
-	return_code=0;
-#endif /* defined (SGI_MOVIE_FILE) */
-	LEAVE;
-
-	return (return_code);
-} /* Texture_set_movie */
 
 int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values)
@@ -5567,7 +5107,6 @@ Returns the number bytes in each component of the texture: 1 or 2.
 {
 	int return_code;
 
-	ENTER(Texture_get_number_of_bytes_per_component);
 	if (texture)
 	{
 		return_code = texture->number_of_bytes_per_component;
@@ -5578,10 +5117,21 @@ Returns the number bytes in each component of the texture: 1 or 2.
 			"Texture_get_number_of_bytes_per_component.  Missing texture");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Texture_get_number_of_bytes_per_component */
+
+int Texture_set_number_of_bytes_per_component(struct Texture *texture,
+	int number_of_bytes)
+{
+	if ((texture && (0 == texture->image_file_name)) &&
+			((number_of_bytes == 1) || (number_of_bytes ==2 )))
+	{
+		texture->number_of_bytes_per_component = number_of_bytes;
+		return 1;
+	}
+	return 0;
+}
 
 int Texture_get_number_of_components(struct Texture *texture)
 /*******************************************************************************
@@ -6369,16 +5919,6 @@ Writes the properties of the <texture> to the command window.
 				display_message(INFORMATION_MESSAGE,
 					"  components : alpha, blue, green, red\n");
 			} break;
-			case TEXTURE_DMBUFFER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  components : Using SGI Digital Media Buffer\n");
-			} break;
-			case TEXTURE_PBUFFER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  components : Using SGI GLX PBuffer\n");
-			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -6498,16 +6038,6 @@ The command is started with the string pointed to by <command_prefix>.
 				texture->stop_file_number,
 				texture->file_number_increment);
 		}
-		if (texture->movie)
-		{
-			display_message(INFORMATION_MESSAGE," movie");
-		}
-#if defined (DEBUG_CODE)
-		/*???debug*/if (texture->image_file_name&&texture->movie)
-		{
-			printf("Texture %s has image_file_name and movie!!\n",texture->name);
-		}
-#endif /* defined (DEBUG_CODE) */
 		/* write the texture size in model units */
 		display_message(INFORMATION_MESSAGE," width %g height %g depth %g",
 			texture->width, texture->height, texture->depth);
@@ -6575,24 +6105,8 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 			texture_target = Texture_get_target_enum(texture);
 			if(texture->display_list_current == TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED)
 			{
-				switch(texture->storage)
-				{
-					case TEXTURE_DMBUFFER:
-					{
-						/* If copied by reference we don't need to do anything */
-					} break;
-					case TEXTURE_PBUFFER:
-					{
-						display_message(ERROR_MESSAGE,
-							"Texture_execute_opengl_texture_object.  PBUFFER not supported");
-						return_code=0;
-					} break;
-					default:
-					{
-						glBindTexture(texture_target, texture->texture_id);
-						direct_render_Texture(texture, renderer);
-					} break;
-				}
+				glBindTexture(texture_target, texture->texture_id);
+				direct_render_Texture(texture, renderer);
 				/* The display list does not need to be compiled too. */
 				texture->display_list_current= TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED;
 			}
@@ -6609,17 +6123,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 				}
 				glBindTexture(texture_target, texture->texture_id);
 				direct_render_Texture_environment(texture);
-				if(texture->storage==TEXTURE_DMBUFFER ||
-					texture->storage==TEXTURE_PBUFFER)
-				{
-					//-- Graphics_buffer_make_read_current(texture->graphics_buffer);
-					direct_render_Texture(texture, renderer);
-					/* X3dThreeDDrawingRemakeCurrent(); */
-				}
-				else
-				{
-					direct_render_Texture(texture, renderer);
-				}
+				direct_render_Texture(texture, renderer);
 				texture->display_list_current= TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED;
 			}
 

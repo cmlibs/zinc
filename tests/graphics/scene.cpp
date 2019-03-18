@@ -473,19 +473,19 @@ TEST(cmzn_scene, threejs_export_glyph_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-	char *memory_buffer, *memory_buffer2, *memory_buffer3;
+	const char *memory_buffer, *memory_buffer2, *memory_buffer3;
 	unsigned int size = 0;
 
-	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "Glyph");
+	const char *temp_char = strstr ( memory_buffer, "Glyph");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "MorphVertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	result = memeory_sr2.getBuffer((void**)&memory_buffer2, &size);
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer2, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer2, "positions");
@@ -500,7 +500,7 @@ TEST(cmzn_scene, threejs_export_glyph_cpp)
 	temp_char = strstr ( memory_buffer2, "axis3");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	result = memeory_sr3.getBuffer((void**)&memory_buffer3, &size);
+	result = memeory_sr3.getBuffer((const void**)&memory_buffer3, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer3, "vertices");
@@ -575,19 +575,19 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-	char *memory_buffer, *memory_buffer2;
+	const char *memory_buffer, *memory_buffer2;
 	unsigned int size = 0;
 
-	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "Surfaces");
+	const char *temp_char = strstr ( memory_buffer, "Surfaces");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "MorphVertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	result = memeory_sr2.getBuffer((void**)&memory_buffer2, &size);
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer2, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer2, "vertices");
@@ -642,19 +642,19 @@ TEST(cmzn_scene, threejs_export_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "Surfaces");
+	const char *temp_char = strstr ( memory_buffer, "Surfaces");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "MorphVertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	result = memeory_sr2.getBuffer((void**)&memory_buffer, &size);
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer, "vertices");
@@ -708,13 +708,13 @@ TEST(cmzn_scene, threejs_export)
 	cmzn_streamresource_memory_id memeory_sr2 = cmzn_streamresource_cast_memory(
 		data_sr2);
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr2, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr2, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "vertices");
+	const char *temp_char = strstr ( memory_buffer, "vertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "faces");
@@ -760,13 +760,13 @@ TEST(cmzn_scene, graphics_description_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "SURFACES");
+	const char *temp_char = strstr ( memory_buffer, "SURFACES");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "POINTS");
@@ -830,13 +830,13 @@ TEST(cmzn_scene, graphics_description)
 	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "SURFACES");
+	const char *temp_char = strstr ( memory_buffer, "SURFACES");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "POINTS");

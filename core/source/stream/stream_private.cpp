@@ -86,21 +86,21 @@ int cmzn_streamresource_memory_destroy(cmzn_streamresource_memory_id *resource_a
 }
 
 int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id resource,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	const void **buffer_out, unsigned int *buffer_length_out)
 {
 	if (resource)
 	{
-		return resource->getBuffer(memory_buffer_references, memory_buffer_sizes);
+		return resource->getBuffer(buffer_out, buffer_length_out);
 	}
 	return 0;
 }
 
 int cmzn_streamresource_memory_get_buffer_copy(cmzn_streamresource_memory_id resource,
-	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	void **buffer_out, unsigned int *buffer_length_out)
 {
 	if (resource)
 	{
-		return resource->getBufferCopy(memory_buffer_references, memory_buffer_sizes);
+		return resource->getBufferCopy(buffer_out, buffer_length_out);
 	}
 	return 0;
 }

@@ -121,9 +121,6 @@ enum Texture_storage_type
 	TEXTURE_RGBA,
 	TEXTURE_ABGR,
 	TEXTURE_BGR,
-	/* The last two types are special and are not user-selectable */
-	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER,
 	TEXTURE_STORAGE_TYPE_INVALID
 }; /* enum Texture_storage_type */
 
@@ -412,6 +409,8 @@ int Texture_allocate_image(struct Texture *texture,
  */
 enum Texture_storage_type Texture_get_storage_type(struct Texture *texture);
 
+int Texture_set_storage_type(struct Texture *texture, enum Texture_storage_type storage_type);
+
 struct Cmgui_image *Texture_get_image(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 1 March 2002
@@ -459,6 +458,16 @@ and must be at least width*number_of_components*number_of_bytes_per_component
 in size.
 ==============================================================================*/
 
+/**
+ * Similar to Texture_set_image_block but this function assumes the source_pixels hold
+ * enough buffer to fill the whole texture block.
+ */
+int Texture_fill_image_block(struct Texture *texture, unsigned char *source_pixels,
+	unsigned int buffer_length);
+
+int Texture_get_image_block(struct Texture *texture,
+		const void **buffer_out, unsigned int *buffer_length_out);
+
 int Texture_add_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
 	int crop_left, int crop_bottom, int crop_width, int crop_height);
@@ -469,27 +478,7 @@ DESCRIPTION :
 Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 
-struct X3d_movie;
 struct Graphics_buffer_package;
-
-struct X3d_movie *Texture_get_movie(struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 3 February 2000
-
-DESCRIPTION :
-Gets the current X3d_movie from the texture.
-==============================================================================*/
-
-int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
-	struct Graphics_buffer_package *graphics_buffer_package, char *image_file_name);
-/*******************************************************************************
-LAST MODIFIED : 27 May 2004
-
-DESCRIPTION :
-Puts the <image> in the texture. The image is left unchanged by this function.
-The <image_file_name> is specified purely so that it may be recorded with the
-texture, and must be given a value.
-==============================================================================*/
 
 int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values);
@@ -562,6 +551,8 @@ LAST MODIFIED : 11 March 2002
 DESCRIPTION :
 Returns the number bytes in each component of the texture: 1 or 2.
 ==============================================================================*/
+
+int Texture_set_number_of_bytes_per_component(struct Texture *texture, int number_of_bytes);
 
 int Texture_get_number_of_components(struct Texture *texture);
 /*******************************************************************************

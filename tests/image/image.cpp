@@ -84,7 +84,45 @@ TEST(ZincFieldImage, read_png)
 	Streamresource sr = si.createStreamresourceFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
 	EXPECT_TRUE(sr.isValid());
 
-	EXPECT_EQ(OK, im.read(si));
+	EXPECT_EQ(CMZN_OK, im.read(si));
+}
+
+TEST(ZincFieldImage, set_get_buffer)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+
+	EXPECT_EQ(FieldImage::PIXEL_FORMAT_RGBA, im.getPixelFormat());
+	EXPECT_EQ(CMZN_OK, im.setPixelFormat(FieldImage::PIXEL_FORMAT_LUMINANCE));
+	EXPECT_EQ(FieldImage::PIXEL_FORMAT_LUMINANCE, im.getPixelFormat());
+
+	EXPECT_EQ(8, im.getNumberOfBitsPerComponent());
+	EXPECT_EQ(CMZN_OK, im.setNumberOfBitsPerComponent(16));
+	EXPECT_EQ(16, im.getNumberOfBitsPerComponent());
+
+	int myArray[3] = {4,3,2};
+	EXPECT_EQ(CMZN_OK, im.setSizeInPixels(3, myArray));
+
+	unsigned int actualSize = 4 *3 * 2 * 2;
+	unsigned char *buffer = new unsigned char[actualSize];
+	for (unsigned int i = 0; i < actualSize; i++)
+	{
+		buffer[i] = i;
+	}
+
+	const void *returnedBuffer = 0;
+	unsigned int length = 0;
+	EXPECT_EQ(CMZN_OK, im.setBuffer((const void *)buffer, actualSize));
+	EXPECT_EQ(CMZN_OK, im.getBuffer(&returnedBuffer, &length));
+	const unsigned char *myBuffer = (const unsigned char *)returnedBuffer;
+	for  (unsigned int i = 0; i < actualSize; i++)
+	{
+		EXPECT_EQ(buffer[i], myBuffer[i]);
+	}
+	EXPECT_EQ(actualSize, length);
+	delete[] buffer;
 }
 
 // Issue 3707: Image filter, wrap and other modes should not be reset after

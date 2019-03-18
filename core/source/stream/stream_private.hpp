@@ -117,14 +117,14 @@ public:
 		}
 	}
 
-	int getBuffer(void **memory_buffer_reference, unsigned int *memory_buffer_size)
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
 	{
-		*memory_buffer_reference = const_cast<void *>(memory_block->memory_buffer);
-		*memory_buffer_size = memory_block->memory_buffer_size;
+		*buffer_out = const_cast<void *>(memory_block->memory_buffer);
+		*buffer_length_out = memory_block->memory_buffer_size;
 		return 1;
 	}
 
-	int getBufferCopy(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	int getBufferCopy(void **buffer_out, unsigned int *buffer_length_out)
 	{
 		if (memory_block->memory_buffer && memory_block->memory_buffer_size)
 		{
@@ -132,14 +132,14 @@ public:
 			ALLOCATE(memory_point, char, memory_block->memory_buffer_size);
 			memcpy(memory_point, memory_block->memory_buffer,
 				memory_block->memory_buffer_size);
-			*memory_buffer_references = memory_point;
-			*memory_buffer_sizes = memory_block->memory_buffer_size;
+			*buffer_out = memory_point;
+			*buffer_length_out = memory_block->memory_buffer_size;
 			return 1;
 		}
 		else
 		{
-			*memory_buffer_references = NULL;
-			*memory_buffer_sizes = 0;
+			*buffer_out = NULL;
+			*buffer_length_out = 0;
 		}
 		return 0;
 	}
