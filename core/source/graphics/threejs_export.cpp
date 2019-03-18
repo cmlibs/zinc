@@ -617,7 +617,6 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 	if (texture_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
 		unsigned int valid_output_per_vertex = 2;
-
 		GLfloat *currentVertex = texture_buffer;
 		char new_string[100];
 		sprintf(new_string, "\t\"uvs\" : [[");
@@ -629,12 +628,14 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 			if (textureSizes[0] > 0.0)
 				sprintf(new_string, "%f,", currentVertex[0]/textureSizes[0]);
 			else
-				sprintf(new_string, "%f,", 0.0);
+				sprintf(new_string, "%f,", currentVertex[0]);
 			outputString += new_string;
-			if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
+			if (values_per_vertex  == 1)
+				sprintf(new_string, "%f", 0.0);
+			else if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
 				sprintf(new_string, "%f", currentVertex[1]/textureSizes[1]);
 			else
-				sprintf(new_string, "%f", 0.0);
+				sprintf(new_string, "%f", currentVertex[1]);
 			outputString += new_string;
 			if (i < vertex_count - 1)
 			{
