@@ -92,12 +92,8 @@ if (GIT_FOUND)
     endif ()
 endif()
 
+# Set this to TRUE if making a release of the Zinc library.
 set(ZINC_RELEASE FALSE)
-if(ZINC_RELEASE)
-    set(ZINC_DEVELOPER_VERSION "")
-else()
-    set(ZINC_DEVELOPER_VERSION ".dev0${ZINC_REVISION}")
-endif()
 
 # Make relative paths absolute (needed later on)
 foreach( p LIB BIN INC CMAKE )

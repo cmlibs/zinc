@@ -156,10 +156,33 @@ if(APPLE)
     set(PYZINC_ARCHITECTURE universal)
 endif()
 
+# Determine the next available Python developer version for the bindings.
+if(ZINC_RELEASE)
+    set(ZINC_PYTHON_DEVELOPER_VERSION "")
+else()
+    # This command will only work if you have the pypipackagemanagement installed into the
+    # Python environment in use.  To get this package use
+    #    pip install git+https://github.com/hsorby/pypipackagemanagement.git@v0.2.0#egg=pypipackagemanagement
+    execute_process(COMMAND ${Python_EXECUTABLE} -m pypipackagemanagement.pypiversionmanagement opencmiss.zinc 
+        OUTPUT_VARIABLE COMMAND_OUTPUT RESULT_VARIABLE COMMAND_RESULT ERROR_VARIABLE COMMAND_ERROR)
+    if (COMMAND_RESULT EQUAL 0)
+        # Strip command output to just have the developer version number
+        string(REGEX MATCH "\.dev[0-9]+" _MATCH ${COMMAND_OUTPUT})
+        if (_MATCH)
+            set(ZINC_PYTHON_DEVELOPER_VERSION ${_MATCH})
+        else ()
+            set(ZINC_PYTHON_DEVELOPER_VERSION ".dev00")
+        endif ()
+    else ()
+        set(ZINC_PYTHON_DEVELOPER_VERSION ".dev000")
+    endif ()
+endif()
+message(STATUS "ZINC_PYTHON_DEVELOPER_VERSION: ${ZINC_PYTHON_DEVELOPER_VERSION}")
+
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
 set(PYPI_PACKAGE_NAME opencmiss.zinc)
-set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
+set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_PYTHON_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
 
 ################################################################
 # Generate the required package files
