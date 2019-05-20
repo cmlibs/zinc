@@ -9,5 +9,4 @@ Zinc is released under the Mozilla Public License v2.0. See file LICENSE.txt in 
 Zinc is currently built and tested on Windows, Mac OS X and Linux.  Developer and release binaries are available for download.
 
 Further information, downloads, examples and help pages are available at:
-http://www.physiomeproject.org/software/zinclibrary/
-http://www.opencmiss.org/zinc/
+http://www.opencmiss.org/
