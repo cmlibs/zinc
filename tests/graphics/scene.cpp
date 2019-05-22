@@ -664,6 +664,67 @@ TEST(cmzn_scene, threejs_export_cpp)
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 }
 
+TEST(cmzn_scene, threejs_export_inline)
+{
+	ZincTestSetup zinc;
+
+	int result;
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	cmzn_graphics_id surfaces = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), surfaces);
+
+	cmzn_field_id coordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinateField);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_coordinate_field(surfaces, coordinateField));
+
+	cmzn_streaminformation_id streaminformation = cmzn_scene_create_streaminformation_scene(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), streaminformation);
+
+	cmzn_streaminformation_scene_id scene_si = cmzn_streaminformation_cast_scene(streaminformation);
+	EXPECT_NE(static_cast<cmzn_streaminformation_scene_id>(0), scene_si);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_io_format(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS));
+
+	EXPECT_EQ(0,  result = cmzn_streaminformation_scene_get_output_is_inline(scene_si));
+	EXPECT_EQ(CMZN_OK,  result = cmzn_streaminformation_scene_set_output_is_inline(scene_si, 1));
+	EXPECT_EQ(1,  result = cmzn_streaminformation_scene_get_output_is_inline(scene_si));
+
+	EXPECT_EQ(1, result = cmzn_streaminformation_scene_get_number_of_resources_required(scene_si));
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_io_data_type(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR));
+
+	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_memory(streaminformation);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_scene_write(zinc.scene, scene_si));
+
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
+		data_sr);
+
+	const char *memory_buffer;
+	unsigned int size = 0;
+
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	const char *temp_char = strstr ( memory_buffer, "Inline");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	cmzn_field_destroy(&coordinateField);
+	data_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
+	cmzn_streamresource_destroy(&data_sr);
+	cmzn_streaminformation_scene_destroy(&scene_si);
+	cmzn_streaminformation_destroy(&streaminformation);
+	cmzn_graphics_destroy(&surfaces);
+}
+
 TEST(cmzn_scene, threejs_export)
 {
 	ZincTestSetup zinc;
@@ -724,7 +785,6 @@ TEST(cmzn_scene, threejs_export)
 	cmzn_streamresource_destroy(&data_sr);
 	data_sr = cmzn_streamresource_memory_base_cast(memeory_sr2);
 	cmzn_streamresource_destroy(&data_sr2);
-	cmzn_streamresource_destroy(&data_sr);
 	cmzn_streaminformation_scene_destroy(&scene_si);
 	cmzn_streaminformation_destroy(&streaminformation);
 	cmzn_graphics_destroy(&surfaces);

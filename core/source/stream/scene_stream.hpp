@@ -27,7 +27,8 @@ public:
 		format(CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID),
 		data_type(CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR),
 		overwriteSceneGraphics(0),  outputTimeDependentVertices(1),
-		outputTimeDependentColours(0), outputTimeDependentNormals(0)
+		outputTimeDependentColours(0), outputTimeDependentNormals(0),
+		outputIsInline(0)
 	{
 		cmzn_scene_access(scene_in);
 	}
@@ -69,6 +70,10 @@ public:
 	{
 		if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 		{
+			if (outputIsInline)
+			{
+				return 1;
+			}
 			/* multiply the following by 2, each glyph export also requires an extra resource
 			 * with informations on the transformation.
 			 */
@@ -178,6 +183,17 @@ public:
 		return CMZN_OK;
 	}
 
+	int getOutputIsInline()
+	{
+		return outputIsInline;
+	}
+
+	int setOutputIsInline(int outputIsInlineIn)
+	{
+		outputIsInline = outputIsInlineIn;
+		return CMZN_OK;
+	}
+
 private:
 	cmzn_scene_id scene;
 	cmzn_scenefilter_id scenefilter;
@@ -186,7 +202,8 @@ private:
 	enum cmzn_streaminformation_scene_io_format format;
 	enum cmzn_streaminformation_scene_io_data_type data_type;
 	int overwriteSceneGraphics;
-	int outputTimeDependentVertices, outputTimeDependentColours, outputTimeDependentNormals;
+	int outputTimeDependentVertices, outputTimeDependentColours, outputTimeDependentNormals,
+		outputIsInline;
 };
 
 

@@ -3414,13 +3414,14 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string,
 	int morphVertices, int morphColours, int morphNormals,
-	int numberOfFiles, char **file_names)
+	int numberOfFiles, char **file_names, int isInline)
 {
 	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
 			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
-			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names);
+			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
+			isInline);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;
 

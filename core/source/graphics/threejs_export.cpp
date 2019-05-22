@@ -88,6 +88,14 @@ int Threejs_export::endExport()
 	return 1;
 }
 
+Json::Value Threejs_export::getExportJson()
+{
+	Json::Value root;
+	Json::Reader reader;
+	reader.parse( outputString, root );
+	return root;
+}
+
 std::string *Threejs_export::getExportString()
 {
 	return &outputString;
@@ -1129,7 +1137,7 @@ void Threejs_export_glyph::setGlyphGeometriesURLName(char *name)
 		glyphGeometriesURLName = duplicate_string(name);
 }
 
-std::string *Threejs_export_glyph::getGlyphTransformationExportString()
+Json::Value Threejs_export_glyph::getGlyphTransformationExportJson()
 {
 	Json::Value root;
 	root["metadata"] = metadata;
@@ -1142,7 +1150,14 @@ std::string *Threejs_export_glyph::getGlyphTransformationExportString()
 		root["colors"] = color_json;
 	if (label_json.size() > 0)
 		root["label"] = label_json;
-	root["GlyphGeometriesURL"] = glyphGeometriesURLName;
+	if (glyphGeometriesURLName)
+		root["GlyphGeometriesURL"] = glyphGeometriesURLName;
+	return root;
+}
+
+std::string *Threejs_export_glyph::getGlyphTransformationExportString()
+{
+	Json::Value root = getGlyphTransformationExportJson();
 	glyphTransformationString = Json::StyledWriter().write(root);
 
 	return &glyphTransformationString;

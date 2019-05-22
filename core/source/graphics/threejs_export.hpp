@@ -114,6 +114,9 @@ public:
 		return groupName;
 	}
 
+	/* this return json format describing colours and transformation of the glyph */
+	Json::Value getExportJson();
+
 	std::string *getExportString();
 
 	bool getMorphVerticesExported()
@@ -173,6 +176,9 @@ public:
 	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
 
 	/* this return json format describing colours and transformation of the glyph */
+	Json::Value getGlyphTransformationExportJson();
+
+	/* this return string format describing colours and transformation of the glyph */
 	std::string *getGlyphTransformationExportString();
 
 	void setGlyphGeometriesURLName(char *name);
