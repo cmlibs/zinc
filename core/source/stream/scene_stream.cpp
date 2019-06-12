@@ -72,7 +72,8 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					streaminformation_scene->getOutputTimeDependentVertices(),
 					streaminformation_scene->getOutputTimeDependentColours(),
 					streaminformation_scene->getOutputTimeDependentNormals(),
-					size,	resource_names);
+					size,	resource_names,
+					streaminformation_scene->getOutputIsInline());
 				cmzn_scenefilter_destroy(&scenefilter);
 				for (int i = 0; i < size; i++)
 				{
@@ -518,6 +519,28 @@ int cmzn_streaminformation_scene_set_output_time_dependent_normals(
 	if (streaminformation)
 	{
 		streaminformation->setOutputTimeDependentNormals(outputTimeDependentNormals);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_scene_get_output_is_inline(
+	cmzn_streaminformation_scene_id streaminformation)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getOutputIsInline();
+	}
+	return 0;
+}
+
+int cmzn_streaminformation_scene_set_output_is_inline(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputIsInline)
+{
+	if (streaminformation)
+	{
+		streaminformation->setOutputIsInline(outputIsInline);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
