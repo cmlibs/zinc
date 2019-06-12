@@ -672,6 +672,7 @@ public:
 
 
 			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+			Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(export_iter->second);
 			if (glyph_export)
 			{
 				graphics_json["Type"]="Glyph";
@@ -695,6 +696,10 @@ public:
 						glyph_export->setGlyphGeometriesURLName(temp);
 					}
 				}
+			}
+			else if (point_export)
+			{
+				graphics_json["Type"]="Points";
 			}
 			else
 			{
@@ -892,6 +897,11 @@ public:
 			if (cmzn_graphicspointattributes_contain_surfaces(pointAttr))
 			{
 				return_code = Graphics_export<Threejs_export_glyph>(graphics);
+			}
+			else if ((cmzn_graphicspointattributes_get_glyph_shape_type(pointAttr) ==
+					CMZN_GLYPH_SHAPE_TYPE_POINT))
+			{
+				return_code = Graphics_export<Threejs_export_point>(graphics);
 			}
 			cmzn_graphicspointattributes_destroy(&pointAttr);
 		}

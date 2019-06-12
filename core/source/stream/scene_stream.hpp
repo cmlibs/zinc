@@ -77,7 +77,7 @@ public:
 			/* multiply the following by 2, each glyph export also requires an extra resource
 			 * with informations on the transformation.
 			 */
-			int numberOfResources = Scene_get_number_of_web_compatible_glyph_in_tree(scene, scenefilter) * 2;
+			int numberOfResources = Scene_get_number_of_exportable_glyph_resources(scene, scenefilter);
 			numberOfResources += Scene_get_number_of_graphics_with_surface_vertices_in_tree(
 				scene, scenefilter);
 			/* An additional resources on new metadata file describing each graphics. */

@@ -514,6 +514,88 @@ TEST(cmzn_scene, threejs_export_glyph_cpp)
 
 }
 
+
+TEST(cmzn_scene, threejs_export_point_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	int result;
+
+	Materialmodule material_module = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(material_module.isValid());
+	Material material = material_module.createMaterial();
+	EXPECT_TRUE(material.isValid());
+	EXPECT_EQ(CMZN_OK, result =  material.setName("myyellow"));
+	EXPECT_EQ(CMZN_OK, result =  material.setManaged(true));
+	double double_value[3] = {0.9, 0.9, 0.0};
+
+	EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_AMBIENT, double_value));
+	EXPECT_EQ(CMZN_OK, result =  material.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, double_value));
+
+	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	GraphicsPoints points = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(points.isValid());
+
+	Glyph pointGlyph = zinc.context.getGlyphmodule().findGlyphByGlyphShapeType(Glyph::SHAPE_TYPE_POINT);
+	EXPECT_TRUE(pointGlyph.isValid());
+
+	Field coordinateField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinateField.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = points.setCoordinateField(coordinateField));
+	EXPECT_EQ(CMZN_OK, result = points.setFieldDomainType(Field::DOMAIN_TYPE_NODES));
+	EXPECT_EQ(CMZN_OK, result = points.setMaterial(material));
+
+	Graphicspointattributes pointAttr = points.getGraphicspointattributes();
+	EXPECT_TRUE(pointAttr.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = pointAttr.setGlyph(pointGlyph));
+
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+	EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	double double_result = 0.0;
+	EXPECT_EQ(0.0, double_result = si.getInitialTime());
+	EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+	StreamresourceMemory memeory_sr2 = si.createStreamresourceMemory();
+
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	const char *memory_buffer, *memory_buffer2;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	const char *temp_char = strstr ( memory_buffer, "Points");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "MorphVertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer2, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	temp_char = strstr ( memory_buffer2, "vertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer2, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer2, "materials");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+}
+
 TEST(cmzn_scene, threejs_export_texture_cpp)
 {
 	ZincTestSetupCpp zinc;
