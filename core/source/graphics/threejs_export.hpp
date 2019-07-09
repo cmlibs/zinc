@@ -48,7 +48,7 @@ protected:
 	void writeIndexBuffer(struct GT_object *object, int typeMask,
 		int number_of_points, unsigned int offset);
 
-	void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
+	virtual void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
 
 	void writeSpecialDataBuffer(struct GT_object *object, GLfloat *vertex_buffer,
 		unsigned int values_per_vertex, unsigned int vertex_count);
@@ -205,6 +205,8 @@ public:
 	}
 
 	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
+
+	virtual void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
 };
 
 
