@@ -384,6 +384,11 @@ void Threejs_export::writeIndexBufferWithoutIndex(int typeMask, int number_of_po
 				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
+			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+				facesString += temp;
+			}
 			current_index += 3;
 			if (i != number_of_triangles - 1)
 			{
@@ -1162,6 +1167,68 @@ std::string *Threejs_export_glyph::getGlyphTransformationExportString()
 	return &glyphTransformationString;
 }
 
+/* write index for triangle surfaces (non triangle-stripe). */
+void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number_of_points,
+	unsigned int offset)
+{
+	if (number_of_points)
+	{
+		char temp[100];
+		facesString += "\t\"faces\": [\n";
+		unsigned int number_of_triangles = number_of_points / 3;
+		int current_index = 0;
+		for (unsigned i = 0; i < number_of_triangles; i++)
+		{
+			sprintf(temp,"\t\t%d", typeMask);
+			facesString += temp;
+			sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+			facesString += temp;
+			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+				facesString += temp;
+			}
+			current_index += 3;
+			if (i != number_of_triangles - 1)
+			{
+				facesString += ",";
+			}
+			facesString += "\n";
+		}
+		/* fill it up */
+		unsigned int unused_points =  number_of_points - number_of_triangles * 3;
+		if (unused_points > 0)
+		{
+			facesString += ",";
+			sprintf(temp,"\t\t%d", typeMask);
+			facesString += temp;
+			if (unused_points == 1)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+				facesString += temp;
+				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+				{
+					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+					facesString += temp;
+				}
+			}
+			else
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+				facesString += temp;
+				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+				{
+					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+					facesString += temp;
+				}
+			}
+			facesString += "\n";
+		}
+
+
+		facesString += "\t]\n\n";
+	}
+}
 
 /* Export surfaces graphics into a json format recognisable by threejs. */
 int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int time_step)
@@ -1204,6 +1271,7 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 			/* this case export the colour */
 			unsigned int colour_values_per_vertex, colour_vertex_count;
 			GLfloat *colour_buffer = (GLfloat *)NULL;
+			printf("colour\n");
 			if (Graphics_object_create_colour_buffer_from_data(object,
 					&colour_buffer,
 					&colour_values_per_vertex, &colour_vertex_count)
