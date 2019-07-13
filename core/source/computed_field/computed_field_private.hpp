@@ -260,6 +260,8 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
+	int evaluateDerivativesFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
+
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
 	{
@@ -545,7 +547,7 @@ DESCRIPTION :
 		cache.setRequestedDerivatives(numberOfDerivatives);
 		RealFieldValueCache *valueCache = RealFieldValueCache::cast(evaluate(cache));
 		cache.setRequestedDerivatives(requestedDerivatives);
-		if (valueCache && valueCache->derivatives_valid)
+		if (valueCache && ((valueCache->derivatives_valid) || this->core->evaluateDerivativesFiniteDifference(cache, *valueCache)))
 			return valueCache;
 		return 0;
 	}

@@ -13,6 +13,7 @@
 #include <opencmiss/zinc/differentialoperator.h>
 #include <opencmiss/zinc/element.h>
 #include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldarithmeticoperators.h>
 #include <opencmiss/zinc/fieldcache.h>
 #include <opencmiss/zinc/fieldconstant.h>
 #include <opencmiss/zinc/fieldderivatives.h>
@@ -221,14 +222,14 @@ TEST(cmzn_fieldmodule_create_field_divergence, valid_args)
 
 	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
-	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
-	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
+	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
 
 	double values[] = {2.0, 3.0, 5.0};
 	cmzn_field_id c1 = cmzn_fieldmodule_create_field_constant(fm, 3, values);
 
-	cmzn_field_id f2 = cmzn_fieldmodule_create_field_divergence(fm, c1, f1);
-	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
+	cmzn_field_id div_const = cmzn_fieldmodule_create_field_divergence(fm, c1, coordinates);
+	EXPECT_NE(static_cast<cmzn_field *>(0), div_const);
 
 	cmzn_fieldcache_id fc = cmzn_fieldmodule_create_fieldcache(fm);
 
@@ -243,15 +244,15 @@ TEST(cmzn_fieldmodule_create_field_divergence, valid_args)
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[1];
-	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
+	result = cmzn_field_evaluate_real(div_const, fc, 1, outvalues);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(0.0, outvalues[0]);
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_field_destroy(&f1);
+	cmzn_field_destroy(&coordinates);
 	cmzn_field_destroy(&c1);
-	cmzn_field_destroy(&f2);
+	cmzn_field_destroy(&div_const);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
@@ -266,15 +267,16 @@ TEST(cmzn_fieldmodule_create_field_divergence, grad_mag)
 
 	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
-	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
-	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
+	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
 
-	cmzn_field_id c1 = cmzn_fieldmodule_create_field_magnitude(fm, f1);
-
-	cmzn_field_id c2 = cmzn_fieldmodule_create_field_gradient(fm, c1, f1);
-
-	cmzn_field_id f2 = cmzn_fieldmodule_create_field_divergence(fm, c2, f1);
-	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
+	const double scaling[] = { 2.0, 1.5, 0.75 };
+	cmzn_field_id constant_scaling = cmzn_fieldmodule_create_field_constant(fm, 3, scaling);
+	cmzn_field_id scaled_coordinates = cmzn_fieldmodule_create_field_multiply(fm, coordinates, constant_scaling);
+	cmzn_field_id mag = cmzn_fieldmodule_create_field_magnitude(fm, scaled_coordinates);
+	cmzn_field_id grad_mag = cmzn_fieldmodule_create_field_gradient(fm, mag, scaled_coordinates);
+	cmzn_field_id div_grad_mag = cmzn_fieldmodule_create_field_divergence(fm, grad_mag, scaled_coordinates);
+	EXPECT_NE(static_cast<cmzn_field *>(0), div_grad_mag);
 
 	cmzn_fieldcache_id fc = cmzn_fieldmodule_create_fieldcache(fm);
 
@@ -284,21 +286,45 @@ TEST(cmzn_fieldmodule_create_field_divergence, grad_mag)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double chart_coordinates[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMZN_OK, result);
-
-	double outvalues[1];
-	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
-	EXPECT_NE(CMZN_OK, result);
-	//EXPECT_EQ(0.0, outvalues[0]);
+	const double xi[3][3] = {
+		{ 0.10, 0.90, 0.25 },
+		{ 0.50, 0.50, 0.00 },
+		{ 0.60, 0.20, 0.45 } };
+	double x[3];
+	const double fineTol = 1.0E-10;
+	const double coarseTol = 1.0E-7;
+	int result;
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int c = 0; c < 3; ++c)
+			x[c] = scaling[c]*xi[i][c];
+		result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi[i]);
+		EXPECT_EQ(CMZN_OK, result);
+		double outvalues[3];
+		result = cmzn_field_evaluate_real(grad_mag, fc, 3, outvalues);
+		// exact math answers:
+		const double mag1 = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
+		const double gradMagAnswers[] = { x[0]/mag1, x[1]/mag1, x[2]/mag1 };
+		double divGradMagAnswer = 0.0;
+		for (int c = 0; c < 3; ++c)
+			divGradMagAnswer += (1.0/mag1) - x[c]*x[c]/(mag1*mag1*mag1);
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(outvalues[c], gradMagAnswers[c], fineTol);
+		// div_grad_mag currently computed with finite differences, hence coarser tolerance:
+		double outValue;
+		result = cmzn_field_evaluate_real(div_grad_mag, fc, 1, &outValue);
+		EXPECT_EQ(CMZN_OK, result);
+		EXPECT_NEAR(divGradMagAnswer, outValue, coarseTol);
+	}
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_field_destroy(&f1);
-	cmzn_field_destroy(&c1);
-	cmzn_field_destroy(&f2);
-	cmzn_field_destroy(&c2);
+	cmzn_field_destroy(&coordinates);
+	cmzn_field_destroy(&constant_scaling);
+	cmzn_field_destroy(&scaled_coordinates);
+	cmzn_field_destroy(&mag);
+	cmzn_field_destroy(&grad_mag);
+	cmzn_field_destroy(&div_grad_mag);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
