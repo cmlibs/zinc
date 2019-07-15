@@ -605,8 +605,8 @@ void evaluateCubicLagrangeBasis(double xi, int derivative, double *basisValuesOu
 {
 	if (derivative == 0)
 	{
-		double xi2 = xi*xi;
-		double xi3 = xi2*xi;
+		const double xi2 = xi*xi;
+		const double xi3 = xi2*xi;
 		basisValuesOut4[0] = 1.0 - 5.5*xi +  9.0*xi2 -  4.5*xi3;
 		basisValuesOut4[1] =       9.0*xi - 22.5*xi2 + 13.5*xi3;
 		basisValuesOut4[2] =      -4.5*xi + 18.0*xi2 - 13.5*xi3;
@@ -614,7 +614,7 @@ void evaluateCubicLagrangeBasis(double xi, int derivative, double *basisValuesOu
 	}
 	else if (derivative == 1)
 	{
-		double xi2 = xi*xi;
+		const double xi2 = xi*xi;
 		basisValuesOut4[0] = -5.5 + 18.0*xi - 13.5*xi2;
 		basisValuesOut4[1] =  9.0 - 45.0*xi + 40.5*xi2;
 		basisValuesOut4[2] = -4.5 + 36.0*xi - 40.5*xi2;
@@ -700,16 +700,19 @@ TEST(ZincFieldDerivative, higher_derivatives)
 		}
 	}
 	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
-	const double xi[8][3] =
+	const int pointCount = 10;
+	const double xi[pointCount][3] =
 	{
 		{ 0.00, 0.00, 0.00 },
 		{ 0.00, 0.75, 0.25 },
 		{ 0.50, 0.50, 0.50 },
 		{ 0.20, 0.10, 0.40 },
+		{ 0.75, 0.33, 0.45 },
 		{ 0.95, 0.95, 0.95 },
-		{ 0.00, 1.0/3.0, 1.0/3.0 },
-		{ 0.00, 2.0/3.0, 1.0/3.0 },
-		{ 1.00, 1.0, 1.0 }
+		{ 1.00, 1.00, 1.00 },
+		{ 2.0/3.0, 1.0/3.0, 1.0/3.0 },
+		{ 1.0/3.0, 2.0/3.0, 1.0/3.0 },
+		{ 1.0/3.0, 1.0/3.0, 2.0/3.0 }
 	};
 	const int derivativeCount = 3;
 	double basisValues[3][derivativeCount][4];  // xi direction, derivative, nodes
@@ -719,7 +722,7 @@ TEST(ZincFieldDerivative, higher_derivatives)
 	const double valuesTolerance = 1.0E-11;
 	const double derivatives1Tolerance = 1.0E-11;
 	const double derivatives2Tolerance = 1.0E-7;  // as currently computed by finite difference
-	for (int p = 0; p < 8; ++p)
+	for (int p = 0; p < pointCount; ++p)
 	{
 		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element, 3, xi[p]));
 		for (int i = 0; i < 3; ++i)
