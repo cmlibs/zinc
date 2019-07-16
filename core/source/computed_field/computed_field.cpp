@@ -1166,6 +1166,72 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
+/** Evaluate derivatives using finite differences. Only implemented for element_xi locations.
+ * @param cache  Parent cache containing location to evaluate.
+ * @param valueCache  The value cache to put values at. */
+int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
+{
+	Field_element_xi_location* element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (!element_xi_location)
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativesFiniteDifference.  Only implemented for element_xi location");
+		return 0;
+	}
+	// evaluate field at perturbed locations in extra working cache
+	cmzn_fieldcache *workingCache = valueCache.getOrCreateExtraCache(cache);
+	RealFieldValueCache* workingValueCache;
+	if ((0 == workingCache) || (0 == (workingValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativesFiniteDifference.  Could not get working value cache");
+		return 0;
+	}
+	workingCache->setTime(cache.getTime());
+	const int componentsCount = this->field->number_of_components;
+	cmzn_element *element = element_xi_location->get_element();
+	const int elementDimension = element_xi_location->get_dimension();
+	const FE_value *xi = element_xi_location->get_xi();
+	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	for (int d = 0; d < elementDimension; ++d)
+		perturbedXi[d] = xi[d];
+	const FE_value xiPerturbation = 1.0E-5;
+	const FE_value weightm = -0.5 / xiPerturbation;
+	const FE_value weightp = +0.5 / xiPerturbation;
+	FE_value *workingValues = workingValueCache->values;
+	for (int d = 0; d < elementDimension; ++d)
+	{
+		FE_value *derivatives = valueCache.derivatives + d;  // where to put final values
+		for (int k = 0; k < 2; ++k)
+		{
+			if (k == 0)
+				perturbedXi[d] -= xiPerturbation;
+			else
+				perturbedXi[d] += xiPerturbation;
+			workingCache->setMeshLocation(element, perturbedXi);
+			if (!this->evaluate(*workingCache, *workingValueCache))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_core::evaluateDerivativesFiniteDifference.  Could not get evaluate field values");
+				return 0;
+			}
+			if (k == 0)
+			{
+				for (int c = 0; c < componentsCount; ++c)
+					derivatives[c*elementDimension] = weightm*workingValues[c];
+			}
+			else
+			{
+				for (int c = 0; c < componentsCount; ++c)
+					derivatives[c*elementDimension] += weightp*workingValues[c];
+			}
+			perturbedXi[d] = xi[d];
+		}
+	}
+	valueCache.derivatives_valid = 1;
+	return 1;
+}
+
 int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void)
 {
