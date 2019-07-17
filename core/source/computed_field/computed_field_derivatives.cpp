@@ -1374,7 +1374,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			}
 		}
 	}
-	else // Do a finite difference calculation varying the coordinate field: should work with any location
+	else // Do a finite difference calculation varying the coordinate field: should work with any location, provided field is a function of it
 	{
 		// temporary arrays are packed in GradientRealFieldValueCache::cacheValues:
 		FE_value *down_values = valueCache.cacheValues.data();
@@ -1429,7 +1429,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 						{
 							display_message(WARNING_MESSAGE,
 								"Computed_field_gradient::evaluate.  "
-								"Unable to evaluate source field when evaluating nodal finite difference.");
+								"Unable to evaluate source field when evaluating finite difference.");
 							return_code = 0;
 							break;
 						}
@@ -1438,7 +1438,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					{
 						display_message(WARNING_MESSAGE,
 							"Computed_field_gradient::evaluate.  "
-							"Unable to set coordinate field when evaluating nodal finite difference.");
+							"Unable to set coordinate field when evaluating finite difference.");
 						return_code = 0;
 						break;
 					}

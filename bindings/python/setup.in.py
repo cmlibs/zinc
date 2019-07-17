@@ -37,7 +37,7 @@ class BinaryDistribution(Distribution):
 
 setup(
     name='@PYPI_PACKAGE_NAME@',
-    version='@Zinc_VERSION@@ZINC_DEVELOPER_VERSION@',
+    version='@Zinc_VERSION@@ZINC_PYTHON_DEVELOPER_VERSION@',
     author='H. Sorby',
     author_email='h.sorby@auckland.ac.nz',
     packages=['opencmiss', 'opencmiss.zinc'],
