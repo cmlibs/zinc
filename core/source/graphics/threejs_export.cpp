@@ -1271,7 +1271,6 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 			/* this case export the colour */
 			unsigned int colour_values_per_vertex, colour_vertex_count;
 			GLfloat *colour_buffer = (GLfloat *)NULL;
-			printf("colour\n");
 			if (Graphics_object_create_colour_buffer_from_data(object,
 					&colour_buffer,
 					&colour_values_per_vertex, &colour_vertex_count)
