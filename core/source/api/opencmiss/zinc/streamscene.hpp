@@ -160,6 +160,16 @@ public:
 		return cmzn_streaminformation_scene_set_output_time_dependent_normals(getDerivedId(),
 				outputTimeDependentNormals);
 	}
+
+	int getOutputIsInline()
+	{
+		return cmzn_streaminformation_scene_get_output_is_inline(getDerivedId());
+	}
+
+	int setOutputIsInline(int outputIsInline)
+	{
+		return cmzn_streaminformation_scene_set_output_is_inline(getDerivedId(), outputIsInline);
+	}
 };
 
 inline StreaminformationScene Streaminformation::castScene()

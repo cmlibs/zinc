@@ -3414,13 +3414,14 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string,
 	int morphVertices, int morphColours, int morphNormals,
-	int numberOfFiles, char **file_names)
+	int numberOfFiles, char **file_names, int isInline)
 {
 	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
 			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
-			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names);
+			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
+			isInline);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;
 
@@ -3472,8 +3473,10 @@ int Scene_get_number_of_graphics_with_condition(cmzn_scene_id scene, void *Scene
 				{
 					cmzn_graphicspointattributes_id pointAttr = cmzn_graphics_get_graphicspointattributes(
 						graphics);
-					if ((data->graphics_object_type == g_SURFACE_VERTEX_BUFFERS) &&
-						(cmzn_graphicspointattributes_contain_surfaces(pointAttr)))
+					if (((data->graphics_object_type == g_SURFACE_VERTEX_BUFFERS) &&
+						(cmzn_graphicspointattributes_contain_surfaces(pointAttr))) ||
+						((data->graphics_object_type == g_POINT_SET_VERTEX_BUFFERS) &&
+						(cmzn_graphicspointattributes_get_glyph_shape_type(pointAttr) == CMZN_GLYPH_SHAPE_TYPE_POINT)))
 					{
 						data->number_of_graphics++;
 					}
@@ -3521,7 +3524,7 @@ int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id sce
 	return 0;
 }
 
-int Scene_get_number_of_web_compatible_glyph_in_tree(cmzn_scene_id scene,
+int Scene_get_number_of_exportable_glyph_resources(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter)
 {
 	if (scene)
@@ -3533,7 +3536,13 @@ int Scene_get_number_of_web_compatible_glyph_in_tree(cmzn_scene_id scene,
 		data.number_of_graphics = 0;
 		for_each_child_scene_in_scene_tree(
 			scene, Scene_get_number_of_graphics_with_condition, &(data));
-		return data.number_of_graphics;
+		int numberOfSurfaces = data.number_of_graphics * 2;
+		data.type = CMZN_GRAPHICS_TYPE_POINTS;
+		data.graphics_object_type = g_POINT_SET_VERTEX_BUFFERS;
+		data.number_of_graphics = 0;
+		for_each_child_scene_in_scene_tree(
+			scene, Scene_get_number_of_graphics_with_condition, &(data));
+		return data.number_of_graphics + numberOfSurfaces;
 	}
 	return 0;
 }
