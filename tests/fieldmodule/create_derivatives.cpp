@@ -7,7 +7,7 @@
  */
 
 #include <gtest/gtest.h>
-
+#include <cmath>
 #include <opencmiss/zinc/context.h>
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/differentialoperator.h>
@@ -473,7 +473,7 @@ TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 	cmzn_mesh_destroy(&mesh);
 }
 
-// Issue 3812 – Grid-based field component derivatives only work for first component
+// Issue 3812 Grid-based field component derivatives only work for first component
 // Derivatives for higher grid-based components were overwriting those of first component
 TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 {
@@ -526,3 +526,4 @@ TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 	for (int i = 0; i < 4; ++i)
 		ASSERT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
 }
+
