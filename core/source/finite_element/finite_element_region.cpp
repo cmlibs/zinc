@@ -19,6 +19,7 @@ finite element fields defined on or interpolated over them.
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/node.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_field_private.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
