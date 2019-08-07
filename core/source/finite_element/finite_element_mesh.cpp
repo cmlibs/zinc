@@ -2443,6 +2443,7 @@ DsLabelIndex FE_mesh::getElementFirstNeighbour(DsLabelIndex elementIndex, int fa
 	DsLabelIndex faceIndex;
 	if ((this->faceMesh) && (elementShapeFaces = this->getElementShapeFaces(elementIndex)) &&
 		(faces = elementShapeFaces->getElementFaces(elementIndex)) &&
+		(0 < faceNumber) && (faceNumber < elementShapeFaces->getFaceCount()) &&
 		(0 <= (faceIndex = faces[faceNumber])))
 	{
 		const DsLabelIndex *parents;
