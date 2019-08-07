@@ -557,7 +557,7 @@ private:
 	bool readKeyValueMap(KeyValueMap& keyValueMap, int initialSeparator = 0);
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	bool checkConsumeNextChar(char testChar);
-	char *readString();
+	char *readString(const char *stringDelimitersFormat = "[^ ,;=\n\r\t]");
 	FE_field *readField();
 	bool readNodeValueLabelsVersions(FE_node_field_template& nft);
 	bool readNodeHeaderField();
@@ -881,11 +881,12 @@ bool EXReader::checkConsumeNextChar(char testChar)
  * if preceded by the escape character \ (backslash), and a backslash itself
  * must be escaped. For historic compatibility with make_valid_token, '\$' is
  * read as '$' (a perl hangover from Cmgui). Can extend over multiple lines.
- * 2. Non-quoted string is read until any of the following characters:
- * whitespace ',' ';' '=' '\0' EOF.
+ * 2. Non-quoted string is read while characters are valid according to the
+  * stringDelimitersFormat with default [^ ,;=\n\r\t], i.e. end on whitespace
+  * EOF, ',', ';', '='. Caller may supply a different stringDelimitersFormat.
  * @see make_valid_token
  * @return  Allocated string or 0 if failed. */
-char *EXReader::readString()
+char *EXReader::readString(const char *stringDelimitersFormat)
 {
 	char *theString = 0;
 	char *whitespaceString = 0;
@@ -897,7 +898,8 @@ char *EXReader::readString()
 		0;
 	if (!quoteChar)
 	{
-		if (!(IO_stream_read_string(this->input_file, "[^ ,;=\n\r\t]", &theString) && (theString)))
+		if (!(IO_stream_read_string(this->input_file, stringDelimitersFormat,
+			&theString) && (theString)))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to read unquoted string.  %s", this->getFileLocation());
 		}
@@ -3466,7 +3468,9 @@ bool EXReader::readElementHeader()
 	int scaleFactorOffset = 0; // accumulate offset of scale factors for set in element
 	for (int s = 0; s < scaleFactorSetCount; ++s)
 	{
-		char *tmpName = this->readString();
+		// read scale factor set name.
+		// Historically this was the basis string which may contain semicolons so need custom delimiters
+		char *tmpName = this->readString("[^ ,\n\r\t]");
 		if (!tmpName)
 		{
 			display_message(ERROR_MESSAGE,
