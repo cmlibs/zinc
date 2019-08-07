@@ -1040,7 +1040,7 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 				{
 					if (time_step != 0)
 						morphVerticesExported = true;
-					for (int k = 0; k < position_values_per_vertex; k++)
+					for (unsigned int k = 0; k < position_values_per_vertex; k++)
 					{
 						positions_json[temp_string].append(position[k]);
 						axis1_json[temp_string].append(axis1[k]);
