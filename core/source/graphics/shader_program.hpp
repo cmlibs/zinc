@@ -36,7 +36,7 @@ public:
 
 };
 
-struct Render_graphics_opengl;
+class Render_graphics_opengl;
 struct Texture;
 
 enum cmzn_shaderprogram_type
