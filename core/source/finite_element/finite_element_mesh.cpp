@@ -1850,14 +1850,14 @@ cmzn_elementiterator *FE_mesh::createElementiterator(DsLabelsGroup *labelsGroup)
 	return iterator;
 }
 
-struct FE_element *FE_mesh::get_first_FE_element_that(
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function, void *user_data_void)
+cmzn_element *FE_mesh::get_first_FE_element_that(
+	LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void)
 {
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
 		return 0;
 	DsLabelIndex elementIndex;
-	FE_element *element = 0;
+	cmzn_element *element = 0;
 	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
 		element = this->getElement(elementIndex);
@@ -1876,14 +1876,14 @@ struct FE_element *FE_mesh::get_first_FE_element_that(
 }
 
 int FE_mesh::for_each_FE_element(
-	LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data_void)
+	LIST_ITERATOR_FUNCTION(cmzn_element) iterator_function, void *user_data_void)
 {
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
 		return 0;
 	int return_code = 1;
 	DsLabelIndex elementIndex;
-	FE_element *element;
+	cmzn_element *element;
 	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
 		element = this->getElement(elementIndex);

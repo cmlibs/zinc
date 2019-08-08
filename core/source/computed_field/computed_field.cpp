@@ -8,7 +8,7 @@ A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
-caching of FE_element_field_values, for example. Their main benefit is in
+caching of evaluation caches, for example. Their main benefit is in
 allowing new types of fields to be defined as functions of other fields and
 source information, such as scale, offset, magnitude, gradient,
 coordinate transformations etc., thus providing cmgui with the ability to

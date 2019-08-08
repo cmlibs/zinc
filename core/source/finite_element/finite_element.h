@@ -54,17 +54,6 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_node_value_label);
 DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
 DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
 
-struct FE_element_field_values;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-The values need to calculate a field on an element.  These structures are
-calculated from the element field as required and are then destroyed.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(FE_element_field_values);
-
 #define FE_element cmzn_element
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
@@ -528,114 +517,6 @@ grid_offset_in_xi[i]*grid_number_in_xi[i] (i summed over element_dimension).
 Sets values appropriately if element_dimension = top_level_element_dimension.
 ==============================================================================*/
 
-struct FE_element_field_values *CREATE(FE_element_field_values)(void);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Creates a blank struct FE_element_field_values which can be passed to
-calculate_FE_element_field_values. The structure can be restored to its
-blank state by calling clear_FE_element_field_values; this should be done
-before calling calculate_FE_element_field_values again, and if leaving the
-structure unused for some time so it is not accessing objects.
-==============================================================================*/
-
-/**
-* Fill the element_field_values structure; must have already been created.
-* @param topLevelElement  Optional element to inherit field from.
-*/
-int calculate_FE_element_field_values(cmzn_element *element,
-	struct FE_field *field, FE_value time, char calculate_derivatives,
-	struct FE_element_field_values *element_field_values,
-	cmzn_element *topLevelElement);
-
-int FE_element_field_values_differentiate(
-	struct FE_element_field_values *element_field_values, int xi_index);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2007
-
-DESCRIPTION :
-Modifies the calculated values for an FE_field so that it will calculate
-derivatives wrt xi_index for the original field.  The <element_field_values>
-must have already been calculated.  Currently only implemented for monomials.
-==============================================================================*/
-
-int clear_FE_element_field_values(
-	struct FE_element_field_values *element_field_values);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Frees the memory for the fields of the <element_field_values> structure.
-Restores <element_field_values> to the blank state it was created with. This
-function must be called before calling calculate_FE_element_field_values again.
-==============================================================================*/
-
-int DESTROY(FE_element_field_values)(
-	struct FE_element_field_values **element_field_values_address);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Destroys the element_field_values at *<element_field_info_address>. Frees the
-memory for the information and sets <*element_field_info_address> to NULL.
-==============================================================================*/
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element_field_values);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field_values,element,struct FE_element *);
-
-int FE_element_field_values_get_component_values(
-	struct FE_element_field_values *element_field_values, int component_number,
-	int *number_of_component_values_address, FE_value **component_values_address);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Allocates and returns to <component_values_address> the component values for
-<component_number> in <element_field_values>. The number of values is returned
-in <number_of_component_values>.
-It is up to the calling function to deallocate any returned component values.
-==============================================================================*/
-
-int FE_element_field_values_get_monomial_component_info(
-	struct FE_element_field_values *element_field_values, int component_number,
-	int *monomial_info);
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-If <component_number> in the <element_field_values> is monomial, integer values
-describing the monomial basis are returned. The first number is the dimension,
-the following numbers are the order of the monomial in each direction, where
-3=cubic, for example.
-<monomial_info> should point to a block of memory big enough to take
-1 + MAXIMUM_ELEMENT_XI_DIMENSIONS integers.
-==============================================================================*/
-
-int FE_element_field_values_are_for_element_and_time(
-	struct FE_element_field_values *element_field_values,
-	struct FE_element *element,FE_value time,struct FE_element *field_element);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Returns true if the <element_field_values> are valid for time <time> and
-originated from <element>, either directly or inherited from <field_element>.
-If <field_element> is NULL no match is required with the field_element in the
-<element_field_values>.
-==============================================================================*/
-
-int FE_element_field_values_have_derivatives_calculated(
-	struct FE_element_field_values *element_field_values);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2003
-
-DESCRIPTION :
-Returns true if the <element_field_values> are valid for calculating
-derivatives.
-==============================================================================*/
-
 /**
  * The function allocates an array, <*element_field_nodes_array_address> to store the
  * pointers to the ACCESS'd element nodes.  Components that are not node-based are
@@ -660,68 +541,6 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address,
 	struct FE_element *top_level_element);
-
-int calculate_FE_element_field(int component_number,
-	struct FE_element_field_values *element_field_values,
-	const FE_value *xi_coordinates, FE_value *values, FE_value *jacobian);
-/*******************************************************************************
-LAST MODIFIED : 2 October 1998
-
-DESCRIPTION :
-Calculates the <values> of the field specified by the <element_field_values> at
-the <xi_coordinates>.  The storage for the <values> should have been allocated
-outside the function.  The <jacobian> will be calculated if it is not NULL (and
-the derivatives values have been calculated).  Only the <component_number>+1
-component will be calculated if 0<=component_number<number of components.  For a
-single component, the value will be put in the first position of <values> and
-the derivatives will start at the first position of <jacobian>.
-==============================================================================*/
-
-int calculate_FE_element_field_as_string(int component_number,
-	struct FE_element_field_values *element_field_values,
-	const FE_value *xi_coordinates, char **string);
-/*******************************************************************************
-LAST MODIFIED : 17 October 1999
-
-DESCRIPTION :
-Calculates the values of element field specified by the <element_field_values>
-at the <xi_coordinates> and returns them as the allocated <string>. Only the
-<component_number>+1 component will be calculated if
-0<=component_number<number of components. If more than 1 component is calculated
-then values are comma separated. Derivatives are not included in the string,
-even if calculated for the <element_field_values>.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
-
-int calculate_FE_element_field_int_values(int component_number,
-	struct FE_element_field_values *element_field_values,
-	const FE_value *xi_coordinates, int *values);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1999
-
-DESCRIPTION :
-Calculates the <values> of the integer field specified by the
-<element_field_values> at the <xi_coordinates>. The storage for the <values>
-should have been allocated outside the function. Only the <component_number>+1
-component will be calculated if 0<=component_number<number of components. For a
-single component, the value will be put in the first position of <values>.
-==============================================================================*/
-
-int calculate_FE_element_field_string_values(int component_number,
-	struct FE_element_field_values *element_field_values,
-	const FE_value *xi_coordinates, char **values);
-/*******************************************************************************
-LAST MODIFIED : 19 October 1999
-
-DESCRIPTION :
-Returns allocated copies of the string values of the field specified by the
-<element_field_values> at the <xi_coordinates>. <values> must be allocated with
-enough space for the number_of_components strings, but the strings themselves
-are allocated here. Only the <component_number>+1 component will be calculated
-if 0<=component_number<number of components. For a single component, the value
-will be put in the first position of <values>.
-It is up to the calling function to deallocate the returned string values.
-==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 
