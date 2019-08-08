@@ -3469,13 +3469,29 @@ bool EXReader::readElementHeader()
 	for (int s = 0; s < scaleFactorSetCount; ++s)
 	{
 		// read scale factor set name.
-		// Historically this was the basis string which may contain semicolons so need custom delimiters
-		char *tmpName = this->readString("[^ ,\n\r\t]");
+		// Historically this was the basis string which may contain spaces and semicolons so need custom delimiters
+		char *tmpName = this->readString("[^,\n\r\t]");
 		if (!tmpName)
 		{
 			display_message(ERROR_MESSAGE,
 				"EX Reader.  Error reading scale factor set name.  %s", this->getFileLocation());
 			return false;
+		}
+		if (this->exVersion < 2)
+		{
+			// basis description was used as identifier for scale factor set prior to EX Version 2
+			// need to convert scale factor set name into standard basis string
+			int *basis_type = FE_basis_string_to_type_array(tmpName);
+			FE_basis *basis = FE_region_get_FE_basis_matching_basis_type(this->fe_region, basis_type);
+			DEALLOCATE(basis_type);
+			DEALLOCATE(tmpName);
+			tmpName = FE_basis_get_description_string(basis);
+			if (!tmpName)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Error parsing scale factor set name %s as basis for EX Version < 2.  %s",
+					tmpName, this->getFileLocation());
+				return false;
+			}
 		}
 		std::string scaleFactorSetName(tmpName);
 		DEALLOCATE(tmpName);
