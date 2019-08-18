@@ -92,7 +92,11 @@ struct cmzn_fieldcache
 private:
 	cmzn_region_id region;
 	int locationCounter; // incremented whenever domain location changes
-	Field_location *location;
+	Field_location_element_xi location_element_xi;
+	Field_location_field_values location_field_values;
+	Field_location_node location_node;
+	Field_location_time location_time;
+	Field_location *location;  // points to currently active location from the above. Always valid.
 	int requestedDerivatives;
 	ValueCacheVector valueCaches;
 	bool assignInCache;
@@ -116,7 +120,7 @@ public:
 	cmzn_fieldcache(cmzn_region_id regionIn) :
 		region(cmzn_region_access(regionIn)),
 		locationCounter(0),
-		location(new Field_time_location()),
+		location(&(this->location_time)),
 		requestedDerivatives(0),
 		valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
 		assignInCache(false),
@@ -146,24 +150,39 @@ public:
 		return CMZN_OK;
 	}
 
-	/** caller is allowed to modify location with care */
-	Field_location* getLocation()
+	/** Copy location from another field cache */
+	void copyLocation(const cmzn_fieldcache &source);
+
+	/** @return Pointer to element xi location, or 0 if not this type of location */
+	const Field_location_element_xi *get_location_element_xi() const
 	{
-		return location;
+		if (this->location->get_type() == Field_location::TYPE_ELEMENT_XI)
+			return static_cast<Field_location_element_xi *>(this->location);
+		return 0;
 	}
 
-	Field_location *cloneLocation()
+	/** @return Pointer to field values location, or 0 if not this type of location */
+	const Field_location_field_values *get_location_field_values() const
 	{
-		return location->clone();
+		if (this->location->get_type() == Field_location::TYPE_FIELD_VALUES)
+			return static_cast<Field_location_field_values *>(this->location);
+		return 0;
 	}
 
-	// cache takes ownership of location object
-	void setLocation(Field_location *newLocation)
+	/** @return Pointer to node location, or 0 if not this type of location */
+	const Field_location_node *get_location_node() const
 	{
-		// future optimisation: check if location has changed
-		delete location;
-		location = newLocation;
-		locationChanged();
+		if (this->location->get_type() == Field_location::TYPE_NODE)
+			return static_cast<Field_location_node *>(this->location);
+		return 0;
+	}
+
+	/** @return Pointer to time location, or 0 if not this type of location */
+	const Field_location_time *get_location_time() const
+	{
+		if (this->location->get_type() == Field_location::TYPE_TIME)
+			return static_cast<Field_location_time *>(this->location);
+		return 0;
 	}
 
 	inline int getLocationCounter() const
@@ -178,21 +197,23 @@ public:
 
 	void clearLocation()
 	{
-		setLocation(new Field_time_location());
+		this->location = &this->location_time;
+		this->locationChanged();
 	}
 
-	FE_value getTime()
+	FE_value getTime() const
 	{
 		return location->get_time();
 	}
 
+	/** Set time in location without changing location type. Call clear location first to change to time location type. */
 	void setTime(FE_value time)
 	{
 		// avoid re-setting current time as cache may have valid values already
-		if (time != location->get_time())
+		if (this->location->get_time() != time)
 		{
-			location->set_time(time);
-			locationChanged();
+			this->location->set_time(time);
+			this->locationChanged();
 		}
 	}
 
@@ -221,10 +242,13 @@ public:
 	{
 		if (element && chart_coordinates)
 		{
-			FE_value time = location->get_time();
-			delete location;
-			location = new Field_element_xi_location(element, chart_coordinates, time, top_level_element);
-			locationChanged();
+			this->location_element_xi.set_element_xi(element, chart_coordinates, top_level_element);
+			if (this->location != &this->location_element_xi)
+			{
+				this->location_element_xi.set_time(this->location->get_time());
+				this->location = &this->location_element_xi;
+			}
+			this->locationChanged();
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -232,17 +256,17 @@ public:
 
 	int setNode(cmzn_node_id node)
 	{
-		FE_value time = location->get_time();
-		delete location;
-		location = new Field_node_location(node, time);
-		locationChanged();
+		this->location_node.set_node(node);
+		if (this->location != &this->location_node)
+		{
+			this->location_node.set_time(this->location->get_time());
+			this->location = &this->location_node;
+		}
+		this->locationChanged();
 		return CMZN_OK;
 	}
 
 	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);
-
-	int setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
-		int numberOfDerivatives, const double *derivatives);
 
 	FieldValueCache* getValueCache(int cacheIndex)
 	{

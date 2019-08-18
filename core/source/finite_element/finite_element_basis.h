@@ -82,6 +82,65 @@ enum FE_basis_modify_theta_mode
 	FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1
 };
 
+/** object for evaluating and caching standard basis function values.
+ * Designed for performance. Not to be shared between threads.
+ * Note client must remember xi_coordinates this is evaluated at */
+class Standard_basis_function_values
+{
+	Standard_basis_function *standard_basis_function;  // Standard basis function pointer. 0 if cache invalid.
+	int standard_basis_function_arguments[MAXIMUM_ELEMENT_XI_DIMENSIONS + 1];  // dimension, order1 ... orderN
+	FE_value *basis_function_values;
+	int number_of_values_allocated;
+
+	/** Full evaluation of basis function values in cache.
+	 * @return  Standard basis function values from cache. */
+	FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
+		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
+
+public:
+	Standard_basis_function_values() :
+		standard_basis_function(0),
+		basis_function_values(0),
+		number_of_values_allocated(0)
+	{
+	}
+
+	~Standard_basis_function_values()
+	{
+		delete[] this->basis_function_values;
+	}
+
+	/** Return basis values at supplied xi coordinates. Optimised for speed.
+	 * Client must ensure all arguments are valid and that xi_coordinates is
+	 * correct dimension for basis.
+	 * Important: object does not store the xi coordinates, so client must call
+	 * invalidate() to force full_evaluation at a different coordinate.
+	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
+	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
+	 * @param xi_coordinates.  Location to evaluate at. Client to check.
+	 * @return  Standard basis function values from cache or from full calculation. */
+	inline FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
+		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
+	{
+		// note only works up to 3-D
+		if ((standard_basis_function_in == this->standard_basis_function)
+			&& (standard_basis_function_arguments_in[0] == this->standard_basis_function_arguments[0])
+			&& (standard_basis_function_arguments_in[1] == this->standard_basis_function_arguments[1])
+			&& ((standard_basis_function_arguments_in[0] < 2) || (
+			((standard_basis_function_arguments_in[2] == this->standard_basis_function_arguments[2]))
+				&& ((standard_basis_function_arguments_in[0] < 3) ||
+				((standard_basis_function_arguments_in[3] == this->standard_basis_function_arguments[3]))))))
+			return this->basis_function_values;
+		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in, xi_coordinates);
+	}
+
+	/** Invalidate cache to force full evaluation */
+	inline void invalidate()
+	{
+		this->standard_basis_function = 0;
+	}
+};
+
 /*
 Global functions
 ----------------
@@ -255,11 +314,13 @@ Also checks that the linked xi numbers have the same basis type.
  */
 int FE_basis_is_non_linear(struct FE_basis *basis);
 
-/* exposed only for comparing function pointers */
+/** Standard monomial basis function used for most bases.
+ * Exposed only for comparing function pointers */
 int monomial_basis_functions(void *type_arguments,
 	const FE_value *xi_coordinates, FE_value *function_values);
 
-/* exposed only for comparing function pointers */
+/** Standard polygon basis function.
+ * Exposed only for comparing function pointers */
 int polygon_basis_functions(void *type_arguments,
 	const FE_value *xi_coordinates, FE_value *function_values);
 

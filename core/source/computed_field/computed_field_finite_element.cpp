@@ -573,13 +573,13 @@ Compare the type specific data
 
 bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		// true and able to be evaluated only if all components have a VALUE parameter
 		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node_location->get_node(), this->fe_field);
@@ -692,12 +692,13 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 {
 	int return_code = 0;
 	enum Value_type value_type = get_FE_field_value_type(fe_field);
+	const Field_location_element_xi* element_xi_location;
+	const Field_location_node *node_location;
 	switch (value_type)
 	{
 		case ELEMENT_XI_VALUE:
 		{
-			Field_node_location *node_location;
-			if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+			if (node_location = cache.get_location_node())
 			{
 				MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
 				// can only have 1 component; can only be evaluated at node so assume node location
@@ -720,9 +721,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 			{
 				DEALLOCATE(feStringValueCache.stringValue);
 			}
-			Field_element_xi_location* element_xi_location;
-			Field_node_location *node_location;
-			if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+			if (node_location = cache.get_location_node())
 			{
 				// can only have 1 component
 				feStringValueCache.stringValue = get_FE_nodal_value_as_string(node_location->get_node(),
@@ -733,7 +732,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					return_code = 0;
 				}
 			}
-			else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+			else if (element_xi_location = cache.get_location_element_xi())
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
@@ -753,9 +752,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		default:
 		{
 			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-			Field_element_xi_location* element_xi_location;
-			Field_node_location *node_location;
-			if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+			if (element_xi_location = cache.get_location_element_xi())
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
@@ -823,7 +820,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					}
 				}
 			}
-			else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+			else if (node_location = cache.get_location_node())
 			{
 				int result = CMZN_ERROR_GENERAL;
 				const int componentCount = field->number_of_components;
@@ -901,7 +898,7 @@ int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int
 	cmzn_node_value_label valueLabel, int versionNumber,
 	int valuesCount, double *valuesOut)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if ((componentNumber >= this->field->number_of_components)
 		|| (versionNumber < 0)
 		|| (valuesCount < ((componentNumber < 0) ? this->field->number_of_components : 1))
@@ -926,7 +923,7 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 	int componentNumber, cmzn_node_value_label valueLabel, int versionNumber,
 	int valuesCount, const double *valuesIn)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if ((componentNumber >= this->field->number_of_components)
 		|| (versionNumber < 0)
 		|| (valuesCount < ((componentNumber < 0) ? this->field->number_of_components : 1))
@@ -949,7 +946,7 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 
 bool Computed_field_finite_element::hasParametersAtLocation(cmzn_fieldcache& cache)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location)
 	{
 		return FE_field_has_parameters_at_node(fe_field, node_location->get_node());
@@ -966,10 +963,9 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(valueCache);
 	FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 	enum Value_type value_type = get_FE_field_value_type(fe_field);
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
-	element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
-	if (element_xi_location)
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
@@ -1082,7 +1078,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 			}
 		}
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
@@ -1180,7 +1176,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 
 enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache& cache, MeshLocationFieldValueCache& valueCache)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location &&
 		(get_FE_field_value_type(fe_field) == ELEMENT_XI_VALUE) &&
 		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
@@ -1197,7 +1193,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 
 enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache& cache, StringFieldValueCache& valueCache)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location &&
 		(get_FE_field_value_type(fe_field) == STRING_VALUE) &&
 		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
@@ -1704,9 +1700,9 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 {
 	int return_code = 1;
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
@@ -1718,7 +1714,7 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 		}
 		valueCache.derivatives_valid = 1;
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = (FE_value)get_FE_node_identifier(node);
@@ -1884,14 +1880,14 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(element->getAccessCount());
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = (FE_value)FE_node_get_access_count(node);
@@ -2098,8 +2094,8 @@ Compare the type specific data
 
 bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_node_location *node_location;
-	if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	const Field_location_node *node_location;
+	if (node_location = cache.get_location_node())
 	{
 		cmzn_node *node = node_location->get_node();
 		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
@@ -2150,7 +2146,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 {
 	int return_code = 1;
 	MultiTypeRealFieldValueCache& valueCache = MultiTypeRealFieldValueCache::cast(inValueCache);
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location)
 	{
 		int result = CMZN_ERROR_GENERAL;
@@ -2218,7 +2214,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 	}
 	else
 	{
-		// Only valid for Field_node_location type
+		// Only valid for Field_location_node type
 		return_code = 0;
 	}
 	return (return_code);
@@ -2226,7 +2222,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 
 enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location)
 	{
 		if (cache.assignInCacheOnly())
@@ -2575,7 +2571,7 @@ private:
 
 int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location* element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 		return 0;
 	cmzn_element *element = element_xi_location->get_element();
@@ -3544,12 +3540,12 @@ private:
 
 bool Computed_field_xi_coordinates::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+	return (0 != cache.get_location_element_xi());
 }
 
 int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
@@ -3835,8 +3831,8 @@ Compare the type specific data
 
 bool Computed_field_basis_derivative::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location *element_xi_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
 		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
@@ -3898,8 +3894,8 @@ DESCRIPTION :
 int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location* element_xi_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
 		FE_element* element = element_xi_location->get_element();
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -4519,13 +4515,13 @@ private:
 
 	bool is_defined_at_location(cmzn_fieldcache& cache)
 	{
-		return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+		return (0 != cache.get_location_element_xi());
 	}
 };
 
 int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
@@ -4624,13 +4620,13 @@ private:
 
 	bool is_defined_at_location(cmzn_fieldcache& cache)
 	{
-		return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+		return (0 != cache.get_location_element_xi());
 	}
 };
 
 int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);

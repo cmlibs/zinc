@@ -719,7 +719,7 @@ int Computed_field_element_group::removeElementFacesRecursive(
 
 int Computed_field_element_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
@@ -1077,7 +1077,7 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 
 int Computed_field_node_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location)
 	{
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);

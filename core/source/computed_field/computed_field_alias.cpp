@@ -204,7 +204,8 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		extraCache->setRequestedDerivatives(cache.getRequestedDerivatives());
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
@@ -229,7 +230,8 @@ enum FieldAssignmentResult Computed_field_alias::assign(cmzn_fieldcache& cache, 
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(*extraCache));
 	}
 	else

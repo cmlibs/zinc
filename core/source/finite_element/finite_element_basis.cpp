@@ -501,7 +501,7 @@ NB.  xi_1 is varying fastest (xi_n slowest)
 		return_code;
 
 	ENTER(monomial_basis_functions);
-	const int *argument = reinterpret_cast<int *>(type_arguments);
+	const int *argument = static_cast<int *>(type_arguments);
 	if (argument && xi_coordinates && function_values)
 	{
 		const FE_value *xi_coordinate = xi_coordinates;
@@ -600,7 +600,7 @@ d) the blending matrix is
 		offset11, order, polygon_offset, polygon_vertex, return_code;
 
 	ENTER(polygon_basis_functions);
-	const int *argument = reinterpret_cast<int *>(type_arguments);
+	const int *argument = static_cast<int *>(type_arguments);
 	if (argument && xi_coordinates && function_values)
 	{
 		const FE_value *xi_coordinate = xi_coordinates;
@@ -714,6 +714,58 @@ d) the blending matrix is
 
 	return (return_code);
 } /* polygon_basis_functions */
+
+FE_value *Standard_basis_function_values::evaluate_full(Standard_basis_function *standard_basis_function_in,
+	int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
+{
+	if ((!standard_basis_function_in) || (!standard_basis_function_arguments_in) || (!xi_coordinates)
+		|| (standard_basis_function_arguments_in[0] < 1) || (standard_basis_function_arguments_in[0] > 3))
+	{
+		display_message(WARNING_MESSAGE, "FE_basis_function_values::evaluate_full.  Invalid arguments");
+		return 0;
+	}
+	this->standard_basis_function = standard_basis_function_in;
+	this->standard_basis_function_arguments[0] = standard_basis_function_arguments_in[0];
+	int number_of_values = 1;
+	if (monomial_basis_functions == standard_basis_function_in)
+	{
+		for (int i = 1; i <= standard_basis_function_arguments_in[0]; ++i)
+		{
+			this->standard_basis_function_arguments[i] = standard_basis_function_arguments_in[i];
+			number_of_values *= (standard_basis_function_arguments_in[i] + 1);
+		}
+	}
+	else // polygon_basis_functions
+	{
+		for (int i = 1; i <= standard_basis_function_arguments_in[0]; ++i)
+		{
+			this->standard_basis_function_arguments[i] = standard_basis_function_arguments_in[i];
+			int order = standard_basis_function_arguments_in[i];
+			if (order < 0) // polygon
+			{
+				order = -order;
+				if (order%2)
+				{
+					// multiply values for first polygon coordinate only
+					order /= 2;
+					const int polygon_offset = i + order%standard_basis_function_arguments_in[0];
+					const int number_of_polygon_vertices = (-standard_basis_function_arguments_in[polygon_offset])/2;
+					number_of_values *= 4*number_of_polygon_vertices;
+				}
+			}
+			else
+				number_of_values *= (order + 1);
+		}
+	}
+	if (number_of_values > this->number_of_values_allocated)
+	{
+		delete[] this->basis_function_values;
+		this->basis_function_values = new FE_value[number_of_values];
+		this->number_of_values_allocated = number_of_values;
+	}
+	(this->standard_basis_function)(static_cast<void *>(this->standard_basis_function_arguments), xi_coordinates, this->basis_function_values);
+	return this->basis_function_values;
+}
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_basis)
 
@@ -4313,4 +4365,3 @@ bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
 	delete nodeValueIndexes;
 	return true;
 }
-

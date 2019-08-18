@@ -14,6 +14,7 @@
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "computed_field/computed_field_private.hpp"
@@ -115,7 +116,6 @@ cmzn_fieldcache::~cmzn_fieldcache()
 		*iter = 0;
 	}
 	cmzn_region_remove_field_cache(region, this);
-	delete location;
 	cmzn_region_destroy(&region);
 }
 
@@ -126,53 +126,69 @@ cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region_id regionIn)
 	return 0;
 }
 
+void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
+{
+	switch (source.location->get_type())
+	{
+	case Field_location::TYPE_ELEMENT_XI:
+	{
+		this->location_element_xi.set_element_xi(
+			source.location_element_xi.get_element(),
+			source.location_element_xi.get_xi(),
+			source.location_element_xi.get_top_level_element());
+		this->location = &this->location_element_xi;
+	} break;
+	case Field_location::TYPE_FIELD_VALUES:
+	{
+		this->location_field_values.set_field_values(
+			source.location_field_values.get_field(),
+			source.location_field_values.get_number_of_values(),
+			source.location_field_values.get_values());
+		this->location = &this->location_field_values;
+	} break;
+	case Field_location::TYPE_NODE:
+	{
+		this->location_node.set_node(
+			source.location_node.get_node());
+		this->location = &this->location_node;
+	} break;
+	case Field_location::TYPE_TIME:
+	{
+		this->location = &this->location_time;
+	} break;
+	case Field_location::TYPE_INVALID:
+	{
+		display_message(ERROR_MESSAGE, "cmzn_fieldcache::copyLocation.  Invalid location type");
+		this->location = &this->location_time;
+	} break;
+	}
+	this->location->set_time(source.location->get_time());
+	this->locationChanged();
+}
+
 int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros
 	if (!(field && field->isNumerical() && (numberOfValues > 0) && values))
 		return CMZN_ERROR_ARGUMENT;
+	// still need to set location_field_values because image processing uses it
+	this->location_field_values.set_field_values(field, numberOfValues, values);
+	if (this->location != &this->location_field_values)
+	{
+		this->location_field_values.set_time(this->location->get_time());
+		this->location = &this->location_field_values;
+	}
+	locationChanged();  // must do first to ensure cache is valid below
+	// now put the values in the cache. Note does not support derivatives!
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
 	{
 		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
 	}
 	valueCache->derivatives_valid = 0;
-	locationChanged();
 	valueCache->evaluationCounter = locationCounter;
-	FE_value time = location->get_time();
-	// still need to create Field_coordinate_location because image processing fields dynamic cast to recognise
-	delete location;
-	location = new Field_coordinate_location(field, numberOfValues, values, time);
 	return CMZN_OK;
-}
-
-int cmzn_fieldcache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
-	int numberOfDerivatives, const double *derivatives)
-{
-	// to support the xi field which has 3 components regardless of dimensions, do not
-	// check (numberOfValues >= field->number_of_components), just pad with zeros
-	if (!(field && field->isNumerical() && (numberOfValues > 0) && values &&
-		(0 < numberOfDerivatives) && (numberOfDerivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
-		return 0;
-	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
-	for (int i = 0; i < field->number_of_components; i++)
-	{
-		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
-	}
-	const int size = field->number_of_components * numberOfDerivatives;
-	const int suppliedSize = numberOfValues * numberOfDerivatives;
-	for (int i = 0; i < size; i++)
-	{
-		valueCache->derivatives[i] = (i < suppliedSize) ? derivatives[i] : 0.0;
-	}
-	valueCache->derivatives_valid = 1;
-	locationChanged();
-	valueCache->evaluationCounter = locationCounter;
-	FE_value time = location->get_time();
-	delete location;
-	location = new Field_coordinate_location(field, numberOfValues, values, time, numberOfDerivatives, derivatives);
-	return 1;
 }
 
 /*

@@ -77,10 +77,8 @@ private:
 
 bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location* element_xi_location;
-	// only works for element_xi locations & at least 2-D
-	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
-		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if ((element_xi_location) && (2 <= element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -102,14 +100,13 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
  */
 int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	/* Only works for element_xi locations */
-	Field_element_xi_location* element_xi_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		FE_element *top_level_element = element_xi_location->get_top_level_element();;
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		cmzn_element *top_level_element = element_xi_location->get_top_level_element();;
 		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		int top_level_element_dimension = 0;
 		FE_element_get_top_level_element_and_xi(element,

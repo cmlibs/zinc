@@ -306,15 +306,15 @@ Compare the type specific data
 bool Computed_field_derivative::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	// derivative values are only defined for element_xi locations, and only up to element dimension...
-	Field_element_xi_location* element_xi_location;
-	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())) &&
-		(xi_index < element_xi_location->get_dimension()))
+	const Field_location_element_xi* element_xi_location;
+	if ((element_xi_location = cache.get_location_element_xi()) &&
+		(xi_index < element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
 	}
-	// ... or image based field derivative with field location
-	else if (dynamic_cast<Field_coordinate_location*>(cache.getLocation()))
+	// ... or image based field derivative with field values location
+	else if (cache.get_location_field_values())
 	{
 		/* This can only be valid if the input field has
 			a native resolution as we will be using image filter. */
@@ -340,12 +340,11 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	/* Only works for element_xi locations, or field locations for image-based fields */
-	Field_element_xi_location *element_xi_location =
-		dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
 		FE_element* element = element_xi_location->get_element();
-		int element_dimension=get_FE_element_dimension(element);
+		const int element_dimension = element_xi_location->get_element_dimension();
 		if (xi_index < element_dimension)
 		{
 			RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
@@ -481,7 +480,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_derivative(
 	cmzn_field_id source_field, int xi_index)
 {
 	cmzn_field *field = NULL;
-	if (source_field && (0 < xi_index) && (xi_index <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (source_field && source_field->isNumerical() &&
+		(0 < xi_index) && (xi_index <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -588,17 +588,16 @@ private:
 int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location* element_xi_location;
-	//Field_node_location* node_location;
-	cmzn_field_id source_field = getSourceField(0);
-	cmzn_field_id coordinate_field = getSourceField(1);
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	/* cannot calculate derivatives for curl yet */
 	valueCache.derivatives_valid = 0;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		cmzn_field_id source_field = getSourceField(0);
+		cmzn_field_id coordinate_field = getSourceField(1);
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		cmzn_element *top_level_element = element_xi_location->get_top_level_element();
 		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		int top_level_element_dimension = 0;
 		FE_element_get_top_level_element_and_xi(element,
@@ -758,8 +757,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_curl(
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = NULL;
-	if (vector_field && (3 == vector_field->number_of_components) &&
-		coordinate_field && (3 == coordinate_field->number_of_components) &&
+	if (vector_field && vector_field->isNumerical() && (3 == vector_field->number_of_components) &&
+		coordinate_field && coordinate_field->isNumerical() && (3 == coordinate_field->number_of_components) &&
 		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
 		cmzn_field *source_fields[2];
@@ -869,17 +868,16 @@ private:
 int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location* element_xi_location;
-	//Field_node_location* node_location;
-	cmzn_field_id source_field = getSourceField(0);
-	cmzn_field_id coordinate_field = getSourceField(1);
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	/* cannot calculate derivatives for curl yet */
 	valueCache.derivatives_valid = 0;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		cmzn_field_id source_field = getSourceField(0);
+		cmzn_field_id coordinate_field = getSourceField(1);
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		cmzn_element *top_level_element = element_xi_location->get_top_level_element();
 		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		int top_level_element_dimension = 0;
 		FE_element_get_top_level_element_and_xi(element,
@@ -1045,7 +1043,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = NULL;
-	if (vector_field && coordinate_field &&
+	if (vector_field && vector_field->isNumerical() &&
+		coordinate_field && coordinate_field->isNumerical() &&
 		(3 >= coordinate_field->number_of_components) &&
 		(vector_field->number_of_components ==
 			coordinate_field->number_of_components) &&
@@ -1127,20 +1126,21 @@ public:
 	{
 	}
 
-	FE_value getPerturbationSize(cmzn_fieldcache& cache, cmzn_field *coordinateField, Field_location *location)
+	FE_value getPerturbationSize(cmzn_fieldcache& cache, cmzn_field *coordinateField, const cmzn_fieldcache& source_cache)
 	{
+		// GRC only implemented properly for node location!
 		if (this->needEvaluatePerturbationSize)
 		{
 			this->needEvaluatePerturbationSize = false;
 			this->perturbationSize = 1.0E-5;
-			Field_node_location *nodeLocation = dynamic_cast<Field_node_location*>(location);
-			if (nodeLocation)
+			const Field_location_node *node_location = source_cache.get_location_node();
+			if (node_location)
 			{
 				const int componentCount = coordinateField->number_of_components;
 				FE_value *minimums = this->cacheValues.data();
 				FE_value *maximums = minimums + componentCount;
 				FE_value *values = maximums + componentCount;
-				FE_nodeset *feNodeset = FE_node_get_FE_nodeset(nodeLocation->get_node());
+				FE_nodeset *feNodeset = FE_node_get_FE_nodeset(node_location->get_node());
 				// get range of coordinate field over nodeset
 				cmzn_nodeiterator *iter = feNodeset->createNodeiterator();
 				if (iter)
@@ -1277,19 +1277,18 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 {
 	int return_code = 0;
 	GradientRealFieldValueCache& valueCache = GradientRealFieldValueCache::cast(inValueCache);
-	Field_element_xi_location* element_xi_location;
-	//Field_node_location* node_location;
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	cmzn_field_id source_field = getSourceField(0);
 	cmzn_field_id coordinate_field = getSourceField(1);
 	const int source_number_of_components = source_field->number_of_components;
 	const int coordinate_number_of_components = coordinate_field->number_of_components;
 	/* cannot calculate derivatives for gradient yet */
 	valueCache.derivatives_valid = 0;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		FE_element *top_level_element = element_xi_location->get_top_level_element();
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		cmzn_element *top_level_element = element_xi_location->get_top_level_element();
 		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		int top_level_element_dimension = 0;
 		FE_element_get_top_level_element_and_xi(element,
@@ -1388,9 +1387,8 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		cmzn_fieldcache *extraCache = valueCache.getOrCreateExtraCache(cache);
 		if ((originalCoordinateValueCache) && (extraCache))
 		{
-			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinate_field, cache.getLocation());
-			Field_location *location = cache.cloneLocation();
-			extraCache->setLocation(location);
+			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinate_field, cache);
+			extraCache->copyLocation(cache);
 			const FE_value *original_coordinate_values = originalCoordinateValueCache->values;
 			return_code = 1;
 			for (int i = 0; i < coordinate_number_of_components; ++i)
@@ -1536,7 +1534,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_gradient(
 	cmzn_field_id source_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = 0;
-	if (source_field && coordinate_field &&
+	if (source_field && source_field->isNumerical() &&
+		coordinate_field && coordinate_field->isNumerical() &&
 		(3 >= coordinate_field->number_of_components))
 	{
 		int number_of_components = source_field->number_of_components *

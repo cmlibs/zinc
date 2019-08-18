@@ -117,17 +117,8 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		if (sourceField->number_of_components == referenceField->number_of_components)
 		{
 			RealFieldValueCache *resultCache = 0;
-			if (number_of_xi && sourceCache->derivatives_valid)
-			{
-				extraCache.setFieldRealWithDerivatives(referenceField, referenceField->number_of_components,
-					sourceCache->values, number_of_xi, sourceCache->derivatives);
-				resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
-			}
-			else
-			{
-				extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
-				resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
-			}
+			extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
+			resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 			if (resultCache)
 			{
 				valueCache.copyValues(*resultCache);
@@ -141,17 +132,8 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			for (int i = 0; i < field->number_of_components; i++)
 			{
 				RealFieldValueCache *resultCache = 0;
-				if (valueCache.derivatives_valid)
-				{
-					extraCache.setFieldRealWithDerivatives(referenceField, 1,
-						sourceCache->values + i, number_of_xi, sourceCache->derivatives + i*number_of_xi);
-					resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
-				}
-				else
-				{
-					extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
-					resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
-				}
+				extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
+				resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 				if (!resultCache)
 					return 0;
 				valueCache.values[i] = resultCache->values[0];

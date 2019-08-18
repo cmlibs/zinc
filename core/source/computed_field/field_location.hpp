@@ -1,13 +1,11 @@
-//******************************************************************************
-// FILE : field_location.hpp
-//
-// LAST MODIFIED : 9 August 2006
-//
-// DESCRIPTION :
-// An class hierarchy for specifying locations at which to evaluate fields.
-// These are transient objects used internally in Computed_fields and so do not
-// access, copy or allocate their members.
-//==============================================================================
+/**
+ * FILE : field_location.hpp
+ *
+ * Location at which to evaluate a field.
+ * These are low level transient objects used internally to evaluate fields.
+ * May contain object pointers, but does not access them for thread safety.
+ * Client using them must monitor for changes and clear as needed.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,119 +14,120 @@
 #if !defined (__FIELD_LOCATION_HPP__)
 #define __FIELD_LOCATION_HPP__
 
-#include "computed_field/computed_field.h"
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/fieldid.h"
+#include "opencmiss/zinc/types/nodeid.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_basis.h"
 #include "general/value.h"
-
-struct cmzn_field;
 
 class Field_location
 {
-protected:
-	FE_value time;
-	int number_of_derivatives;
+public:
+	// enumeration of all derived types 
+	enum Type
+	{
+		TYPE_INVALID = 0,
+		TYPE_ELEMENT_XI = 1,
+		TYPE_FIELD_VALUES = 2,
+		TYPE_NODE = 3,
+		TYPE_TIME = 4
+	};
 
-	Field_location(FE_value time = 0.0, int number_of_derivatives = 0) :
-		time(time), number_of_derivatives(number_of_derivatives)
+private:
+	Field_location();  // not implemented for abstract base class
+
+protected:
+	Type type;  // store for efficient type switching
+	FE_value time;
+
+	Field_location(Type type_in) :
+		type(type_in),
+		time(0.0)
 	{}
 
 public:
 
-	/* Abstract virtual destructor declaration as we will not make objects of this
-		parent class */
+	// abstract virtual destructor declaration
 	virtual ~Field_location() = 0;
 
-	virtual Field_location *clone() = 0;
-
-	FE_value get_time()
+	FE_value get_time() const
 	{
-		return time;
+		return this->time;
 	}
 
-	void set_time(FE_value new_time)
+	void set_time(FE_value time_in)
 	{
-		time = new_time;
+		this->time = time_in;
 	}
 
-	int get_number_of_derivatives()
+	Type get_type() const
 	{
-		return number_of_derivatives;
-	}
-
-	/** use with care in field evaluation & restore after evaluating with */
-	void set_number_of_derivatives(int number_of_derivatives_in)
-	{
-		number_of_derivatives = number_of_derivatives_in;
-	}
-
-	virtual int set_values_for_location(cmzn_field * /*field*/,
-		const FE_value * /*values*/)
-	{
-		/* Default is that the location can't set the values */
-		return 0;
+		return this->type;
 	}
 };
 
-class Field_element_xi_location : public Field_location
+class Field_location_element_xi : public Field_location
 {
 private:
-	struct FE_element *element;
-	int dimension;
+	cmzn_element *element;  // not accessed
+	int element_dimension;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct FE_element *top_level_element;
+	cmzn_element *top_level_element;  // not accessed
+	Standard_basis_function_values basis_function_values;
 
 public:
-	Field_element_xi_location(struct FE_element *element_in,
-			const FE_value *xi_in = NULL, FE_value time_in = 0.0,
-			struct FE_element *top_level_element_in = NULL, int number_of_derivatives_in = 0) :
-		Field_location(time_in, number_of_derivatives_in),
-		element(element_in ? ACCESS(FE_element)(element_in) : 0),
-		dimension(element_in ? element_in->getDimension() : 0),
-		top_level_element(top_level_element_in ? ACCESS(FE_element)(top_level_element_in) : 0)
-	{
-		if (xi_in)
-		{
-			for (int i = 0; i < dimension; i++)
-			{
-				xi[i] = xi_in[i];
-			}
-		}
-		else
-		{
-			for (int i = 0; i < dimension; i++)
-			{
-				xi[i] = 0.0;
-			}
-		}
-	}
 
-	// blank constructor - caller should call set_element_xi & check valid return
-	Field_element_xi_location(FE_value time_in = 0.0, int number_of_derivatives_in = 0) :
-		Field_location(time_in, number_of_derivatives_in),
+	Field_location_element_xi() :
+		Field_location(TYPE_ELEMENT_XI),
 		element(0),
-		dimension(0),
+		element_dimension(0),
 		top_level_element(0)
 	{
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+			xi[i] = 0.0;
 	}
 
-	~Field_element_xi_location()
+	/** Set element and optional top level element to inherit fields from, at default xi.
+	 * @param element  Element pointer. Client must ensure valid.
+	 * @param top_level_element  Field element pointer, or 0 for default. */
+	void set_element(cmzn_element *element_in, cmzn_element *top_level_element_in = 0)
 	{
-		DEACCESS(FE_element)(&element);
-		if (top_level_element)
-			DEACCESS(FE_element)(&top_level_element);
+		this->element = element_in;
+		this->element_dimension = element_in->getDimension();
+		this->top_level_element = top_level_element_in;
+		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+			xi[i] = 0.0;
+		this->basis_function_values.invalidate();
 	}
 
-	virtual Field_location *clone()
+	/** Set element xi location with optional top level element to inherit fields from.
+	 * @param element_in  Element pointer. Client must ensure exists while pointer held.
+	 * @param xi_in  Array of xi coordinates. Client must check valid!
+	 * @param top_level_element_in  Field element pointer, or 0 for default. Client must ensure exists while pointer held */
+	void set_element_xi(cmzn_element *element_in, const FE_value *xi_in, cmzn_element *top_level_element_in = 0)
 	{
-		return new Field_element_xi_location(element, xi, time, top_level_element);
+		this->element = element_in;
+		const int element_dimension_in = element_in->getDimension();
+		bool same_xi = (this->element_dimension == element_dimension_in);
+		this->element_dimension = element_dimension_in;
+		for (int i = 0; i < element_dimension_in; ++i)
+		{
+			if (same_xi && (this->xi[i] != xi_in[i]))
+				same_xi = false;
+			xi[i] = xi_in[i];
+		}
+		this->top_level_element = top_level_element_in;
+		if (!same_xi)
+			this->basis_function_values.invalidate();
 	}
 
-	int get_dimension() const
+	int get_element_dimension() const
 	{
-		return dimension;
+		return this->element_dimension;
 	}
 
-	struct FE_element *get_element()
+	cmzn_element *get_element() const
 	{
 		return element;
 	}
@@ -138,119 +137,92 @@ public:
 		return xi;
 	}
 
-	FE_element *get_top_level_element()
+	cmzn_element *get_top_level_element() const
 	{
 		return top_level_element;
 	}
-
-	int set_element_xi(struct FE_element *element_in,
-		int number_of_xi_in, const FE_value *xi_in,
-		struct FE_element *top_level_element_in = NULL);
 };
 
-class Field_node_location : public Field_location
+/** A location represented by values of a single field */
+class Field_location_field_values : public Field_location
 {
 private:
-	struct FE_node *node;
-
-public:
-	Field_node_location(struct FE_node *node,
-		FE_value time = 0, int number_of_derivatives = 0):
-		Field_location(time, number_of_derivatives),
-		node(ACCESS(FE_node)(node))
-	{
-	}
-
-	~Field_node_location()
-	{
-		DEACCESS(FE_node)(&node);
-	}
-
-	virtual Field_location *clone()
-	{
-		return new Field_node_location(node, time);
-	}
-
-	FE_node *get_node()
-	{
-		return node;
-	}
-
-	void set_node(FE_node *node_in)
-	{
-		REACCESS(FE_node)(&node, node_in);
-	}
-};
-
-class Field_time_location : public Field_location
-{
-public:
-	Field_time_location(FE_value time = 0, int number_of_derivatives = 0):
-		Field_location(time, number_of_derivatives)
-	{
-	}
-
-	~Field_time_location()
-	{
-	}
-
-	virtual Field_location *clone()
-	{
-		return new Field_time_location(time);
-	}
-};
-
-class Field_coordinate_location : public Field_location
-{
-private:
-	cmzn_field *reference_field;
-	int number_of_values;
+	cmzn_field *field;  // not accessed
 	FE_value *values;
-	FE_value *derivatives;
+	int number_of_values;
+	int number_of_values_allocated;
 
 public:
-	Field_coordinate_location(cmzn_field *reference_field_in,
-		int number_of_values_in, const FE_value* values_in, FE_value time = 0,
-		int number_of_derivatives_in = 0, const FE_value* derivatives_in = NULL);
-
-	// blank constructor - caller should call set_field_values & check valid return
-	Field_coordinate_location(FE_value time = 0) :
-		Field_location(time),
-		reference_field(0),
-		number_of_values(0),
+	Field_location_field_values() :
+		Field_location(TYPE_FIELD_VALUES),
+		field(0),
 		values(0),
-		derivatives(0)
+		number_of_values(0),
+		number_of_values_allocated(0)
 	{
 	}
 
-	~Field_coordinate_location();
-
-	virtual Field_location *clone()
+	virtual ~Field_location_field_values()
 	{
-		return new Field_coordinate_location(reference_field, number_of_values, values, time, number_of_derivatives, derivatives);
+		delete[] this->values;
 	}
 
-	cmzn_field *get_reference_field()
+	/** Set field and values to evaluate at.
+	 * @param field_in  Client must ensure exists while pointer held.
+	 * @param number_of_values  Size of values_in, equal to number of field components. Client must ensure correct.
+	 * @param values_in  Array of real coordinates. Client must ensure valid. */
+	void set_field_values(cmzn_field *field_in,
+		int number_of_values_in, const FE_value* values_in);
+
+	cmzn_field *get_field() const
 	{
-		return reference_field;
+		return this->field;
 	}
 
-	int get_number_of_values()
+	int get_number_of_values() const
 	{
 		return number_of_values;
 	}
 
-	FE_value *get_values()
+	const FE_value *get_values() const
 	{
 		return values;
 	}
 
-	int set_field_values(cmzn_field_id reference_field_in,
-		int number_of_values_in, const FE_value *values_in);
+};
 
-	int set_values_for_location(cmzn_field *field,
-		const FE_value *values);
+class Field_location_node : public Field_location
+{
+private:
+	cmzn_node *node;  // not accessed
 
+public:
+	Field_location_node() :
+		Field_location(TYPE_NODE),
+		node(0)
+	{
+	}
+
+	cmzn_node *get_node() const
+	{
+		return node;
+	}
+
+	/** Set node location.
+	 * @param node_in  Node pointer. Client must ensure exists while pointer held. */
+	void set_node(cmzn_node *node_in)
+	{
+		this->node = node_in;
+	}
+};
+
+class Field_location_time : public Field_location
+{
+public:
+	Field_location_time():
+		Field_location(TYPE_TIME)
+	{
+	}
 };
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */

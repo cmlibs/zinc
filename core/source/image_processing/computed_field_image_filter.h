@@ -813,17 +813,15 @@ DESCRIPTION :
 Evaluate the templated version of this filter
 ==============================================================================*/
 {
-	Field_element_xi_location* element_xi_location;
-	Field_coordinate_location* coordinate_location = NULL;
+	const Field_location_element_xi* element_xi_location;
+	const Field_location_field_values* coordinate_location = 0;
 	const FE_value* xi = NULL;
 
-	if ( (element_xi_location =
-		dynamic_cast<Field_element_xi_location*>(cache.getLocation())) )
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		xi = element_xi_location->get_xi();
 	}
-	else if ( (coordinate_location =
-		dynamic_cast<Field_coordinate_location*>(cache.getLocation())) )
+	else if (coordinate_location = cache.get_location_field_values())
 	{
 		xi = coordinate_location->get_values();
 	}
@@ -964,13 +962,11 @@ for subsequent operations.
 	ENTER(computed_field_image_filter::create_input_image);
 	if (field)
 	{
-		Field_element_xi_location* element_xi_location = NULL;
-		Field_coordinate_location* coordinate_location = NULL;
+		const Field_location_element_xi* element_xi_location = 0;
+		const Field_location_field_values* coordinate_location = 0;
 
-		if ((element_xi_location = 
-				dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
-			|| (coordinate_location = 
-				dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
+		if ((element_xi_location = cache.get_location_element_xi())
+			|| (coordinate_location = cache.get_location_field_values()))
 		{
 			return_code = 1;
 			cmzn_field_id sourceField = getSourceField(0);
@@ -1024,7 +1020,7 @@ for subsequent operations.
 				field_cache->setTime(cache.getTime());
 				if(element_xi_location)
 				{
-					FE_element* element = element_xi_location->get_element();
+					cmzn_element* element = element_xi_location->get_element();
 
 					itk::ImageRegionIteratorWithIndex< ImageType >
 						generateInput( inputImage, region );
@@ -1054,13 +1050,12 @@ for subsequent operations.
 				}
 				else if (coordinate_location)
 				{
-					Computed_field* reference_field = 
-						coordinate_location->get_reference_field();
+					cmzn_field* reference_field = coordinate_location->get_field();
 					FE_value time = coordinate_location->get_time();
 					itk::ImageRegionIteratorWithIndex< ImageType >
 						generateInput( inputImage, region );
-					Field_coordinate_location pixel_location(reference_field, 
-						dimension, pixel_xi, time);
+					//Field_location_field_values pixel_location(reference_field, 
+					//	dimension, pixel_xi, time);
 
 					for ( generateInput.GoToBegin(); !generateInput.IsAtEnd(); ++generateInput)
 					{
@@ -1149,10 +1144,11 @@ for subsequent operations.
 					{
 						pixel_xi[i] = ((ZnReal)idx[i] + 0.5) / (ZnReal)sizes[i];
 					}
+					Field_location_element_xi pixel_location(element, pixel_xi);
+					pixel_location.set_time(time);
 					while (count < totalSize)
 					{
-						Field_element_xi_location pixel_location(element, pixel_xi, 
-							time, /*top_level_element*/(struct FE_element *)NULL);
+						pixel_location.set_element_xi(element, pixel_xi);
 						
 						Computed_field_evaluate_cache_at_location(
 							field->source_fields[0], &pixel_location);
@@ -1179,7 +1175,7 @@ for subsequent operations.
 					Computed_field* reference_field = 
 						coordinate_location->get_reference_field();
 					FE_value time = coordinate_location->get_time();
-					Field_coordinate_location pixel_location(reference_field, 
+					Field_location_field_values pixel_location(reference_field, 
 						dimension, pixel_xi, time);
 					typename ImageType::PixelType *buffer_ptr = localBuffer;
 
