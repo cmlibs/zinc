@@ -74,7 +74,7 @@ private:
 	int element_dimension;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	cmzn_element *top_level_element;  // not accessed
-	mutable Standard_basis_function_values basis_function_values;
+	mutable Standard_basis_function_evaluation basis_function_evaluation;
 
 public:
 
@@ -98,7 +98,7 @@ public:
 		this->top_level_element = top_level_element_in;
 		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
 			xi[i] = 0.0;
-		this->basis_function_values.invalidate();
+		this->basis_function_evaluation.invalidate();
 	}
 
 	/** Set element xi location with optional top level element to inherit fields from.
@@ -119,7 +119,7 @@ public:
 		}
 		this->top_level_element = top_level_element_in;
 		if (!same_xi)
-			this->basis_function_values.invalidate();
+			this->basis_function_evaluation.invalidate();
 	}
 
 	int get_element_dimension() const
@@ -143,9 +143,9 @@ public:
 	}
 
 	/** This is only for evaluating basis functions at this xi location. */
-	Standard_basis_function_values &get_basis_function_values() const
+	Standard_basis_function_evaluation &get_basis_function_evaluation() const
 	{
-		return this->basis_function_values;
+		return this->basis_function_evaluation;
 	}
 
 };

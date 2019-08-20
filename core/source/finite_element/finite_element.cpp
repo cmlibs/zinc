@@ -6942,7 +6942,7 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 			"FE_element_smooth_FE_field.  Could not calculate element field values");
 		return 0;
 	}
-	Standard_basis_function_values basis_function_values;
+	Standard_basis_function_evaluation basis_function_evaluation;
 	for (int componentNumber = 0; componentNumber < componentCount; ++componentNumber)
 	{
 		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
@@ -7010,9 +7010,9 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 			xi[0] = (FE_value)(n & 1);
 			xi[1] = (FE_value)((n & 2)/2);
 			xi[2] = (FE_value)((n & 4)/4);
-			basis_function_values.invalidate();
+			basis_function_evaluation.invalidate();
 			if (!fe_element_field_evaluation->evaluate_real(componentNumber,
-				xi, basis_function_values, &(component_value[n]), /*jacobian*/0))
+				xi, basis_function_evaluation, &(component_value[n]), /*jacobian*/0))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_smooth_FE_field.  Could not calculate element field");

@@ -1009,7 +1009,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 }
 
 int FE_element_field_evaluation::evaluate_real(int component_number,
-	const FE_value *xi_coordinates, Standard_basis_function_values &basis_function_values,
+	const FE_value *xi_coordinates, Standard_basis_function_evaluation &basis_function_evaluation,
 	FE_value *values, FE_value *jacobian)
 {
 	int cn,comp_no,*component_number_of_values,components_to_calculate,
@@ -1322,7 +1322,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					{
 						/* standard interpolation */
 						number_of_values = *component_number_of_values;
-						const FE_value *basis_values = basis_function_values.evaluate(
+						const FE_value *basis_values = basis_function_evaluation.evaluate(
 							*component_standard_basis_function, *component_standard_basis_function_arguments, xi_coordinates);
 						if (!basis_values)
 						{
@@ -1499,7 +1499,7 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 }
 
 int FE_element_field_evaluation::evaluate_as_string(int component_number,
-	const FE_value *xi_coordinates, Standard_basis_function_values &basis_function_values, char **out_string)
+	const FE_value *xi_coordinates, Standard_basis_function_evaluation &basis_function_evaluation, char **out_string)
 {
 	int return_code = 0;
 	char temp_string[40];
@@ -1525,7 +1525,7 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 				if (ALLOCATE(values,FE_value,components_to_calculate))
 				{
 					if (this->evaluate_real(component_number, xi_coordinates,
-						basis_function_values, values, /*jacobian*/static_cast<FE_value *>(0)))
+						basis_function_evaluation, values, /*jacobian*/static_cast<FE_value *>(0)))
 					{
 						error=0;
 						for (i=0;i<components_to_calculate;i++)

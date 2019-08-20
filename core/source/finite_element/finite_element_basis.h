@@ -85,7 +85,7 @@ enum FE_basis_modify_theta_mode
 /** object for evaluating and caching standard basis function values.
  * Designed for performance. Not to be shared between threads.
  * Note client must remember xi_coordinates this is evaluated at */
-class Standard_basis_function_values
+class Standard_basis_function_evaluation
 {
 	Standard_basis_function *standard_basis_function;  // Standard basis function pointer. 0 if cache invalid.
 	int standard_basis_function_arguments[MAXIMUM_ELEMENT_XI_DIMENSIONS + 1];  // dimension, order1 ... orderN
@@ -98,14 +98,14 @@ class Standard_basis_function_values
 		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
 
 public:
-	Standard_basis_function_values() :
+	Standard_basis_function_evaluation() :
 		standard_basis_function(0),
 		basis_function_values(0),
 		number_of_values_allocated(0)
 	{
 	}
 
-	~Standard_basis_function_values()
+	~Standard_basis_function_evaluation()
 	{
 		delete[] this->basis_function_values;
 	}

@@ -715,7 +715,7 @@ d) the blending matrix is
 	return (return_code);
 } /* polygon_basis_functions */
 
-const FE_value *Standard_basis_function_values::evaluate_full(Standard_basis_function *standard_basis_function_in,
+const FE_value *Standard_basis_function_evaluation::evaluate_full(Standard_basis_function *standard_basis_function_in,
 	int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
 {
 	if ((!standard_basis_function_in) || (!standard_basis_function_arguments_in) || (!xi_coordinates)

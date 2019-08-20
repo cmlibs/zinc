@@ -745,7 +745,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				if (return_code)
 				{
 					return_code = feStringValueCache.element_field_evaluation->evaluate_as_string(
-						/*component_number*/-1, xi, element_xi_location->get_basis_function_values(),
+						/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 						&(feStringValueCache.stringValue));
 				}
 			}
@@ -775,14 +775,14 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 							if (number_of_derivatives)
 							{
 								return_code = feValueCache.element_field_evaluation->evaluate_real(
-									/*component_number*/-1, xi, element_xi_location->get_basis_function_values(),
+									/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 									feValueCache.values, feValueCache.derivatives);
 								feValueCache.derivatives_valid = 1;
 							}
 							else
 							{
 								return_code = feValueCache.element_field_evaluation->evaluate_real(
-									/*component_number*/-1, xi, element_xi_location->get_basis_function_values(),
+									/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 									feValueCache.values, (FE_value *)NULL);
 								feValueCache.derivatives_valid = 0;
 							}
@@ -3919,14 +3919,14 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 					if (number_of_derivatives)
 					{
 						return_code = feValueCache.element_field_evaluation->evaluate_real(
-							/*component_number*/-1, xi, element_xi_location->get_basis_function_values(),
+							/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 							feValueCache.values, feValueCache.derivatives);
 						feValueCache.derivatives_valid = 1;
 					}
 					else
 					{
 						return_code = feValueCache.element_field_evaluation->evaluate_real(
-							/*component_number*/-1, xi, element_xi_location->get_basis_function_values(),
+							/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 							feValueCache.values, (FE_value *)NULL);
 						feValueCache.derivatives_valid = 0;
 					}
