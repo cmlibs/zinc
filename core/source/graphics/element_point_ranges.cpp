@@ -17,6 +17,7 @@ DESCRIPTION :
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_mesh.hpp"
@@ -1235,8 +1236,8 @@ If field and element_point_ranges not identically grid-based, clear
 				 /*density_field*/(struct Computed_field *)NULL,
 				 set_grid_values_data->source_element_point_number, xi)
 			&& ALLOCATE(values, FE_value, number_of_components)
-			&& (CMZN_OK == cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
-				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi))
+			&& (CMZN_OK == set_grid_values_data->field_cache->setMeshLocation(
+				source_element, xi))
 			&& (CMZN_OK == cmzn_field_evaluate_real(field, set_grid_values_data->field_cache,
 				number_of_components, values)))
 		{
@@ -1257,8 +1258,7 @@ If field and element_point_ranges not identically grid-based, clear
 							 /*coordinate_field*/(struct Computed_field *)NULL,
 							 /*density_field*/(struct Computed_field *)NULL,
 							 grid_point_number, xi) &&
-						(CMZN_OK == cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
-							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+						(CMZN_OK == set_grid_values_data->field_cache->setMeshLocation(destination_element, xi)) &&
 						(CMZN_OK == cmzn_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values)))
 					{
 						set_grid_values_data->number_of_points_set++;

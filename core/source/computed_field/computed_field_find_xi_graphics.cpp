@@ -25,6 +25,7 @@ lookup of the element.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_find_xi_private.hpp"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
@@ -117,12 +118,12 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 			xi[0] = 0.0;
 			xi[1] = 0.0;
-			cmzn_fieldcache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			data->field_cache->setMeshLocation(element, xi);
 			cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 			xi[0] = 1.0;
 			xi[1] = 0.0;
-			cmzn_fieldcache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			data->field_cache->setMeshLocation(element, xi);
 			cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 
@@ -135,7 +136,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				cmzn_fieldcache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				data->field_cache->setMeshLocation(element, xi);
 				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 				glVertex2dv(data->values);
@@ -144,13 +145,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 1.0;
 				xi[1] = 1.0;
-				cmzn_fieldcache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				data->field_cache->setMeshLocation(element, xi);
 				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				cmzn_fieldcache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				data->field_cache->setMeshLocation(element, xi);
 				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 			}

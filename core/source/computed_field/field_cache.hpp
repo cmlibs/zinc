@@ -96,6 +96,8 @@ private:
 	Field_location_field_values location_field_values;
 	Field_location_node location_node;
 	Field_location_time location_time;
+	Field_location_element_xi *indexed_location_element_xi;
+	unsigned int number_of_indexed_location_element_xi;
 	Field_location *location;  // points to currently active location from the above. Always valid.
 	int requestedDerivatives;
 	ValueCacheVector valueCaches;
@@ -120,6 +122,8 @@ public:
 	cmzn_fieldcache(cmzn_region_id regionIn) :
 		region(cmzn_region_access(regionIn)),
 		locationCounter(0),
+		indexed_location_element_xi(0),
+		number_of_indexed_location_element_xi(0),
 		location(&(this->location_time)),
 		requestedDerivatives(0),
 		valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
@@ -253,6 +257,12 @@ public:
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
+
+	/** Set a mesh location where the chart_coordinates are likely to be the same at that index.
+	 * Allows pre-calculated basis functions to be kept.
+	 * @param topLevelElement  Optional top-level element to inherit fields from */
+	int setIndexedMeshLocation(unsigned int index, cmzn_element_id element, const double *chart_coordinates,
+		cmzn_element_id top_level_element = 0);
 
 	int setNode(cmzn_node_id node)
 	{

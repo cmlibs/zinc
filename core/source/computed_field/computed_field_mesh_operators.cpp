@@ -177,7 +177,7 @@ template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(Pro
 	cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
 	cmzn_element_id element = 0;
 	IntegrationPointsCache integrationCache(this->quadratureRule, static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
-	while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+	while (0 != (element = iterator->nextElement()))
 	{
 		IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
 		if (0 == shapePoints)
@@ -203,6 +203,7 @@ protected:
 	cmzn_field *coordinateField;
 	const int coordinatesCount;
 	cmzn_element *element;
+	unsigned int point_index;  // point index within element
 
 public:
 	IntegralTermBase(Computed_field_mesh_integral& meshIntegralIn, cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
@@ -213,20 +214,23 @@ public:
 		integrandField(meshIntegral.getSourceField(0)),
 		coordinateField(meshIntegral.getSourceField(1)),
 		coordinatesCount(coordinateField->number_of_components),
-		element(0)
+		element(0),
+		point_index(0)
 	{
 		cache.setTime(parentCache.getTime());
 	}
 
 	void setElement(cmzn_element *elementIn)
 	{
-		element = elementIn;
+		this->element = elementIn;
+		this->point_index = 0;
 	}
 
 	/** @return pointer to integrand values */
 	inline FE_value *baseProcess(FE_value *xi, FE_value &dLAV)
 	{
-		this->cache.setMeshLocation(this->element, xi);
+		this->cache.setIndexedMeshLocation(this->point_index, this->element, xi);
+		(this->point_index)++;
 		RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
 		RealFieldValueCache *coordinateValueCache = coordinateField->evaluateWithDerivatives(cache, dimension);
 		if (integrandValueCache && coordinateValueCache)

@@ -532,8 +532,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 											/*density_field*/(struct Computed_field *)NULL,
 											grid_point_number, xi))
 								{
-									if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache,
-											element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+									if ((CMZN_OK == data->field_cache->setMeshLocation(element, xi)) &&
 										(CMZN_OK == cmzn_field_evaluate_real(data->source_field,
 											data->field_cache, componentCount, values)))
 									{

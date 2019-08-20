@@ -116,6 +116,7 @@ cmzn_fieldcache::~cmzn_fieldcache()
 		*iter = 0;
 	}
 	cmzn_region_remove_field_cache(region, this);
+	delete[] indexed_location_element_xi;
 	cmzn_region_destroy(&region);
 }
 
@@ -164,6 +165,47 @@ void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
 	}
 	this->location->set_time(source.location->get_time());
 	this->locationChanged();
+}
+
+int cmzn_fieldcache::setIndexedMeshLocation(unsigned int index,
+	cmzn_element_id element, const double *chart_coordinates,
+	cmzn_element_id top_level_element)
+{
+	if (!(element && chart_coordinates))
+		return CMZN_ERROR_ARGUMENT;
+	Field_location_element_xi *element_xi_location;
+	const FE_value time = this->location->get_time();
+	if (index < this->number_of_indexed_location_element_xi)
+	{
+		element_xi_location = &(this->indexed_location_element_xi[index]);
+	}
+	else if (index < 512)  // never store more than this number
+	{
+		// Grow from 0 --> 64 --> 512
+		const unsigned int new_size = ((this->indexed_location_element_xi) || (index >= 64)) ? 512 : 64;
+		Field_location_element_xi *new_indexed_location_element_xi = new Field_location_element_xi[new_size];
+		if (new_indexed_location_element_xi)
+		{
+			delete[] this->indexed_location_element_xi;
+			this->indexed_location_element_xi = new_indexed_location_element_xi;
+			this->number_of_indexed_location_element_xi = new_size;
+			element_xi_location = &(this->indexed_location_element_xi[index]);
+			this->location = element_xi_location;  // ensure this->location is not pointing at freed memory
+		}
+		else
+		{
+			element_xi_location = &this->location_element_xi;
+		}
+	}
+	else
+	{
+		element_xi_location = &this->location_element_xi;
+	}
+	element_xi_location->set_element_xi(element, chart_coordinates, top_level_element);
+	element_xi_location->set_time(time);
+	this->location = element_xi_location;
+	this->locationChanged();
+	return CMZN_OK;
 }
 
 int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
@@ -248,33 +290,33 @@ int cmzn_fieldcache_set_mesh_location_with_parent(
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	cmzn_element_id top_level_element)
 {
-	if (!(cache && element && (number_of_chart_coordinates >= cmzn_element_get_dimension(element))))
-		return CMZN_ERROR_ARGUMENT;
-	cache->setMeshLocation(element, chart_coordinates, top_level_element);
-	return CMZN_OK;
+	if ((cache) && (element) && (number_of_chart_coordinates >= element->getDimension()))
+		return cache->setMeshLocation(element, chart_coordinates, top_level_element);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,
 	cmzn_element_id element, int number_of_chart_coordinates,
 	const double *chart_coordinates)
 {
-	return cmzn_fieldcache_set_mesh_location_with_parent(cache, element,
-		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
+	if ((cache) && (element) && (number_of_chart_coordinates >= element->getDimension()))
+		return cache->setMeshLocation(element, chart_coordinates);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_node(cmzn_fieldcache_id cache, cmzn_node_id node)
 {
-	if (!(cache && node))
-		return CMZN_ERROR_ARGUMENT;
-	return cache->setNode(node);
+	if ((cache) && (node))
+		return cache->setNode(node);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_field_real(cmzn_fieldcache_id cache,
 	cmzn_field_id reference_field, int number_of_values, const double *values)
 {
-	if (!cache)
-		return CMZN_ERROR_ARGUMENT;
-	return cache->setFieldReal(reference_field, number_of_values, values);
+	if (cache)
+		return cache->setFieldReal(reference_field, number_of_values, values);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // Internal function
