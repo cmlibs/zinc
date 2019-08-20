@@ -94,7 +94,7 @@ class Standard_basis_function_values
 
 	/** Full evaluation of basis function values in cache.
 	 * @return  Standard basis function values from cache. */
-	FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
+	const FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
 		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
 
 public:
@@ -119,7 +119,7 @@ public:
 	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
 	 * @param xi_coordinates.  Location to evaluate at. Client to check.
 	 * @return  Standard basis function values from cache or from full calculation. */
-	inline FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
+	inline const FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
 		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
 	{
 		// note only works up to 3-D

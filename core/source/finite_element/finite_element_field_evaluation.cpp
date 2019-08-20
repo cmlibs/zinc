@@ -48,7 +48,7 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	component_values(0),
 	component_standard_basis_functions(0),
 	component_standard_basis_function_arguments(0),
-	basis_function_values(0),
+	grid_basis_function_values(0),
 	access_count(1)
 {
 }
@@ -138,9 +138,9 @@ void FE_element_field_evaluation::clear()
 	{
 		DEALLOCATE(this->component_standard_basis_functions);
 	}
-	if (this->basis_function_values)
+	if (this->grid_basis_function_values)
 	{
-		DEALLOCATE(this->basis_function_values);
+		DEALLOCATE(this->grid_basis_function_values);
 	}
 }
 
@@ -151,8 +151,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 		*derivative_value,*inherited_value,*inherited_values,scalar,
 		*second_derivative_value,*transformation,*value,**values_address;
 	int cn,**component_number_in_xi,
-		*component_base_grid_offset, *element_value_offsets, i,
-		j,k,grid_maximum_number_of_values, maximum_number_of_values,
+		*component_base_grid_offset, *element_value_offsets, i, j, k,
 		number_of_grid_based_components,
 		number_of_inherited_values,number_of_polygon_verticies,number_of_values,
 		*number_of_values_address,offset,order,*orders,polygon_offset,power,
@@ -223,7 +222,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 				(Standard_basis_function **)NULL;
 			this->component_standard_basis_function_arguments=
 				(int **)NULL;
-			this->basis_function_values=(FE_value *)NULL;
+			this->grid_basis_function_values=(FE_value *)NULL;
 			this->time_dependent = 0;
 			this->time = time;
 		} break;
@@ -289,13 +288,11 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 					standard_basis_address;
 				this->component_standard_basis_function_arguments=
 					standard_basis_arguments_address;
-				/* maximum_number_of_values starts off big enough for linear grid with derivatives */
-				grid_maximum_number_of_values=elementDimension+1;
-				for (i=elementDimension;i>0;i--)
+				int grid_maximum_number_of_values = elementDimension + 1;
+				for (i = elementDimension; i > 0; i--)
 				{
 					grid_maximum_number_of_values *= 2;
 				}
-				maximum_number_of_values = grid_maximum_number_of_values;
 
 				const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
 				FE_basis *previous_basis = 0;
@@ -315,6 +312,18 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 					if ((componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 						&& (0 != componentEFT->getLegacyGridNumberInXi()))
 					{
+						if (0 == this->grid_basis_function_values)
+						{
+							// allocate enough space for linear basis plus first derivatives
+							if (!(ALLOCATE(this->grid_basis_function_values, FE_value, grid_maximum_number_of_values)))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_evaluation::calculate_values.  "
+									"Could not allocate grid_basis_function_values");
+								return_code = 0;
+								break;
+							}
+						}
 						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
 						if (!top_level_component_number_in_xi)
 						{
@@ -449,8 +458,28 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 								return_code = 0;
 								break;
 							}
-							memcpy(*values_address, values, basisFunctionCount*sizeof(FE_value));
-							*number_of_values_address = basisFunctionCount;
+							// transform values to standard basis functions if needed
+							FE_basis *basis = componentEFT->getBasis();
+							const int blendedElementValuesCount = FE_basis_get_number_of_blended_functions(basis);
+							if (blendedElementValuesCount > 0)
+							{
+								FE_value *blendedElementValues = FE_basis_get_blended_element_values(basis, values);
+								if (!blendedElementValues)
+								{
+									display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
+										"Could not allocate memory for blended values");
+									return_code = 0;
+									break;
+								}
+								DEALLOCATE(*values_address); // future: avoid allocating this above
+								*values_address = blendedElementValues;
+								*number_of_values_address = blendedElementValuesCount;
+							}
+							else
+							{
+								memcpy(*values_address, values, basisFunctionCount*sizeof(FE_value));
+								*number_of_values_address = basisFunctionCount;
+							}
 						} break;
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 						{
@@ -735,26 +764,10 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 								}
 							}
 						}
-						if (*number_of_values_address>maximum_number_of_values)
-						{
-							maximum_number_of_values= *number_of_values_address;
-						}
 						number_of_values_address++;
 						values_address++;
 						standard_basis_address++;
 						standard_basis_arguments_address++;
-					}
-				}
-				if (return_code)
-				{
-					if (!((maximum_number_of_values>0)&&
-						(ALLOCATE(this->basis_function_values,
-						FE_value,maximum_number_of_values))))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_evaluation::calculate_values.  "
-							"Could not allocate basis_function_values");
-						return_code=0;
 					}
 				}
 			}
@@ -996,13 +1009,14 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 }
 
 int FE_element_field_evaluation::evaluate_real(int component_number,
-	const FE_value *xi_coordinates, FE_value *values, FE_value *jacobian)
+	const FE_value *xi_coordinates, Standard_basis_function_values &basis_function_values,
+	FE_value *values, FE_value *jacobian)
 {
 	int cn,comp_no,*component_number_of_values,components_to_calculate,
 		i,j,k,l,m, *last_number_in_xi,*number_in_xi,
 		number_of_xi_coordinates,recompute_basis,
 		return_code,size,this_comp_no,xi_offset;
-	FE_value *basis_value,*calculated_value,
+	FE_value *calculated_value,
 		**component_values,*derivative,*element_value,temp,xi_coordinate;
 	Standard_basis_function *current_standard_basis_function,
 		**component_standard_basis_function;
@@ -1016,11 +1030,8 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	return_code=0;
-	FE_value *basis_function_values = 0;
 	if ((this->field) && (xi_coordinates) && (values) &&
-		(!jacobian||(jacobian&&(this->derivatives_calculated)))&&
-		((GENERAL_FE_FIELD != this->field->fe_field_type)||
-			(basis_function_values=this->basis_function_values)))
+		(!jacobian||(jacobian&&(this->derivatives_calculated))))
 	{
 		const int dimension = this->element->getDimension();
 		if ((0<=component_number)&&(component_number<this->field->number_of_components))
@@ -1151,6 +1162,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					if (number_in_xi)
 					{
 						/* grid based */
+						FE_value *basis_values = this->grid_basis_function_values;
 						current_standard_basis_function = NULL;
 						current_standard_basis_function_arguments = NULL;
 						/* optimisation: reuse basis from last component if same number_in_xi */
@@ -1177,7 +1189,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 							return_code=1;
 							i=0;
 							offset=this->component_base_grid_offset[this_comp_no];
-							*basis_function_values=1;
+							*basis_values = 1;
 							element_value_offsets = this->element_value_offsets;
 							*element_value_offsets=0;
 							m=1;
@@ -1222,14 +1234,14 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 									element_value_offset++;
 								}
 								temp = 1.0 - xi_coordinate;
-								basis_value=basis_function_values;
+								FE_value *basis_value = basis_values;
 								if (derivative)
 								{
 									// derivatives are w.r.t. element xi, not the grid element xi
 									FE_value grid_xi_scaling = static_cast<FE_value>(number_in_xi[i]);
 									for (j=1;j<=i;j++)
 									{
-										basis_value=basis_function_values+(j*number_of_values+m);
+										basis_value = basis_values + (j*number_of_values + m);
 										for (l=m;l>0;l--)
 										{
 											basis_value--;
@@ -1238,7 +1250,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 										}
 									}
 									j=(i+1)*number_of_values;
-									basis_value=basis_function_values+m;
+									basis_value = basis_values + m;
 									for (l=m;l>0;l--)
 									{
 										basis_value--;
@@ -1246,7 +1258,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 										basis_value[j+m]= (*basis_value)*grid_xi_scaling;
 									}
 								}
-								basis_value=basis_function_values+m;
+								basis_value = basis_values + m;
 								for (l=m;l>0;l--)
 								{
 									basis_value--;
@@ -1266,7 +1278,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 
 							element_values_storage=
 								(*component_grid_values_storage)+size*offset;
-							basis_value=basis_function_values;
+							const FE_value *basis_value = basis_values;
 							sum=0;
 							element_value_offset=element_value_offsets;
 							for (j=number_of_values;j>0;j--)
@@ -1309,32 +1321,18 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					else
 					{
 						/* standard interpolation */
-						/* save calculation when all components use the same basis */
-						/*???DB.  Only good when consecutive components have the same basis.
-							Can do better ? */
-						if ((*component_standard_basis_function!=
-							current_standard_basis_function)||
-							(*component_standard_basis_function_arguments!=
-								current_standard_basis_function_arguments))
+						number_of_values = *component_number_of_values;
+						const FE_value *basis_values = basis_function_values.evaluate(
+							*component_standard_basis_function, *component_standard_basis_function_arguments, xi_coordinates);
+						if (!basis_values)
 						{
-							current_standard_basis_function=
-								*component_standard_basis_function;
-							current_standard_basis_function_arguments=
-								*component_standard_basis_function_arguments;
-							number_of_values= *component_number_of_values;
-							/* calculate the values for the standard basis functions */
-							if (!(current_standard_basis_function)(
-								current_standard_basis_function_arguments,xi_coordinates,
-								basis_function_values))
-							{
-								display_message(ERROR_MESSAGE,"FE_element_field_evaluation::evaluate_real.  "
-									"Error calculating standard basis");
-								return_code=0;
-							}
+							display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
+								"Error calculating standard basis");
+							return_code = 0;
 						}
 						/* calculate the element field value as a dot product of the element
 							 values and the basis function values */
-						basis_value=basis_function_values;
+						const FE_value *basis_value = basis_values;
 						element_value= *component_values;
 						sum=0;
 						for (j=number_of_values;j>0;j--)
@@ -1353,7 +1351,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 							for (k=number_of_xi_coordinates;k>0;k--)
 							{
 								sum=0;
-								basis_value=basis_function_values;
+								basis_value = basis_values;
 								for (j=number_of_values;j>0;j--)
 								{
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
@@ -1501,7 +1499,7 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 }
 
 int FE_element_field_evaluation::evaluate_as_string(int component_number,
-	const FE_value *xi_coordinates, char **out_string)
+	const FE_value *xi_coordinates, Standard_basis_function_values &basis_function_values, char **out_string)
 {
 	int return_code = 0;
 	char temp_string[40];
@@ -1526,8 +1524,8 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 
 				if (ALLOCATE(values,FE_value,components_to_calculate))
 				{
-					if (this->evaluate_real(component_number,
-						xi_coordinates, values, /*jacobian*/static_cast<FE_value *>(0)))
+					if (this->evaluate_real(component_number, xi_coordinates,
+						basis_function_values, values, /*jacobian*/static_cast<FE_value *>(0)))
 					{
 						error=0;
 						for (i=0;i<components_to_calculate;i++)

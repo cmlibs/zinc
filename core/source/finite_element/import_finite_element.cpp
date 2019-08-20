@@ -3319,10 +3319,10 @@ bool EXReader::readElementHeaderField()
 						prefix += ": ";
 						keyValueMap.reportUnusedKeyValues(prefix.c_str());
 					}
-					// don't set grid for element constant or single grid
+					// don't set grid for element constant
 					bool setGrid = false;
 					for (int d = 0; d < dimension; ++d)
-						if ((gridNumberInXi[d] != 0) && (gridNumberInXi[d] != 1))
+						if (gridNumberInXi[d] != 0)
 						{
 							setGrid = true;
 							break;

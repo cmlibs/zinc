@@ -88,8 +88,8 @@ class FE_element_field_evaluation
 	Standard_basis_function **component_standard_basis_functions;
 	/* the arguments for the standard basis function for each component */
 	int **component_standard_basis_function_arguments;
-	/* working space for evaluating basis */
-	FE_value *basis_function_values;
+	/* working space for evaluating basis, for grid-based only */
+	FE_value *grid_basis_function_values;
 	int access_count;
 
 	FE_element_field_evaluation();
@@ -161,11 +161,12 @@ public:
 	 * @param component_number  Component number to evaluate starting at 0, or any
 	 * other value to evaluate all components.
 	 * @param xi_coordinates  Element chart location to evaluate at.
+	 * @param basis_function_values.  Standard basis function evaluation cache.
 	 * @param values  Caller-supplied space to store the real values.
 	 * @param jacobian  If non-zero, points to memory to receive N*M values,
 	 * of N component first derivatives with respect to M xi coordinates. */
 	int evaluate_real(int component_number, const FE_value *xi_coordinates,
-		FE_value *values, FE_value *jacobian);
+		Standard_basis_function_values &basis_function_values, FE_value *values, FE_value *jacobian);
 
 	/** Returns allocated copies of the string values of the field in the element.
 	 * @param component_number  Component number to evaluate starting at 0, or any
@@ -181,10 +182,11 @@ public:
 	 * @param component_number  Component number to evaluate starting at 0, or any
 	 * other value to evaluate all components.
 	 * @param xi_coordinates  Element chart location to evaluate at.
+	 * @param basis_function_values.  Standard basis function evaluation cache.
 	 * @param out_string  Pointer to address to store allocated string pointer.
 	 * It is up to the caller to deallocate the returned string. */
 	int evaluate_as_string(int component_number, const FE_value *xi_coordinates,
-		char **out_string);
+		Standard_basis_function_values &basis_function_values, char **out_string);
 
 	/** Allocates and returns component count and values for component_number.
 	 * It is up to the caller to deallocate any returned component values. */

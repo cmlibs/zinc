@@ -2062,3 +2062,152 @@ TEST(ZincElementfieldtemplate, mergeExternalElementfieldtemplate)
 		EXPECT_DOUBLE_EQ(scaleFactors[s], scaleFactorsOut[s]);
 	}
 }
+
+// Test identical trilinear interpolation with 3 different mappings: node, element and legacy grid
+TEST(ZincFieldFiniteElement, linear_node_element_grid)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE)));
+
+	FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
+	EXPECT_TRUE(coordinates_node.isValid());
+	FieldFiniteElement coordinates_element = zinc.fm.findFieldByName("coordinates_element").castFiniteElement();
+	EXPECT_TRUE(coordinates_element.isValid());
+	FieldFiniteElement coordinates_grid = zinc.fm.findFieldByName("coordinates_grid").castFiniteElement();
+	EXPECT_TRUE(coordinates_grid.isValid());
+
+	// test against trilinear interpolation of these node coordinates
+	const double node_coordinates[8][3] =
+	{
+		{  0.00,  0.00,  0.00 },
+		{  1.08, -0.09, -0.24 },
+		{ -0.04,  0.90,  0.23 },
+		{  1.10,  1.07,  0.04 },
+		{  0.00, -0.10,  0.81 },
+		{  0.84,  0.08,  1.29 },
+		{ -0.20,  0.85,  1.09 },
+		{  1.22,  1.11,  0.99 }
+	};
+
+	// check all 3 fields compute the same values and derivatives
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh.isValid());
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Differentialoperator d_dxi1 = mesh.getChartDifferentialoperator(1, 1);
+	EXPECT_TRUE(d_dxi1.isValid());
+	Differentialoperator d_dxi2 = mesh.getChartDifferentialoperator(1, 2);
+	EXPECT_TRUE(d_dxi2.isValid());
+	Differentialoperator d_dxi3 = mesh.getChartDifferentialoperator(1, 3);
+	EXPECT_TRUE(d_dxi3.isValid());
+	Fieldcache cache = zinc.fm.createFieldcache();
+
+	const int numberInXi1 = 2;
+	const int numberInXi2 = 3;
+	const int numberInXi3 = 2;
+	const double scale1 = 1.0/static_cast<double>(numberInXi1);
+	const double scale2 = 1.0/static_cast<double>(numberInXi2);
+	const double scale3 = 1.0/static_cast<double>(numberInXi3);
+	double phi1a, phi1b, phi2a, phi2b, phi3a, phi3b;
+	double basis_values[8];
+	double d1[3], d2[3], d3[3], x[3], xi[3];
+	double d1out[3], d2out[3], d3out[3], xout[3];
+	const double tol = 1.0E-12;
+	for (int n3 = 0; n3 <= numberInXi3; ++n3)
+	{
+		xi[2] = phi3b = n3*scale3;
+		phi3a = 1.0 - phi3b;
+		for (int n2 = 0; n2 <= numberInXi2; ++n2)
+		{
+			xi[1] = phi2b = n2*scale2;
+			phi2a = 1.0 - phi2b;
+			for (int n1 = 0; n1 <= numberInXi1; ++n1)
+			{
+				xi[0] = phi1b = n1*scale1;
+				phi1a = 1.0 - phi1b;
+				// interpolate here to get known values:
+				basis_values[0] = phi1a*phi2a*phi3a;
+				basis_values[1] = phi1b*phi2a*phi3a;
+				basis_values[2] = phi1a*phi2b*phi3a;
+				basis_values[3] = phi1b*phi2b*phi3a;
+				basis_values[4] = phi1a*phi2a*phi3b;
+				basis_values[5] = phi1b*phi2a*phi3b;
+				basis_values[6] = phi1a*phi2b*phi3b;
+				basis_values[7] = phi1b*phi2b*phi3b;
+				for (int c = 0; c < 3; ++c)
+				{
+					x[c] = 0.0;
+					for (int n = 0; n < 8; ++n)
+						x[c] += basis_values[n]*node_coordinates[n][c];
+				}
+				// dx_dxi1
+				basis_values[0] = -phi2a*phi3a;
+				basis_values[1] = +phi2a*phi3a;
+				basis_values[2] = -phi2b*phi3a;
+				basis_values[3] = +phi2b*phi3a;
+				basis_values[4] = -phi2a*phi3b;
+				basis_values[5] = +phi2a*phi3b;
+				basis_values[6] = -phi2b*phi3b;
+				basis_values[7] = +phi2b*phi3b;
+				for (int c = 0; c < 3; ++c)
+				{
+					d1[c] = 0.0;
+					for (int n = 0; n < 8; ++n)
+						d1[c] += basis_values[n]*node_coordinates[n][c];
+				}
+				// dx_dxi2
+				basis_values[0] = -phi1a*phi3a;
+				basis_values[1] = -phi1b*phi3a;
+				basis_values[2] = +phi1a*phi3a;
+				basis_values[3] = +phi1b*phi3a;
+				basis_values[4] = -phi1a*phi3b;
+				basis_values[5] = -phi1b*phi3b;
+				basis_values[6] = +phi1a*phi3b;
+				basis_values[7] = +phi1b*phi3b;
+				for (int c = 0; c < 3; ++c)
+				{
+					d2[c] = 0.0;
+					for (int n = 0; n < 8; ++n)
+						d2[c] += basis_values[n]*node_coordinates[n][c];
+				}
+				// dx_dxi3
+				basis_values[0] = -phi1a*phi2a;
+				basis_values[1] = -phi1b*phi2a;
+				basis_values[2] = -phi1a*phi2b;
+				basis_values[3] = -phi1b*phi2b;
+				basis_values[4] = +phi1a*phi2a;
+				basis_values[5] = +phi1b*phi2a;
+				basis_values[6] = +phi1a*phi2b;
+				basis_values[7] = +phi1b*phi2b;
+				for (int c = 0; c < 3; ++c)
+				{
+					d3[c] = 0.0;
+					for (int n = 0; n < 8; ++n)
+						d3[c] += basis_values[n]*node_coordinates[n][c];
+				}
+				EXPECT_EQ(CMZN_RESULT_OK, result = cache.setMeshLocation(element1, 3, xi));
+				for (int f = 0; f < 3; ++f)
+				{
+					Field test_field =
+						(f == 0) ? coordinates_node :
+						(f == 1) ? coordinates_element :
+						coordinates_grid;
+					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateReal(cache, 3, xout));
+					for (int c = 0; c < 3; ++c)
+						EXPECT_NEAR(x[c], xout[c], tol);
+					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi1, cache, 3, d1out));
+					for (int c = 0; c < 3; ++c)
+						EXPECT_NEAR(d1[c], d1out[c], tol);
+					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi2, cache, 3, d2out));
+					for (int c = 0; c < 3; ++c)
+						EXPECT_NEAR(d2[c], d2out[c], tol);
+					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateDerivative(d_dxi3, cache, 3, d3out));
+					for (int c = 0; c < 3; ++c)
+						EXPECT_NEAR(d3[c], d3out[c], tol);
+				}
+			}
+		}
+	}
+}

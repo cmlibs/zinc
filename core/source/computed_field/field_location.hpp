@@ -74,7 +74,7 @@ private:
 	int element_dimension;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	cmzn_element *top_level_element;  // not accessed
-	Standard_basis_function_values basis_function_values;
+	mutable Standard_basis_function_values basis_function_values;
 
 public:
 
@@ -141,6 +141,13 @@ public:
 	{
 		return top_level_element;
 	}
+
+	/** This is only for evaluating basis functions at this xi location. */
+	Standard_basis_function_values &get_basis_function_values() const
+	{
+		return this->basis_function_values;
+	}
+
 };
 
 /** A location represented by values of a single field */
