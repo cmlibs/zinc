@@ -92,14 +92,14 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		cmzn_region_id otherRegion = Computed_field_get_region(getSourceField(0));
 		if (otherRegion != Computed_field_get_region(field))
 		{
 			// @TODO: share extraCache with other alias fields in cache referencing otherRegion
-			valueCache->createExtraCache(parentCache, otherRegion);
+			valueCache->getOrCreatePrivateExtraCache(otherRegion);
 		}
 		return valueCache;
 	}

@@ -1150,7 +1150,7 @@ char *Computed_field_core::getComponentName(int componentNumber) const
 	return duplicate_string(name);
 }
 
-FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*parentCache*/)
+FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*fieldCache*/)
 {
 	return new RealFieldValueCache(field->number_of_components);
 }
@@ -1179,7 +1179,7 @@ int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& ca
 		return 0;
 	}
 	// evaluate field at perturbed locations in extra working cache
-	cmzn_fieldcache *workingCache = valueCache.getOrCreateExtraCache(cache);
+	cmzn_fieldcache *workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 	RealFieldValueCache* workingValueCache;
 	if ((0 == workingCache) || (0 == (workingValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
 	{

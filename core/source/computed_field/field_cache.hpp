@@ -64,14 +64,15 @@ public:
 	/** override to clear type-specific buffer information & call this */
 	virtual void clear();
 
-	void createExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region);
+	cmzn_fieldcache *getOrCreatePrivateExtraCache(cmzn_region *region);
 
+	cmzn_fieldcache *getOrCreateSharedExtraCache(cmzn_fieldcache& parentCache);
+
+	/** can use after calling getOrCreatePrivateExtraCache or getOrCreateSharedExtraCache*/
 	cmzn_fieldcache *getExtraCache()
 	{
-		return extraCache;
+		return this->extraCache;
 	}
-
-	cmzn_fieldcache *getOrCreateExtraCache(cmzn_fieldcache& parentCache);
 
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
@@ -90,7 +91,7 @@ typedef std::vector<FieldValueCache*> ValueCacheVector;
 struct cmzn_fieldcache
 {
 private:
-	cmzn_region_id region;
+	cmzn_region_id region;  // accessed: not thread safe
 	int locationCounter; // incremented whenever domain location changes
 	Field_location_element_xi location_element_xi;
 	Field_location_field_values location_field_values;
@@ -102,6 +103,8 @@ private:
 	int requestedDerivatives;
 	ValueCacheVector valueCaches;
 	bool assignInCache;
+	cmzn_fieldcache *parentCache;  // non-accessed parent cache if this is its sharedWorkingCache; finite element evaluation caches are shared with parent
+	cmzn_fieldcache *sharedWorkingCache;  // optional working cache shared by fields evaluating at the same time value
 	int access_count;
 
 	/** call whenever location changes to increment location counter */
@@ -119,19 +122,8 @@ private:
 
 public:
 
-	cmzn_fieldcache(cmzn_region_id regionIn) :
-		region(cmzn_region_access(regionIn)),
-		locationCounter(0),
-		indexed_location_element_xi(0),
-		number_of_indexed_location_element_xi(0),
-		location(&(this->location_time)),
-		requestedDerivatives(0),
-		valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
-		assignInCache(false),
-		access_count(1)
-	{
-		cmzn_region_add_field_cache(this->region, this);
-	}
+	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
+	cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn = 0);
 
 	~cmzn_fieldcache();
 
@@ -322,22 +314,36 @@ public:
 		locationChanged();
 		return oldAssignInCache;
 	}
+
+	cmzn_fieldcache *getParentCache()
+	{
+		return this->parentCache;
+	}
+
+	/** @return  Non-accessed field cache */
+	cmzn_fieldcache *getOrCreateSharedWorkingCache()
+	{
+		if (!this->sharedWorkingCache)
+			this->sharedWorkingCache = new cmzn_fieldcache(this->region, this);
+		return this->sharedWorkingCache;
+	}
 };
 
-/** use this function with getExtraCache() when creating FieldValueCache for fields that must use an extraCache */
-inline void FieldValueCache::createExtraCache(cmzn_fieldcache& /*parentCache*/, cmzn_region *region)
+/** Return private extraCache for evaluating fields at different locations and different time. */
+inline cmzn_fieldcache *FieldValueCache::getOrCreatePrivateExtraCache(cmzn_region *region)
 {
-	if (extraCache)
-		cmzn_fieldcache::deaccess(extraCache);
-	extraCache = new cmzn_fieldcache(region);
+	if (!this->extraCache)
+		this->extraCache = new cmzn_fieldcache(region);
+	return this->extraCache;
 }
 
-/** use this function for fields that may use an extraCache, e.g. derivatives propagating to top-level-element */
-inline cmzn_fieldcache *FieldValueCache::getOrCreateExtraCache(cmzn_fieldcache& parentCache)
+/** Return shared extraCache for evaluating at different locations but the same time.
+ * Hence can share finite element evaluation caches from fieldCache. */
+inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExtraCache(cmzn_fieldcache& fieldCache)
 {
-	if (!extraCache)
-		extraCache = new cmzn_fieldcache(parentCache.getRegion());
-	return extraCache;
+	if (!this->extraCache)
+		this->extraCache = fieldCache.getOrCreateSharedWorkingCache()->access();
+	return this->extraCache;
 }
 
 class RealFieldValueCache : public FieldValueCache

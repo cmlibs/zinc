@@ -314,7 +314,7 @@ int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	const Field_location_field_values* coordinate_location = 0;
 	if ((coordinate_location = cache.get_location_field_values()))
 	{
-		cmzn_fieldcache *field_cache = valueCache.getOrCreateExtraCache(cache);
+		cmzn_fieldcache *field_cache = valueCache.getOrCreateSharedExtraCache(cache);
 		if (!field_cache)
 			return 0;
 		const int numberOfValues= coordinate_location->get_number_of_values();

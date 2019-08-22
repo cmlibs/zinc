@@ -78,12 +78,10 @@ private:
 
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		// set node once as doesn't change
-		valueCache->getExtraCache()->setNode(lookup_node);
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -153,6 +151,7 @@ bool Computed_field_nodal_lookup::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	FieldValueCache &inValueCache = *(field->getValueCache(cache));
 	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setNode(this->lookup_node);  // must set node as extraCache is shared
 	extraCache.setTime(cache.getTime());
 	return getSourceField(0)->core->is_defined_at_location(extraCache);
 }
@@ -160,7 +159,8 @@ bool Computed_field_nodal_lookup::is_defined_at_location(cmzn_fieldcache& cache)
 int Computed_field_nodal_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_fieldcache& extraCache = *(valueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
+	extraCache.setNode(this->lookup_node);  // must set node as extraCache is shared
 	extraCache.setTime(cache.getTime());
 	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 	if (sourceValueCache)
@@ -367,12 +367,10 @@ private:
 
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
-		// set node once as doesn't change
-		valueCache->getExtraCache()->setNode(nodal_lookup_node);
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -446,6 +444,7 @@ bool Computed_field_quaternion_SLERP::is_defined_at_location(cmzn_fieldcache& ca
 {
 	FieldValueCache &inValueCache = *(field->getValueCache(cache));
 	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setNode(this->nodal_lookup_node);  // must set node as extraCache is shared
 	extraCache.setTime(cache.getTime());
 	return getSourceField(0)->core->is_defined_at_location(extraCache);
 }
@@ -454,7 +453,8 @@ int Computed_field_quaternion_SLERP::evaluate(cmzn_fieldcache& cache, FieldValue
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache& extraCache = *(valueCache.getExtraCache());
-	FE_value time = cache.getTime();
+	const FE_value time = cache.getTime();
+	extraCache.setNode(this->nodal_lookup_node);  // must set node as extraCache is shared
 	//t is the normalised time scaled from 0 to 1
 	FE_time_sequence *time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(
 		getSourceField(0), nodal_lookup_node);

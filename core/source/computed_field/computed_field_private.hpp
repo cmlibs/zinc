@@ -235,7 +235,7 @@ public:
 	};
 
 	// override for fields requiring specialised value caches
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/);
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/);
 
 	virtual int clear_cache() // GRC remove
 	{
@@ -509,13 +509,13 @@ DESCRIPTION :
 	 */
 	void clearCaches();
 
-	inline FieldValueCache *getValueCache(cmzn_fieldcache& cache)
+	inline FieldValueCache *getValueCache(cmzn_fieldcache& fieldCache)
 	{
-		FieldValueCache *valueCache = cache.getValueCache(cache_index);
+		FieldValueCache *valueCache = fieldCache.getValueCache(cache_index);
 		if (!valueCache)
 		{
-			valueCache = core->createValueCache(cache);
-			cache.setValueCache(cache_index, valueCache);
+			valueCache = core->createValueCache(fieldCache);
+			fieldCache.setValueCache(cache_index, valueCache);
 		}
 		return valueCache;
 	}

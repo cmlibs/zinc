@@ -116,7 +116,7 @@ int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_fieldcache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getOrCreateExtraCache(cache);
+			workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}

@@ -607,7 +607,7 @@ int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 		cmzn_fieldcache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getOrCreateExtraCache(cache);
+			workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -887,7 +887,7 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_fieldcache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getOrCreateExtraCache(cache);
+			workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -1259,7 +1259,7 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new GradientRealFieldValueCache(
 			getSourceField(0)->number_of_components,
@@ -1298,7 +1298,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		cmzn_fieldcache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getOrCreateExtraCache(cache);
+			workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
@@ -1384,7 +1384,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		// see field assignment / computed_field_update
 		RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(cache));
 		// do finite difference calculations in extraCache:
-		cmzn_fieldcache *extraCache = valueCache.getOrCreateExtraCache(cache);
+		cmzn_fieldcache *extraCache = valueCache.getOrCreateSharedExtraCache(cache);
 		if ((originalCoordinateValueCache) && (extraCache))
 		{
 			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinate_field, cache);

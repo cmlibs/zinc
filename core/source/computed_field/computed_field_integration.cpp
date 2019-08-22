@@ -1253,7 +1253,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				(top_level_element, texture_mapping);
 			if (mapping != 0)
 			{
-				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
+				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateSharedExtraCache(cache));
 				workingCache.setTime(time);
 				/* Integrate to the specified top_level_xi location */
 				for (i = 0 ; i < top_level_element_dimension ; i++)

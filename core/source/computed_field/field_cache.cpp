@@ -108,15 +108,38 @@ char *MeshLocationFieldValueCache::getAsString()
 	return valueAsString;
 }
 
+cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn) :
+	region(cmzn_region_access(regionIn)),
+	locationCounter(0),
+	indexed_location_element_xi(0),
+	number_of_indexed_location_element_xi(0),
+	location(&(this->location_time)),
+	requestedDerivatives(0),
+	valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
+	assignInCache(false),
+	parentCache(parentCacheIn),
+	sharedWorkingCache(0),
+	access_count(1)
+{
+	cmzn_region_add_field_cache(this->region, this);
+}
+
 cmzn_fieldcache::~cmzn_fieldcache()
 {
+	if (this->sharedWorkingCache)
+		this->sharedWorkingCache->parentCache = 0;  // detach first in case code tries to use it as this is being destroyed
+	this->location = &this->location_time;
+	delete[] indexed_location_element_xi;
+	this->indexed_location_element_xi = 0;
+	this->number_of_indexed_location_element_xi = 0;
 	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
+	if (this->sharedWorkingCache)
+		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
 	cmzn_region_remove_field_cache(region, this);
-	delete[] indexed_location_element_xi;
 	cmzn_region_destroy(&region);
 }
 

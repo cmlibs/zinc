@@ -14,6 +14,7 @@
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/result.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -62,111 +63,152 @@ DESCRIPTION :
 
 namespace {
 
-typedef std::map<cmzn_element *, FE_element_field_evaluation *> FE_element_field_evaluation_cache;
+typedef std::map<cmzn_element *, FE_element_field_evaluation *> FE_element_field_evaluation_map;
 
-/** Safely clear by deaccessing objects */
-void FE_element_field_evaluation_cache_clear(FE_element_field_evaluation_cache &element_field_evaluation_cache)
+/** reference counted cache of FE_element_field_evaluation for recent elements to share between field caches */
+class FE_element_field_evaluation_cache
 {
-	for (FE_element_field_evaluation_cache::iterator iter = element_field_evaluation_cache.begin();
-		iter != element_field_evaluation_cache.end(); ++iter)
+	FE_element_field_evaluation_map element_field_evaluation_map;
+	FE_element_field_evaluation *element_field_evaluation;  // evalution object for latest element
+	int access_count;
+
+	FE_element_field_evaluation_cache() :
+		element_field_evaluation(0),
+		access_count(1)
 	{
-		FE_element_field_evaluation::deaccess(iter->second);
 	}
-	element_field_evaluation_cache.clear();
-}
 
-/**
- * Establishes the FE_element_field_evaluation necessary for evaluating field in
- * element at time, inherited from optional top_level_element. Uses existing
- * values in cache if nothing changed.
- * @param calculate_derivatives  Controls whether basis functions for
- * derivatives are also evaluated.
- * @param differential_order  Optional order to differentiate monomials by.
- * @param differential_xi_indices  Which xi indices to differentiate.
- */
-int calculate_FE_element_field_evaluation_for_element(
-	FE_element_field_evaluation_cache &element_field_evaluation_cache,
-	FE_element_field_evaluation* &element_field_evaluation,
-	FE_field *fe_field, bool calculate_derivatives, struct FE_element *element,
-	FE_value time, struct FE_element *top_level_element, int differential_order = 0,
-	int *differential_xi_indices = 0)
-{
-	int return_code = 1;
-	if (fe_field && element)
+	~FE_element_field_evaluation_cache()
 	{
+		this->clear();
+	}
+
+	void inline clear_map()
+	{
+		for (FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.begin();
+			iter != this->element_field_evaluation_map.end(); ++iter)
+		{
+			FE_element_field_evaluation::deaccess(iter->second);
+		}
+		this->element_field_evaluation_map.clear();
+	}
+
+public:
+	static FE_element_field_evaluation_cache *create()
+	{
+		return new FE_element_field_evaluation_cache();
+	}
+
+	FE_element_field_evaluation_cache *access()
+	{
+		++this->access_count;
+		return this;
+	}
+
+	static int deaccess(FE_element_field_evaluation_cache* &evaluation_cache)
+	{
+		if (!evaluation_cache)
+			return CMZN_RESULT_ERROR_ARGUMENT;
+		--(evaluation_cache->access_count);
+		if (evaluation_cache->access_count <= 0)
+			delete evaluation_cache;
+		evaluation_cache = 0;
+		return CMZN_RESULT_OK;
+	}
+
+	void clear()
+	{
+		this->clear_map();
+		// Following was a pointer to an object just destroyed, so must clear
+		this->element_field_evaluation = 0;
+	}
+
+	/**
+	 * Establishes the FE_element_field_evaluation necessary for evaluating field in
+	 * element at time, inherited from optional top_level_element. Uses existing
+	 * values in cache if nothing changed.
+	 * @param calculate_derivatives  Controls whether basis functions for
+	 * derivatives are also evaluated.
+	 * @param differential_order  Optional order to differentiate monomials by.
+	 * @param differential_xi_indices  Which xi indices to differentiate.
+	 * @return  Non-accessed FE_element_field_evaluation* or 0 if failed.
+	 */
+	FE_element_field_evaluation *get_element_field_evaluation(
+		FE_field *fe_field, bool calculate_derivatives, cmzn_element *element,
+		FE_value time, cmzn_element *top_level_element, int differential_order = 0,
+		int *differential_xi_indices = 0)
+	{
+		// GRC remove check?
+		if (!(fe_field) || (!element))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_evaluation_cache::get_element_field_evaluation.  Invalid arguments.");
+			return 0;
+		}
 		// can't trust cached element field values if between manager begin/end change
 		// and this field has been modified.
 		const bool field_changed = FE_field_has_cached_changes(fe_field);
 		// ensure we have FE_element_field_evaluation calculated for element
 		// with derivatives_calculated if requested
-		if (field_changed || (!element_field_evaluation) ||
-			(!element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
-			(calculate_derivatives && (!element_field_evaluation->has_derivatives_calculated())))
+		if ((!this->element_field_evaluation) || field_changed || 
+			(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
+			(calculate_derivatives && (!this->element_field_evaluation->has_derivatives_calculated())))
 		{
 			bool need_update = false;
 			bool add_to_cache = false;
 
-			FE_element_field_evaluation_cache::iterator iter = element_field_evaluation_cache.find(element);
-			if (iter == element_field_evaluation_cache.end())
+			FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.find(element);
+			if (iter == this->element_field_evaluation_map.end())
 			{
+				this->element_field_evaluation = FE_element_field_evaluation::create();
+				add_to_cache = true;
 				need_update = true;
-				element_field_evaluation = FE_element_field_evaluation::create();
-				if (element_field_evaluation)
-				{
-					add_to_cache = true;
-				}
-				else
-				{
-					return_code = 0;
-				}
 			}
 			else
 			{
-				element_field_evaluation = iter->second;
+				this->element_field_evaluation = iter->second;
 				if (field_changed ||
-					(!element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
-					(calculate_derivatives && (!element_field_evaluation->has_derivatives_calculated())))
+					(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
+					(calculate_derivatives && (!this->element_field_evaluation->has_derivatives_calculated())))
 				{
 					need_update = true;
-					element_field_evaluation->clear();
+					this->element_field_evaluation->clear();
 				}
 			}
-			if (return_code && need_update)
+			if ((this->element_field_evaluation) && need_update)
 			{
-				/* note that FE_element_field_evaluation accesses the element */
-				if (element_field_evaluation->calculate_values(fe_field, element,
+				if (this->element_field_evaluation->calculate_values(fe_field, element,
 					time, calculate_derivatives, top_level_element))
 				{
-					for (int i = 0 ; i < differential_order ; i++)
+					for (int i = 0; i < differential_order; ++i)
 					{
-						element_field_evaluation->differentiate(differential_xi_indices[i]);
+						this->element_field_evaluation->differentiate(differential_xi_indices[i]);
 					}
 
 					if (add_to_cache)
 					{
-						/* Set a cache size limit */
-						if (1000 < element_field_evaluation_cache.size())
-						{
-							FE_element_field_evaluation_cache_clear(element_field_evaluation_cache);
-						}
-						element_field_evaluation_cache[element] = element_field_evaluation;
+						// Set a cache size limit, clearing is a simple way to only cache for recent elements
+						if (1000 < this->element_field_evaluation_map.size())
+							this->clear_map();
+						this->element_field_evaluation_map[element] = this->element_field_evaluation;
 					}
+				}
+				else if (add_to_cache)
+				{
+					FE_element_field_evaluation::deaccess(this->element_field_evaluation);
 				}
 				else
 				{
-					/* clear element to indicate that values are clear */
-					element_field_evaluation->clear();
-					return_code = 0;
+					// clear to ensure marked as not valid
+					this->element_field_evaluation->clear();
+					this->element_field_evaluation = 0;
 				}
 			}
 		}
+		return this->element_field_evaluation;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
-}
+
+};
 
 class MultiTypeRealFieldValueCache : public RealFieldValueCache
 {
@@ -205,26 +247,24 @@ public:
 class FiniteElementRealFieldValueCache : public MultiTypeRealFieldValueCache
 {
 public:
-	FE_element_field_evaluation* element_field_evaluation; // evalution cache for latest element
-	// cache of FE_element_field_evaluation objects for recent elements as calculation is expensive
-	FE_element_field_evaluation_cache element_field_evaluation_cache;
+	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
-	FiniteElementRealFieldValueCache(int componentCount) :
+	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
+	FiniteElementRealFieldValueCache(int componentCount, FiniteElementRealFieldValueCache *parentValueCache) :
 		MultiTypeRealFieldValueCache(componentCount),
-		element_field_evaluation(0)
+		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
+			: FE_element_field_evaluation_cache::create())
 	{
 	}
 
 	virtual ~FiniteElementRealFieldValueCache()
 	{
-		FE_element_field_evaluation_cache_clear(this->element_field_evaluation_cache);
+		FE_element_field_evaluation_cache::deaccess(this->element_field_evaluation_cache);
 	}
 
 	virtual void clear()
 	{
-		FE_element_field_evaluation_cache_clear(this->element_field_evaluation_cache);
-		// Following was a pointer to an object just destroyed, so must clear
-		this->element_field_evaluation = 0;
+		this->element_field_evaluation_cache->clear();
 		RealFieldValueCache::clear();
 	}
 
@@ -237,33 +277,30 @@ public:
 	{
 		return FIELD_VALUE_CACHE_CAST<FiniteElementRealFieldValueCache&>(valueCache);
 	}
-
 };
 
 // FE_element_field_evaluation are needed to evaluate indexed string FE_fields on elements
 class FiniteElementStringFieldValueCache : public StringFieldValueCache
 {
 public:
-	FE_element_field_evaluation* element_field_evaluation; // evalution cache for latest element
-	// cache of FE_element_field_evaluation objects for recent elements as calculation is expensive
-	FE_element_field_evaluation_cache element_field_evaluation_cache;
+	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
-	FiniteElementStringFieldValueCache() :
+	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
+	FiniteElementStringFieldValueCache(FiniteElementStringFieldValueCache *parentValueCache) :
 		StringFieldValueCache(),
-		element_field_evaluation(0)
+		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
+			: FE_element_field_evaluation_cache::create())
 	{
 	}
 
 	virtual ~FiniteElementStringFieldValueCache()
 	{
-		FE_element_field_evaluation_cache_clear(this->element_field_evaluation_cache);
+		FE_element_field_evaluation_cache::deaccess(this->element_field_evaluation_cache);
 	}
 
 	virtual void clear()
 	{
-		FE_element_field_evaluation_cache_clear(this->element_field_evaluation_cache);
-		// Following was a pointer to an object just destroyed, so must clear
-		this->element_field_evaluation = 0;
+		this->element_field_evaluation_cache->clear();
 		StringFieldValueCache::clear();
 	}
 
@@ -333,23 +370,24 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		FieldValueCache *parentValueCache = (fieldCache.getParentCache()) ? this->field->getValueCache(*fieldCache.getParentCache()) : 0;
 		switch (value_type)
 		{
 			case ELEMENT_XI_VALUE:
 				return new MeshLocationFieldValueCache();
 			case STRING_VALUE:
 			case URL_VALUE:
-				return new FiniteElementStringFieldValueCache();
+				return new FiniteElementStringFieldValueCache(static_cast<FiniteElementStringFieldValueCache *>(parentValueCache));
 			default:
 				break;
 		}
 		// Future: have common finite element field cache in some circumstances
 		// note they must not be shared with time lookup fields as only a single time is cached
 		// and performance will be poor.
-		return new FiniteElementRealFieldValueCache(field->number_of_components);
+		return new FiniteElementRealFieldValueCache(field->number_of_components, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
 	}
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -739,14 +777,18 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
 
-				return_code = calculate_FE_element_field_evaluation_for_element(
-					feStringValueCache.element_field_evaluation_cache, feStringValueCache.element_field_evaluation,
-					fe_field, /*calculate_derivatives*/false, element, time, top_level_element);
-				if (return_code)
+				FE_element_field_evaluation *element_field_evaluation =
+					feStringValueCache.element_field_evaluation_cache->get_element_field_evaluation(
+						fe_field, /*calculate_derivatives*/false, element, time, top_level_element);
+				if (element_field_evaluation)
 				{
-					return_code = feStringValueCache.element_field_evaluation->evaluate_as_string(
+					return_code = element_field_evaluation->evaluate_as_string(
 						/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 						&(feStringValueCache.stringValue));
+				}
+				else
+				{
+					return_code = 0;
 				}
 			}
 		} break;
@@ -761,10 +803,10 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				const FE_value* xi = element_xi_location->get_xi();
 				int number_of_derivatives = cache.getRequestedDerivatives();
 
-				return_code = calculate_FE_element_field_evaluation_for_element(
-					feValueCache.element_field_evaluation_cache, feValueCache.element_field_evaluation,
-					fe_field, (0 < number_of_derivatives), element, time, top_level_element);
-				if (return_code)
+				FE_element_field_evaluation *element_field_evaluation =
+					feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
+						fe_field, /*calculate_derivatives*/(0 < number_of_derivatives), element, time, top_level_element);
+				if (element_field_evaluation)
 				{
 					/* component number -1 = calculate all components */
 					switch (value_type)
@@ -774,14 +816,14 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 						{
 							if (number_of_derivatives)
 							{
-								return_code = feValueCache.element_field_evaluation->evaluate_real(
+								return_code = element_field_evaluation->evaluate_real(
 									/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 									feValueCache.values, feValueCache.derivatives);
 								feValueCache.derivatives_valid = 1;
 							}
 							else
 							{
-								return_code = feValueCache.element_field_evaluation->evaluate_real(
+								return_code = element_field_evaluation->evaluate_real(
 									/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 									feValueCache.values, (FE_value *)NULL);
 								feValueCache.derivatives_valid = 0;
@@ -796,12 +838,12 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 								display_message(ERROR_MESSAGE,
 									"Computed_field_finite_element::evaluate.  "
 									"Derivatives not defined for integer fields");
-								return_code=0;
+								return_code = 0;
 							}
 							else
 							{
 								int *int_values = feValueCache.int_values.data();
-								return_code = feValueCache.element_field_evaluation->evaluate_int(
+								return_code = element_field_evaluation->evaluate_int(
 									/*component_number*/-1, xi, int_values);
 								const int componentCount = field->number_of_components;
 								for (int c = 0; c < componentCount; ++c)
@@ -816,9 +858,13 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 								"Computed_field_finite_element::evaluate.  "
 								"Unsupported value type %s in finite_element field",
 								Value_type_string(value_type));
-							return_code=0;
+							return_code = 0;
 						} break;
 					}
+				}
+				else
+				{
+					return_code = 0;
 				}
 			}
 			else if (node_location = cache.get_location_node())
@@ -2031,7 +2077,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new MultiTypeRealFieldValueCache(field->number_of_components);
 	}
@@ -2549,11 +2595,11 @@ private:
 		return (field && (0 != dynamic_cast<Computed_field_edge_discontinuity*>(other_core)));
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		// need extra cache for evaluating at parent element locations
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -2914,10 +2960,10 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -3192,10 +3238,10 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		MeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache(this);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -3734,9 +3780,10 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
-		return new FiniteElementRealFieldValueCache(field->number_of_components);
+		FieldValueCache *parentValueCache = (fieldCache.getParentCache()) ? this->field->getValueCache(*fieldCache.getParentCache()) : 0;
+		return new FiniteElementRealFieldValueCache(field->number_of_components, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
 	}
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache);
@@ -3894,6 +3941,7 @@ DESCRIPTION :
 
 int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
+	int return_code = 0;
 	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
@@ -3904,11 +3952,11 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 		const FE_value* xi = element_xi_location->get_xi();
 		int number_of_derivatives = cache.getRequestedDerivatives();
 
-		if (calculate_FE_element_field_evaluation_for_element(
-			feValueCache.element_field_evaluation_cache, feValueCache.element_field_evaluation,
-			fe_field, /*calculate_derivatives*/true, element, time, top_level_element, this->order, this->xi_indices))
+		FE_element_field_evaluation *element_field_evaluation =
+			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(fe_field,
+				/*calculate_derivatives*/true, element, time, top_level_element, this->order, this->xi_indices);
+		if (element_field_evaluation)
 		{
-			int return_code = 1;
 			/* component number -1 = calculate all components */
 			enum Value_type value_type=get_FE_field_value_type(fe_field);
 			switch (value_type)
@@ -3918,14 +3966,14 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 				{
 					if (number_of_derivatives)
 					{
-						return_code = feValueCache.element_field_evaluation->evaluate_real(
+						return_code = element_field_evaluation->evaluate_real(
 							/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 							feValueCache.values, feValueCache.derivatives);
 						feValueCache.derivatives_valid = 1;
 					}
 					else
 					{
-						return_code = feValueCache.element_field_evaluation->evaluate_real(
+						return_code = element_field_evaluation->evaluate_real(
 							/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 							feValueCache.values, (FE_value *)NULL);
 						feValueCache.derivatives_valid = 0;
@@ -3937,13 +3985,11 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 						"Computed_field_basis_derivative::evaluate.  "
 						"Unsupported value type %s in basis_derivative field",
 						Value_type_string(value_type));
-					return_code=0;
 				} break;
 			}
-			return return_code;
 		}
 	}
-	return 0;
+	return return_code;
 }
 
 int Computed_field_basis_derivative::list()
