@@ -18,7 +18,7 @@
 #include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/types/nodeid.h"
 #include "finite_element/finite_element_mesh.hpp"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "general/value.h"
 
 class Field_location

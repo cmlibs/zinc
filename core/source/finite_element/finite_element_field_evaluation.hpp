@@ -13,7 +13,7 @@
 
 #include <opencmiss/zinc/zincconfigure.h>
 #include "opencmiss/zinc/types/elementid.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_field.hpp"
 #include "general/value.h"
 

@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/types/nodeid.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_field.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "finite_element/finite_element_time.h"

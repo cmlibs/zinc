@@ -16,7 +16,7 @@
 #include <cmath>
 #include <vector>
 #include "opencmiss/zinc/zincconfigure.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "general/debug.h"
 #include "general/geometry.h"
 #ifndef HAVE_HEAPSORT

@@ -28,7 +28,7 @@
 #include "field_io/fieldml_common.hpp"
 #include "field_io/write_fieldml.hpp"
 #include "finite_element/finite_element.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_private.h"

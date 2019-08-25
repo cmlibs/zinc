@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : finite_element_basis.h
+ * FILE : finite_element_basis.hpp
  *
  * Declarations of types and methods for finite element basis functions.
  */
@@ -8,8 +8,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if !defined (FINITE_ELEMENT_BASIS_H)
-#define FINITE_ELEMENT_BASIS_H
+#if !defined (FINITE_ELEMENT_BASIS_HPP)
+#define FINITE_ELEMENT_BASIS_HPP
 
 #include "opencmiss/zinc/types/elementbasisid.h"
 #include "general/list.h"
@@ -430,4 +430,4 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
 	enum FE_basis_modify_theta_mode mode, FE_value *values);
 
-#endif /* !defined (FINITE_ELEMENT_BASIS_H) */
+#endif /* !defined (FINITE_ELEMENT_BASIS_HPP) */
