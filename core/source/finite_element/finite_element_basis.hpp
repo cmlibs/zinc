@@ -89,19 +89,60 @@ class Standard_basis_function_evaluation
 {
 	Standard_basis_function *standard_basis_function;  // Standard basis function pointer. 0 if cache invalid.
 	int standard_basis_function_arguments[MAXIMUM_ELEMENT_XI_DIMENSIONS + 1];  // dimension, order1 ... orderN
+	int number_of_basis_functions;
 	FE_value *basis_function_values;
 	int number_of_values_allocated;
+	int derivative_order_evaluated;
+	int derivative_order_maximum;  // maximum derivative order ever encountered
 
-	/** Full evaluation of basis function values in cache.
+	/** Full evaluation of basis function values in cache. Must be called to set
+	 * standard basis function and arguments and to calculate number_of_basis_functions.
 	 * @return  Standard basis function values from cache. */
 	const FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
-		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
+
+	const FE_value *evaluate_derivatives_full(Standard_basis_function *standard_basis_function_in,
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates,
+		int order);
+
+	static inline bool basis_arguments_match(const int *standard_basis_arguments1, const int *standard_basis_arguments2)
+	{
+		for (int i = 0; i <= standard_basis_arguments1[0]; ++i)
+			if (standard_basis_arguments1[i] != standard_basis_arguments2[i])
+				return false;
+		return true;
+	}
+
+	/** Call only when current basis is valid. */
+	inline int get_derivatives_count(int derivative_order_in) const
+	{
+		int count = 1;
+		for (int i = 0; i < derivative_order_in; ++i)
+			count *= this->standard_basis_function_arguments[0];
+		return count;
+	}
+
+	/** Call only when current basis is valid. */
+	inline int get_derivatives_offset(int derivative_order_in) const
+	{
+		int index = 0;
+		int count = 1;
+		for (int i = 0; i < derivative_order_in; ++i)
+		{
+			index += count;
+			count *= this->standard_basis_function_arguments[0];
+		}
+		return index*this->number_of_basis_functions;
+	}
 
 public:
 	Standard_basis_function_evaluation() :
 		standard_basis_function(0),
+		number_of_basis_functions(0),
 		basis_function_values(0),
-		number_of_values_allocated(0)
+		number_of_values_allocated(0),
+		derivative_order_evaluated(-1),
+		derivative_order_maximum(0)
 	{
 	}
 
@@ -118,26 +159,48 @@ public:
 	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
 	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
 	 * @param xi_coordinates.  Location to evaluate at. Client to check.
-	 * @return  Standard basis function values from cache or from full calculation. */
+	 * @return  Standard basis function values from cache or from full calculation.
+	 * WARNING: Treat returned pointer as invalid after another call to this
+	 * function or evaluate_derivatives() due to possible reallocation. */
 	inline const FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
-		int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
 	{
-		// note only works up to 3-D
 		if ((standard_basis_function_in == this->standard_basis_function)
-			&& (standard_basis_function_arguments_in[0] == this->standard_basis_function_arguments[0])
-			&& (standard_basis_function_arguments_in[1] == this->standard_basis_function_arguments[1])
-			&& ((standard_basis_function_arguments_in[0] < 2) || (
-			((standard_basis_function_arguments_in[2] == this->standard_basis_function_arguments[2]))
-				&& ((standard_basis_function_arguments_in[0] < 3) ||
-				((standard_basis_function_arguments_in[3] == this->standard_basis_function_arguments[3]))))))
+			&& basis_arguments_match(standard_basis_function_arguments_in, this->standard_basis_function_arguments))
 			return this->basis_function_values;
 		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in, xi_coordinates);
+	}
+
+	/** Return derivatives of basis functions at supplied xi coordinates.
+	 * Optimised for speed. Client must ensure all arguments are valid and that
+	 * xi_coordinates is correct dimension for basis.
+	 * Important: object does not store the xi coordinates, so client must call
+	 * invalidate() to force full_evaluation at a different coordinate.
+	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
+	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
+	 * @param xi_coordinates.  Location to evaluate at. Client to check.
+	 * @param order.  Derivative order >= 1. Client to check.
+	 * @return  Standard basis function derivatives from cache or from full calculation.
+	 * WARNING: Treat returned pointer as invalid after another call to this
+	 * function with a different basis or higher derivative order due to possible
+	 * reallocation. */
+	inline const FE_value *evaluate_derivatives(Standard_basis_function *standard_basis_function_in,
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates,
+		int derivative_order_in)
+	{
+		if ((derivative_order_in <= this->derivative_order_evaluated)
+			&& (standard_basis_function_in == this->standard_basis_function)
+			&& basis_arguments_match(standard_basis_function_arguments_in, this->standard_basis_function_arguments))
+			return this->basis_function_values + this->get_derivatives_offset(derivative_order_in);
+		return this->evaluate_derivatives_full(standard_basis_function_in,
+			standard_basis_function_arguments_in, xi_coordinates, derivative_order_in);
 	}
 
 	/** Invalidate cache to force full evaluation */
 	inline void invalidate()
 	{
 		this->standard_basis_function = 0;
+		this->derivative_order_evaluated = -1;
 	}
 };
 

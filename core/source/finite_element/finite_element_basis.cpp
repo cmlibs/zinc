@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <cmath>
+#include <cstring>
 #include <vector>
 #include "opencmiss/zinc/zincconfigure.h"
 #include "finite_element/finite_element_basis.hpp"
@@ -547,26 +548,26 @@ int polygon_basis_functions(void *type_arguments,
 /*******************************************************************************
 LAST MODIFIED : 23 November 2001
 
-SCRIPTION :
+DESCRIPTION :
 For a polygon
 a) xi1 is circumferential and xi2 is radial.
 b) the nodal basis functions are
 	phi0 = 1 - xi2,  centre node
-				/ xi2 * (1 - n*xi1), 0<=n*xi1<1
+	       / xi2 * (1 - n*xi1), 0 <= n*xi1 < 1
 	phi1 = | xi2 * (n*xi1 - (n-1)), n-1<n*xi1<n
-				\ 0, otherwise
-				/ xi2 * (i - n*xi1), i-1<=n*xi1<i
+	       \ 0, otherwise
+	       / xi2 * (i - n*xi1), i-1<=n*xi1<i
 	phii = | xi2 * (n*xi1 - (i-2)), i-2<n*xi1<i-1 ,  1<i<=n
-				\ 0, otherwise
-	where n is the number of polygon verticies/sides.
+	       \ 0, otherwise
+	where n is the number of polygon vertices/sides.
 c) the standard basis functions are
-				/ 1, xi1=1
+	       / 1, xi1=1
 	s001 = | 1, 0<=n*xi1<1
-				\ 0, otherwise
+	       \ 0, otherwise
 	s00i = / 1, i-1<=n*xi1<i ,  2<=i<=n
-				\ 0, otherwise
+	       \ 0, otherwise
 	s10i = / n*xi1-i+1, i-1<=n*xi1<i ,  1<=i<=n
-				\ 0, otherwise
+	       \ 0, otherwise
 	s01i = xi2 * s00i ,  1<=i<=n
 	s11i = xi2 * s10i ,  1<=i<=n
 ???DB.  Should this be
@@ -620,6 +621,8 @@ d) the blending matrix is
 				/* need to distinguish between first and second polygon coordinates */
 				if (order%2)
 				{
+					// 1st polygon argument packing: -((order*number_of_xi_coordinates + linked_xi)*2 + 1) == odd
+					// 2nd polygon argument packing: -number_of_polygon_verticies*2 == even
 					/* first polygon coordinate */
 					order /= 2;
 					polygon_offset=order%number_of_xi_coordinates;
@@ -633,6 +636,7 @@ d) the blending matrix is
 					xi_circumferential -= floor(xi_circumferential);
 					number_of_polygon_verticies=(-argument[polygon_offset])/2;
 					/*???DB.  Need to do higher order polygons */
+					// basis_function10 = n*xi1 - i + 1 OR 0 if xi1 == 1
 					basis_function10=
 						xi_circumferential*(FE_value)number_of_polygon_verticies;
 					polygon_vertex=(int)(basis_function10);
@@ -641,6 +645,7 @@ d) the blending matrix is
 					{
 						polygon_vertex=0;
 					}
+					// basis_function11 = xi2*basis_function10
 					basis_function11=xi_radial*basis_function10;
 					temp_value=function_values;
 					offset00=polygon_vertex*number_of_values;
@@ -716,7 +721,7 @@ d) the blending matrix is
 } /* polygon_basis_functions */
 
 const FE_value *Standard_basis_function_evaluation::evaluate_full(Standard_basis_function *standard_basis_function_in,
-	int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
+	const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
 {
 	if ((!standard_basis_function_in) || (!standard_basis_function_arguments_in) || (!xi_coordinates)
 		|| (standard_basis_function_arguments_in[0] < 1) || (standard_basis_function_arguments_in[0] > 3))
@@ -726,13 +731,13 @@ const FE_value *Standard_basis_function_evaluation::evaluate_full(Standard_basis
 	}
 	this->standard_basis_function = standard_basis_function_in;
 	this->standard_basis_function_arguments[0] = standard_basis_function_arguments_in[0];
-	int number_of_values = 1;
+	this->number_of_basis_functions = 1;
 	if (monomial_basis_functions == standard_basis_function_in)
 	{
 		for (int i = 1; i <= standard_basis_function_arguments_in[0]; ++i)
 		{
 			this->standard_basis_function_arguments[i] = standard_basis_function_arguments_in[i];
-			number_of_values *= (standard_basis_function_arguments_in[i] + 1);
+			this->number_of_basis_functions *= (standard_basis_function_arguments_in[i] + 1);
 		}
 	}
 	else // polygon_basis_functions
@@ -750,21 +755,115 @@ const FE_value *Standard_basis_function_evaluation::evaluate_full(Standard_basis
 					order /= 2;
 					const int polygon_offset = i + order%standard_basis_function_arguments_in[0];
 					const int number_of_polygon_vertices = (-standard_basis_function_arguments_in[polygon_offset])/2;
-					number_of_values *= 4*number_of_polygon_vertices;
+					this->number_of_basis_functions *= 4*number_of_polygon_vertices;
 				}
 			}
 			else
-				number_of_values *= (order + 1);
+			{
+				this->number_of_basis_functions *= (order + 1);
+			}
 		}
 	}
-	if (number_of_values > this->number_of_values_allocated)
+	const int number_of_values_to_allocate = this->get_derivatives_offset(this->derivative_order_maximum + 1);
+	if (number_of_values_to_allocate > this->number_of_values_allocated)
 	{
+		this->derivative_order_evaluated = -1;
+		FE_value *new_basis_function_values = new FE_value[number_of_values_to_allocate];
 		delete[] this->basis_function_values;
-		this->basis_function_values = new FE_value[number_of_values];
-		this->number_of_values_allocated = number_of_values;
+		this->basis_function_values = new_basis_function_values;
+		this->number_of_values_allocated = number_of_values_to_allocate;
 	}
 	(this->standard_basis_function)(static_cast<void *>(this->standard_basis_function_arguments), xi_coordinates, this->basis_function_values);
+	this->derivative_order_evaluated = 0;
 	return this->basis_function_values;
+}
+
+const FE_value *Standard_basis_function_evaluation::evaluate_derivatives_full(
+	Standard_basis_function *standard_basis_function_in,
+	const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates,
+	int derivative_order_in)
+{
+	if (derivative_order_in < 1)
+		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in, xi_coordinates);
+	if (derivative_order_in > this->derivative_order_maximum)
+	{
+		if (derivative_order_in > 4)  // limit to avoid large allocations
+		{
+			display_message(WARNING_MESSAGE, "FE_basis_function_values::evaluate_derivatives_full.  Derivative order too high");
+			return 0;
+		}
+		this->derivative_order_maximum = derivative_order_in;
+	}
+	// must call this first otherwise number_of_basis_functions may not be known:
+	const FE_value *source_basis_function_values = this->evaluate_derivatives(
+		standard_basis_function_in, standard_basis_function_arguments_in, xi_coordinates, derivative_order_in - 1);
+	const int number_of_values_to_allocate = this->get_derivatives_offset(this->derivative_order_maximum + 1);
+	if (number_of_values_to_allocate > this->number_of_values_allocated)
+	{
+		// reallocate values
+		FE_value *new_basis_function_values = new FE_value[number_of_values_to_allocate];
+		const int number_of_values_to_copy = this->get_derivatives_offset(this->derivative_order_evaluated + 1);
+		if (number_of_values_to_copy)
+			memcpy(new_basis_function_values, this->basis_function_values, number_of_values_to_copy*sizeof(FE_value));
+		delete[] this->basis_function_values;
+		this->basis_function_values = new_basis_function_values;
+		this->number_of_values_allocated = number_of_values_to_allocate;
+		// must re-fetch source_basis_function_values after reallocation
+		source_basis_function_values = this->basis_function_values + this->get_derivatives_offset(derivative_order_in - 1);
+	}
+	const int dimension = standard_basis_function_arguments_in[0];
+	const int source_derivatives_count = this->get_derivatives_count(derivative_order_in - 1);
+	const int values_count = this->number_of_basis_functions;
+	FE_value *dest_basis_function_values = this->basis_function_values + this->get_derivatives_offset(derivative_order_in);
+	FE_value *dest_value = dest_basis_function_values;
+	if (monomial_basis_functions == standard_basis_function_in)
+	{
+		const int *orders = standard_basis_function_arguments_in + 1;
+		for (int d = 0; d < dimension; ++d)
+		{
+			const int step_limit = orders[d];
+			int step_size = 1;
+			for (int i = 1; i <= d; ++i)
+				step_size *= orders[i - 1] + 1;
+			const FE_value *source_value = source_basis_function_values;
+			for (int s = 0; s < source_derivatives_count; ++s)
+			{
+				int step = 0;
+				FE_value step_scaling = 0.0;
+				int step_index = 0;
+				for (int v = 0; v < values_count; ++v)
+				{
+					if (step == 0)
+						*dest_value = 0.0;
+					else
+						*dest_value = (*source_value++)*step_scaling;
+					++dest_value;
+					++step_index;
+					if (step_index == step_size)
+					{
+						step_index = 0;
+						if (step == step_limit)
+						{
+							step = 0;
+							step_scaling = 0.0;
+							source_value += step_size;
+						}
+						else
+						{
+							++step;
+							step_scaling += 1.0;
+						}
+					}
+				}
+			}
+		}
+		this->derivative_order_evaluated = derivative_order_in;
+	}
+	else // polygon_basis_functions
+	{
+		return 0;
+	}
+	return dest_basis_function_values;
 }
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_basis)
