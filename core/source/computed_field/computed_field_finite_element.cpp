@@ -134,9 +134,8 @@ public:
 	 * @return  Non-accessed FE_element_field_evaluation* or 0 if failed.
 	 */
 	FE_element_field_evaluation *get_element_field_evaluation(
-		FE_field *fe_field, bool calculate_derivatives, cmzn_element *element,
-		FE_value time, cmzn_element *top_level_element, int differential_order = 0,
-		int *differential_xi_indices = 0)
+		FE_field *fe_field, cmzn_element *element, FE_value time,
+		cmzn_element *top_level_element)
 	{
 		// GRC remove check?
 		if (!(fe_field) || (!element))
@@ -151,8 +150,7 @@ public:
 		// ensure we have FE_element_field_evaluation calculated for element
 		// with derivatives_calculated if requested
 		if ((!this->element_field_evaluation) || field_changed || 
-			(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
-			(calculate_derivatives && (!this->element_field_evaluation->has_derivatives_calculated())))
+			(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
 		{
 			bool need_update = false;
 			bool add_to_cache = false;
@@ -167,9 +165,7 @@ public:
 			else
 			{
 				this->element_field_evaluation = iter->second;
-				if (field_changed ||
-					(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)) ||
-					(calculate_derivatives && (!this->element_field_evaluation->has_derivatives_calculated())))
+				if (field_changed || (!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
 				{
 					need_update = true;
 					this->element_field_evaluation->clear();
@@ -178,13 +174,8 @@ public:
 			if ((this->element_field_evaluation) && need_update)
 			{
 				if (this->element_field_evaluation->calculate_values(fe_field, element,
-					time, calculate_derivatives, top_level_element))
+					time, top_level_element))
 				{
-					for (int i = 0; i < differential_order; ++i)
-					{
-						this->element_field_evaluation->differentiate(differential_xi_indices[i]);
-					}
-
 					if (add_to_cache)
 					{
 						// Set a cache size limit, clearing is a simple way to only cache for recent elements
@@ -779,7 +770,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 				FE_element_field_evaluation *element_field_evaluation =
 					feStringValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, /*calculate_derivatives*/false, element, time, top_level_element);
+						fe_field, element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					return_code = element_field_evaluation->evaluate_as_string(
@@ -805,7 +796,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 				FE_element_field_evaluation *element_field_evaluation =
 					feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, /*calculate_derivatives*/(0 < number_of_derivatives), element, time, top_level_element);
+						fe_field, element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					/* component number -1 = calculate all components */
@@ -3954,7 +3945,7 @@ int Computed_field_basis_derivative::evaluate(cmzn_fieldcache& cache, FieldValue
 
 		FE_element_field_evaluation *element_field_evaluation =
 			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(fe_field,
-				/*calculate_derivatives*/true, element, time, top_level_element, this->order, this->xi_indices);
+				element, time, top_level_element);
 		if (element_field_evaluation)
 		{
 			/* component number -1 = calculate all components */

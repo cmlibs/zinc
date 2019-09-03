@@ -37,7 +37,6 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	time_dependent(0),
 	time(0.0),
 	component_number_in_xi(0),
-	derivatives_calculated(false),
 	destroy_standard_basis_arguments(false),
 	number_of_components(0),
 	component_number_of_values(0),
@@ -144,18 +143,15 @@ void FE_element_field_evaluation::clear()
 	}
 }
 
-int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element *element,
-	FE_value time, bool calculate_derivatives, cmzn_element *top_level_element)
+int FE_element_field_evaluation::calculate_values(FE_field *field,
+	cmzn_element *element, FE_value time, cmzn_element *top_level_element)
 {
-	FE_value *blending_matrix,
-		*derivative_value,*inherited_value,*inherited_values,scalar,
-		*second_derivative_value,*transformation,*value,**values_address;
-	int cn,**component_number_in_xi,
-		*component_base_grid_offset, *element_value_offsets, i, j, k,
-		number_of_grid_based_components,
-		number_of_inherited_values,number_of_polygon_verticies,number_of_values,
-		*number_of_values_address,offset,order,*orders,polygon_offset,power,
-		row_size,**standard_basis_arguments_address;
+	FE_value *blending_matrix, *inherited_value, *inherited_values,
+		*transformation, *value, **values_address;
+	int cn, **component_number_in_xi, *component_base_grid_offset,
+		*element_value_offsets, i, j, number_of_inherited_values,
+		*number_of_values_address, row_size,
+		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 	// this had used DOUBLE_FOR_DOT_PRODUCT, but FE_value will be at least double precision now
 	FE_value sum;
@@ -206,8 +202,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 			// a given line or face. */
 			this->field_element = fieldElement->access();
 			this->component_number_in_xi=(int **)NULL;
-			/* derivatives will be calculated in calculate_FE_element_field */
-			this->derivatives_calculated = true;
 			this->destroy_standard_basis_arguments = false;
 			this->number_of_components=number_of_components;
 			this->component_number_of_values=(int *)NULL;
@@ -229,7 +223,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 		case INDEXED_FE_FIELD:
 		{
 			if (this->calculate_values(field->indexer_field, element,
-				time, calculate_derivatives, top_level_element))
+				time, top_level_element))
 			{
 				/* restore pointer to original field - has the indexer_field in
 						it anyway */
@@ -272,7 +266,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 				this->time_dependent =
 					FE_field_has_multiple_times(this->field);
 				this->time = time;
-				this->derivatives_calculated=calculate_derivatives;
 				this->destroy_standard_basis_arguments = fieldElementDimension > elementDimension;
 				this->number_of_components=number_of_components;
 				this->component_number_of_values=
@@ -297,7 +290,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 				const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
 				FE_basis *previous_basis = 0;
 				return_code=1;
-				number_of_grid_based_components = 0;
 				int **component_grid_offset_in_xi = 0;
 				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 				for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
@@ -331,11 +323,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 								"FE_element_field_evaluation::calculate_values.  Element parameter mapping only implemented for legacy grid");
 							return_code = 0;
 							break;
-						}
-						++number_of_grid_based_components;
-						if (number_of_grid_based_components == number_of_components)
-						{
-							this->derivatives_calculated = true;
 						}
 						/* one-off allocation of arrays only needed for grid-based components */
 						if (NULL == this->component_grid_values_storage)
@@ -546,21 +533,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 						{
 							if (fieldElement == element)
 							{
-								/* values already correct regardless of basis, but must make space for derivatives if needed */
-								if (calculate_derivatives)
-								{
-									if (REALLOCATE(inherited_values,*values_address,FE_value,
-										(elementDimension+1)*(*number_of_values_address)))
-									{
-										*values_address=inherited_values;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_field_evaluation::calculate_values.  Could not reallocate values");
-										return_code=0;
-									}
-								}
+								/* values already correct regardless of basis */
 							}
 							else if ((monomial_basis_functions== *standard_basis_address)||
 								(polygon_basis_functions== *standard_basis_address))
@@ -568,16 +541,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 								/* project the fieldElement values onto the lower-dimension element
 										using the affine transformation */
 								/* allocate memory for the element values */
-								if (calculate_derivatives)
-								{
-									ALLOCATE(inherited_values,FE_value,
-										(elementDimension+1)*number_of_inherited_values);
-								}
-								else
-								{
-									ALLOCATE(inherited_values,FE_value,
-										number_of_inherited_values);
-								}
+								ALLOCATE(inherited_values,FE_value, number_of_inherited_values);
 								if (inherited_values)
 								{
 									row_size= *number_of_values_address;
@@ -615,154 +579,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 									"FE_element_field_evaluation::calculate_values.  Invalid basis");
 								return_code=0;
 							}
-							if (return_code)
-							{
-								if (calculate_derivatives)
-								{
-									/* calculate the derivatives with respect to the xi
-											coordinates */
-									if (monomial_basis_functions==
-										*standard_basis_address)
-									{
-										number_of_values= *number_of_values_address;
-										value= *values_address;
-										derivative_value=value+number_of_values;
-										orders= *standard_basis_arguments_address;
-										offset=1;
-										for (i=elementDimension;i>0;i--)
-										{
-											orders++;
-											order= *orders;
-											for (j=0;j<number_of_values;j++)
-											{
-												/* calculate derivative value */
-												power=(j/offset)%(order+1);
-												if (order==power)
-												{
-													*derivative_value=0;
-												}
-												else
-												{
-													*derivative_value=
-														(FE_value)(power+1)*value[j+offset];
-												}
-												/* move to the next derivative value */
-												derivative_value++;
-											}
-											offset *= (order+1);
-										}
-									}
-									else if (polygon_basis_functions==
-										*standard_basis_address)
-									{
-										number_of_values= *number_of_values_address;
-										value= *values_address;
-										derivative_value=value+number_of_values;
-										orders= *standard_basis_arguments_address;
-										offset=1;
-										for (i=elementDimension;i>0;i--)
-										{
-											orders++;
-											order= *orders;
-											if (order<0)
-											{
-												/* polygon */
-												order= -order;
-												if (order%2)
-												{
-													/* calculate derivatives with respect to
-														both polygon coordinates */
-													order /= 2;
-													polygon_offset=order%elementDimension;
-													order /= elementDimension;
-													number_of_polygon_verticies=
-														(-orders[polygon_offset])/2;
-													/* first polygon coordinate is
-														circumferential */
-													second_derivative_value=derivative_value+
-														(polygon_offset*number_of_values);
-													order=4*number_of_polygon_verticies;
-													scalar=
-														(FE_value)number_of_polygon_verticies;
-													for (j=0;j<number_of_values;j++)
-													{
-														/* calculate derivative values */
-														k=(j/offset)%order;
-														switch (k/number_of_polygon_verticies)
-														{
-															case 0:
-															{
-																*derivative_value=scalar*value[j+
-																	number_of_polygon_verticies*offset];
-																*second_derivative_value=value[j+
-																	2*number_of_polygon_verticies*
-																	offset];
-															} break;
-															case 1:
-															{
-																*derivative_value=0;
-																*second_derivative_value=value[j+
-																	2*number_of_polygon_verticies*
-																	offset];
-															} break;
-															case 2:
-															{
-																*derivative_value=scalar*value[j+
-																	number_of_polygon_verticies*offset];
-																*second_derivative_value=0;
-															} break;
-															case 3:
-															{
-																*derivative_value=0;
-																*second_derivative_value=0;
-															} break;
-														}
-														/* move to the next derivative value */
-														derivative_value++;
-														second_derivative_value++;
-													}
-													offset *= order;
-												}
-												else
-												{
-													/* second polgon xi.  Derivatives already
-														calculated */
-													derivative_value += number_of_values;
-												}
-											}
-											else
-											{
-												/* not polygon */
-												for (j=0;j<number_of_values;j++)
-												{
-													/* calculate derivative value */
-													power=(j/offset)%(order+1);
-													if (order==power)
-													{
-														*derivative_value=0;
-													}
-													else
-													{
-														*derivative_value=
-															(FE_value)(power+1)*value[j+offset];
-													}
-													/* move to the next derivative value */
-													derivative_value++;
-												}
-												offset *= (order+1);
-											}
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_field_evaluation::calculate_values.  "
-											"Invalid basis");
-										DEALLOCATE(*values_address);
-										return_code=0;
-									}
-								}
-							}
 						}
 						number_of_values_address++;
 						values_address++;
@@ -793,82 +609,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field, cmzn_element 
 			return_code=0;
 		} break;
 	} /* switch (field->fe_field_type) */
-	return (return_code);
-}
-
-int FE_element_field_evaluation::differentiate(int xi_index)
-{
-	FE_value *derivative_value, *value;
-	int elementDimension, i, j, k, number_of_values, offset, order,
-		*orders, power, return_code;
-
-	if (this->derivatives_calculated)
-	{
-		return_code = 1;
-		elementDimension = this->element->getDimension();
-		for (k = 0 ; k < this->number_of_components ; k++)
-		{
-			if (monomial_basis_functions==
-				this->component_standard_basis_functions[k])
-			{
-				number_of_values = this->component_number_of_values[k];
-				value = this->component_values[k];
-
-				/* Copy the specified derivative back into the values */
-				derivative_value = value + number_of_values * (xi_index + 1);
-				for (j=0;j<number_of_values;j++)
-				{
-					*value = *derivative_value;
-					value++;
-					derivative_value++;
-				}
-
-				/* Now differentiate the values monomial as we did to calculate them above */
-
-				value = this->component_values[k];
-				derivative_value = value + number_of_values;
-
-				orders= this->component_standard_basis_function_arguments[k];
-				offset = 1;
-
-				for (i=elementDimension;i>0;i--)
-				{
-					orders++;
-					order= *orders;
-					for (j=0;j<number_of_values;j++)
-					{
-						/* calculate derivative value */
-						power=(j/offset)%(order+1);
-						if (order==power)
-						{
-							*derivative_value=0;
-						}
-						else
-						{
-							*derivative_value=
-								(FE_value)(power+1)*value[j+offset];
-						}
-						/* move to the next derivative value */
-						derivative_value++;
-					}
-					offset *= (order+1);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_evaluation::differentiate.  Unsupported basis type");
-				return_code=0;
-				break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_evaluation::differentiate.  Must have derivatives calculated");
-		return_code=0;
-	}
 	return (return_code);
 }
 
@@ -1030,8 +770,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	return_code=0;
-	if ((this->field) && (xi_coordinates) && (values) &&
-		(!jacobian||(jacobian&&(this->derivatives_calculated))))
+	if ((this->field) && (xi_coordinates) && (values))
 	{
 		const int dimension = this->element->getDimension();
 		if ((0<=component_number)&&(component_number<this->field->number_of_components))
@@ -1138,14 +877,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 				component_standard_basis_function_arguments=
 					this->component_standard_basis_function_arguments;
 				calculated_value=values;
-				if (this->derivatives_calculated)
-				{
-					derivative=jacobian;
-				}
-				else
-				{
-					derivative=(FE_value *)NULL;
-				}
+				derivative = jacobian;
 				component_number_of_values += comp_no;
 				component_values += comp_no;
 				component_standard_basis_function += comp_no;
@@ -1330,40 +1062,55 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 								"Error calculating standard basis");
 							return_code = 0;
 						}
-						/* calculate the element field value as a dot product of the element
-							 values and the basis function values */
-						const FE_value *basis_value = basis_values;
-						element_value= *component_values;
-						sum=0;
-						for (j=number_of_values;j>0;j--)
+						else
 						{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-							sum += (double)(*element_value)*(double)(*basis_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-							sum += (*element_value)*(*basis_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-							basis_value++;
-							element_value++;
-						}
-						*calculated_value=(FE_value)sum;
-						if (derivative)
-						{
-							for (k=number_of_xi_coordinates;k>0;k--)
+							/* calculate the element field value as a dot product of the element
+								 values and the basis function values */
+							const FE_value *basis_value = basis_values;
+							element_value = *component_values;
+							sum = 0;
+							for (j = number_of_values; j>0; j--)
 							{
-								sum=0;
-								basis_value = basis_values;
-								for (j=number_of_values;j>0;j--)
-								{
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
-									sum += (double)(*element_value)*(double)(*basis_value);
+								sum += (double)(*element_value)*(double)(*basis_value);
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									sum += (*element_value)*(*basis_value);
+								sum += (*element_value)*(*basis_value);
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									basis_value++;
-									element_value++;
+								basis_value++;
+								element_value++;
+							}
+							*calculated_value = (FE_value)sum;
+							if (derivative)
+							{
+								const FE_value *basis_values = basis_function_evaluation.evaluate_derivatives(
+									*component_standard_basis_function, *component_standard_basis_function_arguments, xi_coordinates, 1);
+								if (!basis_values)
+								{
+									display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
+										"Error calculating standard basis derivatives");
+									return_code = 0;
 								}
-								*derivative=(FE_value)sum;
-								derivative++;
+								else
+								{
+									basis_value = basis_values;
+									for (k = number_of_xi_coordinates; k>0; k--)
+									{
+										element_value = *component_values;
+										sum = 0;
+										for (j = number_of_values; j>0; j--)
+										{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+											sum += (double)(*element_value)*(double)(*basis_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+											sum += (*element_value)*(*basis_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+											basis_value++;
+											element_value++;
+										}
+										*derivative = (FE_value)sum;
+										derivative++;
+									}
+								}
 							}
 						}
 					}

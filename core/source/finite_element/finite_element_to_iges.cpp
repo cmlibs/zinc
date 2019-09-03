@@ -284,8 +284,7 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 			(coordinate_field = this->destination_fe_field) &&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = FE_element_field_evaluation::create()) &&
-			coordinate_element_field_values->calculate_values(coordinate_field, element,
-				/*top_level_element*/0, /*time*/0.0, /*calculate_derivatives*/0) &&
+			coordinate_element_field_values->calculate_values(coordinate_field, element, /*time*/0.0) &&
 			coordinate_element_field_values->get_monomial_component_info(
 				/*component_number*/0, monomial_x) &&
 			(2 == monomial_x[0]) && (monomial_x[1] <= 3) && (monomial_x[2] <= 3) &&

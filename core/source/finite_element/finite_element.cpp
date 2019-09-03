@@ -6935,8 +6935,7 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 	// need to calculate field values to evaluate field in element corners,
 	// ensuring optional modify function, version mapping etc. applied
 	int return_code = 1;
-	if (!fe_element_field_evaluation->calculate_values(fe_field, element,
-		time, /*calculate_derivatives*/0, /*top_level_element*/0))
+	if (!fe_element_field_evaluation->calculate_values(fe_field, element, time))
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_smooth_FE_field.  Could not calculate element field values");

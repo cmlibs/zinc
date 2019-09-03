@@ -87,16 +87,20 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double chart_coordinates[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, chart_coordinates);
+	double xi[] = {0.6, 0.2, 0.45};
+	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
-	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_EQ(1.0, outvalues[0]);
-	EXPECT_EQ(0.0, outvalues[1]);
-	EXPECT_EQ(0.0, outvalues[2]);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(xi[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(xi[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(xi[2], outvalues[2]);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f2, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(1.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);

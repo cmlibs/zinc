@@ -56,9 +56,6 @@ class FE_element_field_evaluation
 			if the <component_values> should be destroyed (element field has been
 			inherited) */
 	int **component_number_in_xi;
-	/* a flag to specify whether or not values have also been calculated for the
-		derivatives of the field with respect to the xi coordinates */
-	bool derivatives_calculated;
 	/* a flag added to specify if the element field component modify function is
 		ignored */
 	/* specify whether the standard basis arguments should be destroyed (element
@@ -130,22 +127,12 @@ public:
 			&& ((!this->time_dependent) || (time_in == this->time));
 	}
 
-	bool has_derivatives_calculated() const
-	{
-		return this->derivatives_calculated;
-	}
-
 	/** Fill the evaluation structure, ready to evaluate field.
 	 * Must be freshly created or cleared.
 	 * @param topLevelElement  Optional element to inherit field from.
 	 */
 	int calculate_values(struct FE_field *field, cmzn_element *element,
-		FE_value time, bool calculate_derivatives, cmzn_element *top_level_element);
-
-	/** Modifies the calculated values so that it will calculate
-	 * derivatives wrt xi_index for the original field. 
-	 * Currently only implemented for monomials. */
-	int differentiate(int xi_index);
+		FE_value time, cmzn_element *top_level_element = 0);
 
 	/** Evaluate integer field values in element.
 	 * @param component_number  Component number to evaluate starting at 0, or any
