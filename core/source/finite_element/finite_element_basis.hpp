@@ -99,11 +99,7 @@ class Standard_basis_function_evaluation
 	 * standard basis function and arguments and to calculate number_of_basis_functions.
 	 * @return  Standard basis function values from cache. */
 	const FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
-		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates);
-
-	const FE_value *evaluate_derivatives_full(Standard_basis_function *standard_basis_function_in,
-		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates,
-		int order);
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates, int derivative_order_in);
 
 	static inline bool basis_arguments_match(const int *standard_basis_arguments1, const int *standard_basis_arguments2)
 	{
@@ -151,49 +147,29 @@ public:
 		delete[] this->basis_function_values;
 	}
 
-	/** Return basis values at supplied xi coordinates. Optimised for speed.
-	 * Client must ensure all arguments are valid and that xi_coordinates is
-	 * correct dimension for basis.
+	/** Return basis function values or derivatives at supplied xi coordinates.
+	 * Optimised for speed; client must ensure all arguments are valid and that
+	 * xi_coordinates is of correct dimension for basis.
 	 * Important: object does not store the xi coordinates, so client must call
 	 * invalidate() to force full_evaluation at a different coordinate.
 	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
 	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
 	 * @param xi_coordinates.  Location to evaluate at. Client to check.
+	 * @param derivative_order_in  Derivative order w.r.t. xi starting at <=0 for
+	 * values, 1 for first derivatives etc.
 	 * @return  Standard basis function values from cache or from full calculation.
-	 * WARNING: Treat returned pointer as invalid after another call to this
-	 * function or evaluate_derivatives() due to possible reallocation. */
-	inline const FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
-		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates)
-	{
-		if ((standard_basis_function_in == this->standard_basis_function)
-			&& basis_arguments_match(standard_basis_function_arguments_in, this->standard_basis_function_arguments))
-			return this->basis_function_values;
-		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in, xi_coordinates);
-	}
-
-	/** Return derivatives of basis functions at supplied xi coordinates.
-	 * Optimised for speed. Client must ensure all arguments are valid and that
-	 * xi_coordinates is correct dimension for basis.
-	 * Important: object does not store the xi coordinates, so client must call
-	 * invalidate() to force full_evaluation at a different coordinate.
-	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
-	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
-	 * @param xi_coordinates.  Location to evaluate at. Client to check.
-	 * @param order.  Derivative order >= 1. Client to check.
-	 * @return  Standard basis function derivatives from cache or from full calculation.
 	 * WARNING: Treat returned pointer as invalid after another call to this
 	 * function with a different basis or higher derivative order due to possible
 	 * reallocation. */
-	inline const FE_value *evaluate_derivatives(Standard_basis_function *standard_basis_function_in,
-		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates,
-		int derivative_order_in)
+	inline const FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates, int derivative_order_in = 0)
 	{
 		if ((derivative_order_in <= this->derivative_order_evaluated)
 			&& (standard_basis_function_in == this->standard_basis_function)
 			&& basis_arguments_match(standard_basis_function_arguments_in, this->standard_basis_function_arguments))
 			return this->basis_function_values + this->get_derivatives_offset(derivative_order_in);
-		return this->evaluate_derivatives_full(standard_basis_function_in,
-			standard_basis_function_arguments_in, xi_coordinates, derivative_order_in);
+		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in,
+			xi_coordinates, derivative_order_in);
 	}
 
 	/** Invalidate cache to force full evaluation */

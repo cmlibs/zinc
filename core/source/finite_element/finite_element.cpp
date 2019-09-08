@@ -7011,7 +7011,7 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 			xi[2] = (FE_value)((n & 4)/4);
 			basis_function_evaluation.invalidate();
 			if (!fe_element_field_evaluation->evaluate_real(componentNumber,
-				xi, basis_function_evaluation, &(component_value[n]), /*jacobian*/0))
+				xi, basis_function_evaluation, /*derivative_order*/0, &(component_value[n])))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_smooth_FE_field.  Could not calculate element field");

@@ -86,7 +86,8 @@ class FE_element_field_evaluation
 	/* the arguments for the standard basis function for each component */
 	int **component_standard_basis_function_arguments;
 	/* working space for evaluating basis, for grid-based only */
-	FE_value *grid_basis_function_values;
+	Standard_basis_function_evaluation grid_basis_function_evaluation;
+	FE_value last_grid_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int access_count;
 
 	FE_element_field_evaluation();
@@ -127,6 +128,14 @@ public:
 			&& ((!this->time_dependent) || (time_in == this->time));
 	}
 
+	static inline int get_number_of_derivatives(int derivative_order, int dimension)
+	{
+		int number_of_derivatives = 1;
+		for (int d = 0; d < derivative_order; ++d)
+			number_of_derivatives *= dimension;
+		return number_of_derivatives;
+	}
+
 	/** Fill the evaluation structure, ready to evaluate field.
 	 * Must be freshly created or cleared.
 	 * @param topLevelElement  Optional element to inherit field from.
@@ -143,17 +152,20 @@ public:
 		int *values);
 
 	/** Evaluate real field/component values in element. Converts other numerical
-	 * types to real. Must have called calculate_values first, with derivatives
-	 * if jacobian requested.
+	 * types to real. Must have called calculate_values first.
 	 * @param component_number  Component number to evaluate starting at 0, or any
 	 * other value to evaluate all components.
 	 * @param xi_coordinates  Element chart location to evaluate at.
-	 * @param basis_function_evaluation.  Standard basis function evaluation cache.
-	 * @param values  Caller-supplied space to store the real values.
-	 * @param jacobian  If non-zero, points to memory to receive N*M values,
-	 * of N component first derivatives with respect to M xi coordinates. */
+	 * @param basis_function_evaluation  Standard basis function evaluation cache.
+	 * @param derivative_order  Derivative order w.r.t. xi starting at <=0 for
+	 * values, 1 for first derivatives etc.
+	 * @param values  Caller-supplied space to store the real values. Length
+	 * must be at least N components * dimension^derivative_order. Derivative
+	 * values vary fastest with the first xi index; values for each component
+	 * are consecutive. */
 	int evaluate_real(int component_number, const FE_value *xi_coordinates,
-		Standard_basis_function_evaluation &basis_function_evaluation, FE_value *values, FE_value *jacobian);
+		Standard_basis_function_evaluation &basis_function_evaluation,
+		int derivative_order, FE_value *values);
 
 	/** Returns allocated copies of the string values of the field in the element.
 	 * @param component_number  Component number to evaluate starting at 0, or any

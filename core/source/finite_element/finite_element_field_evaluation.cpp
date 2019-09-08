@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <limits>
 #include "opencmiss/zinc/result.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_field_private.hpp"
@@ -17,8 +18,6 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
-
-#define DOUBLE_FOR_DOT_PRODUCT
 
 // function from finite_element.cpp
 int global_to_element_map_values(FE_field *field, int componentNumber,
@@ -47,9 +46,9 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	component_values(0),
 	component_standard_basis_functions(0),
 	component_standard_basis_function_arguments(0),
-	grid_basis_function_values(0),
 	access_count(1)
 {
+	this->last_grid_xi[0] = std::numeric_limits<FE_value>::quiet_NaN();  // to force initial grid xi to be invalid
 }
 
 int FE_element_field_evaluation::deaccess(FE_element_field_evaluation* &element_field_evaluation)
@@ -137,10 +136,6 @@ void FE_element_field_evaluation::clear()
 	{
 		DEALLOCATE(this->component_standard_basis_functions);
 	}
-	if (this->grid_basis_function_values)
-	{
-		DEALLOCATE(this->grid_basis_function_values);
-	}
 }
 
 int FE_element_field_evaluation::calculate_values(FE_field *field,
@@ -153,8 +148,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 		*number_of_values_address, row_size,
 		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
-	// this had used DOUBLE_FOR_DOT_PRODUCT, but FE_value will be at least double precision now
-	FE_value sum;
 
 	if (!((element) && (field)))
 	{
@@ -216,7 +209,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 				(Standard_basis_function **)NULL;
 			this->component_standard_basis_function_arguments=
 				(int **)NULL;
-			this->grid_basis_function_values=(FE_value *)NULL;
 			this->time_dependent = 0;
 			this->time = time;
 		} break;
@@ -238,13 +230,11 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 		} break;
 		case GENERAL_FE_FIELD:
 		{
-			ALLOCATE(number_of_values_address,int,number_of_components);
-			ALLOCATE(values_address,FE_value *,number_of_components);
-			ALLOCATE(standard_basis_address,Standard_basis_function *,
-				number_of_components);
-			ALLOCATE(standard_basis_arguments_address,int *,
-				number_of_components);
-			blending_matrix=(FE_value *)NULL;
+			ALLOCATE(number_of_values_address, int, number_of_components);
+			ALLOCATE(values_address, FE_value *, number_of_components);
+			ALLOCATE(standard_basis_address, Standard_basis_function *, number_of_components);
+			ALLOCATE(standard_basis_arguments_address, int *, number_of_components);
+			blending_matrix = (FE_value *)NULL;
 			ALLOCATE(component_number_in_xi, int *, number_of_components);
 			if (number_of_values_address&&values_address&&
 				standard_basis_address&&standard_basis_arguments_address&&
@@ -263,24 +253,19 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 				this->field = field->access();
 				this->element = element->access();
 				this->field_element = fieldElement->access();
-				this->time_dependent =
-					FE_field_has_multiple_times(this->field);
+				this->time_dependent = FE_field_has_multiple_times(this->field);
 				this->time = time;
 				this->destroy_standard_basis_arguments = fieldElementDimension > elementDimension;
-				this->number_of_components=number_of_components;
-				this->component_number_of_values=
-					number_of_values_address;
+				this->number_of_components = number_of_components;
+				this->component_number_of_values = number_of_values_address;
 				/* clear arrays only used for grid-based fields */
-				this->component_grid_values_storage=
-					(const Value_storage **)NULL;
-				this->component_grid_offset_in_xi=(int **)NULL;
-				this->element_value_offsets=(int *)NULL;
+				this->component_grid_values_storage = 0;
+				this->component_grid_offset_in_xi = 0;
+				this->element_value_offsets = 0;
 
-				this->component_values=values_address;
-				this->component_standard_basis_functions=
-					standard_basis_address;
-				this->component_standard_basis_function_arguments=
-					standard_basis_arguments_address;
+				this->component_values = values_address;
+				this->component_standard_basis_functions = standard_basis_address;
+				this->component_standard_basis_function_arguments = standard_basis_arguments_address;
 				int grid_maximum_number_of_values = elementDimension + 1;
 				for (i = elementDimension; i > 0; i--)
 				{
@@ -292,7 +277,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 				return_code=1;
 				int **component_grid_offset_in_xi = 0;
 				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
-				for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
+				for (int component_number = 0; component_number < number_of_components; ++component_number)
 				{
 					const FE_element_field_template *componentEFT =
 						meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
@@ -304,26 +289,19 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 					if ((componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
 						&& (0 != componentEFT->getLegacyGridNumberInXi()))
 					{
-						if (0 == this->grid_basis_function_values)
+						/* legacy grid-based */
+						// always uses linear Lagrange for the element dimension, monomial has same number of functions
+						int basisFunctionCount = 2;
+						for (int d = 1; d < elementDimension; ++d)
+							basisFunctionCount *= 2;
+						ALLOCATE(*values_address, FE_value, basisFunctionCount);
+						*number_of_values_address = basisFunctionCount;
+						if (!(*values_address))
 						{
-							// allocate enough space for linear basis plus first derivatives
-							if (!(ALLOCATE(this->grid_basis_function_values, FE_value, grid_maximum_number_of_values)))
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_field_evaluation::calculate_values.  "
-									"Could not allocate grid_basis_function_values");
-								return_code = 0;
-								break;
-							}
-						}
-						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
-						if (!top_level_component_number_in_xi)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_evaluation::calculate_values.  Element parameter mapping only implemented for legacy grid");
 							return_code = 0;
 							break;
 						}
+						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
 						/* one-off allocation of arrays only needed for grid-based components */
 						if (NULL == this->component_grid_values_storage)
 						{
@@ -377,6 +355,8 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 								return_code = 0;
 							} break;
 						}
+						if (!return_code)
+							break;
 						ALLOCATE(component_number_in_xi[component_number], int, elementDimension);
 						ALLOCATE(component_grid_offset_in_xi[component_number], int, elementDimension);
 						if ((NULL != component_number_in_xi[component_number]) &&
@@ -423,6 +403,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 									"Could not calculate node-based values for field %s in %d-D element %d",
 									field->name, fieldElementDimension, fieldElement->getIdentifier());
 								return_code = 0;
+								break;
 							}
 						} break;
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
@@ -499,27 +480,29 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 							break;
 						if (previous_basis == componentEFT->getBasis())
 						{
-							*standard_basis_address= *(standard_basis_address-1);
-							*standard_basis_arguments_address=
-								*(standard_basis_arguments_address-1);
+							*standard_basis_address = *(standard_basis_address - 1);
+							*standard_basis_arguments_address = *(standard_basis_arguments_address - 1);
 						}
 						else
 						{
 							previous_basis = componentEFT->getBasis();
 							if (blending_matrix)
 							{
-								/* SAB We don't want to keep the old one */
 								DEALLOCATE(blending_matrix);
-								blending_matrix=NULL;
+								blending_matrix = 0;
 							}
 							*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
 							if (fieldElementDimension > elementDimension)
 							{
-								return_code=calculate_standard_basis_transformation(
-									previous_basis,coordinate_transformation,
-									elementDimension,standard_basis_arguments_address,
-									&number_of_inherited_values,standard_basis_address,
-									&blending_matrix);
+								if (!calculate_standard_basis_transformation(
+									previous_basis, coordinate_transformation,
+									elementDimension, standard_basis_arguments_address,
+									&number_of_inherited_values, standard_basis_address,
+									&blending_matrix))
+								{
+									return_code = 0;
+									break;
+								}
 							}
 							else
 							{
@@ -529,62 +512,61 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
 							}
 						}
-						if (return_code)
+						if (fieldElement == element)
 						{
-							if (fieldElement == element)
+							/* values already correct regardless of basis */
+						}
+						else if ((monomial_basis_functions== *standard_basis_address)||
+							(polygon_basis_functions== *standard_basis_address))
+						{
+							/* project the fieldElement values onto the lower-dimension element
+									using the affine transformation */
+							/* allocate memory for the element values */
+							ALLOCATE(inherited_values,FE_value, number_of_inherited_values);
+							if (inherited_values)
 							{
-								/* values already correct regardless of basis */
-							}
-							else if ((monomial_basis_functions== *standard_basis_address)||
-								(polygon_basis_functions== *standard_basis_address))
-							{
-								/* project the fieldElement values onto the lower-dimension element
-										using the affine transformation */
-								/* allocate memory for the element values */
-								ALLOCATE(inherited_values,FE_value, number_of_inherited_values);
-								if (inherited_values)
+								row_size= *number_of_values_address;
+								inherited_value=inherited_values;
+								for (j=0;j<number_of_inherited_values;j++)
 								{
-									row_size= *number_of_values_address;
-									inherited_value=inherited_values;
-									for (j=0;j<number_of_inherited_values;j++)
+									FE_value sum = 0.0;
+									value= *values_address;
+									transformation=blending_matrix+j;
+									for (i=row_size;i>0;i--)
 									{
-										sum=0;
-										value= *values_address;
-										transformation=blending_matrix+j;
-										for (i=row_size;i>0;i--)
-										{
-											sum += (*transformation)*(*value);
-											value++;
-											transformation += number_of_inherited_values;
-										}
-										*inherited_value=(FE_value)sum;
-										inherited_value++;
+										sum += (*transformation)*(*value);
+										value++;
+										transformation += number_of_inherited_values;
 									}
-									DEALLOCATE(*values_address);
-									*values_address=inherited_values;
-									*number_of_values_address=number_of_inherited_values;
+									*inherited_value=(FE_value)sum;
+									inherited_value++;
 								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_evaluation::calculate_values.  "
-										"Insufficient memory for inherited_values");
-									DEALLOCATE(*values_address);
-									return_code=0;
-								}
+								DEALLOCATE(*values_address);
+								*values_address=inherited_values;
+								*number_of_values_address=number_of_inherited_values;
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"FE_element_field_evaluation::calculate_values.  Invalid basis");
-								return_code=0;
+									"FE_element_field_evaluation::calculate_values.  "
+									"Insufficient memory for inherited_values");
+								DEALLOCATE(*values_address);
+								return_code = 0;
+								break;
 							}
 						}
-						number_of_values_address++;
-						values_address++;
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_evaluation::calculate_values.  Invalid basis");
+							return_code = 0;
+							break;
+						}
 						standard_basis_address++;
 						standard_basis_arguments_address++;
 					}
+					number_of_values_address++;
+					values_address++;
 				}
 			}
 			else
@@ -651,7 +633,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 		} break;
 		case INDEXED_FE_FIELD:
 		{
-			int index, value_no;
+			int index;
 
 			FE_field *indexed_field = this->field;
 			REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
@@ -661,7 +643,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 				if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
 				{
 					return_code = 1;
-					value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
+					int value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
 					for (i = 0; (i<components_to_calculate)&&return_code; i++)
 					{
 						if (!get_FE_field_int_value(indexed_field, value_no, &values[i]))
@@ -750,29 +732,14 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 
 int FE_element_field_evaluation::evaluate_real(int component_number,
 	const FE_value *xi_coordinates, Standard_basis_function_evaluation &basis_function_evaluation,
-	FE_value *values, FE_value *jacobian)
+	int derivative_order, FE_value *values)
 {
-	int cn,comp_no,*component_number_of_values,components_to_calculate,
-		i,j,k,l,m, *last_number_in_xi,*number_in_xi,
-		number_of_xi_coordinates,recompute_basis,
-		return_code,size,this_comp_no,xi_offset;
-	FE_value *calculated_value,
-		**component_values,*derivative,*element_value,temp,xi_coordinate;
-	Standard_basis_function *current_standard_basis_function,
-		**component_standard_basis_function;
-	int **component_standard_basis_function_arguments,
-		*current_standard_basis_function_arguments;
-	const Value_storage **component_grid_values_storage,*element_values_storage;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-
-	return_code=0;
+	int return_code = 1;
 	if ((this->field) && (xi_coordinates) && (values))
 	{
 		const int dimension = this->element->getDimension();
+		const int number_of_derivatives = this->get_number_of_derivatives(derivative_order, dimension);
+		int comp_no, components_to_calculate;
 		if ((0<=component_number)&&(component_number<this->field->number_of_components))
 		{
 			comp_no=component_number;
@@ -785,346 +752,236 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 		}
 		switch (this->field->fe_field_type)
 		{
-			case CONSTANT_FE_FIELD:
-			{
-				return_code=1;
-				for (i=0;(i<components_to_calculate)&&return_code;i++)
-				{
-					if (!get_FE_field_FE_value_value(this->field,comp_no,&values[i]))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_evaluation::evaluate_real.  "
-							"Could not get values for constant field %s",this->field->name);
-						return_code=0;
-					}
-					comp_no++;
-				}
-				if (jacobian)
-				{
-					/* derivatives are zero for constant fields */
-					derivative=jacobian;
-					for (i = (this->field->number_of_components)*dimension; 0 < i ; --i)
-					{
-						*derivative = 0.0;
-						derivative++;
-					}
-				}
-			} break;
-			case INDEXED_FE_FIELD:
-			{
-				int index,value_no;
-
-				FE_field *indexed_field = this->field;
-				REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
-				if (this->evaluate_int(/*component_number*/0, xi_coordinates, &index))
-				{
-					/* index numbers start at 1 */
-					if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
-					{
-						return_code=1;
-						value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
-						for (i=0;(i<components_to_calculate)&&return_code;i++)
-						{
-							if (!get_FE_field_FE_value_value(indexed_field,value_no,&values[i]))
-							{
-								display_message(ERROR_MESSAGE,
-									"calculate_FE_element_field.  "
-									"Could not get values for constant field %s", indexed_field->name);
-								return_code=0;
-							}
-							value_no += indexed_field->number_of_indexed_values;
-						}
-						if (jacobian)
-						{
-							/* derivatives are zero for indexed fields */
-							derivative=jacobian;
-							for (i = (indexed_field->number_of_components)*dimension; 0 < i ; --i)
-							{
-								*derivative = 0.0;
-								derivative++;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"FE_element_field_evaluation::evaluate_real.  "
-							"Index field %s gave out-of-range index %d in field %s",
-							indexed_field->indexer_field->name,index, indexed_field->name);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"FE_element_field_evaluation::evaluate_real.  "
-						"Could not calculate indexer field %s for field %s at %d-D element %",
-						indexed_field->indexer_field->name, indexed_field->name,
-						this->element->getDimension(),
-						this->element->getIdentifier());
-				}
-				REACCESS(FE_field)(&(this->field), indexed_field);
-			} break;
 			case GENERAL_FE_FIELD:
 			{
-				/* calculate the value for the element field */
-				return_code=1;
 				/* calculate a value for each component */
-				current_standard_basis_function=(Standard_basis_function *)NULL;
-				current_standard_basis_function_arguments=(int *)NULL;
-				component_number_of_values=
-					this->component_number_of_values;
-				component_values=this->component_values;
-				component_standard_basis_function=
-					this->component_standard_basis_functions;
-				component_standard_basis_function_arguments=
-					this->component_standard_basis_function_arguments;
-				calculated_value=values;
-				derivative = jacobian;
-				component_number_of_values += comp_no;
-				component_values += comp_no;
-				component_standard_basis_function += comp_no;
-				component_standard_basis_function_arguments += comp_no;
-				number_of_xi_coordinates = dimension;
-				int *element_value_offsets = 0;
-				int *element_value_offset = 0;
-				int number_of_values = 0;
-				int offset = 0;
-				for (cn=0;(cn<components_to_calculate)&&return_code;cn++)
+				Standard_basis_function *current_standard_basis_function = 0;
+				int *current_standard_basis_function_arguments = 0;
+				Standard_basis_function **standard_basis_function_ptr = this->component_standard_basis_functions;
+				int **standard_basis_function_arguments_ptr = this->component_standard_basis_function_arguments;
+				FE_value *calculated_value = values;
+				int *number_of_element_values_ptr = this->component_number_of_values + comp_no;
+				FE_value **element_values_ptr = this->component_values + comp_no;
+				standard_basis_function_ptr += comp_no;
+				standard_basis_function_arguments_ptr += comp_no;
+				for (int cn = 0; cn < components_to_calculate; ++cn)
 				{
-					this_comp_no = comp_no + cn;
-					number_in_xi = this->component_number_in_xi[this_comp_no];
+					const int this_comp_no = comp_no + cn;
+					const int *number_in_xi = this->component_number_in_xi[this_comp_no];
 					if (number_in_xi)
 					{
-						/* grid based */
-						FE_value *basis_values = this->grid_basis_function_values;
-						current_standard_basis_function = NULL;
-						current_standard_basis_function_arguments = NULL;
-						/* optimisation: reuse basis from last component if same number_in_xi */
-						recompute_basis = 1;
-						if ((cn > 0) && (last_number_in_xi = this->component_number_in_xi[this_comp_no - 1]))
+						/* legacy grid-based */
+						// convert parent xi to grid base offset and grid xi
+						int grid_base_offset = this->component_base_grid_offset[this_comp_no];
+						FE_value grid_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+						bool different_grid_xi = false;
+						FE_value number_in_xi_real[MAXIMUM_ELEMENT_XI_DIMENSIONS];  // used to convert derivatives to be w.r.t. parent xi
+						for (int i = 0; i < dimension; ++i)
 						{
-							recompute_basis = 0;
-							for (i = 0; i < number_of_xi_coordinates; i++)
+							number_in_xi_real[i] = static_cast<FE_value>(number_in_xi[i]);
+							FE_value xi_coordinate = xi_coordinates[i];
+							if (xi_coordinate >= 1.0)
 							{
-								if (number_in_xi[i] != last_number_in_xi[i])
-								{
-									recompute_basis = 1;
-									break;
-								}
+								grid_xi[i] = 1.0;
+								if (number_in_xi[i] > 1)
+									grid_base_offset += (number_in_xi[i] - 1)*this->component_grid_offset_in_xi[this_comp_no][i];
+							}
+							else if (xi_coordinate <= 0.0)
+							{
+								grid_xi[i] = 0.0;
+							}
+							else
+							{
+								xi_coordinate *= number_in_xi_real[i];
+								const FE_value xi_offset_real = floor(xi_coordinate);
+								grid_xi[i] = xi_coordinate - xi_offset_real;
+								grid_base_offset += static_cast<int>(xi_offset_real)*this->component_grid_offset_in_xi[this_comp_no][i];
+							}
+							if (grid_xi[i] != this->last_grid_xi[i])
+							{
+								different_grid_xi = true;
+								this->last_grid_xi[i] = grid_xi[i];
 							}
 						}
-						if (recompute_basis)
-						{
-							number_of_values=1;
-							for (i=number_of_xi_coordinates;i>0;i--)
-							{
-								number_of_values *= 2;
-							}
-							return_code=1;
-							i=0;
-							offset=this->component_base_grid_offset[this_comp_no];
-							*basis_values = 1;
-							element_value_offsets = this->element_value_offsets;
-							*element_value_offsets=0;
-							m=1;
-							while (return_code&&(i<number_of_xi_coordinates))
-							{
-								xi_coordinate=xi_coordinates[i];
-								if (0.0 > xi_coordinate)
-								{
-									xi_coordinate = 0.0;
-								}
-								if (xi_coordinate > 1.0)
-								{
-									xi_coordinate = 1.0;
-								}
-								/* get xi_offset = lower grid number for cell in xi_coordinate
-									 i, and xi_coordinate = fractional xi value in grid cell */
-								if (1.0 == xi_coordinate)
-								{
-									if (number_in_xi[i] > 0)
-									{
-										xi_offset=number_in_xi[i]-1;
-									}
-									else
-									{
-										xi_offset=0;
-									}
-								}
-								else
-								{
-									xi_coordinate *= (FE_value)(number_in_xi[i]);
-									xi_offset=(int)floor((double)xi_coordinate);
-									xi_coordinate -= (FE_value)xi_offset;
-								}
-								offset += xi_offset*this->component_grid_offset_in_xi[this_comp_no][i];
-								/* add grid_offset in xi_coordinate i for neighbouring grid
-									 points around the linear cell */
-								element_value_offset=element_value_offsets;
-								for (l=m;l>0;l--)
-								{
-									element_value_offset[m]=(*element_value_offset)+
-										this->component_grid_offset_in_xi[this_comp_no][i];
-									element_value_offset++;
-								}
-								temp = 1.0 - xi_coordinate;
-								FE_value *basis_value = basis_values;
-								if (derivative)
-								{
-									// derivatives are w.r.t. element xi, not the grid element xi
-									FE_value grid_xi_scaling = static_cast<FE_value>(number_in_xi[i]);
-									for (j=1;j<=i;j++)
-									{
-										basis_value = basis_values + (j*number_of_values + m);
-										for (l=m;l>0;l--)
-										{
-											basis_value--;
-											basis_value[m]=(*basis_value)*xi_coordinate;
-											*basis_value *= temp;
-										}
-									}
-									j=(i+1)*number_of_values;
-									basis_value = basis_values + m;
-									for (l=m;l>0;l--)
-									{
-										basis_value--;
-										basis_value[j]= -(*basis_value)*grid_xi_scaling;
-										basis_value[j+m]= (*basis_value)*grid_xi_scaling;
-									}
-								}
-								basis_value = basis_values + m;
-								for (l=m;l>0;l--)
-								{
-									basis_value--;
-									basis_value[m]=(*basis_value)*xi_coordinate;
-									*basis_value *= temp;
-								}
-								m *= 2;
-								i++;
-							}
-						}
-						if (return_code)
-						{
-							size=get_Value_storage_size(this->field->value_type,
-								(struct FE_time_sequence *)NULL);
-							component_grid_values_storage=
-								this->component_grid_values_storage + this_comp_no;
+						if (different_grid_xi)
+							this->grid_basis_function_evaluation.invalidate();
 
-							element_values_storage=
-								(*component_grid_values_storage)+size*offset;
+						// fill component values from grid parameters in this grid cell
+						// these are for linear Lagrange interpolation for dimension
+						const int size = get_Value_storage_size(this->field->value_type, (struct FE_time_sequence *)NULL);
+						const Value_storage **component_grid_values_storage = this->component_grid_values_storage + this_comp_no;
+						const int number_of_values = *number_of_element_values_ptr;
+						FE_value *set_element_values = *element_values_ptr;
+						for (int i = 0; i < number_of_values; ++i)
+						{
+							int offset = grid_base_offset;
+							for (int d = 0; d < dimension; ++d)
+								if (i & (1 << d))
+									offset += this->component_grid_offset_in_xi[this_comp_no][d];
+							set_element_values[i] = *(reinterpret_cast<const FE_value*>(*component_grid_values_storage + size*offset));
+						}
+
+						// convert linear Lagrange parameters to monomial: 1 x y xy z xz xy xyz
+						// first parameter at xi = (0,0,0) is unchanged
+						for (int i = 1; i < number_of_values; ++i)
+						{
+							FE_value delta = set_element_values[0];
+							for (int j = 1; j < i; ++j)
+								if ((i & j) == j)
+									delta += set_element_values[j];
+							set_element_values[i] -= delta;
+						}
+
+						// interpolate
+						const int standard_basis_function_arguments[] = { dimension, 1, 1, 1 };
+						const FE_value *basis_values = this->grid_basis_function_evaluation.evaluate(
+							monomial_basis_functions, standard_basis_function_arguments, grid_xi, derivative_order);
+						if (!basis_values)
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_evaluation::evaluate_real.  Error calculating grid standard basis");
+							return_code = 0;
+							break;
+						}
+						else
+						{
+							// calculate field value as a dot product of the element and basis values
 							const FE_value *basis_value = basis_values;
-							sum=0;
-							element_value_offset=element_value_offsets;
-							for (j=number_of_values;j>0;j--)
+							for (int k = 0; k < number_of_derivatives; ++k)
 							{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-								sum += (double)(*basis_value)*(double)(*((FE_value *)(
-									element_values_storage+size*(*element_value_offset))));
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								sum += (*basis_value)*(*((FE_value *)(
-									element_values_storage+size*(*element_value_offset))));
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								element_value_offset++;
-								basis_value++;
-							}
-							*calculated_value=(FE_value)sum;
-							if (derivative)
-							{
-								for (k=number_of_xi_coordinates;k>0;k--)
+								const FE_value *element_value = *element_values_ptr;
+								FE_value sum = 0.0;
+								// keep this loop simple & let compiler optimise it
+								for (int j = 0; j < number_of_values; ++j)
+									sum += element_value[j]*basis_value[j];
+								if (derivative_order)
 								{
-									sum=0;
-									element_value_offset=element_value_offsets;
-									for (j=number_of_values;j>0;j--)
+									// scale grid derivatives to be w.r.t. parent element xi
+									int j = k;
+									for (int o = 0; o < derivative_order; ++o)
 									{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-										sum += (double)(*basis_value)*(double)(*((FE_value *)(
-											element_values_storage+size*(*element_value_offset))));
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										sum += (*basis_value)*(*((FE_value *)(
-											element_values_storage+size*(*element_value_offset))));
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										element_value_offset++;
-										basis_value++;
+										sum *= number_in_xi_real[j % dimension];
+										j /= dimension;
 									}
-									*derivative=(FE_value)sum;
-									derivative++;
 								}
+								*calculated_value = sum;
+								++calculated_value;
+								basis_value += number_of_values;
 							}
 						}
 					}
 					else
 					{
 						/* standard interpolation */
-						number_of_values = *component_number_of_values;
 						const FE_value *basis_values = basis_function_evaluation.evaluate(
-							*component_standard_basis_function, *component_standard_basis_function_arguments, xi_coordinates);
+							*standard_basis_function_ptr, *standard_basis_function_arguments_ptr, xi_coordinates, derivative_order);
 						if (!basis_values)
 						{
-							display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
-								"Error calculating standard basis");
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_evaluation::evaluate_real.  Error calculating standard basis");
 							return_code = 0;
+							break;
 						}
 						else
 						{
-							/* calculate the element field value as a dot product of the element
-								 values and the basis function values */
+							// calculate field value as a dot product of the element and basis values
+							const int number_of_values = *number_of_element_values_ptr;
 							const FE_value *basis_value = basis_values;
-							element_value = *component_values;
-							sum = 0;
-							for (j = number_of_values; j>0; j--)
+							for (int k = 0; k < number_of_derivatives; ++k)
 							{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-								sum += (double)(*element_value)*(double)(*basis_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								sum += (*element_value)*(*basis_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								basis_value++;
-								element_value++;
-							}
-							*calculated_value = (FE_value)sum;
-							if (derivative)
-							{
-								const FE_value *basis_values = basis_function_evaluation.evaluate_derivatives(
-									*component_standard_basis_function, *component_standard_basis_function_arguments, xi_coordinates, 1);
-								if (!basis_values)
-								{
-									display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
-										"Error calculating standard basis derivatives");
-									return_code = 0;
-								}
-								else
-								{
-									basis_value = basis_values;
-									for (k = number_of_xi_coordinates; k>0; k--)
-									{
-										element_value = *component_values;
-										sum = 0;
-										for (j = number_of_values; j>0; j--)
-										{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-											sum += (double)(*element_value)*(double)(*basis_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-											sum += (*element_value)*(*basis_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-											basis_value++;
-											element_value++;
-										}
-										*derivative = (FE_value)sum;
-										derivative++;
-									}
-								}
+								const FE_value *element_value = *element_values_ptr;
+								FE_value sum = 0.0;
+								// keep this loop simple & let compiler optimise it
+								for (int j = 0; j < number_of_values; ++j)
+									sum += element_value[j]*basis_value[j];
+								*calculated_value = sum;
+								++calculated_value;
+								basis_value += number_of_values;
 							}
 						}
 					}
-					component_number_of_values++;
-					component_values++;
-					component_standard_basis_function++;
-					component_standard_basis_function_arguments++;
-					calculated_value++;
+					++number_of_element_values_ptr;
+					++element_values_ptr;
+					++standard_basis_function_ptr;
+					++standard_basis_function_arguments_ptr;
+				}
+			} break;
+			case CONSTANT_FE_FIELD:
+			case INDEXED_FE_FIELD:
+			{
+				if (derivative_order <= 0)
+				{
+					if (this->field->fe_field_type == CONSTANT_FE_FIELD)
+					{
+						for (int i = 0; i < components_to_calculate; ++i)
+						{
+							if (!get_FE_field_FE_value_value(this->field, comp_no, &values[i]))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_evaluation::evaluate_real.  "
+									"Could not get values for constant field %s", this->field->name);
+								return_code = 0;
+								break;
+							}
+							comp_no++;
+						}
+					}
+					else // (this->field->fe_field_type == INDEXED_FE_FIELD)
+					{
+						int index;
+						FE_field *indexed_field = this->field;
+						REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
+						if (this->evaluate_int(/*component_number*/0, xi_coordinates, &index))
+						{
+							/* index numbers start at 1 */
+							if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
+							{
+								int value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
+								for (int i = 0; i < components_to_calculate; ++i)
+								{
+									if (!get_FE_field_FE_value_value(indexed_field, value_no, &values[i]))
+									{
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field.  "
+											"Could not get values for indexed field %s", indexed_field->name);
+										return_code = 0;
+										break;
+									}
+									value_no += indexed_field->number_of_indexed_values;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
+									"Index field %s gave out-of-range index %d in field %s",
+									indexed_field->indexer_field->name, index, indexed_field->name);
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
+								"Could not calculate indexer field %s for field %s at %d-D element %",
+								indexed_field->indexer_field->name, indexed_field->name,
+								this->element->getDimension(), this->element->getIdentifier());
+							return_code = 0;
+						}
+						REACCESS(FE_field)(&(this->field), indexed_field);
+					}
+				}
+				else
+				{
+					/* derivatives are zero for constant and indexed fields */
+					const int values_count = number_of_derivatives*components_to_calculate;
+					for (int i = 0; 0 < values_count; ++i)
+						values[i] = 0.0;
 				}
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_field_evaluation::evaluate_real.  Unknown field type");
+				return_code = 0;
 			} break;
 		}
 	}
@@ -1132,8 +989,9 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_field_evaluation::evaluate_real.  Invalid argument(s)\n"
-			"xi_coordinates %p, values %p, jacobian %p",
-			xi_coordinates,values,jacobian);
+			"xi_coordinates %p, derivative_order %d, values %p",
+			xi_coordinates, derivative_order, values);
+		return_code = 0;
 	}
 	return (return_code);
 }
@@ -1272,7 +1130,7 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 				if (ALLOCATE(values,FE_value,components_to_calculate))
 				{
 					if (this->evaluate_real(component_number, xi_coordinates,
-						basis_function_evaluation, values, /*jacobian*/static_cast<FE_value *>(0)))
+						basis_function_evaluation, /*derivative_order*/0, values))
 					{
 						error=0;
 						for (i=0;i<components_to_calculate;i++)
