@@ -782,13 +782,13 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 							FE_value xi_coordinate = xi_coordinates[i];
 							if (xi_coordinate >= 1.0)
 							{
-								grid_xi[i] = 1.0;
+								grid_xi[i] = 1.0 + (xi_coordinate - 1.0)*number_in_xi_real[i];
 								if (number_in_xi[i] > 1)
 									grid_base_offset += (number_in_xi[i] - 1)*this->component_grid_offset_in_xi[this_comp_no][i];
 							}
 							else if (xi_coordinate <= 0.0)
 							{
-								grid_xi[i] = 0.0;
+								grid_xi[i] = xi_coordinate*number_in_xi_real[i];
 							}
 							else
 							{
