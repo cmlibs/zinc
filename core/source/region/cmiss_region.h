@@ -46,26 +46,30 @@ Implements advanced hierarchical functionality through context objects stored
 within it. Type and role of context objects are not known to the cmzn_region.
 ==============================================================================*/
 
-struct cmzn_region_changes
-/*******************************************************************************
-LAST MODIFIED : 11 March 2010
-
-DESCRIPTION :
-Data broadcast with callbacks from <cmzn_region> describing the changes.
-==============================================================================*/
+/** Data broadcast with callbacks from <cmzn_region> describing the changes. */
+class cmzn_region_changes
 {
+public:
 	/* true if the name of this region has changed */
 	int name_changed;
 	/* true if children added, removed or reordered in cmzn_region */
 	int children_changed;
 	/* if a single child has been added (and none removed) it is indicated here */
-	struct cmzn_region *child_added;
+	struct cmzn_region *child_added;  // currently region responsibility to reference count
 	/* if a single child has been removed (and none added) it is indicated here */
-	struct cmzn_region *child_removed;
-}; /* struct cmzn_region_changes */
+	struct cmzn_region *child_removed;  // currently region responsibility to reference count
+
+	cmzn_region_changes() :
+		name_changed(0),
+		children_changed(0),
+		child_added(nullptr),
+		child_removed(nullptr)
+	{
+	}
+};
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
-	struct cmzn_region *, struct cmzn_region_changes *, void);
+	struct cmzn_region *, cmzn_region_changes *, void);
 
 /*
 Global functions
@@ -138,7 +142,7 @@ LAST MODIFIED : 2 December 2002
 DESCRIPTION :
 Adds a callback to <region> so that when it changes <function> is called with
 <user_data>. <function> has 3 arguments, a struct cmzn_region *, a
-struct cmzn_region_changes * and the void *user_data.
+cmzn_region_changes * and the void *user_data.
 ==============================================================================*/
 
 int cmzn_region_remove_callback(struct cmzn_region *region,

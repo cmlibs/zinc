@@ -84,7 +84,7 @@ int GET_UNIQUE_SCENE_NAME()
 }
 
 static void cmzn_scene_region_change(struct cmzn_region *region,
-	struct cmzn_region_changes *region_changes, void *scene_void);
+	cmzn_region_changes *region_changes, void *scene_void);
 
 DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_transformation, void)
 
@@ -859,7 +859,7 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 }
 
 static void cmzn_scene_region_change(struct cmzn_region *region,
-	struct cmzn_region_changes *region_changes, void *scene_void)
+	cmzn_region_changes *region_changes, void *scene_void)
 {
 	cmzn_scene *scene = static_cast<cmzn_scene *>(scene_void);
 	if (region && region_changes && scene)
