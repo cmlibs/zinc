@@ -29,6 +29,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_wrappers.cpp
 	source/computed_field/differential_operator.cpp
 	source/computed_field/field_cache.cpp
+	source/computed_field/field_derivative.cpp
 	source/computed_field/field_module.cpp
 	source/computed_field/fieldassignmentprivate.cpp
 	source/computed_field/fieldsmoothingprivate.cpp
@@ -60,6 +61,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_wrappers.h
 	source/computed_field/differential_operator.hpp
 	source/computed_field/field_cache.hpp
+	source/computed_field/field_derivative.hpp
 	source/computed_field/field_module.hpp
 	source/computed_field/fieldassignmentprivate.hpp
 	source/computed_field/fieldsmoothingprivate.hpp

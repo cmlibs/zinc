@@ -733,7 +733,7 @@ const FE_value *Standard_basis_function_evaluation::evaluate_full(
 	}
 	if (derivative_order_in > this->derivative_order_maximum)
 	{
-		if (derivative_order_in > 4)  // limit to avoid large allocations
+		if (derivative_order_in > MAXIMUM_FIELD_DERIVATIVE_ORDER)  // limit to avoid large allocations
 		{
 			display_message(WARNING_MESSAGE, "FE_basis_function_values::evaluate_full.  Derivative order too high");
 			return 0;
