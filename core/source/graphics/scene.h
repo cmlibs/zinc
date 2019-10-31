@@ -538,11 +538,12 @@ int Scene_render_webgl(cmzn_scene_id scene,
 int Scene_get_number_of_graphics_with_type_in_tree(
 	cmzn_scene_id scene, cmzn_scenefilter_id scenefilter, enum cmzn_graphics_type type);
 
+/* this include surfaces graphics and line graphics with surfaces (cylinder)*/
 int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter);
 
-/* this include surfaces graphics and line graphics with surfaces (cylinder)*/
-int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
+/* this include graphics with  line primitves*/
+int Scene_get_number_of_graphics_with_line_vertices_in_tree(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter);
 
 /* Only glyphs with surfaces are compatible at this moment */

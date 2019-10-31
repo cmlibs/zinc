@@ -1342,3 +1342,99 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 	return 0;
 }
 
+/* Export surfaces graphics into a json format recognisable by threejs. */
+int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time_step)
+{
+	if (object)
+	{
+		int buffer_binding = object->buffer_binding;
+		object->buffer_binding = 1;
+		unsigned int line_index;
+		unsigned int line_count = object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			data_values_per_vertex = 0, data_vertex_count = 0;
+		GLfloat *position_buffer = 0;
+		GLfloat *data_buffer = 0;
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			&position_buffer, &position_values_per_vertex, &position_vertex_count);
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			&data_buffer, &data_values_per_vertex, &data_vertex_count);
+
+		/* cannot use the index as i will be using GL_LINE for rendering on threejs */
+		FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
+		int totalVertices =0;
+
+		for (line_index = 0; line_index < line_count; line_index++)
+		{
+			unsigned int index_count = 0;
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				line_index, 1, &index_count);
+			totalVertices += (index_count - 1) * 2;
+		}
+
+		GLfloat *positions = 0;
+		ALLOCATE(positions, GLfloat, position_values_per_vertex * totalVertices);
+
+		int currentIndex = 0;
+
+		for (line_index = 0; line_index < line_count; line_index++)
+		{
+			unsigned int i, index_start, index_count;
+			GLfloat *position_vertex = 0;
+
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				line_index, 1, &index_start);
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				line_index, 1, &index_count);
+			position_vertex = position_buffer + position_values_per_vertex * index_start;
+
+			for (i = 0; i < index_count; ++i)
+			{
+				for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+				{
+					positions[currentIndex+j] = position_vertex[j];
+				}
+				currentIndex += position_values_per_vertex;
+				if ((i != 0) && (i != index_count - 1))
+				{
+					for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+					{
+						positions[currentIndex+j] = position_vertex[j];
+					}
+					currentIndex += position_values_per_vertex;
+				}
+				position_vertex += position_values_per_vertex;
+			}
+		}
+		if (time_step == 0)
+		{
+			writeVertexBuffer("vertices", 	positions, position_values_per_vertex, totalVertices);
+		}
+		if (number_of_time_steps > 1)
+		{
+			if (morphVertices)
+			{
+				morphVerticesExported = true;
+				writeMorphVertexBuffer("vertices", &verticesMorphString, positions,
+					position_values_per_vertex, totalVertices, time_step);
+			}
+		}
+		if (time_step == 0)
+		{
+			writeIndexBuffer(object, 0, totalVertices, 0);
+		}
+		object->buffer_binding = buffer_binding;
+		DEALLOCATE(positions);
+		return 1;
+	}
+
+	return 0;
+
+}
+

@@ -210,3 +210,23 @@ public:
 };
 
 
+/* class for export point into WebGL format.
+ */
+class Threejs_export_line : public Threejs_export_point
+{
+
+public:
+
+	Threejs_export_line(const char *filename_in, int number_of_time_steps_in,
+		cmzn_streaminformation_scene_io_data_type mode_in,
+		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		double *textureSizesIn, char *groupNameIn) :
+			Threejs_export_point(filename_in, number_of_time_steps_in,
+		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn, groupNameIn)
+	{
+	}
+
+	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
+};
+
+

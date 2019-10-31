@@ -80,6 +80,8 @@ public:
 			int numberOfResources = Scene_get_number_of_exportable_glyph_resources(scene, scenefilter);
 			numberOfResources += Scene_get_number_of_graphics_with_surface_vertices_in_tree(
 				scene, scenefilter);
+			numberOfResources += Scene_get_number_of_graphics_with_line_vertices_in_tree(
+				scene, scenefilter);
 			/* An additional resources on new metadata file describing each graphics. */
 			if (numberOfResources > 0)
 				numberOfResources += 1;
