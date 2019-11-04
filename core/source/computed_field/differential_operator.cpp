@@ -12,6 +12,16 @@
 #include "computed_field/differential_operator.hpp"
 #include "opencmiss/zinc/status.h"
 
+cmzn_differentialoperator* cmzn_differentialoperator::create(Field_derivative *field_derivative_in, int term_in)
+{
+	if ((!field_derivative_in) || (term_in >= field_derivative_in->get_term_count()))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_differentialoperator::create.  Invalid arguments");
+		return nullptr;
+	}
+	return new cmzn_differentialoperator(field_derivative_in, term_in);
+}
+
 cmzn_differentialoperator_id cmzn_differentialoperator_access(
 	cmzn_differentialoperator_id differential_operator)
 {

@@ -15,27 +15,32 @@
 #include "opencmiss/zinc/differentialoperator.h"
 #include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"
+#include "computed_field/field_derivative.hpp"
 
-/**
- * For now can only represent a differential differential_operator give first derivatives
- * with respect to differential_operator elements of given dimension from fe_region.
- */
+/** Currently limited to one or all terms of a Field_derivative */
 struct cmzn_differentialoperator
 {
 private:
-	FE_region *fe_region;
-	int dimension;
-	int term; // which derivative for multiple dimensions, 1 = d/dx1
+	Field_derivative *field_derivative;  // accessed
+	int term; // starting at 0 or negative for all
 	int access_count;
 
-public:
-	cmzn_differentialoperator(FE_region *fe_region, int dimension, int term) :
-		fe_region(ACCESS(FE_region)(fe_region)),
-		dimension(dimension),
-		term(term),
+	cmzn_differentialoperator(Field_derivative *field_derivative_in, int term_in) :
+		field_derivative(field_derivative_in->access()),
+		term(term_in),
 		access_count(1)
 	{
 	}
+
+	~cmzn_differentialoperator()
+	{
+		Field_derivative::deaccess(this->field_derivative);
+	}
+
+public:
+
+	/** @param term_in  Term from 0 to number-1, or negative for all terms */
+	static cmzn_differentialoperator* create(Field_derivative *field_derivative_in, int term_in);
 
 	cmzn_differentialoperator_id access()
 	{
@@ -54,15 +59,16 @@ public:
 		return CMZN_OK;
 	}
 
-	int getDimension() const { return dimension; }
-	FE_region *getFeRegion() const { return fe_region; }
-	int getTerm() const { return term; }
-
-private:
-
-	~cmzn_differentialoperator()
+	int getElementDimension() const
 	{
-		DEACCESS(FE_region)(&fe_region);
+		if (this->field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI)
+			return static_cast<Field_derivative_element_xi*>(this->field_derivative)->get_element_dimension();
+		return 0;
+	}
+
+	int getTerm() const
+	{
+		return this->term;
 	}
 
 };

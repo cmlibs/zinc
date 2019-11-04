@@ -92,14 +92,18 @@ public:
 		return this->region;
 	}
 
+	/** @return  Number of individually evaluatable terms. 0 if variable */
+	virtual int get_term_count() const = 0;
+
 	Type get_type() const
 	{
 		return this->type;
 	}
 
-	void access()
+	Field_derivative *access()
 	{
 		++access_count;
+		return this;
 	}
 
 	static int deaccess(Field_derivative* &field_derivative);
@@ -120,6 +124,14 @@ public:
 	int get_element_dimension() const
 	{
 		return this->element_dimension;
+	}
+
+	virtual int get_term_count() const
+	{
+		int term_count = this->element_dimension;
+		for (int d = 1; d < this->element_dimension; ++d)
+			term_count *= this->element_dimension;
+		return term_count;
 	}
 
 };

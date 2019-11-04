@@ -1497,8 +1497,9 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		const Field_location_element_xi *element_xi_location = cache->get_location_element_xi();
 		if (element_xi_location)
 		{
-			int element_dimension = element_xi_location->get_element_dimension();
-			if (element_dimension == differential_operator->getDimension())
+			const int element_dimension = element_xi_location->get_element_dimension();
+			const int term = differential_operator->getTerm();
+			if ((element_dimension == differential_operator->getElementDimension()) && (term >= 0))
 			{
 				FieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, element_dimension);
 				if (valueCache)
@@ -1506,7 +1507,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 					RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
 					if (realValueCache.derivatives_valid)
 					{
-						FE_value *derivative = realValueCache.derivatives + (differential_operator->getTerm() - 1);
+						FE_value *derivative = realValueCache.derivatives + term;
 						for (int i = 0; i < field->number_of_components; i++)
 						{
 							values[i] = *derivative;
