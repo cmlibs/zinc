@@ -360,12 +360,18 @@ class EXReader
 	IO_stream *input_file;
 	bool useData;  // True if reading datapoints by default, otherwise nodes
 	FE_import_time_index *timeIndex;
+	cmzn_region *region;  // accessed
+	cmzn_fieldmodule *fieldmodule;  // accessed
 	FE_region *fe_region;
 	FE_mesh *mesh;
 	FE_nodeset *nodeset;
+	// current group field and subobject groups being read into
+	cmzn_field_group *fieldGroup;  // accessed
+	cmzn_nodeset_group *nodesetGroup;  // accessed
+	cmzn_mesh_group *meshGroup;  // accessed
 	// cache of latest node and element field header:
 	FE_element_shape* elementShape;
-	FE_node_template *node_template;
+	FE_node_template *nodetemplate;
 	cmzn_elementtemplate *elementtemplate;
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
@@ -379,11 +385,16 @@ public:
 		input_file(input_fileIn),
 		useData(false),
 		timeIndex(timeIndexIn),
+		region(nullptr),
+		fieldmodule(nullptr),
 		fe_region(0),
 		mesh(0),
 		nodeset(0),
+		fieldGroup(nullptr),
+		nodesetGroup(nullptr),
+		meshGroup(nullptr),
 		elementShape(0),
-		node_template(0),
+		nodetemplate(0),
 		elementtemplate(0),
 		hasElementValues(false),
 		fileLocation(0)
@@ -395,22 +406,131 @@ public:
 		this->clearHeaderCache();
 		if (this->fileLocation)
 			DEALLOCATE(this->fileLocation);
+		this->clearGroup();
+		this->clearRegion();
+	}
+
+	void clearGroup()
+	{
+		cmzn_field_group_destroy(&(this->fieldGroup));
+		this->clearSubelementGroups();
+	}
+
+	void clearSubelementGroups()
+	{
+		cmzn_nodeset_group_destroy(&(this->nodesetGroup));
+		cmzn_mesh_group_destroy(&(this->meshGroup));
+	}
+
+	void clearRegion()
+	{
+		cmzn_region_destroy(&(this->region));
+		cmzn_fieldmodule_destroy(&(this->fieldmodule));
 	}
 
 	cmzn_region *getRegion() const
 	{
-		if (this->fe_region)
-			return FE_region_get_cmzn_region(this->fe_region);
-		return 0;
+		return this->region;
 	}
 
 	bool setRegion(cmzn_region *regionIn)
 	{
 		if (!regionIn)
 			return false;
-		this->fe_region = cmzn_region_get_FE_region(regionIn);
+		this->clearRegion();
+		this->region = cmzn_region_access(regionIn);
+		this->fieldmodule = cmzn_region_get_fieldmodule(this->region);
+		this->fe_region = cmzn_region_get_FE_region(this->region);
+		this->clearGroup();
 		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
 			this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
+	}
+
+	cmzn_field_group *getFieldGroup() const
+	{
+		return this->fieldGroup;
+	}
+
+	bool setFieldGroup(cmzn_field_group *fieldGroupIn)
+	{
+		this->clearGroup();
+		if (!fieldGroupIn)
+			return true;
+		if (Computed_field_get_region(cmzn_field_group_base_cast(fieldGroupIn)) != this->region)
+		{
+			display_message(ERROR_MESSAGE, "EXReader::setGroup.  Invalid group for region.  %s", this->getFileLocation());
+			return false;
+		}
+		cmzn_field_access(cmzn_field_group_base_cast(fieldGroupIn));
+		this->fieldGroup = fieldGroupIn;
+		return true;
+	}
+
+	bool setFieldGroupOfName(const char *name)
+	{
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(this->fieldmodule, name);
+		cmzn_field_group *group = nullptr;
+		if (field)
+		{
+			group = cmzn_field_cast_group(field);
+			cmzn_field_destroy(&field);
+			if (!group)
+			{
+				display_message(ERROR_MESSAGE,
+					"EXReader.  Could not create group \'%s\' as name is in use by another field.  %s",
+					name, this->getFileLocation());
+				return false;
+			}
+		}
+		else
+		{
+			field = cmzn_fieldmodule_create_field_group(this->fieldmodule);
+			cmzn_field_set_managed(field, true);
+			cmzn_field_set_name(field, name);
+			group = cmzn_field_cast_group(field);
+			cmzn_field_destroy(&field);
+			if (!group)
+			{
+				display_message(ERROR_MESSAGE,
+					"EXReader.  Could not create group \'%s\'.  %s", name, this->getFileLocation());
+				return false;
+			}
+		}
+		bool result = this->setFieldGroup(group);
+		cmzn_field_group_destroy(&group);
+		return result;
+	}
+
+	/** @return  Non-accessed mesh group or nullptr if none */
+	cmzn_mesh_group *getMeshGroup()
+	{
+		if ((!this->meshGroup) && (this->fieldGroup) && (this->mesh))
+		{
+			cmzn_mesh *extMesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, this->mesh->getDimension());
+			cmzn_field_element_group_id fieldElementGroup = cmzn_field_group_get_field_element_group(this->fieldGroup, extMesh);
+			if (!fieldElementGroup)
+				fieldElementGroup = cmzn_field_group_create_field_element_group(this->fieldGroup, extMesh);
+			this->meshGroup = cmzn_field_element_group_get_mesh_group(fieldElementGroup);
+			cmzn_field_element_group_destroy(&fieldElementGroup);
+			cmzn_mesh_destroy(&extMesh);
+		}
+		return this->meshGroup;
+	}
+
+	/** @return  Non-accessed nodeset group or nullptr if none */
+	cmzn_nodeset_group *getNodesetGroup()
+	{
+		if ((!this->nodesetGroup) && (this->fieldGroup) && (this->nodeset))
+		{
+			cmzn_nodeset *extNodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, this->nodeset->getFieldDomainType());
+			cmzn_field_node_group_id fieldNodeGroup = cmzn_field_group_get_field_node_group(this->fieldGroup, extNodeset);
+			if (!fieldNodeGroup)
+				fieldNodeGroup = cmzn_field_group_create_field_node_group(this->fieldGroup, extNodeset);
+			this->nodesetGroup = cmzn_field_node_group_get_nodeset_group(fieldNodeGroup);
+			cmzn_field_node_group_destroy(&fieldNodeGroup);
+			cmzn_nodeset_destroy(&extNodeset);
+		}
+		return this->nodesetGroup;
 	}
 
 	void setUseDataMetaFlag(bool useDataIn)
@@ -434,9 +554,10 @@ public:
 		this->mesh = 0;
 		this->nodeset = nodesetIn;
 		this->clearHeaderCache();
+		this->clearSubelementGroups();
 		// set default blank node template for nodeset:
-		this->node_template = this->nodeset->create_FE_node_template();
-		if (0 == this->node_template)
+		this->nodetemplate = this->nodeset->create_FE_node_template();
+		if (0 == this->nodetemplate)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
 			return false;
@@ -460,6 +581,7 @@ public:
 		this->mesh = meshIn;
 		this->nodeset = this->mesh->getNodeset();
 		this->clearHeaderCache();
+		this->clearSubelementGroups();
 		return true;
 	}
 
@@ -496,7 +618,7 @@ private:
 
 	void clearHeaderCache(bool clearElementShape = true)
 	{
-		cmzn::Deaccess(this->node_template);
+		cmzn::Deaccess(this->nodetemplate);
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -1496,7 +1618,7 @@ bool EXReader::readFieldValues()
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
 	}
-	if (!((this->node_template || this->elementtemplate)))
+	if (!((this->nodetemplate || this->elementtemplate)))
 	{
 		display_message(ERROR_MESSAGE, "EXReader.  Must have a current node or element template to read field values.  %s", this->getFileLocation());
 		return false;
@@ -1648,7 +1770,7 @@ bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
  */
 bool EXReader::readNodeHeaderField()
 {
-	if (!(this->nodeset && this->node_template))
+	if (!(this->nodeset && this->nodetemplate))
 		return false;
 	// first read non-merged field declaration without node-specific data
 	FE_field *field = this->readField();
@@ -1835,7 +1957,7 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (result)
 		{
-			if (define_FE_field_at_node(node_template->get_template_node(), field,
+			if (define_FE_field_at_node(this->nodetemplate->get_template_node(), field,
 				componentNfts.data(), fe_time_sequence))
 			{
 				this->headerFields.push_back(field);
@@ -1866,8 +1988,8 @@ bool EXReader::readNodeHeader()
 		return false;
 	}
 	this->clearHeaderCache();
-	this->node_template = this->nodeset->create_FE_node_template();
-	if (!this->node_template)
+	this->nodetemplate = this->nodeset->create_FE_node_template();
+	if (!this->nodetemplate)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create node template.  %s", this->getFileLocation());
 		return false;
@@ -1892,7 +2014,7 @@ bool EXReader::readNodeHeader()
 /**
  * Reads a node from stream, adding or merging into current nodeset.
  * If a node of that identifier already exists, parsed data is put into the
- * node_template and merged into the existing node.
+ * nodetemplate and merged into the existing node.
  * If there is no existing node of that identifier a new node is read and merged
  * directly.
  * @return  On success, ACCESSed node, otherwise 0.
@@ -1904,7 +2026,7 @@ cmzn_node *EXReader::readNode()
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Node token.  %s", this->getFileLocation());
 		return 0;
 	}
-	if (!((this->nodeset) && (this->node_template)))
+	if (!((this->nodeset) && (this->nodetemplate)))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set or no node template found.  %s", this->getFileLocation());
 		return 0;
@@ -1923,7 +2045,7 @@ cmzn_node *EXReader::readNode()
 	}
 	else
 	{
-		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->node_template);
+		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->nodetemplate);
 		if (!returnNode)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not create node with number %d.  %s", nodeIdentifier, this->getFileLocation());
@@ -1932,7 +2054,7 @@ cmzn_node *EXReader::readNode()
 	}
 	bool result = true;
 	// fill template node if node with identifier already exists (and merge below), otherwise new node
-	FE_node *node = existingNode ? node_template->get_template_node() : returnNode;
+	FE_node *node = existingNode ? nodetemplate->get_template_node() : returnNode;
 	const size_t fieldCount = this->headerFields.size();
 	for (size_t f = 0; (f < fieldCount) && result; ++f)
 	{
@@ -2136,7 +2258,7 @@ cmzn_node *EXReader::readNode()
 	}
 	if (result && existingNode && (fieldCount > 0)) // nothing to merge if no fields
 	{
-		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->node_template))
+		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->nodetemplate))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
 				nodeIdentifier, this->getFileLocation());
@@ -4014,9 +4136,6 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 	EXReader exReader(input_file, time_index);
 	exReader.setUseDataMetaFlag(use_data != 0);
 	cmzn_region_begin_hierarchical_change(root_region);
-	cmzn_field_group_id group = 0;
-	cmzn_nodeset_group_id nodeset_group = 0;
-	cmzn_mesh_group_id mesh_group = 0;
 	char first_character_in_token, test_string[5];
 	int return_code = 1;
 	while (return_code)
@@ -4032,9 +4151,6 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 			case 'R': /* Region : </path> */
 			case 'G': /* Group name : <name> */
 			{
-				cmzn_field_group_destroy(&group);
-				cmzn_nodeset_group_destroy(&nodeset_group);
-				cmzn_mesh_group_destroy(&mesh_group);
 				/* Use a %1[:] so that a successful read will return 1 */
 				int valid_token = 0;
 				if ('R' == first_character_in_token)
@@ -4108,11 +4224,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					}
 					else
 					{
-						cmzn_region *region = exReader.getRegion();
 						if (0 == exReader.getRegion())
 						{
-							region = root_region;
-							if (!exReader.setRegion(region))
+							if (!exReader.setRegion(root_region))
 							{
 								display_message(ERROR_MESSAGE, "EX Reader.  Could not set root region.  %s", exReader.getFileLocation());
 								return_code = 0;
@@ -4120,36 +4234,12 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						}
 						if (return_code)
 						{
-							cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-							cmzn_field_id group_field = cmzn_fieldmodule_find_field_by_name(field_module, region_path);
-							if (group_field)
+							if (!exReader.setFieldGroupOfName(region_path))
 							{
-								group = cmzn_field_cast_group(group_field);
-								if (!group)
-								{
-									display_message(ERROR_MESSAGE,
-										"EX Reader.  Could not create group \'%s\' as name in use by other field.  %s",
-										region_path, exReader.getFileLocation());
-									return_code = 0;
-								}
+								display_message(ERROR_MESSAGE,
+									"EX Reader.  Could not create group \'%s\'.  %s", region_path, exReader.getFileLocation());
+								return_code = 0;
 							}
-							else
-							{
-								group_field = cmzn_fieldmodule_create_field_group(field_module);
-								cmzn_field_set_managed(group_field, true);
-								if (cmzn_field_set_name(group_field, region_path))
-								{
-									group = cmzn_field_cast_group(group_field);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"EX Reader.  Could not create group \'%s\'.  %s", region_path, exReader.getFileLocation());
-									return_code = 0;
-								}
-							}
-							cmzn_field_destroy(&group_field);
-							cmzn_fieldmodule_destroy(&field_module);
 						}
 					}
 				}
@@ -4159,7 +4249,6 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 			{
 				if (!exReader.readElementShape())
 					return_code = 0;
-				cmzn_mesh_group_destroy(&mesh_group); // since could be a different dimension
 			} break;
 			case '!': /* !# directive, otherwise ! Comment ignored to end of line */
 			{
@@ -4189,21 +4278,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 				cmzn_node *node = exReader.readNode();
 				if (node)
 				{
-					if (group && (!nodeset_group))
-					{
-						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(exReader.getRegion());
-						cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
-							exReader.getNodeset()->getFieldDomainType());
-						cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-						if (!node_group)
-							node_group = cmzn_field_group_create_field_node_group(group, nodeset);
-						nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
-						cmzn_field_node_group_destroy(&node_group);
-						cmzn_nodeset_destroy(&nodeset);
-						cmzn_fieldmodule_destroy(&field_module);
-					}
-					if (nodeset_group)
-						cmzn_nodeset_group_add_node(nodeset_group, node);
+					cmzn_nodeset_group *nodesetGroup = exReader.getNodesetGroup();
+					if (nodesetGroup)
+						cmzn_nodeset_group_add_node(nodesetGroup, node);
 					DEACCESS(FE_node)(&node);
 				}
 				else
@@ -4220,20 +4297,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					cmzn_element *element = exReader.readElement();
 					if (element)
 					{
-						if (group && (!mesh_group))
-						{
-							cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(exReader.getRegion());
-							cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, exReader.getMesh()->getDimension());
-							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-							if (!element_group)
-								element_group = cmzn_field_group_create_field_element_group(group, mesh);
-							mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
-							cmzn_field_element_group_destroy(&element_group);
-							cmzn_mesh_destroy(&mesh);
-							cmzn_fieldmodule_destroy(&field_module);
-						}
-						if (mesh_group)
-							cmzn_mesh_group_add_element(mesh_group, element);
+						cmzn_mesh_group *meshGroup = exReader.getMeshGroup();
+						if (meshGroup)
+							cmzn_mesh_group_add_element(meshGroup, element);
 						cmzn_element::deaccess(element);
 					}
 					else
@@ -4277,9 +4343,6 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 			} break;
 		} /* switch (first_character_in_token) */
 	}
-	cmzn_nodeset_group_destroy(&nodeset_group);
-	cmzn_mesh_group_destroy(&mesh_group);
-	cmzn_field_group_destroy(&group);
 	cmzn_region_end_hierarchical_change(root_region);
 	return (return_code);
 }
