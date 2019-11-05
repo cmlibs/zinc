@@ -387,17 +387,17 @@ public:
 		timeIndex(timeIndexIn),
 		region(nullptr),
 		fieldmodule(nullptr),
-		fe_region(0),
-		mesh(0),
-		nodeset(0),
+		fe_region(nullptr),
+		mesh(nullptr),
+		nodeset(nullptr),
 		fieldGroup(nullptr),
 		nodesetGroup(nullptr),
 		meshGroup(nullptr),
-		elementShape(0),
-		nodetemplate(0),
-		elementtemplate(0),
+		elementShape(nullptr),
+		nodetemplate(nullptr),
+		elementtemplate(nullptr),
 		hasElementValues(false),
-		fileLocation(0)
+		fileLocation(nullptr)
 	{
 	}
 
@@ -426,6 +426,7 @@ public:
 	{
 		cmzn_region_destroy(&(this->region));
 		cmzn_fieldmodule_destroy(&(this->fieldmodule));
+		this->fe_region = nullptr;
 	}
 
 	cmzn_region *getRegion() const
@@ -551,7 +552,7 @@ public:
 			display_message(ERROR_MESSAGE, "EXReader::setNodeset.  Invalid nodeset for region.  %s", this->getFileLocation());
 			return false;
 		}
-		this->mesh = 0;
+		this->mesh = nullptr;
 		this->nodeset = nodesetIn;
 		this->clearHeaderCache();
 		this->clearSubelementGroups();
