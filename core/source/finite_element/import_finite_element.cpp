@@ -371,7 +371,7 @@ class EXReader
 	cmzn_mesh_group *meshGroup;  // accessed
 	// cache of latest node and element field header:
 	FE_element_shape* elementShape;
-	FE_node_template *nodetemplate;
+	FE_node_template *fe_node_template;
 	cmzn_elementtemplate *elementtemplate;
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
@@ -394,7 +394,7 @@ public:
 		nodesetGroup(nullptr),
 		meshGroup(nullptr),
 		elementShape(nullptr),
-		nodetemplate(nullptr),
+		fe_node_template(nullptr),
 		elementtemplate(nullptr),
 		hasElementValues(false),
 		fileLocation(nullptr)
@@ -557,8 +557,8 @@ public:
 		this->clearHeaderCache();
 		this->clearSubelementGroups();
 		// set default blank node template for nodeset:
-		this->nodetemplate = this->nodeset->create_FE_node_template();
-		if (0 == this->nodetemplate)
+		this->fe_node_template = this->nodeset->create_FE_node_template();
+		if (0 == this->fe_node_template)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
 			return false;
@@ -619,7 +619,7 @@ private:
 
 	void clearHeaderCache(bool clearElementShape = true)
 	{
-		cmzn::Deaccess(this->nodetemplate);
+		cmzn::Deaccess(this->fe_node_template);
 		if (clearElementShape && (this->elementShape))
 			DEACCESS(FE_element_shape)(&(this->elementShape));
 		cmzn_elementtemplate::deaccess(this->elementtemplate);
@@ -1352,7 +1352,7 @@ FE_field *EXReader::readField()
 				if (!indexer_field)
 				{
 					/* create and merge an appropriate indexer field */
-					FE_field *temp_indexer_field = CREATE(FE_field)(next_block, fe_region);
+					FE_field *temp_indexer_field = CREATE(FE_field)(next_block, this->fe_region);
 					ACCESS(FE_field)(temp_indexer_field);
 					if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
 						set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
@@ -1564,7 +1564,7 @@ FE_field *EXReader::readField()
 	if (return_code)
 	{
 		/* create the field */
-		field = CREATE(FE_field)(field_name, fe_region);
+		field = CREATE(FE_field)(field_name, this->fe_region);
 		ACCESS(FE_field)(field);
 		if (!set_FE_field_value_type(field, value_type))
 		{
@@ -1619,7 +1619,7 @@ bool EXReader::readFieldValues()
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
 	}
-	if (!((this->nodetemplate || this->elementtemplate)))
+	if (!((this->fe_node_template || this->elementtemplate)))
 	{
 		display_message(ERROR_MESSAGE, "EXReader.  Must have a current node or element template to read field values.  %s", this->getFileLocation());
 		return false;
@@ -1771,7 +1771,7 @@ bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
  */
 bool EXReader::readNodeHeaderField()
 {
-	if (!(this->nodeset && this->nodetemplate))
+	if (!(this->nodeset && this->fe_node_template))
 		return false;
 	// first read non-merged field declaration without node-specific data
 	FE_field *field = this->readField();
@@ -1958,7 +1958,7 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (result)
 		{
-			if (define_FE_field_at_node(this->nodetemplate->get_template_node(), field,
+			if (define_FE_field_at_node(this->fe_node_template->get_template_node(), field,
 				componentNfts.data(), fe_time_sequence))
 			{
 				this->headerFields.push_back(field);
@@ -1989,8 +1989,8 @@ bool EXReader::readNodeHeader()
 		return false;
 	}
 	this->clearHeaderCache();
-	this->nodetemplate = this->nodeset->create_FE_node_template();
-	if (!this->nodetemplate)
+	this->fe_node_template = this->nodeset->create_FE_node_template();
+	if (!this->fe_node_template)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create node template.  %s", this->getFileLocation());
 		return false;
@@ -2015,7 +2015,7 @@ bool EXReader::readNodeHeader()
 /**
  * Reads a node from stream, adding or merging into current nodeset.
  * If a node of that identifier already exists, parsed data is put into the
- * nodetemplate and merged into the existing node.
+ * node template and merged into the existing node.
  * If there is no existing node of that identifier a new node is read and merged
  * directly.
  * @return  On success, ACCESSed node, otherwise 0.
@@ -2027,7 +2027,7 @@ cmzn_node *EXReader::readNode()
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Node token.  %s", this->getFileLocation());
 		return 0;
 	}
-	if (!((this->nodeset) && (this->nodetemplate)))
+	if (!((this->nodeset) && (this->fe_node_template)))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set or no node template found.  %s", this->getFileLocation());
 		return 0;
@@ -2046,7 +2046,7 @@ cmzn_node *EXReader::readNode()
 	}
 	else
 	{
-		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->nodetemplate);
+		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->fe_node_template);
 		if (!returnNode)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not create node with number %d.  %s", nodeIdentifier, this->getFileLocation());
@@ -2055,7 +2055,7 @@ cmzn_node *EXReader::readNode()
 	}
 	bool result = true;
 	// fill template node if node with identifier already exists (and merge below), otherwise new node
-	FE_node *node = existingNode ? nodetemplate->get_template_node() : returnNode;
+	FE_node *node = existingNode ? this->fe_node_template->get_template_node() : returnNode;
 	const size_t fieldCount = this->headerFields.size();
 	for (size_t f = 0; (f < fieldCount) && result; ++f)
 	{
@@ -2259,7 +2259,7 @@ cmzn_node *EXReader::readNode()
 	}
 	if (result && existingNode && (fieldCount > 0)) // nothing to merge if no fields
 	{
-		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->nodetemplate))
+		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->fe_node_template))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
 				nodeIdentifier, this->getFileLocation());
