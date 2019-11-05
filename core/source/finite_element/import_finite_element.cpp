@@ -1196,7 +1196,7 @@ bool EXReader::readCommentOrDirective()
 		else
 			display_message(WARNING_MESSAGE, "EX Reader.  Can't handle arbitrary nodeset name '%s' in directive, assuming default %s.  %s",
 				domainName.c_str(), this->useData ? "datapoints" : "nodes", this->getFileLocation());
-		FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, domainType);
+		FE_nodeset *nodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, domainType);
 		if (!this->setNodeset(nodeset))
 			return false;
 	}
@@ -1348,7 +1348,7 @@ FE_field *EXReader::readField()
 			if ((EOF != IO_stream_scan(this->input_file, " Index_field = ")) &&
 				IO_stream_read_string(this->input_file, "[^,]", &next_block))
 			{
-				indexer_field = FE_region_get_FE_field_from_name(fe_region, next_block);
+				indexer_field = FE_region_get_FE_field_from_name(this->fe_region, next_block);
 				if (!indexer_field)
 				{
 					/* create and merge an appropriate indexer field */
@@ -1356,7 +1356,7 @@ FE_field *EXReader::readField()
 					ACCESS(FE_field)(temp_indexer_field);
 					if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
 						set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
-						(indexer_field = FE_region_merge_FE_field(fe_region,
+						(indexer_field = FE_region_merge_FE_field(this->fe_region,
 							temp_indexer_field))))
 					{
 						return_code = 0;
@@ -2705,7 +2705,7 @@ struct FE_basis *EXReader::readBasis()
 	FE_basis *basis = 0;
 	if (basis_type)
 	{
-		basis = FE_region_get_FE_basis_matching_basis_type(fe_region, basis_type);
+		basis = FE_region_get_FE_basis_matching_basis_type(this->fe_region, basis_type);
 		DEALLOCATE(basis_type);
 	}
 	else
