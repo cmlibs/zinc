@@ -1363,7 +1363,13 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	EXPECT_TRUE(heart_mesh.isValid());
 	FieldFindMeshLocation find_heart = zinc.fm.createFieldFindMeshLocation(plate_coordinates, coordinates, heart_mesh);
 	EXPECT_TRUE(find_heart.isValid());
+	// test cast function and type-specific APIs
+	ASSERT_EQ(find_heart, find_heart.castFindMeshLocation());
+	ASSERT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_EXACT, find_heart.getSearchMode());
 	EXPECT_EQ(RESULT_OK, find_heart.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_NEAREST, find_heart.getSearchMode());
+
 	FieldEmbedded find_heart_coordinates = zinc.fm.createFieldEmbedded(coordinates, find_heart);
 	EXPECT_TRUE(find_heart_coordinates.isValid());
 	Field find_heart_vector = find_heart_coordinates - plate_coordinates;
@@ -1460,6 +1466,48 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	}
 
 	zinc.fm.endChange();
+}
+
+TEST(ZincFieldStoredMeshLocation, valid_arguments)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	Element element = mesh3d.createElement(1, elementtemplate);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(1, mesh3d.getSize());
+
+	FieldStoredMeshLocation storedMeshLocation = zinc.fm.createFieldStoredMeshLocation(mesh3d);
+	EXPECT_TRUE(storedMeshLocation.isValid());
+	// test cast function and type-specific API
+	ASSERT_EQ(storedMeshLocation, storedMeshLocation.castStoredMeshLocation());
+	ASSERT_EQ(mesh3d, storedMeshLocation.getMesh());
+
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_TRUE(datapoints.isValid());
+	Nodetemplate nodetemplate = datapoints.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(storedMeshLocation));
+
+	// test storage
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Node datapoint = datapoints.createNode(1, nodetemplate);
+	ASSERT_TRUE(datapoint.isValid());
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
+	const double xi_in[3] = { 0.1, 0.8, 0.5 };
+	EXPECT_EQ(RESULT_OK, storedMeshLocation.assignMeshLocation(fieldcache, element, 3, xi_in));
+	// use a new fieldcache to check not returned from cache
+	fieldcache = zinc.fm.createFieldcache();
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(datapoint));
+	double xi_out[3];
+	Element element_out = storedMeshLocation.evaluateMeshLocation(fieldcache, 3, xi_out);
+	EXPECT_EQ(element, element_out);
+	for (int c = 0; c < 3; ++c)
+		EXPECT_DOUBLE_EQ(xi_in[c], xi_out[c]);
 }
 
 TEST(ZincElementfieldtemplate, element_based_constant)

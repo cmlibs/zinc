@@ -416,13 +416,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
  * coordinate chart.
  *
  * @param fieldmodule  Region field module which will own new field.
- * @param host_mesh  The host mesh for which locations are stored. Currently
+ * @param mesh  The mesh for which locations are stored. Currently
  * limited to a mesh from the same region. Note that if a mesh group is passed,
  * the master mesh is used.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
-	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id host_mesh);
+	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id mesh);
 
 /**
  * If the field is stored_mesh_location type, return type-specific handle to it.
@@ -459,6 +459,16 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_mesh_location_base_cast(
  */
 ZINC_API int cmzn_field_stored_mesh_location_destroy(
 	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address);
+
+/**
+ * Returns the mesh this field stores locations in.
+ *
+ * @param stored_mesh_location_field  The field to query.
+ * @return  Handle to the mesh, or NULL/invalid handle if none (legacy
+ * data files only) or on failure.
+ */
+ZINC_API cmzn_mesh_id cmzn_field_stored_mesh_location_get_mesh(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field);
 
 /**
  * Creates a field which stores and returns string values at nodes.

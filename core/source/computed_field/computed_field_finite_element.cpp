@@ -1569,11 +1569,31 @@ cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_fie
 	return 0;
 }
 
+inline Computed_field_finite_element *cmzn_field_stored_mesh_location_core_cast(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
+{
+	return (static_cast<Computed_field_finite_element*>(
+		reinterpret_cast<Computed_field*>(stored_mesh_location_field)->core));
+}
+
 int cmzn_field_stored_mesh_location_destroy(
 	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address)
 {
 	return cmzn_field_destroy(
 		reinterpret_cast<cmzn_field_id *>(stored_mesh_location_field_address));
+}
+
+cmzn_mesh_id cmzn_field_stored_mesh_location_get_mesh(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
+{
+	cmzn_mesh_id mesh = 0;
+	if (stored_mesh_location_field)
+	{
+		FE_mesh *fe_mesh = const_cast<FE_mesh *>(FE_field_get_element_xi_host_mesh(
+			cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field));
+		mesh = cmzn_mesh_create(fe_mesh);
+	}
+	return mesh;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_string(

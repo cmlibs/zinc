@@ -245,6 +245,9 @@ public:
 
 };
 
+/** Create external cmzn_mesh with access_count 1 from internal FE_mesh */
+cmzn_mesh *cmzn_mesh_create(FE_mesh *fe_mesh);
+
 /***************************************************************************//**
  * Ensures all faces of the supplied element are in this mesh_group.
  * Candidate for external API.
