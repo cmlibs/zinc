@@ -1510,6 +1510,36 @@ TEST(ZincFieldStoredMeshLocation, valid_arguments)
 		EXPECT_DOUBLE_EQ(xi_in[c], xi_out[c]);
 }
 
+TEST(ZincFieldStoredString, valid_arguments)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldStoredString fieldStoredString = zinc.fm.createFieldStoredString();
+	EXPECT_TRUE(fieldStoredString.isValid());
+	// test cast
+	FieldStoredString tmpFieldStoredString = fieldStoredString.castStoredString();
+	EXPECT_EQ(fieldStoredString, tmpFieldStoredString);
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(fieldStoredString));
+
+	// test storage
+	const char string_in[] = "blah!";
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Node node = nodes.createNode(1, nodetemplate);
+	ASSERT_TRUE(node.isValid());
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+	EXPECT_EQ(RESULT_OK, fieldStoredString.assignString(fieldcache, string_in));
+	// use a new fieldcache to check not returned from cache
+	fieldcache = zinc.fm.createFieldcache();
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+	char *string_out = fieldStoredString.evaluateString(fieldcache);
+	EXPECT_STREQ(string_in, string_out);
+}
+
 TEST(ZincElementfieldtemplate, element_based_constant)
 {
 	ZincTestSetupCpp zinc;

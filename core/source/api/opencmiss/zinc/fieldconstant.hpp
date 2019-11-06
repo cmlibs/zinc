@@ -20,46 +20,52 @@ namespace Zinc
 
 class FieldConstant : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConstant(cmzn_field_id field_id) : Field(field_id)
-	{ }
-
-	friend FieldConstant Fieldmodule::createFieldConstant(int valuesCount, const double *valuesIn);
-
 public:
 
 	FieldConstant() : Field(0)
 	{ }
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldConstant(cmzn_field_constant_id field_constant_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_constant_id))
+	{ }
+
 };
+
+inline FieldConstant Field::castConstant()
+{
+	return FieldConstant(cmzn_field_cast_constant(this->id));
+}
+
+inline FieldConstant Fieldmodule::createFieldConstant(int valuesCount, const double *valuesIn)
+{
+	return FieldConstant(reinterpret_cast<cmzn_field_constant_id>(
+		cmzn_fieldmodule_create_field_constant(this->id, valuesCount, valuesIn)));
+}
 
 class FieldStringConstant : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStringConstant(cmzn_field_id field_id) : Field(field_id)
-	{ }
-
-	friend FieldStringConstant Fieldmodule::createFieldStringConstant(const char *stringConstant);
-
 public:
 
 	FieldStringConstant() : Field(0)
 	{ }
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStringConstant(cmzn_field_string_constant_id field_string_constant_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_string_constant_id))
+	{ }
+
 };
 
-inline FieldConstant Fieldmodule::createFieldConstant(int valuesCount, const double *valuesIn)
+inline FieldStringConstant Field::castStringConstant()
 {
-	return FieldConstant(cmzn_fieldmodule_create_field_constant(id,
-		valuesCount, valuesIn));
+	return FieldStringConstant(cmzn_field_cast_string_constant(this->id));
 }
 
 inline FieldStringConstant Fieldmodule::createFieldStringConstant(const char *stringConstant)
 {
-	return FieldStringConstant(cmzn_fieldmodule_create_field_string_constant(id,
-		stringConstant));
+	return FieldStringConstant(reinterpret_cast<cmzn_field_string_constant_id>(
+		cmzn_fieldmodule_create_field_string_constant(this->id, stringConstant)));
 }
 
 }  // namespace Zinc

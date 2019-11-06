@@ -1192,7 +1192,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 
 cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 {
-	if (field && dynamic_cast<Computed_field_composite*>(field->core))
+	if ((field) && (dynamic_cast<Computed_field_composite*>(field->core)))
 	{
 		// ensure composite field has one source field and no values
 		if ((1 == field->number_of_source_fields) && (0 == field->number_of_source_values))
@@ -1201,7 +1201,7 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 			return (reinterpret_cast<cmzn_field_component_id>(field));
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_field_component_get_component_index(cmzn_field_component_id component)
@@ -1242,4 +1242,17 @@ int cmzn_field_component_destroy(cmzn_field_component_id *component_address)
 {
 	return cmzn_field_destroy(
 		reinterpret_cast<cmzn_field_id *>(component_address));
+}
+
+cmzn_field_constant_id cmzn_field_cast_constant(cmzn_field_id field)
+{
+	if ((field) && (dynamic_cast<Computed_field_composite*>(field->core)))
+	{
+		if ((0 == field->number_of_source_fields) && (0 < field->number_of_source_values))
+		{
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_constant_id>(field));
+		}
+	}
+	return nullptr;
 }
