@@ -38,7 +38,7 @@ public:
 	{
 	}
 
-	virtual bool attach_to_field(Computed_field *parent)
+	virtual bool attach_to_field(cmzn_field *parent)
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
@@ -101,7 +101,7 @@ private:
 
 int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Computed_field *switch_field = getSourceField(0);
+	cmzn_field *switch_field = getSourceField(0);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switch_field->evaluate(cache));
 	if (source1Cache)
 	{
@@ -271,25 +271,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_if(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two,
-	struct Computed_field *source_field_three)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IF with the supplied
-fields, <source_field_one>, <source_field_two> and <source_field_three>.
-Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two,
+	cmzn_field_id source_field_three)
 {
-	Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_if);
+	cmzn_field *field = nullptr;
 	if (source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_three &&
 		((source_field_one->number_of_components == 1) ||
@@ -298,7 +285,7 @@ although its cache may be lost.
 		(source_field_two->number_of_components ==
 			source_field_three->number_of_components))
 	{
-		Computed_field *source_fields[3];
+		cmzn_field *source_fields[3];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		source_fields[2] = source_field_three;
@@ -312,17 +299,15 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_if.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_if.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* Computed_field_create_if */
+}
 
-int Computed_field_get_type_if(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two,
-	struct Computed_field **source_field_three)
+int Computed_field_get_type_if(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two,
+	cmzn_field **source_field_three)
 /*******************************************************************************
 LAST MODIFIED : 27 July 2007
 

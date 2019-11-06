@@ -253,22 +253,21 @@ Returns allocated command string for reproducing field. Includes type.
  * NOTE: this field type has been superceded by find_mesh_location combined with
  * embedded field. DO NOT add to external API.
  */
-Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
-	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *find_element_xi_field,
-	struct Computed_field *calculate_values_field,
+cmzn_field *cmzn_fieldmodule_create_field_compose(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *texture_coordinate_field,
+	cmzn_field *find_element_xi_field,
+	cmzn_field *calculate_values_field,
 	cmzn_mesh_id search_mesh,
 	int find_nearest, int use_point_five_when_out_of_bounds)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 
-	ENTER(Computed_field_create_compose);
 	if (texture_coordinate_field && texture_coordinate_field->isNumerical() &&
 		find_element_xi_field && find_element_xi_field->isNumerical() &&
 		calculate_values_field && calculate_values_field->isNumerical() &&
 		search_mesh &&
 		(cmzn_mesh_get_region_internal(search_mesh) ==
-			cmzn_fieldmodule_get_region_internal(field_module)))
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)
@@ -276,11 +275,11 @@ Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 			if (Computed_field_is_find_element_xi_capable(
 				find_element_xi_field, /*dummy*/NULL))
 			{
-				Computed_field *source_fields[3];
+				cmzn_field *source_fields[3];
 				source_fields[0] = texture_coordinate_field;
 				source_fields[1] = find_element_xi_field;
 				source_fields[2] = calculate_values_field;
-				field = Computed_field_create_generic(field_module,
+				field = Computed_field_create_generic(fieldmodule,
 					/*check_source_field_regions*/true,
 					calculate_values_field->number_of_components,
 					/*number_of_source_fields*/3, source_fields,
@@ -291,7 +290,7 @@ Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_compose.  "
+					"cmzn_fieldmodule_create_field_compose.  "
 					"The type of find_element_xi_field supplied has not "
 					"been implemented for find_element_xi calculations.");
 			}
@@ -299,7 +298,7 @@ Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_compose.  "
+				"cmzn_fieldmodule_create_field_compose.  "
 				"The texture_coordinate_field and find_element_xi_field "
 				"must have the same number of components");
 		}
@@ -307,12 +306,10 @@ Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_compose.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_compose.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* Computed_field_create_compose */
+}
 
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the

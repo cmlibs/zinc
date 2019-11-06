@@ -1356,7 +1356,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *Computed_field_create_finite_element_internal(
+cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
 {
 	cmzn_field *field = 0;
@@ -1367,7 +1367,7 @@ cmzn_field *Computed_field_create_finite_element_internal(
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_finite_element_internal.  Region mismatch");
+				"cmzn_fieldmodule_create_field_finite_element_internal.  Region mismatch");
 			return 0;
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -1401,7 +1401,7 @@ cmzn_field *Computed_field_create_finite_element_internal(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_finite_element_internal.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_finite_element_internal.  Invalid argument(s)");
 	}
 	return (field);
 }
@@ -1846,10 +1846,10 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_cmiss_number */
 
-struct Computed_field *Computed_field_create_cmiss_number(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_cmiss_number(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -1992,10 +1992,10 @@ Returns allocated command string for reproducing field. Includes type.
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_access_count(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_access_count(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -3708,10 +3708,10 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_xi_coordinates */
 
-struct Computed_field *Computed_field_create_xi_coordinates(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_xi_coordinates(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/3,
 		/*number_of_source_fields*/0, NULL,

@@ -166,9 +166,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sin(
+cmzn_field *cmzn_fieldmodule_create_field_sin(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -181,10 +181,10 @@ Computed_field *Computed_field_create_sin(
 			new Computed_field_sin());
 	}
 	return (field);
-} /* Computed_field_create_sin */
+}
 
-int Computed_field_get_type_sin(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_sin(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -355,9 +355,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_cos(
+cmzn_field *cmzn_fieldmodule_create_field_cos(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -370,10 +370,10 @@ Computed_field *Computed_field_create_cos(
 			new Computed_field_cos());
 	}
 	return (field);
-} /* Computed_field_create_cos */
+}
 
-int Computed_field_get_type_cos(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_cos(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -545,9 +545,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_tan(
+cmzn_field *cmzn_fieldmodule_create_field_tan(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -560,10 +560,10 @@ Computed_field *Computed_field_create_tan(
 			new Computed_field_tan());
 	}
 	return (field);
-} /* Computed_field_create_tan */
+}
 
-int Computed_field_get_type_tan(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_tan(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -741,9 +741,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_asin(
+cmzn_field *cmzn_fieldmodule_create_field_asin(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -756,10 +756,10 @@ Computed_field *Computed_field_create_asin(
 			new Computed_field_asin());
 	}
 	return (field);
-} /* Computed_field_create_asin */
+}
 
-int Computed_field_get_type_asin(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_asin(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -937,9 +937,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_acos(
+cmzn_field *cmzn_fieldmodule_create_field_acos(
 		struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -952,10 +952,10 @@ Computed_field *Computed_field_create_acos(
 			new Computed_field_acos());
 	}
 	return (field);
-} /* Computed_field_create_acos */
+}
 
-int Computed_field_get_type_acos(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_acos(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1126,9 +1126,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_atan(
+cmzn_field *cmzn_fieldmodule_create_field_atan(
 		struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -1141,10 +1141,10 @@ Computed_field *Computed_field_create_atan(
 			new Computed_field_atan());
 	}
 	return (field);
-} /* Computed_field_create_atan */
+}
 
-int Computed_field_get_type_atan(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_atan(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1328,18 +1328,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_atan2(
+cmzn_field *cmzn_fieldmodule_create_field_atan2(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	struct Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		field = Computed_field_create_generic(field_module,
@@ -1352,15 +1352,15 @@ Computed_field *Computed_field_create_atan2(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_time_lookup.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_atan2.  Invalid argument(s)");
 	}
 
 	return (field);
-} /* Computed_field_create_atan2 */
+}
 
-int Computed_field_get_type_atan2(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_atan2(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

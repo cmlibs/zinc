@@ -175,11 +175,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_normalise(
+cmzn_field *cmzn_fieldmodule_create_field_normalise(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 {
-	cmzn_field_id field = 0;
+	cmzn_field *field = nullptr;
 	if (source_field)
 	{
 		field = Computed_field_create_generic(field_module,
@@ -190,7 +190,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_normalise(
 			new Computed_field_normalise());
 	}
 	return (field);
-} /* Computed_field_set_type_normalise */
+}
 
 int Computed_field_get_type_normalise(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -997,19 +997,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_magnitude(
+cmzn_field *cmzn_fieldmodule_create_field_magnitude(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/1, &source_field,
 		/*number_of_source_values*/0, NULL,
 		new Computed_field_magnitude());
-
 	return (field);
-} /* Computed_field_set_type_normalise */
+}
 
 int Computed_field_get_type_magnitude(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -1358,14 +1357,14 @@ Returns allocated command string for reproducing field. Includes type.
  * <source_field>.  Sets the number of components equal to the <source_field>.
  * ???GRC Someone needs to explain what this field does.
  */
-struct Computed_field *Computed_field_create_cubic_texture_coordinates(
-	struct cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_cubic_texture_coordinates(
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field *source_field)
 {
-	cmzn_field_id field = 0;
+	cmzn_field *field = nullptr;
 	if (source_field)
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1373,7 +1372,7 @@ struct Computed_field *Computed_field_create_cubic_texture_coordinates(
 			new Computed_field_cubic_texture_coordinates());
 	}
 	return (field);
-} /* Computed_field_set_type_normalise */
+}
 
 int Computed_field_get_type_cubic_texture_coordinates(struct Computed_field *field,
 	struct Computed_field **source_field)

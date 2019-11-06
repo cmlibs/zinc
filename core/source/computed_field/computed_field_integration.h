@@ -37,10 +37,10 @@ DESCRIPTION :
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_integration(
-	struct cmzn_fieldmodule *field_module, cmzn_mesh_id mesh,
-	cmzn_element_id seed_element, Computed_field *integrand,
-	int magnitude_coordinates, Computed_field *coordinate_field);
+cmzn_field *cmzn_fieldmodule_create_field_integration(
+	cmzn_fieldmodule *fieldmodule, cmzn_mesh_id mesh,
+	cmzn_element_id seed_element, cmzn_field *integrand,
+	int magnitude_coordinates, cmzn_field *coordinate_field);
 
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_INTEGRATION, the arguments including

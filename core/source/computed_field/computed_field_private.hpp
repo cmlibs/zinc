@@ -783,10 +783,10 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
  * ownership of field_core object passes to the new field.
  * @return  Newly created field, or NULL on failure.
  */
-Computed_field *Computed_field_create_generic(
+cmzn_field *Computed_field_create_generic(
 	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
-	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core);
 
@@ -892,24 +892,20 @@ its name matches the contents of the <other_computed_field_void>.
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 
-int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field **field_one, struct Computed_field **field_two);
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Takes two ACCESSED fields <field_one> and <field_two> and compares their number
-of components.  If they are equal then the function just returns.  If one
-is a scalar field and the is not then the scalar is wrapped in a composite field
-which repeats the scalar to match the non scalar number of components.  The
-wrapped field will be DEACCESSED by the function but now will be accessed by
-the wrapping field and an ACCESSED pointer to the wrapper field is returned
-replacing the wrapped field.
-If the two fields are non scalar and have different numbers of components then
-nothing is done, although other shape broadcast operations could be proposed
-for matrix operations.
-==============================================================================*/
+/**
+ * Takes two ACCESSED fields <field_one> and <field_two> and compares their number
+ * of components.  If they are equal then the function just returns.  If one
+ * is a scalar field and the other is not then the scalar is wrapped in a component
+ * field repeating the scalar to match the non scalar number of components.  The
+ * wrapped field will be DEACCESSED by the function but now will be accessed by
+ * the wrapping field and an ACCESSED pointer to the wrapper field is returned
+ * replacing the wrapped field.
+ * If the two fields are non scalar and have different numbers of components then
+ * nothing is done, although other shape broadcast operations could be proposed
+ * for matrix operations.
+ */
+int Computed_field_broadcast_field_components(cmzn_fieldmodule *fieldmodule,
+	cmzn_field **field_one, cmzn_field **field_two);
 
 /**
  * For each hierarchical field in manager, propagates changes from sub-region
