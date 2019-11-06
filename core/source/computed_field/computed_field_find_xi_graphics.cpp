@@ -216,8 +216,8 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	/* This method is adversely affected when displaying on a remote machine as every
 		pixel grab requires transfer across the network */
 	if (cache_ptr && hint_minimums && hint_maximums && hint_resolution &&
-		((2 == Computed_field_get_number_of_components(field)) ||
-		((3 == Computed_field_get_number_of_components(field)) &&
+		((2 == cmzn_field_get_number_of_components(field)) ||
+		((3 == cmzn_field_get_number_of_components(field)) &&
 		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh
 		/* This special case actually only works for 2D elements */
 		&& (cmzn_mesh_get_dimension(search_mesh) == 2)

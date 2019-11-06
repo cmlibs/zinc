@@ -873,13 +873,13 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	if (element && field_cache && (2==get_FE_element_dimension(element))&&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
+		(3>=cmzn_field_get_number_of_components(coordinate_field))&&
+		isoscalar_field&&(1==cmzn_field_get_number_of_components(isoscalar_field))&&
 		array)
 	{
 		if (data_field)
 		{
-			n_data_components=Computed_field_get_number_of_components(data_field);
+			n_data_components=cmzn_field_get_number_of_components(data_field);
 		}
 		else
 		{

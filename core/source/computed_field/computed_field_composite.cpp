@@ -1070,7 +1070,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_component(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && (0 < source_component_index) &&
-		(source_component_index <= Computed_field_get_number_of_components(source_field)))
+		(source_component_index <= cmzn_field_get_number_of_components(source_field)))
 	{
 		const int source_field_number = 0;
 		const int source_value_number = source_component_index - 1; // external numbering starts at 1
@@ -1092,7 +1092,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
 	if (source_field && source_field->isNumerical() &&
 		(0 < source_component_indexes_count) && (source_component_indexes_in))
 	{
-		const int source_number_of_components = Computed_field_get_number_of_components(source_field);
+		const int source_number_of_components = cmzn_field_get_number_of_components(source_field);
 		for (int i = 0; i < source_component_indexes_count; ++i)
 		{
 			if ((source_component_indexes_in[i] < 1) || 
@@ -1137,7 +1137,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 				display_message(ERROR_MESSAGE, "Fieldmodule createFieldConcatenate.  Invalid source field");
 				return 0;
 			}
-			number_of_components += Computed_field_get_number_of_components(source_fields[i]);
+			number_of_components += cmzn_field_get_number_of_components(source_fields[i]);
 		}
 		std::vector<cmzn_field *> merged_source_fields(number_of_source_fields);
 		std::vector<int> source_field_numbers(number_of_components);
@@ -1163,7 +1163,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 				++merged_source_fields_count;
 			}
 			const int number_of_components_per_field =
-				Computed_field_get_number_of_components(source_fields[i]);
+				cmzn_field_get_number_of_components(source_fields[i]);
 			for (int j = 0; j < number_of_components_per_field; j++)
 			{
 				source_field_numbers[k + j] = merged_source_field_index;

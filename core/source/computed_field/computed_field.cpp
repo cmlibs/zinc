@@ -1666,30 +1666,13 @@ int Computed_field_is_non_linear(struct Computed_field *field)
 	return return_code;
 }
 
-int Computed_field_get_number_of_components(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int cmzn_field_get_number_of_components(cmzn_field *field)
 {
-	int number_of_components;
-
-	ENTER(Computed_field_get_number_of_components);
 	if (field)
-	{
-		number_of_components=field->number_of_components;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_number_of_components.  Missing field");
-		number_of_components=0;
-	}
-	LEAVE;
-
-	return (number_of_components);
-} /* Computed_field_get_number_of_components */
+		return field->number_of_components;
+	display_message(ERROR_MESSAGE, "cmzn_field_get_number_of_components.  Missing field");
+	return 0;
+}
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field)

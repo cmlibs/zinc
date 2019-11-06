@@ -408,7 +408,7 @@ time is supplied in the workingCache
 			xi[k] = 0.0;
 		}
 		element_dimension = get_FE_element_dimension(element);
-		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+		coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -535,7 +535,7 @@ time is supplied in the workingCache.
 		}
 		else
 		{
-			number_of_components = Computed_field_get_number_of_components(
+			number_of_components = cmzn_field_get_number_of_components(
 				coordinate_field);
 		}
 		for (i = 0; (return_code == CMZN_OK)&&(i<number_of_faces);i++)
@@ -785,7 +785,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			if (ALLOCATE(fifo_node,
 				Computed_field_element_integration_mapping_fifo,1)&&
 				(mapping_item=CREATE(Computed_field_element_integration_mapping)(
-					 seed_element, Computed_field_get_number_of_components(field))))
+					 seed_element, cmzn_field_get_number_of_components(field))))
 			{
 				ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)
 					(mapping_item, texture_mapping);
@@ -1237,7 +1237,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		integrand = field->source_fields[0];
 		coordinate_field = field->source_fields[1];
 		coordinate_dimension =
-			Computed_field_get_number_of_components(field->source_fields[1]);
+			cmzn_field_get_number_of_components(field->source_fields[1]);
 		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -1684,7 +1684,7 @@ cmzn_field *cmzn_fieldmodule_create_field_integration(
 	cmzn_field *field = nullptr;
 	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
 		integrand && coordinate_field &&
-		(1 == Computed_field_get_number_of_components(integrand)))
+		(1 == cmzn_field_get_number_of_components(integrand)))
 	{
 		int number_of_components = 0;
 		if (magnitude_coordinates)

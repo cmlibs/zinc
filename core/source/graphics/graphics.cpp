@@ -1248,7 +1248,7 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 	cmzn_field_id coordinate_field)
 {
 	if (graphics && ((0 == coordinate_field) ||
-		(3 >= Computed_field_get_number_of_components(coordinate_field))))
+		(3 >= cmzn_field_get_number_of_components(coordinate_field))))
 	{
 		if (coordinate_field != graphics->coordinate_field)
 		{
@@ -2801,7 +2801,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 					if (graphics->data_field)
 					{
 						graphics_to_object_data->number_of_data_values =
-							Computed_field_get_number_of_components(graphics->data_field);
+							cmzn_field_get_number_of_components(graphics->data_field);
 						ALLOCATE(graphics_to_object_data->data_copy_buffer,
 							FE_value, graphics_to_object_data->number_of_data_values);
 					}
@@ -4573,7 +4573,7 @@ int cmzn_graphics_set_texture_coordinate_field(
 	cmzn_graphics_id graphics, cmzn_field_id texture_coordinate_field)
 {
 	if (graphics && ((0 == texture_coordinate_field) ||
-		(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
+		(3 >= cmzn_field_get_number_of_components(texture_coordinate_field))))
 	{
 		if (texture_coordinate_field != graphics->texture_coordinate_field)
 		{

@@ -3399,8 +3399,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 	cmzn_field_id mesh_field, cmzn_mesh_id mesh)
 {
 	struct Computed_field *field = NULL;
-	int number_of_source_field_components = Computed_field_get_number_of_components(source_field);
-	int number_of_mesh_field_components = Computed_field_get_number_of_components(mesh_field);
+	int number_of_source_field_components = cmzn_field_get_number_of_components(source_field);
+	int number_of_mesh_field_components = cmzn_field_get_number_of_components(mesh_field);
 	if (field_module && source_field && mesh_field && mesh &&
 		(number_of_source_field_components == number_of_mesh_field_components) &&
 		Computed_field_has_numerical_components(source_field, NULL) &&

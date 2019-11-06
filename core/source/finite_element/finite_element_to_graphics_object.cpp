@@ -122,11 +122,11 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 		int number_of_variable_scale_components = 0;
 
 		if ((coordinate_field=glyph_set_data->coordinate_field) &&
-			(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+			(3 >= cmzn_field_get_number_of_components(coordinate_field)) &&
 			((!(orientation_scale_field =
 					glyph_set_data->orientation_scale_field)) ||
 				(9 >= (number_of_orientation_scale_components =
-					Computed_field_get_number_of_components(orientation_scale_field)))) &&
+					cmzn_field_get_number_of_components(orientation_scale_field)))) &&
 			((!(data_field = glyph_set_data->data_field)) ||
 				glyph_set_data->data) &&
 			((!(label_field = glyph_set_data->label_field)) ||
@@ -135,7 +135,7 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 				glyph_set_data->label_density) &&
 			((!(variable_scale_field = glyph_set_data->variable_scale_field)) ||
 				(3 >= (number_of_variable_scale_components =
-					Computed_field_get_number_of_components(variable_scale_field)))) &&
+					cmzn_field_get_number_of_components(variable_scale_field)))) &&
 			(point = glyph_set_data->point) &&
 			(axis1 = glyph_set_data->axis1) &&
 			(axis2 = glyph_set_data->axis2) &&
@@ -639,15 +639,15 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 	int coordinate_dimension, i, *label_bounds_bit_pattern = NULL, label_bounds_components = 0,
 		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names, return_code = 1;
 	if (field_cache && nodeset && coordinate_field && graphics_object &&
-		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
+		(3>=(coordinate_dimension=cmzn_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
-			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
+			(9 >= cmzn_field_get_number_of_components(orientation_scale_field)))&&
 		((glyph && offset && base_size && scale_factors && label_offset &&
 		((!variable_scale_field) ||
-			(3 >=	Computed_field_get_number_of_components(variable_scale_field))))
+			(3 >=	cmzn_field_get_number_of_components(variable_scale_field))))
 		|| !glyph) &&
 		((!label_density_field) ||
-			(3 >=	Computed_field_get_number_of_components(label_density_field))))
+			(3 >=	cmzn_field_get_number_of_components(label_density_field))))
 	{
 
 		/* label_field is not a required field (if undefined, label is empty) EXCEPT
@@ -702,7 +702,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 				if (data_field)
 				{
 					n_data_components =
-						Computed_field_get_number_of_components(data_field);
+						cmzn_field_get_number_of_components(data_field);
 					ALLOCATE(data, GLfloat, number_of_points*n_data_components);
 					data_values = new FE_value[n_data_components];
 				}
@@ -714,7 +714,7 @@ struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 				{
 					label_bounds_dimension = coordinate_dimension;
 					label_bounds_values = 1 << label_bounds_dimension;
-					label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
+					label_bounds_components = cmzn_field_get_number_of_components(label_bounds_field);
 					ALLOCATE(label_bounds, ZnReal, number_of_points * label_bounds_values *
 						label_bounds_components);
 					/* Temporary space for evaluating the label field */
@@ -900,9 +900,9 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	double *data_buffer = 0;
 
 	ENTER(FE_element_add_line_to_vertex_buffer_set)
-	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
-		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+		cmzn_field_get_number_of_components(texture_coordinate_field) : 0;
 	if (element && field_cache && array && (1 == get_FE_element_dimension(element)) &&
 		coordinate_field && (3 >= coordinate_dimension) &&
 		(!texture_coordinate_field || (3 >= texture_coordinate_dimension)))
@@ -954,7 +954,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 
 			if (data_field)
 			{
-				number_of_data_values = Computed_field_get_number_of_components(data_field);
+				number_of_data_values = cmzn_field_get_number_of_components(data_field);
 				floatData = new GLfloat[number_of_data_values];
 				data_buffer = new double[number_of_data_values];
 			}
@@ -1090,16 +1090,16 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 		*previous_normal, *texture_coordinate;
 	unsigned int vertex_start = 0;
 
-	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
-		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+		cmzn_field_get_number_of_components(texture_coordinate_field) : 0;
 	return_code = 0;
 	if (element && field_cache && line_mesh && (1 == get_FE_element_dimension(element)) &&
 		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
 		coordinate_field && (3 >= coordinate_dimension) &&
 		(0 != base_size) && (0 != scale_factors) &&
 		((!orientation_scale_field) ||
-			(1 == Computed_field_get_number_of_components(orientation_scale_field))) &&
+			(1 == cmzn_field_get_number_of_components(orientation_scale_field))) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
 		return_code = 1;
@@ -1118,7 +1118,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 		number_of_points=(number_of_segments_along+1)*(number_of_segments_around+1);
 		if (data_field)
 		{
-			n_data_components = Computed_field_get_number_of_components(data_field);
+			n_data_components = cmzn_field_get_number_of_components(data_field);
 			if (!ALLOCATE(data,GLfloat,number_of_points*n_data_components))
 			{
 				display_message(ERROR_MESSAGE,
@@ -1821,9 +1821,9 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 	GLfloat floatField[3];
 	return_code = 1;
 
-	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+	int coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
-		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+		cmzn_field_get_number_of_components(texture_coordinate_field) : 0;
 	if (element && field_cache && surface_mesh && (2 == get_FE_element_dimension(element)) &&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&
@@ -1864,7 +1864,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 		n_data_components = 0;
 		if (data_field)
 		{
-			n_data_components = Computed_field_get_number_of_components(data_field);
+			n_data_components = cmzn_field_get_number_of_components(data_field);
 		}
 		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		GLfloat *floatData = data_field ? new GLfloat[n_data_components] : 0;
@@ -2573,13 +2573,13 @@ int add_glyphset_vertex_from_FE_element(
 
 	if (graphics_object && (0 != (array = GT_object_get_vertex_set(graphics_object))) &&
 		field_cache && element && coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		(3 >= cmzn_field_get_number_of_components(coordinate_field)) &&
 		(0 < number_of_xi_points) && xi_points && ((((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
-			Computed_field_get_number_of_components(orientation_scale_field)))&&
+			cmzn_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
 				(void *)NULL))) &&
 		((!variable_scale_field)||(3>=(number_of_variable_scale_components=
-			Computed_field_get_number_of_components(variable_scale_field))))) ||
+			cmzn_field_get_number_of_components(variable_scale_field))))) ||
 			!glyph))
 	{
 		int element_dimension = cmzn_element_get_dimension(element);
@@ -2641,7 +2641,7 @@ int add_glyphset_vertex_from_FE_element(
 			draw_all = (points_to_draw == number_of_xi_points);
 			if (data_field)
 			{
-				n_data_components = Computed_field_get_number_of_components(data_field);
+				n_data_components = cmzn_field_get_number_of_components(data_field);
 				ALLOCATE(data, GLfloat, points_to_draw*n_data_components);
 			}
 			FE_value *feData = new FE_value[n_data_components];

@@ -58,10 +58,6 @@ functions are given their public names.
 /* Convert to use external field object name */
 #define Computed_field cmzn_field
 
-/* Convert the functions that have identical interfaces */
-#define Computed_field_get_number_of_components \
-	cmzn_field_get_number_of_components
-
 enum cmzn_field_type
 {
 	CMZN_FIELD_TYPE_INVALID = 0,
@@ -367,13 +363,6 @@ DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
 the <field>. These parameters will be used in image processing.
 
-==============================================================================*/
-
-int Computed_field_get_number_of_components(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 23 December 1998
-
-DESCRIPTION :
 ==============================================================================*/
 
 struct Coordinate_system *Computed_field_get_coordinate_system(

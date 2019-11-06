@@ -1004,7 +1004,7 @@ component number used.  The first component_index is 0, so this means 1 componen
 			component->is_field_lookup)
 		{
 			int number_of_input_components =
-				Computed_field_get_number_of_components(component->input_field);
+				cmzn_field_get_number_of_components(component->input_field);
 			if (*component_index < number_of_input_components - 1)
 			{
 				/* The maximum index is 1 less than the number of components */
@@ -1051,7 +1051,7 @@ in the value pointed to by <colour_components_void>.
 		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID &&
 			component->is_field_lookup)
 		{
-			int number_of_components = Computed_field_get_number_of_components
+			int number_of_components = cmzn_field_get_number_of_components
 					(component->output_field);
 			if (2 == number_of_components)
 			{
@@ -1389,7 +1389,7 @@ passed in render data.
 				// GRC probably inefficient to create and destroy cache here; keep it through render pass?
 				field_module = cmzn_field_get_fieldmodule(component->output_field);
 				field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-				number_of_components = Computed_field_get_number_of_components
+				number_of_components = cmzn_field_get_number_of_components
 					(component->output_field);
 				ALLOCATE(values, FE_value, number_of_components);
 				if (component->component_number > 0)

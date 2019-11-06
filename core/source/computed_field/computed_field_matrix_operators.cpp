@@ -903,7 +903,7 @@ Computed_field *cmzn_fieldmodule_create_field_matrix_invert(
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
-			Computed_field_get_number_of_components(source_field),
+			cmzn_field_get_number_of_components(source_field),
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_matrix_invert());
