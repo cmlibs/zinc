@@ -159,7 +159,7 @@ struct Render_to_finite_elements_data
 	int checkValidCoordinateField()
 	{
 		int return_code = 1;
-		if (3 != Computed_field_get_number_of_components(coordinate_field))
+		if (3 != cmzn_field_get_number_of_components(coordinate_field))
 			return_code = 0;
 
 		node_template = cmzn_nodeset_create_nodetemplate(nodeset);

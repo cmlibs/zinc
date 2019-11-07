@@ -450,7 +450,7 @@ value for each component of the <field>.
 		if (Computed_field_has_numerical_components(field,(void *)NULL))
 		{
 			/* evaluate the integral */
-			number_of_components=Computed_field_get_number_of_components(field);
+			number_of_components=cmzn_field_get_number_of_components(field);
 			if ((0<number_of_components)&&
 				ALLOCATE(integrate_Computed_field_over_element_data.values,FE_value,
 				number_of_components))

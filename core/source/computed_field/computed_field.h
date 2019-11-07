@@ -48,7 +48,7 @@ if a value is already known.
 struct cmzn_region;
 
 /*
-The cmzn_computed_field which is Public is currently the same object as the
+The cmzn_field which is Public is currently the same object as the
 cmgui internal Computed_field.  The Public interface is contained in
 zinc/field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
@@ -57,11 +57,6 @@ functions are given their public names.
 
 /* Convert to use external field object name */
 #define Computed_field cmzn_field
-
-/* Convert the functions that have identical interfaces */
-#define Computed_field_get_number_of_components \
-	cmzn_field_get_number_of_components
-#define Computed_field_set_type cmzn_field_set_type
 
 enum cmzn_field_type
 {
@@ -368,13 +363,6 @@ DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
 the <field>. These parameters will be used in image processing.
 
-==============================================================================*/
-
-int Computed_field_get_number_of_components(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 23 December 1998
-
-DESCRIPTION :
 ==============================================================================*/
 
 struct Coordinate_system *Computed_field_get_coordinate_system(

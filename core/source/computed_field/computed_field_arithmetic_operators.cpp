@@ -195,13 +195,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_power(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_power);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -226,19 +225,18 @@ Computed_field *Computed_field_create_power(cmzn_fieldmodule *field_module,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_power.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_power.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_power */
+}
 
-int Computed_field_get_type_power(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_power(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -426,13 +424,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_multiply(
+cmzn_field *cmzn_fieldmodule_create_field_multiply(
 	cmzn_fieldmodule *field_module,
-	Computed_field *source_field_one, Computed_field *source_field_two)
+	cmzn_field *source_field_one, cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_multiply);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -457,19 +454,18 @@ Computed_field *Computed_field_create_multiply(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_multiply.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_multiply.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_multiply */
+}
 
-int Computed_field_get_type_multiply_components(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_multiply_components(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -660,13 +656,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_divide(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_divide);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -691,19 +686,18 @@ Computed_field *Computed_field_create_divide(cmzn_fieldmodule *field_module,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_divide.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_divide.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_divide_components */
+}
 
-int Computed_field_get_type_divide_components(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_divide_components(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -898,22 +892,28 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one, double scale_factor1,
-	struct Computed_field *source_field_two, double scale_factor2)
+
+/**
+ * Create field of type COMPUTED_FIELD_ADD with the supplied
+ * fields, <source_field_one> and <source_field_two>.  Sets the number of
+ * components equal to the source_fields.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+*/
+cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field_one, double scale_factor1,
+	cmzn_field *source_field_two, double scale_factor2)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 	double source_values[2];
 
-	ENTER(Computed_field_create_weighted_add);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_one->isNumerical() &&
+	if (fieldmodule && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -922,7 +922,7 @@ Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_modul
 		source_fields[1] = source_field_two;
 		source_values[0] = scale_factor1;
 		source_values[1] = scale_factor2;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -932,29 +932,28 @@ Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_modul
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_weighted_add.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_weighted_add.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_weighted_add */
+}
 
-Computed_field *Computed_field_create_add(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_add(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	return(Computed_field_create_weighted_add(field_module,
+	return(cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
-} /* Computed_field_create_add */
+}
 
-Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	struct Computed_field *field = Computed_field_create_weighted_add(field_module,
+	cmzn_field *field = cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, -1.0);
 	if (field && field->core)
 	{
@@ -962,18 +961,17 @@ Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
 			field->core);
 		fieldAdd->type = CMZN_FIELD_TYPE_SUBTRACT;
 	}
-
 	return field;
-} /* Computed_field_create_subtract */
+}
 
-int Computed_field_get_type_add(struct Computed_field *field,
-	struct Computed_field **source_field_one, FE_value *scale_factor1,
-	struct Computed_field **source_field_two, FE_value *scale_factor2)
+int Computed_field_get_type_weighted_add(cmzn_field *field,
+	cmzn_field **source_field_one, FE_value *scale_factor1,
+	cmzn_field **source_field_two, FE_value *scale_factor2)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ADD, the
+If the field is of type COMPUTED_FIELD_WEIGHTED_ADD, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1237,17 +1235,14 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_scale(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *scale_factors)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SCALE which scales the values of the
-<source_field> by <scale_factors>.
-Sets the number of components equal to that of <source_field>.
-Not exposed in the API as this is really just a multiply with constant
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_SCALE which scales the values of the
+ * <source_field> by <scale_factors>.
+ * Sets the number of components equal to that of <source_field>.
+ * Not exposed in the API as this is really just a multiply with constant
+ */
+cmzn_field *cmzn_fieldmodule_create_field_scale(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field, double *scale_factors)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -1260,10 +1255,10 @@ Not exposed in the API as this is really just a multiply with constant
 			new Computed_field_scale());
 	}
 	return (field);
-} /* Computed_field_create_scale */
+}
 
-int Computed_field_get_type_scale(struct Computed_field *field,
-	struct Computed_field **source_field, double **scale_factors)
+int Computed_field_get_type_scale(cmzn_field *field,
+	cmzn_field **source_field, double **scale_factors)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1504,25 +1499,22 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_maximum(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *maximums)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
-<source_field> and <maximums>.  Each component is clamped by its respective limit
-in <maximums>.
-The <maximums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-SAB.  I think this should be changed so that the maximums come from a source
-field rather than constant maximums before it is exposed in the API.
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
+ * <source_field> and <maximums>.  Each component is clamped by its respective limit
+ * in <maximums>.
+ * The <maximums> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * SAB.  I think this should be changed so that the maximums come from a source
+ * field rather than constant maximums before it is exposed in the API.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_clamp_maximum(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *maximums)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1530,10 +1522,10 @@ field rather than constant maximums before it is exposed in the API.
 			new Computed_field_clamp_maximum());
 	}
 	return (field);
-} /* Computed_field_create_clamp_maximum */
+}
 
-int Computed_field_get_type_clamp_maximum(struct Computed_field *field,
-	struct Computed_field **source_field, double **maximums)
+int Computed_field_get_type_clamp_maximum(cmzn_field *field,
+	cmzn_field **source_field, double **maximums)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1772,25 +1764,22 @@ DESCRIPTION :
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_minimum(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *minimums)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MINIMUM with the supplied
-<source_field> and <minimums>.  Each component is clamped by its respective limit
-in <minimums>.
-The <minimums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-SAB.  I think this should be changed so that the minimums come from a source
-field rather than constant minimums before it is exposed in the API.
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_CLAMP_MINIMUM with the supplied
+ * <source_field> and <minimums>.  Each component is clamped by its respective limit
+ * in <minimums>.
+ * The <minimums> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * SAB.  I think this should be changed so that the minimums come from a source
+ * field rather than constant minimums before it is exposed in the API.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_clamp_minimum(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *minimums)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1798,10 +1787,10 @@ field rather than constant minimums before it is exposed in the API.
 			new Computed_field_clamp_minimum());
 	}
 	return (field);
-} /* Computed_field_create_clamp_minimum */
+}
 
-int Computed_field_get_type_clamp_minimum(struct Computed_field *field,
-	struct Computed_field **source_field, double **minimums)
+int Computed_field_get_type_clamp_minimum(cmzn_field *field,
+	cmzn_field **source_field, double **minimums)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2064,23 +2053,20 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_offset(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *offsets)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
-<source_field> plus the <offsets>.
-The <offsets> array must therefore contain as many FE_values as there are
-components in <source_field>; this is the number of components in the field.
-Not exposed in the API is this is just an add with constant field.
-==============================================================================*/
+/**
+ * Create type COMPUTED_FIELD_OFFSET which returns the values of the
+ * <source_field> plus the <offsets>.
+ * The <offsets> array must therefore contain as many FE_values as there are
+ * components in <source_field>; this is the number of components in the field.
+ * Not exposed in the API is this is just an add with constant field.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_offset(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *offsets)
 {
-	cmzn_field_id field = 0;
+	cmzn_field_id field = nullptr;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2088,10 +2074,10 @@ Not exposed in the API is this is just an add with constant field.
 			new Computed_field_offset());
 	}
 	return (field);
-} /* Computed_field_create_offset */
+}
 
-int Computed_field_get_type_offset(struct Computed_field *field,
-	struct Computed_field **source_field, double **offsets)
+int Computed_field_get_type_offset(cmzn_field *field,
+	cmzn_field **source_field, double **offsets)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2299,21 +2285,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_edit_mask(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *edit_mask)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
-with each component edit_masked by its respective FE_value in <edit_mask>, ie.
-if the edit_mask value for a component is non-zero, the component is editable.
-The <edit_mask> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/**
+ * Create field of to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
+ * with each component edit_masked by its respective FE_value in <edit_mask>, ie.
+ * if the edit_mask value for a component is non-zero, the component is editable.
+ * The <edit_mask> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * Sets the number of components to the same as <source_field>.
+ * If function fails, field is guaranteed to be unchanged from its original state,
+ * although its cache may be lost.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_edit_mask(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field, double *edit_mask)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -2326,10 +2309,10 @@ although its cache may be lost.
 			new Computed_field_edit_mask());
 	}
 	return (field);
-} /* Computed_field_create_edit_mask */
+}
 
-int Computed_field_get_type_edit_mask(struct Computed_field *field,
-	struct Computed_field **source_field, double **edit_mask)
+int Computed_field_get_type_edit_mask(cmzn_field *field,
+	cmzn_field **source_field, double **edit_mask)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2522,8 +2505,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_log(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_log(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2543,10 +2526,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_log());
 	}
 	return (field);
-} /* Computed_field_create_log */
+}
 
-int Computed_field_get_type_log(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_log(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2723,8 +2706,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sqrt(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2744,10 +2727,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_sqrt());
 	}
 	return (field);
-} /* Computed_field_create_sqrt */
+}
 
-int Computed_field_get_type_sqrt(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_sqrt(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2924,8 +2907,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_exp(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2945,10 +2928,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_exp());
 	}
 	return (field);
-} /* Computed_field_create_exp */
+}
 
-int Computed_field_get_type_exp(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_exp(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3144,8 +3127,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_abs(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EXP with the supplied
@@ -3163,10 +3146,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_abs());
 	}
 	return (field);
-} /* Computed_field_create_abs */
+}
 
-int Computed_field_get_type_abs(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_abs(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_EXP, the
