@@ -60,7 +60,7 @@ bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field)
 	Coordinate_system_type coordinate_system_type =
 		get_coordinate_system_type(Computed_field_get_coordinate_system(vector_field));
 	if ((RECTANGULAR_CARTESIAN == coordinate_system_type) ||
-		((1 == Computed_field_get_number_of_components(vector_field)) &&
+		((1 == cmzn_field_get_number_of_components(vector_field)) &&
 		(FIBRE != coordinate_system_type)))
 	{
 		return false;
@@ -85,7 +85,7 @@ cmzn_field *cmzn_field_get_vector_field_wrapper(
 			wrapper_field = ACCESS(Computed_field)(vector_field);
 		}
 		else if ((FIBRE == coordinate_system_type) &&
-			(3>=Computed_field_get_number_of_components(vector_field)))
+			(3>=cmzn_field_get_number_of_components(vector_field)))
 		{
 			/* make fibre_axes wrapper from fibre field */
 			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);

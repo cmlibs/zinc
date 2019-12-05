@@ -574,8 +574,8 @@ int cmzn_mesh_assign_grid_field_from_source(
 	int return_code = 1;
 	if (mesh && destination_field && source_field)
 	{
-		if (Computed_field_get_number_of_components(source_field) ==
-			 Computed_field_get_number_of_components(destination_field))
+		if (cmzn_field_get_number_of_components(source_field) ==
+			 cmzn_field_get_number_of_components(destination_field))
 		{
 			cmzn_region_id region = cmzn_mesh_get_region_internal(mesh);
 			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);

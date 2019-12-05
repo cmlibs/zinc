@@ -303,14 +303,14 @@ Returns allocated command string for reproducing field. Includes type.
  * fibre_angle_field.  Sets the number of components to 4.
  * The <coordinate_field>s must have no more than 3 components.
  */
-struct Computed_field *Computed_field_create_2d_strain(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *deformed_coordinate_field,
-	struct Computed_field *undeformed_coordinate_field,
-	struct Computed_field *fibre_angle_field)
+cmzn_field *cmzn_fieldmodule_create_field_2d_strain(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *deformed_coordinate_field,
+	cmzn_field *undeformed_coordinate_field,
+	cmzn_field *fibre_angle_field)
 {
-	Computed_field *field = NULL;
-	if (field_module && deformed_coordinate_field &&
+	cmzn_field *field = NULL;
+	if (fieldmodule && deformed_coordinate_field &&
 		(3 >= deformed_coordinate_field->number_of_components) &&
 		undeformed_coordinate_field &&
 		(3 >= undeformed_coordinate_field->number_of_components) &&
@@ -320,7 +320,7 @@ struct Computed_field *Computed_field_create_2d_strain(
 		source_fields[0] = deformed_coordinate_field;
 		source_fields[1] = undeformed_coordinate_field;
 		source_fields[2] = fibre_angle_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/3, source_fields,
@@ -330,7 +330,7 @@ struct Computed_field *Computed_field_create_2d_strain(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_2d_strain.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_2d_strain.  Invalid argument(s)");
 	}
 
 	return (field);

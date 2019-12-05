@@ -1032,6 +1032,13 @@ protected:
 	cmzn_field_element_group_id group;
 	int access_count;
 
+	cmzn_mesh(FE_mesh *fe_mesh_in) :
+		fe_mesh(fe_mesh_in->access()),
+		group(0),
+		access_count(1)
+	{
+	}
+
 	cmzn_mesh(cmzn_field_element_group_id group) :
 		fe_mesh(Computed_field_element_group_core_cast(group)->get_fe_mesh()->access()),
 		group(group),
@@ -1049,17 +1056,17 @@ protected:
 	}
 
 public:
-	cmzn_mesh(FE_mesh *fe_mesh_in) :
-		fe_mesh(fe_mesh_in->access()),
-		group(0),
-		access_count(1)
-	{
-	}
-
 	cmzn_mesh_id access()
 	{
 		++access_count;
 		return this;
+	}
+
+	static cmzn_mesh *create(FE_mesh *fe_mesh_in)
+	{
+		if (fe_mesh_in)
+			return new cmzn_mesh(fe_mesh_in);
+		return nullptr;
 	}
 
 	static int deaccess(cmzn_mesh_id &mesh)
@@ -1190,7 +1197,7 @@ public:
 	{
 		if (!isGroup())
 			return access();
-		return new cmzn_mesh(this->fe_mesh);
+		return cmzn_mesh::create(this->fe_mesh);
 	}
 
 	int getSize() const
@@ -1293,7 +1300,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule));
-		mesh = new cmzn_mesh(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
+		mesh = cmzn_mesh::create(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
 	}
 	return mesh;
 }
@@ -1530,6 +1537,11 @@ int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
 	if (mesh_group)
 		return mesh_group->removeElementsConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_mesh *cmzn_mesh_create(FE_mesh *fe_mesh)
+{
+	return cmzn_mesh::create(fe_mesh);
 }
 
 int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
@@ -1875,10 +1887,9 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
-	FE_mesh *fe_mesh = element->getMesh();
-	if (fe_mesh)
-		return new cmzn_mesh(fe_mesh);
-	return 0;
+	if (element)
+		return cmzn_mesh::create(element->getMesh());
+	return nullptr;
 }
 
 cmzn_node_id cmzn_element_get_node(cmzn_element_id element,

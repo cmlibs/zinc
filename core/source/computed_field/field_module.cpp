@@ -395,7 +395,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 			}
 			else
 			{
-				xi_field = Computed_field_create_xi_coordinates(fieldmodule);
+				xi_field = cmzn_fieldmodule_create_field_xi_coordinates(fieldmodule);
 				cmzn_field_set_name(xi_field, xi_field_name);
 				cmzn_field_set_managed(xi_field, true);
 				break;

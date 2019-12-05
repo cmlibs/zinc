@@ -22,6 +22,7 @@ class Element;
 class Fieldassignment;
 class Fieldcache;
 class FieldComponent;
+class FieldConstant;
 class FieldEdgeDiscontinuity;
 class FieldEigenvalues;
 class FieldElementGroup;
@@ -35,6 +36,7 @@ class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
 class FieldMeshIntegral;
 class FieldNodeGroup;
+class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
 class Fieldmodule;
@@ -256,6 +258,7 @@ public:
 
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();
+	inline FieldConstant castConstant();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();
 	inline FieldEigenvalues castEigenvalues();
 	inline FieldElementGroup castElementGroup();
@@ -269,6 +272,7 @@ public:
 	inline FieldImagefilterThreshold castImagefilterThreshold();
 	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
+	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();
 };

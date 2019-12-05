@@ -1384,7 +1384,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *Computed_field_create_finite_element_internal(
+cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
 {
 	cmzn_field *field = 0;
@@ -1395,7 +1395,7 @@ cmzn_field *Computed_field_create_finite_element_internal(
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_finite_element_internal.  Region mismatch");
+				"cmzn_fieldmodule_create_field_finite_element_internal.  Region mismatch");
 			return 0;
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -1429,7 +1429,7 @@ cmzn_field *Computed_field_create_finite_element_internal(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_finite_element_internal.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_finite_element_internal.  Invalid argument(s)");
 	}
 	return (field);
 }
@@ -1597,11 +1597,31 @@ cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_fie
 	return 0;
 }
 
+inline Computed_field_finite_element *cmzn_field_stored_mesh_location_core_cast(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
+{
+	return (static_cast<Computed_field_finite_element*>(
+		reinterpret_cast<Computed_field*>(stored_mesh_location_field)->core));
+}
+
 int cmzn_field_stored_mesh_location_destroy(
 	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address)
 {
 	return cmzn_field_destroy(
 		reinterpret_cast<cmzn_field_id *>(stored_mesh_location_field_address));
+}
+
+cmzn_mesh_id cmzn_field_stored_mesh_location_get_mesh(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
+{
+	cmzn_mesh_id mesh = 0;
+	if (stored_mesh_location_field)
+	{
+		FE_mesh *fe_mesh = const_cast<FE_mesh *>(FE_field_get_element_xi_host_mesh(
+			cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field));
+		mesh = cmzn_mesh_create(fe_mesh);
+	}
+	return mesh;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
@@ -1854,10 +1874,10 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_cmiss_number */
 
-struct Computed_field *Computed_field_create_cmiss_number(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_cmiss_number(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -2000,10 +2020,10 @@ Returns allocated command string for reproducing field. Includes type.
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_access_count(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_access_count(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -3407,8 +3427,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 	cmzn_field_id mesh_field, cmzn_mesh_id mesh)
 {
 	struct Computed_field *field = NULL;
-	int number_of_source_field_components = Computed_field_get_number_of_components(source_field);
-	int number_of_mesh_field_components = Computed_field_get_number_of_components(mesh_field);
+	int number_of_source_field_components = cmzn_field_get_number_of_components(source_field);
+	int number_of_mesh_field_components = cmzn_field_get_number_of_components(mesh_field);
 	if (field_module && source_field && mesh_field && mesh &&
 		(number_of_source_field_components == number_of_mesh_field_components) &&
 		Computed_field_has_numerical_components(source_field, NULL) &&
@@ -3716,10 +3736,10 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_xi_coordinates */
 
-struct Computed_field *Computed_field_create_xi_coordinates(
-	struct cmzn_fieldmodule *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_xi_coordinates(
+	cmzn_fieldmodule *fieldmodule)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(fieldmodule,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/3,
 		/*number_of_source_fields*/0, NULL,

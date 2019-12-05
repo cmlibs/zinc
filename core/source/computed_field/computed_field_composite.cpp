@@ -40,7 +40,7 @@ set_Computed_field_component.
 this structure in set_Computed_field_component.
 ==============================================================================*/
 {
-	struct Computed_field *field;
+	cmzn_field *field;
 	int component_no;
 }; /* struct Computed_field_component */
 
@@ -279,7 +279,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 		  (source_field_number<field->number_of_source_fields);
 		  source_field_number++)
 	{
-		Computed_field *sourceField = this->getSourceField(source_field_number);
+		cmzn_field *sourceField = this->getSourceField(source_field_number);
 		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 		if (!sourceValueCache)
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
@@ -403,7 +403,7 @@ If <commands> is set, field/components are made into valid tokens.
 {
 	char *component_name, *source_string, tmp_string[40], *token;
 	int error, i, j, source_number_of_components, token_error, whole_field;
-	struct Computed_field *source_field;
+	cmzn_field *source_field;
 
 	ENTER(Computed_field_composite_get_source_string);
 	source_string = (char *)NULL;
@@ -556,24 +556,24 @@ inline Computed_field_composite *Computed_field_composite_core_cast(
 {
 	if (composite_field)
 		return (static_cast<Computed_field_composite*>(
-			reinterpret_cast<Computed_field*>(composite_field)->core));
+			reinterpret_cast<cmzn_field*>(composite_field)->core));
 	return 0;
 }
 
 } //namespace
 
-struct Computed_field *Computed_field_create_composite(
-	struct cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_composite(
+	cmzn_fieldmodule *field_module,
 	int number_of_components,
-	int number_of_source_fields,struct Computed_field **source_fields,
+	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	const int *source_field_numbers, const int *source_value_numbers)
 {
 	int i, j, return_code, source_field_number, source_value_number;
-	Computed_field *field, *source_field;
+	cmzn_field *field, *source_field;
 
-	ENTER(Computed_field_create_composite);
-	field = (Computed_field *)NULL;
+	ENTER(cmzn_fieldmodule_create_field_composite);
+	field = nullptr;
 	if ((0<number_of_components) &&
 		((0==number_of_source_fields) ||
 			((0<number_of_source_fields) && source_fields)) &&
@@ -592,7 +592,7 @@ struct Computed_field *Computed_field_create_composite(
 					if (source_fields[j] == source_fields[i])
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_create_composite.  Repeated source field");
+							"cmzn_fieldmodule_create_field_composite.  Repeated source field");
 						return_code=0;
 					}
 				}
@@ -600,7 +600,7 @@ struct Computed_field *Computed_field_create_composite(
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_composite.  Missing or non-numerical source field");
+					"cmzn_fieldmodule_create_field_composite.  Missing or non-numerical source field");
 				return 0;
 			}
 		}
@@ -621,7 +621,7 @@ struct Computed_field *Computed_field_create_composite(
 					if (source_value_number != source_value_numbers[i])
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_create_composite.  "
+							"cmzn_fieldmodule_create_field_composite.  "
 							"Source value numbers out of order");
 						return_code=0;
 					}
@@ -641,7 +641,7 @@ struct Computed_field *Computed_field_create_composite(
 							(source_value_numbers[i] >= source_field->number_of_components))
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_create_composite.  "
+								"cmzn_fieldmodule_create_field_composite.  "
 								"Component %d is out of range for field %s",
 								source_value_numbers[i],source_field->name);
 							return_code=0;
@@ -650,7 +650,7 @@ struct Computed_field *Computed_field_create_composite(
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_create_composite.  "
+							"cmzn_fieldmodule_create_field_composite.  "
 							"source fields not used in order");
 						return_code=0;
 					}
@@ -658,7 +658,7 @@ struct Computed_field *Computed_field_create_composite(
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_create_composite.  "
+						"cmzn_fieldmodule_create_field_composite.  "
 						"Invalid source field number %d",source_field_numbers[i]);
 					return_code=0;
 				}
@@ -666,13 +666,13 @@ struct Computed_field *Computed_field_create_composite(
 			if (source_field_number < number_of_source_fields)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_composite.  Not all source fields used");
+					"cmzn_fieldmodule_create_field_composite.  Not all source fields used");
 				return_code=0;
 			}
 			if (source_value_number < number_of_source_values)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_composite.  Not all source values used");
+					"cmzn_fieldmodule_create_field_composite.  Not all source values used");
 				return_code=0;
 			}
 		}
@@ -690,16 +690,16 @@ struct Computed_field *Computed_field_create_composite(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_composite.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_composite.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Computed_field_create_composite */
+} /* cmzn_fieldmodule_create_field_composite */
 
-int Computed_field_get_type_composite(struct Computed_field *field,
+int Computed_field_get_type_composite(cmzn_field *field,
 	int *number_of_components,
-	int *number_of_source_fields,struct Computed_field ***source_fields,
+	int *number_of_source_fields,cmzn_field ***source_fields,
 	int *number_of_source_values, double **source_values,
 	int **source_field_numbers,int **source_value_numbers)
 /*******************************************************************************
@@ -726,13 +726,13 @@ Note returned fields are not allocated in arrays.
 	{
 		*number_of_components = field->number_of_components;
 		*number_of_source_fields = field->number_of_source_fields;
-		*source_fields = (struct Computed_field **)NULL;
+		*source_fields = (cmzn_field **)NULL;
 		*number_of_source_values = field->number_of_source_values;
 		*source_values = (double *)NULL;
 		*source_field_numbers = (int *)NULL;
 		*source_value_numbers = (int *)NULL;
 		if (((0 == field->number_of_source_fields) || ALLOCATE(*source_fields,
-			struct Computed_field *, field->number_of_source_fields)) &&
+			cmzn_field *, field->number_of_source_fields)) &&
 			((0 == field->number_of_source_values) || ALLOCATE(*source_values,
 				double, field->number_of_source_values)) &&
 			ALLOCATE(*source_field_numbers, int, field->number_of_components) &&
@@ -775,7 +775,7 @@ Note returned fields are not allocated in arrays.
 	return (return_code);
 } /* Computed_field_get_type_composite */
 
-struct Computed_field *Computed_field_create_constant(
+cmzn_field *cmzn_fieldmodule_create_field_constant(
 	struct cmzn_fieldmodule *field_module,
 	int number_of_values, const double *values)
 /*******************************************************************************
@@ -791,9 +791,9 @@ convenience function for building a composite field which has <number_of_values>
 ==============================================================================*/
 {
 	int i, *source_field_numbers, *source_value_numbers;
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 
-	ENTER(Computed_field_create_constant);
+	ENTER(cmzn_fieldmodule_create_field_constant);
 	if ((0 < number_of_values) && values)
 	{
 		ALLOCATE(source_field_numbers, int, number_of_values);
@@ -805,10 +805,10 @@ convenience function for building a composite field which has <number_of_values>
 				source_field_numbers[i] = -1;
 				source_value_numbers[i] = i;
 			}
-			field = Computed_field_create_composite(field_module,
+			field = cmzn_fieldmodule_create_field_composite(field_module,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/0,
-				/*source_fields*/(struct Computed_field **)NULL,
+				/*source_fields*/(cmzn_field **)NULL,
 				/*number_of_source_values*/number_of_values,
 				/*source_values*/values,
 				source_field_numbers, source_value_numbers);
@@ -822,7 +822,7 @@ convenience function for building a composite field which has <number_of_values>
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_constant.  Not enough memory");
+				"cmzn_fieldmodule_create_field_constant.  Not enough memory");
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);
@@ -830,21 +830,21 @@ convenience function for building a composite field which has <number_of_values>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_constant.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_constant.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Computed_field_create_constant */
+} /* cmzn_fieldmodule_create_field_constant */
 
-FE_value *Computed_field_constant_get_values_storage(struct Computed_field *field)
+FE_value *Computed_field_constant_get_values_storage(cmzn_field *field)
 {
 	if (Computed_field_is_constant(field))
 		return field->source_values;
 	return 0;
 }
 
-int Computed_field_is_constant(struct Computed_field *field)
+int Computed_field_is_constant(cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -872,7 +872,7 @@ source_values.
 	return (return_code);
 } /* Computed_field_is_constant */
 
-int Computed_field_is_constant_scalar(struct Computed_field *field,
+int Computed_field_is_constant_scalar(cmzn_field *field,
 	FE_value scalar)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -903,7 +903,7 @@ a single source value, equal to <scalar>.
 	return (return_code);
 } /* Computed_field_is_constant_scalar */
 
-int Computed_field_is_component_wrapper(struct Computed_field *field,
+int Computed_field_is_component_wrapper(cmzn_field *field,
 	void *field_component_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -939,9 +939,9 @@ the passed Computed_field_component.
 	return (return_code);
 } /* Computed_field_is_component_wrapper */
 
-struct Computed_field *Computed_field_manager_get_component_wrapper(
+cmzn_field *Computed_field_manager_get_component_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct Computed_field *field, int component_number)
+	cmzn_field *field, int component_number)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -953,11 +953,11 @@ Returned field is ACCESSed once.
 ==============================================================================*/
 {
 	char *component_field_name, *component_name;
-	struct Computed_field *component_field;
+	cmzn_field *component_field;
 	struct Computed_field_component field_component;
 
 	ENTER(Computed_field_manager_get_component_wrapper);
-	component_field = (struct Computed_field *)NULL;
+	component_field = (cmzn_field *)NULL;
 	if (computed_field_manager && field && (0 <= component_number) &&
 		(component_number < field->number_of_components))
 	{
@@ -983,7 +983,7 @@ Returned field is ACCESSed once.
 					cmzn_region* region = Computed_field_get_region(field);
 					cmzn_fieldmodule *field_module = cmzn_fieldmodule_create(region);
 					cmzn_fieldmodule_set_field_name(field_module, component_field_name);
-					component_field = Computed_field_create_component(field_module, field, component_number + 1);
+					component_field = cmzn_fieldmodule_create_field_component(field_module, field, component_number + 1);
 					cmzn_fieldmodule_destroy(&field_module);
 					DEALLOCATE(component_field_name);
 				}
@@ -1006,9 +1006,9 @@ Returned field is ACCESSed once.
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
 
-Computed_field *cmzn_fieldmodule_create_field_identity(
+cmzn_field *cmzn_fieldmodule_create_field_identity(
 	struct cmzn_fieldmodule *field_module,
-	Computed_field *source_field)
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -1018,9 +1018,9 @@ Changes <field> into type composite with one input field, the <source_field>.
 {
 	int i, number_of_values, *source_field_numbers,
 		*source_value_numbers;
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 
-	ENTER(Computed_field_create_identity);
+	ENTER(cmzn_fieldmodule_create_field_identity);
 	if (source_field && source_field->isNumerical())
 	{
 		number_of_values = source_field->number_of_components;
@@ -1034,7 +1034,7 @@ Changes <field> into type composite with one input field, the <source_field>.
 				source_value_numbers[i] = i;
 			}
 			field =
-				Computed_field_create_composite(field_module,
+				cmzn_fieldmodule_create_field_composite(field_module,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
@@ -1049,7 +1049,7 @@ Changes <field> into type composite with one input field, the <source_field>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_identity.  Not enough memory");
+				"cmzn_fieldmodule_create_field_identity.  Not enough memory");
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);
@@ -1057,12 +1057,12 @@ Changes <field> into type composite with one input field, the <source_field>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_identity.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_identity.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Computed_field_create_identity */
+} /* cmzn_fieldmodule_create_field_identity */
 
 cmzn_field_id cmzn_fieldmodule_create_field_component(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -1070,12 +1070,12 @@ cmzn_field_id cmzn_fieldmodule_create_field_component(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && (0 < source_component_index) &&
-		(source_component_index <= Computed_field_get_number_of_components(source_field)))
+		(source_component_index <= cmzn_field_get_number_of_components(source_field)))
 	{
 		const int source_field_number = 0;
 		const int source_value_number = source_component_index - 1; // external numbering starts at 1
 		field =
-			Computed_field_create_composite(field_module,
+			cmzn_fieldmodule_create_field_composite(field_module,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, /*source_fields*/&source_field,
 			/*number_of_source_values*/0, /*source_values*/(double *)0,
@@ -1092,7 +1092,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
 	if (source_field && source_field->isNumerical() &&
 		(0 < source_component_indexes_count) && (source_component_indexes_in))
 	{
-		const int source_number_of_components = Computed_field_get_number_of_components(source_field);
+		const int source_number_of_components = cmzn_field_get_number_of_components(source_field);
 		for (int i = 0; i < source_component_indexes_count; ++i)
 		{
 			if ((source_component_indexes_in[i] < 1) || 
@@ -1110,7 +1110,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
 				source_field_numbers[i] = 0;
 				source_value_numbers[i] = source_component_indexes_in[i] - 1; // external numbering starts at 1
 			}
-			field = Computed_field_create_composite(field_module,
+			field = cmzn_fieldmodule_create_field_composite(field_module,
 				/*number_of_components*/source_component_indexes_count,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)0,
@@ -1137,7 +1137,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 				display_message(ERROR_MESSAGE, "Fieldmodule createFieldConcatenate.  Invalid source field");
 				return 0;
 			}
-			number_of_components += Computed_field_get_number_of_components(source_fields[i]);
+			number_of_components += cmzn_field_get_number_of_components(source_fields[i]);
 		}
 		std::vector<cmzn_field *> merged_source_fields(number_of_source_fields);
 		std::vector<int> source_field_numbers(number_of_components);
@@ -1163,7 +1163,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 				++merged_source_fields_count;
 			}
 			const int number_of_components_per_field =
-				Computed_field_get_number_of_components(source_fields[i]);
+				cmzn_field_get_number_of_components(source_fields[i]);
 			for (int j = 0; j < number_of_components_per_field; j++)
 			{
 				source_field_numbers[k + j] = merged_source_field_index;
@@ -1171,7 +1171,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 			}
 			k += number_of_components_per_field;
 		}
-		field = Computed_field_create_composite(fieldmodule,
+		field = cmzn_fieldmodule_create_field_composite(fieldmodule,
 			number_of_components,
 			merged_source_fields_count, merged_source_fields.data(),
 			/*number_of_source_values*/0, /*source_values*/(double *)NULL,
@@ -1192,7 +1192,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
 
 cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 {
-	if (field && dynamic_cast<Computed_field_composite*>(field->core))
+	if ((field) && (dynamic_cast<Computed_field_composite*>(field->core)))
 	{
 		// ensure composite field has one source field and no values
 		if ((1 == field->number_of_source_fields) && (0 == field->number_of_source_values))
@@ -1201,7 +1201,7 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 			return (reinterpret_cast<cmzn_field_component_id>(field));
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 int cmzn_field_component_get_component_index(cmzn_field_component_id component)
@@ -1242,4 +1242,17 @@ int cmzn_field_component_destroy(cmzn_field_component_id *component_address)
 {
 	return cmzn_field_destroy(
 		reinterpret_cast<cmzn_field_id *>(component_address));
+}
+
+cmzn_field_constant_id cmzn_field_cast_constant(cmzn_field_id field)
+{
+	if ((field) && (dynamic_cast<Computed_field_composite*>(field->core)))
+	{
+		if ((0 == field->number_of_source_fields) && (0 < field->number_of_source_values))
+		{
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_constant_id>(field));
+		}
+	}
+	return nullptr;
 }

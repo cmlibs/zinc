@@ -1865,7 +1865,7 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 				if (coordinate_system)
 					cmzn_fieldmodule_set_coordinate_system(fieldmodule, *coordinate_system);
 			}
-			cmzn_field_id field = Computed_field_create_finite_element_internal(fieldmodule, fe_field);
+			cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_internal(fieldmodule, fe_field);
 			cmzn_field_set_managed(field, true);
 			cmzn_field_destroy(&field);
 			char *new_field_name = 0;
@@ -1906,7 +1906,7 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
 			if (!field)
 			{
-				field = Computed_field_create_cmiss_number(fieldmodule);
+				field = cmzn_fieldmodule_create_field_cmiss_number(fieldmodule);
 				cmzn_field_set_name(field, cmiss_number_field_name);
 				cmzn_field_set_managed(field, true);
 			}

@@ -670,8 +670,8 @@ public:
 			if (group_name)
 				graphics_json["GroupName"] = group_name;
 
-
 			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+			Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
 			Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(export_iter->second);
 			if (glyph_export)
 			{
@@ -696,6 +696,10 @@ public:
 						glyph_export->setGlyphGeometriesURLName(temp);
 					}
 				}
+			}
+			else if (line_export)
+			{
+				graphics_json["Type"]="Lines";
 			}
 			else if (point_export)
 			{
@@ -904,6 +908,10 @@ public:
 				return_code = Graphics_export<Threejs_export_point>(graphics);
 			}
 			cmzn_graphicspointattributes_destroy(&pointAttr);
+		}
+		else if (graphics_object && (GT_object_get_type(graphics_object) == g_POLYLINE_VERTEX_BUFFERS))
+		{
+			return_code = Graphics_export<Threejs_export_line>(graphics);
 		}
 
 		return return_code;

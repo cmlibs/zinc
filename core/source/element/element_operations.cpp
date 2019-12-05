@@ -605,7 +605,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 		const int number_of_elements = (element_group) ? element_group->getSize() : fe_mesh->getSize();
 		if (0 < number_of_elements)
 		{
-			const int number_of_values = (sort_by_field) ? Computed_field_get_number_of_components(sort_by_field) : 0;
+			const int number_of_values = (sort_by_field) ? cmzn_field_get_number_of_components(sort_by_field) : 0;
 			struct FE_element_values_number *element_values;
 			if (ALLOCATE(element_values, struct FE_element_values_number, number_of_elements))
 			{

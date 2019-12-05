@@ -277,7 +277,7 @@ int Computed_field_nodal_lookup::check_dependency()
 cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field, cmzn_node_id lookup_node)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (source_field && source_field->isNumerical() && lookup_node &&
 		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
 			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
@@ -292,9 +292,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_nodal_lookup.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_node_lookup.  Invalid argument(s)");
 	}
-
 	return (field);
 }
 
@@ -620,17 +619,17 @@ int Computed_field_quaternion_SLERP::check_dependency()
  * variation of quaternion parameters are held in a node.
  * <source_field> must have 4 components.
  */
-struct Computed_field *Computed_field_create_quaternion_SLERP(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+cmzn_field *cmzn_fieldmodule_create_field_quaternion_SLERP(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_node_id quaternion_SLERP_node)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (source_field && (4 == source_field->number_of_components) &&
 		quaternion_SLERP_node &&
 			(FE_node_get_FE_nodeset(quaternion_SLERP_node)->get_FE_region() ==
-			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
+			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule))))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -640,7 +639,7 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_quaternion_SLERP.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_quaternion_SLERP.  Invalid argument(s)");
 	}
 
 	return (field);

@@ -117,9 +117,9 @@ like the number of components.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "opencmiss/zinc/result.h"
 #include "opencmiss/zinc/status.h"
+#include "opencmiss/zinc/fieldcomposite.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
-#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
@@ -183,7 +183,7 @@ static int Computed_field_clear_type(struct Computed_field *field)
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Used internally by DESTROY and Computed_field_set_type_*() functions to
+Used internally by DESTROY and Computed_field_copy_type_specific functions to
 deallocate or deaccess data specific to any Computed_field_type. Functions
 changing the type of the Computed_field should allocate any dynamic data needed
 for the type, call this function to clear what is currently in the field and
@@ -920,14 +920,14 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 	return return_code;
 }
 
-Computed_field *Computed_field_create_generic(
+cmzn_field *Computed_field_create_generic(
 	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
-	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core)
 {
-	Computed_field *field = 0;
+	cmzn_field *field = 0;
 	if ((NULL != fieldmodule) && (0 < number_of_components) &&
 		((0 == number_of_source_fields) ||
 			((0 < number_of_source_fields) && (NULL != source_fields))) &&
@@ -1666,30 +1666,13 @@ int Computed_field_is_non_linear(struct Computed_field *field)
 	return return_code;
 }
 
-int Computed_field_get_number_of_components(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int cmzn_field_get_number_of_components(cmzn_field *field)
 {
-	int number_of_components;
-
-	ENTER(Computed_field_get_number_of_components);
 	if (field)
-	{
-		number_of_components=field->number_of_components;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_number_of_components.  Missing field");
-		number_of_components=0;
-	}
-	LEAVE;
-
-	return (number_of_components);
-} /* Computed_field_get_number_of_components */
+		return field->number_of_components;
+	display_message(ERROR_MESSAGE, "cmzn_field_get_number_of_components.  Missing field");
+	return 0;
+}
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field)
@@ -2723,29 +2706,12 @@ bool Computed_field_core::is_purely_function_of_field(cmzn_field *other_field)
 }
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field **field_one, struct Computed_field **field_two)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Takes two ACCESSED fields <field_one> and <field_two> and compares their number
-of components.  If they are equal then the function just returns.  If one
-is a scalar field and the is not then the scalar is wrapped in a composite field
-which repeats the scalar to match the non scalar number of components.  The
-wrapped field will be DEACCESSED by the function but now will be accessed by
-the wrapping field and an ACCESSED pointer to the wrapper field is returned
-replacing the wrapped field.
-If the two fields are non scalar and have different numbers of components then
-nothing is done, although other shape broadcast operations could be proposed
-for matrix operations.
-==============================================================================*/
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field **field_one, cmzn_field **field_two)
 {
-	int i, number_of_components, return_code, *source_field_numbers,
-		*source_value_numbers;
-	Computed_field *broadcast_wrapper, ***field_to_wrap;
+	int return_code;
+	cmzn_field *broadcast_wrapper, ***field_to_wrap;
 
-	ENTER(Computed_field_broadcast_field_components);
 	if (field_one && *field_one && field_two && *field_two)
 	{
 		if ((*field_one)->number_of_components ==
@@ -2756,7 +2722,8 @@ for matrix operations.
 		else
 		{
 			return_code = 0;
-			field_to_wrap = (Computed_field ***)NULL;
+			int number_of_components;
+			field_to_wrap = nullptr;
 			if (1 == (*field_one)->number_of_components)
 			{
 				number_of_components = (*field_two)->number_of_components;
@@ -2775,33 +2742,20 @@ for matrix operations.
 
 			if (field_to_wrap)
 			{
-				ALLOCATE(source_field_numbers, int, number_of_components);
-				ALLOCATE(source_value_numbers, int, number_of_components);
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					/* First (and only) field */
-					source_field_numbers[i] = 0;
-					/* First (and only) component */
-					source_value_numbers[i] = 0;
-				}
+				int *source_component_indexes_in = new int[number_of_components];
+				for (int c = 0; c < number_of_components; ++c)
+					source_component_indexes_in[c] = 1;
 				// use temporary field module for broadcast wrapper since needs different defaults
 				cmzn_fieldmodule *temp_field_module =
 					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(fieldmodule));
 				// wrapper field has same name stem as wrapped field
 				cmzn_fieldmodule_set_field_name(temp_field_module, (**field_to_wrap)->name);
-				broadcast_wrapper = Computed_field_create_composite(temp_field_module,
-					number_of_components,
-					/*number_of_source_fields*/1, *field_to_wrap,
-					0, (double *)NULL,
-					source_field_numbers, source_value_numbers);
+				broadcast_wrapper = cmzn_fieldmodule_create_field_component_multiple(temp_field_module,
+					**field_to_wrap, number_of_components, source_component_indexes_in);
 				cmzn_fieldmodule_destroy(&temp_field_module);
-
-				DEALLOCATE(source_field_numbers);
-				DEALLOCATE(source_value_numbers);
-
+				delete[] source_component_indexes_in;
 				DEACCESS(Computed_field)(*field_to_wrap);
 				*(*field_to_wrap) = broadcast_wrapper;
-
 				return_code = 1;
 			}
 		}

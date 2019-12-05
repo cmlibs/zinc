@@ -1369,16 +1369,13 @@ int cmzn_field_group_destroy(cmzn_field_group_id *group_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(group_address));
 }
 
-Computed_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_module)
+cmzn_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id fieldmodule)
 {
-	Computed_field *field;
-
-	ENTER(Computed_field_create_group);
-	field = (Computed_field *)NULL;
-	if (field_module)
+	cmzn_field *field = nullptr;
+	if (fieldmodule)
 	{
-		cmzn_region_id region = cmzn_fieldmodule_get_region(field_module);
-		field = Computed_field_create_generic(field_module,
+		cmzn_region_id region = cmzn_fieldmodule_get_region(fieldmodule);
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
@@ -1390,10 +1387,8 @@ Computed_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_mo
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* cmzn_fieldmodule_create_field_group */
+}
 
 int cmzn_field_group_clear(cmzn_field_group_id group)
 {

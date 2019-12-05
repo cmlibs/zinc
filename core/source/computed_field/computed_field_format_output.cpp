@@ -203,11 +203,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_format_output(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, char *format_string)
+cmzn_field *cmzn_fieldmodule_create_field_format_output(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, char *format_string)
 {
-	cmzn_field_id field = 0;
+	cmzn_field_id field = nullptr;
 	if (source_field && format_string)
 	{
 		if (source_field->number_of_components <= 4)
@@ -233,7 +233,7 @@ struct Computed_field *Computed_field_create_format_output(
 				valid_string = 0;
 			if (valid_string)
 			{
-				field = Computed_field_create_generic(field_module,
+				field = Computed_field_create_generic(fieldmodule,
 					/*check_source_field_regions*/true, source_field->number_of_components,
 					/*number_of_source_fields*/1, &source_field,
 					/*number_of_source_values*/0, NULL,
@@ -242,13 +242,13 @@ struct Computed_field *Computed_field_create_format_output(
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_create_format_output.  Invalid or unsupported format_string.");
+					"cmzn_fieldmodule_create_field_format_output.  Invalid or unsupported format_string.");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_format_output.  Only source fields with between 1 and 4 components are currently supported.");
+				"cmzn_fieldmodule_create_field_format_output.  Only source fields with between 1 and 4 components are currently supported.");
 		}
 	}
 	return (field);

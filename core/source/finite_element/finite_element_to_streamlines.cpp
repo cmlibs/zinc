@@ -205,7 +205,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		far as tracking is concerned,
 		the vector field may have extra components related to the cross directions
 	   which are used to orient stream ribbons and tubes */
-	vector_dimension = Computed_field_get_number_of_components(coordinate_field);
+	vector_dimension = cmzn_field_get_number_of_components(coordinate_field);
 	point1[0]=0.0;
 	point1[1]=0.0;
 	point1[2]=0.0;
@@ -633,7 +633,7 @@ accurate if small), also ensuring that the element is updated.
 	/* check the arguments */
 	if ((*element)&&(3==get_FE_element_dimension(*element))&&
 		coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field)))
+		(3>=cmzn_field_get_number_of_components(coordinate_field)))
 	{
 		point[0]=0.0;
 		point[1]=0.0;
@@ -749,9 +749,9 @@ following way:
 		((3 == element_dimension) || (2 == element_dimension)) &&
 		xi&&(0.0 <= xi[0])&&(1.0 >= xi[0])&&(0.0 <= xi[1])&&(1.0 >= xi[1])&&
 		(0.0 <= xi[2])&&(1.0 >= xi[2])&& (field_cache) && coordinate_field &&
-		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+		(number_of_coordinate_components=cmzn_field_get_number_of_components(coordinate_field))&&
 		stream_vector_field&&(number_of_stream_vector_components=
-		Computed_field_get_number_of_components(stream_vector_field))
+		cmzn_field_get_number_of_components(stream_vector_field))
 		&& (((3 == number_of_coordinate_components) &&
 		((3==number_of_stream_vector_components)||
 		(6==number_of_stream_vector_components)||
@@ -1372,8 +1372,8 @@ int create_polyline_streamline_FE_element_vertex_array(
 			(element_dimension = get_FE_element_dimension(element))&&
 			((3 == element_dimension) || (2 == element_dimension))
 			&&start_xi&&coordinate_field&&
-			(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
-			(number_of_stream_vector_components=Computed_field_get_number_of_components(stream_vector_field))
+			(number_of_coordinate_components=cmzn_field_get_number_of_components(coordinate_field))&&
+			(number_of_stream_vector_components=cmzn_field_get_number_of_components(stream_vector_field))
 			&& (((3 == number_of_coordinate_components) &&
 			((3==number_of_stream_vector_components)||
 			(6==number_of_stream_vector_components)||
@@ -1459,9 +1459,9 @@ int create_surface_streamribbon_FE_element_vertex_array(
 			(0 < (element_dimension = get_FE_element_dimension(element))) &&
 			((3 == element_dimension) || (2 == element_dimension))
 			&&start_xi&&coordinate_field&&
-			(0 < (number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))) &&
+			(0 < (number_of_coordinate_components=cmzn_field_get_number_of_components(coordinate_field))) &&
 			(number_of_stream_vector_components=
-				Computed_field_get_number_of_components(stream_vector_field))
+				cmzn_field_get_number_of_components(stream_vector_field))
 				&& (((3 == number_of_coordinate_components) &&
 					((3==number_of_stream_vector_components)||
 						(6==number_of_stream_vector_components)||

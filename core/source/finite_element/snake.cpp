@@ -142,7 +142,7 @@ Calculates the coordinates and length from the first node.
 		(0 <= (node_number = accumulate_data->node_number)) &&
 		(coordinate_field = accumulate_data->coordinate_field) &&
 		(1 < (number_of_components =
-			Computed_field_get_number_of_components(coordinate_field))))
+			cmzn_field_get_number_of_components(coordinate_field))))
 	{
 		accumulate_data->current_node = node;
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(
@@ -424,7 +424,7 @@ int create_FE_element_snake_from_data_points(
 			}
 			number_of_components = initialise_array_data.number_of_components;
 
-			number_of_coordinate_components = Computed_field_get_number_of_components(coordinate_field);
+			number_of_coordinate_components = cmzn_field_get_number_of_components(coordinate_field);
 
 			fitting_field_values = (FE_value *)NULL;
 			lengths = (FE_value *)NULL;

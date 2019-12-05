@@ -639,7 +639,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	enum cmzn_scenecoordinatesystem from_coordinate_system,
 	enum cmzn_scenecoordinatesystem to_coordinate_system)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (sceneviewer)
 	{
 		field = Computed_field_create_generic(field_module,
@@ -653,7 +653,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_scene_viewer_projection.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_sceneviewer_projection.  Invalid argument(s)");
 	}
 
 	return (field);

@@ -173,18 +173,27 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_fieldcach
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_string_constant(
+cmzn_field_id cmzn_fieldmodule_create_field_string_constant(
 	struct cmzn_fieldmodule *field_module, const char *string_value_in)
 {
-	Computed_field *field = NULL;
+	cmzn_field_id field = nullptr;
 	if (string_value_in)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, /*number_of_components*/1,
-			/*number_of_source_fields*/0, NULL,
-			/*number_of_source_values*/0, NULL,
+			/*number_of_source_fields*/0, nullptr,
+			/*number_of_source_values*/0, nullptr,
 			new Computed_field_string_constant(string_value_in));
 	}
-	return (field);
+	return field;
 }
 
+cmzn_field_string_constant_id cmzn_field_cast_string_constant(cmzn_field_id field)
+{
+	if ((field) && (dynamic_cast<Computed_field_string_constant*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_string_constant_id>(field));
+	}
+	return nullptr;
+}

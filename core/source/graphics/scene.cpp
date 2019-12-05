@@ -3524,6 +3524,24 @@ int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id sce
 	return 0;
 }
 
+int Scene_get_number_of_graphics_with_line_vertices_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter)
+{
+	if (scene)
+	{
+		struct Scene_get_number_of_graphics_data data;
+		data.scenefilter = scenefilter;
+		data.type = CMZN_GRAPHICS_TYPE_INVALID;
+		data.graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
+		data.number_of_graphics = 0;
+		for_each_child_scene_in_scene_tree(
+			scene, Scene_get_number_of_graphics_with_condition, &(data));
+		return data.number_of_graphics;
+	}
+	return 0;
+}
+
+
 int Scene_get_number_of_exportable_glyph_resources(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter)
 {

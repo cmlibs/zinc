@@ -903,7 +903,7 @@ Computed_field *cmzn_fieldmodule_create_field_matrix_invert(
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
-			Computed_field_get_number_of_components(source_field),
+			cmzn_field_get_number_of_components(source_field),
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_matrix_invert());
@@ -1941,15 +1941,14 @@ Returns allocated command string for reproducing field. Includes type.
  * @param source_field  4 component field giving source quaternion value.
  * @return Newly created field.
  */
-Computed_field *Computed_field_create_quaternion_to_matrix(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_quaternion_to_matrix(
+	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field && source_field->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if (fieldmodule && source_field && source_field->isNumerical() &&
 		(source_field->number_of_components == 4))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/16,
 			/*number_of_source_fields*/1, &source_field,
@@ -1959,7 +1958,7 @@ Computed_field *Computed_field_create_quaternion_to_matrix(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_quaternion_to_matrix.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_quaternion_to_matrix.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -2128,15 +2127,14 @@ Returns allocated command string for reproducing field. Includes type.
  * @param source_field  4x4 component source field.
  * @return Newly created field.
  */
-Computed_field *Computed_field_create_matrix_to_quaternion(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_matrix_to_quaternion(
+	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field && source_field->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if (fieldmodule && source_field && source_field->isNumerical() &&
 		(source_field->number_of_components == 16))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/1, &source_field,
@@ -2146,7 +2144,7 @@ Computed_field *Computed_field_create_matrix_to_quaternion(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_matrix_to_quaternion.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_matrix_to_quaternion.  Invalid argument(s)");
 	}
 
 	return (field);

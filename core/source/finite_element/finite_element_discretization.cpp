@@ -984,7 +984,7 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				((1 == (number_of_coordinate_components =
-					Computed_field_get_number_of_components(coordinate_field))) ||
+					cmzn_field_get_number_of_components(coordinate_field))) ||
 					(2 == number_of_coordinate_components) ||
 					(3 == number_of_coordinate_components)) &&
 				(CMZN_OK == field_cache->setMeshLocation(element, &xi_centre)) &&
@@ -1149,7 +1149,7 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				((2 == (number_of_coordinate_components =
-					Computed_field_get_number_of_components(coordinate_field))) ||
+					cmzn_field_get_number_of_components(coordinate_field))) ||
 					(3 == number_of_coordinate_components)) &&
 				(CMZN_OK == field_cache->setMeshLocation(element, centre_xi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
@@ -1348,7 +1348,7 @@ array is enlarged if necessary and the new points added at random locations.
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
-				(3 == Computed_field_get_number_of_components(coordinate_field)) &&
+				(3 == cmzn_field_get_number_of_components(coordinate_field)) &&
 				(CMZN_OK == field_cache->setMeshLocation(element, centre_xi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian)) &&
@@ -1584,7 +1584,7 @@ fields, required for DENSITY and POISSON modes.
 		(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
-			(Computed_field_get_number_of_components(coordinate_field) >=
+			(cmzn_field_get_number_of_components(coordinate_field) >=
 				element_dimension) && density_field &&
 			Computed_field_is_scalar(density_field, (void *)NULL) &&
 			field_cache && number_of_xi_points_address)

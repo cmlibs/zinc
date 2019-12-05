@@ -243,12 +243,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_function(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct Computed_field *result_field,
-	struct Computed_field *reference_field)
+cmzn_field *cmzn_fieldmodule_create_field_function(
+	struct cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, cmzn_field *result_field,
+	cmzn_field *reference_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (source_field && result_field && reference_field &&
 		((source_field->number_of_components ==
 			reference_field->number_of_components) ||
@@ -269,7 +269,7 @@ struct Computed_field *Computed_field_create_function(
 		source_fields[0] = source_field;
 		source_fields[1] = result_field;
 		source_fields[2] = reference_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/3, source_fields,
@@ -279,7 +279,7 @@ struct Computed_field *Computed_field_create_function(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_function.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_function.  Invalid argument(s)");
 	}
 	LEAVE;
 

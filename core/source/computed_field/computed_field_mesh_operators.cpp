@@ -566,7 +566,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral(
 	if (integrand_field && integrand_field->isNumerical() &&
 		coordinate_field && coordinate_field->isNumerical() && mesh)
 	{
-		int numCoordinates = Computed_field_get_number_of_components(coordinate_field);
+		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{
@@ -660,7 +660,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral_squares(
 	if (integrand_field && integrand_field->isNumerical() &&
 		coordinate_field && coordinate_field->isNumerical() && mesh)
 	{
-		int numCoordinates = Computed_field_get_number_of_components(coordinate_field);
+		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{

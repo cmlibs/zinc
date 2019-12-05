@@ -408,7 +408,7 @@ time is supplied in the workingCache
 			xi[k] = 0.0;
 		}
 		element_dimension = get_FE_element_dimension(element);
-		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+		coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -535,7 +535,7 @@ time is supplied in the workingCache.
 		}
 		else
 		{
-			number_of_components = Computed_field_get_number_of_components(
+			number_of_components = cmzn_field_get_number_of_components(
 				coordinate_field);
 		}
 		for (i = 0; (return_code == CMZN_OK)&&(i<number_of_faces);i++)
@@ -664,7 +664,7 @@ time is supplied in the workingCache.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_set_type_integration.  "
+								"Computed_field_integration::add_neighbours.  "
 								"Unable to allocate member");
 							DEALLOCATE(fifo_node);
 							return_code=CMZN_ERROR_MEMORY;
@@ -749,13 +749,13 @@ time is supplied in the workingCache.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_add_neighbours.  Invalid argument(s)");
+			"Computed_field_integration::add_neighbours.  Invalid argument(s)");
 		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_integration_add_neighbours */
+} /* Computed_field_integration::add_neighbours */
 
 /***************************************************************************//**
  * Calculates the mapping for the time and location details in the cache.
@@ -785,7 +785,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			if (ALLOCATE(fifo_node,
 				Computed_field_element_integration_mapping_fifo,1)&&
 				(mapping_item=CREATE(Computed_field_element_integration_mapping)(
-					 seed_element, Computed_field_get_number_of_components(field))))
+					 seed_element, cmzn_field_get_number_of_components(field))))
 			{
 				ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)
 					(mapping_item, texture_mapping);
@@ -798,7 +798,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_integration.  "
+					"Computed_field_integration::calculate_mapping.  "
 					"Unable to allocate member");
 				DEALLOCATE(fifo_node);
 				return_code=CMZN_ERROR_MEMORY;
@@ -861,7 +861,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_integration_calculate_mapping.  "
+				"Computed_field_integration::calculate_mapping.  "
 				"Unable to create mapping list.");
 			return_code=CMZN_ERROR_GENERAL;
 		}
@@ -872,12 +872,12 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_calculate_mapping.  "
+			"Computed_field_integration::calculate_mapping.  "
 			"Invalid arguments.");
 		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	return (return_code);
-} /* Computed_field_integration_calculate_mapping */
+} /* Computed_field_integration::calculate_mapping */
 
 int Computed_field_element_integration_mapping_has_values(
 	Computed_field_element_integration_mapping *mapping, void *user_data)
@@ -1237,7 +1237,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		integrand = field->source_fields[0];
 		coordinate_field = field->source_fields[1];
 		coordinate_dimension =
-			Computed_field_get_number_of_components(field->source_fields[1]);
+			cmzn_field_get_number_of_components(field->source_fields[1]);
 		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -1676,16 +1676,16 @@ Returns true if <field> has the appropriate static type string.
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_integration(
-	struct cmzn_fieldmodule *field_module, cmzn_mesh_id mesh,
-	cmzn_element_id seed_element, Computed_field *integrand,
-	int magnitude_coordinates, Computed_field *coordinate_field)
+cmzn_field *cmzn_fieldmodule_create_field_integration(
+	cmzn_fieldmodule *fieldmodule, cmzn_mesh_id mesh,
+	cmzn_element_id seed_element, cmzn_field *integrand,
+	int magnitude_coordinates, cmzn_field *coordinate_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
 		integrand && integrand->isNumerical() && coordinate_field &&
 		coordinate_field->isNumerical() && 
-		(1 == Computed_field_get_number_of_components(integrand)))
+		(1 == cmzn_field_get_number_of_components(integrand)))
 	{
 		int number_of_components = 0;
 		if (magnitude_coordinates)
@@ -1703,11 +1703,11 @@ struct Computed_field *Computed_field_create_integration(
 				number_of_components = get_FE_element_dimension(seed_element);
 			}
 		}
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = integrand;
 		source_fields[1] = coordinate_field;
 
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1718,7 +1718,7 @@ struct Computed_field *Computed_field_create_integration(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_integration.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_integration.  Invalid argument(s)");
 	}
 	return (field);
 }

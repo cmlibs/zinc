@@ -107,7 +107,7 @@ public:
 			int new_number_of_components;
 			if (texture_is_evaluated_from_source_field())
 			{
-				new_number_of_components = Computed_field_get_number_of_components(
+				new_number_of_components = cmzn_field_get_number_of_components(
 					field->source_fields[1]);
 			}
 			else if (texture_in)
@@ -377,7 +377,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 				// and evaluate source field there; as defined here it gives no scope to
 				// optimise, e.g. by searching through a subgroup of the mesh
 				const int number_of_texture_coordinate_components =
-					Computed_field_get_number_of_components(texture_coordinate_field);
+					cmzn_field_get_number_of_components(texture_coordinate_field);
 				cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 				cmzn_mesh_id search_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
 					number_of_texture_coordinate_components);
@@ -1221,9 +1221,9 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 		}
 	}
 	number_of_data_components =
-		Computed_field_get_number_of_components(field);
+		cmzn_field_get_number_of_components(field);
 	const int number_of_texture_coordinate_components =
-		Computed_field_get_number_of_components(texture_coordinate_field);
+		cmzn_field_get_number_of_components(texture_coordinate_field);
 	if ((number_of_texture_coordinate_components > 3) ||
 		(number_of_texture_coordinate_components < dimension))
 	{
@@ -1339,11 +1339,11 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 						if (search_mesh && (
 							(graphics_buffer_package && Computed_field_find_element_xi_special(
 								 texture_coordinate_field, field_cache, &cache, values,
-								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
+								 cmzn_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
 							Computed_field_find_element_xi(texture_coordinate_field, field_cache,
-								values, Computed_field_get_number_of_components(texture_coordinate_field),
+								values, cmzn_field_get_number_of_components(texture_coordinate_field),
 								&element, xi, search_mesh, propagate_field,
 								/*find_nearest_location*/0)))
 						{
