@@ -865,7 +865,7 @@ LAST MODIFIED : 2 December 2002
 DESCRIPTION :
 Adds a callback to <region> so that when it changes <function> is called with
 <user_data>. <function> has 3 arguments, a struct cmzn_region *, a
-struct cmzn_region_changes * and the void *user_data.
+cmzn_region_changes * and the void *user_data.
 ==============================================================================*/
 {
 	int return_code;
