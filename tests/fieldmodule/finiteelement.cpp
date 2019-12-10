@@ -1269,6 +1269,70 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_DOUBLE_EQ(valueIn3, valueOut3);
 }
 
+// Test that setting node parameters correctly invalidates fieldcache
+// so updated element field values are returned.
+TEST(ZincFieldFiniteElement, fieldcacheInvalidation)
+{
+	ZincTestSetupCpp zinc;
+	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Element element = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Node node = nodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(node.isValid());
+	const double tol = 1.0E-10;
+
+	Fieldcache fieldcache1 = zinc.fm.createFieldcache();
+	const double x0[] = { 0.0, 0.0, 0.0 };
+	EXPECT_EQ(OK, fieldcache1.setNode(node));
+	double xout[3];
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache1, 3, xout));
+	EXPECT_NEAR(x0[0], xout[0], tol);
+	EXPECT_NEAR(x0[1], xout[1], tol);
+	EXPECT_NEAR(x0[2], xout[2], tol);
+
+	const double xi[] = { 0.5, 0.5, 0.5 };
+	EXPECT_EQ(OK, fieldcache1.setMeshLocation(element, 3, xi));
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache1, 3, xout));
+	EXPECT_NEAR(0.5, xout[0], tol);
+	EXPECT_NEAR(0.5, xout[1], tol);
+	EXPECT_NEAR(0.5, xout[2], tol);
+
+	// set node parameters in a separate field cache
+	Fieldcache fieldcache2 = zinc.fm.createFieldcache();
+	EXPECT_EQ(OK, fieldcache2.setNode(node));
+	const double x1[] = { 0.1, -0.2, 0.4 };
+	EXPECT_EQ(OK, coordinates.assignReal(fieldcache2, 3, x1));
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache2, 3, xout));
+	EXPECT_NEAR(x1[0], xout[0], tol);
+	EXPECT_NEAR(x1[1], xout[1], tol);
+	EXPECT_NEAR(x1[2], xout[2], tol);
+
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache1, 3, xout));
+	EXPECT_NEAR(0.5125, xout[0], tol);
+	EXPECT_NEAR(0.475, xout[1], tol);
+	EXPECT_NEAR(0.55, xout[2], tol);
+
+	// now change it back while caching changes
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, coordinates.assignReal(fieldcache2, 3, x0));
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache2, 3, xout));
+	EXPECT_NEAR(x0[0], xout[0], tol);
+	EXPECT_NEAR(x0[1], xout[1], tol);
+	EXPECT_NEAR(x0[2], xout[2], tol);
+
+	EXPECT_EQ(OK, coordinates.evaluateReal(fieldcache1, 3, xout));
+	EXPECT_NEAR(0.5, xout[0], tol);
+	EXPECT_NEAR(0.5, xout[1], tol);
+	EXPECT_NEAR(0.5, xout[2], tol);
+	zinc.fm.endChange();
+}
 
 TEST(ZincNodetemplate, define_undefineField)
 {
