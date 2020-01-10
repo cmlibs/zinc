@@ -70,7 +70,7 @@ private:
 			return 0;
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new StringFieldValueCache();
 	}

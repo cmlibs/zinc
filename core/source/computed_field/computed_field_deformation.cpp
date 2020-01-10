@@ -70,10 +70,8 @@ private:
 
 bool Computed_field_2d_strain::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location* element_xi_location;
-	// only works for element_xi locations & at least 2-D
-	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
-		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if ((element_xi_location) && (2 <= element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -83,12 +81,11 @@ bool Computed_field_2d_strain::is_defined_at_location(cmzn_fieldcache& cache)
 
 int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location* element_xi_location;
-	/* Only works for element_xi locations */
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		RealFieldValueCache *deformedCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
 		RealFieldValueCache *undeformedCache = RealFieldValueCache::cast(getSourceField(1)->evaluateWithDerivatives(cache, element_dimension));

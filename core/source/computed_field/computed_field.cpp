@@ -8,7 +8,7 @@ A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
-caching of FE_element_field_values, for example. Their main benefit is in
+caching of evaluation caches, for example. Their main benefit is in
 allowing new types of fields to be defined as functions of other fields and
 source information, such as scale, offset, magnitude, gradient,
 coordinate transformations etc., thus providing cmgui with the ability to
@@ -1150,7 +1150,7 @@ char *Computed_field_core::getComponentName(int componentNumber) const
 	return duplicate_string(name);
 }
 
-FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*parentCache*/)
+FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*fieldCache*/)
 {
 	return new RealFieldValueCache(field->number_of_components);
 }
@@ -1171,7 +1171,7 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
  * @param valueCache  The value cache to put values at. */
 int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
-	Field_element_xi_location* element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 	{
 		display_message(ERROR_MESSAGE,
@@ -1179,7 +1179,7 @@ int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& ca
 		return 0;
 	}
 	// evaluate field at perturbed locations in extra working cache
-	cmzn_fieldcache *workingCache = valueCache.getOrCreateExtraCache(cache);
+	cmzn_fieldcache *workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 	RealFieldValueCache* workingValueCache;
 	if ((0 == workingCache) || (0 == (workingValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
 	{
@@ -1190,7 +1190,7 @@ int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& ca
 	workingCache->setTime(cache.getTime());
 	const int componentsCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
-	const int elementDimension = element_xi_location->get_dimension();
+	const int elementDimension = element_xi_location->get_element_dimension();
 	const FE_value *xi = element_xi_location->get_xi();
 	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	for (int d = 0; d < elementDimension; ++d)
@@ -1494,12 +1494,12 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		(number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
-		Field_element_xi_location *element_xi_location =
-			dynamic_cast<Field_element_xi_location *>(cache->getLocation());
+		const Field_location_element_xi *element_xi_location = cache->get_location_element_xi();
 		if (element_xi_location)
 		{
-			int element_dimension = element_xi_location->get_dimension();
-			if (element_dimension == differential_operator->getDimension())
+			const int element_dimension = element_xi_location->get_element_dimension();
+			const int term = differential_operator->getTerm();
+			if ((element_dimension == differential_operator->getElementDimension()) && (term >= 0))
 			{
 				FieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, element_dimension);
 				if (valueCache)
@@ -1507,7 +1507,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 					RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
 					if (realValueCache.derivatives_valid)
 					{
-						FE_value *derivative = realValueCache.derivatives + (differential_operator->getTerm() - 1);
+						FE_value *derivative = realValueCache.derivatives + term;
 						for (int i = 0; i < field->number_of_components; i++)
 						{
 							values[i] = *derivative;

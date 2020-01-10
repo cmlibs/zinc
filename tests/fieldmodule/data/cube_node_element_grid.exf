@@ -1,0 +1,107 @@
+! Defines identical linear interpoloation by node, element and legacy grid methods
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=1
+1) coordinates_node, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node: 1
+  0.00  0.00  0.00
+Node: 2
+  1.08 -0.09 -0.24
+Node: 3
+ -0.04  0.90  0.23
+Node: 4
+  1.10  1.07  0.04
+Node: 5
+  0.00 -0.10  0.81
+Node: 6
+  0.84  0.08  1.29
+Node: 7
+ -0.20  0.85  1.09
+Node: 8
+  1.22  1.11  0.99
+!#mesh mesh3d, dimension=3, face mesh=mesh2d, nodeset=nodes
+Shape. Dimension=3, line*line*line
+#Scale factor sets=0
+#Nodes=8
+#Fields=3
+1) coordinates_node, coordinate, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+  #Nodes=8
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+  4. #Values=1
+   Value labels: value
+  5. #Values=1
+   Value labels: value
+  6. #Values=1
+   Value labels: value
+  7. #Values=1
+   Value labels: value
+  8. #Values=1
+   Value labels: value
+2) coordinates_element, field, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, element based.
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, element based.
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, element based.
+3) coordinates_grid, field, rectangular cartesian, real, #Components=3
+ x. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=1, #xi2=1, #xi3=1
+ y. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=1, #xi2=1, #xi3=1
+ z. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=1, #xi2=1, #xi3=1
+Element: 1
+ Values:
+  0.00  1.08 -0.04  1.10  0.00  0.84 -0.20  1.22
+  0.00 -0.09  0.90  1.07 -0.10  0.08  0.85  1.11 
+  0.00 -0.24  0.23  0.04  0.81  1.29  1.09  0.99
+  0.00  1.08 -0.04  1.10  0.00  0.84 -0.20  1.22
+  0.00 -0.09  0.90  1.07 -0.10  0.08  0.85  1.11 
+  0.00 -0.24  0.23  0.04  0.81  1.29  1.09  0.99
+ Nodes:
+ 1 2 3 4 5 6 7 8

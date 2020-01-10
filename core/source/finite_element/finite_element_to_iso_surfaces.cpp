@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -677,7 +678,7 @@ private:
 		xi[0] = 0.25*(xi1[0] + xi2[0] + xi3[0] + xi4[0]);
 		xi[1] = 0.25*(xi1[1] + xi2[1] + xi3[1] + xi4[1]);
 		xi[2] = 0.25*(xi1[2] + xi2[2] + xi3[2] + xi4[2]);
-		cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi);
+		field_cache->setMeshLocation(element, xi);
 		cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 		return ((double)scalar_FE_value > current_iso_value);
 	}
@@ -825,7 +826,7 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	vertex->xi[1] = xi_a[1]*inverse_r + xi_b[1]*r;
 	vertex->xi[2] = xi_a[2]*inverse_r + xi_b[2]*r;
 	// future: option to iterate to get exact xi crossing for non-linear fields
-	cmzn_fieldcache_set_mesh_location(field_cache, element, 3, vertex->xi);
+	this->field_cache->setMeshLocation(element, vertex->xi);
 	cmzn_field_evaluate_real(coordinate_field, field_cache, 3, vertex->coordinates);
 	if (NULL != texture_coordinate_field)
 	{
@@ -1085,7 +1086,7 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 			// divide into 6 pyramids with new centre point sample
 			FE_value xi_c[3], scalar_FE_value;
 			get_cell_centre_xi(i, j, k, xi_c);
-			cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi_c);
+			this->field_cache->setMeshLocation(element, xi_c);
 			cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 			Point_index pc(xi_c,  static_cast<double>(scalar_FE_value));
 			cross_pyramid(p[0], p[2], p[4], p[6], pc);
@@ -1629,7 +1630,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			xi_c[0] /= 6.0;
 			xi_c[1] /= 6.0;
 			xi_c[2] /= 6.0;
-			cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi_c);
+			this->field_cache->setMeshLocation(element, xi_c);
 			cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 			Point_index pc(xi_c,  static_cast<double>(scalar_FE_value));
 			cross_tetrahedron(p0, p1, p2, pc);
@@ -1658,6 +1659,7 @@ int Isosurface_builder::sweep()
 	double scalar_value;
 	FE_value scalar_FE_value, xi[3];
 
+	unsigned int point_index = 0;
 	for (int k = number_in_xi3; (k >= 0) && return_code; k--)
 	{
 		xi[2] = k*delta_xi3;
@@ -1683,7 +1685,7 @@ int Isosurface_builder::sweep()
 			for (int i = mod_number_in_xi1; i >= 0; i--)
 			{
 				xi[0] = i*delta_xi1;
-				if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi)) &&
+				if ((CMZN_OK == this->field_cache->setIndexedMeshLocation(point_index, element, xi)) &&
 					(CMZN_OK == cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value)))
 				{
 					scalar_value = static_cast<double>(scalar_FE_value);
@@ -1765,6 +1767,7 @@ int Isosurface_builder::sweep()
 					return_code = 0;
 					break;
 				}
+				++point_index;
 			}
 		}
 	}
@@ -1792,7 +1795,7 @@ bool Isosurface_builder::reverse_winding()
 		cmzn_differentialoperator_id d_dxi1 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 1);
 		cmzn_differentialoperator_id d_dxi2 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 2);
 		cmzn_differentialoperator_id d_dxi3 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 3);
-		if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, /*dimension*/3, xi_points[0])) &&
+		if ((CMZN_OK == this->field_cache->setMeshLocation(element, xi_points[0])) &&
 			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi1, field_cache, 3, winding_coordinate_derivative1)) &&
 			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi2, field_cache, 3, winding_coordinate_derivative2)) &&
 			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi3, field_cache, 3, winding_coordinate_derivative3)))

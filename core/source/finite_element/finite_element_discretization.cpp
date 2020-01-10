@@ -18,6 +18,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/field_cache.hpp"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
@@ -986,7 +987,7 @@ array is enlarged if necessary and the new points added at random locations.
 					cmzn_field_get_number_of_components(coordinate_field))) ||
 					(2 == number_of_coordinate_components) ||
 					(3 == number_of_coordinate_components)) &&
-				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 1, &xi_centre)) &&
+				(CMZN_OK == field_cache->setMeshLocation(element, &xi_centre)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/1, jacobian)) &&
 				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))
@@ -1150,7 +1151,7 @@ array is enlarged if necessary and the new points added at random locations.
 				((2 == (number_of_coordinate_components =
 					cmzn_field_get_number_of_components(coordinate_field))) ||
 					(3 == number_of_coordinate_components)) &&
-				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 2, centre_xi)) &&
+				(CMZN_OK == field_cache->setMeshLocation(element, centre_xi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/2, jacobian)) &&
 				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))
@@ -1348,7 +1349,7 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				(3 == cmzn_field_get_number_of_components(coordinate_field)) &&
-				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 3, centre_xi)) &&
+				(CMZN_OK == field_cache->setMeshLocation(element, centre_xi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian)) &&
 				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))

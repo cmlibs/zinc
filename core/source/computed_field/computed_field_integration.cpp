@@ -1050,11 +1050,11 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 		return_code = Computed_field_core::is_defined_at_location(location);
 		if (return_code)
 		{
-			Field_element_xi_location *element_xi_location;
-			Field_node_location *node_location;
+			Field_location_element_xi *element_xi_location;
+			Field_location_node *node_location;
 
 			element_xi_location =
-				dynamic_cast<Field_element_xi_location*>(location);
+				dynamic_cast<Field_location_element_xi*>(location);
 			if (element_xi_location != 0)
 			{
 				FE_element* element = element_xi_location->get_element();
@@ -1100,7 +1100,7 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 				}
 			}
 			else if (0 != (node_location =
-				dynamic_cast<Field_node_location*>(location)))
+				dynamic_cast<Field_location_node*>(location)))
 			{
 				FE_node *node = node_location->get_node();
 
@@ -1166,10 +1166,10 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	Computed_field *coordinate_field, *integrand;
 
 	int return_code = 1;
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
 
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		FE_element* element = element_xi_location->get_element();
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -1253,7 +1253,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				(top_level_element, texture_mapping);
 			if (mapping != 0)
 			{
-				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
+				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateSharedExtraCache(cache));
 				workingCache.setTime(time);
 				/* Integrate to the specified top_level_xi location */
 				for (i = 0 ; i < top_level_element_dimension ; i++)
@@ -1329,7 +1329,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 			return_code=0;
 		}
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
 
@@ -1683,7 +1683,8 @@ cmzn_field *cmzn_fieldmodule_create_field_integration(
 {
 	cmzn_field *field = nullptr;
 	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
-		integrand && coordinate_field &&
+		integrand && integrand->isNumerical() && coordinate_field &&
+		coordinate_field->isNumerical() && 
 		(1 == cmzn_field_get_number_of_components(integrand)))
 	{
 		int number_of_components = 0;

@@ -356,17 +356,15 @@ int Computed_field_histogram_image_filter::evaluate_histogram(
 {
 	USE_PARAMETER(dummytemplarg);
 	USE_PARAMETER(dummytemplarg2);
-	Field_element_xi_location* element_xi_location;
-	Field_coordinate_location* coordinate_location = NULL;
+	const Field_location_element_xi* element_xi_location;
+	const Field_location_field_values* coordinate_location = 0;
 	const FE_value* xi = NULL;
 
-	if (NULL != (element_xi_location =
-		dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		xi = element_xi_location->get_xi();
 	}
-	else if (NULL != (coordinate_location =
-		dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
+	else if (coordinate_location = cache.get_location_field_values())
 	{
 		xi = coordinate_location->get_values();
 	}

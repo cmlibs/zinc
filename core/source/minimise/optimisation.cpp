@@ -499,7 +499,6 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	minimisation->do_fieldassignments();
 
 	int return_code = 1;
-	Field_time_location location;
 	// NEWMAT::ColumnVector::element(int m) is 0-based, not 1 as are other interfaces
 	int termIndex = 0;
 	for (ObjectiveFieldDataVector::iterator iter = minimisation->objectiveFields.begin();

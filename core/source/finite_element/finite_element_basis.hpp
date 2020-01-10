@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : finite_element_basis.h
+ * FILE : finite_element_basis.hpp
  *
  * Declarations of types and methods for finite element basis functions.
  */
@@ -8,8 +8,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if !defined (FINITE_ELEMENT_BASIS_H)
-#define FINITE_ELEMENT_BASIS_H
+#if !defined (FINITE_ELEMENT_BASIS_HPP)
+#define FINITE_ELEMENT_BASIS_HPP
 
 #include "opencmiss/zinc/types/elementbasisid.h"
 #include "general/list.h"
@@ -80,6 +80,106 @@ enum FE_basis_modify_theta_mode
 	FE_BASIS_MODIFY_THETA_MODE_INCREASING_IN_XI1,
 	FE_BASIS_MODIFY_THETA_MODE_NON_DECREASING_IN_XI1,
 	FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1
+};
+
+const int MAXIMUM_FIELD_DERIVATIVE_ORDER = 4;
+
+/** object for evaluating and caching standard basis function values.
+ * Designed for performance. Not to be shared between threads.
+ * Note client must remember xi_coordinates this is evaluated at */
+class Standard_basis_function_evaluation
+{
+	Standard_basis_function *standard_basis_function;  // Standard basis function pointer. 0 if cache invalid.
+	int standard_basis_function_arguments[MAXIMUM_ELEMENT_XI_DIMENSIONS + 1];  // dimension, order1 ... orderN
+	int number_of_basis_functions;
+	FE_value *basis_function_values;
+	int number_of_values_allocated;
+	int derivative_order_evaluated;
+	int derivative_order_maximum;  // maximum derivative order ever encountered
+
+	/** Full evaluation of basis function values in cache. Must be called to set
+	 * standard basis function and arguments and to calculate number_of_basis_functions.
+	 * @return  Standard basis function values from cache. */
+	const FE_value *evaluate_full(Standard_basis_function *standard_basis_function_in,
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates, int derivative_order_in);
+
+	static inline bool basis_arguments_match(const int *standard_basis_arguments1, const int *standard_basis_arguments2)
+	{
+		for (int i = 0; i <= standard_basis_arguments1[0]; ++i)
+			if (standard_basis_arguments1[i] != standard_basis_arguments2[i])
+				return false;
+		return true;
+	}
+
+	/** Call only when current basis is valid. */
+	inline int get_derivatives_count(int derivative_order_in) const
+	{
+		int count = 1;
+		for (int i = 0; i < derivative_order_in; ++i)
+			count *= this->standard_basis_function_arguments[0];
+		return count;
+	}
+
+	/** Call only when current basis is valid. */
+	inline int get_derivatives_offset(int derivative_order_in) const
+	{
+		int index = 0;
+		int count = 1;
+		for (int i = 0; i < derivative_order_in; ++i)
+		{
+			index += count;
+			count *= this->standard_basis_function_arguments[0];
+		}
+		return index*this->number_of_basis_functions;
+	}
+
+public:
+	Standard_basis_function_evaluation() :
+		standard_basis_function(0),
+		number_of_basis_functions(0),
+		basis_function_values(0),
+		number_of_values_allocated(0),
+		derivative_order_evaluated(-1),
+		derivative_order_maximum(0)
+	{
+	}
+
+	~Standard_basis_function_evaluation()
+	{
+		delete[] this->basis_function_values;
+	}
+
+	/** Return basis function values or derivatives at supplied xi coordinates.
+	 * Optimised for speed; client must ensure all arguments are valid and that
+	 * xi_coordinates is of correct dimension for basis.
+	 * Important: object does not store the xi coordinates, so client must call
+	 * invalidate() to force full_evaluation at a different coordinate.
+	 * @param standard_basis_function.  Standard basis function pointer. Client to check.
+	 * @param standard_basis_function_arguments_in.  Arguments. Client to check.
+	 * @param xi_coordinates.  Location to evaluate at. Client to check.
+	 * @param derivative_order_in  Derivative order w.r.t. xi starting at <=0 for
+	 * values, 1 for first derivatives etc.
+	 * @return  Standard basis function values from cache or from full calculation.
+	 * WARNING: Treat returned pointer as invalid after another call to this
+	 * function with a different basis or higher derivative order due to possible
+	 * reallocation. */
+	inline const FE_value *evaluate(Standard_basis_function *standard_basis_function_in,
+		const int *standard_basis_function_arguments_in, const FE_value *xi_coordinates, int derivative_order_in = 0)
+	{
+		if ((derivative_order_in <= this->derivative_order_evaluated)
+			&& (standard_basis_function_in == this->standard_basis_function)
+			&& basis_arguments_match(standard_basis_function_arguments_in, this->standard_basis_function_arguments))
+			return this->basis_function_values + this->get_derivatives_offset(derivative_order_in);
+		return this->evaluate_full(standard_basis_function_in, standard_basis_function_arguments_in,
+			xi_coordinates, derivative_order_in);
+	}
+
+	/** Invalidate cache to force full evaluation */
+	inline void invalidate()
+	{
+		this->standard_basis_function = 0;
+		this->derivative_order_evaluated = -1;
+	}
 };
 
 /*
@@ -255,11 +355,13 @@ Also checks that the linked xi numbers have the same basis type.
  */
 int FE_basis_is_non_linear(struct FE_basis *basis);
 
-/* exposed only for comparing function pointers */
+/** Standard monomial basis function used for most bases.
+ * Exposed only for comparing function pointers */
 int monomial_basis_functions(void *type_arguments,
 	const FE_value *xi_coordinates, FE_value *function_values);
 
-/* exposed only for comparing function pointers */
+/** Standard polygon basis function.
+ * Exposed only for comparing function pointers */
 int polygon_basis_functions(void *type_arguments,
 	const FE_value *xi_coordinates, FE_value *function_values);
 
@@ -369,4 +471,4 @@ int calculate_standard_basis_transformation(struct FE_basis *basis,
 bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
 	enum FE_basis_modify_theta_mode mode, FE_value *values);
 
-#endif /* !defined (FINITE_ELEMENT_BASIS_H) */
+#endif /* !defined (FINITE_ELEMENT_BASIS_HPP) */

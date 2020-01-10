@@ -14,6 +14,7 @@
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "computed_field/computed_field_private.hpp"
@@ -107,15 +108,38 @@ char *MeshLocationFieldValueCache::getAsString()
 	return valueAsString;
 }
 
+cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn) :
+	region(cmzn_region_access(regionIn)),
+	locationCounter(0),
+	indexed_location_element_xi(0),
+	number_of_indexed_location_element_xi(0),
+	location(&(this->location_time)),
+	requestedDerivatives(0),
+	valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
+	assignInCache(false),
+	parentCache(parentCacheIn),
+	sharedWorkingCache(0),
+	access_count(1)
+{
+	cmzn_region_add_field_cache(this->region, this);
+}
+
 cmzn_fieldcache::~cmzn_fieldcache()
 {
+	if (this->sharedWorkingCache)
+		this->sharedWorkingCache->parentCache = 0;  // detach first in case code tries to use it as this is being destroyed
+	this->location = &this->location_time;
+	delete[] indexed_location_element_xi;
+	this->indexed_location_element_xi = 0;
+	this->number_of_indexed_location_element_xi = 0;
 	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
+	if (this->sharedWorkingCache)
+		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
 	cmzn_region_remove_field_cache(region, this);
-	delete location;
 	cmzn_region_destroy(&region);
 }
 
@@ -126,53 +150,110 @@ cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region_id regionIn)
 	return 0;
 }
 
+void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
+{
+	switch (source.location->get_type())
+	{
+	case Field_location::TYPE_ELEMENT_XI:
+	{
+		this->location_element_xi.set_element_xi(
+			source.location_element_xi.get_element(),
+			source.location_element_xi.get_xi(),
+			source.location_element_xi.get_top_level_element());
+		this->location = &this->location_element_xi;
+	} break;
+	case Field_location::TYPE_FIELD_VALUES:
+	{
+		this->location_field_values.set_field_values(
+			source.location_field_values.get_field(),
+			source.location_field_values.get_number_of_values(),
+			source.location_field_values.get_values());
+		this->location = &this->location_field_values;
+	} break;
+	case Field_location::TYPE_NODE:
+	{
+		this->location_node.set_node(
+			source.location_node.get_node());
+		this->location = &this->location_node;
+	} break;
+	case Field_location::TYPE_TIME:
+	{
+		this->location = &this->location_time;
+	} break;
+	case Field_location::TYPE_INVALID:
+	{
+		display_message(ERROR_MESSAGE, "cmzn_fieldcache::copyLocation.  Invalid location type");
+		this->location = &this->location_time;
+	} break;
+	}
+	this->location->set_time(source.location->get_time());
+	this->locationChanged();
+}
+
+int cmzn_fieldcache::setIndexedMeshLocation(unsigned int index,
+	cmzn_element_id element, const double *chart_coordinates,
+	cmzn_element_id top_level_element)
+{
+	if (!(element && chart_coordinates))
+		return CMZN_ERROR_ARGUMENT;
+	Field_location_element_xi *element_xi_location;
+	const FE_value time = this->location->get_time();
+	if (index < this->number_of_indexed_location_element_xi)
+	{
+		element_xi_location = &(this->indexed_location_element_xi[index]);
+	}
+	else if (index < 512)  // never store more than this number
+	{
+		// Grow from 0 --> 64 --> 512
+		const unsigned int new_size = ((this->indexed_location_element_xi) || (index >= 64)) ? 512 : 64;
+		Field_location_element_xi *new_indexed_location_element_xi = new Field_location_element_xi[new_size];
+		if (new_indexed_location_element_xi)
+		{
+			delete[] this->indexed_location_element_xi;
+			this->indexed_location_element_xi = new_indexed_location_element_xi;
+			this->number_of_indexed_location_element_xi = new_size;
+			element_xi_location = &(this->indexed_location_element_xi[index]);
+			this->location = element_xi_location;  // ensure this->location is not pointing at freed memory
+		}
+		else
+		{
+			element_xi_location = &this->location_element_xi;
+		}
+	}
+	else
+	{
+		element_xi_location = &this->location_element_xi;
+	}
+	element_xi_location->set_element_xi(element, chart_coordinates, top_level_element);
+	element_xi_location->set_time(time);
+	this->location = element_xi_location;
+	this->locationChanged();
+	return CMZN_OK;
+}
+
 int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros
 	if (!(field && field->isNumerical() && (numberOfValues > 0) && values))
 		return CMZN_ERROR_ARGUMENT;
+	// still need to set location_field_values because image processing uses it
+	this->location_field_values.set_field_values(field, numberOfValues, values);
+	if (this->location != &this->location_field_values)
+	{
+		this->location_field_values.set_time(this->location->get_time());
+		this->location = &this->location_field_values;
+	}
+	locationChanged();  // must do first to ensure cache is valid below
+	// now put the values in the cache. Note does not support derivatives!
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
 	{
 		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
 	}
 	valueCache->derivatives_valid = 0;
-	locationChanged();
 	valueCache->evaluationCounter = locationCounter;
-	FE_value time = location->get_time();
-	// still need to create Field_coordinate_location because image processing fields dynamic cast to recognise
-	delete location;
-	location = new Field_coordinate_location(field, numberOfValues, values, time);
 	return CMZN_OK;
-}
-
-int cmzn_fieldcache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
-	int numberOfDerivatives, const double *derivatives)
-{
-	// to support the xi field which has 3 components regardless of dimensions, do not
-	// check (numberOfValues >= field->number_of_components), just pad with zeros
-	if (!(field && field->isNumerical() && (numberOfValues > 0) && values &&
-		(0 < numberOfDerivatives) && (numberOfDerivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives))
-		return 0;
-	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
-	for (int i = 0; i < field->number_of_components; i++)
-	{
-		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
-	}
-	const int size = field->number_of_components * numberOfDerivatives;
-	const int suppliedSize = numberOfValues * numberOfDerivatives;
-	for (int i = 0; i < size; i++)
-	{
-		valueCache->derivatives[i] = (i < suppliedSize) ? derivatives[i] : 0.0;
-	}
-	valueCache->derivatives_valid = 1;
-	locationChanged();
-	valueCache->evaluationCounter = locationCounter;
-	FE_value time = location->get_time();
-	delete location;
-	location = new Field_coordinate_location(field, numberOfValues, values, time, numberOfDerivatives, derivatives);
-	return 1;
 }
 
 /*
@@ -232,33 +313,33 @@ int cmzn_fieldcache_set_mesh_location_with_parent(
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	cmzn_element_id top_level_element)
 {
-	if (!(cache && element && (number_of_chart_coordinates >= cmzn_element_get_dimension(element))))
-		return CMZN_ERROR_ARGUMENT;
-	cache->setMeshLocation(element, chart_coordinates, top_level_element);
-	return CMZN_OK;
+	if ((cache) && (element) && (number_of_chart_coordinates >= element->getDimension()))
+		return cache->setMeshLocation(element, chart_coordinates, top_level_element);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,
 	cmzn_element_id element, int number_of_chart_coordinates,
 	const double *chart_coordinates)
 {
-	return cmzn_fieldcache_set_mesh_location_with_parent(cache, element,
-		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
+	if ((cache) && (element) && (number_of_chart_coordinates >= element->getDimension()))
+		return cache->setMeshLocation(element, chart_coordinates);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_node(cmzn_fieldcache_id cache, cmzn_node_id node)
 {
-	if (!(cache && node))
-		return CMZN_ERROR_ARGUMENT;
-	return cache->setNode(node);
+	if ((cache) && (node))
+		return cache->setNode(node);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_field_real(cmzn_fieldcache_id cache,
 	cmzn_field_id reference_field, int number_of_values, const double *values)
 {
-	if (!cache)
-		return CMZN_ERROR_ARGUMENT;
-	return cache->setFieldReal(reference_field, number_of_values, values);
+	if (cache)
+		return cache->setFieldReal(reference_field, number_of_values, values);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // Internal function

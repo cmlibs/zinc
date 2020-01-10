@@ -17,7 +17,7 @@
 #include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/status.h"
 #include "general/value.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "datastore/labels.hpp"
 #include <vector>
 

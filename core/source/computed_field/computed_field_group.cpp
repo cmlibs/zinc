@@ -176,8 +176,8 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 #endif /* defined (USE_OPENCASCADE) */
 	else
 	{
-		Field_element_xi_location *element_xi_location;
-		if (dynamic_cast<Field_node_location*>(cache.getLocation()))
+		const Field_location_element_xi *element_xi_location;
+		if (cache.get_location_node())
 		{
 			if (local_node_group)
 			{
@@ -196,9 +196,9 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 				}
 			}
 		}
-		else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+		else if (element_xi_location = cache.get_location_element_xi())
 		{
-			int dimension = element_xi_location->get_dimension();
+			int dimension = element_xi_location->get_element_dimension();
 			cmzn_field_id subobject_group_field = get_element_group_field_private(dimension);
 			if (subobject_group_field)
 			{

@@ -67,10 +67,10 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreatePrivateExtraCache(Computed_field_get_region(field));
 		return valueCache;
 	}
 
@@ -90,9 +90,8 @@ int Computed_field_time_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
-		Field_location *location = cache.cloneLocation();
-		location->set_time(timeValueCache->values[0]);
-		extraCache.setLocation(location);
+		extraCache.copyLocation(cache);
+		extraCache.setTime(timeValueCache->values[0]);
 		extraCache.setRequestedDerivatives(cache.getRequestedDerivatives());
 		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		if (sourceValueCache)

@@ -87,16 +87,20 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double chart_coordinates[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, chart_coordinates);
+	double xi[] = {0.6, 0.2, 0.45};
+	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
-	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_EQ(1.0, outvalues[0]);
-	EXPECT_EQ(0.0, outvalues[1]);
-	EXPECT_EQ(0.0, outvalues[2]);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(xi[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(xi[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(xi[2], outvalues[2]);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f2, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(1.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
@@ -446,22 +450,22 @@ TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 
 	double outValue;
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(potential, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(1.75, outValue);
+	EXPECT_DOUBLE_EQ(1.75, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi1, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(2.0, outValue);
+	EXPECT_DOUBLE_EQ(2.0, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi2, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(1.5, outValue);
+	EXPECT_DOUBLE_EQ(1.5, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi3, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(8.0, outValue);
+	EXPECT_DOUBLE_EQ(8.0, outValue);
 
 	cmzn_field_id grad_potential = cmzn_fieldmodule_create_field_gradient(zinc.fm, potential, coordinates);
 	EXPECT_NE(static_cast<cmzn_field *>(0), grad_potential);
 
 	double outValues[3];
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(grad_potential, cache, 3, outValues));
-	ASSERT_DOUBLE_EQ(2.0, outValues[0]);
-	ASSERT_DOUBLE_EQ(1.5, outValues[1]);
-	ASSERT_DOUBLE_EQ(8.0, outValues[2]);
+	EXPECT_DOUBLE_EQ(2.0, outValues[0]);
+	EXPECT_DOUBLE_EQ(1.5, outValues[1]);
+	EXPECT_DOUBLE_EQ(8.0, outValues[2]);
 
 	cmzn_field_destroy(&grad_potential);
 	cmzn_fieldcache_destroy(&cache);
@@ -506,24 +510,24 @@ TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 	double x[4];
 	EXPECT_EQ(OK, result = dependent.evaluateReal(cache, 4, x));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_x[i], x[i]);
+		EXPECT_DOUBLE_EQ(expected_x[i], x[i]);
 
 	const double expected_dx_dxi1[4] = { 1.0, 0.0, 0.0, 0.0 };
 	double dx_dxi1[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi1, cache, 4, dx_dxi1));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi1[i], dx_dxi1[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi1[i], dx_dxi1[i]);
 
 	const double expected_dx_dxi2[4] = { 0.0, 1.0, 0.0, 0.0 };
 	double dx_dxi2[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi2, cache, 4, dx_dxi2));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi2[i], dx_dxi2[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi2[i], dx_dxi2[i]);
 
 	const double expected_dx_dxi3[4] = { 0.0, 0.0, 1.0, 0.0 };
 	double dx_dxi3[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi3, cache, 4, dx_dxi3));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
 }
 

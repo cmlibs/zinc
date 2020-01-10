@@ -68,7 +68,7 @@ private:
 		return CMZN_FIELD_TYPE_IF;
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /* parentCache */)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		if (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
 			return new RealFieldValueCache(field->number_of_components);

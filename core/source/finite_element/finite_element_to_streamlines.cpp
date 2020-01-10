@@ -221,7 +221,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	coordinate_tolerance = 1.0e-2;  /* We are tolerating a greater error in the coordinate
 											  positions so long as the tracking is valid */
 	local_step_size = *step_size;
-	return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xi)) &&
+	return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xi)) &&
 		(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 			vector_dimension, point1, /*number_of_derivatives*/element_dimension, dxdxi)) &&
 		(CMZN_OK == cmzn_field_evaluate_real(stream_vector_field, field_cache,
@@ -273,7 +273,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			leave the step size alone and adjust the stepsize after xiB */
 		if (return_code)
 		{
-			return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiA)) &&
+			return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiA)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					vector_dimension, point3, /*number_of_derivatives*/element_dimension, dxdxi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real(stream_vector_field, field_cache,
@@ -345,7 +345,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			increment_xi, &fraction, &face_number, xi_face);
 		if (return_code)
 		{
-			return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiC)) &&
+			return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiC)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					vector_dimension, point2, /*number_of_derivatives*/element_dimension, dxdxi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real(stream_vector_field, field_cache,
@@ -402,7 +402,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		{
 			if (return_code)
 			{
-				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiD)) &&
+				return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiD)) &&
 					(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 						vector_dimension, point2, /*number_of_derivatives*/element_dimension, dxdxi)) &&
 					(CMZN_OK == cmzn_field_evaluate_real(stream_vector_field, field_cache,
@@ -432,7 +432,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			}
 			if (return_code)
 			{
-				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiE)) &&
+				return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiE)) &&
 					(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 						vector_dimension, point3, /*number_of_derivatives*/element_dimension, dxdxi)) &&
 					(CMZN_OK == cmzn_field_evaluate_real(stream_vector_field, field_cache,
@@ -533,7 +533,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 					/* Check the new xi coordinates are correct for our
 					coordinate field and if not try rotating them */
 
-					return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiF)) &&
+					return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiF)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1));
 					coordinate_point_error = 0.0;
 					for (i = 0 ; i < vector_dimension ; i++)
@@ -558,7 +558,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 						xiF[2]=xiD[2];
 						return_code = FE_element_change_to_adjacent_element(element,
 							xiF, (FE_value *)NULL, &face_number, xi_face, permutation);
-						return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiF)) &&
+						return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xiF)) &&
 							(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1));
 						coordinate_point_error = 0.0;
 						for (i = 0 ; i < vector_dimension ; i++)
@@ -640,7 +640,7 @@ accurate if small), also ensuring that the element is updated.
 		point[2]=0.0;
 		if ( translate )
 		{
-			if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, 3, xi)) &&
+			if ((CMZN_OK == field_cache->setMeshLocation(*element, xi)) &&
 				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field, field_cache,
 					/*number_of_values*/3, point, /*number_of_derivatives*/3, dxdxi)))
 			{
@@ -668,7 +668,7 @@ accurate if small), also ensuring that the element is updated.
 		}
 		if ( return_code )
 		{
-			if ((CMZN_OK != cmzn_fieldcache_set_mesh_location(field_cache, *element, 3, xi)) ||
+			if ((CMZN_OK != field_cache->setMeshLocation(*element, xi)) ||
 				(CMZN_OK != cmzn_field_evaluate_real(coordinate_field, field_cache,
 					/*number_of_values*/3, point_coordinates)))
 			{
@@ -748,7 +748,7 @@ following way:
 		(element_dimension = get_FE_element_dimension(*element))&&
 		((3 == element_dimension) || (2 == element_dimension)) &&
 		xi&&(0.0 <= xi[0])&&(1.0 >= xi[0])&&(0.0 <= xi[1])&&(1.0 >= xi[1])&&
-		(0.0 <= xi[2])&&(1.0 >= xi[2])&&coordinate_field&&
+		(0.0 <= xi[2])&&(1.0 >= xi[2])&& (field_cache) && coordinate_field &&
 		(number_of_coordinate_components=cmzn_field_get_number_of_components(coordinate_field))&&
 		stream_vector_field&&(number_of_stream_vector_components=
 		cmzn_field_get_number_of_components(stream_vector_field))
@@ -797,7 +797,7 @@ following way:
 				while (return_code && add_point && (i<allocated_number_of_points))
 				{
 					/* evaluate the coordinate and stream_vector fields */
-					return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xi));
+					return_code = (CMZN_OK == field_cache->setMeshLocation(*element, xi));
 					switch (number_of_stream_vector_components)
 					{
 						case 2:

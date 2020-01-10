@@ -19,6 +19,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
+#include "computed_field/field_derivative.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "context/context.h"
@@ -28,6 +29,7 @@
 #include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/message.h"
@@ -41,7 +43,7 @@ Module types
 */
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
-	struct cmzn_region *, struct cmzn_region_changes *);
+	struct cmzn_region *, cmzn_region_changes *);
 
 typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
 
@@ -68,7 +70,8 @@ struct cmzn_region
 	int field_cache_size; // 1 more than highest field cache index given out
 	// all field caches currently in use for this region, for clearing
 	// when fields changed, and adding value caches for new fields.
-	std::list<cmzn_fieldcache_id> *field_caches;
+	std::list<cmzn_fieldcache_id> field_caches;
+	std::vector<Field_derivative *> field_derivatives;
 
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
@@ -84,10 +87,20 @@ struct cmzn_region
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
 
 	// list of notifiers which receive field module callbacks
-	cmzn_fieldmodulenotifier_list *notifier_list;
+	cmzn_fieldmodulenotifier_list notifier_list;
 
 	/* number of objects using this region */
 	int access_count;
+
+	cmzn_region(cmzn_region *base_region);
+
+	~cmzn_region();
+
+	/** @return  Accessed field derivative or nullptr if failed. */
+	Field_derivative_element_xi *get_field_derivative_element_xi(int element_dimension_in, int order_in);
+
+	void remove_field_derivative(Field_derivative *field_derivative);
+
 };
 
 /*
@@ -98,7 +111,7 @@ Module functions
 DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_region_change, void)
 
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_region_change, \
-	struct cmzn_region *, struct cmzn_region_changes *)
+	struct cmzn_region *, cmzn_region_changes *)
 
 /**
  * Computed field manager callback.
@@ -117,7 +130,7 @@ static void cmzn_region_Computed_field_change(
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
 		// clear active field caches for changed fields
 		if ((change_summary & MANAGER_CHANGE_RESULT(Computed_field)) &&
-			(0 < region->field_caches->size()))
+			(0 < region->field_caches.size()))
 		{
 			LIST(Computed_field) *changedFieldList =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message, MANAGER_CHANGE_RESULT(Computed_field));
@@ -130,7 +143,7 @@ static void cmzn_region_Computed_field_change(
 			cmzn_fielditerator_destroy(&iter);
 			DESTROY(LIST(Computed_field))(&changedFieldList);
 		}
-		if (0 < region->notifier_list->size())
+		if (0 < region->notifier_list.size())
 		{
 			cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(region);
 			event->setChangeFlags(change_summary);
@@ -138,8 +151,8 @@ static void cmzn_region_Computed_field_change(
 			FE_region_changes *changes = FE_region_changes::create(region->fe_region);
 			event->setFeRegionChanges(changes);
 			FE_region_changes::deaccess(changes);
-			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list->begin();
-				iter != region->notifier_list->end(); ++iter)
+			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list.begin();
+				iter != region->notifier_list.end(); ++iter)
 			{
 				(*iter)->notify(event);
 			}
@@ -167,8 +180,8 @@ static int cmzn_region_fields_begin_change(struct cmzn_region *region)
 	if (region)
 	{
 		// reset field value caches so always re-evaluated. See cmzn_field::evaluate()
-		for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches->begin();
-			iter != region->field_caches->end(); ++iter)
+		for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches.begin();
+			iter != region->field_caches.end(); ++iter)
 		{
 			cmzn_fieldcache_id cache = *iter;
 			cache->resetValueCacheEvaluationCounters();
@@ -217,7 +230,7 @@ region. No messages sent if change count positive or no changes have occurred.
 ==============================================================================*/
 {
 	int return_code;
-	struct cmzn_region_changes changes;
+	cmzn_region_changes changes;
 
 	ENTER(cmzn_region_update);
 	if (region)
@@ -313,52 +326,6 @@ struct cmzn_region *cmzn_region_find_subregion_at_path_internal(
 
 } // anonymous namespace
 
-cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
-{
-	struct cmzn_region *region;
-	if (ALLOCATE(region, struct cmzn_region, 1))
-	{
-		region->name = NULL;
-		region->context = 0;
-		region->parent = NULL;
-		region->first_child = NULL;
-		region->next_sibling = NULL;
-		region->previous_sibling = NULL;
-		region->any_object_list = CREATE(LIST(Any_object))();
-		region->change_level = 0;
-		region->hierarchical_change_level = 0;
-		region->changes.name_changed = 0;
-		region->changes.children_changed = 0;
-		region->changes.child_added = NULL;
-		region->changes.child_removed = NULL;
-		region->change_callback_list =
-			CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))();
-		region->notifier_list = new cmzn_fieldmodulenotifier_list();
-		region->field_manager = CREATE(MANAGER(Computed_field))();
-		Computed_field_manager_set_region(region->field_manager, region);
-		region->field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
-			cmzn_region_Computed_field_change, (void *)region, region->field_manager);
-		region->fe_region = FE_region_create(base_region ? base_region->fe_region : 0);
-		FE_region_set_cmzn_region_private(region->fe_region, region);
-		region->field_cache_size = 0;
-		region->field_caches = new std::list<cmzn_fieldcache_id>();
-		region->access_count = 1;
-		if (!(region->any_object_list && region->change_callback_list &&
-			region->field_manager && region->field_manager_callback_id &&
-			region->fe_region))
-		{
-			display_message(ERROR_MESSAGE, "cmzn_region_create_internal.  Could not build region");
-			DEACCESS(cmzn_region)(&region);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_create_internal.  Could not allocate memory");
-	}
-	return (region);
-}
-
 cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region)
 {
 	if (!region)
@@ -387,91 +354,199 @@ static void cmzn_region_detach_fields(struct cmzn_region *region)
 	}
 }
 
-/**
- * Destructor for cmzn_region. Sets <*cmiss_region_address> to NULL.
- */
-int DESTROY(cmzn_region)(struct cmzn_region **region_address)
-{
-	int return_code;
-	struct cmzn_region *region;
-	if (region_address && (0 != (region = *region_address)))
-	{
-		if (0 == region->access_count)
-		{
-			// first notify clients as they call some region/fieldmodule APIs
-			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list->begin();
-				iter != region->notifier_list->end(); ++iter)
-			{
-				cmzn_fieldmodulenotifier *notifier = *iter;
-				notifier->regionDestroyed();
-				cmzn_fieldmodulenotifier::deaccess(notifier);
-			}
-			delete region->notifier_list;
-			region->notifier_list = 0;
-
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
-				&(region->change_callback_list));
-
-			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
-			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
-
-			// destroy child list
-			cmzn_region *next_child = region->first_child;
-			region->first_child = NULL;
-			cmzn_region *child;
-			while ((child = next_child))
-			{
-				next_child = child->next_sibling;
-				child->parent = NULL;
-				child->next_sibling = NULL;
-				child->previous_sibling = NULL;
-				DEACCESS(cmzn_region)(&child);
-			}
-
-			// cease receiving field manager callbacks otherwise get problems from fields being destroyed
-			// e.g. selection field accessed by scene held in any_object_list
-			if (region->field_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
-				region->field_manager_callback_id = 0;
-			}
-
-			delete region->field_caches;
-			DESTROY(LIST(Any_object))(&(region->any_object_list));
-
-			cmzn_region_detach_fields(region);
-
-			if (region->context)
-				region->context->removeRegion(region);
-			if (region->name)
-				DEALLOCATE(region->name);
-
-			DEALLOCATE(*region_address);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(cmzn_region).  Non-zero access count");
-			return_code = 0;
-		}
-		*region_address = (struct cmzn_region *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(cmzn_region).  Missing cmzn_region");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
 } // anonymous namespace
 
 /*
 Global functions
 ----------------
 */
+
+cmzn_region::cmzn_region(cmzn_region *base_region) :
+	name(nullptr),
+	context(nullptr),
+	parent(nullptr),
+	first_child(nullptr),
+	next_sibling(nullptr),
+	previous_sibling(nullptr),
+	any_object_list(CREATE(LIST(Any_object))()),
+	change_level(0),
+	hierarchical_change_level(0),
+	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
+	field_manager(CREATE(MANAGER(Computed_field))()),
+	field_manager_callback_id(MANAGER_REGISTER(Computed_field)(
+		cmzn_region_Computed_field_change, (void *)this, this->field_manager)),
+	fe_region(FE_region_create(base_region ? base_region->fe_region : 0)),
+	field_cache_size(0),
+	access_count(1)
+{
+	Computed_field_manager_set_region(this->field_manager, this);
+	FE_region_set_cmzn_region_private(this->fe_region, this);
+}
+
+cmzn_region::~cmzn_region()
+{
+	// first notify clients as they call some region/fieldmodule APIs
+	for (cmzn_fieldmodulenotifier_list::iterator iter = this->notifier_list.begin();
+		iter != this->notifier_list.end(); ++iter)
+	{
+		cmzn_fieldmodulenotifier *notifier = *iter;
+		notifier->regionDestroyed();
+		cmzn_fieldmodulenotifier::deaccess(notifier);
+	}
+
+	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(&(this->change_callback_list));
+
+	// release accessed field derivatives
+	const int size = static_cast<int>(this->field_derivatives.size());
+	for (int i = 0; i < size; ++i)
+	{
+		Field_derivative *field_derivative = this->field_derivatives[i];
+		if (field_derivative)
+		{
+			field_derivative->set_region(nullptr);
+			// certain types are accessed by region to prevent constant re-creation
+			if (field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI)
+				Field_derivative::deaccess(field_derivative);
+		}
+	}
+
+	// GRC move to changes object?
+	REACCESS(cmzn_region)(&this->changes.child_added, NULL);
+	REACCESS(cmzn_region)(&this->changes.child_removed, NULL);
+
+	// destroy child list
+	cmzn_region *next_child = this->first_child;
+	this->first_child = NULL;
+	cmzn_region *child;
+	while ((child = next_child))
+	{
+		next_child = child->next_sibling;
+		child->parent = NULL;
+		child->next_sibling = NULL;
+		child->previous_sibling = NULL;
+		DEACCESS(cmzn_region)(&child);
+	}
+
+	// cease receiving field manager callbacks otherwise get problems from fields being destroyed
+	// e.g. selection field accessed by scene held in any_object_list
+	if (this->field_manager_callback_id)
+	{
+		MANAGER_DEREGISTER(Computed_field)(this->field_manager_callback_id, this->field_manager);
+		this->field_manager_callback_id = 0;
+	}
+
+	DESTROY(LIST(Any_object))(&(this->any_object_list));
+
+	cmzn_region_detach_fields(this);
+
+	if (this->context)
+		this->context->removeRegion(this);
+	if (this->name)
+		DEALLOCATE(this->name);
+}
+
+Field_derivative_element_xi *cmzn_region::get_field_derivative_element_xi(int element_dimension_in, int order_in)
+{
+	if ((element_dimension_in < 1)
+		|| (element_dimension_in > MAXIMUM_ELEMENT_XI_DIMENSIONS)
+		|| (order_in < 1)
+		|| (order_in > MAXIMUM_FIELD_DERIVATIVE_ORDER))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_region::get_field_derivative_element_xi.  Invalid arguments");
+		return nullptr;
+	}
+	const int size = static_cast<int>(this->field_derivatives.size());
+	Field_derivative_element_xi *field_derivative_element_xi;
+	for (int i = 0; i < size; ++i)
+	{
+		Field_derivative *field_derivative = this->field_derivatives[i];
+		if ((field_derivative)
+			&& (field_derivative->get_order() == order_in)
+			&& (field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI))
+		{
+			field_derivative_element_xi = static_cast<Field_derivative_element_xi *>(field_derivative);
+			if (field_derivative_element_xi->get_element_dimension() == element_dimension_in)
+			{
+				field_derivative_element_xi->access();
+				return field_derivative_element_xi;
+			}
+		}
+	}
+	Field_derivative_element_xi *lower_derivative = nullptr;
+	if (order_in > 1)
+	{
+		lower_derivative = this->get_field_derivative_element_xi(element_dimension_in, order_in - 1);
+		if (!lower_derivative)
+		{
+			display_message(ERROR_MESSAGE, "cmzn_region::get_field_derivative_element_xi.  Failed to get lower derivative");
+			return nullptr;
+		}
+	}
+	field_derivative_element_xi = new Field_derivative_element_xi(element_dimension_in, order_in);
+	field_derivative_element_xi->set_lower_derivative(lower_derivative);
+	field_derivative_element_xi->access();  // additional access so not constantly recreated. Deaccessed in ~cmzn_region
+	const int updated_size = static_cast<int>(this->field_derivatives.size());
+	for (int i = 0; i < updated_size; ++i)
+	{
+		if (!this->field_derivatives[i])
+		{
+			field_derivative_element_xi->set_cache_index(i);
+			return field_derivative_element_xi;
+		}
+	}
+	this->field_derivatives.push_back(field_derivative_element_xi);
+	field_derivative_element_xi->set_cache_index(updated_size);
+	return field_derivative_element_xi;
+}
+
+/** Called only by ~Field_derivative. Only happens for derivatives not accessed by region */
+void cmzn_region::remove_field_derivative(Field_derivative *field_derivative)
+{
+	if (!field_derivative)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_region::remove_field_derivative.  Invalid field derivative");
+		return;
+	}
+	const int cache_index = field_derivative->get_cache_index();
+	const int size = static_cast<int>(this->field_derivatives.size());
+	if ((field_derivative->get_region() != this) || (cache_index < 0) || (cache_index >= size))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_region::remove_field_derivative.  Invalid field derivative");
+		return;
+	}
+	// ???GRC Future: clear derivative caches
+	this->field_derivatives[cache_index] = nullptr;
+}
+
+cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
+{
+	cmzn_region *region = new cmzn_region(base_region);
+	if (region->any_object_list && region->change_callback_list &&
+		region->field_manager && region->field_manager_callback_id &&
+		region->fe_region)
+	{
+		return region;
+	}
+	display_message(ERROR_MESSAGE, "cmzn_region_create_internal.  Could not create region");
+	delete region;
+	return 0;
+}
+
+/** Destroy the region and clear *region_address. */
+int DESTROY(cmzn_region)(struct cmzn_region **region_address)
+{
+	if ((region_address) && (*region_address))
+	{
+		if (0 == (*region_address)->access_count)
+		{
+			delete *region_address;
+			*region_address = 0;
+			return 1;
+		}
+		display_message(ERROR_MESSAGE, "DESTROY(cmzn_region).  Non-zero access count");
+	}
+	return 0;
+}
 
 DECLARE_OBJECT_FUNCTIONS(cmzn_region)
 
@@ -505,8 +580,8 @@ int cmzn_region_add_field_private(cmzn_region_id region, cmzn_field_id field)
 		if (Computed_field_add_to_manager_private(field, region->field_manager))
 		{
 			int i = 1;
-			for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches->begin();
-				iter != region->field_caches->end(); ++iter)
+			for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches.begin();
+				iter != region->field_caches.end(); ++iter)
 			{
 				cmzn_fieldcache_id field_cache = *iter;
 				field_cache->setValueCache(cache_index, 0);
@@ -522,8 +597,8 @@ int cmzn_region_add_field_private(cmzn_region_id region, cmzn_field_id field)
 void cmzn_region_clear_field_value_caches(cmzn_region_id region, cmzn_field_id field)
 {
 	int cacheIndex = cmzn_field_get_cache_index_private(field);
-	for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches->begin();
-		iter != region->field_caches->end(); ++iter)
+	for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches.begin();
+		iter != region->field_caches.end(); ++iter)
 	{
 		cmzn_fieldcache_id cache = *iter;
 		FieldValueCache *valueCache = cache->getValueCache(cacheIndex);
@@ -637,14 +712,14 @@ int cmzn_region_get_field_cache_size(cmzn_region_id region)
 void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_fieldcache_id cache)
 {
 	if (region && cache)
-		region->field_caches->push_back(cache);
+		region->field_caches.push_back(cache);
 }
 
 void cmzn_region_remove_field_cache(cmzn_region_id region,
 	cmzn_fieldcache_id cache)
 {
 	if (region && cache)
-		region->field_caches->remove(cache);
+		region->field_caches.remove(cache);
 }
 
 int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id field_module)
@@ -790,7 +865,7 @@ LAST MODIFIED : 2 December 2002
 DESCRIPTION :
 Adds a callback to <region> so that when it changes <function> is called with
 <user_data>. <function> has 3 arguments, a struct cmzn_region *, a
-struct cmzn_region_changes * and the void *user_data.
+cmzn_region_changes * and the void *user_data.
 ==============================================================================*/
 {
 	int return_code;
@@ -1732,7 +1807,7 @@ void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
 	cmzn_fieldmodulenotifier *notifier)
 {
 	if (region && notifier)
-		region->notifier_list->push_back(notifier->access());
+		region->notifier_list.push_back(notifier->access());
 }
 
 void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
@@ -1741,11 +1816,11 @@ void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
 	if (region && notifier)
 	{
 		cmzn_fieldmodulenotifier_list::iterator iter = std::find(
-			region->notifier_list->begin(), region->notifier_list->end(), notifier);
-		if (iter != region->notifier_list->end())
+			region->notifier_list.begin(), region->notifier_list.end(), notifier);
+		if (iter != region->notifier_list.end())
 		{
 			cmzn_fieldmodulenotifier::deaccess(notifier);
-			region->notifier_list->erase(iter);
+			region->notifier_list.erase(iter);
 		}
 	}
 }
@@ -1856,3 +1931,18 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 #endif
 	}
 }
+
+Field_derivative_element_xi *cmzn_region_get_field_derivative_element_xi(
+	cmzn_region *region, int element_dimension_in, int order_in)
+{
+	if (region)
+		return region->get_field_derivative_element_xi(element_dimension_in, order_in);
+	display_message(ERROR_MESSAGE, "cmzn_region_get_field_derivative_element_xi.  Missing region");
+	return nullptr;
+}
+
+void cmzn_region_remove_field_derivative(cmzn_region *region, Field_derivative *field_derivative)
+{
+	region->remove_field_derivative(field_derivative);
+}
+

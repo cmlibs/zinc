@@ -85,23 +85,7 @@ int Computed_field_normalise::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 		{
 			valueCache.values[i] = sourceCache->values[i] / size;
 		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			FE_value *source_derivative = sourceCache->derivatives;
-			for (int i = 0 ; i < field->number_of_components * number_of_xi ; i++)
-			{
-				*derivative = *source_derivative / size;
-				derivative++;
-				source_derivative++;
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
+		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;

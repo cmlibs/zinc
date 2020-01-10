@@ -11,11 +11,13 @@
 #if !defined (FINITE_ELEMENT_MESH_HPP)
 #define FINITE_ELEMENT_MESH_HPP
 
+#include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/status.h"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
+#include "finite_element/finite_element_shape.hpp"
 #include "finite_element/finite_element.h"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -1067,10 +1069,10 @@ public:
 
 	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
 
-	struct FE_element *get_first_FE_element_that(
-		LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function, void *user_data_void);
+	cmzn_element *get_first_FE_element_that(
+		LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void);
 
-	int for_each_FE_element(LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data_void);
+	int for_each_FE_element(LIST_ITERATOR_FUNCTION(cmzn_element) iterator_function, void *user_data_void);
 
 	DsLabelsGroup *createLabelsGroup();
 

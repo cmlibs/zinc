@@ -15,24 +15,33 @@ SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/finite_element.cpp
 	source/finite_element/finite_element_basis.cpp
 	source/finite_element/finite_element_discretization.cpp
+	source/finite_element/finite_element_field.cpp
+	source/finite_element/finite_element_field_evaluation.cpp
 	source/finite_element/finite_element_mesh.cpp
 	source/finite_element/finite_element_nodeset.cpp
 	source/finite_element/finite_element_region.cpp
+	source/finite_element/finite_element_shape.cpp
 	source/finite_element/finite_element_time.cpp
+	source/finite_element/finite_element_value_storage.cpp
 	source/finite_element/import_finite_element.cpp
 	source/finite_element/node_field_template.cpp )
 SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/element_field_template.hpp
 	source/finite_element/export_finite_element.h
+	source/finite_element/finite_element.h
+	source/finite_element/finite_element_basis.hpp
 	source/finite_element/finite_element_discretization.h
+	source/finite_element/finite_element_field.hpp
+	source/finite_element/finite_element_field_evaluation.hpp
+	source/finite_element/finite_element_field_private.hpp
 	source/finite_element/finite_element_mesh.hpp
 	source/finite_element/finite_element_nodeset.hpp
 	source/finite_element/finite_element_private.h
 	source/finite_element/finite_element_region.h
 	source/finite_element/finite_element_region_private.h
-	source/finite_element/finite_element.h
-	source/finite_element/finite_element_basis.h
+	source/finite_element/finite_element_shape.hpp
 	source/finite_element/finite_element_time.h
+	source/finite_element/finite_element_value_storage.hpp
 	source/finite_element/import_finite_element.h
 	source/finite_element/node_field_template.hpp )
 

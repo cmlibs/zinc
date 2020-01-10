@@ -30,7 +30,7 @@ class IntegrationShapePoints
 	friend class IntegrationPointsCache;
 
 protected:
-	FE_element_shape *shape;
+	FE_element_shape *shape;  // not accessed
 	int dimension;
 	int numbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int numPoints;
@@ -43,7 +43,7 @@ public:
 	// takes ownership of points and weights arrays
 	IntegrationShapePoints(FE_element_shape *shapeIn, int *numbersOfPointsIn,
 		int numPointsIn, FE_value *pointsIn, FE_value *weightsIn) :
-		shape(ACCESS(FE_element_shape)(shapeIn)),
+		shape(shapeIn),
 		dimension(get_FE_element_shape_dimension(shapeIn)),
 		numPoints(numPointsIn),
 		points(pointsIn),
@@ -55,7 +55,6 @@ public:
 
 	virtual ~IntegrationShapePoints()
 	{
-		DEACCESS(FE_element_shape)(&this->shape);
 		delete[] this->points;
 		delete[] this->weights;
 	}

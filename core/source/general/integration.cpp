@@ -18,6 +18,7 @@ elements.
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
@@ -163,7 +164,7 @@ value for each component of the field.
 				return_code=1;
 				while (return_code&&(i>0))
 				{
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache, element, dimension, abscissa)) &&
+					if ((CMZN_OK == data->field_cache->setMeshLocation(element, abscissa)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(field, data->field_cache, number_of_components, values)))
 					{
 						for (j=0;j<number_of_components;j++)

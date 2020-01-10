@@ -19,6 +19,7 @@ The functions for creating graphical objects from finite elements.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_discretization.h"
@@ -972,8 +973,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 			{
 				xi=((FE_value)i)/distance;
 				/* evaluate the fields */
-				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
-					field_cache, element, /*dimension*/1, &xi, top_level_element));
+				return_code = (CMZN_OK == field_cache->setIndexedMeshLocation(i, element, &xi, top_level_element));
 				if (return_code && (CMZN_OK == cmzn_field_evaluate_real(coordinate_field,
 					field_cache, coordinate_dimension, coordinates)) &&
 					((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field,
@@ -1174,12 +1174,12 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
 			FE_value *feData = new FE_value[n_data_components];
+			const FE_value xiScale = 1.0 / number_of_segments_along;
 			for (i=0;(i<=number_of_segments_along) && return_code;i++)
 			{
-				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
+				xi = i*xiScale;
 				/* evaluate the fields */
-				if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
-						field_cache, element, /*dimension*/1, &xi, top_level_element)) &&
+				if ((CMZN_OK == field_cache->setIndexedMeshLocation(static_cast<unsigned int>(i), element, &xi, top_level_element)) &&
 					(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi, field_cache, coordinate_dimension, derivative_xi)) &&
 					(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache,
@@ -2020,8 +2020,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			FE_value *xi = xi_points;
 			while ((i<number_of_points)&&return_code)
 			{
-				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
-					field_cache, element, /*dimension*/2, xi, top_level_element));
+				return_code = (CMZN_OK == field_cache->setIndexedMeshLocation(static_cast<unsigned int>(i), element, xi, top_level_element));
 				/* evaluate the fields */
 				if ((CMZN_OK != cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi1, field_cache, coordinate_dimension, derivative_xi1)) ||
@@ -2710,8 +2709,7 @@ int add_glyphset_vertex_from_FE_element(
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
-							field_cache, element, element_dimension, xi, top_level_element)) &&
+						if ((CMZN_OK == field_cache->setIndexedMeshLocation(static_cast<unsigned int>(i), element, xi, top_level_element)) &&
 							((!orientation_scale_field) ||
 								(CMZN_OK == cmzn_field_evaluate_real(orientation_scale_field, field_cache,
 									number_of_orientation_scale_components, orientation_scale))) &&

@@ -92,14 +92,14 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		cmzn_region_id otherRegion = Computed_field_get_region(getSourceField(0));
 		if (otherRegion != Computed_field_get_region(field))
 		{
 			// @TODO: share extraCache with other alias fields in cache referencing otherRegion
-			valueCache->createExtraCache(parentCache, otherRegion);
+			valueCache->getOrCreatePrivateExtraCache(otherRegion);
 		}
 		return valueCache;
 	}
@@ -204,7 +204,8 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		extraCache->setRequestedDerivatives(cache.getRequestedDerivatives());
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
@@ -229,7 +230,8 @@ enum FieldAssignmentResult Computed_field_alias::assign(cmzn_fieldcache& cache, 
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(*extraCache));
 	}
 	else
