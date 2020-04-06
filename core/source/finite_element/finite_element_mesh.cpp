@@ -3794,7 +3794,7 @@ FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
 		{
 			for (int c = 0; c < componentCount; ++c)
 				delete components[c];
-			delete components;
+			delete[] components;
 		}
 	}
 	return meshFieldData;

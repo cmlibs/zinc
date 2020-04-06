@@ -14,6 +14,7 @@
 #include "opencmiss/zinc/types/elementid.h"
 #include "general/change_log.h"
 #include "general/enumerator.h"
+#include "general/value.h"
 #include "general/list.h"
 
 /*
