@@ -96,6 +96,12 @@ struct cmzn_region
 
 	~cmzn_region();
 
+	/** @return  Non-acccessed field derivative or nullptr if none. */
+	Field_derivative *get_field_derivative_at_index(int derivative_index)
+	{
+		return this->field_derivatives[derivative_index];
+	}
+
 	/** @return  Accessed field derivative or nullptr if failed. */
 	Field_derivative_element_xi *get_field_derivative_element_xi(int element_dimension_in, int order_in);
 
@@ -1938,6 +1944,15 @@ Field_derivative_element_xi *cmzn_region_get_field_derivative_element_xi(
 	if (region)
 		return region->get_field_derivative_element_xi(element_dimension_in, order_in);
 	display_message(ERROR_MESSAGE, "cmzn_region_get_field_derivative_element_xi.  Missing region");
+	return nullptr;
+}
+
+Field_derivative *cmzn_region_get_field_derivative_at_index(
+	cmzn_region *region, int derivative_index)
+{
+	if (region)
+		return region->get_field_derivative_at_index(derivative_index);
+	display_message(ERROR_MESSAGE, "cmzn_region_get_field_derivative_at_index.  Missing region");
 	return nullptr;
 }
 

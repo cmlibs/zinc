@@ -165,7 +165,7 @@ int Computed_field_nodal_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCach
 	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 	if (sourceValueCache)
 	{
-		valueCache.copyValuesZeroDerivatives(*sourceValueCache);
+		valueCache.copyValues(*sourceValueCache);
 		return 1;
 	}
 	return 0;

@@ -1166,28 +1166,46 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-/** Evaluate derivatives using finite differences. Only implemented for element_xi locations.
- * @param cache  Parent cache containing location to evaluate.
- * @param valueCache  The value cache to put values at. */
-int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
+int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, Field_derivative&)
 {
+	return 0;  // Invalid operation for non-real fields
+}
+
+int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const Field_derivative& fieldDerivative)
+{
+	if (fieldDerivative.get_type() != Field_derivative::TYPE_ELEMENT_XI)
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
+		return 0;
+	}
+	const Field_derivative_element_xi &fieldDerivativeElementXi = static_cast<const Field_derivative_element_xi&>(fieldDerivative);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativesFiniteDifference.  Only implemented for element_xi location");
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
+		return 0;
+	}
+	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.get_element_dimension())
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
 		return 0;
 	}
 	// evaluate field at perturbed locations in extra working cache
 	cmzn_fieldcache *workingCache = valueCache.getOrCreateSharedExtraCache(cache);
-	RealFieldValueCache* workingValueCache;
-	if ((0 == workingCache) || (0 == (workingValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
+	RealFieldValueCache* lowerValueCache;
+	if ((0 == workingCache) || (0 == (lowerValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativesFiniteDifference.  Could not get working value cache");
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not get working value cache");
 		return 0;
 	}
 	workingCache->setTime(cache.getTime());
+	Field_derivative *lowerFieldDerivative = fieldDerivative.get_lower_derivative();
+	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->get_term_count() : 1;
+
 	const int componentsCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
 	const int elementDimension = element_xi_location->get_element_dimension();
@@ -1198,10 +1216,14 @@ int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& ca
 	const FE_value xiPerturbation = 1.0E-5;
 	const FE_value weightm = -0.5 / xiPerturbation;
 	const FE_value weightp = +0.5 / xiPerturbation;
-	FE_value *workingValues = workingValueCache->values;
+	const RealFieldValueCache *workingRealValueCache;
+	const int lowerValueCount = componentsCount*lowerDerivativeTermCount;
+	DerivativeValueCache derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.get_cache_index());
+	const FE_value *lowerValues = nullptr;
 	for (int d = 0; d < elementDimension; ++d)
 	{
-		FE_value *derivatives = valueCache.derivatives + d;  // where to put final values
+		// GRC decide order of higher derivatives
+		FE_value *derivatives = derivativeValueCache.values + d;  // where to put final values
 		for (int k = 0; k < 2; ++k)
 		{
 			if (k == 0)
@@ -1209,21 +1231,37 @@ int Computed_field_core::evaluateDerivativesFiniteDifference(cmzn_fieldcache& ca
 			else
 				perturbedXi[d] += xiPerturbation;
 			workingCache->setMeshLocation(element, perturbedXi);
-			if (!this->evaluate(*workingCache, *workingValueCache))
+			if (lowerFieldDerivative)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_core::evaluateDerivativesFiniteDifference.  Could not get evaluate field values");
-				return 0;
-			}
-			if (k == 0)
-			{
-				for (int c = 0; c < componentsCount; ++c)
-					derivatives[c*elementDimension] = weightm*workingValues[c];
+				if (!this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
+					return 0;
+				}
+				if (!lowerValues)
+					lowerValues = lowerValueCache->getDerivativeValueCache(lowerFieldDerivative->get_cache_index())->values;
 			}
 			else
 			{
-				for (int c = 0; c < componentsCount; ++c)
-					derivatives[c*elementDimension] += weightp*workingValues[c];
+				if (!this->field->evaluate(*workingCache))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field values");
+					return 0;
+				}
+				if (!lowerValues)
+					lowerValues = lowerValueCache->values;
+			}
+			if (k == 0)
+			{
+				for (int v = 0; v < lowerValueCount; ++v)
+					derivatives[v*elementDimension] = weightm*lowerValues[v];
+			}
+			else
+			{
+				for (int v = 0; v < lowerValueCount; ++v)
+					derivatives[v*elementDimension] += weightp*lowerValues[v];
 			}
 			perturbedXi[d] = xi[d];
 		}

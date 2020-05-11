@@ -287,6 +287,13 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 Field_derivative_element_xi *cmzn_region_get_field_derivative_element_xi(
 	cmzn_region *region, int element_dimension_in, int order_in);
 
+/**
+ * Get existing field derivative at supplied index.
+ * @return  Non-accessed field derivative or nullptr if none.
+ */
+Field_derivative *cmzn_region_get_field_derivative_at_index(
+	cmzn_region *region, int derivative_index);
+
 /** Called only by ~Field_derivative */
 void cmzn_region_remove_field_derivative(cmzn_region *region, Field_derivative *field_derivative);
 

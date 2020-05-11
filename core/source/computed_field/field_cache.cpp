@@ -33,21 +33,22 @@ void FieldValueCache::clear()
 
 RealFieldValueCache::~RealFieldValueCache()
 {
-	if (find_element_xi_cache)
+	if (this->find_element_xi_cache)
 	{
-		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
-		find_element_xi_cache = 0;
+		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
+		this->find_element_xi_cache = 0;
 	}
-	delete[] values;
-	delete[] derivatives;
+	delete[] this->values;
+	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
+		delete *iter;
 }
 
 void RealFieldValueCache::clear()
 {
-	if (find_element_xi_cache)
+	if (this->find_element_xi_cache)
 	{
-		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
-		find_element_xi_cache = 0;
+		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
+		this->find_element_xi_cache = 0;
 	}
 	FieldValueCache::clear();
 }
@@ -114,7 +115,6 @@ cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *paren
 	indexed_location_element_xi(0),
 	number_of_indexed_location_element_xi(0),
 	location(&(this->location_time)),
-	requestedDerivatives(0),
 	valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
 	assignInCache(false),
 	parentCache(parentCacheIn),
@@ -248,10 +248,7 @@ int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const
 	// now put the values in the cache. Note does not support derivatives!
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
-	{
 		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
-	}
-	valueCache->derivatives_valid = 0;
 	valueCache->evaluationCounter = locationCounter;
 	return CMZN_OK;
 }
