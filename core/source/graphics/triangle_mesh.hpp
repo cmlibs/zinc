@@ -23,7 +23,7 @@ class Triangle_vertex
 {
 private:
 	ZnReal coordinates[3];
-	int identifier;
+	size_t identifier;
 
 	friend class Triangle_vertex_compare;
 	friend class Mesh_triangle;
@@ -56,12 +56,12 @@ public:
 		outValues3[2] = coordinates[2];
 	}
 
-	void set_identifier(int in_identifier)
+	void set_identifier(size_t in_identifier)
 	{
 		identifier = in_identifier;
 	}
 	
-	int get_identifier() const
+	size_t get_identifier() const
 	{
 		return identifier;
 	}
@@ -84,7 +84,7 @@ public:
 	{	
 	}
 
-	bool operator() (const Triangle_vertex *v1, const Triangle_vertex *v2);
+	bool operator() (const Triangle_vertex *v1, const Triangle_vertex *v2) const;
 };
 
 typedef std::set<Triangle_vertex*,Triangle_vertex_compare> Triangle_vertex_set;
@@ -184,7 +184,7 @@ public:
 		add_quadrilateral(add_vertex(c1), add_vertex(c2), add_vertex(c3), add_vertex(c4));
 	}
 
-	void set_vertex_identifiers(int first_identifier);
+	void set_vertex_identifiers(size_t first_identifier);
 	
 	const Triangle_vertex_set& get_vertex_set() const
 	{

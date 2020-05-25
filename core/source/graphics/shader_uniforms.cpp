@@ -500,11 +500,11 @@ struct cmzn_shaderuniforms_compare_name
 
 typedef cmzn_set<cmzn_shaderuniforms *,cmzn_shaderuniforms_compare_name> cmzn_set_cmzn_shaderuniforms;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderuniforms, cmzn_shadermodule, struct cmzn_shaderuniforms_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderuniforms, cmzn_shadermodule, class cmzn_shaderuniforms_change_detail *);
 
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_shaderuniforms);
 
-inline struct cmzn_shaderuniforms_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderuniforms)(
+inline class cmzn_shaderuniforms_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderuniforms)(
 		cmzn_shaderuniforms *uniforms)
 {
 	return uniforms->extractChangeDetail();
