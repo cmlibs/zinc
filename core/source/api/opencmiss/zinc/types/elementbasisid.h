@@ -57,9 +57,12 @@ enum cmzn_elementbasis_function_type
 	     3 linked dimensions gives a quadratic tetrahedron with 10 parameters with
 	     lowest xi cycling fastest: xi (0,0,0) (0.5,0,0) (1,0,0) (0,0.5,0)
 	     (0.5,0.5,0) (0,1,0) (0,0,0.5) (0.5,0,0.5) (0,0.5,0.5) (0,0,1) */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE = 7
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE = 7,
 	/*!< Cubic Hermite basis over xi in [0,1] with 4 parameters: x at xi=0,
 	     dx/dxi at xi=0, x at xi=1. dx/dxi at xi=1. */
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY = 8
+	/*!< Cubic Hermite serendipity basis linked on 2 or more dimensions over
+	     square or cube element. Parameters are value and first derivatives. */
 };
 
 #endif

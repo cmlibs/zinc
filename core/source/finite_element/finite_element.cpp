@@ -6838,15 +6838,14 @@ public:
 	 */
 	void accumulate_edge(int xiIndex, int basisNode1, int basisNode2)
 	{
-		// basis functions for a local node are assumed to be in order of nodal value types:
-		const int basisNodeFunctionIndex =
-			((xiIndex == 0) ? CMZN_NODE_VALUE_LABEL_D_DS1 : (xiIndex == 1) ? CMZN_NODE_VALUE_LABEL_D_DS2 : CMZN_NODE_VALUE_LABEL_D_DS3)
-			- CMZN_NODE_VALUE_LABEL_VALUE;
+		const cmzn_node_value_label basisNodeValueLabel =
+			((xiIndex == 0) ? CMZN_NODE_VALUE_LABEL_D_DS1 : (xiIndex == 1) ? CMZN_NODE_VALUE_LABEL_D_DS2 : CMZN_NODE_VALUE_LABEL_D_DS3);
 		const FE_value delta = this->component_values[basisNode2] - this->component_values[basisNode1];
 		for (int n = 0; n < 2; ++n)
 		{
 			const int basisNode = (n == 0) ? basisNode1 : basisNode2;
-			const int functionNumber = FE_basis_get_function_number_from_node_function(eft->getBasis(), basisNode, basisNodeFunctionIndex);
+			const int functionNumber = FE_basis_get_function_number_from_node_index_and_derivative(eft->getBasis(),
+				basisNode, basisNodeValueLabel);
 			if (functionNumber < 0)
 				continue; // derivative not used for basis at node
 			const int termCount = this->eft->getFunctionNumberOfTerms(functionNumber);

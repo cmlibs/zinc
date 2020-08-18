@@ -12,6 +12,7 @@
 #define FINITE_ELEMENT_BASIS_HPP
 
 #include "opencmiss/zinc/types/elementbasisid.h"
+#include "opencmiss/zinc/types/nodeid.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -22,22 +23,19 @@ Global types
 ------------
 */
 
+/**
+ * The different basis types available.
+ * NOTE: Must keep this up to date with array fe_basis_type_ex_string.
+ * NOTE: External API uses different enum cmzn_elementbasis_type
+ * NOTE: Several of these are partially or not implemented.
+ */
 enum FE_basis_type
-/*******************************************************************************
-LAST MODIFIED : 20 October 1997
-
-DESCRIPTION :
-The different basis types available.
-NOTE: Must keep this up to date with functions
-FE_basis_type_string
-NOTE: External API uses different enum cmzn_elementbasis_type
-==============================================================================*/
 {
-	FE_BASIS_TYPE_INVALID=-1,
-	NO_RELATION=0,
-		/*???DB.  Used on the off-diagonals of the type matrix */
+	FE_BASIS_TYPE_INVALID = -1,
+	NO_RELATION = 0, // Used on the off-diagonals of the type matrix
 	BSPLINE,
 	CUBIC_HERMITE,
+	CUBIC_HERMITE_SERENDIPITY,
 	CUBIC_LAGRANGE,
 	FE_BASIS_CONSTANT,
 	FOURIER,
@@ -48,10 +46,10 @@ NOTE: External API uses different enum cmzn_elementbasis_type
 	POLYGON,
 	QUADRATIC_LAGRANGE,
 	QUADRATIC_SIMPLEX,
-	SERENDIPITY,
+	SERENDIPITY,  // should be QUADRATIC_SERENDIPITY
 	SINGULAR,
 	TRANSITION
-}; /* enum FE_basis_type */
+};
 
 typedef int (Standard_basis_function)(/*type_arguments*/void *,
 	/*xi_coordinates*/const FE_value *, /*function_values*/FE_value *);
@@ -250,17 +248,15 @@ Some examples of basis descriptions are:
 	5-gon for xi1 and xi3.
 ==============================================================================*/
 
+/**
+ * Returns a pointer to a static string token for the given <basis_type>.
+ * The calling function must not deallocate the returned string.
+ * Returns names for all declared types except for FE_BASIS_TYPE_INVALID,
+ * including several types with are partially or not implemented.
+ */
 const char *FE_basis_type_string(enum FE_basis_type basis_type);
-/*******************************************************************************
-LAST MODIFIED : 1 April 1999
 
-DESCRIPTION :
-Returns a pointer to a static string token for the given <basis_type>.
-The calling function must not deallocate the returned string.
-#### Must ensure implemented correctly for new FE_basis_type. ####
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Returns the string description of the basis type used in serialisation.
  * ???RC Currently limited to handling one polygon or one simplex. Will have to
  * be rewritten for 4-D and above elements.
@@ -278,6 +274,15 @@ DESCRIPTION :
 Returns the dimension of <basis>.
 If fails, puts zero at <dimension_address>.
 ==============================================================================*/
+
+/**
+ * @return  Function number >=0 from node number and valueLabel, or -1 if
+ * invalid.
+ * @param localNodeIndex  Basis node number starting at 0.
+ * @param valueLabel  Default node value label for parameter to match.
+ */
+int FE_basis_get_function_number_from_node_index_and_derivative(struct FE_basis *basis,
+	int localNodeIndex, cmzn_node_value_label valueLabel);
 
 /**
  * @return  Function number >=0 from node number and node function, or -1 if
@@ -306,6 +311,16 @@ int FE_basis_get_number_of_nodes(struct FE_basis *basis);
  * @return  The number of parameters, or 0 if invalid node number.
  */
 int FE_basis_get_number_of_functions_per_node(struct FE_basis *basis, int nodeNumber);
+
+/**
+ * Returns the local node and global derivative this basis ideally maps for functionNumber.
+ * @param functionNumber.  Basis function from 0 to number of basis functions - 1.
+ * @param localNodeIndex.  On success, set to local node index starting at 0.
+ * @param valueLabel.  On success, set to node value label.
+ * @return  1 on success, otherwise 0.
+ */
+int FE_basis_get_function_node_index_and_derivative(struct FE_basis *basis, int functionNumber,
+	int &localNodeIndex, cmzn_node_value_label& valueLabel);
 
 /** convert from external API basis function type to internal basis type enum */
 FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(

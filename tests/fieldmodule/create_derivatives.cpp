@@ -68,7 +68,8 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	int result = cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
@@ -88,7 +89,7 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
 	double xi[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
+	result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];

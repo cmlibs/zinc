@@ -259,6 +259,7 @@ also defines the dimension of the integration scheme.
 								number_of_weights *= 2;
 							} break;
 							case CUBIC_HERMITE:
+							case CUBIC_HERMITE_SERENDIPITY:
 							case CUBIC_LAGRANGE:
 							{
 								number_of_weights *= 3;
@@ -318,6 +319,7 @@ also defines the dimension of the integration scheme.
 										number_of_weights *= 2;
 									} break;
 									case CUBIC_HERMITE:
+									case CUBIC_HERMITE_SERENDIPITY:
 									case CUBIC_LAGRANGE:
 									{
 										for (j=number_of_weights;j>0;j--)

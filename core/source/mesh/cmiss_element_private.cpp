@@ -189,7 +189,8 @@ FE_basis *cmzn_elementbasis::getFeBasis() const
 		++temp;
 		for (int j = i + 1; j < dimension; j++)
 		{
-			if (((fe_basis_type == LINEAR_SIMPLEX) ||
+			if (((fe_basis_type == CUBIC_HERMITE_SERENDIPITY) ||
+				(fe_basis_type == LINEAR_SIMPLEX) ||
 				(fe_basis_type == QUADRATIC_SIMPLEX)) &&
 				(function_types[j] == function_types[i]))
 			{
@@ -2173,6 +2174,9 @@ public:
 				break;
 			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
 				enum_string = "CUBIC_HERMITE";
+				break;
+			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY:
+				enum_string = "CUBIC_HERMITE_SERENDIPITY";
 				break;
 			default:
 				break;
