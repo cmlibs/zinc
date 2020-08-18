@@ -60,9 +60,15 @@ enum cmzn_elementbasis_function_type
 	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE = 7,
 	/*!< Cubic Hermite basis over xi in [0,1] with 4 parameters: x at xi=0,
 	     dx/dxi at xi=0, x at xi=1. dx/dxi at xi=1. */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY = 8
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY = 8,
 	/*!< Cubic Hermite serendipity basis linked on 2 or more dimensions over
 	     square or cube element. Parameters are value and first derivatives. */
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_HERMITE_LAGRANGE = 9,
+	/*!< Quadratic polynomial with Hermite value + derivative at xi=0 node
+	     and Lagrange value at xi=1 node. */
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE_HERMITE = 10
+	/*!< Quadratic polynomial with Lagrange value at xi=0 node and Hermite
+	     value + derivative at xi=1 node. */
 };
 
 #endif
