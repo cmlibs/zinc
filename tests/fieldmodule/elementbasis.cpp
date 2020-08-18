@@ -235,6 +235,19 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_2d)
 	EXPECT_EQ(RESULT_OK, zinc.fm.defineAllFaces());
 	EXPECT_EQ(12, mesh1d.getSize());
 
+	const double xi[10][2] = {
+		{ 0.00, 0.00 },
+		{ 1.00, 0.00 },
+		{ 0.00, 1.00 },
+		{ 1.00, 1.00 },
+		{ 0.50, 0.50 },
+		{ 0.33, 0.55 },
+		{ 0.55, 0.33 },
+		{ 0.90, 0.10 },
+		{ 0.50, 0.75 },
+		{ 0.20, 0.89 }
+	};
+	double xOut[3];
 	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
 	StreamresourceMemory srm = sir.createStreamresourceMemory();
 	EXPECT_TRUE(srm.isValid());
@@ -251,19 +264,6 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_2d)
 			EXPECT_EQ(12, mesh1d.getSize());
 			EXPECT_EQ(9, nodes.getSize());
 		}
-		double xOut[3];
-		const double xi[10][2] = {
-			{ 0.00, 0.00 },
-			{ 1.00, 0.00 },
-			{ 0.00, 1.00 },
-			{ 1.00, 1.00 },
-			{ 0.50, 0.50 },
-			{ 0.33, 0.55 },
-			{ 0.55, 0.33 },
-			{ 0.90, 0.10 },
-			{ 0.50, 0.75 },
-			{ 0.20, 0.89 }
-		};
 		for (int e = 0; e < 4; ++e)
 		{
 			Element element = mesh2d.findElementByIdentifier(e + 1);
@@ -291,7 +291,7 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_3d)
 	EXPECT_TRUE(elementbasis.isValid());
 	EXPECT_EQ(32, elementbasis.getNumberOfFunctions());
 	EXPECT_EQ(8, elementbasis.getNumberOfNodes());
-	for (int n = 1; n <= 4; ++n)
+	for (int n = 1; n <= 8; ++n)
 		EXPECT_EQ(4, elementbasis.getNumberOfFunctionsPerNode(n));
 
 	// test interpolating over an element
@@ -381,6 +381,25 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_3d)
 	EXPECT_EQ(20, mesh2d.getSize());
 	EXPECT_EQ(33, mesh1d.getSize());
 
+	const double xi[16][3] = {
+		{ 0.00, 0.00, 0.00 },
+		{ 1.00, 0.00, 0.00 },
+		{ 0.00, 1.00, 0.00 },
+		{ 1.00, 1.00, 0.00 },
+		{ 0.00, 0.00, 1.00 },
+		{ 1.00, 0.00, 1.00 },
+		{ 0.00, 1.00, 1.00 },
+		{ 1.00, 1.00, 1.00 },
+		{ 0.50, 0.50, 0.50 },
+		{ 0.33, 0.55, 0.77 },
+		{ 0.77, 0.55, 0.33 },
+		{ 0.90, 0.10, 0.40 },
+		{ 0.25, 0.50, 0.75 },
+		{ 0.50, 0.75, 0.25 },
+		{ 0.75, 0.25, 0.50 },
+		{ 0.20, 0.89, 0.20 }
+	};
+	double xOut[3];
 	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
 	StreamresourceMemory srm = sir.createStreamresourceMemory();
 	EXPECT_TRUE(srm.isValid());
@@ -398,25 +417,6 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_3d)
 			EXPECT_EQ(33, mesh1d.getSize());
 			EXPECT_EQ(18, nodes.getSize());
 		}
-		double xOut[3];
-		const double xi[16][3] = {
-			{ 0.00, 0.00, 0.00 },
-			{ 1.00, 0.00, 0.00 },
-			{ 0.00, 1.00, 0.00 },
-			{ 1.00, 1.00, 0.00 },
-			{ 0.00, 0.00, 1.00 },
-			{ 1.00, 0.00, 1.00 },
-			{ 0.00, 1.00, 1.00 },
-			{ 1.00, 1.00, 1.00 },
-			{ 0.50, 0.50, 0.50 },
-			{ 0.33, 0.55, 0.77 },
-			{ 0.77, 0.55, 0.33 },
-			{ 0.90, 0.10, 0.40 },
-			{ 0.25, 0.50, 0.75 },
-			{ 0.50, 0.75, 0.25 },
-			{ 0.75, 0.25, 0.50 },
-			{ 0.20, 0.89, 0.20 }
-		};
 		for (int e = 0; e < 4; ++e)
 		{
 			Element element = mesh3d.findElementByIdentifier(e + 1);
