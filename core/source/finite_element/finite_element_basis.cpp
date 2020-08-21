@@ -52,24 +52,24 @@ list.
 		basis type for each coordinate and entries in the same row/column indicate
 		associated coordinates eg.
 		1.  CUBIC_HERMITE       0              0
-											CUBIC_HERMITE        0
-																		LINEAR_LAGRANGE
+		                  CUBIC_HERMITE        0
+		                                LINEAR_LAGRANGE
 			has cubic variation in xi1 and xi2 and linear variation in xi3 (8 nodes).
-		2.  SERENDIPITY       0            1
-										CUBIC_HERMITE      0
-																	SERENDIPITY
-			has cubic variation in xi2 and 2-D serendipity variation for xi1 and
-			xi3 (16 nodes).
+		2.  CUBIC_HERMITE_SERENDIPITY        0                    1
+		                              LINEAR_LAGRANGE             0
+		                                              CUBIC_HERMITE_SERENDIPITY
+		    has linear variation in xi2 and 2-D cubic hermite serendipity
+		    variation for xi1 and xi3 (8 nodes).
 		3.  CUBIC_HERMITE        0               0
-											LINEAR_SIMPLEX         1
-																			LINEAR_SIMPLEX
-			has cubic variation in xi1 and 2-D linear simplex variation for xi2 and
-			xi3 (6 nodes)
+		                  LINEAR_SIMPLEX         1
+		                                  LINEAR_SIMPLEX
+		    has cubic variation in xi1 and 2-D linear simplex variation for xi2 and
+		    xi3 (6 nodes)
 		4.  POLYGON        0           5
-								LINEAR_LAGRANGE    0
-																POLYGON
-			has linear variation in xi2 and a 2-D 5-gon for xi1 and xi3 (12 nodes,
-			5-gon has 5 peripheral nodes and a centre node) */
+		            LINEAR_LAGRANGE    0
+		                            POLYGON
+		    has linear variation in xi2 and a 2-D 5-gon for xi1 and xi3 (12 nodes,
+		    5-gon has 5 peripheral nodes and a centre node) */
 	int *type;
 	/* the number of basis functions */
 	int number_of_basis_functions;
@@ -110,22 +110,24 @@ Module variables
 ----------------
 */
 
-/* blending matricies for the monomial basis */
+namespace {
 
-static FE_value linear_lagrange_blending_matrix[]=
+/* blending matrices for the monomial basis */
+
+const FE_value linear_lagrange_blending_matrix[]=
 {
 	1,-1, /* phi1 = 1 - x */
 	0, 1  /* phi2 = x     */
 };
 
-static FE_value quadratic_lagrange_blending_matrix[]=
+const FE_value quadratic_lagrange_blending_matrix[]=
 {
 	1,-3, 2, /* phi1 = 1 - 3x + 2xx */
 	0, 4,-4,
 	0,-1, 2
 };
 
-static FE_value cubic_lagrange_blending_matrix[]=
+const FE_value cubic_lagrange_blending_matrix[]=
 {
 	1,-5.5,  9  , -4.5,
 	0, 9  ,-22.5, 13.5,
@@ -133,7 +135,17 @@ static FE_value cubic_lagrange_blending_matrix[]=
 	0, 1  , -4.5,  4.5
 };
 
-static FE_value cubic_hermite_blending_matrix[]=
+// valid up to cubic
+const int lagrange_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# */
+	0, 0,
+	1, 0,
+	2, 0,
+	3, 0
+};
+
+const FE_value cubic_hermite_blending_matrix[]=
 {
 	1,0,-3, 2,
 	0,1,-2, 1,
@@ -141,22 +153,250 @@ static FE_value cubic_hermite_blending_matrix[]=
 	0,0,-1, 1
 };
 
-static FE_value lagrange_hermite_blending_matrix[]=
+const int cubic_hermite_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# */
+	0, 0,
+	0, 1,
+	1, 0,
+	1, 1
+};
+
+/** Special form of tensor product which adds products of vectors of monomial coefficients in 2d */
+void add_cubic_tensor_product_2d(const FE_value *mono1, int length1, const FE_value *mono2, int length2, FE_value *dest)
+{
+	for (int j = 0; j < length2; ++j)
+		for (int i = 0; i < length1; ++i)
+			dest[j*4 + i] += mono1[i]*mono2[j];
+}
+
+/** Special form of tensor product which subtracts products of vectors of monomial coefficients in 2d */
+void sub_cubic_tensor_product_2d(const FE_value *mono1, int length1, const FE_value *mono2, int length2, FE_value *dest)
+{
+	for (int j = 0; j < length2; ++j)
+		for (int i = 0; i < length1; ++i)
+			dest[j*4 + i] -= mono1[i]*mono2[j];
+}
+
+/** class for computing cubic hermite serendipity blending functions and node derivative labels once */
+class Cubic_hermite_serendipity_2d
+{
+private:
+	FE_value blending_matrix[192]; // 12 rows of 16 2D cubic monomial coefficients
+	int node_derivative_labels[48]; // 12 rows of 4 values 0-based xi1node# xi1derivative# xi2node# xi2derivative#
+
+	Cubic_hermite_serendipity_2d()
+	{
+		for (int i = 0; i < 192; ++i)
+			this->blending_matrix[i] = 0.0;
+		const FE_value *herm_v[2] = { cubic_hermite_blending_matrix, cubic_hermite_blending_matrix + 8 };
+		const FE_value *herm_d[2] = { cubic_hermite_blending_matrix + 4, cubic_hermite_blending_matrix + 12 };
+		const FE_value *linear[2] = { linear_lagrange_blending_matrix, linear_lagrange_blending_matrix + 2 };
+		FE_value *blend = this->blending_matrix;
+		int *label = this->node_derivative_labels;
+		for (int n = 0; n < 4; ++n)
+		{
+			const int n1 = n % 2;
+			const int n2 = n / 2;
+			add_cubic_tensor_product_2d(herm_v[n1], 4, linear[n2], 2, blend);
+			add_cubic_tensor_product_2d(linear[n1], 2, herm_v[n2], 4, blend);
+			sub_cubic_tensor_product_2d(linear[n1], 2, linear[n2], 2, blend);
+			add_cubic_tensor_product_2d(herm_d[n1], 4, linear[n2], 2, blend + 16);
+			add_cubic_tensor_product_2d(linear[n1], 2, herm_d[n2], 4, blend + 32);
+			blend += 48;
+			for (int d = 0; d < 3; ++d)
+			{
+				label[0] = n1;
+				label[1] = (d == 1) ? 1 : 0;
+				label[2] = n2;
+				label[3] = (d == 2) ? 1 : 0;
+				label += 4;
+			}
+		}
+#if defined (DEBUG_CODE)
+		printf("cubic_hermite_serendipity_2d_blending_matrix =\n{\n");
+		for (int f = 0; f < 12; ++f)
+		{
+			for (int m = 0; m < 16; ++m)
+			{
+				printf("%4g", this->blending_matrix[f*16 + m]);
+				if ((f != 11) || (m != 15))
+					printf(",");
+			}
+			printf("\n");
+		}
+		printf("}\n");
+		printf("cubic_hermite_serendipity_2d_node_derivative_labels =\n{\n");
+		for (int f = 0; f < 12; ++f)
+		{
+			for (int m = 0; m < 4; ++m)
+			{
+				printf("%2d", this->node_derivative_labels[f*4 + m]);
+				if ((f != 11) || (m != 3))
+					printf(",");
+			}
+			printf("\n");
+		}
+		printf("}\n");
+#endif /* defined (DEBUG_CODE) */
+	}
+
+	static const Cubic_hermite_serendipity_2d& get_instance()
+	{
+		static Cubic_hermite_serendipity_2d instance;
+		return instance;
+	}
+
+public:
+	static const FE_value *get_blending_matrix()
+	{
+		return get_instance().blending_matrix;
+	}
+
+	static const int *get_node_derivative_labels()
+	{
+		return get_instance().node_derivative_labels;
+	}
+
+};
+
+/** Special form of tensor product which adds products of vectors of monomial coefficients in 3d */
+void add_cubic_tensor_product_3d(const FE_value *mono1, int length1, const FE_value *mono2, int length2, const FE_value *mono3, int length3, FE_value *dest)
+{
+	for (int k = 0; k < length3; ++k)
+		for (int j = 0; j < length2; ++j)
+			for (int i = 0; i < length1; ++i)
+				dest[k*16 + j*4 + i] += mono1[i]*mono2[j]*mono3[k];
+}
+
+/** Special form of tensor product which subtracts 2x products of vectors of monomial coefficients in 3d */
+void s2x_cubic_tensor_product_3d(const FE_value *mono1, int length1, const FE_value *mono2, int length2, const FE_value *mono3, int length3, FE_value *dest)
+{
+	for (int k = 0; k < length3; ++k)
+		for (int j = 0; j < length2; ++j)
+			for (int i = 0; i < length1; ++i)
+				dest[k*16 + j*4 + i] -= 2.0*mono1[i]*mono2[j]*mono3[k];
+}
+
+/** class for computing cubic hermite serendipity blending functions and node derivative labels once */
+class Cubic_hermite_serendipity_3d
+{
+private:
+	FE_value blending_matrix[2048]; // 32 rows of 64 3D cubic monomial coefficients
+	int node_derivative_labels[192]; // 32 rows of 6 values 0-based xi1node# xi1derivative# xi2node# xi2derivative#
+
+	Cubic_hermite_serendipity_3d()
+	{
+		for (int i = 0; i < 2048; ++i)
+			this->blending_matrix[i] = 0.0;
+		const FE_value *herm_v[2] = { cubic_hermite_blending_matrix, cubic_hermite_blending_matrix + 8 };
+		const FE_value *herm_d[2] = { cubic_hermite_blending_matrix + 4, cubic_hermite_blending_matrix + 12 };
+		const FE_value *linear[2] = { linear_lagrange_blending_matrix, linear_lagrange_blending_matrix + 2 };
+		FE_value *blend = this->blending_matrix;
+		int *label = this->node_derivative_labels;
+		for (int n = 0; n < 8; ++n)
+		{
+			const int n1 = n % 2;
+			const int n2 = (n / 2) % 2;
+			const int n3 = n / 4;
+			add_cubic_tensor_product_3d(herm_v[n1], 4, linear[n2], 2, linear[n3], 2, blend);
+			add_cubic_tensor_product_3d(linear[n1], 2, herm_v[n2], 4, linear[n3], 2, blend);
+			add_cubic_tensor_product_3d(linear[n1], 2, linear[n2], 2, herm_v[n3], 4, blend);
+			s2x_cubic_tensor_product_3d(linear[n1], 2, linear[n2], 2, linear[n3], 2, blend);
+			add_cubic_tensor_product_3d(herm_d[n1], 4, linear[n2], 2, linear[n3], 2, blend + 64);
+			add_cubic_tensor_product_3d(linear[n1], 2, herm_d[n2], 4, linear[n3], 2, blend + 128);
+			add_cubic_tensor_product_3d(linear[n1], 2, linear[n2], 2, herm_d[n3], 4, blend + 192);
+			blend += 256;
+			for (int d = 0; d < 4; ++d)
+			{
+				label[0] = n1;
+				label[1] = (d == 1) ? 1 : 0;
+				label[2] = n2;
+				label[3] = (d == 2) ? 1 : 0;
+				label[4] = n3;
+				label[5] = (d == 3) ? 1 : 0;
+				label += 6;
+			}
+		}
+#if defined (DEBUG_CODE)
+		printf("cubic_hermite_serendipity_3d_blending_matrix =\n{\n");
+		for (int f = 0; f < 32; ++f)
+		{
+			for (int m = 0; m < 64; ++m)
+			{
+				printf("%4g", this->blending_matrix[f*64 + m]);
+				if ((f != 31) || (m != 63))
+					printf(",");
+			}
+			printf("\n");
+		}
+		printf("}\n");
+		printf("cubic_hermite_serendipity_3d_node_derivative_labels =\n{\n");
+		for (int f = 0; f < 32; ++f)
+		{
+			for (int m = 0; m < 6; ++m)
+			{
+				printf("%2d", this->node_derivative_labels[f*6 + m]);
+				if ((f != 31) || (m != 5))
+					printf(",");
+			}
+			printf("\n");
+		}
+		printf("}\n");
+#endif /* defined (DEBUG_CODE) */
+	}
+
+	static const Cubic_hermite_serendipity_3d& get_instance()
+	{
+		static Cubic_hermite_serendipity_3d instance;
+		return instance;
+	}
+
+public:
+	static const FE_value *get_blending_matrix()
+	{
+		return get_instance().blending_matrix;
+	}
+
+	static const int *get_node_derivative_labels()
+	{
+		return get_instance().node_derivative_labels;
+	}
+
+};
+
+const FE_value lagrange_hermite_blending_matrix[]=
 {
 	1,-2, 1,
 	0, 2,-1,
 	0,-1, 1
 };
 
-static FE_value hermite_lagrange_blending_matrix[]=
+const int lagrange_hermite_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# */
+	0, 0,
+	1, 0,
+	1, 1
+};
+
+const FE_value hermite_lagrange_blending_matrix[]=
 {
 	1,0,-1,
 	0,1,-1,
 	0,0, 1
 };
 
+const int hermite_lagrange_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# */
+	0, 0,
+	0, 1,
+	1, 0
+};
+
 /*???DB.  Start by blending to full monomial.  Think about reduced later */
-static FE_value linear_simplex_2d_blending_matrix[]=
+const FE_value linear_simplex_2d_blending_matrix[]=
 {
 	/* coefficients of 1 x y xy; all cooefficients of xy are zero, so can be "reduced" */
 	1,-1,-1, 0, /* phi1 = 1 - x - y */
@@ -164,7 +404,15 @@ static FE_value linear_simplex_2d_blending_matrix[]=
 	0, 0, 1, 0
 };
 
-static FE_value quadratic_simplex_2d_blending_matrix[]=
+const int linear_simplex_2d_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# xi2node# xi2derivative# */
+	0, 0, 0, 0,
+	1, 0, 0, 0,
+	0, 0, 1, 0,
+};
+
+const FE_value quadratic_simplex_2d_blending_matrix[]=
 {
 	/* coefficients of 1 x  xx y xy xxy yy xyy xxyy; starting to be wasteful with lots of zero terms */
 	1,-3, 2,-3, 4, 0, 2, 0, 0, /* phi1 = 1 - 3x + 2xx - 3y + 4xy + 2yy */
@@ -175,7 +423,18 @@ static FE_value quadratic_simplex_2d_blending_matrix[]=
 	0, 0, 0,-1, 0, 0, 2, 0, 0
 };
 
-static FE_value linear_simplex_3d_blending_matrix[]=
+const int quadratic_simplex_2d_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# xi2node# xi2derivative# */
+	0, 0, 0, 0,
+	1, 0, 0, 0,
+	2, 0, 0, 0,
+	0, 0, 1, 0,
+	1, 0, 1, 0,
+	0, 0, 2, 0
+};
+
+const FE_value linear_simplex_3d_blending_matrix[]=
 {
 	1,-1,-1, 0,-1, 0, 0, 0, /* i.e. phi(0) = 1 - xi1 - xi2 - xi3; no quadratic or cubic (xi1*xi2*xi3) terms */
 	0, 1, 0, 0, 0, 0, 0, 0,
@@ -183,7 +442,16 @@ static FE_value linear_simplex_3d_blending_matrix[]=
 	0, 0, 0, 0, 1, 0, 0, 0
 };
 
-static FE_value quadratic_simplex_3d_blending_matrix[]=
+const int linear_simplex_3d_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# xi2node# xi2derivative# xi3node# xi3derivative# */
+	0, 0, 0, 0, 0, 0,
+	1, 0, 0, 0, 0, 0,
+	0, 0, 1, 0, 0, 0,
+	0, 0, 0, 0, 1, 0
+};
+
+const FE_value quadratic_simplex_3d_blending_matrix[]=
 {
 	/* Very wasteful! 27 standard basis functions with as few as 1 non-zero coefficient!
 	   Intend to use simplex basis functions directly once testing examples running.
@@ -203,21 +471,34 @@ static FE_value quadratic_simplex_3d_blending_matrix[]=
 	0, 0, 0, 0, 0,  0,  0,  0,0, -1, 0,  0,  0,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0
 };
 
-
+const int quadratic_simplex_3d_node_derivative_labels[] =
+{
+	/* 0-based xi1node# xi1derivative# xi2node# xi2derivative# xi3node# xi3derivative# */
+	0, 0, 0, 0, 0, 0,
+	1, 0, 0, 0, 0, 0,
+	2, 0, 0, 0, 0, 0,
+	0, 0, 1, 0, 0, 0,
+	1, 0, 1, 0, 0, 0,
+	0, 0, 2, 0, 0, 0,
+	0, 0, 0, 0, 1, 0,
+	1, 0, 0, 0, 1, 0,
+	0, 0, 1, 0, 1, 0,
+	0, 0, 0, 0, 2, 0
+};
 
 #if defined (NEW_NEW_CODE)
 /*???DB.  For reduced monomial */
 /* simplex elements have zero coefficients for most/all higher order monomial terms, e.g. xi1*xi1 or xi1*xi2*xi2, so
  * in theory these could be removed from the monomial basis. Similarly for serendipity element bases which
  * are like Lagrangian elements but omitting certain interior or midface nodes associated with higher order monomial terms */
-static FE_value linear_simplex_2d_blending_matrix[]=
+const FE_value linear_simplex_2d_blending_matrix[]=
 {
 	1,-1,-1,
 	0, 1, 0,
 	0, 0, 1
 };
 
-static FE_value quadratic_simplex_2d_blending_matrix[]=
+const FE_value quadratic_simplex_2d_blending_matrix[]=
 {
 	1,-3, 2,-3,-4, 2,
 	0, 4,-4, 0,-4, 0,
@@ -227,7 +508,7 @@ static FE_value quadratic_simplex_2d_blending_matrix[]=
 	0, 0, 0,-1, 0, 2
 };
 
-static FE_value linear_simplex_3d_blending_matrix[]=
+const FE_value linear_simplex_3d_blending_matrix[]=
 {
 	1,-1,-1,-1,
 	0, 1, 0, 0,
@@ -235,6 +516,8 @@ static FE_value linear_simplex_3d_blending_matrix[]=
 	0, 0, 0, 1
 };
 #endif /* defined (NEW_NEW_CODE) */
+
+}
 
 /*
 Module functions
@@ -326,39 +609,35 @@ Returns -1 if basis_type_1 < basis_type_2, 0 if basis_type_1 = basis_type_2 and
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_basis,type,int *,compare_FE_basis_type)
 
+/**
+ * This function returns the tensor product (memory allocated within the function)
+ * of <matrix_1> and <matrix_2>.  All matrices are assumed to be stored row-wise.
+ * @return  Allocated tensor product matrix, or nullptr if failed.
+ */
 static FE_value *tensor_product(int row_dimension_1,int column_dimension_1,
-	FE_value *matrix_1,int row_dimension_2,int column_dimension_2,
-	FE_value *matrix_2)
-/*******************************************************************************
-LAST MODIFIED : 17 June 1994
-
-DESCRIPTION :
-This function returns the tensor product (memory allocated within the function)
-of <matrix_1> and <matrix_2>.  All matrices are assumed to be stored row-wise.
-==============================================================================*/
+	const FE_value *matrix_1,int row_dimension_2,int column_dimension_2,
+	const FE_value *matrix_2)
 {
-	FE_value *product,*row_start_1,*row_start_2,*value,*value_1 = NULL, *value_2 = NULL;
-	int i,j,k,l;
-
-	ENTER(tensor_product);
+	FE_value *product;
 	if ((row_dimension_1>0)&&(column_dimension_1>0)&&matrix_1&&
 		(row_dimension_2>0)&&(column_dimension_2>0)&&matrix_2)
 	{
 		if (ALLOCATE(product,FE_value,
 			row_dimension_1*column_dimension_1*row_dimension_2*column_dimension_2))
 		{
-			value=product;
-			row_start_1=matrix_1;
-			for (i=row_dimension_1;i>0;i--)
+			const FE_value *value_1 = nullptr, *value_2 = nullptr;
+			FE_value *value = product;
+			const FE_value *row_start_1 = matrix_1;
+			for (int i=row_dimension_1;i>0;i--)
 			{
-				row_start_2=matrix_2;
-				for (j=row_dimension_2;j>0;j--)
+				const FE_value *row_start_2 = matrix_2;
+				for (int j=row_dimension_2;j>0;j--)
 				{
 					value_1=row_start_1;
-					for (k=column_dimension_1;k>0;k--)
+					for (int k=column_dimension_1;k>0;k--)
 					{
 						value_2=row_start_2;
-						for (l=column_dimension_2;l>0;l--)
+						for (int l=column_dimension_2;l>0;l--)
 						{
 							*value=(*value_2)*(*value_1);
 							value++;
@@ -380,12 +659,72 @@ of <matrix_1> and <matrix_2>.  All matrices are assumed to be stored row-wise.
 	else
 	{
 		display_message(ERROR_MESSAGE, "tensor_product.  Invalid argument(s)");
-		product=(FE_value *)NULL;
+		product = nullptr;
 	}
-	LEAVE;
-
 	return (product);
-} /* tensor_product */
+}
+
+/**
+ * Partner function to tensor_product which multiplies the basis function numbers to
+ * include xi node and derivatives for additional functions, for later
+ * reordering.
+ * @param number_of_xi_coordinates  Total number of xi coordinates for basis.
+ * @param add_number_of_basis_functions  Number if additional basis functions to multiply in.
+ * @param add_basis_number_of_xi_indices  Number of xi indices for additional basis,
+ * gives size of xi_indices array, and factor in size of add_basis_node_derivative_labels.
+ * @parm add_basis_node_derivative_labels  Array of (2*add_basis_number_of_xi_indices)*add_number_of_basis_functions
+ * giving the node index in xi and derivative in xi for each xi in basis, for each basis function.
+ * @param xi_indices  Array of final xi indices basis applies to. Note: starts at 1.
+ * @param number_of_basis_functions  Original number if basis functions to multiply.
+ * @param basis_function_numbers  Array of 2*(number_of_xi_coordinates + 1)*number_of_basis_functions
+ * containing 0 #number_of_xi_coordinates then for each xi: node index in xi, derivative index in xi
+ * which applies to function.
+ * @return Reallocated basis_function_numbers, size multiplied by new_number_of_basis_functions, or
+   nullptr on failure.
+ */
+static int *tensor_product_basis_function_numbers(int number_of_xi_coordinates,
+	int add_number_of_basis_functions, int add_basis_number_of_xi_indices,
+	const int *add_basis_node_derivative_labels, const int *add_basis_xi_indices,
+	int number_of_basis_functions, int *basis_function_numbers)
+{
+	if (!((add_basis_node_derivative_labels) && (add_basis_xi_indices) && (basis_function_numbers)))
+	{
+		display_message(ERROR_MESSAGE, "tensor_product_basis_function_numbers.  Invalid argument(s)");
+		return nullptr;
+	}
+	const int dst_labels_per_function = 2*(number_of_xi_coordinates + 1);
+	const int temp_int_1 = number_of_basis_functions*dst_labels_per_function;
+	int *temp_int_ptr_1;
+	if (nullptr == REALLOCATE(temp_int_ptr_1, basis_function_numbers,
+		int, add_number_of_basis_functions*temp_int_1))
+	{
+		display_message(ERROR_MESSAGE, "tensor_product_basis_function_numbers.  Failed to allocate memory");
+		return nullptr;
+	}
+	basis_function_numbers = temp_int_ptr_1;
+	const int src_labels_per_function = 2*add_basis_number_of_xi_indices;
+	const int *src_labels = add_basis_node_derivative_labels;
+	int *dst_labels = basis_function_numbers;
+	for (int fn = 0; fn < add_number_of_basis_functions; ++fn)
+	{
+		if (fn > 0)
+			memcpy(dst_labels, basis_function_numbers, temp_int_1*sizeof(int));
+		for (int fo = 0; fo < number_of_basis_functions; ++fo)
+		{
+			int *dst = dst_labels;
+			for (int i = 0; i < add_basis_number_of_xi_indices; ++i)
+			{
+				const int src_index = 2*i;
+				const int dst_index = 2*add_basis_xi_indices[i];
+				dst_labels[dst_index] = src_labels[src_index];
+				dst_labels[dst_index + 1] = src_labels[src_index + 1];
+			}
+			dst_labels += dst_labels_per_function;
+		}
+		src_labels += src_labels_per_function;
+	}
+	return basis_function_numbers;
+}
 
 static int sort_integers(const void *number_1_address, const void *number_2_address)
 /*******************************************************************************
@@ -1804,16 +2143,14 @@ returned.
 ==============================================================================*/
 {
 	char valid_type;
-	FE_value *blending_matrix = NULL,*polygon_blending_matrix,*reorder_1,*reorder_2,
-		*temp_matrix;
+	FE_value *blending_matrix = NULL,*polygon_blending_matrix,*reorder_1,*reorder_2;
 	int *argument,*arguments,*basis_function_number,*basis_function_numbers = NULL,
-		fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
-		number_of_basis_functions,
+		i,j,k,l,need_reorder,number_of_basis_functions,
 		number_of_polygon_verticies,number_of_standard_basis_functions,
 		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
-		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_offset,
-		simplex_type,step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,
-		temp_int_2,temp_int_3,*type_column,*type_entry,xi_coordinate;
+		*reorder_xi,*reorder_xi_entry,
+		step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,
+		*type_column,*type_entry,xi_coordinate;
 	Standard_basis_function *standard_basis;
 	struct FE_basis *basis;
 
@@ -1835,7 +2172,7 @@ returned.
 			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function
 				so that can order the basis functions (rows of the blending matrix) with
 				node value label varying fastest, xi1 varying next fastest, xi2
-				varying next fastest and so on. These consist of a recorder per function:
+				varying next fastest and so on. These consist of a record per function:
 				0 #xi xi1node# xi1deriv# xi2node# xi2deriv# ... xiNnode# xiNderiv#
 				Later, sequential numbers are put in the first column and after sorting
 				these give the index into the blending functions for the sorted index. */
@@ -1853,7 +2190,7 @@ returned.
 			type_entry=type+1;
 			standard_basis=monomial_basis_functions;
 			polygon_offset = 0;
-			/* for non-tensor product bases (simplex and polygon), the blending
+			/* for non-tensor product bases (simplex, serendipity and polygon), the blending
 				matrix is initially calculated as the tensor product of the current
 				blending matrix and the blending matrix for the non-tensor product
 				basis.  This implies that all the coordinates for the non-tensor
@@ -1864,6 +2201,12 @@ returned.
 			while (valid_type&&(xi_coordinate<number_of_xi_coordinates))
 			{
 				xi_coordinate++;
+				int add_number_of_basis_functions = 0;
+				int add_number_of_standard_basis_functions = 0;
+				const FE_value *add_basis_blending_matrix = nullptr;
+				const int *add_basis_node_derivative_labels = nullptr;
+				int add_basis_number_of_xi_indices = 1;  // increment for additional tied dimensions
+				const int *add_basis_xi_indices = reorder_xi_entry;
 				switch (*type_entry)
 				{
 					case FE_BASIS_CONSTANT:
@@ -1876,283 +2219,75 @@ returned.
 					} break;
 					case LINEAR_LAGRANGE:
 					{
-						if (NULL != (temp_matrix = tensor_product(2,2,
-							linear_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								2*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 2;
-								number_of_standard_basis_functions *= 2;
-								*argument=1;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 2;
+						add_number_of_standard_basis_functions = 2;
+						add_basis_blending_matrix = linear_lagrange_blending_matrix;
+						add_basis_node_derivative_labels = lagrange_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 1;
+						argument++;
+						valid_type = 1;
 					} break;
 					case QUADRATIC_LAGRANGE:
 					{
-						if (NULL != (temp_matrix = tensor_product(3,3,
-							quadratic_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=2;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 3;
+						add_number_of_standard_basis_functions = 3;
+						add_basis_blending_matrix = quadratic_lagrange_blending_matrix;
+						add_basis_node_derivative_labels = lagrange_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 2;
+						argument++;
+						valid_type = 1;
 					} break;
 					case CUBIC_LAGRANGE:
 					{
-						if (NULL != (temp_matrix = tensor_product(4,4,cubic_lagrange_blending_matrix,
-							number_of_basis_functions,number_of_standard_basis_functions,
-							blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(3*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=2;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number[2*temp_int_1]=3;
-									basis_function_number[2*temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 4;
-								number_of_standard_basis_functions *= 4;
-								*argument=3;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 4;
+						add_number_of_standard_basis_functions = 4;
+						add_basis_blending_matrix = cubic_lagrange_blending_matrix;
+						add_basis_node_derivative_labels = lagrange_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 3;
+						argument++;
+						valid_type = 1;
 					} break;
 					case CUBIC_HERMITE:
 					{
-						if (NULL != (temp_matrix = tensor_product(4,4,cubic_hermite_blending_matrix,
-							number_of_basis_functions,number_of_standard_basis_functions,
-							blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(3*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=0;
-									basis_function_number[1]=1;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number[2*temp_int_1]=1;
-									basis_function_number[2*temp_int_1+1]=1;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 4;
-								number_of_standard_basis_functions *= 4;
-								*argument=3;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 4;
+						add_number_of_standard_basis_functions = 4;
+						add_basis_blending_matrix = cubic_hermite_blending_matrix;
+						add_basis_node_derivative_labels = cubic_hermite_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 3;
+						argument++;
+						valid_type = 1;
 					} break;
 					case HERMITE_LAGRANGE:
 					{
-						if (NULL != (temp_matrix = tensor_product(3,3,
-							hermite_lagrange_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=0;
-									basis_function_number[1]=1;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=0;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 3;
+						add_number_of_standard_basis_functions = 3;
+						add_basis_blending_matrix = hermite_lagrange_blending_matrix;
+						add_basis_node_derivative_labels = hermite_lagrange_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 2;
+						argument++;
+						valid_type = 1;
 					} break;
 					case LAGRANGE_HERMITE:
 					{
-						if (NULL != (temp_matrix = tensor_product(3,3,
-							lagrange_hermite_blending_matrix,number_of_basis_functions,
-							number_of_standard_basis_functions,blending_matrix)))
-						{
-							DEALLOCATE(blending_matrix);
-							blending_matrix=temp_matrix;
-							temp_int_1=number_of_basis_functions*
-								2*(number_of_xi_coordinates+1);
-							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*temp_int_1))
-							{
-								*reorder_xi_entry=xi_coordinate;
-								reorder_xi_entry++;
-								basis_function_numbers=temp_int_ptr_1;
-								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
-									temp_int_1*sizeof(int));
-								memcpy(basis_function_numbers+(2*temp_int_1),
-									basis_function_numbers,temp_int_1*sizeof(int));
-								basis_function_number=basis_function_numbers+(temp_int_1+
-									2*xi_coordinate);
-								for (i=number_of_basis_functions;i>0;i--)
-								{
-									*basis_function_number=1;
-									basis_function_number[1]=0;
-									basis_function_number[temp_int_1]=1;
-									basis_function_number[temp_int_1+1]=1;
-									basis_function_number += 2*(number_of_xi_coordinates+1);
-								}
-								number_of_basis_functions *= 3;
-								number_of_standard_basis_functions *= 3;
-								*argument=2;
-								argument++;
-								valid_type=1;
-							}
-							else
-							{
-								valid_type=0;
-							}
-						}
-						else
-						{
-							valid_type=0;
-						}
+						add_number_of_basis_functions = 3;
+						add_number_of_standard_basis_functions = 3;
+						add_basis_blending_matrix = lagrange_hermite_blending_matrix;
+						add_basis_node_derivative_labels = lagrange_hermite_node_derivative_labels;
+						*reorder_xi_entry = xi_coordinate;
+						reorder_xi_entry++;
+						*argument = 2;
+						argument++;
+						valid_type = 1;
 					} break;
 					case POLYGON:
 					{
@@ -2246,7 +2381,7 @@ returned.
 										(number_of_polygon_verticies+1)*
 										4*number_of_polygon_verticies))
 									{
-										temp_matrix=polygon_blending_matrix;
+										FE_value *temp_matrix=polygon_blending_matrix;
 										for (j=number_of_polygon_verticies;j>0;j--)
 										{
 											*temp_matrix=1;
@@ -2351,15 +2486,16 @@ returned.
 							}
 						}
 					} break;
+					case CUBIC_HERMITE_SERENDIPITY:
 					case LINEAR_SIMPLEX:
 					case QUADRATIC_SIMPLEX:
 					{
-						int simplex_order = 0;
-						/* simplex */
+						int tied_order = 0;
+						/* simple tied basis: simplex or serendipity */
 						/* to avoid increment/check of row */
 						valid_type=2;
-						/* determine if this is the first component of the simplex */
-						simplex_dimension=1;
+						/* determine if this is the first tied dimension */
+						int tied_dimension=1;
 						type_column=type_entry;
 						i=xi_coordinate-1;
 						j=number_of_xi_coordinates-xi_coordinate;
@@ -2369,33 +2505,33 @@ returned.
 							type_column -= j;
 							if (NO_RELATION!= *type_column)
 							{
-								simplex_dimension++;
+								tied_dimension++;
 							}
 							i--;
 						}
-						if (1==simplex_dimension)
+						if (1==tied_dimension)
 						{
-							/* first component of the simplex */
+							/* first tied dimension */
 							*reorder_xi_entry=xi_coordinate;
 							reorder_xi_entry++;
-							simplex_type= *type_entry;
+							const int tied_type= *type_entry;
 								/*???DB.  Maybe able to remove if can work how to calculate the
 									blending matrix for an arbitrary order */
-							/* determine the simplex dimension */
+							/* determine the highest tied dimension */
 							type_entry++;
 							i=1;
 							while (valid_type && (i<=number_of_xi_coordinates-xi_coordinate))
 							{
 								if (NO_RELATION!= *type_entry)
 								{
-									simplex_offset=i;
-									if (simplex_type==type_entry[simplex_offset*
+									int tied_offset=i;
+									if (tied_type==type_entry[tied_offset*
 										(2*(number_of_xi_coordinates-xi_coordinate+1)+
-										(1-simplex_offset))/2-i])
+										(1-tied_offset))/2-i])
 									{
 										*reorder_xi_entry=xi_coordinate+i;
 										reorder_xi_entry++;
-										simplex_dimension++;
+										tied_dimension++;
 									}
 									else
 									{
@@ -2405,113 +2541,57 @@ returned.
 								type_entry++;
 								i++;
 							}
-							if (valid_type && (2<=simplex_dimension))
+							if (valid_type && (2<=tied_dimension))
 							{
+								add_basis_number_of_xi_indices = tied_dimension;
 								/*???DB.  Should be able to calculate the blending matrix for
 									arbitrary dimension and arbitrary order, but get the basics
 									going first */
-								switch (simplex_type)
+								switch (tied_type)
 								{
-									case LINEAR_SIMPLEX:
+									case CUBIC_HERMITE_SERENDIPITY:
 									{
-										simplex_order=1;
-										switch (simplex_dimension)
+										tied_order = 3;
+										switch (tied_dimension)
 										{
 											case 2:
 											{
-												if (NULL != (temp_matrix = tensor_product(3,4,
-													linear_simplex_2d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix)))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,3*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=temp_int_1+
-															2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_2]=1;
-															basis_function_number[temp_int_2+1]=0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 3;
-														number_of_standard_basis_functions *= 4;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
+												add_number_of_basis_functions = 12;
+												add_number_of_standard_basis_functions = 16;
+												add_basis_blending_matrix = Cubic_hermite_serendipity_2d::get_blending_matrix();
+												add_basis_node_derivative_labels = Cubic_hermite_serendipity_2d::get_node_derivative_labels();
 											} break;
 											case 3:
 											{
-												if (NULL != (temp_matrix = tensor_product(4,8,
-													linear_simplex_3d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix)))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,4*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(3*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=temp_int_1+
-															2*(*(reorder_xi_entry-2)-xi_coordinate);
-														temp_int_3=2*temp_int_1+
-															2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_2]=1;
-															basis_function_number[temp_int_2+1]=0;
-															basis_function_number[temp_int_3]=1;
-															basis_function_number[temp_int_3+1]=0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 4;
-														number_of_standard_basis_functions *= 8;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
+												add_number_of_basis_functions = 32;
+												add_number_of_standard_basis_functions = 64;
+												add_basis_blending_matrix = Cubic_hermite_serendipity_3d::get_blending_matrix();
+												add_basis_node_derivative_labels = Cubic_hermite_serendipity_3d::get_node_derivative_labels();
+											} break;
+											default:
+											{
+												valid_type = 0;
+											} break;
+										}
+									} break;
+									case LINEAR_SIMPLEX:
+									{
+										tied_order=1;
+										switch (tied_dimension)
+										{
+											case 2:
+											{
+												add_number_of_basis_functions = 3;
+												add_number_of_standard_basis_functions = 4;
+												add_basis_blending_matrix = linear_simplex_2d_blending_matrix;
+												add_basis_node_derivative_labels = linear_simplex_2d_node_derivative_labels;
+											} break;
+											case 3:
+											{
+												add_number_of_basis_functions = 4;
+												add_number_of_standard_basis_functions = 8;
+												add_basis_blending_matrix = linear_simplex_3d_blending_matrix;
+												add_basis_node_derivative_labels = linear_simplex_3d_node_derivative_labels;
 											} break;
 											default:
 											{
@@ -2521,143 +2601,22 @@ returned.
 									} break;
 									case QUADRATIC_SIMPLEX:
 									{
-										simplex_order=2;
-										switch (simplex_dimension)
+										tied_order=2;
+										switch (tied_dimension)
 										{
 											case 2:
 											{
-												if (NULL != (temp_matrix = tensor_product(6,9,
-													quadratic_simplex_2d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix)))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,6*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														memcpy(basis_function_numbers+temp_int_1,
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(2*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(3*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(4*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														memcpy(basis_function_numbers+(5*temp_int_1),
-															basis_function_numbers,temp_int_1*sizeof(int));
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_1]=2;
-															basis_function_number[temp_int_1+1]=0;
-															basis_function_number[2*temp_int_1+temp_int_2]=1;
-															basis_function_number[2*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number[3*temp_int_1]=1;
-															basis_function_number[3*temp_int_1+1]=0;
-															basis_function_number[3*temp_int_1+temp_int_2]=1;
-															basis_function_number[3*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number[4*temp_int_1+temp_int_2]=2;
-															basis_function_number[4*temp_int_1+temp_int_2+1]=
-																0;
-															basis_function_number +=
-																2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= 6;
-														number_of_standard_basis_functions *= 9;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
+												add_number_of_basis_functions = 6;
+												add_number_of_standard_basis_functions = 9;
+												add_basis_blending_matrix = quadratic_simplex_2d_blending_matrix;
+												add_basis_node_derivative_labels = quadratic_simplex_2d_node_derivative_labels;
 											} break;
 											case 3:
 											{
-												new_func_count = 10;
-												new_std_func_count = 27;
-												if (NULL != (temp_matrix = tensor_product(new_func_count,new_std_func_count,
-													quadratic_simplex_3d_blending_matrix,
-													number_of_basis_functions,
-													number_of_standard_basis_functions,blending_matrix)))
-												{
-													DEALLOCATE(blending_matrix);
-													blending_matrix=temp_matrix;
-													temp_int_1=number_of_basis_functions*
-														2*(number_of_xi_coordinates+1);
-													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,new_func_count*temp_int_1))
-													{
-														basis_function_numbers=temp_int_ptr_1;
-														for (fn=1; fn<new_func_count; ++fn)
-														{
-															memcpy(basis_function_numbers+(fn*temp_int_1),
-																basis_function_numbers,temp_int_1*sizeof(int));
-														}
-														basis_function_number=basis_function_numbers+
-															(temp_int_1+2*xi_coordinate);
-														temp_int_2=2*(*(reorder_xi_entry-2)-xi_coordinate);
-														temp_int_3=2*(*(reorder_xi_entry-1)-xi_coordinate);
-														for (i=number_of_basis_functions;i>0;i--)
-														{
-															*basis_function_number=1;
-															basis_function_number[1]=0;
-															basis_function_number[temp_int_1]=2;
-															basis_function_number[temp_int_1+1]=0;
-															basis_function_number[2*temp_int_1+temp_int_2]=1;
-															basis_function_number[2*temp_int_1+temp_int_2+1]=0;
-
-															basis_function_number[3*temp_int_1]=1;
-															basis_function_number[3*temp_int_1+1]=0;
-															basis_function_number[3*temp_int_1+temp_int_2]=1;
-															basis_function_number[3*temp_int_1+temp_int_2+1]=0;
-
-															basis_function_number[4*temp_int_1+temp_int_2]=2;
-															basis_function_number[4*temp_int_1+temp_int_2+1]=0;
-
-															basis_function_number[5*temp_int_1+temp_int_3]=1;
-															basis_function_number[5*temp_int_1+temp_int_3+1]=0;
-
-															basis_function_number[6*temp_int_1]=1;
-															basis_function_number[6*temp_int_1+1]=0;
-															basis_function_number[6*temp_int_1+temp_int_3]=1;
-															basis_function_number[6*temp_int_1+temp_int_3+1]=0;
-
-															basis_function_number[7*temp_int_1+temp_int_2]=1;
-															basis_function_number[7*temp_int_1+temp_int_2+1]=0;
-															basis_function_number[7*temp_int_1+temp_int_3]=1;
-															basis_function_number[7*temp_int_1+temp_int_3+1]=0;
-
-															basis_function_number[8*temp_int_1+temp_int_3]=2;
-															basis_function_number[8*temp_int_1+temp_int_3+1]=0;
-
-															basis_function_number += 2*(number_of_xi_coordinates+1);
-														}
-														number_of_basis_functions *= new_func_count;
-														number_of_standard_basis_functions *= new_std_func_count;
-													}
-													else
-													{
-														valid_type=0;
-													}
-												}
-												else
-												{
-													valid_type=0;
-												}
+												add_number_of_basis_functions = 10;
+												add_number_of_standard_basis_functions = 27;
+												add_basis_blending_matrix = quadratic_simplex_3d_blending_matrix;
+												add_basis_node_derivative_labels = quadratic_simplex_3d_node_derivative_labels;
 											} break;
 											default:
 											{
@@ -2670,9 +2629,9 @@ returned.
 										valid_type=0;
 									} break;
 								}
-								for (i=simplex_dimension;i>0;i--)
+								for (i=tied_dimension;i>0;i--)
 								{
-									*argument=simplex_order;
+									*argument=tied_order;
 									argument++;
 								}
 							}
@@ -2691,6 +2650,33 @@ returned.
 					{
 						valid_type=0;
 					} break;
+				}
+				if ((valid_type) && (add_basis_blending_matrix))
+				{
+					FE_value *temp_matrix = tensor_product(add_number_of_basis_functions, add_number_of_standard_basis_functions,
+						add_basis_blending_matrix, number_of_basis_functions, number_of_standard_basis_functions, blending_matrix);
+					if (temp_matrix)
+					{
+						DEALLOCATE(blending_matrix);
+						blending_matrix = temp_matrix;
+						int *tmp_basis_function_numbers = tensor_product_basis_function_numbers(number_of_xi_coordinates,
+							add_number_of_basis_functions, add_basis_number_of_xi_indices, add_basis_node_derivative_labels,
+							add_basis_xi_indices, number_of_basis_functions, basis_function_numbers);
+						if (tmp_basis_function_numbers)
+						{
+							basis_function_numbers = tmp_basis_function_numbers;
+							number_of_basis_functions *= add_number_of_basis_functions;
+							number_of_standard_basis_functions *= add_number_of_standard_basis_functions;
+						}
+						else
+						{
+							valid_type = 0;
+						}
+					}
+					else
+					{
+						valid_type = 0;
+					}
 				}
 				if (1==valid_type)
 				{
@@ -3113,6 +3099,7 @@ FE_basis *FE_basis_get_connectivity_basis(FE_basis *feBasis)
 		switch (feBasis->type[i])
 		{
 			case CUBIC_HERMITE:
+			case CUBIC_HERMITE_SERENDIPITY:
 			case LAGRANGE_HERMITE:
 			case HERMITE_LAGRANGE:
 				basisType[i] = LINEAR_LAGRANGE;
@@ -3238,6 +3225,63 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_basis,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *,manager)
 
+namespace {
+
+	/* Must ensure implemented correctly for new FE_basis_types */
+	const int FE_basis_type_count = 17;
+	const int FE_basis_type_valid_count = 11;
+
+	const struct
+	{
+		FE_basis_type feBasisType;
+		const char *exString;  // string as used in EX format
+	} fe_basis_type_ex_string[FE_basis_type_count] =
+	{
+		{ CUBIC_HERMITE_SERENDIPITY, "c.HermiteSerendipity" },  // must precede c.Hermite to allow match
+		{ CUBIC_HERMITE, "c.Hermite" },
+		{ CUBIC_LAGRANGE, "c.Lagrange" },
+		{ FE_BASIS_CONSTANT, "constant" },
+		{ HERMITE_LAGRANGE, "HermiteLagrange" },
+		{ LAGRANGE_HERMITE, "LagrangeHermite" },
+		{ LINEAR_LAGRANGE, "l.Lagrange" },
+		{ LINEAR_SIMPLEX, "l.simplex" },
+		{ POLYGON, "polygon" },
+		{ QUADRATIC_LAGRANGE, "q.Lagrange" },
+		{ QUADRATIC_SIMPLEX, "q.simplex" },
+		{ NO_RELATION, "no_relation" },
+		{ BSPLINE, "???bspline" },
+		{ FOURIER, "???fourier" },
+		{ SERENDIPITY, "???serendipity" },
+		{ SINGULAR, "???singular" },
+		{ TRANSITION, "???transition" }
+	};
+
+	/**
+	 * Match leading characters of basisString to valid names from
+	 * fe_basis_type_ex_string.
+	 * @param basisStringLength.  On return, the number of characters
+	 * matched in basis string.
+	 * @return Valid FE_basis_type or FE_BASIS_TYPE_INVALID.
+	 */
+	enum FE_basis_type FE_basis_string_extract_FE_basis_type(
+		const char *basisString, int &basisStringLength)
+	{
+		for (int i = 0; i < FE_basis_type_valid_count; ++i)
+		{
+			const char* exString = fe_basis_type_ex_string[i].exString;
+			const size_t len = strlen(exString);
+			if (0 == strncmp(basisString, exString, len))
+			{
+				basisStringLength = static_cast<int>(len);
+				return fe_basis_type_ex_string[i].feBasisType;
+			}
+		}
+		basisStringLength = 0;
+		return FE_BASIS_TYPE_INVALID;
+	}
+
+}
+
 int *FE_basis_string_to_type_array(const char *basis_description_string)
 /*******************************************************************************
 LAST MODIFIED : 3 November 2004
@@ -3257,7 +3301,7 @@ Some examples of basis descriptions are:
 ==============================================================================*/
 {
 	const char *index,*start_basis_name;
-	int *basis_type,component,i,j,*first_simplex,no_error,
+	int *basis_type,component,i,j,no_error,
 		number_of_polygon_vertices,number_of_xi_coordinates,previous_component,
 		*temp_basis_type,*xi_basis_type,xi_number;
 
@@ -3291,34 +3335,24 @@ Some examples of basis descriptions are:
 			{
 				xi_number++;
 				/* determine the interpolation in the xi direction */
-				if ((0==strncmp(start_basis_name,"l.simplex",9))||
-					(0==strncmp(start_basis_name,"q.simplex",9)))
+				int basisStringLength;
+				FE_basis_type feBasisType = FE_basis_string_extract_FE_basis_type(start_basis_name, basisStringLength);
+				if ((LINEAR_SIMPLEX == feBasisType)
+					|| (QUADRATIC_SIMPLEX == feBasisType)
+					|| (CUBIC_HERMITE_SERENDIPITY == feBasisType))
 				{
-					/*???debug */
-					/*printf("simplex\n");*/
-					if (0==strncmp(start_basis_name,"l.simplex",9))
-					{
-						*xi_basis_type=LINEAR_SIMPLEX;
-					}
-					else
-					{
-						*xi_basis_type=QUADRATIC_SIMPLEX;
-					}
-					/*???debug */
-					/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
-					start_basis_name += 9;
+					*xi_basis_type = feBasisType;
+					start_basis_name += basisStringLength;
 					/* skip blanks */
 					while (' '== *start_basis_name)
 					{
 						start_basis_name++;
 					}
-					/* check for links to other simplex components */
+					/* check for links to other components */
 					if ('('== *start_basis_name)
 					{
-						/*???debug */
-						/*printf("first simplex component\n");*/
 						xi_basis_type++;
-						/* assign links to other simplex components */
+						/* assign links to other dimensions */
 						previous_component=xi_number+1;
 						if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
 							(previous_component<=component)&&
@@ -3355,7 +3389,7 @@ Some examples of basis descriptions are:
 							{
 								/* have no links to succeeding xi directions */
 								display_message(ERROR_MESSAGE,
-									"Invalid simplex component of basis");
+									"Invalid linked dimension of basis");
 								no_error=0;
 							}
 						}
@@ -3363,31 +3397,26 @@ Some examples of basis descriptions are:
 						{
 							/* have no links to succeeding xi directions */
 							display_message(ERROR_MESSAGE,
-								"Invalid simplex component of basis");
+								"Invalid first linked dimension of basis");
 							no_error=0;
 						}
 					}
 					else
 					{
-						/*???debug */
-						/*printf("not first simplex component\n");*/
 						/* check that links have been assigned */
 						temp_basis_type=xi_basis_type;
 						i=xi_number-1;
 						j=number_of_xi_coordinates-xi_number;
-						first_simplex=(int *)NULL;
+						int *first_basis_type = nullptr;
 						while (no_error&&(i>0))
 						{
 							j++;
 							temp_basis_type -= j;
 							if (NO_RELATION!= *temp_basis_type)
 							{
-								/*???debug */
-								/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
-								  printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
 								if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
 								{
-									first_simplex=temp_basis_type;
+									first_basis_type=temp_basis_type;
 								}
 								else
 								{
@@ -3396,18 +3425,107 @@ Some examples of basis descriptions are:
 							}
 							i--;
 						}
-						/*???debug */
-						/*printf("%d %p\n",no_error,first_simplex);*/
-						if (no_error&&first_simplex)
+						if (no_error&&first_basis_type)
 						{
 							xi_basis_type++;
-							first_simplex++;
+							first_basis_type++;
 							i=xi_number;
 							while (i<number_of_xi_coordinates)
 							{
-								*xi_basis_type= *first_simplex;
+								*xi_basis_type= *first_basis_type;
 								xi_basis_type++;
-								first_simplex++;
+								first_basis_type++;
+								i++;
+							}
+						}
+						else
+						{
+							no_error=0;
+						}
+					}
+				}
+				else if (POLYGON == feBasisType)
+				{
+					*xi_basis_type = feBasisType;
+					start_basis_name += basisStringLength;
+					/* skip blanks */
+					while (' '== *start_basis_name)
+					{
+						start_basis_name++;
+					}
+					/* check for link to other polygon component */
+					if ('('== *start_basis_name)
+					{
+						/* assign link to other polygon component */
+						if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
+									&number_of_polygon_vertices,&component,&i))&&
+							(3<=number_of_polygon_vertices)&&
+							(xi_number<component)&&
+							(component<=number_of_xi_coordinates)&&
+							('*'== start_basis_name[i]))
+						{
+							start_basis_name += i;
+							/* assign link */
+							xi_basis_type++;
+							i=xi_number+1;
+							while (i<component)
+							{
+								*xi_basis_type=NO_RELATION;
+								xi_basis_type++;
+								i++;
+							}
+							*xi_basis_type=number_of_polygon_vertices;
+							xi_basis_type++;
+							while (i<number_of_xi_coordinates)
+							{
+								*xi_basis_type=NO_RELATION;
+								xi_basis_type++;
+								i++;
+							}
+						}
+						else
+						{
+							/* have no links to succeeding xi directions */
+							display_message(ERROR_MESSAGE,
+								"Invalid polygon component of basis");
+							no_error=0;
+						}
+					}
+					else
+					{
+						/* check that link has been assigned */
+						temp_basis_type=xi_basis_type;
+						i=xi_number-1;
+						j=number_of_xi_coordinates-xi_number;
+						number_of_polygon_vertices=0;
+						while (no_error&&(i>0))
+						{
+							j++;
+							temp_basis_type -= j;
+							if (NO_RELATION!= *temp_basis_type)
+							{
+								if (0<number_of_polygon_vertices)
+								{
+									no_error=0;
+								}
+								else
+								{
+									if ((number_of_polygon_vertices= *temp_basis_type)<3)
+									{
+										no_error=0;
+									}
+								}
+							}
+							i--;
+						}
+						if (no_error&&(3<=number_of_polygon_vertices))
+						{
+							xi_basis_type++;
+							i=xi_number;
+							while (i<number_of_xi_coordinates)
+							{
+								*xi_basis_type=NO_RELATION;
+								xi_basis_type++;
 								i++;
 							}
 						}
@@ -3419,233 +3537,81 @@ Some examples of basis descriptions are:
 				}
 				else
 				{
-					if (0==strncmp(start_basis_name,"polygon",7))
+					if (feBasisType != FE_BASIS_TYPE_INVALID)
 					{
-						*xi_basis_type=POLYGON;
-						start_basis_name += 7;
+						*xi_basis_type = feBasisType;
+						start_basis_name += basisStringLength;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Invalid basis type");
+						no_error=0;
+					}
+					if (no_error)
+					{
 						/* skip blanks */
 						while (' '== *start_basis_name)
 						{
 							start_basis_name++;
 						}
-						/* check for link to other polygon component */
+						/* check for linked dimensions */
 						if ('('== *start_basis_name)
 						{
-							/* assign link to other polygon component */
-							if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
-									  &number_of_polygon_vertices,&component,&i))&&
-								(3<=number_of_polygon_vertices)&&
-								(xi_number<component)&&
-								(component<=number_of_xi_coordinates)&&
-								('*'== start_basis_name[i]))
-							{
-								start_basis_name += i;
-								/* assign link */
-								xi_basis_type++;
-								i=xi_number+1;
-								while (i<component)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-								*xi_basis_type=number_of_polygon_vertices;
-								xi_basis_type++;
-								while (i<number_of_xi_coordinates)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-							}
-							else
-							{
-								/* have no links to succeeding xi directions */
-								display_message(ERROR_MESSAGE,
-									"Invalid polygon component of basis");
-								no_error=0;
-							}
-						}
-						else
-						{
-							/* check that link has been assigned */
+							/* assign links to succeeding linked xi directions */
 							temp_basis_type=xi_basis_type;
-							i=xi_number-1;
-							j=number_of_xi_coordinates-xi_number;
-							number_of_polygon_vertices=0;
-							while (no_error&&(i>0))
+							i=xi_number;
+							while (no_error&&(i<number_of_xi_coordinates)&&
+								(')'!= *start_basis_name))
 							{
-								j++;
-								temp_basis_type -= j;
-								if (NO_RELATION!= *temp_basis_type)
+								temp_basis_type++;
+								if (';'== *start_basis_name)
 								{
-									if (0<number_of_polygon_vertices)
+									*temp_basis_type=NO_RELATION;
+									start_basis_name++;
+								}
+								else
+								{
+									int basisStringLength2;
+									FE_basis_type feBasisType2 = FE_basis_string_extract_FE_basis_type(start_basis_name, basisStringLength2);
+									if (feBasisType2 != FE_BASIS_TYPE_INVALID)
 									{
+										*xi_basis_type = feBasisType2;
+										start_basis_name += basisStringLength2;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE, "Invalid basis type");
 										no_error=0;
 									}
-									else
-									{
-										if ((number_of_polygon_vertices= *temp_basis_type)<3)
-										{
-											no_error=0;
-										}
-									}
-								}
-								i--;
-							}
-							if (no_error&&(3<=number_of_polygon_vertices))
-							{
-								xi_basis_type++;
-								i=xi_number;
-								while (i<number_of_xi_coordinates)
-								{
-									*xi_basis_type=NO_RELATION;
-									xi_basis_type++;
-									i++;
-								}
-							}
-							else
-							{
-								no_error=0;
-							}
-						}
-					}
-					else
-					{
-						if (0==strncmp(start_basis_name,"l.Lagrange",10))
-						{
-							*xi_basis_type=LINEAR_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"q.Lagrange",10))
-						{
-							*xi_basis_type=QUADRATIC_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"c.Lagrange",10))
-						{
-							*xi_basis_type=CUBIC_LAGRANGE;
-							start_basis_name += 10;
-						}
-						else if (0==strncmp(start_basis_name,"c.Hermite",9))
-						{
-							*xi_basis_type=CUBIC_HERMITE;
-							start_basis_name += 9;
-						}
-						else if (0==strncmp(start_basis_name,"constant",8))
-						{
-							*xi_basis_type=FE_BASIS_CONSTANT;
-							start_basis_name += 8;
-						}
-						else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-						{
-							*xi_basis_type=LAGRANGE_HERMITE;
-							start_basis_name += 15;
-						}
-						else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-						{
-							*xi_basis_type=HERMITE_LAGRANGE;
-							start_basis_name += 15;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Invalid basis type");
-							no_error=0;
-						}
-						if (no_error)
-						{
-							/* skip blanks */
-							while (' '== *start_basis_name)
-							{
-								start_basis_name++;
-							}
-							/* check for simplex elements */
-							if ('('== *start_basis_name)
-							{
-								/* assign links to succeeding simplex xi directions */
-								temp_basis_type=xi_basis_type;
-								i=xi_number;
-								while (no_error&&(i<number_of_xi_coordinates)&&
-									(')'!= *start_basis_name))
-								{
-									temp_basis_type++;
 									if (';'== *start_basis_name)
 									{
-										*temp_basis_type=NO_RELATION;
 										start_basis_name++;
 									}
-									else
-									{
-										if (0==strncmp(start_basis_name,"l.Lagrange",10))
-										{
-											*xi_basis_type=LINEAR_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"q.Lagrange",10))
-										{
-											*xi_basis_type=QUADRATIC_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"c.Lagrange",10))
-										{
-											*xi_basis_type=CUBIC_LAGRANGE;
-											start_basis_name += 10;
-										}
-										else if (0==strncmp(start_basis_name,"c.Hermite",9))
-										{
-											*xi_basis_type=CUBIC_HERMITE;
-											start_basis_name += 9;
-										}
-										else if (0==strncmp(start_basis_name,"constant",8))
-										{
-											*xi_basis_type=FE_BASIS_CONSTANT;
-											start_basis_name += 8;
-										}
-										else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-										{
-											*xi_basis_type=LAGRANGE_HERMITE;
-											start_basis_name += 15;
-										}
-										else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-										{
-											*xi_basis_type=HERMITE_LAGRANGE;
-											start_basis_name += 15;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE, "Invalid basis type");
-											no_error=0;
-										}
-										if (';'== *start_basis_name)
-										{
-											start_basis_name++;
-										}
-									}
-									i++;
 								}
-								if (no_error)
-								{
-									while (i<number_of_xi_coordinates)
-									{
-										temp_basis_type++;
-										*temp_basis_type=NO_RELATION;
-										i++;
-									}
-								}
+								i++;
 							}
-							else
+							if (no_error)
 							{
-								temp_basis_type=xi_basis_type;
-								for (i=xi_number;i<number_of_xi_coordinates;i++)
+								while (i<number_of_xi_coordinates)
 								{
 									temp_basis_type++;
 									*temp_basis_type=NO_RELATION;
+									i++;
 								}
 							}
-							if (no_error&&(xi_number<number_of_xi_coordinates))
+						}
+						else
+						{
+							temp_basis_type=xi_basis_type;
+							for (i=xi_number;i<number_of_xi_coordinates;i++)
 							{
-								xi_basis_type += number_of_xi_coordinates-xi_number+1;
+								temp_basis_type++;
+								*temp_basis_type=NO_RELATION;
 							}
+						}
+						if (no_error&&(xi_number<number_of_xi_coordinates))
+						{
+							xi_basis_type += number_of_xi_coordinates-xi_number+1;
 						}
 					}
 				}
@@ -3733,6 +3699,7 @@ static char *FE_basis_type_array_to_string(const int *type_array)
 					{
 						/* no linking between dimensions */
 					} break;
+					case CUBIC_HERMITE_SERENDIPITY:
 					case LINEAR_SIMPLEX:
 					case QUADRATIC_SIMPLEX:
 					case SERENDIPITY:
@@ -3860,96 +3827,14 @@ char *FE_basis_get_description_string(struct FE_basis *basis)
 }
 
 const char *FE_basis_type_string(enum FE_basis_type basis_type)
-/*******************************************************************************
-LAST MODIFIED : 1 April 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <basis_type>.
-The calling function must not deallocate the returned string.
-???RC Not complete
-#### Must ensure implemented correctly for new FE_basis_types ####
-==============================================================================*/
 {
-	const char *basis_type_string;
-
-	ENTER(FE_basis_type_string);
-	switch (basis_type)
+	for (int i = 0; i < FE_basis_type_count; ++i)
 	{
-		case NO_RELATION:
-		{
-			basis_type_string="no_relation";
-		} break;
-		case BSPLINE:
-		{
-			basis_type_string="???bspline";
-		} break;
-		case CUBIC_HERMITE:
-		{
-			basis_type_string="c.Hermite";
-		} break;
-		case CUBIC_LAGRANGE:
-		{
-			basis_type_string="c.Lagrange";
-		} break;
-		case FE_BASIS_CONSTANT:
-		{
-			basis_type_string="constant";
-		} break;
-		case FOURIER:
-		{
-			basis_type_string="???fourier";
-		} break;
-		case HERMITE_LAGRANGE:
-		{
-			basis_type_string="HermiteLagrange";
-		} break;
-		case LAGRANGE_HERMITE:
-		{
-			basis_type_string="LagrangeHermite";
-		} break;
-		case LINEAR_LAGRANGE:
-		{
-			basis_type_string="l.Lagrange";
-		} break;
-		case LINEAR_SIMPLEX:
-		{
-			basis_type_string="l.simplex";
-		} break;
-		case POLYGON:
-		{
-			basis_type_string="polygon";
-		} break;
-		case QUADRATIC_LAGRANGE:
-		{
-			basis_type_string="q.Lagrange";
-		} break;
-		case QUADRATIC_SIMPLEX:
-		{
-			basis_type_string="q.simplex";
-		} break;
-		case SERENDIPITY:
-		{
-			basis_type_string="???serendipity";
-		} break;
-		case SINGULAR:
-		{
-			basis_type_string="???singular";
-		} break;
-		case TRANSITION:
-		{
-			basis_type_string="???transition";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_basis_type_string.  Invalid basis_type");
-			basis_type_string=(const char *)NULL;
-		} break;
+		if (basis_type == fe_basis_type_ex_string[i].feBasisType)
+			return fe_basis_type_ex_string[i].exString;
 	}
-	LEAVE;
-
-	return (basis_type_string);
-} /* FE_basis_type_string */
+	return nullptr;
+}
 
 int FE_basis_get_dimension(struct FE_basis *basis,
 	int *dimension_address)
@@ -3989,6 +3874,18 @@ int FE_basis_get_number_of_basis_functions(struct FE_basis *basis)
 	if (basis)
 		return basis->number_of_basis_functions;
 	return 0;
+}
+
+int FE_basis_get_function_number_from_node_index_and_derivative(struct FE_basis *basis,
+	int localNodeIndex, cmzn_node_value_label valueLabel)
+{
+	if (basis)
+		for (int fn = 0; fn < basis->number_of_basis_functions; ++fn)
+			if ((basis->parameterNodes[fn] == localNodeIndex) &&
+				(static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + basis->parameterDerivatives[fn]) == valueLabel))
+				return fn;
+	display_message(ERROR_MESSAGE, "FE_basis_get_function_number_from_node_index_and_derivative.  Invalid argument(s)");
+	return -1;
 }
 
 int FE_basis_get_function_number_from_node_function(struct FE_basis *basis,
@@ -4049,6 +3946,17 @@ int FE_basis_get_number_of_functions_per_node(struct FE_basis *basis, int nodeNu
 	return 0;
 }
 
+int FE_basis_get_function_node_index_and_derivative(struct FE_basis *basis, int functionNumber,
+	int &localNodeIndex, cmzn_node_value_label& valueLabel)
+{
+	if ((!basis) || (functionNumber < 0) || (functionNumber >= basis->number_of_basis_functions))
+		return 0;
+	localNodeIndex = basis->parameterNodes[functionNumber];
+	// assumes value labels are in same order
+	valueLabel = static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + basis->parameterDerivatives[functionNumber]);
+	return 1;
+}
+
 FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
 	cmzn_elementbasis_function_type functionType)
 {
@@ -4075,6 +3983,15 @@ FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
 		break;
 	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
 		feBasisType = CUBIC_HERMITE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY:
+		feBasisType = CUBIC_HERMITE_SERENDIPITY;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_HERMITE_LAGRANGE:
+		feBasisType = HERMITE_LAGRANGE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE_HERMITE:
+		feBasisType = LAGRANGE_HERMITE;
 		break;
 	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID:
 		break;
@@ -4109,12 +4026,19 @@ cmzn_elementbasis_function_type FE_basis_type_to_cmzn_elementbasis_function_type
 	case CUBIC_HERMITE:
 		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE;
 		break;
+	case CUBIC_HERMITE_SERENDIPITY:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY;
+		break;
+	case HERMITE_LAGRANGE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_HERMITE_LAGRANGE;
+		break;
+	case LAGRANGE_HERMITE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE_HERMITE;
+		break;
 	case FE_BASIS_TYPE_INVALID:
 	case NO_RELATION:
 	case BSPLINE:
 	case FOURIER:
-	case HERMITE_LAGRANGE:
-	case LAGRANGE_HERMITE:
 	case POLYGON:
 	case SERENDIPITY:
 	case SINGULAR:
@@ -4264,6 +4188,7 @@ inline int FE_basis_type_to_number_of_nodes(enum FE_basis_type basis_type)
 	{
 	case LINEAR_LAGRANGE:
 	case CUBIC_HERMITE:
+	case CUBIC_HERMITE_SERENDIPITY:
 	case LAGRANGE_HERMITE:
 	case HERMITE_LAGRANGE:
 		return 2;

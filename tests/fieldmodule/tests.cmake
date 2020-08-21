@@ -15,6 +15,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/region_io.cpp
 	${CURRENT_TEST}/create_image_processing.cpp
 	${CURRENT_TEST}/create_fibre_axes.cpp
+	${CURRENT_TEST}/elementbasis.cpp
 	${CURRENT_TEST}/fieldarithmeticoperators.cpp
 	${CURRENT_TEST}/fieldassignment.cpp
 	${CURRENT_TEST}/fieldconstant.cpp
@@ -54,3 +55,4 @@ SET(FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE "${CMAKE_CURRENT_LIST_DIR
 SET(FIELDMODULE_EX2_CYLINDER_TEXTURE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/cylinder_texture.ex2")
 SET(FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/cube_node_element_grid.exf")
 SET(FIELDMODULE_CUBE_TRIQUADRATIC_DELTA_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/cube_triquadratic_delta.ex2")
+SET(FIELDMODULE_EX2_ELEMENT_BASES_3D_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/data/element_bases_3d.ex2")
