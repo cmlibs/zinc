@@ -106,6 +106,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -201,12 +203,11 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
-	RealFieldValueCache *sourceCache = 0;
+	RealFieldValueCache *sourceCache = nullptr;
 	if (extraCache)
 	{
 		// exists only if aliasing field from separate region
 		extraCache->copyLocation(cache);
-		extraCache->setRequestedDerivatives(cache.getRequestedDerivatives());
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
 	else
@@ -216,6 +217,28 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	if (sourceCache)
 	{
 		valueCache.copyValues(*sourceCache);
+		return 1;
+	}
+	return 0;
+}
+
+/** Alias field is currently guaranteed to be numerical */
+int Computed_field_alias::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+{
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
+	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
+	if (extraCache)
+	{
+		// not implemented for other region - don't allow FieldDerivative for another region at this point
+		return 0;
+	}
+	DerivativeValueCache *sourceDerivativeValueCache = this->getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeValueCache)
+	{
+		const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
+		for (int v = 0; v < valuesCount; ++v)
+			derivativeValueCache.values[v] = sourceDerivativeValueCache->values[v];
 		return 1;
 	}
 	return 0;

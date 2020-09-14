@@ -96,6 +96,11 @@ public:
 	{
 		delete[] values;
 	}
+
+private:
+	DerivativeValueCache(); // not implemented
+	DerivativeValueCache(const DerivativeValueCache &source); // not implemented
+	DerivativeValueCache& operator=(const DerivativeValueCache &source); // not implemented
 };
 
 class RealFieldValueCache : public FieldValueCache
@@ -148,13 +153,13 @@ public:
 		return this->derivatives[derivativeIndex];
 	}
 
-	DerivativeValueCache *getOrCreateDerivativeValueCache(Field_derivative& fieldDerivative)
+	DerivativeValueCache *getOrCreateDerivativeValueCache(FieldDerivative& fieldDerivative)
 	{
-		const size_t derivativeIndex = fieldDerivative.get_cache_index();
+		const size_t derivativeIndex = fieldDerivative.getCacheIndex();
 		if (this->derivatives.size() <= derivativeIndex)
 			this->derivatives.resize(derivativeIndex + 1, nullptr);
 		if (!this->derivatives[derivativeIndex])
-			this->derivatives[derivativeIndex] = new DerivativeValueCache(fieldDerivative.get_term_count());
+			this->derivatives[derivativeIndex] = new DerivativeValueCache(this->componentCount*fieldDerivative.getTermCount());
 		return this->derivatives[derivativeIndex];
 	}
 

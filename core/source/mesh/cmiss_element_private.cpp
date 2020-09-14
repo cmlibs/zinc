@@ -1432,18 +1432,14 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
-	if (!(mesh) || (1 != order) || (term < 1) || (term > mesh->getDimension()))
+	FieldDerivativeMesh *fieldDerivative;
+	if ((mesh) && (1 <= order) && (order <= MAXIMUM_FIELD_DERIVATIVE_ORDER) &&
+		((fieldDerivative = mesh->get_FE_mesh()->getFieldDerivative(order))))
 	{
-		display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
-		return 0;
+		return cmzn_differentialoperator::create(fieldDerivative, term - 1);
 	}
-	cmzn_region *region = FE_region_get_cmzn_region(mesh->get_FE_mesh()->get_FE_region());
-	Field_derivative_element_xi *field_derivative_element_xi =
-		cmzn_region_get_field_derivative_element_xi(region, mesh->getDimension(), order);
-	cmzn_differentialoperator_id diffOp = cmzn_differentialoperator::create(field_derivative_element_xi, term - 1);
-	Field_derivative *tmp = field_derivative_element_xi;
-	Field_derivative::deaccess(tmp);
-	return diffOp;
+	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
+	return nullptr;
 }
 
 int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)

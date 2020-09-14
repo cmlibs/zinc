@@ -280,21 +280,16 @@ bool cmzn_region_can_merge(cmzn_region_id target_region,
  */
 int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region);
 
-/**
- * Get or create Field_derivative w.r.t. element chart of dimension and order.
+/** Called only by ~FieldDerivative.
+ * Add the field derivative to the list in the region and assign its unique
+ * cache index.
+ * NOTE: Throws an exception on any failure.
  * @return  Accessed field derivative or nullptr if failed.
  */
-Field_derivative_element_xi *cmzn_region_get_field_derivative_element_xi(
-	cmzn_region *region, int element_dimension_in, int order_in);
+void cmzn_region_add_field_derivative(cmzn_region *region,
+	FieldDerivative *fieldDerivative);
 
-/**
- * Get existing field derivative at supplied index.
- * @return  Non-accessed field derivative or nullptr if none.
- */
-Field_derivative *cmzn_region_get_field_derivative_at_index(
-	cmzn_region *region, int derivative_index);
-
-/** Called only by ~Field_derivative */
-void cmzn_region_remove_field_derivative(cmzn_region *region, Field_derivative *field_derivative);
+/** Called only by ~FieldDerivative */
+void cmzn_region_remove_field_derivative(cmzn_region *region, FieldDerivative *field_derivative);
 
 #endif /* !defined (CMZN_REGION_H) */

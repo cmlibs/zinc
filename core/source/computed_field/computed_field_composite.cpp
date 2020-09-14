@@ -130,7 +130,7 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, Field_derivative& fieldDerivative);
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -237,16 +237,15 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	return 1;
 }
 
-int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, Field_derivative& fieldDerivative)
+int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	// following is ensured by caller Computed_field::evaluateDerivative:
-	const int derivativeIndex = fieldDerivative.get_cache_index();
-	DerivativeValueCache derivativeValueCache = *valueCache.getDerivativeValueCache(derivativeIndex);
+	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
 	FE_value *targetDerivative = derivativeValueCache.values;
 	int sourceFieldNumber = -1;
-	const FE_value *sourceFieldDerivatives;
-	const int derivativeTermCount = fieldDerivative.get_term_count();
+	const DerivativeValueCache *sourceDerivativeValueCache = nullptr;
+	const int derivativeTermCount = fieldDerivative.getTermCount();
 	for (int c = 0; c < field->number_of_components; ++c)
 	{
 		if (0 <= this->source_field_numbers[c])
@@ -254,13 +253,11 @@ int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldVa
 			if (sourceFieldNumber != this->source_field_numbers[c])
 			{
 				sourceFieldNumber = this->source_field_numbers[c];
-				const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(this->getSourceField(sourceFieldNumber)->evaluateDerivative(cache, fieldDerivative));
-				if (!sourceValueCache)
+				sourceDerivativeValueCache = this->getSourceField(sourceFieldNumber)->evaluateDerivative(cache, fieldDerivative);
+				if (!sourceDerivativeValueCache)
 					return 0;
-				// following is guaranteed by successful call to evaluateDerivative above:
-				sourceFieldDerivatives = sourceValueCache->getDerivativeValueCache(derivativeIndex)->values;
 			}
-			const FE_value *sourceDerivative = sourceFieldDerivatives + derivativeTermCount*source_value_numbers[c];
+			const FE_value *sourceDerivative = sourceDerivativeValueCache->values + derivativeTermCount*source_value_numbers[c];
 			for (int d = 0; d < derivativeTermCount; ++d)
 				targetDerivative[d] = sourceDerivative[d];
 		}

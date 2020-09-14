@@ -80,7 +80,7 @@ enum FE_basis_modify_theta_mode
 	FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1
 };
 
-const int MAXIMUM_FIELD_DERIVATIVE_ORDER = 4;
+const int MAXIMUM_FIELD_DERIVATIVE_ORDER = 3;
 
 /** object for evaluating and caching standard basis function values.
  * Designed for performance. Not to be shared between threads.

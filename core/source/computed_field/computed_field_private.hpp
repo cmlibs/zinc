@@ -261,14 +261,14 @@ public:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
 	/** Override for real-valued fields */
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, Field_derivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, FieldDerivative& fieldDerivative);
 
 	/** Evaluate derivatives using finite differences. Only for real-valued fields
 	 * Only implemented for element_xi derivatives & locations.
 	 * @param cache  Parent cache containing location to evaluate.
 	 * @param valueCache  The real field value cache to put values in.
 	 * @param fieldDerivative  The field derivative operator. */
-	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const Field_derivative& fieldDerivative);
+	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
 
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
@@ -548,8 +548,8 @@ DESCRIPTION :
 
 	inline FieldValueCache *evaluate(cmzn_fieldcache& cache);
 
-	/** Note: caller is responsible for ensuring field is real-valued */
-	inline RealFieldValueCache *evaluateDerivative(cmzn_fieldcache& cache, Field_derivative& fieldDerivative);
+	/** Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline DerivativeValueCache *evaluateDerivative(cmzn_fieldcache& cache, FieldDerivative& fieldDerivative);
 
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
@@ -681,7 +681,7 @@ inline FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
 }
 
 /** Caller is responsible for ensuring field is real-valued */
-inline RealFieldValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& cache, Field_derivative& fieldDerivative)
+inline DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& cache, FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
 	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
@@ -698,7 +698,7 @@ inline RealFieldValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& 
 		else
 			return nullptr;
 	}
-	return realValueCache;
+	return derivativeValueCache;
 }
 
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator

@@ -71,7 +71,7 @@ struct cmzn_region
 	// all field caches currently in use for this region, for clearing
 	// when fields changed, and adding value caches for new fields.
 	std::list<cmzn_fieldcache_id> field_caches;
-	std::vector<Field_derivative *> field_derivatives;
+	std::vector<FieldDerivative *> fieldDerivatives;
 
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
@@ -96,16 +96,10 @@ struct cmzn_region
 
 	~cmzn_region();
 
-	/** @return  Non-acccessed field derivative or nullptr if none. */
-	Field_derivative *get_field_derivative_at_index(int derivative_index)
-	{
-		return this->field_derivatives[derivative_index];
-	}
+	/** Note: throws exception if fails */
+	void addFieldDerivative(FieldDerivative *fieldDerivative);
 
-	/** @return  Accessed field derivative or nullptr if failed. */
-	Field_derivative_element_xi *get_field_derivative_element_xi(int element_dimension_in, int order_in);
-
-	void remove_field_derivative(Field_derivative *field_derivative);
+	void removeFieldDerivative(FieldDerivative *fieldDerivative);
 
 };
 
@@ -403,18 +397,10 @@ cmzn_region::~cmzn_region()
 	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(&(this->change_callback_list));
 
 	// release accessed field derivatives
-	const int size = static_cast<int>(this->field_derivatives.size());
+	const int size = static_cast<int>(this->fieldDerivatives.size());
 	for (int i = 0; i < size; ++i)
-	{
-		Field_derivative *field_derivative = this->field_derivatives[i];
-		if (field_derivative)
-		{
-			field_derivative->set_region(nullptr);
-			// certain types are accessed by region to prevent constant re-creation
-			if (field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI)
-				Field_derivative::deaccess(field_derivative);
-		}
-	}
+		if (this->fieldDerivatives[i])
+			this->fieldDerivatives[i]->setRegionAndCacheIndex();
 
 	// GRC move to changes object?
 	REACCESS(cmzn_region)(&this->changes.child_added, NULL);
@@ -451,77 +437,36 @@ cmzn_region::~cmzn_region()
 		DEALLOCATE(this->name);
 }
 
-Field_derivative_element_xi *cmzn_region::get_field_derivative_element_xi(int element_dimension_in, int order_in)
+void cmzn_region::addFieldDerivative(FieldDerivative *fieldDerivative)
 {
-	if ((element_dimension_in < 1)
-		|| (element_dimension_in > MAXIMUM_ELEMENT_XI_DIMENSIONS)
-		|| (order_in < 1)
-		|| (order_in > MAXIMUM_FIELD_DERIVATIVE_ORDER))
-	{
-		display_message(ERROR_MESSAGE, "cmzn_region::get_field_derivative_element_xi.  Invalid arguments");
-		return nullptr;
-	}
-	const int size = static_cast<int>(this->field_derivatives.size());
-	Field_derivative_element_xi *field_derivative_element_xi;
+	const int size = static_cast<int>(this->fieldDerivatives.size());
 	for (int i = 0; i < size; ++i)
-	{
-		Field_derivative *field_derivative = this->field_derivatives[i];
-		if ((field_derivative)
-			&& (field_derivative->get_order() == order_in)
-			&& (field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI))
+		if (!this->fieldDerivatives[i])
 		{
-			field_derivative_element_xi = static_cast<Field_derivative_element_xi *>(field_derivative);
-			if (field_derivative_element_xi->get_element_dimension() == element_dimension_in)
-			{
-				field_derivative_element_xi->access();
-				return field_derivative_element_xi;
-			}
+			fieldDerivative->setRegionAndCacheIndex(this, i);
+			return;
 		}
-	}
-	Field_derivative_element_xi *lower_derivative = nullptr;
-	if (order_in > 1)
-	{
-		lower_derivative = this->get_field_derivative_element_xi(element_dimension_in, order_in - 1);
-		if (!lower_derivative)
-		{
-			display_message(ERROR_MESSAGE, "cmzn_region::get_field_derivative_element_xi.  Failed to get lower derivative");
-			return nullptr;
-		}
-	}
-	field_derivative_element_xi = new Field_derivative_element_xi(element_dimension_in, order_in);
-	field_derivative_element_xi->set_lower_derivative(lower_derivative);
-	field_derivative_element_xi->access();  // additional access so not constantly recreated. Deaccessed in ~cmzn_region
-	const int updated_size = static_cast<int>(this->field_derivatives.size());
-	for (int i = 0; i < updated_size; ++i)
-	{
-		if (!this->field_derivatives[i])
-		{
-			field_derivative_element_xi->set_cache_index(i);
-			return field_derivative_element_xi;
-		}
-	}
-	this->field_derivatives.push_back(field_derivative_element_xi);
-	field_derivative_element_xi->set_cache_index(updated_size);
-	return field_derivative_element_xi;
+	this->fieldDerivatives.push_back(fieldDerivative);
+	fieldDerivative->setRegionAndCacheIndex(this, size);
 }
 
-/** Called only by ~Field_derivative. Only happens for derivatives not accessed by region */
-void cmzn_region::remove_field_derivative(Field_derivative *field_derivative)
+void cmzn_region::removeFieldDerivative(FieldDerivative *fieldDerivative)
 {
-	if (!field_derivative)
+	if (!fieldDerivative)
 	{
-		display_message(ERROR_MESSAGE, "cmzn_region::remove_field_derivative.  Invalid field derivative");
+		display_message(ERROR_MESSAGE, "cmzn_region::removeFieldDerivative.  Invalid field derivative");
 		return;
 	}
-	const int cache_index = field_derivative->get_cache_index();
-	const int size = static_cast<int>(this->field_derivatives.size());
-	if ((field_derivative->get_region() != this) || (cache_index < 0) || (cache_index >= size))
+	const int cacheIndex = fieldDerivative->getCacheIndex();
+	const int size = static_cast<int>(this->fieldDerivatives.size());
+	if ((fieldDerivative->getRegion() != this) || (cacheIndex < 0) || (cacheIndex >= size))
 	{
-		display_message(ERROR_MESSAGE, "cmzn_region::remove_field_derivative.  Invalid field derivative");
+		display_message(ERROR_MESSAGE, "cmzn_region::removeFieldDerivative.  Invalid field derivative");
 		return;
 	}
+	fieldDerivative->setRegionAndCacheIndex();
 	// ???GRC Future: clear derivative caches
-	this->field_derivatives[cache_index] = nullptr;
+	this->fieldDerivatives[cacheIndex] = nullptr;
 }
 
 cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
@@ -1938,26 +1883,14 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 	}
 }
 
-Field_derivative_element_xi *cmzn_region_get_field_derivative_element_xi(
-	cmzn_region *region, int element_dimension_in, int order_in)
+void cmzn_region_add_field_derivative(cmzn_region *region,
+	FieldDerivative *fieldDerivative)
 {
-	if (region)
-		return region->get_field_derivative_element_xi(element_dimension_in, order_in);
-	display_message(ERROR_MESSAGE, "cmzn_region_get_field_derivative_element_xi.  Missing region");
-	return nullptr;
+	region->addFieldDerivative(fieldDerivative);
 }
 
-Field_derivative *cmzn_region_get_field_derivative_at_index(
-	cmzn_region *region, int derivative_index)
+void cmzn_region_remove_field_derivative(cmzn_region *region, FieldDerivative *field_derivative)
 {
-	if (region)
-		return region->get_field_derivative_at_index(derivative_index);
-	display_message(ERROR_MESSAGE, "cmzn_region_get_field_derivative_at_index.  Missing region");
-	return nullptr;
-}
-
-void cmzn_region_remove_field_derivative(cmzn_region *region, Field_derivative *field_derivative)
-{
-	region->remove_field_derivative(field_derivative);
+	region->removeFieldDerivative(field_derivative);
 }
 

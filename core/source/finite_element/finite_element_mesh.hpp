@@ -13,6 +13,7 @@
 
 #include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/field_derivative.hpp"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
@@ -738,6 +739,8 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
+	FieldDerivativeMesh *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
+
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
@@ -1192,6 +1195,14 @@ public:
 	int destroyAllElements();
 
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
+
+	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
+	FieldDerivativeMesh *getFieldDerivative(int order)
+	{
+		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
+			return nullptr;
+		return this->fieldDerivatives[order - 1];
+	}
 
 	/** @param scaleFactorIndex  Not checked. Must be valid. */
 	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const

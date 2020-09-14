@@ -1166,20 +1166,20 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, Field_derivative&)
+int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, FieldDerivative&)
 {
-	return 0;  // Invalid operation for non-real fields
+	return 0;  // Invalid operation for non-real fields, or not available
 }
 
-int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const Field_derivative& fieldDerivative)
+int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.get_type() != Field_derivative::TYPE_ELEMENT_XI)
+	if (fieldDerivative.get_type() != FieldDerivative::TYPE_ELEMENT_XI)
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
 		return 0;
 	}
-	const Field_derivative_element_xi &fieldDerivativeElementXi = static_cast<const Field_derivative_element_xi&>(fieldDerivative);
+	const FieldDerivativeMesh &fieldDerivativeElementXi = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 	{
@@ -1187,7 +1187,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
 		return 0;
 	}
-	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.get_element_dimension())
+	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.getElementDimension())
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
@@ -1203,10 +1203,9 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		return 0;
 	}
 	workingCache->setTime(cache.getTime());
-	Field_derivative *lowerFieldDerivative = fieldDerivative.get_lower_derivative();
-	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->get_term_count() : 1;
-
-	const int componentsCount = this->field->number_of_components;
+	FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
+	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getTermCount() : 1;
+	const int componentCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
 	const int elementDimension = element_xi_location->get_element_dimension();
 	const FE_value *xi = element_xi_location->get_xi();
@@ -1214,16 +1213,11 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	for (int d = 0; d < elementDimension; ++d)
 		perturbedXi[d] = xi[d];
 	const FE_value xiPerturbation = 1.0E-5;
-	const FE_value weightm = -0.5 / xiPerturbation;
-	const FE_value weightp = +0.5 / xiPerturbation;
-	const RealFieldValueCache *workingRealValueCache;
-	const int lowerValueCount = componentsCount*lowerDerivativeTermCount;
-	DerivativeValueCache derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.get_cache_index());
+	const FE_value weight = 0.5 / xiPerturbation;
+	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
 	const FE_value *lowerValues = nullptr;
 	for (int d = 0; d < elementDimension; ++d)
 	{
-		// GRC decide order of higher derivatives
-		FE_value *derivatives = derivativeValueCache.values + d;  // where to put final values
 		for (int k = 0; k < 2; ++k)
 		{
 			if (k == 0)
@@ -1233,14 +1227,14 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			workingCache->setMeshLocation(element, perturbedXi);
 			if (lowerFieldDerivative)
 			{
-				if (!this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative))
+				DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
+				if (!derivativeValueCache)
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
 					return 0;
 				}
-				if (!lowerValues)
-					lowerValues = lowerValueCache->getDerivativeValueCache(lowerFieldDerivative->get_cache_index())->values;
+				lowerValues = derivativeValueCache->values;
 			}
 			else
 			{
@@ -1250,23 +1244,27 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field values");
 					return 0;
 				}
-				if (!lowerValues)
-					lowerValues = lowerValueCache->values;
+				lowerValues = lowerValueCache->values;
 			}
-			if (k == 0)
+			// values cycle over components slowest, then this outermost derivative, then lower derivatives
+			for (int c = 0; c < componentCount; ++c)
 			{
-				for (int v = 0; v < lowerValueCount; ++v)
-					derivatives[v*elementDimension] = weightm*lowerValues[v];
-			}
-			else
-			{
-				for (int v = 0; v < lowerValueCount; ++v)
-					derivatives[v*elementDimension] += weightp*lowerValues[v];
+				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
+				FE_value *dst = derivativeValueCache.values + (c*componentCount + d)*lowerDerivativeTermCount;
+				if (k == 0)
+				{
+					for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						dst[v] = src[v];
+				}
+				else
+				{
+					for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						dst[v] = weight*(src[v] - dst[v]);
+				}
 			}
 			perturbedXi[d] = xi[d];
 		}
 	}
-	valueCache.derivatives_valid = 1;
 	return 1;
 }
 
@@ -1475,38 +1473,46 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-// Internal API
-// IMPORTANT: Not yet approved for external API!
+/** Internal function only. Evaluate real field values with all first derivatives w.r.t. xi.
+ * @deprecated
+ * Try to remove its use as soon as possible.
+ */
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values,
 	int number_of_derivatives, double *derivatives)
 {
-	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
-		(number_of_derivatives > 0) && (number_of_derivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives &&
-		field->core->has_numerical_components())
+	const Field_location_element_xi* element_xi_location = cache->get_location_element_xi();
+	if (!element_xi_location)
 	{
-		RealFieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, number_of_derivatives);
-		if (valueCache)
-		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
-			if (realValueCache.derivatives_valid)
-			{
-				int i;
-				for (i = 0; i < field->number_of_components; ++i)
-				{
-					values[i] = realValueCache.values[i];
-				}
-				int size = field->number_of_components*number_of_derivatives;
-				for (i = 0; i < size; ++i)
-				{
-					derivatives[i] = realValueCache.derivatives[i];
-				}
-				return CMZN_OK;
-			}
-		}
-		return CMZN_ERROR_GENERAL;
+		display_message(ERROR_MESSAGE, "cmzn_field_evaluate_real_with_derivatives.  Requires element_xi location");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	return CMZN_ERROR_ARGUMENT;
+	int result = cmzn_field_evaluate_real(field, cache, number_of_values, values);
+	if (result != CMZN_OK)
+		return result;
+	FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
+	const int termCount = fieldDerivative->getTermCount();
+	if ((number_of_derivatives != termCount) || (!derivatives))
+	{
+		result = CMZN_ERROR_ARGUMENT;
+	}
+	else
+	{
+		DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, *fieldDerivative);
+		if (!derivativeValueCache)
+		{
+			result = CMZN_ERROR_GENERAL;
+		}
+		else
+		{
+			const int valueCount = field->number_of_components*termCount;
+			const FE_value *srcValues = derivativeValueCache->values;
+			for (int v = 0; v < valueCount; ++v)
+				derivatives[v] = srcValues[v];
+			result = CMZN_OK;
+		}
+	}
+	return result;
 }
 
 // External API
@@ -1532,31 +1538,21 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		(number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
-		const Field_location_element_xi *element_xi_location = cache->get_location_element_xi();
-		if (element_xi_location)
+		FieldDerivative& fieldDerivative = differential_operator->getFieldDerivative();
+		if (field->manager->owner != fieldDerivative.getRegion())
+			return CMZN_ERROR_ARGUMENT;
+		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, fieldDerivative);
+		if (derivativeValueCache)
 		{
-			const int element_dimension = element_xi_location->get_element_dimension();
+			const int termCount = fieldDerivative.getTermCount();
 			const int term = differential_operator->getTerm();
-			if ((element_dimension == differential_operator->getElementDimension()) && (term >= 0))
-			{
-				FieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, element_dimension);
-				if (valueCache)
-				{
-					RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
-					if (realValueCache.derivatives_valid)
-					{
-						FE_value *derivative = realValueCache.derivatives + term;
-						for (int i = 0; i < field->number_of_components; i++)
-						{
-							values[i] = *derivative;
-							derivative += element_dimension;
-						}
-						return CMZN_OK;
-					}
-				}
-				return CMZN_ERROR_GENERAL;
-			}
+			const int componentCount = field->number_of_components;
+			const FE_value *derivatives = derivativeValueCache->values + term;
+			for (int c = 0; c < componentCount; ++c)
+				values[c] = derivatives[c*termCount];
+			return CMZN_OK;
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }

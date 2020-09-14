@@ -17,30 +17,30 @@
 #include "finite_element/finite_element_region.h"
 #include "computed_field/field_derivative.hpp"
 
-/** Currently limited to one or all terms of a Field_derivative */
+/** Currently limited to one or all terms of a FieldDerivative */
 struct cmzn_differentialoperator
 {
 private:
-	Field_derivative *field_derivative;  // accessed
+	FieldDerivative *fieldDerivative;  // accessed
 	int term; // starting at 0 or negative for all
 	int access_count;
 
-	cmzn_differentialoperator(Field_derivative *field_derivative_in, int term_in) :
-		field_derivative(field_derivative_in->access()),
-		term(term_in),
+	cmzn_differentialoperator(FieldDerivative *fieldDerivativeIn, int termIn) :
+		fieldDerivative(fieldDerivativeIn->access()),
+		term(termIn),
 		access_count(1)
 	{
 	}
 
 	~cmzn_differentialoperator()
 	{
-		Field_derivative::deaccess(this->field_derivative);
+		FieldDerivative::deaccess(this->fieldDerivative);
 	}
 
 public:
 
 	/** @param term_in  Term from 0 to number-1, or negative for all terms */
-	static cmzn_differentialoperator* create(Field_derivative *field_derivative_in, int term_in);
+	static cmzn_differentialoperator* create(FieldDerivative *fieldDerivativeIn, int termIn);
 
 	cmzn_differentialoperator_id access()
 	{
@@ -61,9 +61,14 @@ public:
 
 	int getElementDimension() const
 	{
-		if (this->field_derivative->get_type() == Field_derivative::TYPE_ELEMENT_XI)
-			return static_cast<Field_derivative_element_xi*>(this->field_derivative)->get_element_dimension();
+		if (this->fieldDerivative->get_type() == FieldDerivative::TYPE_ELEMENT_XI)
+			return static_cast<FieldDerivativeMesh*>(this->fieldDerivative)->getElementDimension();
 		return 0;
+	}
+
+	FieldDerivative& getFieldDerivative() const
+	{
+		return *this->fieldDerivative;
 	}
 
 	int getTerm() const
