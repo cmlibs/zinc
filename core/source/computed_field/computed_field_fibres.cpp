@@ -123,10 +123,10 @@ int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 		cmzn_field_id fibre_field = getSourceField(0);
 		cmzn_field_id coordinate_field = getSourceField(1);
-		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
-		RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluate(*workingCache));
+		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
+		const RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluate(*workingCache));
 		FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
-		DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
+		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
 		FE_value x[3], dx_dxi[9];
 		if (fibreCache && coordinateCache && coordinateDerivativeCache &&
 			convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),

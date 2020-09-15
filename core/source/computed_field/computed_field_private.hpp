@@ -551,6 +551,10 @@ DESCRIPTION :
 	/** Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
 	inline DerivativeValueCache *evaluateDerivative(cmzn_fieldcache& cache, FieldDerivative& fieldDerivative);
 
+	/** Evaluate all derivatives from fieldDerivative down to value.
+	 * Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline RealFieldValueCache *evaluateDerivativeTree(cmzn_fieldcache& cache, FieldDerivative& fieldDerivative);
+
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
 	 */
@@ -699,6 +703,19 @@ inline DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache&
 			return nullptr;
 	}
 	return derivativeValueCache;
+}
+
+/** Caller is responsible for ensuring field is real-valued */
+inline RealFieldValueCache *Computed_field::evaluateDerivativeTree(cmzn_fieldcache& cache, FieldDerivative& fieldDerivative)
+{
+	FieldDerivative *thisFieldDerivative = &fieldDerivative;
+	do
+	{
+		if (!this->evaluateDerivative(cache, *thisFieldDerivative))
+			return nullptr;
+		thisFieldDerivative = thisFieldDerivative->getLowerDerivative();
+	} while (thisFieldDerivative);
+	return RealFieldValueCache::cast(this->evaluate(cache));
 }
 
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
