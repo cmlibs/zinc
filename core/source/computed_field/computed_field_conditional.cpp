@@ -94,6 +94,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -101,81 +103,40 @@ private:
 
 int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	cmzn_field *switch_field = getSourceField(0);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switch_field->evaluate(cache));
+	cmzn_field *switchField = getSourceField(0);
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switchField->evaluate(cache));
 	if (source1Cache)
 	{
-		/* 2. Work out whether we need to evaluate source_field_two
-			or source_field_three or both. */
-		int calculate_field_two = 0;
-		int calculate_field_three = 0;
-		for (int i = 0 ; i < switch_field->number_of_components ; i++)
-		{
+		// Work out whether we need to evaluate source field 2, 3 or both
+		bool evaluateField2 = false;
+		bool evaluateField3 = false;
+		for (int i = 0; i < switchField->number_of_components; ++i)
 			if (source1Cache->values[i])
-			{
-				calculate_field_two = 1;
-			}
+				evaluateField2 = true;
 			else
-			{
-				calculate_field_three = 1;
-			}
-		}
-		if (value_type == CMZN_FIELD_VALUE_TYPE_REAL)
+				evaluateField3 = true;
+		if (this->value_type == CMZN_FIELD_VALUE_TYPE_REAL)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-			RealFieldValueCache *source2Cache = 0;
-			RealFieldValueCache *source3Cache = 0;
-			if (calculate_field_two)
+			const RealFieldValueCache *source2Cache = evaluateField2 ? RealFieldValueCache::cast(getSourceField(1)->evaluate(cache)) : nullptr;
+			const RealFieldValueCache *source3Cache = evaluateField3 ? RealFieldValueCache::cast(getSourceField(2)->evaluate(cache)) : nullptr;
+			if (((!evaluateField2) || source2Cache) && ((!evaluateField3) || source3Cache))
 			{
-				source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
-			}
-			if (calculate_field_three)
-			{
-				source3Cache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
-			}
-			if (((!calculate_field_two) || source2Cache) && ((!calculate_field_three) || source3Cache))
-			{
-				int number_of_xi = cache.getRequestedDerivatives();
-				FE_value *derivative = valueCache.derivatives;
-				valueCache.derivatives_valid = (0 != number_of_xi);
-				for (int i = 0 ; i < field->number_of_components ; i++)
+				const FE_value *sourceValues = nullptr;
+				for (int i = 0; i < field->number_of_components; ++i)
 				{
-					RealFieldValueCache *useSourceCache;
-					int switch_field_i = i;
-					if (switch_field->number_of_components == 1)
-						switch_field_i = 0;
-					if (source1Cache->values[switch_field_i])
-					{
-						useSourceCache = source2Cache;
-					}
-					else
-					{
-						useSourceCache = source3Cache;
-					}
-					valueCache.values[i] = useSourceCache->values[i];
-					if (valueCache.derivatives_valid)
-					{
-						if (useSourceCache->derivatives_valid)
-						{
-							for (int j = 0 ; j < number_of_xi ; j++)
-							{
-								*derivative = useSourceCache->derivatives[i * number_of_xi + j];
-								derivative++;
-							}
-						}
-						else
-						{
-							valueCache.derivatives_valid = 0;
-						}
-					}
+					if (i < switchField->number_of_components)
+						sourceValues = (source1Cache->values[i]) ? source2Cache->values : source3Cache->values;
+					valueCache.values[i] = sourceValues[i];
 				}
 				return 1;
 			}
 		}
-		else if (value_type == CMZN_FIELD_VALUE_TYPE_STRING)
+		else if (this->value_type == CMZN_FIELD_VALUE_TYPE_STRING)
 		{
+			// can only be scalar
 			StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
-			StringFieldValueCache *useSourceCache = calculate_field_two ?
+			StringFieldValueCache *useSourceCache = evaluateField2 ?
 				StringFieldValueCache::cast(getSourceField(1)->evaluate(cache)) :
 				StringFieldValueCache::cast(getSourceField(2)->evaluate(cache));
 			if (useSourceCache)
@@ -184,8 +145,46 @@ int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValue
 				return 1;
 			}
 		}
-		else if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+		else if (this->value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 		{
+		}
+	}
+	return 0;
+}
+
+int Computed_field_if::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+{
+	if (this->value_type != CMZN_FIELD_VALUE_TYPE_REAL)
+		return 0;
+	cmzn_field *switchField = getSourceField(0);
+	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switchField->evaluate(cache));
+	if (source1Cache)
+	{
+		// Work out whether we need to evaluate source field 2, 3 or both
+		bool evaluateField2 = false;
+		bool evaluateField3 = false;
+		for (int i = 0; i < switchField->number_of_components; ++i)
+			if (source1Cache->values[i])
+				evaluateField2 = true;
+			else
+				evaluateField3 = true;
+		const DerivativeValueCache *source2DerivativeCache = evaluateField2 ? getSourceField(1)->evaluateDerivative(cache, fieldDerivative) : nullptr;
+		const DerivativeValueCache *source3DerivativeCache = evaluateField3 ? getSourceField(2)->evaluateDerivative(cache, fieldDerivative) : nullptr;
+		if (((!evaluateField2) || source2DerivativeCache) && ((!evaluateField3) || source3DerivativeCache))
+		{
+			const int termCount = fieldDerivative.getTermCount();
+			FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative.getCacheIndex())->values;
+			const FE_value *sourceDerivatives = nullptr;
+			for (int i = 0; i < field->number_of_components; ++i)
+			{
+				if (i < switchField->number_of_components)
+					sourceDerivatives = (source1Cache->values[i]) ? source2DerivativeCache->values : source3DerivativeCache->values;
+				FE_value *componentDerivatives = derivatives + i*termCount;
+				const FE_value *componentSourceDerivatives = sourceDerivatives + i*termCount;
+				for (int j = 0; j < termCount; ++j)
+					componentDerivatives[j] = componentSourceDerivatives[j];
+			}
+			return 1;
 		}
 	}
 	return 0;

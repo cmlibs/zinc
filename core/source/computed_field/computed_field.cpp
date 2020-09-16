@@ -1168,7 +1168,7 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 
 int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, FieldDerivative&)
 {
-	return 0;  // Invalid operation for non-real fields, or not available
+	return 0;  // Invalid operation for non-real fields, or not available / fallback to finite difference
 }
 
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)

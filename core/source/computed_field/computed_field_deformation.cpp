@@ -86,49 +86,52 @@ int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-		RealFieldValueCache *deformedCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
-		RealFieldValueCache *undeformedCache = RealFieldValueCache::cast(getSourceField(1)->evaluateWithDerivatives(cache, element_dimension));
-		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
-		if (deformedCache && undeformedCache && fibreCache)
+		FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *deformedDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+		const DerivativeValueCache *undeformedDerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
+		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+		if (deformedDerivativeCache && undeformedDerivativeCache && fibreCache)
 		{
 			double A,A2,B,B2,cos_fibre_angle,C2,D,dxi_dnu[6],E[4],fibre_angle,
 				F_x[6],F_X[6],sin_fibre_angle;
 			FE_value def_derivative_xi[9], undef_derivative_xi[9];
-			valueCache.derivatives_valid = 0;
-			switch(element_dimension)
+
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			const FE_value *deformedDerivatives = deformedDerivativeCache->values;
+			const FE_value *undeformedDerivatives = undeformedDerivativeCache->values;
+			switch (element_dimension)
 			{
 				case 2:
 				{
-					def_derivative_xi[0] = deformedCache->derivatives[0];
-					def_derivative_xi[1] = deformedCache->derivatives[1];
-					def_derivative_xi[3] = deformedCache->derivatives[2];
-					def_derivative_xi[4] = deformedCache->derivatives[3];
-					def_derivative_xi[6] = deformedCache->derivatives[4];
-					def_derivative_xi[7] = deformedCache->derivatives[5];
-					undef_derivative_xi[0] = undeformedCache->derivatives[0];
-					undef_derivative_xi[1] = undeformedCache->derivatives[1];
-					undef_derivative_xi[3] = undeformedCache->derivatives[2];
-					undef_derivative_xi[4] = undeformedCache->derivatives[3];
-					undef_derivative_xi[6] = undeformedCache->derivatives[4];
-					undef_derivative_xi[7] = undeformedCache->derivatives[5];
+					def_derivative_xi[0] = deformedDerivatives[0];
+					def_derivative_xi[1] = deformedDerivatives[1];
+					def_derivative_xi[3] = deformedDerivatives[2];
+					def_derivative_xi[4] = deformedDerivatives[3];
+					def_derivative_xi[6] = deformedDerivatives[4];
+					def_derivative_xi[7] = deformedDerivatives[5];
+					undef_derivative_xi[0] = undeformedDerivatives[0];
+					undef_derivative_xi[1] = undeformedDerivatives[1];
+					undef_derivative_xi[3] = undeformedDerivatives[2];
+					undef_derivative_xi[4] = undeformedDerivatives[3];
+					undef_derivative_xi[6] = undeformedDerivatives[4];
+					undef_derivative_xi[7] = undeformedDerivatives[5];
 				} break;
 				case 3:
 				{
 					/* Convert to 2D ignoring xi3, should be able to choose the
 						direction that is ignored */
-					def_derivative_xi[0] = deformedCache->derivatives[0];
-					def_derivative_xi[1] = deformedCache->derivatives[1];
-					def_derivative_xi[3] = deformedCache->derivatives[3];
-					def_derivative_xi[4] = deformedCache->derivatives[4];
-					def_derivative_xi[6] = deformedCache->derivatives[6];
-					def_derivative_xi[7] = deformedCache->derivatives[7];
-					undef_derivative_xi[0] = undeformedCache->derivatives[0];
-					undef_derivative_xi[1] = undeformedCache->derivatives[1];
-					undef_derivative_xi[3] = undeformedCache->derivatives[3];
-					undef_derivative_xi[4] = undeformedCache->derivatives[4];
-					undef_derivative_xi[6] = undeformedCache->derivatives[6];
-					undef_derivative_xi[7] = undeformedCache->derivatives[7];
+					def_derivative_xi[0] = deformedDerivatives[0];
+					def_derivative_xi[1] = deformedDerivatives[1];
+					def_derivative_xi[3] = deformedDerivatives[3];
+					def_derivative_xi[4] = deformedDerivatives[4];
+					def_derivative_xi[6] = deformedDerivatives[6];
+					def_derivative_xi[7] = deformedDerivatives[7];
+					undef_derivative_xi[0] = undeformedDerivatives[0];
+					undef_derivative_xi[1] = undeformedDerivatives[1];
+					undef_derivative_xi[3] = undeformedDerivatives[3];
+					undef_derivative_xi[4] = undeformedDerivatives[4];
+					undef_derivative_xi[6] = undeformedDerivatives[6];
+					undef_derivative_xi[7] = undeformedDerivatives[7];
 				} break;
 				default:
 				{

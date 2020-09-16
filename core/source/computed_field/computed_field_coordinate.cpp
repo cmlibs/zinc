@@ -63,6 +63,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -78,44 +80,50 @@ private:
 int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	cmzn_field_id sourceField = getSourceField(0);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 	if (sourceCache)
 	{
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_value *dx_dX,temp[9];
-		int number_of_derivatives = cache.getRequestedDerivatives();
-		if (number_of_derivatives && sourceCache->derivatives_valid)
+		if (convert_Coordinate_system(&(sourceField->coordinate_system),
+			sourceField->number_of_components, sourceCache->values,
+			&(field->coordinate_system), field->number_of_components, valueCache.values,
+			/*jacobian*/nullptr))
 		{
-			dx_dX=temp;
+			return 1;
 		}
-		else
-		{
-			dx_dX=(FE_value *)NULL;
-		}
+	}
+	return 0;
+}
+
+int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fallback to numerical derivatives
+	cmzn_field_id sourceField = getSourceField(0);
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		FE_value dx_dX[9];
 		if (convert_Coordinate_system(&(sourceField->coordinate_system),
 			sourceField->number_of_components, sourceCache->values,
 			&(field->coordinate_system), field->number_of_components, valueCache.values,
 			dx_dX))
 		{
-			if (dx_dX)
+			const int cacheIndex = fieldDerivative.getCacheIndex();
+			FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(cacheIndex)->values;
+			const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(cacheIndex)->values;
+			const int termCount = fieldDerivative.getTermCount();
+			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				FE_value *destination = valueCache.derivatives;
-				for (int i=0;i<field->number_of_components;i++)
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (int j=0;j<number_of_derivatives;j++)
-					{
-						*destination =
-							dx_dX[0+i*3]*sourceCache->derivatives[j+number_of_derivatives*0] +
-							dx_dX[1+i*3]*sourceCache->derivatives[j+number_of_derivatives*1] +
-							dx_dX[2+i*3]*sourceCache->derivatives[j+number_of_derivatives*2];
-						destination++;
-					}
+					*derivative =
+						dx_dX[i*3    ]*sourceDerivatives[j              ] +
+						dx_dX[i*3 + 1]*sourceDerivatives[j + termCount  ] +
+						dx_dX[i*3 + 2]*sourceDerivatives[j + termCount*2];
+					++derivative;
 				}
-				valueCache.derivatives_valid = 1;
-			}
-			else
-			{
-				valueCache.derivatives_valid = 0;
 			}
 			return 1;
 		}
@@ -377,7 +385,6 @@ int Computed_field_vector_coordinate_transformation::evaluate(
 					valueCache.values[i*3+j]=sum;
 				}
 			}
-			valueCache.derivatives_valid = 0;
 			return 1;
 		}
 	}
@@ -418,7 +425,6 @@ enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assi
 						vectorValueCache->values[i*coordinates_per_vector+m]=sum;
 					}
 				}
-				vectorValueCache->derivatives_valid = 0;
 				return vectorField->assign(cache, *vectorValueCache);
 			}
 		}
