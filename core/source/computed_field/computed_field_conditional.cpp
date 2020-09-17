@@ -94,7 +94,7 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -136,7 +136,7 @@ int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValue
 		{
 			// can only be scalar
 			StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
-			StringFieldValueCache *useSourceCache = evaluateField2 ?
+			const StringFieldValueCache *useSourceCache = evaluateField2 ?
 				StringFieldValueCache::cast(getSourceField(1)->evaluate(cache)) :
 				StringFieldValueCache::cast(getSourceField(2)->evaluate(cache));
 			if (useSourceCache)
@@ -152,12 +152,12 @@ int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValue
 	return 0;
 }
 
-int Computed_field_if::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+int Computed_field_if::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (this->value_type != CMZN_FIELD_VALUE_TYPE_REAL)
 		return 0;
 	cmzn_field *switchField = getSourceField(0);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switchField->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switchField->evaluate(cache));
 	if (source1Cache)
 	{
 		// Work out whether we need to evaluate source field 2, 3 or both
@@ -173,7 +173,7 @@ int Computed_field_if::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCach
 		if (((!evaluateField2) || source2DerivativeCache) && ((!evaluateField3) || source3DerivativeCache))
 		{
 			const int termCount = fieldDerivative.getTermCount();
-			FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative.getCacheIndex())->values;
+			FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
 			const FE_value *sourceDerivatives = nullptr;
 			for (int i = 0; i < field->number_of_components; ++i)
 			{

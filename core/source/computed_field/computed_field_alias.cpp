@@ -106,7 +106,7 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -203,7 +203,7 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
-	RealFieldValueCache *sourceCache = nullptr;
+	const RealFieldValueCache *sourceCache = nullptr;
 	if (extraCache)
 	{
 		// exists only if aliasing field from separate region
@@ -223,17 +223,17 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 }
 
 /** Alias field is currently guaranteed to be numerical */
-int Computed_field_alias::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+int Computed_field_alias::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
+	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
 	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
 	if (extraCache)
 	{
 		// not implemented for other region - don't allow FieldDerivative for another region at this point
 		return 0;
 	}
-	DerivativeValueCache *sourceDerivativeValueCache = this->getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	const DerivativeValueCache *sourceDerivativeValueCache = this->getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeValueCache)
 	{
 		const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();

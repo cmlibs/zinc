@@ -68,7 +68,7 @@ public:
 	}
 
 	/** @return  Non-accessed lower derivative or nullptr if none == value. */
-	FieldDerivative *getLowerDerivative() const
+	const FieldDerivative *getLowerDerivative() const
 	{
 		return this->lowerDerivative;
 	}
@@ -87,7 +87,7 @@ public:
 	/** @return  Number of individually evaluatable terms. 0 if variable */
 	virtual int getTermCount() const = 0;
 
-	Type get_type() const
+	Type getType() const
 	{
 		return this->type;
 	}
@@ -124,6 +124,12 @@ public:
 	int getElementDimension() const
 	{
 		return this->elementDimension;
+	}
+
+	/** @return  Non-accessed FE_mesh *, or nullptr if invalidated */
+	FE_mesh *getMesh() const
+	{
+		return this->mesh;
 	}
 
 	virtual int getTermCount() const

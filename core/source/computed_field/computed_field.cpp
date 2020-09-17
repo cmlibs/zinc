@@ -1166,14 +1166,14 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, FieldDerivative&)
+int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, const FieldDerivative&)
 {
 	return 0;  // Invalid operation for non-real fields, or not available / fallback to finite difference
 }
 
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.get_type() != FieldDerivative::TYPE_ELEMENT_XI)
+	if (fieldDerivative.getType() != FieldDerivative::TYPE_ELEMENT_XI)
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
@@ -1203,7 +1203,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		return 0;
 	}
 	workingCache->setTime(cache.getTime());
-	FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
+	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
 	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getTermCount() : 1;
 	const int componentCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
@@ -1214,7 +1214,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		perturbedXi[d] = xi[d];
 	const FE_value xiPerturbation = 1.0E-5;
 	const FE_value weight = 0.5 / xiPerturbation;
-	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
+	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
 	const FE_value *lowerValues = nullptr;
 	for (int d = 0; d < elementDimension; ++d)
 	{
@@ -1227,7 +1227,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			workingCache->setMeshLocation(element, perturbedXi);
 			if (lowerFieldDerivative)
 			{
-				DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
+				const DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
 				if (!derivativeValueCache)
 				{
 					display_message(ERROR_MESSAGE,
@@ -1400,14 +1400,14 @@ bool cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
 	const FE_value zero_tolerance = 1e-6;
 	if (cmzn_fieldcache_check(field, cache) && field->isNumerical())
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
+			const FE_value *sourceValues = RealFieldValueCache::cast(valueCache)->values;
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				if ((realValueCache.values[i] < -zero_tolerance) ||
-					(realValueCache.values[i] > zero_tolerance))
+				if ((sourceValues[i] < -zero_tolerance) ||
+					(sourceValues[i] > zero_tolerance))
 				{
 					return true;
 				}
@@ -1426,10 +1426,10 @@ cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
 	if (cmzn_fieldcache_check(field, cache) && chart_coordinates &&
 		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			MeshLocationFieldValueCache& meshLocationValueCache =
+			const MeshLocationFieldValueCache& meshLocationValueCache =
 				MeshLocationFieldValueCache::cast(*valueCache);
 			int dimension = get_FE_element_dimension(meshLocationValueCache.element);
 			if (number_of_chart_coordinates >= dimension)
@@ -1458,13 +1458,13 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
+			const FE_value *sourceValues = RealFieldValueCache::cast(valueCache)->values;
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				values[i] = realValueCache.values[i];
+				values[i] = sourceValues[i];
 			}
 			return CMZN_OK;
 		}
@@ -1490,7 +1490,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	int result = cmzn_field_evaluate_real(field, cache, number_of_values, values);
 	if (result != CMZN_OK)
 		return result;
-	FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
+	const FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
 	const int termCount = fieldDerivative->getTermCount();
 	if ((number_of_derivatives != termCount) || (!derivatives))
 	{
@@ -1498,7 +1498,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	}
 	else
 	{
-		DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, *fieldDerivative);
+		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, *fieldDerivative);
 		if (!derivativeValueCache)
 		{
 			result = CMZN_ERROR_GENERAL;
@@ -1522,7 +1522,7 @@ char *cmzn_field_evaluate_string(cmzn_field_id field,
 {
 	if (cmzn_fieldcache_check(field, cache))
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 			return valueCache->getAsString();
 	}

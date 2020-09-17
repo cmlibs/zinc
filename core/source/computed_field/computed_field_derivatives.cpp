@@ -262,6 +262,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -338,23 +340,22 @@ bool Computed_field_derivative::is_defined_at_location(cmzn_fieldcache& cache)
 
 int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	/* Only works for element_xi locations, or field locations for image-based fields */
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
+		cmzn_element* element = element_xi_location->get_element();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		if (xi_index < element_dimension)
+		if (this->xi_index < element_dimension)
 		{
-			RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
-			if (sourceCache)
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+			if (sourceDerivativeCache)
 			{
-				for (int i = 0 ; i < field->number_of_components ; i++)
-				{
-					valueCache.values[i] = sourceCache->derivatives[i * element_dimension + xi_index];
-				}
-				valueCache.derivatives_valid = 0;
+				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
+				for (int i = 0; i < field->number_of_components; i += element_dimension)
+					valueCache.values[i] = sourceDerivatives[i];
 				return 1;
 			}
 		}
@@ -386,6 +387,40 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			}
 			if (derivative_image_filter && derivative_image_filter->evaluate(cache, inValueCache))
 			{
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// Only implemented for derivative w.r.t. element xi coordinates of same mesh
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location && (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI))
+	{
+		cmzn_element* element = element_xi_location->get_element();
+		const FE_mesh *mesh = element->getMesh();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		const FieldDerivativeMesh& fieldDerivativeMesh = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
+		const FieldDerivative *higherFieldDerivative = mesh->getFieldDerivative(fieldDerivative.getOrder() + 1);
+		if (((fieldDerivativeMesh.getMesh() == mesh) && (higherFieldDerivative)) && (this->xi_index < element_dimension))
+		{
+			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *higherFieldDerivative);
+			if (sourceDerivativeCache)
+			{
+				FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+				const int termCount = fieldDerivative.getTermCount();
+				for (int i = 0; i < field->number_of_components; ++i)
+				{
+					const FE_value *sourceDerivatives = sourceDerivativeCache->values + (i*element_dimension + this->xi_index)*termCount;
+					for (int j = 0; j < termCount; ++j)
+					{
+						*derivative = sourceDerivatives[j];
+						derivative++;
+					}
+				}
 				return 1;
 			}
 		}
@@ -579,7 +614,7 @@ private:
 
 };
 
-/***************************************************************************//**
+/**
  * Evaluates the curl of a vector field.
  * If function fails to invert the coordinate derivatives then the curl is
  * returned as 0 with a warning - as may happen at certain locations of the mesh.
@@ -587,12 +622,10 @@ private:
  */
 int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	/* cannot calculate derivatives for curl yet */
-	valueCache.derivatives_valid = 0;
 	if (element_xi_location)
 	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_field_id source_field = getSourceField(0);
 		cmzn_field_id coordinate_field = getSourceField(1);
 		cmzn_element* element = element_xi_location->get_element();
@@ -611,12 +644,12 @@ int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		if (sourceValueCache && sourceValueCache->derivatives_valid &&
-			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
+		const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateDerivativeTree(*workingCache, fieldDerivative));
+		if (sourceDerivativeCache && coordinateValueCache)
 		{
+			const DerivativeValueCache *coordinateDerivativeCache = coordinateValueCache->getDerivativeValueCache(fieldDerivative);
 			FE_value curl,dx_dxi[9],dxi_dx[9],x[3],*source;
 			/* curl is only valid in 3 dimensions */
 			// Constructor already checked (3==element_dimension)&&(3==coordinate_number_of_components)
@@ -625,12 +658,12 @@ int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 			{
 				cmzn_field_id coordinate_field = getSourceField(1);
 				if (convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
-					coordinate_field->number_of_components, coordinateValueCache->values, coordinateValueCache->derivatives,
+					coordinate_field->number_of_components, coordinateValueCache->values, coordinateDerivativeCache->values,
 					top_level_element_dimension, x, dx_dxi))
 				{
 					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
 					{
-						source=sourceValueCache->derivatives;
+						source = sourceDerivativeCache->values;
 						/* curl[0] = dVz/dy - dVy/dz */
 						curl=0.0;
 						for (int i=0;i<top_level_element_dimension;i++)
@@ -662,8 +695,6 @@ int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 							valueCache.values[i]=0.0;
 						}
 					}
-					/* cannot calculate derivatives for curl yet */
-					valueCache.derivatives_valid=0;
 					return 1;
 				}
 			}
@@ -859,7 +890,7 @@ private:
 
 };
 
-/***************************************************************************//**
+/**
  * Evaluates the divergence of a vector field.
  * If function fails to invert the coordinate derivatives then the divergence is
  * returned as 0 with a warning - as may happen at certain locations of the mesh.
@@ -869,8 +900,6 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	/* cannot calculate derivatives for curl yet */
-	valueCache.derivatives_valid = 0;
 	if (element_xi_location)
 	{
 		cmzn_field_id source_field = getSourceField(0);
@@ -891,12 +920,12 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		if (sourceValueCache && sourceValueCache->derivatives_valid &&
-			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
+		const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateDerivativeTree(*workingCache, fieldDerivative));
+		if (sourceDerivativeCache && coordinateValueCache)
 		{
+			const DerivativeValueCache *coordinateDerivativeCache = coordinateValueCache->getDerivativeValueCache(fieldDerivative);
 			FE_value divergence,dx_dxi[9],dxi_dx[9],x[3],*source;
 			int coordinate_components = coordinate_field->number_of_components;
 			/* Following asks: can dx_dxi be inverted? */
@@ -910,7 +939,7 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 				if (RECTANGULAR_CARTESIAN == source_field->coordinate_system.type)
 				{
 					if (convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
-						coordinate_field->number_of_components, coordinateValueCache->values, coordinateValueCache->derivatives,
+						coordinate_field->number_of_components, coordinateValueCache->values, coordinateDerivativeCache->values,
 						top_level_element_dimension, x, dx_dxi))
 					{
 						/* if the element_dimension is less than 3, put ones on the main
@@ -926,7 +955,7 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 						if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
 						{
 							divergence=0.0;
-							source=sourceValueCache->derivatives;
+							source = sourceDerivativeCache->values;
 							for (int i=0;i<top_level_element_dimension;i++)
 							{
 								for (int j=0;j<top_level_element_dimension;j++)
@@ -1282,8 +1311,6 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	cmzn_field_id coordinate_field = getSourceField(1);
 	const int source_number_of_components = source_field->number_of_components;
 	const int coordinate_number_of_components = coordinate_field->number_of_components;
-	/* cannot calculate derivatives for gradient yet */
-	valueCache.derivatives_valid = 0;
 	if (element_xi_location)
 	{
 		cmzn_element* element = element_xi_location->get_element();
@@ -1302,11 +1329,10 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
-		if (sourceValueCache && sourceValueCache->derivatives_valid &&
-			coordinateValueCache && coordinateValueCache->derivatives_valid)
+		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
+		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
+		if (sourceDerivativeCache && coordinateDerivativeCache)
 		{
 			/*  Calculate the field. First verify we can invert the derivatives of
 				the coordinate field, which we can if dx_dxi is square */
@@ -1320,7 +1346,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					for (j = 0; j < coordinate_number_of_components; j++)
 					{
 						a[i*coordinate_number_of_components + j] =
-							coordinateValueCache->derivatives[j*coordinate_number_of_components+i];
+							coordinateDerivativeCache->values[j*coordinate_number_of_components+i];
 					}
 				}
 				/* invert to get derivatives of xi w.r.t. coordinates */
@@ -1328,7 +1354,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 				if (LU_decompose(coordinate_number_of_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
 				{
 					return_code = 1;
-					FE_value *source = sourceValueCache->derivatives;
+					FE_value *source = sourceDerivativeCache->values;
 					for (i = 0; i < source_number_of_components; i++)
 					{
 						for (j = 0; j < coordinate_number_of_components; j++)
@@ -1382,7 +1408,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 
 		// evaluate current coordinates in original cache; allows in-cache values to be picked up
 		// see field assignment / computed_field_update
-		RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(cache));
+		const RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(cache));
 		// do finite difference calculations in extraCache:
 		cmzn_fieldcache *extraCache = valueCache.getOrCreateSharedExtraCache(cache);
 		if ((originalCoordinateValueCache) && (extraCache))
@@ -1415,7 +1441,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					if (CMZN_OK == cmzn_field_assign_real(coordinate_field, extraCache,
 						coordinate_number_of_components, coordinate_values))
 					{
-						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(*extraCache));
+						const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(*extraCache));
 						if (sourceValueCache)
 						{
 							for (int m = 0; m < source_number_of_components; ++m)

@@ -93,7 +93,7 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 		{
 			/* calculate the third source_field at this new location */
 			extraCache.setMeshLocation(compose_element, compose_xi);
-			RealFieldValueCache *calculateValueCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(extraCache));
+			const RealFieldValueCache *calculateValueCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(extraCache));
 			if (calculateValueCache)
 			{
 				return_code = 1;

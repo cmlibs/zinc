@@ -130,7 +130,7 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -237,11 +237,11 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	return 1;
 }
 
-int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	// following is ensured by caller Computed_field::evaluateDerivative:
-	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative.getCacheIndex());
+	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
 	FE_value *targetDerivative = derivativeValueCache.values;
 	int sourceFieldNumber = -1;
 	const DerivativeValueCache *sourceDerivativeValueCache = nullptr;
@@ -277,14 +277,13 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 		for components that are used in the composite field, then setting the
 		whole field in one hit */
 	enum FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
-	for (int source_field_number=0;
-		  (source_field_number<field->number_of_source_fields);
-		  source_field_number++)
+	for (int source_field_number = 0; source_field_number<field->number_of_source_fields; ++source_field_number)
 	{
 		cmzn_field *sourceField = this->getSourceField(source_field_number);
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
-		if (!sourceValueCache)
+		if (!sourceField->evaluate(cache))
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
+		// get non-const sourceCache to modify:
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->getValueCache(cache));
 		for (int i=0;i<field->number_of_components;i++)
 		{
 			if (source_field_numbers[i] == source_field_number)

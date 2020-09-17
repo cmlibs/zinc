@@ -63,7 +63,7 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative);
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -95,7 +95,7 @@ int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, F
 	return 0;
 }
 
-int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, FieldDerivative& fieldDerivative)
+int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fallback to numerical derivatives
@@ -110,9 +110,8 @@ int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache
 			&(field->coordinate_system), field->number_of_components, valueCache.values,
 			dx_dX))
 		{
-			const int cacheIndex = fieldDerivative.getCacheIndex();
-			FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(cacheIndex)->values;
-			const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(cacheIndex)->values;
+			FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+			const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 			const int termCount = fieldDerivative.getTermCount();
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
@@ -356,8 +355,8 @@ int Computed_field_vector_coordinate_transformation::evaluate(
 {
 	cmzn_field_id vectorField = getSourceField(0);
 	cmzn_field_id coordinateField = getSourceField(1);
-	RealFieldValueCache *vectorValueCache = RealFieldValueCache::cast(vectorField->evaluate(cache));
-	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
+	const RealFieldValueCache *vectorValueCache = RealFieldValueCache::cast(vectorField->evaluate(cache));
+	const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
 	if (vectorValueCache && coordinateValueCache)
 	{
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
@@ -395,7 +394,7 @@ enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assi
 {
 	cmzn_field_id vectorField = getSourceField(0);
 	cmzn_field_id coordinateField = getSourceField(1);
-	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
+	const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
 	if (coordinateValueCache)
 	{
 		FE_value cx[3];

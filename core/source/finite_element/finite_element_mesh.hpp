@@ -1197,7 +1197,7 @@ public:
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
 
 	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
-	FieldDerivativeMesh *getFieldDerivative(int order)
+	const FieldDerivativeMesh *getFieldDerivative(int order) const
 	{
 		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
 			return nullptr;

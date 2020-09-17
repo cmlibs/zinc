@@ -53,7 +53,7 @@ void RealFieldValueCache::clear()
 	FieldValueCache::clear();
 }
 
-char *RealFieldValueCache::getAsString()
+char *RealFieldValueCache::getAsString() const
 {
 	char *valueAsString = 0;
 	int error = 0;
@@ -80,9 +80,9 @@ void StringFieldValueCache::setString(const char *string_in)
 	stringValue = duplicate_string(string_in);
 }
 
-char *StringFieldValueCache::getAsString()
+char *StringFieldValueCache::getAsString() const
 {
-	return duplicate_string(stringValue);
+	return duplicate_string(this->stringValue);
 }
 
 void MeshLocationFieldValueCache::clear()
@@ -91,7 +91,7 @@ void MeshLocationFieldValueCache::clear()
 	FieldValueCache::clear();
 }
 
-char *MeshLocationFieldValueCache::getAsString()
+char *MeshLocationFieldValueCache::getAsString() const
 {
 	if (!element)
 		return 0;

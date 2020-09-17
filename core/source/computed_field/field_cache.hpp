@@ -75,7 +75,7 @@ public:
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
 	 */
-	virtual char *getAsString() = 0;
+	virtual char *getAsString() const = 0;
 
 };
 
@@ -84,10 +84,12 @@ class DerivativeValueCache
 {
 public:
 	FE_value *values;
+	int valuesCount;
 	int evaluationCounter;  // set to cmzn_fieldcache::locationCounter when evaluated
 
-	DerivativeValueCache(int valuesCount) :
-		values(new FE_value[valuesCount]),
+	DerivativeValueCache(int valuesCountIn) :
+		values(new FE_value[valuesCountIn]),
+		valuesCount(valuesCountIn),
 		evaluationCounter(-1)
 	{
 	}
@@ -95,6 +97,12 @@ public:
 	~DerivativeValueCache()
 	{
 		delete[] values;
+	}
+
+	void copyValues(const DerivativeValueCache& source)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = source.values[i];
 	}
 
 private:
@@ -123,9 +131,19 @@ public:
 
 	virtual void clear();
 
+	static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache*>(valueCache);
+	}
+
 	static RealFieldValueCache* cast(FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache*>(valueCache);
+	}
+
+	static const RealFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache&>(valueCache);
 	}
 
 	static RealFieldValueCache& cast(FieldValueCache& valueCache)
@@ -139,7 +157,17 @@ public:
 			values[i] = source.values[i];
 	}
 
-	virtual char *getAsString();
+	/** copy values and all derivatives existing on both source and this value cache */
+	void copyValuesAndDerivatives(const RealFieldValueCache& source)
+	{
+		this->copyValues(source);
+		const size_t commonSize = this->derivatives.size() < source.derivatives.size() ? this->derivatives.size() : source.derivatives.size();
+		for (size_t i = 0; i < commonSize; ++i)
+			if ((this->derivatives[i]) && (source.derivatives[i]))
+				this->derivatives[i]->copyValues(*source.derivatives[i]);
+	}
+
+	virtual char *getAsString() const;
 
 	void setValues(const FE_value *values_in)
 	{
@@ -148,19 +176,19 @@ public:
 	}
 
 	/** Call only if known that getOrCreateDerivativeValueCache has been called */
-	DerivativeValueCache *getDerivativeValueCache(int derivativeIndex) const
+	DerivativeValueCache *getDerivativeValueCache(const FieldDerivative& fieldDerivative) const
 	{
-		return this->derivatives[derivativeIndex];
+		return this->derivatives[fieldDerivative.getCacheIndex()];
 	}
 
-	DerivativeValueCache *getOrCreateDerivativeValueCache(FieldDerivative& fieldDerivative)
+	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative)
 	{
-		const size_t derivativeIndex = fieldDerivative.getCacheIndex();
-		if (this->derivatives.size() <= derivativeIndex)
-			this->derivatives.resize(derivativeIndex + 1, nullptr);
-		if (!this->derivatives[derivativeIndex])
-			this->derivatives[derivativeIndex] = new DerivativeValueCache(this->componentCount*fieldDerivative.getTermCount());
-		return this->derivatives[derivativeIndex];
+		int cacheIndex = fieldDerivative.getCacheIndex();
+		if (this->derivatives.size() <= cacheIndex)
+			this->derivatives.resize(cacheIndex + 1, nullptr);
+		if (!this->derivatives[cacheIndex])
+			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount*fieldDerivative.getTermCount());
+		return this->derivatives[cacheIndex];
 	}
 
 private:
@@ -429,9 +457,19 @@ public:
 		DEALLOCATE(stringValue);
 	}
 
+	static const StringFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const StringFieldValueCache*>(valueCache);
+	}
+
 	static StringFieldValueCache* cast(FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<StringFieldValueCache*>(valueCache);
+	}
+
+	static const StringFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const StringFieldValueCache&>(valueCache);
 	}
 
 	static StringFieldValueCache& cast(FieldValueCache& valueCache)
@@ -441,7 +479,7 @@ public:
 
 	void setString(const char *string_in);
 
-	virtual char *getAsString();
+	virtual char *getAsString() const;
 
 };
 
@@ -464,9 +502,19 @@ public:
 
 	virtual void clear();
 
+	static const MeshLocationFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const MeshLocationFieldValueCache*>(valueCache);
+	}
+
 	static MeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<MeshLocationFieldValueCache*>(valueCache);
+	}
+
+	static const MeshLocationFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const MeshLocationFieldValueCache&>(valueCache);
 	}
 
 	static MeshLocationFieldValueCache& cast(FieldValueCache& valueCache)
@@ -484,7 +532,7 @@ public:
 		}
 	}
 
-	virtual char *getAsString();
+	virtual char *getAsString() const;
 
 };
 

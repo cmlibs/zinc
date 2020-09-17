@@ -61,7 +61,7 @@ public:
 
 	int getElementDimension() const
 	{
-		if (this->fieldDerivative->get_type() == FieldDerivative::TYPE_ELEMENT_XI)
+		if (this->fieldDerivative->getType() == FieldDerivative::TYPE_ELEMENT_XI)
 			return static_cast<FieldDerivativeMesh*>(this->fieldDerivative)->getElementDimension();
 		return 0;
 	}

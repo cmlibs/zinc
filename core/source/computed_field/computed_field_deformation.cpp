@@ -86,7 +86,7 @@ int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *deformedDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 		const DerivativeValueCache *undeformedDerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
 		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
