@@ -181,7 +181,7 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 		{
 			if (local_node_group)
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_node_group->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_node_group->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];
@@ -189,7 +189,7 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 			}
 			if (local_data_group && (0.0 == valueCache.values[0]))
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_data_group->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_data_group->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];
@@ -202,7 +202,7 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 			cmzn_field_id subobject_group_field = get_element_group_field_private(dimension);
 			if (subobject_group_field)
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(subobject_group_field->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(subobject_group_field->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];

@@ -162,7 +162,7 @@ int Computed_field_nodal_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCach
 	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 	extraCache.setNode(this->lookup_node);  // must set node as extraCache is shared
 	extraCache.setTime(cache.getTime());
-	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 	if (sourceValueCache)
 	{
 		valueCache.copyValues(*sourceValueCache);
@@ -471,7 +471,7 @@ int Computed_field_quaternion_SLERP::evaluate(cmzn_fieldcache& cache, FieldValue
 		FE_value normalised_t = xi;
 		// get the starting quaternion
 		extraCache.setTime(lower_time);
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		FE_value old_w = sourceValueCache->values[0];
 		FE_value old_x = sourceValueCache->values[1];
 		FE_value old_y = sourceValueCache->values[2];

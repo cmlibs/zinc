@@ -428,7 +428,7 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	check_evaluate_texture();
 	if (texture)
 	{
-		RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+		const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 		if (sourceCache)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
@@ -470,7 +470,6 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 						texture_values[i] * (maximum - minimum);
 				}
 			}
-			valueCache.derivatives_valid = 0;
 			return 1;
 		}
 	}
