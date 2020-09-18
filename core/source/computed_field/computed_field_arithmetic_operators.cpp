@@ -91,7 +91,7 @@ int Computed_field_power::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
@@ -328,7 +328,7 @@ int Computed_field_multiply_components::evaluate(cmzn_fieldcache& cache, FieldVa
 int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
@@ -562,7 +562,7 @@ int Computed_field_divide_components::evaluate(cmzn_fieldcache& cache, FieldValu
 int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
@@ -2415,7 +2415,7 @@ int Computed_field_log::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -2618,7 +2618,7 @@ int Computed_field_sqrt::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 int Computed_field_sqrt::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -2821,7 +2821,7 @@ int Computed_field_exp::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
-		return 0;  // fallback to numerical derivatives
+		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{

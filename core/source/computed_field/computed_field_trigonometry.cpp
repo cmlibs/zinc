@@ -60,6 +60,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -67,34 +69,37 @@ private:
 
 int Computed_field_sin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = sin(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_sin::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			valueCache.values[i] = (FE_value)sin((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			const FE_value dsin_u = cos(sourceCache->values[i]);
+			for (int j = 0 ; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(sin u)/dx = cos u * du/dx */
-					*derivative =
-						(FE_value)(cos((double)(sourceCache->values[i])) *
-						sourceCache->derivatives[i * number_of_xi + j]);
-					derivative++;
-				}
+				/* d(sin u)/dx = cos u * du/dx */
+				*derivative = dsin_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -248,6 +253,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -255,35 +262,37 @@ private:
 
 int Computed_field_cos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		for (int i = 0 ; i < field->number_of_components ; i++)
+			valueCache.values[i] = cos(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_cos::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
 		{
-			valueCache.values[i] =
-				(FE_value)cos((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			const FE_value dcos_u = -sin(sourceCache->values[i]);
+			for (int j = 0; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(cos u)/dx = -sin u * du/dx */
-					*derivative =
-						(FE_value)(-sin((double)(sourceCache->values[i])) *
-						sourceCache->derivatives[i * number_of_xi + j]);
-					derivative++;
-				}
+				/* d(cos u)/dx = -sin u * du/dx */
+				*derivative = dcos_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -437,6 +446,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -444,42 +455,43 @@ private:
 
 int Computed_field_tan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		/* 2. Calculate the field */
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		for (int i = 0 ; i < field->number_of_components ; i++)
-		{
-			valueCache.values[i] =
-				(FE_value)tan((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
-			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(tan u)/dx = sec^2 u * du/dx */
-					*derivative = (FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
-						(cos((double)(sourceCache->values[i])) *
-						cos((double)(sourceCache->values[i]))));
-					derivative++;
-				}
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
+			valueCache.values[i] = tan(sourceCache->values[i]);
 		return 1;
 	}
 	return 0;
 }
 
+int Computed_field_tan::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
+		{
+			const FE_value cosSourceValue = cos(sourceCache->values[i]);
+			const FE_value dtan_u = 1.0 / (cosSourceValue*cosSourceValue);
+			for (int j = 0; j < termCount; j++)
+			{
+				/* d(tan u)/dx = sec^2 u * du/dx */
+				*derivative = dtan_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
 int Computed_field_tan::list()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -627,6 +639,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -634,42 +648,39 @@ private:
 
 int Computed_field_asin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; i++)
+			valueCache.values[i] = asin(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_asin::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
 		{
-			valueCache.values[i] = (FE_value)asin((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			// avoid division by zero - make derivative zero there
+			const FE_value u = sourceCache->values[i];
+			const FE_value dasin_u = (u != 1.0) ? 1.0/sqrt(1.0 - u*u) : 0.0;
+			for (int j = 0; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx */
-					if (sourceCache->values[i] != 1.0)
-					{
-						*derivative =
-							(FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
-							sqrt(1.0 - ((double)sourceCache->values[i] *
-							(double)sourceCache->values[i])));
-					}
-					else
-					{
-						*derivative = 0.0;
-					}
-					derivative++;
-				}
+				/* d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx */
+				*derivative = dasin_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -823,6 +834,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -830,42 +843,39 @@ private:
 
 int Computed_field_acos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; i++)
+			valueCache.values[i] = acos(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_acos::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
 		{
-			valueCache.values[i] = (FE_value)acos((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			// avoid division by zero - make derivative zero there
+			const FE_value u = sourceCache->values[i];
+			const FE_value dacos_u = (u != 1.0) ? -1.0/sqrt(1.0 - u*u) : 0.0;
+			for (int j = 0; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(asin u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx */
-					if (sourceCache->values[i] != 1.0)
-					{
-						*derivative =
-							(FE_value)(-sourceCache->derivatives[i * number_of_xi + j] /
-							sqrt(1.0 - ((double)sourceCache->values[i] *
-							(double)sourceCache->values[i])));
-					}
-					else
-					{
-						*derivative = 0.0;
-					}
-					derivative++;
-				}
+				/* d(acos u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx */
+				*derivative = dacos_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -1019,6 +1029,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -1026,35 +1038,39 @@ private:
 
 int Computed_field_atan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; i++)
+			valueCache.values[i] = atan(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_atan::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
 		{
-			valueCache.values[i] = (FE_value)atan((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			// avoid division by zero - make derivative zero there
+			const FE_value u = sourceCache->values[i];
+			const FE_value datan_u = 1.0/sqrt(1.0 - u*u);
+			for (int j = 0; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx */
-					*derivative =
-						(FE_value)(sourceCache->derivatives[i * number_of_xi + j] /
-						(1.0 + ((double)sourceCache->values[i] *
-						(double)sourceCache->values[i])));
-					derivative++;
-				}
+				/* d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx */
+				*derivative = datan_u * (*sourceDerivative);
+				++sourceDerivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -1208,6 +1224,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -1215,40 +1233,43 @@ private:
 
 int Computed_field_atan2::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		for (int i = 0 ; i < field->number_of_components ; i++)
+			valueCache.values[i] = atan2(source1Cache->values[i], source2Cache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_atan2::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (source1Cache && source2Cache)
+	{
+		const FE_value *source1Derivative = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivative = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; i++)
 		{
-			valueCache.values[i] =
-				(FE_value)atan2((double)(source1Cache->values[i]),
-				(double)(source2Cache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (int i = 0 ; i < field->number_of_components ; i++)
+			const FE_value u = source1Cache->values[i];
+			const FE_value v = source2Cache->values[i];
+			const FE_value one_denominator = 1.0 / (v*v + u*u);
+			for (int j = 0; j < termCount; j++)
 			{
-				for (int j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( v^2 * u^2 ) */
-					FE_value u = source1Cache->values[i];
-					FE_value v = source2Cache->values[i];
-					*derivative =
-						(FE_value)(v * source1Cache->derivatives[i * number_of_xi + j] -
-						u * source2Cache->derivatives[i * number_of_xi + j]) /
-						(u * u + v * v);
-					derivative++;
-				}
+				/* d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( v^2 + u^2 ) */
+				*derivative = (v * (*source1Derivative) - u * (*source2Derivative)) * one_denominator;
+				++source1Derivative;
+				++source2Derivative;
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}

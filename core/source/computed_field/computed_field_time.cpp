@@ -85,15 +85,14 @@ private:
 
 int Computed_field_time_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluateNoDerivatives(cache));
+	const RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (timeValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.copyLocation(cache);
 		extraCache.setTime(timeValueCache->values[0]);
-		extraCache.setRequestedDerivatives(cache.getRequestedDerivatives());
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			valueCache.copyValues(*sourceValueCache);
@@ -330,6 +329,8 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -373,12 +374,16 @@ int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	valueCache.values[0] = (Time_object_get_timekeeper(time_object))->getTime();
-	// spatial derivatives are zero
-	for (int j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
-	{
-		valueCache.derivatives[j] = 0.0;
-	}
-	valueCache.derivatives_valid = 1;
+	return 1;
+}
+
+int Computed_field_time_value::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+	// spatial derivatives are zero (review when time derivatives are added)
+	const int termCount = fieldDerivative.getTermCount();
+	for (int j = 0; j < termCount; j++)
+		derivatives[j] = 0.0;
 	return 1;
 }
 

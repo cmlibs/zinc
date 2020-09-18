@@ -216,7 +216,7 @@ int Computed_field_nodeset_sum::evaluate_sum(cmzn_fieldcache& cache, FieldValueC
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
-		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			for (i = 0 ; i < number_of_components ; i++)
@@ -227,7 +227,6 @@ int Computed_field_nodeset_sum::evaluate_sum(cmzn_fieldcache& cache, FieldValueC
 		}
 	}
 	cmzn_nodeiterator_destroy(&iterator);
-	valueCache.derivatives_valid = 0;
 	return number_of_terms;
 }
 
@@ -366,7 +365,7 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
-		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			if (number_of_terms >= max_terms)
@@ -409,7 +408,7 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_fieldcache& ca
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
-		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			for (i = 0 ; i < number_of_components ; i++)
@@ -420,7 +419,6 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_fieldcache& ca
 		}
 	}
 	cmzn_nodeiterator_destroy(&iterator);
-	valueCache.derivatives_valid = 0;
 	return number_of_terms;
 }
 
@@ -547,7 +545,7 @@ int Computed_field_nodeset_minimum::evaluate(cmzn_fieldcache& cache, FieldValueC
 	{
 		node_count++;
 		extraCache.setNode(node);
-		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			for (int i = 0 ; i < field->number_of_components ; i++)
@@ -625,7 +623,7 @@ int Computed_field_nodeset_maximum::evaluate(cmzn_fieldcache& cache, FieldValueC
 	{
 		node_count++;
 		extraCache.setNode(node);
-		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
+		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			for (int i = 0 ; i < field->number_of_components ; i++)

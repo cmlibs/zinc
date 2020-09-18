@@ -23,6 +23,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 
 namespace {
@@ -202,6 +203,7 @@ protected:
 	cmzn_field *integrandField;
 	cmzn_field *coordinateField;
 	const int coordinatesCount;
+	const FieldDerivativeMesh& fieldDerivativeMesh;
 	cmzn_element *element;
 	unsigned int point_index;  // point index within element
 
@@ -214,6 +216,7 @@ public:
 		integrandField(meshIntegral.getSourceField(0)),
 		coordinateField(meshIntegral.getSourceField(1)),
 		coordinatesCount(coordinateField->number_of_components),
+		fieldDerivativeMesh(*cmzn_mesh_get_FE_mesh_internal(meshIntegral.getMesh())->getFieldDerivative(/*order*/1)),
 		element(0),
 		point_index(0)
 	{
@@ -231,12 +234,12 @@ public:
 	{
 		this->cache.setIndexedMeshLocation(this->point_index, this->element, xi);
 		(this->point_index)++;
-		RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
-		RealFieldValueCache *coordinateValueCache = coordinateField->evaluateWithDerivatives(cache, dimension);
-		if (integrandValueCache && coordinateValueCache)
+		const RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
+		const DerivativeValueCache *coordinateDerivativeCache = coordinateField->evaluateDerivative(cache, this->fieldDerivativeMesh);
+		if (integrandValueCache && coordinateDerivativeCache)
 		{
 			// note dx_dxi cycles over xi fastest
-			FE_value *dx_dxi = coordinateValueCache->derivatives;
+			const FE_value *dx_dxi = coordinateDerivativeCache->values;
 			dLAV = 0.0; // dL (1-D), dA (2-D), dV (3-D)
 			switch (this->dimension)
 			{
@@ -251,11 +254,10 @@ public:
 				else
 				{
 					// dA = magnitude of dx_dxi1 (x) dx_dxi2
-					FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
-					FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
-					FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
-					dLAV = n1*n1 + n2*n2 + n3*n3;
-					dLAV = sqrt(dLAV);
+					const FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
+					const FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
+					const FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
+					dLAV = sqrt(n1*n1 + n2*n2 + n3*n3);
 				}
 				break;
 			case 3:
@@ -284,7 +286,6 @@ public:
 	{
 		for (int i = 0; i < componentsCount; i++)
 			values[i] = 0;
-		valueCache.derivatives_valid = 0;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
@@ -527,7 +528,6 @@ public:
 	{
 		for (int i = 0; i < componentsCount; i++)
 			values[i] = 0;
-		valueCache.derivatives_valid = 0;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
