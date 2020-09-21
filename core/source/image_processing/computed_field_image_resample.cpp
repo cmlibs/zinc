@@ -237,7 +237,7 @@ namespace {
 			return new Computed_field_image_resample(dimension, sizes);
 		}
 
-		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{

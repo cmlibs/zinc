@@ -65,9 +65,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -88,7 +88,7 @@ int Computed_field_power::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	return 0;
 }
 
-int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
@@ -100,7 +100,7 @@ int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, FieldValueC
 		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -302,9 +302,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -325,7 +325,7 @@ int Computed_field_multiply_components::evaluate(cmzn_fieldcache& cache, FieldVa
 	return 0;
 }
 
-int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
@@ -337,7 +337,7 @@ int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cach
 		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -536,9 +536,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -559,7 +559,7 @@ int Computed_field_divide_components::evaluate(cmzn_fieldcache& cache, FieldValu
 	return 0;
 }
 
-int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
@@ -571,7 +571,7 @@ int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache,
 		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -777,7 +777,7 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -800,7 +800,7 @@ int Computed_field_add::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 	return 0;
 }
 
-int Computed_field_add::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_add::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const DerivativeValueCache *source1DerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	const DerivativeValueCache *source2DerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
@@ -808,7 +808,7 @@ int Computed_field_add::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCac
 	{
 		const FE_value *source1Derivatives = source1DerivativeCache->values;
 		const FE_value *source2Derivatives = source2DerivativeCache->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int valuesCount = field->number_of_components*fieldDerivative.getTermCount();
 		for (int i = 0; i < valuesCount; ++i)
 			derivative[i] = field->source_values[0]*source1Derivatives[i] + field->source_values[1]*source2Derivatives[i];
@@ -1043,9 +1043,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1072,13 +1072,13 @@ int Computed_field_scale::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	return 0;
 }
 
-int Computed_field_scale::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_scale::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeCache)
 	{
 		const FE_value *sourceDerivative = sourceDerivativeCache->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -1337,9 +1337,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1362,13 +1362,13 @@ int Computed_field_clamp_maximum::evaluate(cmzn_fieldcache& cache, FieldValueCac
 	return 0;
 }
 
-int Computed_field_clamp_maximum::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_clamp_maximum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceCache && sourceDerivativeCache)
 	{
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int termCount = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -1599,9 +1599,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1623,13 +1623,13 @@ int Computed_field_clamp_minimum::evaluate(cmzn_fieldcache& cache, FieldValueCac
 	return 0;
 }
 
-int Computed_field_clamp_minimum::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_clamp_minimum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceCache && sourceDerivativeCache)
 	{
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int termCount = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -1867,9 +1867,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1896,12 +1896,12 @@ int Computed_field_offset::evaluate(cmzn_fieldcache& cache, FieldValueCache& inV
 	return 0;
 }
 
-int Computed_field_offset::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_offset::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeCache)
 	{
-		RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
+		inValueCache.getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
 		return 1;
 	}
 	return 0;
@@ -2146,9 +2146,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2170,12 +2170,12 @@ int Computed_field_edit_mask::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	return 0;
 }
 
-int Computed_field_edit_mask::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_edit_mask::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeCache)
 	{
-		RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
+		inValueCache.getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
 		return 1;
 	}
 	return 0;
@@ -2390,9 +2390,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2412,7 +2412,7 @@ int Computed_field_log::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 	return 0;
 }
 
-int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
@@ -2421,7 +2421,7 @@ int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCac
 	{
 		const FE_value *sourcevalues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -2593,9 +2593,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2615,23 +2615,24 @@ int Computed_field_sqrt::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 	return 0;
 }
 
-int Computed_field_sqrt::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_sqrt::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourcevalues = sourceCache->values;
+		const FE_value *sourceValues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
+			const FE_value dsqrt_u = 0.5 / sqrt(sourceValues[i]);
 			for (int j = 0; j < number_of_xi; ++j)
 			{
 				/* d(sqrt u)/dx = du/dx / 2 sqrt(u) */
-				*derivative = sourceDerivatives[i * number_of_xi + j] / (2.0 * sourcevalues[i]);
+				*derivative = sourceDerivatives[i * number_of_xi + j] * dsqrt_u;
 				derivative++;
 			}
 		}
@@ -2796,9 +2797,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2818,7 +2819,7 @@ int Computed_field_exp::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 	return 0;
 }
 
-int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if (fieldDerivative.getOrder() > 1)
 		return 0;  // fall back to numerical derivatives
@@ -2827,7 +2828,7 @@ int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCac
 	{
 		const FE_value *sourcevalues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int number_of_xi = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{
@@ -2999,9 +3000,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -3021,14 +3022,14 @@ int Computed_field_abs::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 	return 0;
 }
 
-int Computed_field_abs::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_abs::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceCache && sourceDerivativeCache)
 	{
 		const FE_value *sourceDerivative = sourceDerivativeCache->values;
-		FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 		const int termCount = fieldDerivative.getTermCount();
 		for (int i = 0; i < field->number_of_components; ++i)
 		{

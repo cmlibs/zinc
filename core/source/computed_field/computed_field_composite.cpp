@@ -128,9 +128,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -237,12 +237,9 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	return 1;
 }
 
-int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	// following is ensured by caller Computed_field::evaluateDerivative:
-	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
-	FE_value *targetDerivative = derivativeValueCache.values;
+	FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 	int sourceFieldNumber = -1;
 	const DerivativeValueCache *sourceDerivativeValueCache = nullptr;
 	const int derivativeTermCount = fieldDerivative.getTermCount();
@@ -259,14 +256,14 @@ int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, FieldVa
 			}
 			const FE_value *sourceDerivative = sourceDerivativeValueCache->values + derivativeTermCount*source_value_numbers[c];
 			for (int d = 0; d < derivativeTermCount; ++d)
-				targetDerivative[d] = sourceDerivative[d];
+				derivative[d] = sourceDerivative[d];
 		}
 		else
 		{
 			for (int d = 0; d < derivativeTermCount; ++d)
-				targetDerivative[d] = 0.0;
+				derivative[d] = 0.0;
 		}
-		targetDerivative += derivativeTermCount;
+		derivative += derivativeTermCount;
 	}
 	return 1;
 }

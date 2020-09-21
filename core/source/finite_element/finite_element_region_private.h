@@ -104,9 +104,14 @@ struct FE_region
 	/* number of objects using this region */
 	int access_count;
 
-	FE_region(FE_region *base_fe_region);
+	FE_region(cmzn_region *region, FE_region *base_fe_region);
 
 	~FE_region();
+
+	/**
+	 * Only to be called by owning cmzn_region during clean up.
+	 */
+	void clearRegionPrivate();
 
 	void createFieldChangeLog();
 

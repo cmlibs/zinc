@@ -28,7 +28,7 @@ FieldDerivative::FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn
 	type(typeIn),
 	access_count(1)
 {
-	cmzn_region_add_field_derivative(this->region, this);
+	cmzn_region_add_field_derivative(regionIn, this);
 }
 
 FieldDerivative::~FieldDerivative()

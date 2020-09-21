@@ -74,7 +74,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -327,9 +327,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -377,10 +377,10 @@ int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	return 1;
 }
 
-int Computed_field_time_value::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_time_value::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	// spatial derivatives are zero (review when time derivatives are added)
-	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 

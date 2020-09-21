@@ -261,7 +261,7 @@ public:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
 	/** Override for real-valued fields */
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	/** Evaluate derivatives using finite differences. Only for real-valued fields
 	 * Only implemented for element_xi derivatives & locations.

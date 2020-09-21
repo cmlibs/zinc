@@ -424,7 +424,7 @@ public:
 	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_mesh_integral_squares::get_number_of_sum_square_terms(cmzn_fieldcache& cache) const

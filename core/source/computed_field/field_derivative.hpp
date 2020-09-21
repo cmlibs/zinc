@@ -135,7 +135,7 @@ public:
 	virtual int getTermCount() const
 	{
 		int termCount = this->elementDimension;
-		for (int d = 1; d < this->elementDimension; ++d)
+		for (int d = 1; d < this->order; ++d)
 			termCount *= this->elementDimension;
 		return termCount;
 	}

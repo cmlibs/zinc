@@ -260,9 +260,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -354,8 +354,8 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			if (sourceDerivativeCache)
 			{
 				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
-				for (int i = 0; i < field->number_of_components; i += element_dimension)
-					valueCache.values[i] = sourceDerivatives[i];
+				for (int i = 0; i < field->number_of_components; ++i)
+					valueCache.values[i] = sourceDerivatives[i*element_dimension];
 				return 1;
 			}
 		}
@@ -394,7 +394,7 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	return 0;
 }
 
-int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	// Only implemented for derivative w.r.t. element xi coordinates of same mesh
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
@@ -410,7 +410,7 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, FieldV
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *higherFieldDerivative);
 			if (sourceDerivativeCache)
 			{
-				FE_value *derivative = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+				FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 				const int termCount = fieldDerivative.getTermCount();
 				for (int i = 0; i < field->number_of_components; ++i)
 				{
@@ -606,7 +606,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -882,7 +882,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1295,7 +1295,7 @@ private:
 			getSourceField(1)->number_of_components);
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 

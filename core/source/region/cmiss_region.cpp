@@ -347,7 +347,7 @@ static void cmzn_region_detach_fields(struct cmzn_region *region)
 			region->field_manager_callback_id = 0;
 		}
 		// clear region pointer otherwise get updates when finite element fields destroyed
-		FE_region_set_cmzn_region_private(region->fe_region, (cmzn_region *)0);
+		region->fe_region->clearRegionPrivate();
 		DESTROY(MANAGER(Computed_field))(&(region->field_manager));
 		region->field_manager = 0;
 		DEACCESS(FE_region)(&region->fe_region);
@@ -375,12 +375,13 @@ cmzn_region::cmzn_region(cmzn_region *base_region) :
 	field_manager(CREATE(MANAGER(Computed_field))()),
 	field_manager_callback_id(MANAGER_REGISTER(Computed_field)(
 		cmzn_region_Computed_field_change, (void *)this, this->field_manager)),
-	fe_region(FE_region_create(base_region ? base_region->fe_region : 0)),
+	fe_region(nullptr),
 	field_cache_size(0),
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);
-	FE_region_set_cmzn_region_private(this->fe_region, this);
+	// cmzn_region must be fully constructed before creating FE_region
+	this->fe_region = new FE_region(this, (base_region) ? base_region->fe_region : nullptr);
 }
 
 cmzn_region::~cmzn_region()

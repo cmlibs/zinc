@@ -361,7 +361,7 @@ private:
 
 	bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 

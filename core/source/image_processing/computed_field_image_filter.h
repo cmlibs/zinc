@@ -113,7 +113,7 @@ public:
 	template < class PixelType >
 	inline void setPixelValues( PixelType& pixel, ZnReal *values );
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 protected:
 

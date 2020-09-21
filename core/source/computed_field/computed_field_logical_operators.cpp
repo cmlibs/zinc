@@ -62,7 +62,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
@@ -193,7 +193,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
@@ -324,7 +324,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_xor::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -461,7 +461,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_equal_to::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -616,7 +616,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_less_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -744,7 +744,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_greater_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -872,7 +872,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual bool is_defined_at_location(cmzn_fieldcache&)
 	{
@@ -961,7 +961,7 @@ private:
 		return (0 != dynamic_cast<Computed_field_not*>(other_field));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_not::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
