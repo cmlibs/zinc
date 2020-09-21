@@ -310,7 +310,7 @@ Compare the type specific data.
 int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = 0;
+	const RealFieldValueCache *sourceCache = 0;
 	const Field_location_field_values* coordinate_location = 0;
 	if ((coordinate_location = cache.get_location_field_values()))
 	{

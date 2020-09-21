@@ -379,11 +379,8 @@ int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 int Computed_field_time_value::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
 	// spatial derivatives are zero (review when time derivatives are added)
-	const int termCount = fieldDerivative.getTermCount();
-	for (int j = 0; j < termCount; j++)
-		derivatives[j] = 0.0;
+	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 

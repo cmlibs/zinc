@@ -105,6 +105,12 @@ public:
 			this->values[i] = source.values[i];
 	}
 
+	void zeroValues()
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
 private:
 	DerivativeValueCache(); // not implemented
 	DerivativeValueCache(const DerivativeValueCache &source); // not implemented

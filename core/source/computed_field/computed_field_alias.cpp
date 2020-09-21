@@ -236,9 +236,7 @@ int Computed_field_alias::evaluateDerivative(cmzn_fieldcache& cache, FieldValueC
 	const DerivativeValueCache *sourceDerivativeValueCache = this->getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeValueCache)
 	{
-		const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
-		for (int v = 0; v < valuesCount; ++v)
-			derivativeValueCache.values[v] = sourceDerivativeValueCache->values[v];
+		derivativeValueCache.copyValues(*sourceDerivativeValueCache);
 		return 1;
 	}
 	return 0;

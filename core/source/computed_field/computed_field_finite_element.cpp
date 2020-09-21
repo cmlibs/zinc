@@ -1782,10 +1782,7 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 int Computed_field_cmiss_number::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	// assume all derivatives are zero
-	FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
-	const int termCount = fieldDerivative.getTermCount();
-	for (int i = 0; i < termCount; ++i)
-		derivatives[i] = 0.0;
+	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 
@@ -3623,28 +3620,33 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	// directly evaluate only derivative w.r.t. mesh which owns element at location
-	// first derivatives are 1.0 in the xi direction, otherwise 0.0
-	// derivatives w.r.t. face xi currently handled by fallback finite difference
-	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	if ((element_xi_location) && ((fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
-		&& (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh())))
+	if (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
 	{
-		FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
-		// start with all derivatives zero
-		const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
-		for (int i = 0; i < valuesCount; ++i)
-			derivatives[i] = 0.0;
-		// first derivatives have 1.0 on main diagonal up to element_dimension
-		if (fieldDerivative.getOrder() == 1)
+		// directly evaluate only derivative w.r.t. mesh which owns element at location
+		// first derivatives are 1.0 in the xi direction, otherwise 0.0
+		// derivatives w.r.t. face xi currently handled by fallback finite difference
+		const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+		if ((element_xi_location) && (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh()))
 		{
-			const int elementDimension = element_xi_location->get_element()->getDimension();
-			for (int i = 0; i < elementDimension; i += (elementDimension + 1))
-				derivatives[i] = 1.0;
+			FE_value *derivatives = RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->values;
+			// start with all derivatives zero
+			const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
+			for (int i = 0; i < valuesCount; ++i)
+				derivatives[i] = 0.0;
+			// first derivatives have 1.0 on main diagonal up to element_dimension
+			if (fieldDerivative.getOrder() == 1)
+			{
+				const int elementDimension = element_xi_location->get_element()->getDimension();
+				for (int i = 0; i < elementDimension; i += (elementDimension + 1))
+					derivatives[i] = 1.0;
+			}
+			return 1;
 		}
-		return 1;
+		return 0;
 	}
-	return 0;
+	// all other derivatives are zero
+	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 int Computed_field_xi_coordinates::list()
@@ -4188,18 +4190,9 @@ int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache
 
 int Computed_field_is_exterior::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
-	if (element_xi_location)
-	{
-		// assume all derivatives are zero
-		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_value *derivatives = valueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
-		for (int i = 0; i < termCount; ++i)
-			derivatives[i] = 0.0;
-		return 1;
-	}
-	return 0;
+	// assume all derivatives are zero
+	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 } // namespace
@@ -4311,18 +4304,9 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, FieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
-	if (element_xi_location)
-	{
-		// assume all derivatives are zero
-		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_value *derivatives = valueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
-		for (int i = 0; i < termCount; ++i)
-			derivatives[i] = 0.0;
-		return 1;
-	}
-	return 0;
+	// assume all derivatives are zero
+	RealFieldValueCache::cast(inValueCache).getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 } // namespace
