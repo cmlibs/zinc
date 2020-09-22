@@ -54,9 +54,10 @@ public:
 
 	virtual ~FieldValueCache();
 
-	inline void resetEvaluationCounter()
+	/** override if needed to clear type-specific evaluation counters & call this */
+	virtual void resetEvaluationCounter()
 	{
-		evaluationCounter = -1;
+		this->evaluationCounter = -1;
 	}
 
 	/** override to clear type-specific buffer information & call this */
@@ -99,6 +100,11 @@ public:
 		delete[] values;
 	}
 
+	void resetEvaluationCounter()
+	{
+		this->evaluationCounter = -1;
+	}
+
 	void copyValues(const DerivativeValueCache& source)
 	{
 		for (int i = 0; i < this->valuesCount; ++i)
@@ -134,6 +140,8 @@ public:
 	}
 
 	virtual ~RealFieldValueCache();
+
+	virtual void resetEvaluationCounter();
 
 	virtual void clear();
 

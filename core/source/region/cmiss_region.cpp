@@ -397,7 +397,7 @@ cmzn_region::~cmzn_region()
 
 	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(&(this->change_callback_list));
 
-	// release accessed field derivatives
+	// release field derivative pointers to this region
 	const int size = static_cast<int>(this->fieldDerivatives.size());
 	for (int i = 0; i < size; ++i)
 		if (this->fieldDerivatives[i])

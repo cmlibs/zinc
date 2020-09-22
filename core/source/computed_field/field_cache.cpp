@@ -28,7 +28,7 @@ FieldValueCache::~FieldValueCache()
 
 void FieldValueCache::clear()
 {
-	resetEvaluationCounter();
+	this->resetEvaluationCounter();
 }
 
 RealFieldValueCache::~RealFieldValueCache()
@@ -41,6 +41,14 @@ RealFieldValueCache::~RealFieldValueCache()
 	delete[] this->values;
 	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
 		delete *iter;
+}
+
+void RealFieldValueCache::resetEvaluationCounter()
+{
+	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
+		if (*iter)
+			(*iter)->resetEvaluationCounter();
+	FieldValueCache::resetEvaluationCounter();
 }
 
 void RealFieldValueCache::clear()
