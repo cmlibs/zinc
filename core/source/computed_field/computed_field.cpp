@@ -1030,9 +1030,8 @@ cmzn_field *Computed_field_create_generic(
 							(replace_field->core->get_type_string() == field_core->get_type_string()))
 						{
 							/* copy modifications to existing field. Can fail if new definition is incompatible */
-							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-								replace_field, field,
-								cmzn_region_get_Computed_field_manager(region));
+							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field, name)(
+								replace_field, field, region->getFieldManager());
 							REACCESS(Computed_field)(&field, replace_field);
 						}
 						else
@@ -1045,7 +1044,7 @@ cmzn_field *Computed_field_create_generic(
 					}
 					else
 					{
-						if (!cmzn_region_add_field_private(region, field))
+						if (!region->addField(field))
 						{
 							display_message(ERROR_MESSAGE,
 								"Computed_field_create_generic.  Unable to add field to region");
@@ -1094,7 +1093,7 @@ void cmzn_field::clearCaches()
 		cmzn_field_id field = *iter;
 		if (field->dependsOnField(this))
 		{
-			cmzn_region_clear_field_value_caches(region, field);
+			region->clearFieldValueCaches(field);
 		}
 	}
 }
@@ -3147,7 +3146,7 @@ cmzn_region *Computed_field_modify_data::get_region()
 
 MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
 {
-	return cmzn_region_get_Computed_field_manager(get_region());
+	return this->get_region()->getFieldManager();
 };
 
 int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_field_void)

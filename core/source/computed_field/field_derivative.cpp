@@ -28,13 +28,13 @@ FieldDerivative::FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn
 	type(typeIn),
 	access_count(1)
 {
-	cmzn_region_add_field_derivative(regionIn, this);
+	regionIn->addFieldDerivative(this);
 }
 
 FieldDerivative::~FieldDerivative()
 {
 	if (this->region)
-		cmzn_region_remove_field_derivative(this->region, this);
+		this->region->removeFieldDerivative(this);
 	if (this->lowerDerivative)
 		FieldDerivative::deaccess(this->lowerDerivative);
 }

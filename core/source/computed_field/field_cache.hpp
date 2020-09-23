@@ -197,7 +197,7 @@ public:
 
 	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative)
 	{
-		int cacheIndex = fieldDerivative.getCacheIndex();
+		const int cacheIndex = fieldDerivative.getCacheIndex();
 		if (this->derivatives.size() <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
 		if (!this->derivatives[cacheIndex])

@@ -123,13 +123,13 @@ cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *paren
 	indexed_location_element_xi(0),
 	number_of_indexed_location_element_xi(0),
 	location(&(this->location_time)),
-	valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
+	valueCaches(this->region->getFieldcacheSize(), (FieldValueCache*)0),
 	assignInCache(false),
 	parentCache(parentCacheIn),
 	sharedWorkingCache(0),
 	access_count(1)
 {
-	cmzn_region_add_field_cache(this->region, this);
+	this->region->addFieldcache(this);
 }
 
 cmzn_fieldcache::~cmzn_fieldcache()
@@ -147,7 +147,7 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	}
 	if (this->sharedWorkingCache)
 		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
-	cmzn_region_remove_field_cache(region, this);
+	this->region->removeFieldcache(this);
 	cmzn_region_destroy(&region);
 }
 

@@ -198,7 +198,7 @@ static int write_ipbase_file(FILE *ipbase_file, cmzn_region *region,
 		FE_element_field_add_basis_data add_basis_data;
 		add_basis_data.basis_types = CREATE(LIST(FE_basis))();
 		add_basis_data.field = field;
-		add_basis_data.fe_region = cmzn_region_get_FE_region(region);
+		add_basis_data.fe_region = region->get_FE_region();
 		add_basis_data.number_of_components = get_FE_field_number_of_components(field);
 
 		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);

@@ -155,8 +155,7 @@ char *cmzn_fieldmodule_get_unique_field_name(
 	struct cmzn_fieldmodule *fieldmodule)
 {
 	struct MANAGER(Computed_field) *manager;
-	if (fieldmodule &&
-		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
+	if (fieldmodule && (manager = fieldmodule->region->getFieldManager()))
 	{
 		return Computed_field_manager_get_unique_field_name(manager);
 	}
@@ -175,8 +174,7 @@ struct Computed_field *cmzn_fieldmodule_find_field_by_name(
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(cmzn_fieldmodule_find_field_by_name);
-	if (fieldmodule && field_name &&
-		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
+	if (fieldmodule && field_name && (manager = fieldmodule->region->getFieldManager()))
 	{
 		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			(char *)field_name, manager);
@@ -353,7 +351,7 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 {
 	if (!fieldmodule)
 		return 0;
-	return cmzn_region_create_fielditerator(fieldmodule->region);
+	return fieldmodule->region->createFielditerator();
 }
 
 cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
@@ -368,7 +366,7 @@ cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 	if (!fieldmodule)
 		return NULL;
 	FE_time_sequence *fe_timesequence = FE_region_get_FE_time_sequence_matching_series(
-			cmzn_region_get_FE_region(fieldmodule->region), number_of_times, times);
+		fieldmodule->region->get_FE_region(), number_of_times, times);
 	ACCESS(FE_time_sequence)(fe_timesequence);
 	return reinterpret_cast<cmzn_timesequence_id>(fe_timesequence);
 }

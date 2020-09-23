@@ -53,12 +53,12 @@ cmzn_context::~cmzn_context()
 		/* need the following due to circular references where field owned by region references region itself;
 			* when following removed also remove #include "region/cmiss_region_private.h". Also scene
 			* has a computed_field manager callback so it must be deleted before detaching fields hierarchical */
-		cmzn_region_detach_fields_hierarchical(this->root_region);
+		this->root_region->detachFieldsHierarchical();
 		DEACCESS(cmzn_region)(&this->root_region);
 	}
 	// clear regions' pointers to this context
 	for (std::list<cmzn_region*>::iterator iter = this->allRegions.begin(); iter != this->allRegions.end(); ++iter)
-		cmzn_region_set_context_private(*iter, 0);
+		(*iter)->setContext(nullptr);
 	if (this->element_point_ranges_selection)
 		DESTROY(Element_point_ranges_selection)(&this->element_point_ranges_selection);
 	if (this->io_stream_package)
@@ -85,11 +85,11 @@ cmzn_region *cmzn_context::createRegion()
 {
 	// all regions share element shapes and bases
 	cmzn_region *baseRegion = (this->allRegions.size() > 0) ? this->allRegions.front() : 0;
-	cmzn_region *region = cmzn_region_create_internal(baseRegion);
+	cmzn_region *region = new cmzn_region(baseRegion);
 	if (region)
 	{
 		this->allRegions.push_back(region);
-		cmzn_region_set_context_private(region, this);
+		region->setContext(this);
 		cmzn_graphics_module_enable_scenes(this->getGraphicsmodule(), region);
 	}
 	return region;
@@ -100,7 +100,7 @@ void cmzn_context::removeRegion(cmzn_region *region)
 	std::list<cmzn_region*>::iterator iter = std::find(this->allRegions.begin(), this->allRegions.end(), region);
 	if (iter != this->allRegions.end())
 	{
-		cmzn_region_set_context_private(region, 0);
+		region->setContext(nullptr);
 		this->allRegions.erase(iter);
 	}
 }
@@ -148,7 +148,7 @@ int cmzn_context_set_default_region(cmzn_context_id context,
 {
 	if (context)
 	{
-		if (region && (cmzn_region_get_context_private(region) != context))
+		if (region && (region->getContext() != context))
 		{
 			display_message(ERROR_MESSAGE, "Zinc Context setDefaultRegion():  Region is from a different context");
 			return CMZN_ERROR_ARGUMENT_CONTEXT;

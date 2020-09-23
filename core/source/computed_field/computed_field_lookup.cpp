@@ -54,7 +54,7 @@ public:
 		{
 			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
 			FE_region *fe_region = fe_nodeset->get_FE_region();
-			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
+			if (Computed_field_get_region(parent->source_fields[0])->get_FE_region() == fe_region)
 				return true;
 		}
 		return false;
@@ -280,7 +280,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
 	cmzn_field *field = nullptr;
 	if (source_field && source_field->isNumerical() && lookup_node &&
 		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
-			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
+			cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region()))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -345,7 +345,7 @@ public:
 		{
 			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
 			FE_region *fe_region = fe_nodeset->get_FE_region();
-			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
+			if (Computed_field_get_region(parent->source_fields[0])->get_FE_region() == fe_region)
 				return true;
 		}
 		return false;
@@ -627,7 +627,7 @@ cmzn_field *cmzn_fieldmodule_create_field_quaternion_SLERP(
 	if (source_field && (4 == source_field->number_of_components) &&
 		quaternion_SLERP_node &&
 			(FE_node_get_FE_nodeset(quaternion_SLERP_node)->get_FE_region() ==
-			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule))))
+			cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region()))
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,

@@ -1193,7 +1193,7 @@ const FE_value *Standard_basis_function_evaluation::evaluate_full(
 				}
 			}
 		}
-		source_basis_function_values += source_derivatives_count*values_count;  // required to call this in final loop to return below
+		source_basis_function_values += source_derivatives_count*values_count;  // required to set this in final loop to return below
 		source_derivatives_count *= dimension;
 		dest_basis_function_values += source_derivatives_count*values_count;
 	}

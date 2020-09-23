@@ -1629,7 +1629,7 @@ int FieldMLReader::readMeshes()
 			return_code = 0;
 			break;
 		}
-		FE_region *fe_region = cmzn_region_get_FE_region(this->region);
+		FE_region *fe_region = this->region->get_FE_region();
 		this->mesh = FE_region_find_FE_mesh_by_dimension(fe_region, meshDimension);
 		if (!this->mesh)
 		{

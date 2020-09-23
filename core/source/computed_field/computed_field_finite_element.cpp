@@ -1390,7 +1390,7 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	if (field_module && fe_field)
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
@@ -1439,7 +1439,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 	cmzn_field_id field = 0;
 	// cache changes to ensure FE_field not automatically wrapped already
 	cmzn_fieldmodule_begin_change(field_module);
-	FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module));
+	FE_region *fe_region = cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region();
 	// ensure FE_field and Computed_field have same name
 	char *field_name = cmzn_fieldmodule_get_field_name(field_module);
 	bool no_default_name = (0 == field_name);

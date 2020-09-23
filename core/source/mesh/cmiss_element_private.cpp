@@ -1285,7 +1285,7 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 	if (fieldmodule && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		if (fe_region)
 		{
 			return cmzn_elementbasis::create(fe_region, dimension, function_type);
@@ -1300,7 +1300,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_mesh_id mesh = NULL;
 	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule));
+		FE_region *fe_region = cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region();
 		mesh = cmzn_mesh::create(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
 	}
 	return mesh;
@@ -2217,7 +2217,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
-		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_mesh_get_FE_region_internal(meshIn)))
+		(eventIn->getRegion()->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
 }

@@ -12,11 +12,13 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
+#include "opencmiss/zinc/types/contextid.h"
 #include "opencmiss/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_derivative.hpp"
 #include "general/callback.h"
 #include "general/object.h"
+#include <list>
 
 
 /*
@@ -58,31 +60,262 @@ public:
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
 	struct cmzn_region *, cmzn_region_changes *, void);
 
+typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
+
+/***************************************************************************//**
+ * A region object which contains fields and child regions.
+ * Other data can be attached using the any_object_list.
+ */
+struct cmzn_region
+{
+	friend struct cmzn_context;
+
+private:
+	char *name;
+	/* non-accessed pointer to context region belongs to */
+	cmzn_context *context;
+	/* non-accessed pointer to parent region, or NULL if root */
+	cmzn_region *parent;
+	/* accessed first child and next sibling for building region tree */
+	cmzn_region *first_child, *next_sibling;
+	/* non-access pointer to previous sibling, if any */
+	cmzn_region *previous_sibling;
+
+	/* fields owned by this region (or master) */
+	struct MANAGER(Computed_field) *field_manager;
+	void *field_manager_callback_id;
+	struct FE_region *fe_region;
+	int field_cache_size; // 1 more than highest field cache index given out
+	// all field caches currently in use for this region, for clearing
+	// when fields changed, and adding value caches for new fields.
+	std::list<cmzn_fieldcache_id> field_caches;
+	std::vector<FieldDerivative *> fieldDerivatives;
+
+	/* list of objects attached to region */
+	struct LIST(Any_object) *any_object_list;
+
+	/* increment/decrement change_level to nest changes. Message sent when zero */
+	int change_level;
+	/* number of hierarchical changes in progress on this region tree. A region's
+	 * change_level will have one increment per ancestor hierarchical_change_level.
+	 * Must be tracked to safely transfer when re-parenting regions */
+	int hierarchical_change_level;
+	cmzn_region_changes changes;
+	/* list of change callbacks */
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
+
+	// list of notifiers which receive field module callbacks
+	cmzn_fieldmodulenotifier_list notifier_list;
+
+	/* number of objects using this region */
+	int access_count;
+
+	cmzn_region(cmzn_region *base_region);
+
+	~cmzn_region();
+
+	/**
+	 * Record the context this region was created for.
+	 * Should only be set by context / region creation functions.
+	 */
+	void setContext(cmzn_context *contextIn)
+	{
+		this->context = contextIn;
+	}
+
+	void detachFields();
+
+	void detachFieldsHierarchical();
+
+	static void Computed_field_change(struct MANAGER_MESSAGE(Computed_field) *message, void *region_void);
+
+	void updateClients();
+
+public:
+
+	inline cmzn_region *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_region* &region);
+
+	void beginChangeFields();
+
+	void endChangeFields();
+
+	void beginChange()
+	{
+		++(this->change_level);
+		this->beginChangeFields();
+	}
+
+	int endChange();
+
+	// special version for use during merge
+	void beginChangeNoNotify();
+
+	// special version for use during merge
+	void endChangeNoNotify();
+
+	int getSumHierarchicalChangeLevel() const;
+
+	void treeChange(int delta_change_level);
+
+	void beginHierarchicalChange()
+	{
+		++(this->hierarchical_change_level);
+		this->treeChange(+1);
+	}
+
+	void endHierarchicalChange()
+	{
+		--(this->hierarchical_change_level);
+		this->treeChange(-1);
+	}
+
+	int addCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
+
+	int removeCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
+
+	/**
+	 * Returns pointer to context this region was created for. Can be NULL if
+	 * context is destroyed already during clean-up.
+	 * @return  Non-accessed pointer to cmzn_context or NULL if none/cleared.
+	 */
+	cmzn_context *getContext() const
+	{
+		return this->context;
+	}
+
+	struct MANAGER(Computed_field) *getFieldManager() const
+	{
+		return this->field_manager;
+	}
+
+	FE_region *get_FE_region() const
+	{
+		return this->fe_region;
+	}
+
+	cmzn_region *findChildByName(const char *name) const;
+
+	cmzn_region *findSubregionAtPath(const char *path) const;
+
+	cmzn_region *createSubregion(const char *path);
+
+	cmzn_fielditerator *createFielditerator() const;
+
+	/** Called only by Field constructor code to assign cache index */
+	int addField(cmzn_field *field);
+
+	/** Called only by FieldDerivative to assign cache index */
+	void addFieldDerivative(FieldDerivative *fieldDerivative);
+
+	/** Called only by FieldDerivative to remove cache index */
+	void removeFieldDerivative(FieldDerivative *fieldDerivative);
+
+	/** Returns size of field cache array to fit all assigned cache indexes. */
+	int getFieldcacheSize() const
+	{
+		return this->field_cache_size;
+	}
+
+	/** Called only by Fieldcache constructor.
+	 * Adds cache to the list of caches for this region. Region needs this list to
+	 * add new value caches for any fields created while the cache exists.
+	 */
+	void addFieldcache(cmzn_fieldcache *fieldcache)
+	{
+		if (fieldcache)
+			this->field_caches.push_back(fieldcache);
+	}
+
+	/** Called only by Fieldcache destructor.
+	 * Removes cache from the list of caches for this region.
+	 */
+	void removeFieldcache(cmzn_fieldcache *fieldcache)
+	{
+		if (fieldcache)
+			this->field_caches.remove(fieldcache);
+	}
+
+	/**
+	 * Private function for clearing field value caches for field in all caches
+	 * listed in region.
+	 */
+	void clearFieldValueCaches(cmzn_field *field);
+
+	cmzn_field *findFieldByName(const char *fieldName) const
+	{
+		if (!fieldName)
+			return nullptr;
+		return FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+			(char *)fieldName, this->field_manager);
+	}
+
+	const char *getName() const
+	{
+		return this->name;
+	}
+
+	int setName(const char *name);
+
+	cmzn_region *getParent() const
+	{
+		return this->parent;
+	}
+
+	/** @return allocated string /path/to/region/ */
+	char *getPath() const;
+
+	char *getRelativePath(cmzn_region *other_region) const;
+
+	cmzn_region *getFirstChild() const
+	{
+		return this->first_child;
+	}
+
+	cmzn_region *getNextSibling() const
+	{
+		return this->next_sibling;
+	}
+
+	cmzn_region *getPreviousSibling() const
+	{
+		return this->previous_sibling;
+	}
+
+	int appendChild(cmzn_region *new_child)
+	{
+		return this->insertChildBefore(new_child, nullptr);
+	}
+
+	int insertChildBefore(cmzn_region *new_child, cmzn_region *ref_child);
+
+	int removeChild(cmzn_region *old_child);
+
+	bool containsSubregion(cmzn_region *subregion) const;
+
+	void addFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier);
+
+	void removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier);
+
+	/** Legacy method for attaching Scene to region; don't use any more */
+	struct LIST(Any_object) *getAnyObjectList() const
+	{
+		return this->any_object_list;
+	}
+
+};
+
 /*
 Global functions
 ----------------
 */
 
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
-
-/**
- * Private constructor for a cmzn_region.
- * Region is created with an access_count of 1; DEACCESS to destroy.
- * @param base_region  Optional region to share element shape and basis data
- * with. If NULL, creates independent lists of shape and basis information.
- *
- * Note: This is an internal function and should not be exposed to the API.
- *
- * @return  Accessed reference to the newly created region, or NULL if failed.
- */
-cmzn_region *cmzn_region_create_internal(cmzn_region *base_region);
-
-/**
- * Create an iterator for the region's fields.
- * Internal; externally use cmzn_fieldmodule_create_fielditerator
- * @return  Accessed iterator.
- */
-cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region);
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
@@ -102,24 +335,6 @@ struct FE_region *cmzn_region_get_FE_region(struct cmzn_region *region);
  */
 struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
 	struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns the size a field cache array needs to be to fit the assigned field
- * cache indexes.
- */
-int cmzn_region_get_field_cache_size(cmzn_region_id region);
-
-/***************************************************************************//**
- * Adds cache to the list of caches for this region. Region needs this list to
- * add new value caches for any fields created while the cache exists.
- */
-void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_fieldcache_id cache);
-
-/***************************************************************************//**
- * Removes cache from the list of caches for this region.
- */
-void cmzn_region_remove_field_cache(cmzn_region_id region,
-	cmzn_fieldcache_id cache);
 
 int cmzn_region_add_callback(struct cmzn_region *region,
 	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);

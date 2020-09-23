@@ -1860,7 +1860,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	if (output_file && region)
 	{
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		return_code = 1;
 		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
 
@@ -2116,7 +2116,7 @@ static int write_cmzn_region(ostream *output_file,
 		{
 			if (!group || (region != root_region))
 			{
-				char *region_path = cmzn_region_get_relative_path(region, root_region);
+				char *region_path = region->getRelativePath(root_region);
 				size_t len = strlen(region_path);
 				if ((1 < len) && (region_path[len - 1] == CMZN_REGION_PATH_SEPARATOR_CHAR))
 				{

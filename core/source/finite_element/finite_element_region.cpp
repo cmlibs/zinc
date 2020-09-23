@@ -186,7 +186,7 @@ void FE_region::update()
 
 cmzn_fielditerator *FE_region::create_fielditerator()
 {
-	return cmzn_region_create_fielditerator(this->cmiss_region);
+	return this->cmiss_region->createFielditerator();
 }
 
 /*
