@@ -2668,12 +2668,12 @@ int Computed_field::setOptionalSourceField(int index, Computed_field *sourceFiel
 				tmp[index - 1] = ACCESS(Computed_field)(sourceField);
 				this->source_fields = tmp;
 				++(this->number_of_source_fields);
-				Computed_field_changed(this);
+				this->setChanged();
 			}
 			else if (sourceField != this->source_fields[index - 1])
 			{
 				REACCESS(Computed_field)(&(this->source_fields[index - 1]), sourceField);
-				Computed_field_changed(this);
+				this->setChanged();
 			}
 		}
 		else
@@ -2682,8 +2682,8 @@ int Computed_field::setOptionalSourceField(int index, Computed_field *sourceFiel
 			{
 				DEACCESS(Computed_field)(&(this->source_fields[index - 1]));
 				--(this->number_of_source_fields);
-				Computed_field_changed(this);
-			}			
+				this->setChanged();
+			}
 		}
 		return CMZN_OK;
 	}

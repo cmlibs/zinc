@@ -543,7 +543,7 @@ that the computed field has changed.
 			core->scene_viewer = (struct Scene_viewer *)NULL;
 			if (field->manager)
 			{
-				Computed_field_changed(field);
+				field->setChanged();
 			}
 		}
 	}

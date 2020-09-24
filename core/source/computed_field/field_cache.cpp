@@ -120,6 +120,7 @@ char *MeshLocationFieldValueCache::getAsString() const
 cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn) :
 	region(cmzn_region_access(regionIn)),
 	locationCounter(0),
+	modifyCounter(-1),
 	indexed_location_element_xi(0),
 	number_of_indexed_location_element_xi(0),
 	location(&(this->location_time)),

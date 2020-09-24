@@ -1111,9 +1111,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 			if (elementFieldChange)
 			{
 				// change notification
-				element->getMesh()->get_FE_region()->FE_field_change(this->fe_field,
-					CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-				element->getMesh()->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_RELATED); // includes update
+				element->getMesh()->elementFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_RELATED, this->fe_field);
 			}
 		}
 	}
@@ -3226,7 +3224,7 @@ public:
 		if (search_mode_in != search_mode)
 		{
 			search_mode = search_mode_in;
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 		return CMZN_OK;
 	}

@@ -591,6 +591,12 @@ DESCRIPTION :
 	}
 
 	/**
+	 * Record that field data has changed.
+	 * Notify clients if not caching changes.
+	 */
+	inline void setChanged();
+
+	/**
 	 * Private function for setting the change status flag and adding
 	 * to the manager's changed object list without sending manager updates.
 	 * Should only be called by Computed_field_core-defined check_dependency methods.
@@ -669,17 +675,13 @@ FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct 
 inline const FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
 {
 	FieldValueCache *valueCache = this->getValueCache(cache);
-	if (valueCache->evaluationCounter < cache.getLocationCounter())
+	if ((valueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
 	{
 		if (this->core->evaluate(cache, *valueCache))
-		{
-			// this disables field value caching between manager begin/end change
-			// note valueCache->evaluationCounter is reset to -1 in beginChange()
-			if (0 == this->manager->cache)
-				valueCache->evaluationCounter = cache.getLocationCounter();
-		}
+			valueCache->evaluationCounter = cache.getLocationCounter();
 		else
-			valueCache = 0;
+			return nullptr;
 	}
 	return valueCache;
 }
@@ -689,15 +691,13 @@ inline const DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_field
 {
 	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
 	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
-	if (derivativeValueCache->evaluationCounter < cache.getLocationCounter())
+	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
 	{
 		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative) ||
 			this->core->evaluateDerivativeFiniteDifference(cache, *realValueCache, fieldDerivative))
 		{
-			// this disables field value caching between manager begin/end change
-			// note derivativeValueCache->evaluationCounter is reset to -1 in beginChange()
-			if (0 == this->manager->cache)
-				derivativeValueCache->evaluationCounter = cache.getLocationCounter();
+			derivativeValueCache->evaluationCounter = cache.getLocationCounter();
 		}
 		else
 			return nullptr;
@@ -846,6 +846,20 @@ struct cmzn_region *Computed_field_manager_get_region(
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
+inline void Computed_field_core::setChanged()
+{
+	this->field->setChanged();
+}
+
+inline void Computed_field::setChanged()
+{
+	if ((this->manager) && (this->manager->owner))
+	{
+		this->manager->owner->setFieldModify();
+		MANAGED_OBJECT_CHANGE(Computed_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	}
+}
+
 /**
  * Record that field data has changed.
  * Notify clients if not caching changes.
@@ -855,15 +869,12 @@ const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 inline int Computed_field_changed(struct Computed_field *field)
 {
 	if (field)
-		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	{
+		field->setChanged();
+		return 1;
+	}
 	display_message(ERROR_MESSAGE, "Computed_field_changed.  Invalid argument(s)");
 	return 0;
-}
-
-inline void Computed_field_core::setChanged()
-{
-	Computed_field_changed(this->field);
 }
 
 /**

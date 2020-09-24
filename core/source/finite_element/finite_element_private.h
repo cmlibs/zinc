@@ -308,16 +308,12 @@ DESCRIPTION :
 Returns the number of values expected for the <node_field_info>.
 ==============================================================================*/
 
-int FE_node_field_info_log_FE_field_changes(
-	struct FE_node_field_info *fe_node_field_info,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2003
-
-DESCRIPTION :
-Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
+/**
+ * Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
+ * in FE_region.
+ */
+int FE_node_field_info_log_FE_field_change_related(
+	struct FE_node_field_info *fe_node_field_info, FE_region *fe_region);
 
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_node,cm_node_identifier);
 

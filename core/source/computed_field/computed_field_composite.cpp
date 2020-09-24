@@ -101,7 +101,7 @@ public:
 			if (source_value_numbers[index] != source_component_index)
 			{
 				source_value_numbers[index] = source_component_index;
-				Computed_field_changed(field);
+				this->field->setChanged();
 			}
 			return CMZN_OK;
 		}
@@ -310,7 +310,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 			}
 		}
 		if (changed)
-			Computed_field_changed(field);
+			this->field->setChanged();
 	}
 	return result;
 }

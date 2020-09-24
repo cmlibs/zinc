@@ -167,7 +167,7 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_fieldcach
 		DEALLOCATE(string_value);
 	}
 	string_value = duplicate_string(valueCache.stringValue);
-	Computed_field_changed(field);
+	this->field->setChanged();
 	return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 }
 

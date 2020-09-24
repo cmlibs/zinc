@@ -67,6 +67,7 @@ cmzn_region::cmzn_region(cmzn_region *base_region) :
 	next_sibling(nullptr),
 	previous_sibling(nullptr),
 	any_object_list(CREATE(LIST(Any_object))()),
+	fieldModifyCounter(0),
 	change_level(0),
 	hierarchical_change_level(0),
 	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),

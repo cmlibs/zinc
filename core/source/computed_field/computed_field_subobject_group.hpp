@@ -284,7 +284,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 	};
@@ -448,7 +448,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 		virtual int check_dependency();
@@ -621,7 +621,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 		static int FE_node_is_not_in_FE_nodeset(cmzn_node *node, void *fe_nodeset_void)

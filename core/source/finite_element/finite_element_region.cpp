@@ -1082,7 +1082,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 						{
 							if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
 							{
-								fe_mesh->elementChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
+								fe_mesh->elementFieldChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED, fe_field);  // redundant?
 							}
 							else
 							{
@@ -1105,7 +1105,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 					if (FE_field_has_parameters_at_node(fe_field, node))
 					{
 						if (FE_node_smooth_FE_field(node, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
-							fe_nodeset->nodeFieldChange(node, fe_field);
+							fe_nodeset->nodeFieldChange(node, fe_field);  // redundant, probably
 						else
 						{
 							return_code = 0;

@@ -123,12 +123,30 @@ struct FE_region
 	inline void FE_field_change(FE_field *fe_field, enum CHANGE_LOG_CHANGE(FE_field) change)
 	{
 		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_field_changes, fe_field, change);
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
+	}
+
+	/** records related change to FE_field but does not call setFieldModify as expect to be
+	 * called for multiple fields. Also does no update check; call FE_region::update if needed */
+	inline void FE_field_change_related(FE_field *fe_field, enum CHANGE_LOG_CHANGE(FE_field) change)
+	{
+		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_field_changes, fe_field, change);
 	}
 
 	/** record change to all fields in region */
 	inline void FE_field_all_change(enum CHANGE_LOG_CHANGE(FE_field) change)
 	{
 		CHANGE_LOG_ALL_CHANGE(FE_field)(this->fe_field_changes, change);
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
+	}
+
+	/** records change not specific to an FE_field, e.g. node identifier change */
+	inline void FE_region_change()
+	{
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
 	}
 
 	cmzn_fielditerator *create_fielditerator();

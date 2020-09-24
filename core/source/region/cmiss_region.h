@@ -94,6 +94,10 @@ private:
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
 
+	// incremented if any fields are modified in the region so field caches
+	// can detect if their values are invalid.
+	int fieldModifyCounter;
+
 	/* increment/decrement change_level to nest changes. Message sent when zero */
 	int change_level;
 	/* number of hierarchical changes in progress on this region tree. A region's
@@ -140,6 +144,20 @@ public:
 	}
 
 	static int deaccess(cmzn_region* &region);
+
+	// all code which modifies values of fields must call this to ensure
+	// field caches are recalculated
+	inline void setFieldModify()
+	{
+		++(this->fieldModifyCounter);
+	}
+
+	// field caches store current value when calculating at a new location
+	// and if the region value changes then cache is invalid
+	inline int getFieldModifyCounter() const
+	{
+		return this->fieldModifyCounter;
+	}
 
 	void beginChangeFields();
 

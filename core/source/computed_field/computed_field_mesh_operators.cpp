@@ -122,8 +122,8 @@ public:
 					change = true;
 				}
 			}
-			if (change && this->field)
-				Computed_field_changed(this->field);
+			if (change)
+				this->field->setChanged();
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -142,7 +142,7 @@ public:
 			if (this->quadratureRule != quadratureRuleIn)
 			{
 				this->quadratureRule = quadratureRuleIn;
-				Computed_field_changed(this->field);
+				this->field->setChanged();
 			}
 			return CMZN_OK;
 		}

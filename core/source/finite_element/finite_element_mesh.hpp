@@ -896,6 +896,10 @@ public:
 
 	void elementChange(DsLabelIndex elementIndex, int change);
 
+	void elementFieldChange(DsLabelIndex elementIndex, int change, FE_field *fe_field);
+
+	void elementAllFieldChange(DsLabelIndex elementIndex, int change);
+
 	int getDimension() const
 	{
 		return this->dimension;

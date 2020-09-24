@@ -214,8 +214,9 @@ typedef std::vector<FieldValueCache*> ValueCacheVector;
 struct cmzn_fieldcache
 {
 private:
-	cmzn_region_id region;  // accessed: not thread safe
+	cmzn_region_id region;  // accessed: not thread safe. Means region is guaranteed to exist.
 	int locationCounter; // incremented whenever domain location changes
+	int modifyCounter; // set to match region when location changes; if region value changes, cache is invalid
 	Field_location_element_xi location_element_xi;
 	Field_location_field_values location_field_values;
 	Field_location_node location_node;
@@ -233,6 +234,7 @@ private:
 	void locationChanged()
 	{
 		++(this->locationCounter);
+		this->modifyCounter = this->region->getFieldModifyCounter();
 		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
 		// Logic assumes counter will overflow back to a negative value to trigger reset
 		if (this->locationCounter < 0)
@@ -266,6 +268,11 @@ public:
 			delete cache;
 		cache = 0;
 		return CMZN_OK;
+	}
+
+	inline bool hasRegionModifications() const
+	{
+		return this->modifyCounter != this->region->getFieldModifyCounter();
 	}
 
 	/** Copy location from another field cache */
