@@ -412,14 +412,16 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 			{
 				FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 				const int termCount = fieldDerivative.getTermCount();
+				// the derivative for this field becomes the first/innermost derivative:
+				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
 				for (int i = 0; i < field->number_of_components; ++i)
 				{
-					const FE_value *sourceDerivatives = sourceDerivativeCache->values + (i*element_dimension + this->xi_index)*termCount;
 					for (int j = 0; j < termCount; ++j)
 					{
-						*derivative = sourceDerivatives[j];
+						*derivative = sourceDerivatives[j*element_dimension];
 						derivative++;
 					}
+					sourceDerivatives += element_dimension*termCount;
 				}
 				return 1;
 			}
