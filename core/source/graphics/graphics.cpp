@@ -455,7 +455,7 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 			dimension = 3;
 			if (graphics->scene)
 			{
-				dimension = FE_region_get_highest_dimension(cmzn_region_get_FE_region(graphics->scene->region));
+				dimension = FE_region_get_highest_dimension(graphics->scene->region->get_FE_region());
 				if (0 >= dimension)
 					dimension = 3;
 			}
@@ -3481,7 +3481,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				}
 				feRegionChanges->propagateToDimension(domainDimension);
 				if (elementChangeLog->isAllChange() || (elementChangeLog->getChangeCount()*2 >
-					FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(graphics->scene->region), domainDimension)->getSize()))
+					FE_region_find_FE_mesh_by_dimension(graphics->scene->region->get_FE_region(), domainDimension)->getSize()))
 				{
 					// too many changes for partial rebuild
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
@@ -6627,8 +6627,7 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				cmzn_fieldmodule_begin_change(graphics_to_object_data.field_module);
 				graphics_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(
 					graphics_to_object_data.field_module);
-				graphics_to_object_data.fe_region = cmzn_region_get_FE_region(
-					cmzn_scene_get_region_internal(graphics->scene));
+				graphics_to_object_data.fe_region = cmzn_scene_get_region_internal(graphics->scene)->get_FE_region();
 				graphics_to_object_data.master_mesh = 0;
 				graphics_to_object_data.iteration_mesh = 0;
 				graphics_to_object_data.scenefilter = 0;

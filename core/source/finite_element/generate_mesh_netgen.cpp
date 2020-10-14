@@ -368,8 +368,8 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_nodetemplate_destroy(&nodetemplate);
 
 	// establish mode which automates creation of shared faces
-	FE_region_begin_define_faces(cmzn_region_get_FE_region(region));
-	FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(region), 3);
+	FE_region_begin_define_faces(region->get_FE_region());
+	FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(region->get_FE_region(), 3);
 
 	cmzn_mesh_id cmesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(cmesh);
@@ -403,7 +403,7 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_nodeset_destroy(&nodeset);
 	cmzn_field_destroy(&coordinate_field);
 
-	FE_region_end_define_faces(cmzn_region_get_FE_region(region));
+	FE_region_end_define_faces(region->get_FE_region());
 
 	cmzn_fieldmodule_end_change(fieldmodule);
 

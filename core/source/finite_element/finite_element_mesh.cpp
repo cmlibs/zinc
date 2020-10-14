@@ -515,9 +515,8 @@ int FE_mesh_element_field_template_data::setElementLocalNode(DsLabelIndex elemen
 		elementNodeIndexes[localNodeIndex] = nodeIndex;
 		// simplest to mark all fields as changed as they may share local nodes
 		// can optimise in future
-		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		// following will update clients:
-		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+		mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 	return CMZN_OK;
 }
@@ -584,9 +583,8 @@ int FE_mesh_element_field_template_data::setElementLocalNodes(
 	{
 		// simplest to mark all fields as changed since too expensive to determine which are affected
 		// can optimise in future
-		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		// following will update clients:
-		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+		mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 	return CMZN_OK;
 }
@@ -654,9 +652,8 @@ int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elem
 	mesh->setScaleFactor(scaleFactorIndexes[localScaleFactorIndex], value);
 	// conservatively mark all fields as changed as they may share scale factors
 	// can optimise in future
-	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	// following will update clients:
-	mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	return CMZN_OK;
 }
 
@@ -703,9 +700,8 @@ int FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex ele
 	}
 	// conservatively mark all fields as changed as they may share scale factors
 	// can optimise in future
-	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	// following will update clients:
-	mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	return CMZN_OK;
 }
 
@@ -1250,10 +1246,18 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	this->createChangeLog();
 	std::string name(this->getName());
 	this->labels.setName(name + ".elements");
+	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+		this->fieldDerivatives[i] = new FieldDerivativeMesh(this, /*order*/(i + 1), (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
 }
 
 FE_mesh::~FE_mesh()
 {
+	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+	{
+		this->fieldDerivatives[i]->clearMesh();
+		FieldDerivative *tmp = this->fieldDerivatives[i];
+		FieldDerivative::deaccess(tmp);
+	}
 	// safely detach from parent/face meshes
 	if (this->parentMesh)
 		this->parentMesh->setFaceMesh(0);
@@ -1483,6 +1487,37 @@ void FE_mesh::elementChange(DsLabelIndex elementIndex, int change)
 	if (this->fe_region && this->changeLog)
 	{
 		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_region_change();
+		this->fe_region->update();
+	}
+}
+
+/**
+ * Call this to mark element with the supplied change and related change to field.
+ * Notifies change to clients of FE_region.
+ * @param change  Logical OR of values from enum DsLabelChangeType
+ */
+void FE_mesh::elementFieldChange(DsLabelIndex elementIndex, int change, FE_field *fe_field)
+{
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		this->fe_region->update();
+	}
+}
+/**
+ * Call this to mark element with the supplied change.
+ * Conservatively marks all fields as changed too.
+ * Notifies change to clients of FE_region.
+ * @param change  Logical OR of values from enum DsLabelChangeType
+ */
+void FE_mesh::elementAllFieldChange(DsLabelIndex elementIndex, int change)
+{
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->fe_region->update();
 	}
 }
@@ -1684,7 +1719,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 	{
 		// record changes to fields, but don't check for FE_region update as caching is assumed
 		for (int f = 0; f < fieldCount; ++f)
-			CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_region->fe_field_changes,
+			this->fe_region->FE_field_change(
 				elementTemplate->fields[f]->getField(), CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->lastMergedElementTemplate = elementTemplate;
 	}

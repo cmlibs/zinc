@@ -260,7 +260,15 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
-	int evaluateDerivativesFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
+	/** Override for real-valued fields */
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	/** Evaluate derivatives using finite differences. Only for real-valued fields
+	 * Only implemented for element_xi derivatives & locations.
+	 * @param cache  Parent cache containing location to evaluate.
+	 * @param valueCache  The real field value cache to put values in.
+	 * @param fieldDerivative  The field derivative operator. */
+	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
 
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
@@ -511,11 +519,11 @@ DESCRIPTION :
 
 	inline FieldValueCache *getValueCache(cmzn_fieldcache& fieldCache)
 	{
-		FieldValueCache *valueCache = fieldCache.getValueCache(cache_index);
+		FieldValueCache *valueCache = fieldCache.getValueCache(this->cache_index);
 		if (!valueCache)
 		{
-			valueCache = core->createValueCache(fieldCache);
-			fieldCache.setValueCache(cache_index, valueCache);
+			valueCache = this->core->createValueCache(fieldCache);
+			fieldCache.setValueCache(this->cache_index, valueCache);
 		}
 		return valueCache;
 	}
@@ -538,28 +546,14 @@ DESCRIPTION :
 		return result;
 	}
 
-	inline FieldValueCache *evaluate(cmzn_fieldcache& cache);
+	inline const FieldValueCache *evaluate(cmzn_fieldcache& cache);
 
-	/** @param numberOfDerivatives  positive number of xi dimension of element location */
-	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_fieldcache& cache, int numberOfDerivatives)
-	{
-		int requestedDerivatives = cache.getRequestedDerivatives();
-		cache.setRequestedDerivatives(numberOfDerivatives);
-		RealFieldValueCache *valueCache = RealFieldValueCache::cast(evaluate(cache));
-		cache.setRequestedDerivatives(requestedDerivatives);
-		if (valueCache && ((valueCache->derivatives_valid) || this->core->evaluateDerivativesFiniteDifference(cache, *valueCache)))
-			return valueCache;
-		return 0;
-	}
+	/** Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline const DerivativeValueCache *evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
-	inline FieldValueCache *evaluateNoDerivatives(cmzn_fieldcache& cache)
-	{
-		int requestedDerivatives = cache.getRequestedDerivatives();
-		cache.setRequestedDerivatives(0);
-		FieldValueCache *valueCache = evaluate(cache);
-		cache.setRequestedDerivatives(requestedDerivatives);
-		return valueCache;
-	}
+	/** Evaluate all derivatives from fieldDerivative down to value.
+	 * Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline const RealFieldValueCache *evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
@@ -595,6 +589,12 @@ DESCRIPTION :
 		}
 		return 0;
 	}
+
+	/**
+	 * Record that field data has changed.
+	 * Notify clients if not caching changes.
+	 */
+	inline void setChanged();
 
 	/**
 	 * Private function for setting the change status flag and adding
@@ -672,23 +672,50 @@ typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_fie
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
-inline FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
+inline const FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
 {
-	FieldValueCache *valueCache = getValueCache(cache);
-	// GRC: move derivatives to a separate value cache in future
-	if ((valueCache->evaluationCounter < cache.getLocationCounter()) ||
-		(cache.getRequestedDerivatives() && (!valueCache->hasDerivatives())))
+	FieldValueCache *valueCache = this->getValueCache(cache);
+	if ((valueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
 	{
-		if (core->evaluate(cache, *valueCache))
-		{
-			// this disables field value caching between manager begin/end change
-			if (0 == this->manager->cache)
-				valueCache->evaluationCounter = cache.getLocationCounter();
-		}
+		if (this->core->evaluate(cache, *valueCache))
+			valueCache->evaluationCounter = cache.getLocationCounter();
 		else
-			valueCache = 0;
+			return nullptr;
 	}
 	return valueCache;
+}
+
+/** Caller is responsible for ensuring field is real-valued */
+inline const DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+{
+	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
+	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
+	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
+	{
+		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative) ||
+			this->core->evaluateDerivativeFiniteDifference(cache, *realValueCache, fieldDerivative))
+		{
+			derivativeValueCache->evaluationCounter = cache.getLocationCounter();
+		}
+		else
+			return nullptr;
+	}
+	return derivativeValueCache;
+}
+
+/** Caller is responsible for ensuring field is real-valued */
+inline const RealFieldValueCache *Computed_field::evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+{
+	const FieldDerivative *thisFieldDerivative = &fieldDerivative;
+	do
+	{
+		if (!this->evaluateDerivative(cache, *thisFieldDerivative))
+			return nullptr;
+		thisFieldDerivative = thisFieldDerivative->getLowerDerivative();
+	} while (thisFieldDerivative);
+	return RealFieldValueCache::cast(this->evaluate(cache));
 }
 
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
@@ -819,6 +846,20 @@ struct cmzn_region *Computed_field_manager_get_region(
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
+inline void Computed_field_core::setChanged()
+{
+	this->field->setChanged();
+}
+
+inline void Computed_field::setChanged()
+{
+	if ((this->manager) && (this->manager->owner))
+	{
+		this->manager->owner->setFieldModify();
+		MANAGED_OBJECT_CHANGE(Computed_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	}
+}
+
 /**
  * Record that field data has changed.
  * Notify clients if not caching changes.
@@ -828,15 +869,12 @@ const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 inline int Computed_field_changed(struct Computed_field *field)
 {
 	if (field)
-		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	{
+		field->setChanged();
+		return 1;
+	}
 	display_message(ERROR_MESSAGE, "Computed_field_changed.  Invalid argument(s)");
 	return 0;
-}
-
-inline void Computed_field_core::setChanged()
-{
-	Computed_field_changed(this->field);
 }
 
 /**

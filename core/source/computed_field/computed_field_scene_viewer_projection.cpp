@@ -113,7 +113,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -271,37 +271,19 @@ int Computed_field_scene_viewer_projection::evaluate(cmzn_fieldcache& cache, Fie
 			{
 				valueCache.values[i] = projection_matrix[i];
 			}
-			int number_of_xi = cache.getRequestedDerivatives();
-			if (number_of_xi)
-			{
-				for (int i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (int k = 0; k < number_of_xi; k++)
-					{
-						valueCache.derivatives[i*number_of_xi + k] = 0.0;
-					}
-				}
-				valueCache.derivatives_valid = 1;
-			}
-			else
-			{
-				valueCache.derivatives_valid = 0;
-			}
-		}
-		else
-		{
-			return 0;
+			return 1;
 		}
 	}
-	else
-	{
-		/* Just set everything to zero */
-		for (int i = 0 ; i < field->number_of_components ; i++)
-		{
-			valueCache.values[i] = 0.0;
-		}
-	}
-	return 1;
+	//else
+	//{
+	//	/* Just set everything to zero */
+	//	for (int i = 0 ; i < field->number_of_components ; i++)
+	//	{
+	//		valueCache.values[i] = 0.0;
+	//	}
+	//}
+	//return 1;
+	return 0;
 }
 
 /* return 1 if projection matrix requires an update */
@@ -561,7 +543,7 @@ that the computed field has changed.
 			core->scene_viewer = (struct Scene_viewer *)NULL;
 			if (field->manager)
 			{
-				Computed_field_changed(field);
+				field->setChanged();
 			}
 		}
 	}

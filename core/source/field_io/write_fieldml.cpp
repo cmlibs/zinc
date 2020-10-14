@@ -436,7 +436,7 @@ class FieldMLWriter
 public:
 	FieldMLWriter(struct cmzn_region *region, const char *locationIn, const char *filenameIn) :
 		region(cmzn_region_access(region)),
-		fe_region(cmzn_region_get_FE_region(this->region)),
+		fe_region(this->region->get_FE_region()),
 		location(locationIn),
 		filename(filenameIn),
 		fmlSession(Fieldml_Create(location, /*regionName*/"/")),
@@ -1238,8 +1238,7 @@ int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 
 int FieldMLWriter::getHighestMeshDimension() const
 {
-	FE_region *fe_region = cmzn_region_get_FE_region(this->region);
-	return FE_region_get_highest_dimension(fe_region);
+	return FE_region_get_highest_dimension(this->region->get_FE_region());
 }
 
 // Ensures the versions ensemble and labels have at least as many entries as the

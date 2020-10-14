@@ -75,7 +75,7 @@ private:
 		return new StringFieldValueCache();
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -99,7 +99,7 @@ private:
 int Computed_field_format_output::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	StringFieldValueCache &valueCache = StringFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		/* 2. Write out the source field values using the format_string */
@@ -208,7 +208,7 @@ cmzn_field *cmzn_fieldmodule_create_field_format_output(
 	cmzn_field *source_field, char *format_string)
 {
 	cmzn_field_id field = nullptr;
-	if (source_field && format_string)
+	if (source_field && source_field->isNumerical() && format_string)
 	{
 		if (source_field->number_of_components <= 4)
 		{

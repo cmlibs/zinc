@@ -1518,67 +1518,31 @@ by only one external object.
 	return (return_code);
 } /* FE_node_field_info_used_only_once */
 
-int FE_node_field_log_FE_field_change(
-	struct FE_node_field *node_field, void *fe_field_change_log_void)
-/*******************************************************************************
-LAST MODIFIED : 14 February 2003
+namespace {
 
-DESCRIPTION :
-Logs the field in <node_field> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
-{
-	int return_code;
-	struct CHANGE_LOG(FE_field) *fe_field_change_log;
-
-	ENTER(FE_node_field_log_FE_field_change);
-	if (node_field && (fe_field_change_log =
-		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void))
+	/** Log field in <node_field> as RELATED_OBJECT_CHANGED in FE_region. */
+	int FE_node_field_log_FE_field_change_related(
+		struct FE_node_field *node_field, void *fe_region_void)
 	{
-		return_code = CHANGE_LOG_OBJECT_CHANGE(FE_field)(fe_field_change_log,
-			node_field->field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		static_cast<FE_region *>(fe_region_void)->FE_field_change_related(node_field->field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_log_FE_field_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* FE_node_field_log_FE_field_change */
+}
 
-int FE_node_field_info_log_FE_field_changes(
-	struct FE_node_field_info *fe_node_field_info,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
+int FE_node_field_info_log_FE_field_change_related(
+	struct FE_node_field_info *fe_node_field_info, FE_region *fe_region)
 {
-	int return_code;
-
-	ENTER(FE_node_field_info_log_FE_field_changes);
-	if (fe_node_field_info && fe_field_change_log)
+	if (fe_node_field_info && fe_region)
 	{
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-			FE_node_field_log_FE_field_change, (void *)fe_field_change_log,
+		return FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+			FE_node_field_log_FE_field_change_related, static_cast<void *>(fe_region),
 			fe_node_field_info->node_field_list);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_info_log_FE_field_changes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_info_log_FE_field_changes */
+	display_message(ERROR_MESSAGE,
+		"FE_node_field_info_log_FE_field_change_related.  Invalid argument(s)");
+	return 0;
+}
 
 /**
  * Compare functions for listing struct FE_element_type_node_sequence in order:

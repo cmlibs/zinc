@@ -791,7 +791,7 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 {
 	cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-		cmzn_region_get_FE_region(region), domain_type);
+		region->get_FE_region(), domain_type);
 	if (fe_nodeset)
 		return new cmzn_nodeset(fe_nodeset);
 	return 0;
@@ -1271,7 +1271,7 @@ cmzn_nodesetchanges::~cmzn_nodesetchanges()
 cmzn_nodesetchanges *cmzn_nodesetchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && nodesetIn &&
-		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
+		(eventIn->getRegion()->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
 		return new cmzn_nodesetchanges(eventIn, nodesetIn);
 	return 0;
 }

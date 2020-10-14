@@ -1309,8 +1309,7 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 		if (field)
 		{
 			struct cmzn_region *temp_region = Computed_field_get_region(cmzn_field_image_base_cast(field));
-			MANAGER(Computed_field) *field_manager =
-				cmzn_region_get_Computed_field_manager(temp_region);
+			MANAGER(Computed_field) *field_manager = temp_region->getFieldManager();
 			if (field_manager)
 			{
 				image_texture->callback_id=

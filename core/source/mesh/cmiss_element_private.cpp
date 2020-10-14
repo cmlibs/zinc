@@ -1285,7 +1285,7 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 	if (fieldmodule && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		if (fe_region)
 		{
 			return cmzn_elementbasis::create(fe_region, dimension, function_type);
@@ -1300,7 +1300,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_mesh_id mesh = NULL;
 	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule));
+		FE_region *fe_region = cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region();
 		mesh = cmzn_mesh::create(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
 	}
 	return mesh;
@@ -1432,18 +1432,14 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
-	if (!(mesh) || (1 != order) || (term < 1) || (term > mesh->getDimension()))
+	FieldDerivativeMesh *fieldDerivative;
+	if ((mesh) && (1 <= order) && (order <= MAXIMUM_FIELD_DERIVATIVE_ORDER) &&
+		((fieldDerivative = mesh->get_FE_mesh()->getFieldDerivative(order))))
 	{
-		display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
-		return 0;
+		return cmzn_differentialoperator::create(fieldDerivative, term - 1);
 	}
-	cmzn_region *region = FE_region_get_cmzn_region(mesh->get_FE_mesh()->get_FE_region());
-	Field_derivative_element_xi *field_derivative_element_xi =
-		cmzn_region_get_field_derivative_element_xi(region, mesh->getDimension(), order);
-	cmzn_differentialoperator_id diffOp = cmzn_differentialoperator::create(field_derivative_element_xi, term - 1);
-	Field_derivative *tmp = field_derivative_element_xi;
-	Field_derivative::deaccess(tmp);
-	return diffOp;
+	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
+	return nullptr;
 }
 
 int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
@@ -2221,7 +2217,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
-		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_mesh_get_FE_region_internal(meshIn)))
+		(eventIn->getRegion()->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
 }

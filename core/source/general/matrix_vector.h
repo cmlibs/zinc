@@ -264,22 +264,16 @@ Calculates and returns in <result> the matrix product of 3x3 FE_value matrices
 <a> and <b>.
 ==============================================================================*/
 
-int cross_product_FE_value_vector3(FE_value *a,FE_value *b,FE_value *result);
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
+/**
+ * Calculates and returns in <result> the vector cross product of 2 3-component
+ * FE_value vectors <a> and <b>.
+ */
+int cross_product_FE_value_vector3(const FE_value *a, const FE_value *b, FE_value *result);
 
-DESCRIPTION :
-Calculates and returns in <result> the vector cross product of 2 3-component
-FE_value vectors <a> and <b>.
-==============================================================================*/
+/**
+ * Calculates and returns in <result> the vector cross product of 3 4-component
+ * FE_value vectors <a>, <b> and <c>.
+ */
+int cross_product_FE_value_vector4(const FE_value *a, const FE_value *b, const FE_value *c, FE_value *result);
 
-int cross_product_FE_value_vector4(FE_value *a,FE_value *b,FE_value *c,
-  FE_value *result);
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-Calculates and returns in <result> the vector cross product of 3 4-component
-FE_value vectors <a>, <b> and <c>.
-==============================================================================*/
 #endif /* !defined (MATRIX_VECTOR_H) */

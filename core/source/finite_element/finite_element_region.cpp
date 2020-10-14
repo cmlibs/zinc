@@ -142,7 +142,6 @@ bool FE_region_changes::propagateToDimension(int dimension)
 	return true;
 }
 
-
 /**
  * Tells parent region about changes to fields, nodes and elements.
  * No messages sent if change level is positive, or no changes have been made.
@@ -187,7 +186,7 @@ void FE_region::update()
 
 cmzn_fielditerator *FE_region::create_fielditerator()
 {
-	return cmzn_region_create_fielditerator(this->cmiss_region);
+	return this->cmiss_region->createFielditerator();
 }
 
 /*
@@ -208,8 +207,8 @@ FE_region_bases_and_shapes::~FE_region_bases_and_shapes()
 	DESTROY(LIST(FE_element_shape))(&this->element_shape_list);
 }
 
-FE_region::FE_region(FE_region *base_fe_region) :
-	cmiss_region(0),
+FE_region::FE_region(cmzn_region *region, FE_region *base_fe_region) :
+	cmiss_region(region),
 	fe_time(CREATE(FE_time_sequence_package)()),
 	fe_field_list(CREATE(LIST(FE_field))()),
 	fe_field_info(0),
@@ -273,6 +272,11 @@ FE_region::~FE_region()
 	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
 }
 
+void FE_region::clearRegionPrivate()
+{
+	this->cmiss_region = nullptr;
+}
+
 /** Private: assumes current change log pointer is null or invalid */
 void FE_region::createFieldChangeLog()
 {
@@ -323,11 +327,6 @@ they belong to.
 Global functions
 ----------------
 */
-
-struct FE_region *FE_region_create(struct FE_region *base_fe_region)
-{
-	return new FE_region(base_fe_region);
-}
 
 /**
  * Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
@@ -1083,7 +1082,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 						{
 							if (FE_element_smooth_FE_field(element, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
 							{
-								fe_mesh->elementChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
+								fe_mesh->elementFieldChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED, fe_field);  // redundant?
 							}
 							else
 							{
@@ -1106,7 +1105,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 					if (FE_field_has_parameters_at_node(fe_field, node))
 					{
 						if (FE_node_smooth_FE_field(node, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
-							fe_nodeset->nodeFieldChange(node, fe_field);
+							fe_nodeset->nodeFieldChange(node, fe_field);  // redundant, probably
 						else
 						{
 							return_code = 0;
@@ -1183,13 +1182,6 @@ struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
 		}
 	}
 	return make_FE_basis(basisType, fe_region->bases_and_shapes->getBasisManager());
-}
-
-void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
-	struct cmzn_region *cmiss_region)
-{
-	if (fe_region)
-		fe_region->cmiss_region = cmiss_region;
 }
 
 struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region)

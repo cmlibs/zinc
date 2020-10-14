@@ -66,7 +66,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -86,7 +86,7 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
 	return false;
 }
 
-/***************************************************************************//**
+/**
  * Compute the three 3-component fibre axes in the order fibre, sheet, normal from
  * the source fibre and coordinate fields. Function reads the coordinate field and
  * derivatives in rectangular cartesian coordinates. The 1 to 3 fibre angles in
@@ -96,7 +96,7 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
  * 3 = sheet angle, rotation of the sheet about the fibre vector.
  * coordinates from the source_field values in an arbitrary
  * <element_dimension> may be 2 or 3 only.
- * Derivatives may not be computed for this type of Computed_field [yet].
+ * Derivatives may not be computed for this type of field yet.
  */
 int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
@@ -123,12 +123,14 @@ int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 		cmzn_field_id fibre_field = getSourceField(0);
 		cmzn_field_id coordinate_field = getSourceField(1);
-		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
-		RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
+		const RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluate(*workingCache));
+		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
 		FE_value x[3], dx_dxi[9];
-		if (fibreCache && coordinateCache && coordinateCache->derivatives_valid &&
+		if (fibreCache && coordinateCache && coordinateDerivativeCache &&
 			convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
-				coordinate_field->number_of_components, coordinateCache->values, coordinateCache->derivatives,
+				coordinate_field->number_of_components, coordinateCache->values, coordinateDerivativeCache->values,
 				top_level_element_dimension, x, dx_dxi))
 		{
 			FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha,

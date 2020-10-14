@@ -361,7 +361,7 @@ private:
 
 	bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
@@ -407,7 +407,7 @@ time is supplied in the workingCache
 		{
 			xi[k] = 0.0;
 		}
-		element_dimension = get_FE_element_dimension(element);
+		element_dimension = element->getDimension();
 		coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 		{
@@ -431,6 +431,7 @@ time is supplied in the workingCache
 		{
 			xi_vector[k] = final_xi[k] - initial_xi[k];
 		}
+		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		for (m = 0 ; m < number_of_gauss_points ; m++)
 		{
 			final_position = gauss_positions[number_of_gauss_points - 1][m];
@@ -442,34 +443,38 @@ time is supplied in the workingCache
 			}
 			/* Integrand elements should always be top level */
 			workingCache.setMeshLocation(element, xi);
-			RealFieldValueCache* coordinateValueCache = coordinate_field->evaluateWithDerivatives(workingCache, element_dimension);
-			RealFieldValueCache* integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(workingCache));
-			if (magnitude_coordinates)
+			const DerivativeValueCache* coordinateDerivativeCache = coordinate_field->evaluateDerivative(workingCache, fieldDerivative);
+			const RealFieldValueCache* integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(workingCache));
+			if ((coordinateDerivativeCache) && (integrandValueCache))
 			{
-				for (k = 0 ; k < element_dimension ; k++)
+				const FE_value *coordinateDerivatives = coordinateDerivativeCache->values;
+				if (magnitude_coordinates)
 				{
-					dsdxi = 0.0;
-					for (j = 0 ; j < coordinate_dimension ; j++)
+					for (k = 0; k < element_dimension; k++)
 					{
-						dsdxi +=
-							coordinateValueCache->derivatives[j * element_dimension + k] *
-							coordinateValueCache->derivatives[j * element_dimension + k];
-					}
-					dsdxi = sqrt(dsdxi);
-					values[0] += integrandValueCache->values[0] *
-						xi_vector[k] * dsdxi *
-						gauss_weights[number_of_gauss_points - 1][m];
-				}
-			}
-			else
-			{
-				for (k = 0 ; k < element_dimension ; k++)
-				{
-					for (j = 0 ; j < coordinate_dimension ; j++)
-					{
-						values[j] += integrandValueCache->values[0] * xi_vector[k] *
-							coordinateValueCache->derivatives[j * element_dimension + k] *
+						dsdxi = 0.0;
+						for (j = 0; j < coordinate_dimension; j++)
+						{
+							dsdxi +=
+								coordinateDerivatives[j * element_dimension + k] *
+								coordinateDerivatives[j * element_dimension + k];
+						}
+						dsdxi = sqrt(dsdxi);
+						values[0] += integrandValueCache->values[0] *
+							xi_vector[k] * dsdxi *
 							gauss_weights[number_of_gauss_points - 1][m];
+					}
+				}
+				else
+				{
+					for (k = 0; k < element_dimension; k++)
+					{
+						for (j = 0; j < coordinate_dimension; j++)
+						{
+							values[j] += integrandValueCache->values[0] * xi_vector[k] *
+								coordinateDerivatives[j * element_dimension + k] *
+								gauss_weights[number_of_gauss_points - 1][m];
+						}
 					}
 				}
 			}
@@ -1158,12 +1163,10 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	FE_value time = cache.getTime();
 
-	double dsdxi;
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int coordinate_dimension, element_dimension, i, j, k,
 		top_level_element_dimension = -1;
-	Computed_field *coordinate_field, *integrand;
 
 	int return_code = 1;
 	const Field_location_element_xi *element_xi_location;
@@ -1174,7 +1177,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		FE_element* element = element_xi_location->get_element();
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
 		const FE_value* xi = element_xi_location->get_xi();
-		int number_of_derivatives = cache.getRequestedDerivatives();
 
 		Computed_field_element_integration_mapping *mapping;
 
@@ -1234,8 +1236,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				return_code=0;
 			}
 		}
-		integrand = field->source_fields[0];
-		coordinate_field = field->source_fields[1];
+		cmzn_field *integrand = field->source_fields[0];
+		cmzn_field *coordinate_field = field->source_fields[1];
 		coordinate_dimension =
 			cmzn_field_get_number_of_components(field->source_fields[1]);
 		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
@@ -1265,52 +1267,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 					/*number_of_gauss_points*/2, workingCache, field->source_fields[0],
 					magnitude_coordinates, field->source_fields[1],
 					valueCache.values);
-				if (number_of_derivatives)
-				{
-					// Evaluate the fields at this location
-					// use the normal cache if already on a top level element, otherwise use extra cache
-					cmzn_fieldcache *useCache = &cache;
-					if (top_level_element != element)
-					{
-						useCache = &workingCache;
-						useCache->setMeshLocation(top_level_element, top_level_xi);
-					}
-					RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(*useCache));
-					RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(
-						coordinate_field->evaluateWithDerivatives(*useCache, top_level_element_dimension));
-					if (magnitude_coordinates)
-					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							dsdxi = 0.0;
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								dsdxi +=
-									coordinateValueCache->derivatives[j * element_dimension + k] *
-									coordinateValueCache->derivatives[j * element_dimension + k];
-							}
-							dsdxi = sqrt(dsdxi);
-							valueCache.derivatives[k] = integrandValueCache->values[0] * dsdxi;
-						}
-					}
-					else
-					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								valueCache.derivatives[j * element_dimension + k] =
-									integrandValueCache->values[0] *
-									coordinateValueCache->derivatives[j * element_dimension + k];
-							}
-						}
-					}
-					valueCache.derivatives_valid = 1;
-				}
-				else
-				{
-					valueCache.derivatives_valid = 0;
-				}
 			}
 			else
 			{
@@ -1364,7 +1320,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				{
 					valueCache.values[i] = mapping->values[i];
 				}
-				valueCache.derivatives_valid = 0;
 			}
 			else
 			{

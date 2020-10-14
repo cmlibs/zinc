@@ -441,7 +441,7 @@ public:
 		this->clearRegion();
 		this->region = cmzn_region_access(regionIn);
 		this->fieldmodule = cmzn_region_get_fieldmodule(this->region);
-		this->fe_region = cmzn_region_get_FE_region(this->region);
+		this->fe_region = this->region->get_FE_region();
 		this->clearGroup();
 		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
 			this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));

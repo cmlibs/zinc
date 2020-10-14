@@ -73,7 +73,7 @@ bool Computed_field_compose::is_defined_at_location(cmzn_fieldcache& cache)
 int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (coordinateValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
@@ -93,7 +93,7 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 		{
 			/* calculate the third source_field at this new location */
 			extraCache.setMeshLocation(compose_element, compose_xi);
-			RealFieldValueCache *calculateValueCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(extraCache));
+			const RealFieldValueCache *calculateValueCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(extraCache));
 			if (calculateValueCache)
 			{
 				return_code = 1;
@@ -120,7 +120,6 @@ int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& in
 				return_code = 0;
 			}
 		}
-		valueCache.derivatives_valid = 0;
 	}
 	return return_code;
 }

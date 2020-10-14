@@ -327,11 +327,12 @@ bool cmzn_field_evaluate_boolean(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
 
 /***************************************************************************//**
- * Temporary function to allow derivatives to be evaluated with value.
- * Currently only needed for evaluation of derivatives on CAD surfaces.
+ * Temporary function to allow first derivatives to be evaluated with value.
  * @param number_of_derivatives  Expected number of derivatives for domain.
  * @param derivatives  Array of size number_of_values*number_of_derivatives.
  * IMPORTANT: Not approved for external API!
+ * @deprecated
+ * Try to remove its use as soon as possible.
  */
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values,

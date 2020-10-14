@@ -54,7 +54,7 @@ public:
 		{
 			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
 			FE_region *fe_region = fe_nodeset->get_FE_region();
-			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
+			if (Computed_field_get_region(parent->source_fields[0])->get_FE_region() == fe_region)
 				return true;
 		}
 		return false;
@@ -85,7 +85,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int has_multiple_times()
 	{
@@ -162,10 +162,10 @@ int Computed_field_nodal_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCach
 	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 	extraCache.setNode(this->lookup_node);  // must set node as extraCache is shared
 	extraCache.setTime(cache.getTime());
-	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 	if (sourceValueCache)
 	{
-		valueCache.copyValuesZeroDerivatives(*sourceValueCache);
+		valueCache.copyValues(*sourceValueCache);
 		return 1;
 	}
 	return 0;
@@ -280,7 +280,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
 	cmzn_field *field = nullptr;
 	if (source_field && source_field->isNumerical() && lookup_node &&
 		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
-			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
+			cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region()))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -345,7 +345,7 @@ public:
 		{
 			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
 			FE_region *fe_region = fe_nodeset->get_FE_region();
-			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
+			if (Computed_field_get_region(parent->source_fields[0])->get_FE_region() == fe_region)
 				return true;
 		}
 		return false;
@@ -373,7 +373,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -471,7 +471,7 @@ int Computed_field_quaternion_SLERP::evaluate(cmzn_fieldcache& cache, FieldValue
 		FE_value normalised_t = xi;
 		// get the starting quaternion
 		extraCache.setTime(lower_time);
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		FE_value old_w = sourceValueCache->values[0];
 		FE_value old_x = sourceValueCache->values[1];
 		FE_value old_y = sourceValueCache->values[2];
@@ -627,7 +627,7 @@ cmzn_field *cmzn_fieldmodule_create_field_quaternion_SLERP(
 	if (source_field && (4 == source_field->number_of_components) &&
 		quaternion_SLERP_node &&
 			(FE_node_get_FE_nodeset(quaternion_SLERP_node)->get_FE_region() ==
-			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule))))
+			cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region()))
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,

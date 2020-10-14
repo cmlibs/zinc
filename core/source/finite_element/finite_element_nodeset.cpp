@@ -17,6 +17,7 @@
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/debug.h"
 #include "general/message.h"
@@ -343,6 +344,7 @@ void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change)
 	if (this->fe_region && this->changeLog)
 	{
 		this->changeLog->setIndexChange(nodeIndex, change);
+		this->fe_region->FE_region_change();
 		this->fe_region->update();
 	}
 }
@@ -365,10 +367,10 @@ void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change, FE_node *field_i
 			FE_node_get_FE_node_field_info(field_info_node);
 		if (temp_fe_node_field_info != this->last_fe_node_field_info)
 		{
-			FE_node_field_info_log_FE_field_changes(temp_fe_node_field_info,
-				fe_region->fe_field_changes);
+			FE_node_field_info_log_FE_field_change_related(temp_fe_node_field_info, fe_region);
 			this->last_fe_node_field_info = temp_fe_node_field_info;
 		}
+		this->fe_region->FE_region_change();
 		this->fe_region->update();
 	}
 }
@@ -382,8 +384,7 @@ void FE_nodeset::nodeFieldChange(FE_node *node, FE_field *fe_field)
 	if (this->fe_region && this->changeLog)
 	{
 		this->changeLog->setIndexChange(get_FE_node_index(node), DS_LABEL_CHANGE_TYPE_RELATED);
-		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_region->fe_field_changes,
-			fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->fe_region->update();
 	}
 }

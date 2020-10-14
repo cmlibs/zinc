@@ -160,7 +160,7 @@ public:
 		{
 			cmzn_fieldmodule_define_all_faces(this->destination_fieldmodule);
 			char *name = cmzn_field_get_name(this->source_field);
-			this->destination_fe_field = FE_region_get_FE_field_from_name(cmzn_region_get_FE_region(this->destination_region), name);
+			this->destination_fe_field = FE_region_get_FE_field_from_name(this->destination_region->get_FE_region(), name);
 			cmzn_deallocate(name);
 			name = 0;
 			cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(this->destination_mesh);

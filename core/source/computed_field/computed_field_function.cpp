@@ -63,7 +63,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -107,18 +107,16 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	cmzn_field_id sourceField = getSourceField(0);
 	cmzn_field_id resultField = getSourceField(1);
 	cmzn_field_id referenceField = getSourceField(2);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 	if (sourceCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
-		int number_of_xi = cache.getRequestedDerivatives();
 		if (sourceField->number_of_components == referenceField->number_of_components)
 		{
-			RealFieldValueCache *resultCache = 0;
 			extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
-			resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
+			const RealFieldValueCache *resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 			if (resultCache)
 			{
 				valueCache.copyValues(*resultCache);
@@ -128,29 +126,13 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		else
 		{
 			/* Apply the scalar function operation to each source field component */
-			valueCache.derivatives_valid = sourceCache->derivatives_valid;
 			for (int i = 0; i < field->number_of_components; i++)
 			{
-				RealFieldValueCache *resultCache = 0;
 				extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
-				resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
+				const RealFieldValueCache *resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 				if (!resultCache)
 					return 0;
-				valueCache.values[i] = resultCache->values[0];
-				if (valueCache.derivatives_valid)
-				{
-					if (resultCache->derivatives_valid)
-					{
-						for (int j=0;j<number_of_xi;j++)
-						{
-							valueCache.derivatives[i*number_of_xi+j] = resultCache->derivatives[j];
-						}
-					}
-					else
-					{
-						valueCache.derivatives_valid = 0;
-					}
-				}
+				valueCache.values[i] = *(resultCache->values);
 			}
 			return 1;
 		}

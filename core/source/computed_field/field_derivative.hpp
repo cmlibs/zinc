@@ -2,9 +2,9 @@
  * FILE : field_derivative.hpp
  *
  * Field derivative defining order and type of derivative operator to apply
- * to any given field. Each Field_derivative has a unique index within its
+ * to any given field. Each FieldDerivative has a unique index within its
  * owning region for efficient look up in field cache. Object describes how to
- * evaluate derivative, including links to next lower Field_derivative so
+ * evaluate derivative, including links to next lower FieldDerivative so
  * can evaluate downstream derivatives using rules.
  */
 /* OpenCMISS-Zinc Library
@@ -17,7 +17,9 @@
 
 #include "opencmiss/zinc/types/regionid.h"
 
-class Field_derivative
+class FE_mesh;
+
+class FieldDerivative
 {
 	friend struct cmzn_region;
 public:
@@ -30,108 +32,112 @@ public:
 
 protected:
 	cmzn_region *region;  // non-accessed pointer to owning region
-	Field_derivative *lower_derivative;  // next lower field derivative, accessed
-	int cache_index;  // unique index of values in field value cache for region; 0 == value
+	FieldDerivative *lowerDerivative;  // next lower field derivative, accessed
+	int cacheIndex;  // unique index of values in field value cache for region; 0 == value
 	int order;  // total order of derivative
 	Type type;  // store for efficient type checking
 	int access_count;
 
-	Field_derivative(int order_in, Type type_in) :
-		region(0),
-		lower_derivative(0),
-		cache_index(-1),
-		order(order_in),
-		type(type_in),
-		access_count(1)
-	{}
+	/**
+	 * @param region  Owning region for this derivative.
+	 * @param lowerDerivative  Must be supplied if orderIn > 1.
+	 */
+	FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn, FieldDerivative *lowerDerivative);
 
 private:
-	Field_derivative();  // not implemented for abstract base class
+	FieldDerivative(); // not implemented
+	FieldDerivative(const FieldDerivative &source); // not implemented
+	FieldDerivative& operator=(const FieldDerivative &source); // not implemented
 
 	// should only be called by owning region
-	void set_cache_index(int cache_index_in)
+	// default arguments clear the region and cache index
+	void setRegionAndCacheIndex(cmzn_region *regionIn=nullptr, int cacheIndexIn=-1)
 	{
-		this->cache_index = cache_index_in;
-	}
-
-	// should only be called by owning region; take over access of argument
-	void set_lower_derivative(Field_derivative *lower_derivative_in)
-	{
-		this->lower_derivative = lower_derivative_in;
-	}
-
-	// should only be called by owning region
-	void set_region(cmzn_region *region_in)
-	{
-		this->region = region_in;
+		this->region = regionIn;
+		this->cacheIndex = cacheIndexIn;
 	}
 
 public:
 
 	// abstract virtual destructor declaration
-	virtual ~Field_derivative();
+	virtual ~FieldDerivative();
 
-	int get_cache_index() const
+	int getCacheIndex() const
 	{
-		return this->cache_index;
+		return this->cacheIndex;
 	}
 
 	/** @return  Non-accessed lower derivative or nullptr if none == value. */
-	Field_derivative *get_lower_derivative() const
+	const FieldDerivative *getLowerDerivative() const
 	{
-		return this->lower_derivative;
+		return this->lowerDerivative;
 	}
 
-	int get_order() const
+	int getOrder() const
 	{
 		return this->order;
 	}
 
-	cmzn_region *get_region() const
+	/** @return  Non-accessed owning region, or nullptr if invalid. */
+	cmzn_region *getRegion() const
 	{
 		return this->region;
 	}
 
 	/** @return  Number of individually evaluatable terms. 0 if variable */
-	virtual int get_term_count() const = 0;
+	virtual int getTermCount() const = 0;
 
-	Type get_type() const
+	Type getType() const
 	{
 		return this->type;
 	}
 
-	Field_derivative *access()
+	FieldDerivative *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Field_derivative* &field_derivative);
+	static int deaccess(FieldDerivative* &field_derivative);
 };
 
-class Field_derivative_element_xi : public Field_derivative
+/** Derivative w.r.t. mesh element xi */
+class FieldDerivativeMesh : public FieldDerivative
 {
+	friend class FE_mesh;
 private:
-	int element_dimension;  // revise when mesh objects properly exist
+	FE_mesh *mesh;  // not accessed as it owns this object
+	const int elementDimension;
+
+	void clearMesh()
+	{
+		this->mesh = nullptr;
+	}
+
+	FieldDerivativeMesh(); // not implemented
+	FieldDerivativeMesh(const FieldDerivativeMesh &source); // not implemented
+	FieldDerivativeMesh& operator=(const FieldDerivativeMesh &source); // not implemented
 
 public:
-	Field_derivative_element_xi(int element_dimension_in, int order_in) :
-		Field_derivative(order_in, TYPE_ELEMENT_XI),
-		element_dimension(element_dimension_in)
+	FieldDerivativeMesh(FE_mesh *meshIn, int orderIn, FieldDerivative *lowerDerivative);
+
+	int getElementDimension() const
 	{
+		return this->elementDimension;
 	}
 
-	int get_element_dimension() const
+	/** @return  Non-accessed FE_mesh *, or nullptr if invalidated */
+	FE_mesh *getMesh() const
 	{
-		return this->element_dimension;
+		return this->mesh;
 	}
 
-	virtual int get_term_count() const
+	virtual int getTermCount() const
 	{
-		int term_count = this->element_dimension;
-		for (int d = 1; d < this->element_dimension; ++d)
-			term_count *= this->element_dimension;
-		return term_count;
+		int termCount = this->elementDimension;
+		for (int d = 1; d < this->order; ++d)
+			termCount *= this->elementDimension;
+		return termCount;
 	}
 
 };

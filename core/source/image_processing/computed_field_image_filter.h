@@ -113,7 +113,7 @@ public:
 	template < class PixelType >
 	inline void setPixelValues( PixelType& pixel, ZnReal *values );
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 protected:
 
@@ -1036,7 +1036,7 @@ for subsequent operations.
 						}
 
 						field_cache->setMeshLocation(element, pixel_xi);
-						RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
+						const RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
 						if (valueCache)
 						{
 							generateInput.Set( valueCache->values[0] );
@@ -1068,7 +1068,7 @@ for subsequent operations.
 						}
 
 						field_cache->setFieldReal(reference_field, dimension, pixel_xi);
-						RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
+						const RealFieldValueCache *valueCache = RealFieldValueCache::cast(sourceField->evaluate(*field_cache));
 						if (valueCache)
 						{
 							generateInput.Set( valueCache->values[0] );

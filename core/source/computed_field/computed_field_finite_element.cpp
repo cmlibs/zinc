@@ -137,13 +137,12 @@ public:
 		FE_field *fe_field, cmzn_element *element, FE_value time,
 		cmzn_element *top_level_element)
 	{
-		// GRC remove check?
-		if (!(fe_field) || (!element))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_evaluation_cache::get_element_field_evaluation.  Invalid arguments.");
-			return 0;
-		}
+		//if (!(fe_field) || (!element))
+		//{
+		//	display_message(ERROR_MESSAGE,
+		//		"FE_element_field_evaluation_cache::get_element_field_evaluation.  Invalid arguments.");
+		//	return 0;
+		//}
 		// can't trust cached element field values if between manager begin/end change
 		// and this field has been modified.
 		const bool field_changed = FE_field_has_cached_changes(fe_field);
@@ -381,7 +380,9 @@ private:
 		return new FiniteElementRealFieldValueCache(field->number_of_components, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -720,7 +721,7 @@ The FE_field must also not be in use.
 int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-	enum Value_type value_type = get_FE_field_value_type(fe_field);
+	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
 	const Field_location_element_xi* element_xi_location;
 	const Field_location_node *node_location;
 	switch (value_type)
@@ -790,10 +791,8 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
-				FE_value time = element_xi_location->get_time();
+				const FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
-				int number_of_derivatives = cache.getRequestedDerivatives();
-
 				FE_element_field_evaluation *element_field_evaluation =
 					feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
 						fe_field, element, time, top_level_element);
@@ -808,39 +807,16 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 							return_code = element_field_evaluation->evaluate_real(
 								/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 								/*derivative_order*/0, feValueCache.values);
-							if (return_code && number_of_derivatives)
-							{
-								return_code = element_field_evaluation->evaluate_real(
-									/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-									/*derivative_order*/1, feValueCache.derivatives);
-								feValueCache.derivatives_valid = (return_code != 0);
-							}
-							else
-							{
-								feValueCache.derivatives_valid = 0;
-							}
 						} break;
 						case INT_VALUE:
 						{
-							/* no derivatives for this value_type */
-							feValueCache.derivatives_valid=0;
-							if (number_of_derivatives)
+							int *int_values = feValueCache.int_values.data();
+							return_code = element_field_evaluation->evaluate_int(
+								/*component_number*/-1, xi, int_values);
+							const int componentCount = field->number_of_components;
+							for (int c = 0; c < componentCount; ++c)
 							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_finite_element::evaluate.  "
-									"Derivatives not defined for integer fields");
-								return_code = 0;
-							}
-							else
-							{
-								int *int_values = feValueCache.int_values.data();
-								return_code = element_field_evaluation->evaluate_int(
-									/*component_number*/-1, xi, int_values);
-								const int componentCount = field->number_of_components;
-								for (int c = 0; c < componentCount; ++c)
-								{
-									feValueCache.values[c] = static_cast<FE_value>(int_values[c]);
-								}
+								feValueCache.values[c] = static_cast<FE_value>(int_values[c]);
 							}
 						} break;
 						default:
@@ -863,7 +839,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				int result = CMZN_ERROR_GENERAL;
 				const int componentCount = field->number_of_components;
 				cmzn_node *node = node_location->get_node();
-				FE_value time = node_location->get_time();
+				const FE_value time = node_location->get_time();
 				switch (value_type)
 				{
 				case DOUBLE_VALUE:
@@ -919,8 +895,6 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 						Value_type_string(value_type));
 				} break;
 				}
-				/* No derivatives at node (at least at the moment!) */
-				feValueCache.derivatives_valid = 0;
 				return_code = (result == CMZN_OK) ? 1 : 0;
 			}
 			else
@@ -930,6 +904,33 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		} break;
 	}
 	return return_code;
+}
+
+int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// derivative must be w.r.t. mesh which owns this element
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
+		&& ((fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
+		&& (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh())))
+	{
+		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
+		FE_value *derivatives = feValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value* xi = element_xi_location->get_xi();
+		FE_element_field_evaluation *element_field_evaluation =
+			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
+				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
+				element_xi_location->get_top_level_element());
+		if ((element_field_evaluation) &&
+			element_field_evaluation->evaluate_real(
+				/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
+				fieldDerivative.getOrder(), derivatives))
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
@@ -1110,9 +1111,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 			if (elementFieldChange)
 			{
 				// change notification
-				element->getMesh()->get_FE_region()->FE_field_change(this->fe_field,
-					CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-				element->getMesh()->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_RELATED); // includes update
+				element->getMesh()->elementFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_RELATED, this->fe_field);
 			}
 		}
 	}
@@ -1207,8 +1206,6 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	{
 		result = FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
-	if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
-		valueCache.derivatives_valid = 0;
 	return result;
 }
 
@@ -1391,7 +1388,7 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	if (field_module && fe_field)
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
@@ -1440,7 +1437,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 	cmzn_field_id field = 0;
 	// cache changes to ensure FE_field not automatically wrapped already
 	cmzn_fieldmodule_begin_change(field_module);
-	FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module));
+	FE_region *fe_region = cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region();
 	// ensure FE_field and Computed_field have same name
 	char *field_name = cmzn_fieldmodule_get_field_name(field_module);
 	bool no_default_name = (0 == field_name);
@@ -1746,7 +1743,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1764,19 +1763,11 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
-		/* derivatives are always zero for this type, hence always calculated */
-		int element_dimension = element->getDimension();
-		for (int i = 0; i < element_dimension; i++)
-		{
-			valueCache.derivatives[i] = 0.0;
-		}
-		valueCache.derivatives_valid = 1;
 	}
 	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
-		valueCache.values[0] = (FE_value)get_FE_node_identifier(node);
-		valueCache.derivatives_valid = 0;
+		valueCache.values[0] = static_cast<FE_value>(get_FE_node_identifier(node));
 	}
 	else
 	{
@@ -1784,6 +1775,13 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+int Computed_field_cmiss_number::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// assume all derivatives are zero
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 int Computed_field_cmiss_number::list()
@@ -1927,7 +1925,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1954,7 +1952,6 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	{
 		valueCache.values[0] = 0;
 	}
-	valueCache.derivatives_valid = 0;
 	return 1;
 }
 
@@ -2093,7 +2090,7 @@ private:
 		return new MultiTypeRealFieldValueCache(field->number_of_components);
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -2266,8 +2263,6 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 				Value_type_string(value_type));
 		} break;
 		}
-		/* No derivatives at node (at least at the moment!) */
-		valueCache.derivatives_valid = 0;
 		return_code = ((result == CMZN_OK) || (result == CMZN_WARNING_PART_DONE)) ? 1 : 0;
 	}
 	else
@@ -2614,7 +2609,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -2633,19 +2628,18 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	if (!element_xi_location)
 		return 0;
 	cmzn_element *element = element_xi_location->get_element();
-	if (1 != element->getDimension())
-		return 0;
 	FE_mesh *fe_mesh = element->getMesh();
-	if (!fe_mesh)
+	if ((!fe_mesh) || (1 != fe_mesh->getDimension()))
 		return 0;
 	FE_mesh *parentMesh = fe_mesh->getParentMesh();
 	if (!parentMesh)
 		return 0;
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
-	RealFieldValueCache *sourceValueCache;
+	const RealFieldValueCache *sourceValueCache;
+	const FieldDerivativeMesh& fieldDerivative = *fe_mesh->getFieldDerivative(/*order*/1);
 	if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
-		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(cache, 1));
+		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
 	else
 		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 	if (!sourceValueCache)
@@ -2668,13 +2662,17 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	RealFieldValueCache parent2SourceValueCache(numberOfComponents);
 	RealFieldValueCache *parentSourceValueCaches[2] =
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
+	const FieldDerivativeMesh& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
+	for (int i = 0; i < 2; ++i)
+		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative)))
+			return 0;
 	const FE_value *elementToParentsXi[2];
 	int qualifyingParents = 0;
 	for (int i = 0; (i < parentsCount) && (qualifyingParents < 2); ++i)
 	{
 		cmzn_element *parent = parentMesh->getElement(parents[i]);
 		if (!parent)
-		  continue;
+			continue;
 		int face_number = parentMesh->getElementFaceNumber(parents[i], elementIndex);
 		FE_element_shape *parentShape = get_FE_element_shape(parent);
 		const FE_value *elementToParentXi = get_FE_element_shape_face_to_element(parentShape, face_number);
@@ -2688,21 +2686,21 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		extraCache.setMeshLocation(parent, parentXi);
 		if (conditionalField)
 		{
-			RealFieldValueCache *conditionalValueCache = RealFieldValueCache::cast(conditionalField->evaluate(extraCache));
+			const RealFieldValueCache *conditionalValueCache = RealFieldValueCache::cast(conditionalField->evaluate(extraCache));
 			if ((!conditionalValueCache) || (0.0 == conditionalValueCache->values[0]))
 				continue;
 		}
-		RealFieldValueCache *parentSourceValueCache =
-			RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(extraCache, 2));
+		const RealFieldValueCache *parentSourceValueCache =
+			RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(extraCache, parentFieldDerivative));
 		if (!parentSourceValueCache)
 			continue;
-		parentSourceValueCaches[qualifyingParents]->copyValues(*parentSourceValueCache);
+		parentSourceValueCaches[qualifyingParents]->copyValuesAndDerivatives(*parentSourceValueCache);
 
 		// face-to-element map matches either xi or (1.0 - xi), try latter and see which is closer to line value
 		parentXi[0] = elementToParentXi[0] + elementToParentXi[1]*(1.0 - xi);
 		parentXi[1] = elementToParentXi[2] + elementToParentXi[3]*(1.0 - xi);
 		extraCache.setMeshLocation(parent, parentXi);
-		parentSourceValueCache = RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(extraCache, 2));
+		parentSourceValueCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(extraCache, parentFieldDerivative));
 
 		FE_value sqdiff1 = 0.0, sqdiff2 = 0.0;
 		for (int n = 0; n < numberOfComponents; ++n)
@@ -2713,7 +2711,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 			sqdiff2 += diff2*diff2;
 		}
 		if (sqdiff2 < sqdiff1)
-			parentSourceValueCaches[qualifyingParents]->copyValues(*parentSourceValueCache);
+			parentSourceValueCaches[qualifyingParents]->copyValuesAndDerivatives(*parentSourceValueCache);
 		elementToParentsXi[qualifyingParents] = elementToParentXi;
 		++qualifyingParents;
 	}
@@ -2722,38 +2720,38 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		for (int p = 0; p < 2; ++p)
 		{
 			RealFieldValueCache& parentSourceValueCache = *(parentSourceValueCaches[p]);
+			const FE_value *parentDerivatives = parentSourceValueCache.getDerivativeValueCache(parentFieldDerivative)->values;
 			const FE_value *elementToParentXi = elementToParentsXi[p];
 			if (0.0 == elementToParentXi[1])
 			{
 				// parent lateral direction = xi1;
 				if (0.0 == elementToParentXi[0]) // away from edge
 					for (int n = 0; n < numberOfComponents; ++n)
-						parentSourceValueCache.values[n] = parentSourceValueCache.derivatives[n*2];
+						parentSourceValueCache.values[n] = parentDerivatives[n*2];
 				else
 					for (int n = 0; n < numberOfComponents; ++n)
-						parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2];
+						parentSourceValueCache.values[n] = -parentDerivatives[n*2];
 			}
 			else if (0.0 == elementToParentXi[3])
 			{
 				// parent lateral direction = xi2;
 				if (0.0 == elementToParentXi[2]) // away from edge
 					for (int n = 0; n < numberOfComponents; ++n)
-						parentSourceValueCache.values[n] = parentSourceValueCache.derivatives[n*2 + 1];
+						parentSourceValueCache.values[n] = parentDerivatives[n*2 + 1];
 				else
 					for (int n = 0; n < numberOfComponents; ++n)
-						parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2 + 1];
+						parentSourceValueCache.values[n] = -parentDerivatives[n*2 + 1];
 			}
 			else
 			{
 				// simplex - get derivative w.r.t. extra barycentric coordinate: 1 - xi1 - xi2
 				for (int n = 0; n < numberOfComponents; ++n)
-					parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2]
-						- parentSourceValueCache.derivatives[n*2 + 1];
+					parentSourceValueCache.values[n] = -parentDerivatives[n*2] - parentDerivatives[n*2 + 1];
 			}
 			if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
 			{
 				// requires source field to have 3 components
-				const FE_value *dx_dxi1 = sourceValueCache->derivatives;
+				const FE_value *dx_dxi1 = sourceValueCache->getDerivativeValueCache(fieldDerivative)->values;
 				const FE_value dx_dxi2[3] =
 				{
 					parentSourceValueCache.values[0],
@@ -2788,7 +2786,6 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		for (int n = 0; n < numberOfComponents; ++n)
 			valueCache.values[n] = 0.0;
 	}
-	valueCache.derivatives_valid = 0;
 	return 1;
 }
 
@@ -2978,7 +2975,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -3039,14 +3036,14 @@ int Computed_field_embedded::has_numerical_components()
 int Computed_field_embedded::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	// assumes mesh-location valued fields all create MeshLocationFieldValueCache
-	MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (meshLocationValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
 		extraCache.setTime(cache.getTime());
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			valueCache.copyValues(*sourceValueCache);
@@ -3227,7 +3224,7 @@ public:
 		if (search_mode_in != search_mode)
 		{
 			search_mode = search_mode_in;
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 		return CMZN_OK;
 	}
@@ -3256,7 +3253,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -3332,7 +3329,7 @@ bool Computed_field_find_mesh_location::is_defined_at_location(cmzn_fieldcache& 
 int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluateNoDerivatives(cache));
+	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluate(cache));
 	if (sourceValueCache)
 	{
 		MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
@@ -3587,7 +3584,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -3607,42 +3606,45 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
-
-		/* returns the values in xi, up to the element_dimension and padded
-			with zeroes */
-		int element_dimension = element->getDimension();
-		FE_value *temp = valueCache.derivatives;
-		for (int i=0;i<field->number_of_components;i++)
-		{
-			if (i<element_dimension)
-			{
-				valueCache.values[i]=xi[i];
-			}
-			else
-			{
-				valueCache.values[i]=0.0;
-			}
-			for (int j=0;j<element_dimension;j++)
-			{
-				if (i==j)
-				{
-					*temp = 1.0;
-				}
-				else
-				{
-					*temp = 0.0;
-				}
-				temp++;
-			}
-		}
-		/* derivatives are always calculated since they are merely part of
-			the identity matrix */
-		valueCache.derivatives_valid=1;
+		// returns xi up to the element_dimension and padded with zeroes
+		const int elementDimension = element_xi_location->get_element()->getDimension();
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = (i < elementDimension) ? xi[i] : 0.0;
 		return 1;
 	}
 	return 0;
+}
+
+int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
+	{
+		// directly evaluate only derivative w.r.t. mesh which owns element at location
+		// first derivatives are 1.0 in the xi direction, otherwise 0.0
+		// derivatives w.r.t. face xi currently handled by fallback finite difference
+		const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+		if ((element_xi_location) && (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh()))
+		{
+			FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+			// start with all derivatives zero
+			const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
+			for (int i = 0; i < valuesCount; ++i)
+				derivatives[i] = 0.0;
+			// first derivatives have 1.0 on main diagonal up to element_dimension
+			if (fieldDerivative.getOrder() == 1)
+			{
+				const int elementDimension = element_xi_location->get_element_dimension();
+				for (int i = 0; i < elementDimension; ++i)
+					derivatives[i*(elementDimension + 1)] = 1.0;
+			}
+			return 1;
+		}
+		return 0;
+	}
+	// all other derivatives are zero
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 int Computed_field_xi_coordinates::list()
@@ -4147,7 +4149,9 @@ private:
 		return (0 != dynamic_cast<Computed_field_is_exterior*>(other_field));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list()
 	{
@@ -4177,14 +4181,16 @@ int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache
 			valueCache.values[0] = 1.0;
 		else
 			valueCache.values[0] = 0.0;
-		FE_value *temp = valueCache.derivatives;
-		const int dimension = fe_mesh ? fe_mesh->getDimension() : 0;
-		for (int j = 0; j < dimension; ++j)
-			temp[j] = 0.0;
-		valueCache.derivatives_valid = 1;
 		return 1;
 	}
 	return 0;
+}
+
+int Computed_field_is_exterior::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// assume all derivatives are zero
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 } // namespace
@@ -4247,7 +4253,9 @@ private:
 		return (0 != other_core) && (other_core->faceType == this->faceType);
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list()
 	{
@@ -4287,14 +4295,16 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			valueCache.values[0] = 1.0;
 		else
 			valueCache.values[0] = 0.0;
-		FE_value *temp = valueCache.derivatives;
-		const int dimension = fe_mesh ? fe_mesh->getDimension() : 0;
-		for (int j = 0; j < dimension; ++j)
-			temp[j] = 0.0;
-		valueCache.derivatives_valid = 1;
 		return 1;
 	}
 	return 0;
+}
+
+int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// assume all derivatives are zero
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	return 1;
 }
 
 } // namespace

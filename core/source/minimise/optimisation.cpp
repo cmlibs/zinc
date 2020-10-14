@@ -126,7 +126,7 @@ void Minimisation::touch_independent_fields()
 	for (iter = optimisation.independentFields.begin();
 		iter != optimisation.independentFields.end(); ++iter)
 	{
-		Computed_field_changed(iter->independentField);
+		iter->independentField->setChanged();
 	}
 }
 

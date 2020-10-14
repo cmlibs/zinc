@@ -124,7 +124,7 @@ public:
 			{
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
-				Computed_field_changed(this->field);
+				this->field->setChanged();
 				return_code = 1;
 			}
 			else
@@ -139,7 +139,7 @@ public:
 		{
 			// just called from copy() - copy texture reference
 			REACCESS(Texture)(&texture, texture_in);
-			Computed_field_changed(this->field);
+			this->field->setChanged();
 			return_code = 1;
 		}
 		return (return_code);
@@ -200,7 +200,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -428,7 +428,7 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	check_evaluate_texture();
 	if (texture)
 	{
-		RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+		const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 		if (sourceCache)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
@@ -470,7 +470,6 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 						texture_values[i] * (maximum - minimum);
 				}
 			}
-			valueCache.derivatives_valid = 0;
 			return 1;
 		}
 	}
@@ -967,7 +966,7 @@ int cmzn_field_image_set_size_in_pixels(cmzn_field_image_id image,
 		{
 			image_core->use_source_resolution = false;
 			image_core->texture_buffer_changed();
-			Computed_field_changed(field);
+			field->setChanged();
 			return CMZN_RESULT_OK;
 		}
 		return CMZN_RESULT_ERROR_GENERAL;
@@ -1629,7 +1628,7 @@ int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
 		if (Texture_get_combine_mode(image_core->texture) != texture_combine_mode)
 		{
 			Texture_set_combine_mode(image_core->texture, texture_combine_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1756,7 +1755,7 @@ int cmzn_field_image_set_hardware_compression_mode(cmzn_field_image_id image_fie
 		if (Texture_get_compression_mode(image_core->texture) != texture_compression_mode)
 		{
 			Texture_set_compression_mode(image_core->texture, texture_compression_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1821,7 +1820,7 @@ int cmzn_field_image_set_filter_mode(cmzn_field_image_id image_field,
 		if (Texture_get_filter_mode(image_core->texture) != texture_filter_mode)
 		{
 			Texture_set_filter_mode(image_core->texture, texture_filter_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1905,7 +1904,7 @@ int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
 		if (Texture_get_wrap_mode(image_core->texture) != texture_wrap_mode)
 		{
 			Texture_set_wrap_mode(image_core->texture, texture_wrap_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -2111,7 +2110,7 @@ int cmzn_field_image_set_buffer(cmzn_field_image_id image_field, const void *buf
 		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
 		if (texture)
 		{
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 			return Texture_fill_image_block(texture, (unsigned char *)buffer,
 				buffer_length);
 		}

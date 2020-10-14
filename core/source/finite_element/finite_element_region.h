@@ -175,13 +175,6 @@ Global functions
 ----------------
 */
 
-/**
- * Creates a struct FE_region owning sets of nodes, elements and datapoints.
- * If <basis_manager> or <element_shape_list> are not supplied then new ones
- * are created for this region.
- */
-struct FE_region *FE_region_create(struct FE_region *base_fe_region);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
 /**
@@ -464,13 +457,6 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
  */
 struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
 	struct FE_region *fe_region, int dimension);
-
-/**
- * Sets the owning cmiss_region for this fe_region. Can also clear it.
- * Private - only for use by cmzn_region on construction and destruction!
- */
-void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
-	struct cmzn_region *cmiss_region);
 
 /**
  * @return  The cmzn_region containing this fe_region. Not accessed.

@@ -675,7 +675,7 @@ cmzn_field_id cmzn_scene_guess_coordinate_field(
 	{
 		coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 			Computed_field_is_coordinate_field, (void *)NULL,
-			cmzn_region_get_Computed_field_manager(scene->region));
+			scene->region->getFieldManager());
 	}
 	return coordinate_field;
 }
@@ -1034,7 +1034,7 @@ static int cmzn_scene_build_graphics_objects(
 			// cache changes to avoid reporting add/remove temporary wrapper fields
 			cmzn_fieldmodule_begin_change(graphics_to_object_data.field_module);
 			graphics_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(graphics_to_object_data.field_module);
-			graphics_to_object_data.fe_region = cmzn_region_get_FE_region(scene->region);
+			graphics_to_object_data.fe_region = scene->region->get_FE_region();
 			graphics_to_object_data.master_mesh = 0;
 			graphics_to_object_data.iteration_mesh = 0;
 			graphics_to_object_data.scenefilter = renderer->getScenefilter();

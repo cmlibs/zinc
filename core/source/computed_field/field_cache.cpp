@@ -28,31 +28,40 @@ FieldValueCache::~FieldValueCache()
 
 void FieldValueCache::clear()
 {
-	resetEvaluationCounter();
+	this->resetEvaluationCounter();
 }
 
 RealFieldValueCache::~RealFieldValueCache()
 {
-	if (find_element_xi_cache)
+	if (this->find_element_xi_cache)
 	{
-		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
-		find_element_xi_cache = 0;
+		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
+		this->find_element_xi_cache = 0;
 	}
-	delete[] values;
-	delete[] derivatives;
+	delete[] this->values;
+	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
+		delete *iter;
+}
+
+void RealFieldValueCache::resetEvaluationCounter()
+{
+	for (std::vector<DerivativeValueCache *>::iterator iter = this->derivatives.begin(); iter != this->derivatives.end(); ++iter)
+		if (*iter)
+			(*iter)->resetEvaluationCounter();
+	FieldValueCache::resetEvaluationCounter();
 }
 
 void RealFieldValueCache::clear()
 {
-	if (find_element_xi_cache)
+	if (this->find_element_xi_cache)
 	{
-		DESTROY(Computed_field_find_element_xi_cache)(&find_element_xi_cache);
-		find_element_xi_cache = 0;
+		DESTROY(Computed_field_find_element_xi_cache)(&this->find_element_xi_cache);
+		this->find_element_xi_cache = 0;
 	}
 	FieldValueCache::clear();
 }
 
-char *RealFieldValueCache::getAsString()
+char *RealFieldValueCache::getAsString() const
 {
 	char *valueAsString = 0;
 	int error = 0;
@@ -79,9 +88,9 @@ void StringFieldValueCache::setString(const char *string_in)
 	stringValue = duplicate_string(string_in);
 }
 
-char *StringFieldValueCache::getAsString()
+char *StringFieldValueCache::getAsString() const
 {
-	return duplicate_string(stringValue);
+	return duplicate_string(this->stringValue);
 }
 
 void MeshLocationFieldValueCache::clear()
@@ -90,7 +99,7 @@ void MeshLocationFieldValueCache::clear()
 	FieldValueCache::clear();
 }
 
-char *MeshLocationFieldValueCache::getAsString()
+char *MeshLocationFieldValueCache::getAsString() const
 {
 	if (!element)
 		return 0;
@@ -111,17 +120,17 @@ char *MeshLocationFieldValueCache::getAsString()
 cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn) :
 	region(cmzn_region_access(regionIn)),
 	locationCounter(0),
+	modifyCounter(-1),
 	indexed_location_element_xi(0),
 	number_of_indexed_location_element_xi(0),
 	location(&(this->location_time)),
-	requestedDerivatives(0),
-	valueCaches(cmzn_region_get_field_cache_size(this->region), (FieldValueCache*)0),
+	valueCaches(this->region->getFieldcacheSize(), (FieldValueCache*)0),
 	assignInCache(false),
 	parentCache(parentCacheIn),
 	sharedWorkingCache(0),
 	access_count(1)
 {
-	cmzn_region_add_field_cache(this->region, this);
+	this->region->addFieldcache(this);
 }
 
 cmzn_fieldcache::~cmzn_fieldcache()
@@ -139,7 +148,7 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	}
 	if (this->sharedWorkingCache)
 		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
-	cmzn_region_remove_field_cache(region, this);
+	this->region->removeFieldcache(this);
 	cmzn_region_destroy(&region);
 }
 
@@ -248,10 +257,7 @@ int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const
 	// now put the values in the cache. Note does not support derivatives!
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
-	{
 		valueCache->values[i] = (i < numberOfValues) ? values[i] : 0.0;
-	}
-	valueCache->derivatives_valid = 0;
 	valueCache->evaluationCounter = locationCounter;
 	return CMZN_OK;
 }

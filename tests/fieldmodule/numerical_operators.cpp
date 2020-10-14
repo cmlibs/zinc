@@ -451,6 +451,7 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			if (v_error > op.max_v_error)
 				op.max_v_error = v_error;
 
+			//std::cerr << "operator: " << name  << "\n";
 			for (int d = 0; d < 3; ++d)
 			{
 				FieldDerivative d1_field = zinc.fm.createFieldDerivative(v_field, d + 1);

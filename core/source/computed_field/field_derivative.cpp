@@ -2,9 +2,9 @@
  * FILE : field_derivative.cpp
  *
  * Field derivative defining order and type of derivative operator to apply
- * to any given field. Each Field_derivative has a unique index within its
+ * to any given field. Each FieldDerivative has a unique index within its
  * owning region for efficient look up in field cache. Object describes how to
- * evaluate derivative, including links to next lower Field_derivative so
+ * evaluate derivative, including links to next lower FieldDerivative so
  * can evaluate downstream derivatives using rules.
  */
  /* OpenCMISS-Zinc Library
@@ -15,17 +15,31 @@
 
 #include "opencmiss/zinc/status.h"
 #include "computed_field/field_derivative.hpp"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
+#include "region/cmiss_region.h"
 
-Field_derivative::~Field_derivative()
+
+FieldDerivative::FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn, FieldDerivative *lowerDerivative) :
+	region(nullptr),  // set by cmzn_region_add_field_derivative
+	lowerDerivative((orderIn > 1) ? lowerDerivative->access() : nullptr),
+	cacheIndex(-1),
+	order(orderIn),
+	type(typeIn),
+	access_count(1)
 {
-	if (this->region)
-		cmzn_region_remove_field_derivative(this->region, this);
-	if (this->lower_derivative)
-		Field_derivative::deaccess(this->lower_derivative);
+	regionIn->addFieldDerivative(this);
 }
 
-int Field_derivative::deaccess(Field_derivative* &field_derivative)
+FieldDerivative::~FieldDerivative()
+{
+	if (this->region)
+		this->region->removeFieldDerivative(this);
+	if (this->lowerDerivative)
+		FieldDerivative::deaccess(this->lowerDerivative);
+}
+
+int FieldDerivative::deaccess(FieldDerivative* &field_derivative)
 {
 	if (!field_derivative)
 		return CMZN_ERROR_ARGUMENT;
@@ -34,4 +48,11 @@ int Field_derivative::deaccess(Field_derivative* &field_derivative)
 		delete field_derivative;
 	field_derivative = 0;
 	return CMZN_OK;
+}
+
+FieldDerivativeMesh::FieldDerivativeMesh(FE_mesh *meshIn, int orderIn, FieldDerivative *lowerDerivative) :
+	FieldDerivative(FE_region_get_cmzn_region(meshIn->get_FE_region()), orderIn, TYPE_ELEMENT_XI, lowerDerivative),
+	mesh(meshIn),
+	elementDimension(mesh->getDimension())
+{
 }

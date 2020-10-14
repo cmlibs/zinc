@@ -45,20 +45,19 @@ private:
 
 public:
 	int evaluationCounter; // set to cmzn_fieldcache::locationCounter when field evaluated
-	int derivatives_valid; // only relevant to real caches, but having here saves a virtual function call
 
 	FieldValueCache() :
 		extraCache(0),
-		evaluationCounter(-1),
-		derivatives_valid(0)
+		evaluationCounter(-1)
 	{
 	}
 
 	virtual ~FieldValueCache();
 
-	inline void resetEvaluationCounter()
+	/** override if needed to clear type-specific evaluation counters & call this */
+	virtual void resetEvaluationCounter()
 	{
-		evaluationCounter = -1;
+		this->evaluationCounter = -1;
 	}
 
 	/** override to clear type-specific buffer information & call this */
@@ -77,13 +76,137 @@ public:
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
 	 */
-	virtual char *getAsString() = 0;
+	virtual char *getAsString() const = 0;
 
-	bool hasDerivatives()
+};
+
+/** Storage of derivative values */
+class DerivativeValueCache
+{
+public:
+	FE_value *values;
+	int valuesCount;
+	int evaluationCounter;  // set to cmzn_fieldcache::locationCounter when evaluated
+
+	DerivativeValueCache(int valuesCountIn) :
+		values(new FE_value[valuesCountIn]),
+		valuesCount(valuesCountIn),
+		evaluationCounter(-1)
 	{
-		return derivatives_valid == 1;
 	}
 
+	~DerivativeValueCache()
+	{
+		delete[] values;
+	}
+
+	void resetEvaluationCounter()
+	{
+		this->evaluationCounter = -1;
+	}
+
+	void copyValues(const DerivativeValueCache& source)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = source.values[i];
+	}
+
+	void zeroValues()
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
+private:
+	DerivativeValueCache(); // not implemented
+	DerivativeValueCache(const DerivativeValueCache &source); // not implemented
+	DerivativeValueCache& operator=(const DerivativeValueCache &source); // not implemented
+};
+
+class RealFieldValueCache : public FieldValueCache
+{
+public:
+	FE_value *values;
+	std::vector<DerivativeValueCache *> derivatives;
+	Computed_field_find_element_xi_cache *find_element_xi_cache;
+	int componentCount;
+
+	RealFieldValueCache(int componentCount) :
+		FieldValueCache(),
+		componentCount(componentCount),
+		values(new FE_value[componentCount]),
+		find_element_xi_cache(0)
+	{
+	}
+
+	virtual ~RealFieldValueCache();
+
+	virtual void resetEvaluationCounter();
+
+	virtual void clear();
+
+	static const RealFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache*>(valueCache);
+	}
+
+	static RealFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache*>(valueCache);
+	}
+
+	static const RealFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const RealFieldValueCache&>(valueCache);
+	}
+
+	static RealFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache&>(valueCache);
+	}
+
+	void copyValues(const RealFieldValueCache& source)
+	{
+		for (int i = 0; i < componentCount; ++i)
+			values[i] = source.values[i];
+	}
+
+	/** copy values and all derivatives existing on both source and this value cache */
+	void copyValuesAndDerivatives(const RealFieldValueCache& source)
+	{
+		this->copyValues(source);
+		const size_t commonSize = this->derivatives.size() < source.derivatives.size() ? this->derivatives.size() : source.derivatives.size();
+		for (size_t i = 0; i < commonSize; ++i)
+			if ((this->derivatives[i]) && (source.derivatives[i]))
+				this->derivatives[i]->copyValues(*source.derivatives[i]);
+	}
+
+	virtual char *getAsString() const;
+
+	void setValues(const FE_value *values_in)
+	{
+		for (int i = 0; i < componentCount; ++i)
+			values[i] = values_in[i];
+	}
+
+	/** Call only if known that getOrCreateDerivativeValueCache has been called */
+	DerivativeValueCache *getDerivativeValueCache(const FieldDerivative& fieldDerivative) const
+	{
+		return this->derivatives[fieldDerivative.getCacheIndex()];
+	}
+
+	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative)
+	{
+		const int cacheIndex = fieldDerivative.getCacheIndex();
+		if (this->derivatives.size() <= cacheIndex)
+			this->derivatives.resize(cacheIndex + 1, nullptr);
+		if (!this->derivatives[cacheIndex])
+			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount*fieldDerivative.getTermCount());
+		return this->derivatives[cacheIndex];
+	}
+
+private:
+	RealFieldValueCache(); // not implemented
 };
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;
@@ -91,8 +214,9 @@ typedef std::vector<FieldValueCache*> ValueCacheVector;
 struct cmzn_fieldcache
 {
 private:
-	cmzn_region_id region;  // accessed: not thread safe
+	cmzn_region_id region;  // accessed: not thread safe. Means region is guaranteed to exist.
 	int locationCounter; // incremented whenever domain location changes
+	int modifyCounter; // set to match region when location changes; if region value changes, cache is invalid
 	Field_location_element_xi location_element_xi;
 	Field_location_field_values location_field_values;
 	Field_location_node location_node;
@@ -100,7 +224,6 @@ private:
 	Field_location_element_xi *indexed_location_element_xi;
 	unsigned int number_of_indexed_location_element_xi;
 	Field_location *location;  // points to currently active location from the above. Always valid.
-	int requestedDerivatives;
 	ValueCacheVector valueCaches;
 	bool assignInCache;
 	cmzn_fieldcache *parentCache;  // non-accessed parent cache if this is its sharedWorkingCache; finite element evaluation caches are shared with parent
@@ -110,12 +233,13 @@ private:
 	/** call whenever location changes to increment location counter */
 	void locationChanged()
 	{
-		++locationCounter;
+		++(this->locationCounter);
+		this->modifyCounter = this->region->getFieldModifyCounter();
 		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
 		// Logic assumes counter will overflow back to a negative value to trigger reset
-		if (locationCounter < 0)
+		if (this->locationCounter < 0)
 		{
-			locationCounter = 0;
+			this->locationCounter = 0;
 			this->resetValueCacheEvaluationCounters();
 		}
 	}
@@ -144,6 +268,11 @@ public:
 			delete cache;
 		cache = 0;
 		return CMZN_OK;
+	}
+
+	inline bool hasRegionModifications() const
+	{
+		return this->modifyCounter != this->region->getFieldModifyCounter();
 	}
 
 	/** Copy location from another field cache */
@@ -183,12 +312,12 @@ public:
 
 	inline int getLocationCounter() const
 	{
-		return locationCounter;
+		return this->locationCounter;
 	}
 
-	cmzn_region_id getRegion()
+	cmzn_region_id getRegion() const
 	{
-		return region;
+		return this->region;
 	}
 
 	void clearLocation()
@@ -199,7 +328,7 @@ public:
 
 	FE_value getTime() const
 	{
-		return location->get_time();
+		return this->location->get_time();
 	}
 
 	/** Set time in location without changing location type. Call clear location first to change to time location type. */
@@ -210,19 +339,6 @@ public:
 		{
 			this->location->set_time(time);
 			this->locationChanged();
-		}
-	}
-
-	inline int getRequestedDerivatives()
-	{
-		return requestedDerivatives;
-	}
-
-	void setRequestedDerivatives(int requestedDerivativesIn)
-	{
-		if ((requestedDerivativesIn >= 0) && (requestedDerivativesIn <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
-		{
-			requestedDerivatives = requestedDerivativesIn;
 		}
 	}
 
@@ -270,9 +386,9 @@ public:
 
 	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);
 
-	FieldValueCache* getValueCache(int cacheIndex)
+	FieldValueCache* getValueCache(int cacheIndex) const
 	{
-		return valueCaches[cacheIndex];
+		return this->valueCaches[cacheIndex];
 	}
 
 	/** call if new field added to initialise value cache, and when cache created for field */
@@ -346,88 +462,6 @@ inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExtraCache(cmzn_fieldc
 	return this->extraCache;
 }
 
-class RealFieldValueCache : public FieldValueCache
-{
-public:
-	int componentCount;
-	FE_value *values, *derivatives;
-	Computed_field_find_element_xi_cache *find_element_xi_cache;
-
-	RealFieldValueCache(int componentCount) :
-		FieldValueCache(),
-		componentCount(componentCount),
-		values(new FE_value[componentCount]),
-		derivatives(new FE_value[componentCount*MAXIMUM_ELEMENT_XI_DIMENSIONS]),
-		find_element_xi_cache(0)
-	{
-	}
-
-	virtual ~RealFieldValueCache();
-
-	virtual void clear();
-
-	static RealFieldValueCache* cast(FieldValueCache* valueCache)
-   {
-		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache*>(valueCache);
-   }
-
-	static RealFieldValueCache& cast(FieldValueCache& valueCache)
-   {
-		return FIELD_VALUE_CACHE_CAST<RealFieldValueCache&>(valueCache);
-   }
-
-	virtual void copyValues(const RealFieldValueCache& source)
-	{
-		int i;
-		for (i = 0; i < componentCount; ++i)
-		{
-			values[i] = source.values[i];
-		}
-		if (source.derivatives_valid)
-		{
-			// future optimisation: copy only number of derivatives evaluated
-			int derivativeCount = componentCount*MAXIMUM_ELEMENT_XI_DIMENSIONS;
-			for (i = 0; i < derivativeCount; ++i)
-			{
-				derivatives[i] = source.derivatives[i];
-			}
-			derivatives_valid = 1;
-		}
-		else
-		{
-			derivatives_valid = 0;
-		}
-	}
-
-	virtual void copyValuesZeroDerivatives(const RealFieldValueCache& source)
-	{
-		int i;
-		for (i = 0; i < componentCount; ++i)
-		{
-			values[i] = source.values[i];
-		}
-		int derivativeCount = componentCount*MAXIMUM_ELEMENT_XI_DIMENSIONS;
-		for (i = 0; i < derivativeCount; ++i)
-		{
-			derivatives[i] = 0.0;
-		}
-		derivatives_valid = 1;
-	}
-
-	virtual char *getAsString();
-
-	void setValues(const FE_value *values_in)
-	{
-		for (int i = 0; i < componentCount; ++i)
-		{
-			values[i] = values_in[i];
-		}
-		derivatives_valid = 0;
-	}
-private:
-	RealFieldValueCache(); // not implemented
-};
-
 class StringFieldValueCache : public FieldValueCache
 {
 public:
@@ -444,19 +478,29 @@ public:
 		DEALLOCATE(stringValue);
 	}
 
+	static const StringFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const StringFieldValueCache*>(valueCache);
+	}
+
 	static StringFieldValueCache* cast(FieldValueCache* valueCache)
-   {
+	{
 		return FIELD_VALUE_CACHE_CAST<StringFieldValueCache*>(valueCache);
-   }
+	}
+
+	static const StringFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const StringFieldValueCache&>(valueCache);
+	}
 
 	static StringFieldValueCache& cast(FieldValueCache& valueCache)
-   {
+	{
 		return FIELD_VALUE_CACHE_CAST<StringFieldValueCache&>(valueCache);
-   }
+	}
 
 	void setString(const char *string_in);
 
-	virtual char *getAsString();
+	virtual char *getAsString() const;
 
 };
 
@@ -479,15 +523,25 @@ public:
 
 	virtual void clear();
 
+	static const MeshLocationFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const MeshLocationFieldValueCache*>(valueCache);
+	}
+
 	static MeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
-   {
+	{
 		return FIELD_VALUE_CACHE_CAST<MeshLocationFieldValueCache*>(valueCache);
-   }
+	}
+
+	static const MeshLocationFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const MeshLocationFieldValueCache&>(valueCache);
+	}
 
 	static MeshLocationFieldValueCache& cast(FieldValueCache& valueCache)
-   {
+	{
 		return FIELD_VALUE_CACHE_CAST<MeshLocationFieldValueCache&>(valueCache);
-   }
+	}
 
 	void setMeshLocation(cmzn_element_id element_in, const FE_value *xi_in)
 	{
@@ -499,7 +553,7 @@ public:
 		}
 	}
 
-	virtual char *getAsString();
+	virtual char *getAsString() const;
 
 };
 

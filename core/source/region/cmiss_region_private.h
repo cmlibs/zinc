@@ -23,25 +23,6 @@ Global functions
 ----------------
 */
 
-/***************************************************************************//**
- * Private function for adding field to region. Ensures the new field has a
- * unique cache_index.
- */
-int cmzn_region_add_field_private(cmzn_region_id region, cmzn_field_id field);
-
-/***************************************************************************//**
- * Private function for clearing field value caches for field in all caches
- * listed in region.
- */
-void cmzn_region_clear_field_value_caches(cmzn_region_id region, cmzn_field_id field);
-
-/***************************************************************************//**
- * Deaccesses fields from region and all child regions recursively.
- * Temporary until circular references sorted out - certain fields access
- * regions. Call ONLY before deaccessing root_region in cmzn_context.
- */
-void cmzn_region_detach_fields_hierarchical(struct cmzn_region *region);
-
 int cmzn_region_private_attach_any_object(struct cmzn_region *region,
 	struct Any_object *any_object);
 /*******************************************************************************
@@ -83,21 +64,6 @@ void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
 /** private for use by cmzn_fieldmodulenotifier */
 void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
 	cmzn_fieldmodulenotifier *notifier);
-
-/**
- * Returns pointer to context this region was created for. Can be NULL if
- * context is destroyed already during clean-up.
- *
- * @param region  The region to query.
- * @return  Non-accessed pointer to cmzn_context or NULL if none/cleared.
- */
-cmzn_context *cmzn_region_get_context_private(cmzn_region *region);
-
-/**
- * Record the context this region was created for.
- * Should only be set by context / region creation functions.
- */
-void cmzn_region_set_context_private(cmzn_region *region, cmzn_context *context);
 
 /**
  * Callback for changes to FE_region attached to region.
