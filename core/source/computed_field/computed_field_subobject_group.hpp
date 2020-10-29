@@ -532,7 +532,7 @@ public:
 		bool containsObject(cmzn_node *object)
 		{
 			return this->isNodeCompatible(object) &&
-				this->labelsGroup->hasIndex(get_FE_node_index(object));
+				this->labelsGroup->hasIndex(object->getIndex());
 		};
 
 		cmzn_nodeiterator_id createNodeiterator()

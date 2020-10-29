@@ -671,8 +671,7 @@ Do not allow copy if:
 		}
 		if (return_code)
 		{
-			COPY(Coordinate_system)(&destination->coordinate_system,
-				&source->coordinate_system);
+			destination->coordinate_system = source->coordinate_system;
 			if (!Computed_field_copy_type_specific(destination, source))
 			{
 				display_message(ERROR_MESSAGE,
@@ -1736,7 +1735,7 @@ Computed_field_set_coordinate_system for further details.
 } /* Computed_field_get_coordinate_system */
 
 int Computed_field_set_coordinate_system(struct Computed_field *field,
-	struct Coordinate_system *coordinate_system)
+	const Coordinate_system *coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1749,24 +1748,15 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 ???RC How to check the coordinate system is valid?
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_set_coordinate_system);
-	if (field&&coordinate_system)
+	if ((field) && (coordinate_system))
 	{
-		return_code=
-			COPY(Coordinate_system)(&(field->coordinate_system),coordinate_system);
+		field->coordinate_system = *coordinate_system;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_coordinate_system.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_coordinate_system */
+	display_message(ERROR_MESSAGE,
+		"Computed_field_set_coordinate_system.  Invalid argument(s)");
+	return 0;
+}
 
 const char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************

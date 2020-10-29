@@ -207,7 +207,7 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 		ALLOCATE(mapping_item,Computed_field_node_integration_mapping,1) &&
 		ALLOCATE(mapping_item->values, FE_value, number_of_components))
 	{
-		mapping_item->node_ptr = ACCESS(FE_node)(node);
+		mapping_item->node_ptr = node->access();
 		for (i = 0 ; i < number_of_components ; i++)
 		{
 			mapping_item->values[i] = 0.0;
@@ -243,7 +243,7 @@ Frees memory/deaccess mapping at <*mapping_address>.
 		{
 			if ((*mapping_address)->node_ptr)
 			{
-				DEACCESS(FE_node)(&((*mapping_address)->node_ptr));
+				cmzn_node::deaccess((*mapping_address)->node_ptr);
 			}
 			DEALLOCATE((*mapping_address)->values);
 			DEALLOCATE(*mapping_address);
@@ -745,7 +745,7 @@ time is supplied in the workingCache.
 
 			for (i = 0 ; i < number_of_element_field_nodes ; i++)
 			{
-				DEACCESS(FE_node)(element_field_nodes_array + i);
+				cmzn_node::deaccess(element_field_nodes_array[i]);
 			}
 			DEALLOCATE(element_field_nodes_array);
 		}

@@ -506,7 +506,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 				for (int n = 0; n < nodeIndexesCount; ++n)
 				{
 					cmzn_node *node = this->legacyNodes[nodeIndexes[n] - 1];
-					workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
+					workingNodeIndexes[n] = (node) ? node->getIndex() : DS_LABEL_INDEX_INVALID;
 				}
 				const int result = eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data());
 				if (result != CMZN_OK)
@@ -685,7 +685,7 @@ int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
 	if (finite_element_field)
 	{
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
+		if (fe_field->get_FE_region() != this->getMesh()->get_FE_region())
 		{
 			display_message(ERROR_MESSAGE,
 				"Elementtemplate defineFieldSimpleNodal.  Field is from another region");
@@ -746,7 +746,7 @@ int cmzn_elementtemplate::defineFieldElementConstant(cmzn_field_id field, int co
 	if ((fe_field) && (GENERAL_FE_FIELD == get_FE_field_FE_field_type(fe_field)) &&
 		((FE_VALUE_VALUE == get_FE_field_value_type(fe_field)) || (INT_VALUE == get_FE_field_value_type(fe_field))))
 	{
-		if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
+		if (fe_field->get_FE_region() != this->getMesh()->get_FE_region())
 		{
 			display_message(ERROR_MESSAGE,
 				"Elementtemplate defineFieldElementConstant.  Field is from another region");
@@ -935,7 +935,7 @@ int cmzn_elementtemplate::setNode(int local_node_index, cmzn_node_id node)
 			&& (nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_NODES)
 			&& (this->fe_element_template->getMesh()->get_FE_region() == nodeset->get_FE_region()))))
 	{
-		REACCESS(FE_node)(this->legacyNodes + local_node_index - 1, node);
+		cmzn_node::reaccess(this->legacyNodes[local_node_index - 1], node);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -1840,7 +1840,7 @@ cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 		display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  Can only query a finite element type field on elements");
 		return 0;
 	}
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, element->getMesh());
+	FE_mesh_field_data *meshFieldData = fe_field->getMeshFieldData(element->getMesh());
 	if (!meshFieldData)
 		return 0;
 	FE_element_field_template *eft = 0;
@@ -1937,7 +1937,7 @@ int cmzn_element_set_node(cmzn_element_id element,
 		display_message(ERROR_MESSAGE, "Element setNode.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID);
+	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? node->getIndex() : DS_LABEL_INDEX_INVALID);
 }
 
 int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,

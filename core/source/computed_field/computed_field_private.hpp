@@ -461,11 +461,11 @@ enum Computed_field_attribute_flags
 };
 
 struct Computed_field
-/*******************************************************************************
-LAST MODIFIED : 23 August 2006
+	/*******************************************************************************
+	LAST MODIFIED : 23 August 2006
 
-DESCRIPTION :
-==============================================================================*/
+	DESCRIPTION :
+	==============================================================================*/
 {
 	/* the name/identifier of the Computed_field */
 	const char *name;
@@ -568,6 +568,11 @@ DESCRIPTION :
 				return true;
 		}
 		return false;
+	}
+
+	const char *getName() const
+	{
+		return this->name;
 	}
 
 	int isNumerical()

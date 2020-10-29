@@ -613,34 +613,6 @@ z = focus*cosh(lambda)*cos(mu)*cos(theta)
 	return (return_code);
 } /* oblate_spheroidal_to_cartesian */
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(Coordinate_system)
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Copies the Coordinate_system contents from source to destination.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(COPY(Coordinate_system));
-	if (destination&&source)
-	{
-		destination->type=source->type;
-		destination->parameters=source->parameters;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"COPY(Coordinate_system).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* COPY(Coordinate_system) */
-
 enum Coordinate_system_type get_coordinate_system_type(
 	struct Coordinate_system *coordinate_system)
 /*******************************************************************************
@@ -729,7 +701,7 @@ The calling function must not deallocate the returned string.
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Coordinate_system_type)
 
-char *Coordinate_system_string(struct Coordinate_system *coordinate_system)
+char *Coordinate_system_string(const Coordinate_system *coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1999
 

@@ -12,15 +12,16 @@
 #define FINITE_ELEMENT_FIELD_EVALUATION_HPP
 
 #include <opencmiss/zinc/zincconfigure.h>
-#include "opencmiss/zinc/types/elementid.h"
 #include "finite_element/finite_element_basis.hpp"
-#include "finite_element/finite_element_field.hpp"
 #include "general/value.h"
 
 /*
 Global types
 ------------
 */
+
+struct cmzn_element;
+struct FE_field;
 
 /**
  * Values and methods for interpolating a field over a single element.
@@ -35,7 +36,7 @@ Global types
 class FE_element_field_evaluation
 {
 	/* the FE_field these values are for */
-	struct FE_field *field;
+	FE_field *field;
 	/* the element these values are for */
 	cmzn_element *element;
 	/* the element the field was inherited from */
@@ -140,7 +141,7 @@ public:
 	 * Must be freshly created or cleared.
 	 * @param topLevelElement  Optional element to inherit field from.
 	 */
-	int calculate_values(struct FE_field *field, cmzn_element *element,
+	int calculate_values(FE_field *field, cmzn_element *element,
 		FE_value time, cmzn_element *top_level_element = 0);
 
 	/** Evaluate integer field values in element.

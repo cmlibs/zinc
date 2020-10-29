@@ -2985,10 +2985,10 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 	FE_mesh_field_data *meshFieldData = 0;
 	if (return_code)
 	{
-		meshFieldData = FE_field_getMeshFieldData(feField, this->mesh);
+		meshFieldData = feField->getMeshFieldData(this->mesh);
 		if (!meshFieldData)
 		{
-			meshFieldData = FE_field_createMeshFieldData(feField, this->mesh);
+			meshFieldData = feField->createMeshFieldData(this->mesh);
 			if (!meshFieldData)
 			{
 				display_message(ERROR_MESSAGE, "FieldMLReader::readField.  Failed to create mesh field data");

@@ -221,10 +221,8 @@ Returns the type of the coordinate system passed to it.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Coordinate_system_type);
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(Coordinate_system);
-
 char *Coordinate_system_string(
-	struct Coordinate_system *coordinate_system);
+	const Coordinate_system *coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1999
 

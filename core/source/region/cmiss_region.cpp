@@ -1653,8 +1653,7 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 		CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)))
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
-		char *field_name = NULL;
-		GET_NAME(FE_field)(fe_field, &field_name);
+		const char *field_name = fe_field->getName();
 		bool update_wrapper = (0 != (change & (CHANGE_LOG_OBJECT_ADDED(FE_field) |
 			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))));
 		cmzn_field *existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -1675,23 +1674,20 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 			else
 			{
 				cmzn_fieldmodule_set_field_name(fieldmodule, field_name);
-				struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(fe_field);
-				if (coordinate_system)
-					cmzn_fieldmodule_set_coordinate_system(fieldmodule, *coordinate_system);
+				cmzn_fieldmodule_set_coordinate_system(fieldmodule, fe_field->getCoordinateSystem());
 			}
-			cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_internal(fieldmodule, fe_field);
-			cmzn_field_set_managed(field, true);
-			cmzn_field_destroy(&field);
-			char *new_field_name = 0;
-			GET_NAME(FE_field)(fe_field, &new_field_name);
-			if (strcmp(new_field_name, field_name))
+			cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_wrapper(fieldmodule, fe_field);
+			if (field)
 			{
-				display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
-					field_name, new_field_name);
+				cmzn_field_set_managed(field, true);
+				if (strcmp(field_name, field->getName()))
+				{
+					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
+						field_name, field->getName());
+				}
+				cmzn_field::deaccess(&field);
 			}
-			DEALLOCATE(new_field_name);
 		}
-		DEALLOCATE(field_name);
 	}
 	return 1;
 }

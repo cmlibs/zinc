@@ -19,7 +19,6 @@
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_shape.hpp"
-#include "finite_element/finite_element.h"
 #include "general/block_array.hpp"
 #include "general/list.h"
 #include <algorithm>
@@ -265,7 +264,7 @@ public:
 
 	inline FE_element_shape *getElementShape() const;
 
-	/** @return  Non-accessed mesh, or 0 if invalid. */
+	/** @return  Non-accessed mesh, or nullptr if invalid. */
 	inline FE_mesh *getMesh() const
 	{
 		return this->mesh;
@@ -273,6 +272,8 @@ public:
 
 };
 
+DECLARE_LIST_CONDITIONAL_FUNCTION(cmzn_element);
+DECLARE_LIST_ITERATOR_FUNCTION(cmzn_element);
 
 /** Stores FE_element_field_template and its element-varying local-to-global map data */
 class FE_mesh_element_field_template_data
@@ -1578,13 +1579,7 @@ private:
 	const Value_type valueType;
 	ComponentBase **components;
 
-	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn) :
-		field(fieldIn),
-		componentCount(get_FE_field_number_of_components(fieldIn)),
-		valueType(get_FE_field_value_type(fieldIn)),
-		components(componentsIn) // takes ownership of passed-in array
-	{
-	}
+	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn);
 
 public:
 

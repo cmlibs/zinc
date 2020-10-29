@@ -52,7 +52,6 @@ Writes text for an <ipcoor_file> to support <field>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Coordinate_system *coordinate_system;
 
 	ENTER(write_ipcoor_file);
 	if (ipcoor_file && field)
@@ -66,8 +65,8 @@ Writes text for an <ipcoor_file> to support <field>.
 		fprintf(ipcoor_file, "   (3) spherical polar (r,theta,phi)\n");
 		fprintf(ipcoor_file, "   (4) prolate spheroidal (lambda,mu,theta)\n");
 		fprintf(ipcoor_file, "   (5) oblate  spheroidal (lambda,mu,theta)\n");
-		coordinate_system = get_FE_field_coordinate_system(field);
-		switch (coordinate_system->type)
+		const Coordinate_system& coordinate_system = field->getCoordinateSystem();
+		switch (coordinate_system.type)
 		{
 			case RECTANGULAR_CARTESIAN:
 			{
@@ -80,7 +79,7 @@ Writes text for an <ipcoor_file> to support <field>.
 			default:
 			{
 				display_message(ERROR_MESSAGE, "write_ipcoor_file.  "
-					"Coordinate system %s not implemented yet.", Coordinate_system_string(coordinate_system));
+					"Coordinate system %s not implemented yet.", Coordinate_system_string(&coordinate_system));
 				return_code = 0;
 			} break;
 		}
@@ -88,7 +87,7 @@ Writes text for an <ipcoor_file> to support <field>.
 			get_FE_field_number_of_components(field));
 		fprintf(ipcoor_file, " Do you want to specify another coord. system for dependent variables [N]? N\n");
 
-		if (coordinate_system->type == CYLINDRICAL_POLAR)
+		if (coordinate_system.type == CYLINDRICAL_POLAR)
 		{
 			fprintf(ipcoor_file, " Specify whether radial interpolation is in [1]:\n"
 				"   (1) r\n"
@@ -129,7 +128,7 @@ static int FE_element_field_add_basis_to_list(
 		int basis_type_array[4], dimension, xi1, xi2;
 		struct FE_basis *face_basis, *fe_basis;
 		return_code = 1;
-		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, element->getMesh());
+		FE_mesh_field_data *meshFieldData = data->field->getMeshFieldData(element->getMesh());
 		if (!meshFieldData)
 		{
 			return 1; // not defined on mesh
@@ -442,7 +441,7 @@ static int FE_node_write_cm_check_node_values(
 	if (node && data)
 	{
 		bool has_versions = false;
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		const FE_node_field *node_field = node->getNodeField(data->field);
 		if (node_field)
 		{
 			if (data->number_of_nodes)
@@ -519,7 +518,7 @@ static int write_cm_FE_node(
 	if (node && data)
 	{
 		return_code = 1;
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		const FE_node_field *node_field = node->getNodeField(data->field);
 		if (node_field)
 		{
 			fprintf(data->ipnode_file, " Node number [    1]:     %d\n",
@@ -594,7 +593,7 @@ static int write_cm_FE_nodal_mapping(
 	{
 		return_code = 1;
 		map_derivatives = 1;
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		const FE_node_field *node_field = node->getNodeField(data->field);
 		if (node_field)
 		{
 			// Does this node have any versions?
@@ -970,7 +969,7 @@ static int write_cm_FE_element(
 		return_code = 1;
 		FE_mesh *mesh = element->getMesh();
 		FE_nodeset *nodeset = mesh->getNodeset();
-		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, mesh);
+		FE_mesh_field_data *meshFieldData = data->field->getMeshFieldData(mesh);
 		const int componentCount = get_FE_field_number_of_components(data->field);
 		if (!meshFieldData)
 		{
@@ -1067,7 +1066,7 @@ static int write_cm_FE_element(
 								node_number_array[j] = -1;
 								node = 0;
 							}
-							const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+							const FE_node_field *node_field = node->getNodeField(data->field);
 							if (node_field)
 							{
 								const FE_node_field_template *nft = node_field->getComponent(/*component*/0);

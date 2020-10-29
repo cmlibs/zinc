@@ -16,6 +16,7 @@
 #include "opencmiss/zinc/types/nodeid.h"
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_field.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "finite_element/finite_element_time.h"
 #include "datastore/labels.hpp"
@@ -36,24 +37,7 @@ class DsLabelsChangeLog;
 
 class FE_node_field_template;
 
-/**
- * FE_node has pointer to owning FE_nodeset in shared field info.
- */
-class FE_nodeset;
-
-/**
- * FE_element has pointer to owning FE_mesh in shared field info.
- */
-class FE_mesh;
-
-struct cmzn_node;
-#define FE_node cmzn_node
-
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_node_value_label);
-
-DECLARE_LIST_CONDITIONAL_FUNCTION(FE_node);
-DECLARE_LIST_ITERATOR_FUNCTION(FE_node);
-
+struct cmzn_element;
 #define FE_element cmzn_element
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
@@ -63,9 +47,6 @@ A region in space with functions defined on the region.  The region is
 parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
-
-DECLARE_LIST_CONDITIONAL_FUNCTION(FE_element);
-DECLARE_LIST_ITERATOR_FUNCTION(FE_element);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
 
@@ -95,32 +76,13 @@ Global functions
 ----------------
 */
 
-/**
- * Return the highest derivative and version numbers used to label any node
- * parameter of the finite element field.
- * @see cmzn_node_value_label
- *
- * @param field  The finite element field to query.
- * @param highest_derivative  On success, set to the highest derivative number
- * used to label any node parameter, using definition of cmzn_node_value_label
- * i.e. 1 = value.
- * @return highest_version  On success, set to the highest version number used
- * to label any node parameter, starting at 1.
- * @return  CMZN_OK on success, otherwise any other value.
- */
-int FE_field_get_highest_node_derivative_and_version(FE_field *field,
-	int& highest_derivative, int& highest_version);
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
-
 /** Define a field at a node. Does not assign values.
   * @param componentTemplates  Pointer to array of node field templates. These
   * are copied for internal use and valuesOffset set appropriately.
   * @param timeSequence  Optional time sequence for time-varying parameters. */
-int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
+int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 	const FE_node_field_template *componentTemplatesIn,
-	struct FE_time_sequence *timesequence);
+	struct FE_time_sequence *time_sequence);
 
 /**
  * Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
@@ -464,21 +426,6 @@ Returns the number of values stored at the <node>.
  */
 int get_FE_node_identifier(struct FE_node *node);
 
-/**
- * @return  The non-negative node index within the owning nodeset otherwise
- * DS_LABEL_INDEX_INVALID on error or if node is orphaned from nodeset.
- */
-DsLabelIndex get_FE_node_index(struct FE_node *node);
-
-/**
- * Set the index of the node in owning nodeset. Used only by FE_nodeset when
- * merging nodes from another region's nodeset.
- * @param node  The node to modify.
- * @param index  The new index, non-negative. Value is not checked due
- * to use by privileged caller.
- */
-void set_FE_node_index(struct FE_node *node, DsLabelIndex index);
-
 /***************************************************************************//**
  * Writes to the console the node identifier and details of the fields and
  * parameters defined there.
@@ -648,11 +595,6 @@ int FE_element_add_number_to_Multi_range(
 cmzn_element_id cmzn_elementiterator_next_non_access(
 	cmzn_elementiterator_id element_iterator);
 
-/***************************************************************************//**
- * @return  number of objects using fe_node.
- */
-int FE_node_get_access_count(struct FE_node *fe_node);
-
 /**
  * Returns true if element is a top_level parent of other_element.
  */
@@ -758,9 +700,6 @@ int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsG
  * @return  1 if element is top-level i.e. has no parents, otherwise 0.
  */
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-
-/** @return  True if the field has parameters at the node. */
-bool FE_field_has_parameters_at_node(FE_field *field, cmzn_node *node);
 
 /** @return  True if the <field> is defined on the <element>, directly or
   * inherited from any parent element it is a face of.

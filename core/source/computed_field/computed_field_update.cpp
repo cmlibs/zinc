@@ -119,7 +119,7 @@ int cmzn_nodeset_assign_field_from_source(
 							{
 								if (feField)
 								{
-									const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, feField);
+									const FE_node_field *node_field = node->getNodeField(feField);
 									if (node_field)
 									{
 										int assign_count = 0;
@@ -128,7 +128,7 @@ int cmzn_nodeset_assign_field_from_source(
 										if (sourceFeField)
 										{
 											// special case for assigning finite element parameters directly
-											const FE_node_field *source_node_field = cmzn_node_get_FE_node_field(node, sourceFeField);
+											const FE_node_field *source_node_field = node->getNodeField(sourceFeField);
 											if (source_node_field)
 											{
 												for (int d = 0; d <= maximumDerivativeNumber; ++d)
