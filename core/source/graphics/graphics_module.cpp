@@ -28,7 +28,7 @@
 #include "graphics/scenefilter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include <list>
 

@@ -23,7 +23,7 @@ FILE : scene.h
 #include "graphics/graphics.h"
 #include "graphics/graphics_library.h"
 #include "context/context.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/types/timenotifierid.h"
 #include "general/enumerator_private.hpp"
 

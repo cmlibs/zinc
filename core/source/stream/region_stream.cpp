@@ -19,7 +19,7 @@
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "stream/region_stream.hpp"
 
 namespace {

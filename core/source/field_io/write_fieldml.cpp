@@ -40,7 +40,7 @@
 #include "general/refcounted.hpp"
 #include "general/refhandle.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "FieldmlIoApi.h"
 
 namespace {

@@ -28,7 +28,7 @@
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #if defined (USE_OPENCASCADE)
 #include "cad/computed_field_cad_topology.h"
 #include "cad/element_identifier.h"

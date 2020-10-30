@@ -33,7 +33,7 @@ FILE : scene.cpp
 #include "computed_field/field_module.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "description_io/scene_json_export.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphics.h"
 #include "graphics/graphics_module.h"

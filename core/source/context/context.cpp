@@ -20,7 +20,7 @@
 #include "graphics/scene_viewer.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scene.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/timekeeper.h"
 //-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for cmzn_region  */

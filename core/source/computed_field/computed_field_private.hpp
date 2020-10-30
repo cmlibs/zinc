@@ -27,7 +27,7 @@ Types used only internally to computed fields.
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /**
  * Argument to field modifier functions supplying region, default name,

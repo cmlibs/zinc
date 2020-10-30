@@ -30,7 +30,7 @@ finite element fields defined on or interpolated over them.
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "region/cmiss_region_private.h"
 #include "general/message.h"
 

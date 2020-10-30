@@ -16,7 +16,7 @@ Private interface for attaching any object type to cmzn_region objects.
 
 #include "opencmiss/zinc/types/contextid.h"
 #include "general/any_object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /*
 Global functions

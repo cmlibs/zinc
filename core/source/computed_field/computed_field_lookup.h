@@ -14,7 +14,7 @@ Implements computed fields for lookups.
 #if !defined (COMPUTED_FIELD_LOOKUP_H)
 #define COMPUTED_FIELD_LOOKUP_H
 
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the

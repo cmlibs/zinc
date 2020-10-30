@@ -23,7 +23,7 @@
 #include "computed_field/computed_field_private.hpp"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include <map>
 #include <iterator>

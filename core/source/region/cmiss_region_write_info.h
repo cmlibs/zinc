@@ -14,7 +14,7 @@ Data structure shared by several region export modules.
 #if !defined (CMZN_REGION_WRITE_INFO_H)
 #define CMZN_REGION_WRITE_INFO_H
 
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/list.h"
 #include "general/object.h"
 

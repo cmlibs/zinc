@@ -55,7 +55,7 @@
 #include "image_processing/computed_field_binary_dilate_image_filter.h"
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "region/cmiss_region_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_matrix_operators.hpp"

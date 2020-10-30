@@ -22,7 +22,7 @@
 #include "interaction/interaction_volume.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 

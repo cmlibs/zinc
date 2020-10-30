@@ -30,7 +30,7 @@
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "mesh/cmiss_element_private.hpp"

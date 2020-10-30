@@ -18,7 +18,7 @@
 #include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "computed_field/field_location.hpp"
 #include <vector>
 

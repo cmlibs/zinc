@@ -17,7 +17,7 @@
 #include "computed_field/field_derivative.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 
 FieldDerivative::FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn, FieldDerivative *lowerDerivative) :

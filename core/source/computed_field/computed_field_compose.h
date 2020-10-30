@@ -15,7 +15,7 @@ DESCRIPTION :
 
 #include "opencmiss/zinc/mesh.h"
 #include "finite_element/finite_element.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "computed_field/computed_field_private.hpp"
 
 

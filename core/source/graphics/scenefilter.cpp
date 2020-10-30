@@ -22,7 +22,7 @@
 #include "graphics/graphics.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scenefilter.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_scenefilter, cmzn_scenefiltermodule, struct cmzn_scenefilter_change_detail *);
 

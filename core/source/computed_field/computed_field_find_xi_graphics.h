@@ -16,7 +16,7 @@ lookup of the element.
 #define COMPUTED_FIELD_FIND_XI_GRAPHICS_H
 
 #include "computed_field/computed_field_find_xi.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 struct Graphics_buffer_package;
 

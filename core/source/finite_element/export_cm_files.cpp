@@ -30,7 +30,7 @@
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/message.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /*
 Module types

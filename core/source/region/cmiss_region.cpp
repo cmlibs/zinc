@@ -27,7 +27,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/scene.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_region.h"

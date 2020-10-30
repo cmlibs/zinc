@@ -19,7 +19,7 @@ finite element fields defined on or interpolated over them.
 #include "general/callback.h"
 #include "general/change_log.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /*
 Global types
