@@ -300,7 +300,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			return 0;
 		}
 		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-		cmzn_scene_id scene = cmzn_region_get_scene_private(region);
+		cmzn_scene_id scene = region->getScene();
 		cmzn_scene_id top_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 		gtMatrix *local_transformation_matrix = cmzn_scene_get_total_transformation(
 			scene, top_scene);
@@ -452,7 +452,7 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 		if (field_module)
 		{
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			struct cmzn_scene *scene = region->getScene();
 			transformation_callback_flag = cmzn_scene_add_total_transformation_callback(
 				scene, current_scene,
 				Computed_field_scene_projection_transformation_callback,
@@ -471,7 +471,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 		if (field_module)
 		{
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			struct cmzn_scene *scene = region->getScene();
 			cmzn_scene_remove_total_transformation_callback(scene,
 				current_scene, Computed_field_scene_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);

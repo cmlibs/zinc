@@ -622,6 +622,13 @@ struct Computed_field
 	 */
 	int setOptionalSourceField(int index, Computed_field *sourceField);
 
+	/** Return owning field manager. Must check not nullptr before use as
+	 * can be cleared during clean-up. */
+	struct MANAGER(Computed_field) *getManager() const
+	{
+		return this->manager;
+	}
+
 }; /* struct Computed_field */
 
 inline void Computed_field_core::beginChange() const

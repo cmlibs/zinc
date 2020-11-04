@@ -75,7 +75,6 @@ SET( REGION_SRCS source/region/cmiss_region.cpp
 	source/stream/region_stream.cpp
 	source/region/cmiss_region_write_info.cpp )
 SET( REGION_HDRS source/region/cmiss_region.hpp
-	source/region/cmiss_region_private.h
 	source/stream/region_stream.hpp
 	source/region/cmiss_region_write_info.h )
 

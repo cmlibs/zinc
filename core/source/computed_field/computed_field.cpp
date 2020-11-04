@@ -129,7 +129,6 @@ like the number of components.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
-#include "general/any_object_definition.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -138,7 +137,6 @@ like the number of components.
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
-#include "region/cmiss_region_private.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>

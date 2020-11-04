@@ -553,7 +553,7 @@ cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id su
 	cmzn_field_group_id subregion_group = NULL;
 	if (cmzn_region_contains_subregion(region, subregion) && region != subregion)
 	{
-		cmzn_region_id parent_region = cmzn_region_get_parent_internal(subregion);
+		cmzn_region_id parent_region = subregion->getParent();
 		if (parent_region != region)
 		{
 			cmzn_field_group_id temp = getSubRegionGroup(subregion);

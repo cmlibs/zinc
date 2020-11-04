@@ -27,41 +27,45 @@ FILE : graphics_module.h
 #include "time/time_keeper.hpp"
 
 
-struct cmzn_graphics_module;
+/** Members are public only for legacy C functions. Create methods to access in any new code */
+struct cmzn_graphics_module
+{
+	/* attribute managers and defaults: */
+	cmzn_context *context;  // owning context, not accessed
+	cmzn_fontmodule_id fontmodule;
+	void *font_manager_callback_id;
+	// need to construct spectrummodule before materialmodule
+	cmzn_spectrummodule_id spectrummodule;
+	void *spectrum_manager_callback_id;
+	// need to construct materialmodule before glyphmodule
+	cmzn_materialmodule *materialmodule;
+	void *material_manager_callback_id;
+	struct cmzn_glyphmodule *glyphmodule;
+	void *glyph_manager_callback_id;
+	cmzn_lightmodule *lightmodule;
+	cmzn_scenefiltermodule *scenefiltermodule;
+	cmzn_sceneviewermodule_id sceneviewermodule;
+	cmzn_shadermodule_id shadermodule;
+	void *shaderprogram_manager_callback_id;
+	void *shaderuniforms_manager_callback_id;
+	cmzn_tessellationmodule_id tessellationmodule;
+	void *tessellation_manager_callback_id;
 
-/***************************************************************************//**
- * Create cmzn_scene_graphics_module
- *
- * @param glyph_list  List of glyphs
- * @param graphical_material_manager  Material manager
- * @param default_font  Default font
- * @param light_manager  cmzn_light Manager
- * @param spectrum_manager  Spectrum manager
- * @param default_spectrum  Default spectrum
- * @return  If successfully constructed, return the cmzn_scene
- */
-struct cmzn_graphics_module *cmzn_graphics_module_create(cmzn_context *context);
+public:
 
-/***************************************************************************//**
- * Return an additional handle to the graphics module. Increments the
- * internal 'access count' of the module.
- *
- * @param graphics_module  Existing handle to the graphics module.
- * @return  Additional handle to graphics module.
- */
-cmzn_graphics_module * cmzn_graphics_module_access(
-	cmzn_graphics_module * graphics_module);
+	cmzn_graphics_module(cmzn_context *contextIn);
 
-/***************************************************************************//**
- * Destroy this handle to the graphics module. The graphics module itself will
- * only be destroyed when all handles to it are destroyed.
- *
- * @param graphics_module_address  Address of the graphics module handle to be
- * destroyed.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-int cmzn_graphics_module_destroy(
-	cmzn_graphics_module * *graphics_module_address);
+public:
+
+	~cmzn_graphics_module();
+
+	static cmzn_graphics_module *create(cmzn_context *contextIn);
+
+	cmzn_context *getContext() const
+	{
+		return this->context;
+	}
+};
 
 /***************************************************************************//**
  * Return the light module in graphics module.
@@ -102,29 +106,6 @@ struct cmzn_font *cmzn_graphics_module_get_default_font(
 cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule(
 	struct cmzn_graphics_module *graphics_module);
 
-/***************************************************************************//**
- * Add a region with a scene created by this graphics module object
- * into a list, so that graphics module can deaccess the scene of the region
- * when the graphics module is being destroyed.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @param region  Pointer to a region.
- * @return  1 if successfully add region into a list, otherwise 0.
- */
-int cmzn_graphics_module_add_member_region(
-	struct cmzn_graphics_module *graphics_module, struct cmzn_region *region);
-
-/***************************************************************************//**
- * Remove a region which scene is created by this graphics module object
- * from a list.
- *
- * @param graphics_module  Pointer to a Graphics_module object.
- * @param region  Pointer to a region.
- * @return  1 if successfully remove region from a list, otherwise 0.
- */
-int cmzn_graphics_module_remove_member_region(
-		struct cmzn_graphics_module *graphics_module, struct cmzn_region *region);
-
 /**
  * Return the manager of scenefilter objects in graphics module.
  *
@@ -137,14 +118,6 @@ struct MANAGER(cmzn_scenefilter) *cmzn_graphics_module_get_scenefilter_manager(
 
 struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
 	struct cmzn_graphics_module *graphics_module);
-
-/**
- * this function will remove most of the callbacks in scenes belong to this
- * module. This function should only be called when context is being destroyed.
- */
-void cmzn_graphics_module_remove_external_callback_dependency(
-	struct cmzn_graphics_module *graphics_module);
-
 
 /**
  * Returns a handle to the scene viewer module.
@@ -165,19 +138,6 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
  */
 cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
 	cmzn_graphics_module * graphics_module);
-
-/***************************************************************************//**
- * Get a scene of region from graphics module with an access_count incremented
- * by 1. Caller is responsible for calling cmzn_scene_destroy to destroy the
- * reference to it.
- *
- * @param graphics_module  The module at which the scene will get its
- * graphics setting for.
- * @param region  The region at which the scene is representing for.
- * @return  Reference to the scene.
- */
-cmzn_scene_id cmzn_graphics_module_get_scene(
-	cmzn_graphics_module * graphics_module, cmzn_region_id region);
 
 /**
 * Get the shader module which stores shaderuniforms and shaderprogram objects.
@@ -233,9 +193,5 @@ cmzn_fontmodule_id cmzn_graphics_module_get_fontmodule(
  */
 cmzn_materialmodule_id cmzn_graphics_module_get_materialmodule(
 	struct cmzn_graphics_module *graphics_module);
-
-int cmzn_graphics_module_enable_scenes(
-	struct cmzn_graphics_module *graphics_module,
-	struct cmzn_region *cmiss_region);
 
 #endif /* !defined (GRAPHICS_MODULE_H) */

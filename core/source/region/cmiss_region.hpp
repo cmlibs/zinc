@@ -62,9 +62,10 @@ DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
 
 typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
 
-/***************************************************************************//**
- * A region object which contains fields and child regions.
- * Other data can be attached using the any_object_list.
+struct cmzn_scene;
+
+/**
+ * Hierarchical constainer for local fields and Scene and child regions.
  */
 struct cmzn_region
 {
@@ -91,8 +92,8 @@ private:
 	std::list<cmzn_fieldcache_id> field_caches;
 	std::vector<FieldDerivative *> fieldDerivatives;
 
-	/* list of objects attached to region */
-	struct LIST(Any_object) *any_object_list;
+	// Scene gives visualisation of region content
+	cmzn_scene *scene;
 
 	// incremented if any fields are modified in the region so field caches
 	// can detect if their values are invalid.
@@ -114,22 +115,20 @@ private:
 	/* number of objects using this region */
 	int access_count;
 
-	cmzn_region(cmzn_region *base_region);
+	cmzn_region(cmzn_context* contextIn);
 
 	~cmzn_region();
 
-	/**
-	 * Record the context this region was created for.
-	 * Should only be set by context / region creation functions.
-	 */
-	void setContext(cmzn_context *contextIn)
+	/** Called only by context->createRegion */
+	static cmzn_region *create(cmzn_context* contextIn);
+
+	/** Clear context pointer; called only when context is being destroyed. */
+	void clearContext()
 	{
-		this->context = contextIn;
+		this->context = nullptr;
 	}
 
 	void detachFields();
-
-	void detachFieldsHierarchical();
 
 	static void Computed_field_change(struct MANAGER_MESSAGE(Computed_field) *message, void *region_void);
 
@@ -143,7 +142,25 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_region* &region);
+	static int deaccess(cmzn_region* &region)
+	{
+		if (!region)
+			return CMZN_ERROR_ARGUMENT;
+		--(region->access_count);
+		if (region->access_count <= 0)
+			delete region;
+		region = nullptr;
+		return CMZN_OK;
+	}
+
+	static void reaccess(cmzn_region* &region, cmzn_region *newRegion)
+	{
+		if (newRegion)
+			++(newRegion->access_count);
+		if ((region) && (--(region->access_count) == 0))
+			delete region;
+		region = newRegion;
+	}
 
 	// all code which modifies values of fields must call this to ensure
 	// field caches are recalculated
@@ -216,6 +233,16 @@ public:
 	{
 		return this->fe_region;
 	}
+
+	/**
+	 * Callback for changes to FE_region attached to region.
+	 * Updates definitions of Computed_field wrappers for changed FE_fields in the
+	 * region.
+	 * Ensures region has cmiss_number and xi fields, at the appropriate time.
+	 * Triggers computed field changes if not already changed.
+	 * @private  Should only be called from finite_element_region.cpp
+	 */
+	void FeRegionChange();
 
 	cmzn_region *findChildByName(const char *name) const;
 
@@ -320,11 +347,14 @@ public:
 
 	void removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier);
 
-	/** Legacy method for attaching Scene to region; don't use any more */
-	struct LIST(Any_object) *getAnyObjectList() const
+	/** @return  Non-accessed pointer to scene for region, or nullptr if none */
+	cmzn_scene *getScene() const
 	{
-		return this->any_object_list;
+		return this->scene;
 	}
+
+	/** Only to be called by region or context destructors */
+	void detachScene();
 
 };
 
@@ -401,15 +431,6 @@ char *cmzn_region_get_path(struct cmzn_region *region);
  */
 char *cmzn_region_get_relative_path(struct cmzn_region *region,
 	struct cmzn_region *other_region);
-
-/***************************************************************************//**
- * Returns a non-accessed pointer to parent region of this region, if any.
- * Internal only.
- *
- * @param region  The child region.
- * @return  Non-accessed reference to parent region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_parent_internal(struct cmzn_region *region);
 
 /*******************************************************************************
  * Internal only. External API is cmzn_fieldmodule_find_field_by_name.

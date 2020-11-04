@@ -31,7 +31,6 @@ finite element fields defined on or interpolated over them.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "region/cmiss_region.hpp"
-#include "region/cmiss_region_private.h"
 #include "general/message.h"
 
 /*
@@ -179,7 +178,7 @@ void FE_region::update()
 					}
 				}
 			if (changed)
-				cmzn_region_FE_region_change(this->cmiss_region);
+				this->cmiss_region->FeRegionChange();
 		}
 	}
 }

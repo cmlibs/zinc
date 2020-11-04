@@ -16,8 +16,6 @@ FILE : scene.h
 #include <string>
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
-#include "general/any_object.h"
-#include "general/any_object_prototype.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/graphics.h"
@@ -80,12 +78,13 @@ private:
 private:
 	cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
 
+	~cmzn_scene();
+
 	void transformationChange();
 
 	void updateTimeDependence();
 
 public:
-	~cmzn_scene(); // to call from DESTROY(cmzn_scene)
 
 	/** Deaccess any fields used by scene and its graphics. */
 	void detachFields();
@@ -93,11 +92,46 @@ public:
 	/** Remove references to external objects and callbacks from them.
 	  * This function is called when:
 	  * - owning region is being destroyed
-	  * - scene is being removed from graphics module
 	  * - context is being destroyed */
 	void detachFromOwner();
 
+	/**
+	 * @return Non-accessed scene, or nullptr on failure.
+	 */
 	static cmzn_scene *create(cmzn_region *regionIn, cmzn_graphics_module *graphicsmoduleIn);
+
+	/** Special copy constructor making an independent copy of scene with its
+	 * graphics without graphics objects. Avoids setting up change callbacks etc.
+	 * @return Accessed scene, or nullptr on failure.
+	 */
+	static cmzn_scene *createCopy(const cmzn_scene& source);
+
+	inline cmzn_scene *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static inline int deaccess(cmzn_scene* &scene)
+	{
+		if (scene)
+		{
+			if (--(scene->access_count) == 0)
+				delete scene;
+			scene = 0;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	static inline void reaccess(cmzn_scene* &scene, cmzn_scene *newScene)
+	{
+		if (newScene)
+			++(newScene->access_count);
+		if ((scene) && (--(scene->access_count) == 0))
+			delete scene;
+		scene = newScene;
+	}
 
 	void addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier);
 
@@ -136,6 +170,18 @@ public:
 	bool isEditorCopy() const
 	{
 		return this->editorCopy;
+	}
+
+	cmzn_graphics_module *getGraphicsmodule() const
+	{
+		return this->graphics_module;
+	}
+
+	/** @return  Non-accessed pointer to parent scene, or nullptr if none */
+	cmzn_scene *getParent() const
+	{
+		cmzn_region *parentRegion = (this->region) ? this->region->getParent() : nullptr;
+		return (parentRegion) ? parentRegion->getScene() : nullptr;
 	}
 
 	/** @return  Non-accessed timekeeper for scene, or 0 if failed */
@@ -224,30 +270,6 @@ DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, struct cmzn_scene *, \
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_top_region_change, struct cmzn_scene *, \
 	struct cmzn_scene *, void);
-
-struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
-	struct cmzn_graphics_module *graphics_module);
-
-/** @return  Handle to graphics module. Up to caller to destroy */
-cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene);
-
-int cmzn_scene_get_picking_name(struct cmzn_scene *scene);
-
-/**
- * Return non-accessed handle to the scene for this region.
- * Currently, a cmzn_region may have at most one scene.
- * Private; do not use out of zinc library.
- * @param cmiss_region  The region of query.
- * @return Non-accessed handle to scene for region, or 0 if none.
- */
-struct cmzn_scene *cmzn_region_get_scene_private(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Deaccess the scene of the region
- * @param region The region to deaccess scene from
- * @return If successfully deaccess scene from region returns 1, otherwise 0
- */
-int cmzn_region_deaccess_scene(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Wrapper for accessing the list of graphics in <cmzn_scene>.
@@ -358,13 +380,6 @@ int cmzn_scene_get_graphics_position(
 int cmzn_scenes_match(struct cmzn_scene *scene1,
 	struct cmzn_scene *scene2);
 
-/***************************************************************************//**
- * Creates a cmzn_scene that is a copy of <existing_scene> -
- * WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
- */
-struct cmzn_scene *create_editor_copy_cmzn_scene(
-	struct cmzn_scene *existing_scene);
-
 int for_each_graphics_in_cmzn_scene(struct cmzn_scene *scene,
 	int (*cmzn_scene_graphics_iterator_function)(struct cmzn_graphics *graphics,
 		void *user_data),	void *user_data);
@@ -390,9 +405,8 @@ int cmzn_scene_remove_transformation_callback(
 	struct cmzn_scene *scene,
 	CMZN_CALLBACK_FUNCTION(cmzn_scene_transformation) *function, void *user_data);
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene);
-
-PROTOTYPE_ANY_OBJECT(cmzn_scene);
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_scene);
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_scene);
 
 /***************************************************************************//**
  * Remove selection groups from scene tree if they are empty.
@@ -445,14 +459,6 @@ int cmzn_scene_is_visible_hierarchical(cmzn_scene_id scene);
  */
 cmzn_graphics_id cmzn_scene_get_graphics_at_position(
 	cmzn_scene_id scene, int pos);
-
-/***************************************************************************//**
- * Check either region has scene or not.
- *
- * @param region  The handle to cmiss_region.
- * @return  Returns 1 if scene is found in region, otherwise 0.
- */
-int cmzn_region_has_scene(cmzn_region_id cmiss_region);
 
 cmzn_field_id cmzn_scene_get_selection_group_private_for_highlighting(
 	cmzn_scene_id scene);

@@ -28,7 +28,6 @@
 #include "general/mystring.h"
 #include "graphics/scene.h"
 #include "region/cmiss_region.hpp"
-#include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
@@ -59,14 +58,13 @@ Class methods
 -------------
 */
 
-cmzn_region::cmzn_region(cmzn_region *base_region) :
+cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	name(nullptr),
-	context(nullptr),
+	context(contextIn),
 	parent(nullptr),
 	first_child(nullptr),
 	next_sibling(nullptr),
 	previous_sibling(nullptr),
-	any_object_list(CREATE(LIST(Any_object))()),
 	fieldModifyCounter(0),
 	change_level(0),
 	hierarchical_change_level(0),
@@ -76,11 +74,16 @@ cmzn_region::cmzn_region(cmzn_region *base_region) :
 		cmzn_region::Computed_field_change, (void *)this, this->field_manager)),
 	fe_region(nullptr),
 	field_cache_size(0),
+	scene(nullptr),
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);
 	// cmzn_region must be fully constructed before creating FE_region
-	this->fe_region = new FE_region(this, (base_region) ? base_region->fe_region : nullptr);
+	// get any existing region from context to share element bases and shapes with
+	cmzn_region *baseRegion = contextIn->getBaseRegion();
+	this->fe_region = new FE_region(this, (baseRegion) ? baseRegion->fe_region : nullptr);
+	// create scene last as technically builds on FE_region
+	this->scene = cmzn_scene::create(this, contextIn->getGraphicsmodule());
 }
 
 cmzn_region::~cmzn_region()
@@ -120,15 +123,14 @@ cmzn_region::~cmzn_region()
 	}
 
 	// cease receiving field manager callbacks otherwise get problems from fields being destroyed
-	// e.g. selection field accessed by scene held in any_object_list
+	// e.g. selection field accessed by scene in region
 	if (this->field_manager_callback_id)
 	{
 		MANAGER_DEREGISTER(Computed_field)(this->field_manager_callback_id, this->field_manager);
 		this->field_manager_callback_id = 0;
 	}
 
-	DESTROY(LIST(Any_object))(&(this->any_object_list));
-
+	this->detachScene();
 	this->detachFields();
 
 	if (this->context)
@@ -137,7 +139,28 @@ cmzn_region::~cmzn_region()
 		DEALLOCATE(this->name);
 }
 
-/** partial cleanup of region, needed by destructor and detachFieldsHierarchical */
+cmzn_region *cmzn_region::create(cmzn_context* contextIn)
+{
+	if (!contextIn)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_region::create.  Missing context");
+		return nullptr;
+	}
+	cmzn_region *region = new cmzn_region(contextIn);
+	if ((region->change_callback_list) &&
+		(region->field_manager) &&
+		(region->field_manager_callback_id) &&
+		(region->scene) &&
+		(region->fe_region))
+	{
+		return region;
+	}
+	display_message(ERROR_MESSAGE, "cmzn_region::create.  Failed");
+	delete region;
+	return nullptr;
+}
+
+/** partial cleanup of region, needed by region and context destructors */
 void cmzn_region::detachFields()
 {
 	if (this->field_manager)
@@ -154,18 +177,6 @@ void cmzn_region::detachFields()
 		this->field_manager = 0;
 		DEACCESS(FE_region)(&this->fe_region);
 	}
-}
-
-/**
- * Deaccesses fields from region and all child regions recursively.
- * Temporary until circular references sorted out - certain fields access
- * regions. Call ONLY before deaccessing root_region in cmzn_context.
- */
-void cmzn_region::detachFieldsHierarchical()
-{
-	for (cmzn_region *child = this->first_child; (child); child = child->next_sibling)
-		child->detachFieldsHierarchical();
-	this->detachFields();
 }
 
 /**
@@ -216,11 +227,11 @@ void cmzn_region::Computed_field_change(
 		if (change_summary & (MANAGER_CHANGE_RESULT(Computed_field) |
 			MANAGER_CHANGE_ADD(Computed_field)))
 		{
-			cmzn_region *parent = cmzn_region_get_parent_internal(region);
-			if (parent)
+			cmzn_region *parentRegion = region->getParent();
+			if (parentRegion)
 			{
 				Computed_field_manager_propagate_hierarchical_field_changes(
-					parent->field_manager, message);
+					parentRegion->field_manager, message);
 			}
 		}
 	}
@@ -376,17 +387,6 @@ int cmzn_region::removeCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *func
 	}
 	display_message(ERROR_MESSAGE, "cmzn_region::removeCallback.  Could not remove callback");
 	return 0;
-}
-
-int cmzn_region::deaccess(cmzn_region* &region)
-{
-	if (!region)
-		return CMZN_ERROR_ARGUMENT;
-	--(region->access_count);
-	if (region->access_count <= 0)
-		delete region;
-	region = nullptr;
-	return CMZN_OK;
 }
 
 /**
@@ -807,6 +807,17 @@ void cmzn_region::removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
 	}
 }
 
+void cmzn_region::detachScene()
+{
+	if (this->scene)
+	{
+		this->beginChange();
+		this->scene->detachFromOwner();
+		cmzn_scene::deaccess(this->scene);
+		this->endChange();
+	}
+}
+
 /*
 Global functions
 ----------------
@@ -1011,13 +1022,6 @@ struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region)
 	if (parent)
 		parent->access();
 	return parent;
-}
-
-struct cmzn_region *cmzn_region_get_parent_internal(struct cmzn_region *region)
-{
-	if (region)
-		return region->getParent();
-	return nullptr;
 }
 
 struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region)
@@ -1279,105 +1283,6 @@ indented from the left margin by <indent> spaces; this is incremented by
 	return (return_code);
 } /* cmzn_region_list */
 
-int cmzn_region_private_attach_any_object(struct cmzn_region *region,
-	struct Any_object *any_object)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Adds <any_object> to the list of objects attached to <region>.
-This function is only externally visible to context objects.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(cmzn_region_private_attach_any_object);
-	if (region && any_object)
-	{
-		return_code =
-			ADD_OBJECT_TO_LIST(Any_object)(any_object, region->getAnyObjectList());
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_private_attach_any_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_region_private_attach_any_object */
-
-int cmzn_region_private_detach_any_object(struct cmzn_region *region,
-	struct Any_object *any_object)
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Removes <any_object> from the list of objects attached to <region>.
-Note that only in the case that <any_object> is the exact Any_object stored in
-<region> may it be cleaned up. In any other case the <any_object> passed in
-must be cleaned up by the calling function.
-This function is only externally visible to context objects.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(cmzn_region_private_detach_any_object);
-	if (region && any_object)
-	{
-		if (IS_OBJECT_IN_LIST(Any_object)(any_object, region->getAnyObjectList()))
-		{
-			return_code = REMOVE_OBJECT_FROM_LIST(Any_object)(any_object,
-				region->getAnyObjectList());
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_region_private_detach_any_object.  Object is not in list");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_private_detach_any_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_region_private_detach_any_object */
-
-struct LIST(Any_object) *
-cmzn_region_private_get_any_object_list(struct cmzn_region *region)
-/*******************************************************************************
-LAST MODIFIED : 1 October 2002
-
-DESCRIPTION :
-Returns the list of objects, abstractly stored as struct Any_object from
-<region>. It is important that this list not be modified directly.
-This function is only externally visible to context objects.
-==============================================================================*/
-{
-	struct LIST(Any_object) *any_object_list;
-
-	ENTER(cmzn_region_private_get_any_object_list);
-	if (region)
-	{
-		any_object_list = region->getAnyObjectList();
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_private_get_any_object_list.  Missing region");
-		any_object_list = (struct LIST(Any_object) *)NULL;
-	}
-	LEAVE;
-
-	return (any_object_list);
-} /* cmzn_region_private_get_any_object_list */
-
 /***************************************************************************//**
  * Returns field module container for this region's fields, which must be passed
  * to field factory create methods.
@@ -1625,20 +1530,6 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 	return return_code;
 }
 
-void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
-	cmzn_fieldmodulenotifier *notifier)
-{
-	if (region && notifier)
-		region->addFieldmodulenotifier(notifier);
-}
-
-void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
-	cmzn_fieldmodulenotifier *notifier)
-{
-	if (region && notifier)
-		region->removeFieldmodulenotifier(notifier);
-}
-
 /**
  * Ensures there is an up-to-date computed field wrapper for <fe_field>.
  * @param fe_field  Field to wrap.
@@ -1692,53 +1583,48 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	return 1;
 }
 
-void cmzn_region_FE_region_change(cmzn_region *region)
+void cmzn_region::FeRegionChange()
 {
-	if (region)
+	struct CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(this->fe_region);
+	int field_change_summary;
+	CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(fe_field_changes, &field_change_summary);
+
+	cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(this);
+	MANAGER_BEGIN_CACHE(Computed_field)(this->field_manager);
+
+	// check field wrappers?
+	if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
 	{
-		FE_region *fe_region = region->get_FE_region();
-		struct CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(fe_region);
-		int field_change_summary;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(fe_field_changes, &field_change_summary);
-
-		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-		MANAGER_BEGIN_CACHE(Computed_field)(region->getFieldManager());
-
-		// check field wrappers?
-		if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
-		{
-			CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
-				FE_field_to_Computed_field_change, (void *)fieldmodule);
-		}
-		if (FE_region_need_add_cmiss_number_field(fe_region))
-		{
-			const char *cmiss_number_field_name = "cmiss_number";
-			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
-			if (!field)
-			{
-				field = cmzn_fieldmodule_create_field_cmiss_number(fieldmodule);
-				cmzn_field_set_name(field, cmiss_number_field_name);
-				cmzn_field_set_managed(field, true);
-			}
-			cmzn_field_destroy(&field);
-		}
-		if (FE_region_need_add_xi_field(fe_region))
-		{
-			cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
-			cmzn_field_destroy(&xi_field);
-		}
-		// force field update for changes to nodes/elements etc.:
-		MANAGER_EXTERNAL_CHANGE(Computed_field)(region->getFieldManager());
-		MANAGER_END_CACHE(Computed_field)(region->getFieldManager());
-		cmzn_fieldmodule_destroy(&fieldmodule);
-#if 0
-		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
-		{
-			/* Currently we do nothing as the computed field wrapper is destroyed
-				before the FE_field is removed from the manager.  This is not necessary
-				and this response could be to delete the wrapper. */
-		}
-#endif
+		CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
+			FE_field_to_Computed_field_change, (void *)fieldmodule);
 	}
+	if (FE_region_need_add_cmiss_number_field(this->fe_region))
+	{
+		const char *cmiss_number_field_name = "cmiss_number";
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
+		if (!field)
+		{
+			field = cmzn_fieldmodule_create_field_cmiss_number(fieldmodule);
+			cmzn_field_set_name(field, cmiss_number_field_name);
+			cmzn_field_set_managed(field, true);
+		}
+		cmzn_field_destroy(&field);
+	}
+	if (FE_region_need_add_xi_field(this->fe_region))
+	{
+		cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
+		cmzn_field_destroy(&xi_field);
+	}
+	// force field update for changes to nodes/elements etc.:
+	MANAGER_EXTERNAL_CHANGE(Computed_field)(this->field_manager);
+	MANAGER_END_CACHE(Computed_field)(this->field_manager);
+	cmzn_fieldmodule_destroy(&fieldmodule);
+#if 0
+	if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
+	{
+		/* Currently we do nothing as the computed field wrapper is destroyed
+			before the FE_field is removed from the manager.  This is not necessary
+			and this response could be to delete the wrapper. */
+	}
+#endif
 }
-

@@ -56,7 +56,6 @@
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif
 #include "region/cmiss_region.hpp"
-#include "region/cmiss_region_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
@@ -423,7 +422,7 @@ cmzn_fieldmodulenotifier::cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule
 	user_data(0),
 	access_count(1)
 {
-	cmzn_region_add_fieldmodulenotifier(region, this);
+	this->region->addFieldmodulenotifier(this);
 }
 
 cmzn_fieldmodulenotifier::~cmzn_fieldmodulenotifier()
@@ -438,7 +437,7 @@ int cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
 		if (notifier->access_count <= 0)
 			delete notifier;
 		else if ((1 == notifier->access_count) && notifier->region)
-			cmzn_region_remove_fieldmodulenotifier(notifier->region, notifier);
+			notifier->region->removeFieldmodulenotifier(notifier);
 		notifier = 0;
 		return CMZN_OK;
 	}

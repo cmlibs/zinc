@@ -1120,7 +1120,7 @@ bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics)
 cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics)
 {
 	if (graphics)
-		return ACCESS(cmzn_scene)(graphics->scene);
+		return graphics->scene->access();
 	return 0;
 }
 
@@ -6136,7 +6136,7 @@ int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
 	if (graphics && (CMZN_GLYPH_SHAPE_TYPE_INVALID != glyph_shape_type))
 	{
-		cmzn_graphics_module* graphics_module = cmzn_scene_get_graphics_module(graphics->scene);
+		cmzn_graphics_module* graphics_module = graphics->scene->getGraphicsmodule();
 		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
 		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_shape_type);
 		if (glyph || (glyph_shape_type == CMZN_GLYPH_SHAPE_TYPE_NONE))
@@ -6144,7 +6144,6 @@ int cmzn_graphicspointattributes_set_glyph_shape_type(
 			return_code = cmzn_graphicspointattributes_set_glyph(point_attributes, glyph);
 		}
 		cmzn_glyphmodule_destroy(&glyphmodule);
-		cmzn_graphics_module_destroy(&graphics_module);
 	}
 	return return_code;
 }
