@@ -19,7 +19,7 @@ finite element fields defined on or interpolated over them.
 #include "general/callback.h"
 #include "general/change_log.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /*
 Global types
@@ -270,6 +270,7 @@ int FE_region_get_number_of_FE_fields(struct FE_region *fe_region);
  * Field must be of FE_field_type GENERAL_FE_FIELD.
  * Field properties other than those listed are ignored in comparisons and
  * left at their default values.
+ * @return  Accessed FE_field or nullptr if failed.
  */
 struct FE_field *FE_region_get_FE_field_with_general_properties(
 	struct FE_region *fe_region, const char *name, enum Value_type value_type,

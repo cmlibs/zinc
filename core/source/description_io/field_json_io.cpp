@@ -35,7 +35,6 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/region.hpp"
-#include "region/cmiss_region_private.h"
 #include <stdio.h>
 #include <string.h>
 

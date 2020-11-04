@@ -23,14 +23,14 @@
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #if defined (USE_OPENCASCADE)
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "mesh/cmiss_element_private.hpp"
@@ -553,7 +553,7 @@ cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id su
 	cmzn_field_group_id subregion_group = NULL;
 	if (cmzn_region_contains_subregion(region, subregion) && region != subregion)
 	{
-		cmzn_region_id parent_region = cmzn_region_get_parent_internal(subregion);
+		cmzn_region_id parent_region = subregion->getParent();
 		if (parent_region != region)
 		{
 			cmzn_field_group_id temp = getSubRegionGroup(subregion);

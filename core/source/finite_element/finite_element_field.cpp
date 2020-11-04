@@ -83,6 +83,98 @@ Global functions
 ----------------
 */
 
+FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
+	name(duplicate_string(nameIn)),
+	fe_region(fe_regionIn),
+	fe_field_type(GENERAL_FE_FIELD),
+	indexer_field(nullptr),
+	number_of_indexed_values(0),
+	cm_field_type(CM_GENERAL_FIELD),
+	number_of_components(0),  // GRC really?
+	component_names(nullptr),  // not allocated until we have custom names
+	coordinate_system(),
+	number_of_values(0),
+	values_storage(nullptr),
+	value_type(UNKNOWN_VALUE),
+	element_xi_host_mesh(nullptr),
+	number_of_wrappers(0),
+	access_count(1)
+{
+	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+		this->meshFieldData[d] = nullptr;
+}
+
+FE_field::~FE_field()
+{
+	if (0 != this->access_count)
+	{
+		display_message(ERROR_MESSAGE, "~FE_field.  Non-zero access_count (%d)", this->access_count);
+		return;
+	}
+	if (this->element_xi_host_mesh)
+		FE_mesh::deaccess(this->element_xi_host_mesh);
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+		delete this->meshFieldData[d];
+	if (this->indexer_field)
+		FE_field::deaccess(&this->indexer_field);
+	if (this->values_storage)
+	{
+		/* free any arrays pointed to by field->values_storage */
+		free_value_storage_array(this->values_storage, this->value_type,
+			(struct FE_time_sequence *)NULL, this->number_of_values);
+		/* free the global values */
+		DEALLOCATE(this->values_storage);
+	}
+	if (this->name)
+		DEALLOCATE(this->name);
+	if (this->component_names)
+	{
+		for (int c = 0; c < this->number_of_components; ++c)
+			DEALLOCATE(this->component_names[c]);
+		DEALLOCATE(this->component_names);
+	}
+}
+
+FE_field *FE_field::create(const char *nameIn, FE_region *fe_regionIn)
+{
+	if ((nameIn) && (fe_regionIn))
+		return new FE_field(nameIn, fe_regionIn);
+	display_message(ERROR_MESSAGE, "FE_field::create.  Invalid argument(s)");
+	return nullptr;
+}
+
+int FE_field::deaccess(FE_field **fieldAddress)
+{
+	if (!((fieldAddress) && (*fieldAddress)))
+		return 0;
+	--((*fieldAddress)->access_count);
+	if ((*fieldAddress)->access_count <= 0)
+		delete *fieldAddress;
+	*fieldAddress = nullptr;
+	return 1;
+}
+
+int FE_field::setName(const char *nameIn)
+{
+	if (nameIn)
+	{
+		char *temp = duplicate_string(nameIn);
+		if (temp)
+		{
+			DEALLOCATE(this->name);
+			this->name = temp;
+			return 1;
+		}
+		display_message(ERROR_MESSAGE, "FE_field::setName.  Failed");
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FE_field::setName.  Missing name");
+	}
+	return 0;
+}
+
 /**
  * Get definition of field on element, or higher dimension element it is a face
  * of, or a face of a face. If field is inherited, returns the xi coordinate
@@ -247,342 +339,151 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(CM_field_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(CM_field_type)
 
-struct FE_field_info *CREATE(FE_field_info)(struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_field_info with a pointer to <fe_region>.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
+char *FE_field::getComponentName(int componentIndex) const
 {
-	struct FE_field_info *fe_field_info;
+	if ((0 <= componentIndex) && (componentIndex < this->number_of_components))
+		return get_automatic_component_name(this->component_names, componentIndex);
+	return nullptr;
+}
 
-	ENTER(CREATE(FE_field_info));
-	fe_field_info = (struct FE_field_info *)NULL;
-	if (fe_region)
-	{
-		if (ALLOCATE(fe_field_info, struct FE_field_info, 1))
-		{
-			/* maintain pointer to the the FE_region this information belongs to.
-				 It is not ACCESSed since FE_region is the owning object and it
-				 would prevent the FE_region from being destroyed. */
-			fe_field_info->fe_region = fe_region;
-			fe_field_info->access_count = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_field_info).  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_field_info).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (fe_field_info);
-} /* CREATE(FE_field_info) */
-
-int DESTROY(FE_field_info)(
-	struct FE_field_info **fe_field_info_address)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Destroys the FE_field_info at *<field_info_address>. Frees the
-memory for the information and sets <*field_info_address> to NULL.
-==============================================================================*/
+bool FE_field::setComponentName(int componentIndex, const char *componentName)
 {
-	int return_code;
-	struct FE_field_info *fe_field_info;
-
-	ENTER(DESTROY(FE_field_info));
-	if ((fe_field_info_address) &&
-		(fe_field_info = *fe_field_info_address))
+	if ((0 <= componentIndex) && (componentIndex < this->number_of_components) && (componentName))
 	{
-		if (0 == fe_field_info->access_count)
+		const char *tempName = this->getComponentName(componentIndex);
+		const bool change = strcmp(tempName, componentName);
+		DEALLOCATE(tempName);
+		if (!change)
+			return true;
+		char *tempComponentName = duplicate_string(componentName);
+		if (tempComponentName)
 		{
-			DEALLOCATE(*fe_field_info_address);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_field_info).  Non-zero access count");
-			return_code = 0;
-		}
-		*fe_field_info_address = (struct FE_field_info *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_field_info).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_field_info) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_field_info)
-
-int FE_field_info_clear_FE_region(struct FE_field_info *field_info)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_info_clear_FE_region);
-	if (field_info)
-	{
-		field_info->fe_region = (struct FE_region *)NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_info_clear_FE_region.  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_info_clear_FE_region */
-
-struct FE_field *CREATE(FE_field)(const char *name, struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates and returns a struct FE_field of <name> belonging to the ultimate
-master FE_region of <fe_region>. The new field has no name/identifier, zero
-components, field_type FIELD, NOT_APPLICABLE coordinate system, no field values.
-???RC Used to pass <fe_time> in here and store in FE_field; can now get it from
-FE_region.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(CREATE(FE_field));
-	field = (struct FE_field *)NULL;
-	if (name && fe_region)
-	{
-		if (ALLOCATE(field, struct FE_field, 1))
-		{
-			return_code = 1;
-			if (!(field->name = duplicate_string(name)))
+			/* component_names array may be non-existent if default names used */
+			if (this->component_names)
 			{
-				return_code = 0;
+				if (this->component_names[componentIndex])
+				{
+					DEALLOCATE(this->component_names[componentIndex]);
+				}
 			}
-			/* get and ACCESS FE_field_info relating this field back to fe_region */
-			if (!(field->info =
-				ACCESS(FE_field_info)(FE_region_get_FE_field_info(fe_region))))
+			else
 			{
-				return_code = 0;
+				if (ALLOCATE(this->component_names, char *, this->number_of_components))
+				{
+					for (int i = 0; i < this->number_of_components; ++i)
+						this->component_names[i] = nullptr;
+				}
 			}
-			field->fe_field_type = GENERAL_FE_FIELD;
-			field->indexer_field = (struct FE_field *)NULL;
-			field->number_of_indexed_values = 0;
-			field->cm_field_type = CM_GENERAL_FIELD;
-			field->number_of_components = 0;
-			/* don't allocate component names until we have custom names */
-			field->component_names = (char **)NULL;
-			field->coordinate_system.type = NOT_APPLICABLE;
-			field->number_of_values = 0;
-			field->values_storage = (Value_storage *)NULL;
-			field->value_type = UNKNOWN_VALUE;
-			field->element_xi_host_mesh = 0;
-			field->number_of_times = 0;
-			field->time_value_type = UNKNOWN_VALUE;
-			field->times = (Value_storage *)NULL;
-			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
-				field->meshFieldData[d] = 0;
-			field->number_of_wrappers = 0;
-			field->access_count = 0;
-			if (!return_code)
+			if (this->component_names)
 			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(FE_field).  Could not construct contents");
-				DEALLOCATE(field);
-				field = (struct FE_field *)NULL;
+				this->component_names[componentIndex] = tempComponentName;
+				return true;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"CREATE(FE_field).  Not enough memory");
-		}
+		display_message(ERROR_MESSAGE, "FE_field::setComponentName.  Failed");
+		return false;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "CREATE(FE_field).  Invalid argument(s)");
-	}
-	LEAVE;
+	display_message(ERROR_MESSAGE, "FE_field::setComponentName.  Invalid argument(s)");
+	return false;
+}
 
-	return (field);
-} /* CREATE(FE_field) */
-
-int DESTROY(FE_field)(struct FE_field **field_address)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Frees the memory for the field and sets <*field_address> to NULL.
-==============================================================================*/
+void FE_field::list() const
 {
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(DESTROY(FE_field));
-	if ((field_address)&&(field= *field_address))
+	display_message(INFORMATION_MESSAGE, "field : %s\n", this->name);
+	display_message(INFORMATION_MESSAGE, "  access count = %d\n", this->access_count);
+	display_message(INFORMATION_MESSAGE, "  type = %s",
+		ENUMERATOR_STRING(CM_field_type)(this->cm_field_type));
+	display_message(INFORMATION_MESSAGE, "  coordinate system = %s",
+		ENUMERATOR_STRING(Coordinate_system_type)(this->coordinate_system.type));
+	const int number_of_components = this->number_of_components;
+	display_message(INFORMATION_MESSAGE, ", #Components = %d\n", number_of_components);
+	for (int c = 0; c < this->number_of_components; ++c)
 	{
-		if (0==field->access_count)
+		char *component_name = this->getComponentName(c);
+		if (component_name)
 		{
-			if (field->element_xi_host_mesh)
-				FE_mesh::deaccess(field->element_xi_host_mesh);
-			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
-				delete field->meshFieldData[d];
-
-			/* free the field name */
-			if (field->name)
-			{
-				DEALLOCATE(field->name);
-			}
-			DEACCESS(FE_field_info)(&field->info);
-			REACCESS(FE_field)(&(field->indexer_field),(struct FE_field *)NULL);
-			if (field->values_storage)
-			{
-				/* free any arrays pointed to by field->values_storage */
-				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_sequence *)NULL,field->number_of_values);
-				/* free the global values */
-				DEALLOCATE(field->values_storage);
-			}
-
-			// free component names
-			if (field->component_names)
-			{
-				for (int c = 0; c < field->number_of_components; ++c)
-					DEALLOCATE(field->component_names[c]);
-				DEALLOCATE(field->component_names);
-			}
-
-			DEALLOCATE(*field_address);
-			return_code=1;
+			display_message(INFORMATION_MESSAGE, "    %s", component_name);
+			DEALLOCATE(component_name);
 		}
-		else
+		/* display field based information*/
+		if (this->number_of_values)
 		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_field).  Non-zero access_count (%d)",field->access_count);
-			return_code=0;
+			int count;
+
+			display_message(INFORMATION_MESSAGE, "field based values: ");
+			switch (this->value_type)
+			{
+			case FE_VALUE_VALUE:
+			{
+				display_message(INFORMATION_MESSAGE, "\n");
+				/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+				for (count = 0; count < this->number_of_values; count++)
+				{
+					display_message(INFORMATION_MESSAGE, " %" FE_VALUE_STRING,
+						*((FE_value*)(this->values_storage + count*sizeof(FE_value))));
+					if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
+						(0==((count+1) % FE_VALUE_MAX_OUTPUT_COLUMNS)))
+					{
+						display_message(INFORMATION_MESSAGE, "\n");
+					}
+				}
+			} break;
+			default:
+			{
+				display_message(INFORMATION_MESSAGE, "list_FE_field: "
+					"Can't display that field value_type yet. Write the code!");
+			} break;
+			}	/* switch () */
 		}
+		display_message(INFORMATION_MESSAGE, "\n");
 	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
+}
 
-	return (return_code);
-} /* DESTROY(FE_field) */
-
-int list_FE_field(struct FE_field *field,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
-
-DESCRIPTION :
-Outputs the information contained in <field>.
-==============================================================================*/
+int list_FE_field(struct FE_field *field, void *)
 {
-	char *component_name;
-	int i, number_of_components, return_code;
-
-	ENTER(list_FE_field);
-	USE_PARAMETER(dummy);
 	if (field)
 	{
-		return_code=1;
-		/* write the identifier */
-		display_message(INFORMATION_MESSAGE, "field : %s\n", field->name);
-		display_message(INFORMATION_MESSAGE,
-			"  access count = %d\n", field->access_count);
-		display_message(INFORMATION_MESSAGE,"  type = %s",
-			ENUMERATOR_STRING(CM_field_type)(field->cm_field_type));
-		display_message(INFORMATION_MESSAGE,"  coordinate system = %s",
-			ENUMERATOR_STRING(Coordinate_system_type)(field->coordinate_system.type));
-		number_of_components=field->number_of_components;
-		display_message(INFORMATION_MESSAGE,", #Components = %d\n",
-			number_of_components);
-		i=0;
-		while (return_code&&(i<number_of_components))
-		{
-			if (NULL != (component_name = get_FE_field_component_name(field, i)))
-			{
-				display_message(INFORMATION_MESSAGE,"    %s", component_name);
-				DEALLOCATE(component_name);
-			}
-			/* display field based information*/
-			if (field->number_of_values)
-			{
-				int count;
-
-				display_message(INFORMATION_MESSAGE,"field based values: ");
-				switch (field->value_type)
-				{
-					case FE_VALUE_VALUE:
-					{
-						display_message(INFORMATION_MESSAGE,"\n");
-						/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-						for (count=0;count<field->number_of_values;count++)
-						{
-							display_message(INFORMATION_MESSAGE, " %" FE_VALUE_STRING,
-								*((FE_value*)(field->values_storage + count*sizeof(FE_value))));
-							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-								(0==((count+1) % FE_VALUE_MAX_OUTPUT_COLUMNS)))
-							{
-								display_message(INFORMATION_MESSAGE,"\n");
-							}
-						}
-					} break;
-					default:
-					{
-						display_message(INFORMATION_MESSAGE,"list_FE_field: "
-							"Can't display that field value_type yet. Write the code!");
-					} break;
-				}	/* switch () */
-			}
-			display_message(INFORMATION_MESSAGE,"\n");
-			i++;
-		}
-
+		field->list();
+		return 1;
 	}
-	else
+	display_message(ERROR_MESSAGE, "list_FE_field.  Invalid argument");
+	return 0;
+}
+
+bool FE_field::hasMultipleTimes()
+{
+	return FE_region_FE_field_has_multiple_times(this->fe_region, this);
+}
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_field)
+{
+	if (object)
+		return object->access();
+	return 0;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_field)
+{
+	return FE_field::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_field)
+{
+	if (object_address)
 	{
-		display_message(ERROR_MESSAGE,"list_FE_field.  Invalid argument");
-		return_code=0;
+		if (new_object)
+		{
+			new_object->access();
+		}
+		if (*object_address)
+		{
+			FE_field::deaccess(object_address);
+		}
+		*object_address = new_object;
+		return 1;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* list_FE_field */
-
-DECLARE_OBJECT_FUNCTIONS(FE_field)
-
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(FE_field)
+	return 0;
+}
 
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(FE_field)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(FE_field,name,const char *)
@@ -590,18 +491,16 @@ DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_field)
 
-int FE_field_copy_without_identifier(struct FE_field *destination,
-	struct FE_field *source)
+int FE_field::copyProperties(FE_field *source)
 {
-	if (!(destination && destination->info && destination->info->fe_region
-		&& source && source->info && source->info->fe_region))
+	if (!(this->fe_region && source && source->fe_region))
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_copy_without_identifier.  Invalid argument(s)");
+			"FE_field::copyProperties.  Invalid argument(s)");
 		return 0;
 	}
 	int return_code = 1;
-	const bool externalMerge = destination->info->fe_region != source->info->fe_region;
+	const bool externalMerge = this->fe_region != source->fe_region;
 	char **component_names=(char **)NULL;
 	if (source->component_names)
 	{
@@ -628,26 +527,14 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 			}
 		}
 	}
-	Value_storage *values_storage = 0;
-	Value_storage *times = 0;
+	Value_storage *new_values_storage = 0;
 	if (0<source->number_of_values)
 	{
-		if (!((values_storage=make_value_storage_array(source->value_type,
+		if (!((new_values_storage =make_value_storage_array(source->value_type,
 			(struct FE_time_sequence *)NULL,source->number_of_values))&&
-			copy_value_storage_array(values_storage,source->value_type,
+			copy_value_storage_array(new_values_storage,source->value_type,
 				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
 				source->number_of_values,source->values_storage, /*optimised_merge*/0)))
-		{
-			return_code=0;
-		}
-	}
-	if (0<source->number_of_times)
-	{
-		if (!((times=make_value_storage_array(source->time_value_type,
-			(struct FE_time_sequence *)NULL,source->number_of_times))&&
-			copy_value_storage_array(times,source->time_value_type,
-				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-				source->number_of_times,source->times, /*optimised_merge*/0)))
 		{
 			return_code=0;
 		}
@@ -661,7 +548,7 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 		{
 			if (externalMerge)
 			{
-				indexer_field = FE_region_get_FE_field_from_name(destination->info->fe_region, source->indexer_field->name);
+				indexer_field = FE_region_get_FE_field_from_name(this->fe_region, source->indexer_field->name);
 				if (!indexer_field)
 					return_code = 0;
 			}
@@ -671,24 +558,24 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 			}
 		}
 	}
-	const FE_mesh *element_xi_host_mesh = 0;
+	FE_mesh *element_xi_host_mesh = nullptr;
 	if (ELEMENT_XI_VALUE == source->value_type)
 	{
 		if (!source->element_xi_host_mesh)
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_field_copy_without_identifier.  Source element:xi valued field %s does not have a host mesh", source->name);
+				"FE_field::copyProperties.  Source element:xi valued field %s does not have a host mesh", source->name);
 			return_code = 0;
 		}
 		else if (externalMerge)
 		{
 			// find equivalent host mesh in destination FE_region
 			// to be fixed in future when arbitrary meshes are allowed:
-			element_xi_host_mesh = FE_region_find_FE_mesh_by_dimension(destination->info->fe_region, source->element_xi_host_mesh->getDimension());
+			element_xi_host_mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, source->element_xi_host_mesh->getDimension());
 			if (strcmp(element_xi_host_mesh->getName(), source->element_xi_host_mesh->getName()) != 0)
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_field_copy_without_identifier.  Cannot find destination host mesh named %s for merging 'element:xi' valued field %s. Needs to be implemented.",
+					"FE_field::copyProperties.  Cannot find destination host mesh named %s for merging 'element:xi' valued field %s. Needs to be implemented.",
 					source->element_xi_host_mesh->getName(), source->name);
 				return_code = 0;
 			}
@@ -702,65 +589,53 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 	{
 		// don't want to change info if merging to external region. In all other cases should be same info anyway
 		if (!externalMerge)
-			REACCESS(FE_field_info)(&(destination->info), source->info);
-		if (destination->cm_field_type != source->cm_field_type)
+			this->set_FE_region(source->get_FE_region());
+		if (this->cm_field_type != source->cm_field_type)
 		{
 			display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
-				source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
+				source->name, ENUMERATOR_STRING(CM_field_type)(this->cm_field_type),
 				ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
-			destination->cm_field_type = source->cm_field_type;
+			this->cm_field_type = source->cm_field_type;
 		}
-		destination->fe_field_type=source->fe_field_type;
-		REACCESS(FE_field)(&(destination->indexer_field), indexer_field);
-		destination->number_of_indexed_values=
+		this->fe_field_type=source->fe_field_type;
+		REACCESS(FE_field)(&(this->indexer_field), indexer_field);
+		this->number_of_indexed_values=
 			source->number_of_indexed_values;
-		if (destination->component_names)
+		if (this->component_names)
 		{
-			for (int i = 0; i < destination->number_of_components; i++)
+			for (int i = 0; i < this->number_of_components; i++)
 			{
-				if (destination->component_names[i])
+				if (this->component_names[i])
 				{
-					DEALLOCATE(destination->component_names[i]);
+					DEALLOCATE(this->component_names[i]);
 				}
 			}
-			DEALLOCATE(destination->component_names);
+			DEALLOCATE(this->component_names);
 		}
-		destination->number_of_components=source->number_of_components;
-		destination->component_names=component_names;
-		COPY(Coordinate_system)(&(destination->coordinate_system),
-			&(source->coordinate_system));
-		destination->value_type=source->value_type;
+		this->number_of_components=source->number_of_components;
+		this->component_names=component_names;
+		this->coordinate_system = source->coordinate_system;
+		this->value_type=source->value_type;
 		if (element_xi_host_mesh)
 			element_xi_host_mesh->access();
-		if (destination->element_xi_host_mesh)
-			FE_mesh::deaccess(destination->element_xi_host_mesh);
-		destination->element_xi_host_mesh = element_xi_host_mesh;
-		destination->time_value_type=source->time_value_type;
+		if (this->element_xi_host_mesh)
+			FE_mesh::deaccess(this->element_xi_host_mesh);
+		this->element_xi_host_mesh = element_xi_host_mesh;
 		/* replace old values_storage with new */
-		if (0<destination->number_of_values)
+		if (0<this->number_of_values)
 		{
-			free_value_storage_array(destination->values_storage,
-				destination->value_type,(struct FE_time_sequence *)NULL,
-				destination->number_of_values);
-			DEALLOCATE(destination->values_storage);
+			free_value_storage_array(this->values_storage,
+				this->value_type,(struct FE_time_sequence *)NULL,
+				this->number_of_values);
+			DEALLOCATE(this->values_storage);
 		}
-		destination->number_of_values=source->number_of_values;
-		destination->values_storage=values_storage;
-		/* replace old times with new */
-		if (0<destination->number_of_times)
-		{
-			free_value_storage_array(destination->times,
-				destination->time_value_type,(struct FE_time_sequence *)NULL,
-				destination->number_of_times);
-			DEALLOCATE(destination->times);
-		}
-		destination->number_of_times=source->number_of_times;
-		destination->times=times;
+		this->number_of_values=source->number_of_values;
+		this->values_storage= new_values_storage;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_copy_without_identifier.  Invalid source field or could not copy dynamic contents");
+			"FE_field::copyProperties.  Invalid source field or could not copy dynamic contents");
 	}
 	if (!return_code)
 	{
@@ -775,17 +650,11 @@ int FE_field_copy_without_identifier(struct FE_field *destination,
 			}
 			DEALLOCATE(component_names);
 		}
-		if (values_storage)
+		if (new_values_storage)
 		{
-			free_value_storage_array(values_storage,source->value_type,
+			free_value_storage_array(new_values_storage,source->value_type,
 				(struct FE_time_sequence *)NULL,source->number_of_values);
-			DEALLOCATE(values_storage);
-		}
-		if (times)
-		{
-			free_value_storage_array(times,source->time_value_type,
-				(struct FE_time_sequence *)NULL,source->number_of_times);
-			DEALLOCATE(times);
+			DEALLOCATE(new_values_storage);
 		}
 	}
 	return (return_code);
@@ -840,9 +709,7 @@ bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
 			Coordinate_systems_match(&(field1->coordinate_system),
 				&(field2->coordinate_system)) &&
 			(field1->value_type == field2->value_type) &&
-			(field1->number_of_components == field2->number_of_components) &&
-			(field1->number_of_times == field2->number_of_times) &&
-			(field1->time_value_type == field2->time_value_type))
+			(field1->number_of_components == field2->number_of_components))
 		{
 			// matches until disproven
 			// check component names match
@@ -876,7 +743,7 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
 	struct LIST(FE_field) *field_list = reinterpret_cast<struct LIST(FE_field) *>(field_list_void);
 	if (field && field_list)
 	{
-		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->name, field_list);
+		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->getName(), field_list);
 		if ((!(other_field)) || FE_fields_match_fundamental(field, other_field))
 			return 1;
 	}
@@ -888,43 +755,11 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
 	return 0;
 }
 
-int FE_field_has_multiple_times(struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Returns true if any node_fields corresponding to <field> have time_sequences.
-This will be improved when regionalised, so that hopefully the node field
-list we will be looking at will not be global but will belong to the region.
-==============================================================================*/
+bool FE_field::usesNonlinearBasis() const
 {
-	int return_code;
-
-	ENTER(FE_field_has_multiple_times);
-	if (fe_field)
-	{
-		return_code = FE_region_FE_field_has_multiple_times(
-			FE_field_get_FE_region(fe_field), fe_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_has_multiple_times.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_has_multiple_times */
-
-bool FE_field_uses_non_linear_basis(struct FE_field *fe_field)
-{
-	if (fe_field && fe_field->info && fe_field->info->fe_region)
-	{
-		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
-			if ((fe_field->meshFieldData[d]) && fe_field->meshFieldData[d]->usesNonLinearBasis())
-				return true;
-	}
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+		if ((this->meshFieldData[d]) && this->meshFieldData[d]->usesNonLinearBasis())
+			return true;
 	return false;
 }
 
@@ -962,335 +797,71 @@ Iterator function for adding <field> to <field_list> if not currently in it.
 	return (return_code);
 } /* ensure_FE_field_is_in_list */
 
-struct FE_region *FE_field_get_FE_region(struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Returns the FE_region that <fe_field> belongs to.
-==============================================================================*/
-{
-	struct FE_region *fe_region;
-
-	ENTER(FE_field_get_FE_region);
-	if (fe_field && fe_field->info)
-	{
-		fe_region = fe_field->info->fe_region;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_get_FE_region.  Invalid argument(s)");
-		fe_region = (struct FE_region *)NULL;
-	}
-	LEAVE;
-
-	return (fe_region);
-} /* FE_field_get_FE_region */
-
-int FE_field_add_wrapper(struct FE_field *field)
+char *get_FE_field_component_name(struct FE_field *field, int component_no)
 {
 	if (field)
-		return (++(field->number_of_wrappers));
-	return 0;
+		return field->getComponentName(component_no);
+	display_message(ERROR_MESSAGE, "get_FE_field_component_name.  Invalid argument(s)");
+	return nullptr;
 }
-
-int FE_field_remove_wrapper(struct FE_field *field)
-{
-	if (field)
-		return (--(field->number_of_wrappers));
-	return 0;
-}
-
-int FE_field_set_FE_field_info(struct FE_field *fe_field,
-	struct FE_field_info *fe_field_info)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Changes the FE_field_info at <fe_field> to <fe_field_info>.
-Private function only to be called by FE_region when merging FE_regions!
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_set_FE_field_info);
-	if (fe_field && fe_field_info)
-	{
-		return_code =
-			REACCESS(FE_field_info)(&(fe_field->info), fe_field_info);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_set_FE_field_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_set_FE_field_info */
-
-int FE_field_get_access_count(struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 2003
-
-DESCRIPTION :
-Returns the FE_region that <fe_field> belongs to.
-==============================================================================*/
-{
-	int access_count;
-
-	ENTER(FE_field_get_access_count);
-	if (fe_field)
-	{
-		access_count = fe_field->access_count;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_get_access_count.  Invalid argument(s)");
-		access_count = 0;
-	}
-	LEAVE;
-
-	return (access_count);
-} /* FE_field_get_access_count */
-
-char *get_FE_field_component_name(struct FE_field *field,int component_no)
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Returns the name of component <component_no> of <field>. If no name is stored
-for the component, a string comprising the value component_no+1 is returned.
-Up to calling function to DEALLOCATE the returned string.
-==============================================================================*/
-{
-	char *component_name;
-
-	ENTER(get_FE_field_component_name);
-	if (field&&(0<=component_no)&&(component_no<field->number_of_components))
-	{
-		component_name=
-			get_automatic_component_name(field->component_names,component_no);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_component_name.  Invalid argument(s)");
-		component_name=(char *)NULL;
-	}
-	LEAVE;
-
-	return (component_name);
-} /* get_FE_field_component_name */
 
 int set_FE_field_component_name(struct FE_field *field,int component_no,
 	const char *component_name)
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Sets the name of component <component_no> of <field>. Only sets name if it is
-different from that already returned for field to preserve default names if can.
-==============================================================================*/
 {
-	char *temp_component_name;
-	int different_name,i,return_code;
-
-	ENTER(set_FE_field_component_name);
-	if (field&&(0<=component_no)&&(component_no<field->number_of_components)&&
-		component_name)
-	{
-		if (NULL != (temp_component_name=get_FE_field_component_name(field,component_no)))
-		{
-			different_name=strcmp(temp_component_name,component_name);
-			DEALLOCATE(temp_component_name);
-		}
-		else
-		{
-			different_name=1;
-		}
-		if (different_name)
-		{
-			if (ALLOCATE(temp_component_name,char,strlen(component_name)+1))
-			{
-				strcpy(temp_component_name,component_name);
-				/* component_names array may be non-existent if default names used */
-				if (field->component_names)
-				{
-					if (field->component_names[component_no])
-					{
-						DEALLOCATE(field->component_names[component_no]);
-					}
-				}
-				else
-				{
-					if (ALLOCATE(field->component_names,char *,
-						field->number_of_components))
-					{
-						/* clear the pointers to names */
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->component_names[i]=(char *)NULL;
-						}
-					}
-				}
-				if (field->component_names)
-				{
-					field->component_names[component_no]=temp_component_name;
-					return_code=1;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_field_component_name.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_component_name.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_component_name */
-
-struct Coordinate_system *get_FE_field_coordinate_system(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Returns a pointer to the coordinate system for the <field>.
-???RC Should not be returning pointer to internal structure; change to
-fill struct Coordinate_system at address passed to this function.
-==============================================================================*/
-{
-	struct Coordinate_system *coordinate_system;
-
-	ENTER(get_FE_field_coordinate_system);
-	if (field)
-	{
-		coordinate_system = &field->coordinate_system;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_coordinate_system.  Invalid field");
-		coordinate_system = (struct Coordinate_system *)NULL;
-	}
-	LEAVE;
-
-	return (coordinate_system);
-} /* get_FE_field_coordinate_system */
+	if ((field) && (component_name))
+		return field->setComponentName(component_no, component_name);
+	display_message(ERROR_MESSAGE, "set_FE_field_component_name.  Invalid argument(s)");
+	return 0;
+}
 
 int set_FE_field_coordinate_system(struct FE_field *field,
-	struct Coordinate_system *coordinate_system)
-/*******************************************************************************
-LAST MODIFIED : 28 January 1999
-
-DESCRIPTION :
-Sets the coordinate system of the <field>.
-==============================================================================*/
+	const Coordinate_system *coordinate_system)
 {
-	int return_code;
-
-	ENTER(set_FE_field_coordinate_system);
-	if (field&&coordinate_system)
+	if ((field) && (coordinate_system))
 	{
-		return_code=
-			COPY(Coordinate_system)(&field->coordinate_system,coordinate_system);
+		field->setCoordinateSystem(*coordinate_system);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_coordinate_system.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	display_message(ERROR_MESSAGE,
+		"set_FE_field_coordinate_system.  Invalid argument(s)");
+	return 0;
+}
 
-	return (return_code);
-} /* set_FE_field_coordinate_system */
-
-void FE_field_clearMeshFieldData(struct FE_field *field, FE_mesh *mesh)
+void FE_field::clearMeshFieldData(FE_mesh *mesh)
 {
-	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
+	if (mesh && (mesh->get_FE_region() == this->fe_region))
 	{
 		const int dim = mesh->getDimension() - 1;
-		if (field->meshFieldData[dim])
+		if (this->meshFieldData[dim])
 		{
-			delete field->meshFieldData[dim];
-			field->meshFieldData[dim] = 0;
-			field->info->fe_region->FE_field_change(field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+			delete this->meshFieldData[dim];
+			this->meshFieldData[dim] = 0;
+			this->fe_region->FE_field_change(this, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		}
 	}
 }
 
-FE_mesh_field_data *FE_field_createMeshFieldData(struct FE_field *field,
-	FE_mesh *mesh)
+FE_mesh_field_data *FE_field::createMeshFieldData(FE_mesh *mesh)
 {
 	// GRC check field type general, real/int only?
-	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
+	if (mesh && (mesh->get_FE_region() == this->fe_region))
 	{
 		const int dim = mesh->getDimension() - 1;
-		if (!field->meshFieldData[dim])
-			field->meshFieldData[dim] = FE_mesh_field_data::create(field, mesh);
-		return field->meshFieldData[dim];
+		if (!this->meshFieldData[dim])
+			this->meshFieldData[dim] = FE_mesh_field_data::create(this, mesh);
+		return this->meshFieldData[dim];
 	}
-	return 0;
-}
-
-FE_mesh_field_data *FE_field_getMeshFieldData(struct FE_field *field,
-	const FE_mesh *mesh)
-{
-	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
-		return field->meshFieldData[mesh->getDimension() - 1];
-	display_message(ERROR_MESSAGE, "FE_field_getMeshFieldData.  Invalid argument(s)");
-	return 0;
+	return nullptr;
 }
 
 int get_FE_field_number_of_components(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 16 November 1998
-
-DESCRIPTION :
-Returns the number of components for the <field>.
-==============================================================================*/
 {
-	int number_of_components;
-
-	ENTER(get_FE_field_number_of_components);
 	if (field)
-	{
-		number_of_components=field->number_of_components;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_number_of_components.  Missing field");
-		number_of_components=0;
-	}
-	LEAVE;
-
-	return (number_of_components);
-} /* get_FE_field_number_of_components */
+		return field->getNumberOfComponents();
+	display_message(ERROR_MESSAGE,
+		"get_FE_field_number_of_components.  Missing field");
+	return 0;
+}
 
 int set_FE_field_number_of_components(struct FE_field *field,
 	int number_of_components)
@@ -1418,299 +989,33 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 	return (return_code);
 } /* set_FE_field_number_of_components */
 
-int get_FE_field_number_of_values(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Returns the number of global values for the <field>.
-==============================================================================*/
-{
-	int number_of_values;
-
-	ENTER(get_FE_field_number_of_values);
-	if (field)
-	{
-		number_of_values=field->number_of_values;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_number_of_values.  Invalid field");
-		number_of_values=0;
-	}
-	LEAVE;
-
-	return (number_of_values);
-} /* get_FE_field_number_of_values */
-
-int get_FE_field_number_of_times(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1999
-
-DESCRIPTION :
-Returns the number of global times for the <field>.
-==============================================================================*/
-{
-	int number_of_times;
-
-	ENTER(get_FE_field_number_of_times);
-	if (field)
-	{
-		number_of_times=field->number_of_times;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_number_of_times.  Invalid field");
-		number_of_times=0;
-	}
-	LEAVE;
-
-	return (number_of_times);
-} /* get_FE_field_number_of_times */
-
-int set_FE_field_number_of_times(struct FE_field *field,
-	int number_of_times)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1999
-
-DESCRIPTION :
-Sets the number of times stored with the <field>
-REALLOCATES the requires memory in field->value_storage, based upon the
-field->time_value_type.
-
-For non-array types, the contents of field->times_storage is:
-   | data type (eg FE_value) | x number_of_times
-
-For array types, the contents of field->times is:
-   ( | int (number of array values) | pointer to array (eg double *) | x number_of_times )
-
-Sets data in this memory to 0, pointers to NULL.
-
-MUST have called set_FE_field_time_value_type before calling this function.
-Should only call this function for unmanaged fields.
-==============================================================================*/
-{
-	int i,j, return_code,size;
-	Value_storage *new_value, *times;
-
-	ENTER(set_FE_field_number_of_times);
-	if (field&&(0<=number_of_times))
-	{
-		return_code=1;
-		if (number_of_times != 0)
-		{
-			field->number_of_times=number_of_times;
-			size = get_Value_storage_size(field->time_value_type,
-				(struct FE_time_sequence *)NULL);
-
-			if (REALLOCATE(times,field->times,Value_storage,
-				size*number_of_times))
-			{
-				field->times = times;
-				for (i=0;i<number_of_times;i++)
-				{
-					switch (field->time_value_type)
-					{
-						/* set values to zero*/
-						case DOUBLE_VALUE:
-						{
-							*((double *)times) = 0;
-						}	break;
-						case ELEMENT_XI_VALUE:
-						{
-							new_value = times;
-							*((cmzn_element **)new_value) = 0;
-							new_value += sizeof(cmzn_element *);
-							for (j = 0 ; j < MAXIMUM_ELEMENT_XI_DIMENSIONS ; j++)
-							{
-								*((FE_value *)new_value) = 0;
-								new_value+=sizeof(FE_value);
-							}
-						}	break;
-						case FE_VALUE_VALUE:
-						{
-							*((FE_value *)times) = 0;
-						}	break;
-						case FLT_VALUE:
-						{
-							*((float *)times) = 0;
-						} break;
-						case SHORT_VALUE:
-						{
-							display_message(ERROR_MESSAGE," set_FE_field_number_of_times."
-								"SHORT_VALUE. Code not written yet. Beware alignment problems ");
-							return_code =0;
-						} break;
-						case INT_VALUE:
-						{
-							*((int *)times) = 0;
-						}	break;
-						case UNSIGNED_VALUE:
-						{
-							*((unsigned *)times) = 0;
-						}	break;
-						/* set number of array values to 0, array pointers to NULL*/
-						case DOUBLE_ARRAY_VALUE:
-						{
-							double **array_address;
-							/* copy the number of array values (0!) to times*/
-							*((int *)times) = 0;
-							/* copy the pointer to the array values (currently NULL), to times*/
-							array_address = (double **)(times+sizeof(int));
-							*array_address = (double *)NULL;
-						} break;
-						case FE_VALUE_ARRAY_VALUE:
-						{
-							FE_value **array_address;
-							*((int *)times) = 0;
-							array_address = (FE_value **)(times+sizeof(int));
-							*array_address = (FE_value *)NULL;
-						} break;
-						case FLT_ARRAY_VALUE:
-						{
-							float **array_address;
-							*((int *)times) = 0;
-							array_address = (float **)(times+sizeof(int));
-							*array_address = (float *)NULL;
-						} break;
-						case SHORT_ARRAY_VALUE:
-						{
-							short **array_address;
-							*((int *)times) = 0;
-							array_address = (short **)(times+sizeof(int));
-							*array_address = (short *)NULL;
-						} break;
-						case INT_ARRAY_VALUE:
-						{
-							int **array_address;
-							*((int *)times) = 0;
-							array_address = (int **)(times+sizeof(int));
-							*array_address = (int *)NULL;
-						} break;
-						case UNSIGNED_ARRAY_VALUE:
-						{
-							unsigned **array_address;
-							*((int *)times) = 0;
-							array_address = (unsigned **)(times+sizeof(int));
-							*array_address = (unsigned *)NULL;
-						} break;
-						case STRING_VALUE:
-						{
-							char **str_address;
-							str_address = (char **)(times);
-							*str_address = (char *)NULL;
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE," set_FE_field_number_of_times."
-								"  Unsupported value_type");
-							return_code =0;
-						} break;
-					}	/*	switch (field->time_value_type) */
-					times += size;
-				}/* (i=0;i<number_of_times;i++) */
-			}/* if (REALLOCATE */
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_field_number_of_times."
-					" Not enough memory");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_number_of_times.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_number_of_times */
-
 enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2001
-
-DESCRIPTION :
-Returns the CM_field_type for the <field>.
-==============================================================================*/
 {
-	enum CM_field_type type;
-
-	ENTER(get_FE_field_CM_field_type);
 	if (field)
-	{
-		type=field->cm_field_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_CM_field_type.  Invalid field");
-		type=CM_GENERAL_FIELD;
-	}
-	LEAVE;
-
-	return (type);
-} /* get_FE_field_CM_field_type */
+		return field->get_CM_field_type();
+	display_message(ERROR_MESSAGE, "get_FE_field_CM_field_type.  Invalid field");
+	return CM_GENERAL_FIELD;
+}
 
 int set_FE_field_CM_field_type(struct FE_field *field,
 	enum CM_field_type cm_field_type)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2001
-
-DESCRIPTION :
-Sets the CM_field_type of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(set_FE_field_CM_field_type);
 	if (field)
 	{
-		field->cm_field_type=cm_field_type;
-		return_code=1;
+		field->set_CM_field_type(cm_field_type);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_CM_field_type.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_CM_field_type */
+	display_message(ERROR_MESSAGE, "set_FE_field_CM_field_type.  Invalid argument(s)");
+	return 0;
+}
 
 enum FE_field_type get_FE_field_FE_field_type(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns the FE_field_type for the <field>.
-==============================================================================*/
 {
-	enum FE_field_type fe_field_type;
-
-	ENTER(get_FE_field_FE_field_type);
 	if (field)
-	{
-		fe_field_type=field->fe_field_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_FE_field_type.  Invalid field");
-		fe_field_type=UNKNOWN_FE_FIELD;
-	}
-	LEAVE;
-
-	return (fe_field_type);
-} /* get_FE_field_FE_field_type */
+		return field->get_FE_field_type();
+	display_message(ERROR_MESSAGE, "get_FE_field_FE_field_type.  Invalid field");
+	return UNKNOWN_FE_FIELD;
+}
 
 int set_FE_field_type_constant(struct FE_field *field)
 /*******************************************************************************
@@ -1731,6 +1036,12 @@ Should only call this function for unmanaged fields.
 	return_code = 0;
 	if (field)
 	{
+		if (field->getValueType() == ELEMENT_XI_VALUE)
+		{
+			display_message(ERROR_MESSAGE,
+				"set_FE_field_type_constant.  Not implemented for ELEMENT_XI_VALUE");
+			return 0;
+		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_values = field->number_of_components;
 		if (NULL != (values_storage = make_value_storage_array(field->value_type,
@@ -1817,7 +1128,7 @@ LAST MODIFIED : 1 September 1999
 DESCRIPTION :
 If the field is of type INDEXED_FE_FIELD, the indexer_field and
 number_of_indexed_values it uses are returned - otherwise an error is reported.
-Use function get_FE_field_FE_field_type to determine the field type.
+Use function FE_field::get_FE_field_type to determine the field type.
 ==============================================================================*/
 {
 	int return_code;
@@ -1868,6 +1179,12 @@ Should only call this function for unmanaged fields.
 		(indexer_field != field) &&
 		(INDEXED_FE_FIELD != get_FE_field_FE_field_type(indexer_field)))
 	{
+		if (field->getValueType() == ELEMENT_XI_VALUE)
+		{
+			display_message(ERROR_MESSAGE,
+				"set_FE_field_type_indexed.  Not implemented for ELEMENT_XI_VALUE");
+			return 0;
+		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_values = field->number_of_components*number_of_indexed_values;
 		if (NULL != (values_storage = make_value_storage_array(field->value_type,
@@ -1904,91 +1221,13 @@ Should only call this function for unmanaged fields.
 	return (return_code);
 } /* set_FE_field_type_indexed */
 
-int FE_field_set_indexer_field(struct FE_field *fe_field,
-	struct FE_field *indexer_fe_field)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-If <fe_field> is already indexed, substitutes <indexer_fe_field>.
-Does not change any of the values currently stored in <fe_field>
-Used to merge indexed fields into different FE_regions; should not be used for
-any other purpose.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_set_indexer_field);
-	return_code = 0;
-	if (fe_field && (INDEXED_FE_FIELD == fe_field->fe_field_type) &&
-		indexer_fe_field &&
-		(1 == get_FE_field_number_of_components(indexer_fe_field)) &&
-		(INT_VALUE == get_FE_field_value_type(indexer_fe_field)) &&
-		/* and to avoid possible endless loops... */
-		(INDEXED_FE_FIELD != get_FE_field_FE_field_type(indexer_fe_field)))
-	{
-		REACCESS(FE_field)(&(fe_field->indexer_field), indexer_fe_field);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_set_indexer_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_set_indexer_field */
-
-int FE_field_log_FE_field_change(struct FE_field *fe_field,
-	void *fe_field_change_log_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Logs the field in <fe_field> as RELATED_OBJECT_CHANGED in the
-struct CHANGE_LOG(FE_field) pointed to by <fe_field_change_log_void>.
-???RC Later may wish to allow more than just RELATED_OBJECT_CHANGED, or have
-separate functions for each type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_log_FE_field_change);
-	/*???RC try to make this as efficient as possible so no argument checking */
-	return_code = CHANGE_LOG_OBJECT_CHANGE(FE_field)(
-		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void,
-		fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_log_FE_field_change */
-
 enum Value_type get_FE_field_value_type(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns the value_type of the <field>.
-==============================================================================*/
 {
-	enum Value_type value_type;
-
-	ENTER(get_FE_field_value_type);
 	if (field)
-	{
-		value_type = field->value_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_value_type.  Invalid field");
-		value_type = UNKNOWN_VALUE;
-	}
-	LEAVE;
-
-	return (value_type);
-} /* get_FE_field_value_type */
+		return field->getValueType();
+	display_message(ERROR_MESSAGE, "get_FE_field_value_type.  Invalid field");
+	return UNKNOWN_VALUE;
+}
 
 int set_FE_field_value_type(struct FE_field *field, enum Value_type value_type)
 /*******************************************************************************
@@ -2056,294 +1295,22 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 	return (return_code);
 }/* set_FE_field_value_type */
 
-const FE_mesh *FE_field_get_element_xi_host_mesh(struct FE_field *field)
+int FE_field::setElementXiHostMesh(FE_mesh *hostMesh)
 {
-	if (field)
-		return field->element_xi_host_mesh;
-	return 0;
-}
-
-int FE_field_set_element_xi_host_mesh(struct FE_field *field,
-	const FE_mesh *hostMesh)
-{
-	if (!((field) && (field->value_type == ELEMENT_XI_VALUE) && (hostMesh)
-		&& (hostMesh->get_FE_region() == field->info->fe_region))) // Current limitation of same region can be removed later
+	if (!((this->value_type == ELEMENT_XI_VALUE) && (hostMesh)
+		&& (hostMesh->get_FE_region() == this->fe_region))) // Current limitation of same region can be removed later
 	{
-		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Invalid arguments");
+		display_message(ERROR_MESSAGE, "FE_field::setElementXiHostMesh.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	if (field->element_xi_host_mesh)
+	if (this->element_xi_host_mesh)
 	{
-		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Host mesh is already set");
+		display_message(ERROR_MESSAGE, "FE_field::setElementXiHostMesh.  Host mesh is already set");
 		return CMZN_ERROR_ALREADY_EXISTS;
 	}
-	field->element_xi_host_mesh = hostMesh->access();
+	this->element_xi_host_mesh = hostMesh->access();
 	return CMZN_OK;
 }
-
-enum Value_type get_FE_field_time_value_type(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1999
-
-DESCRIPTION :
-Returns the time_value_type of the <field>.
-==============================================================================*/
-{
-	enum Value_type time_value_type;
-
-	ENTER(get_FE_field_time_value_type);
-	if (field)
-	{
-		time_value_type = field->time_value_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_time_value_type.  Invalid field");
-		time_value_type = UNKNOWN_VALUE;
-	}
-	LEAVE;
-
-	return (time_value_type);
-} /*get_FE_field_time_value_type */
-
-int set_FE_field_time_value_type(struct FE_field *field, enum Value_type time_value_type)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1999
-
-DESCRIPTION :
-Sets the time_value_type of the <field>.
-Should only call this function for unmanaged fields.
-=========================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_field_time_value_type);
-	if (field)
-	{
-		field->time_value_type = time_value_type;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "set_FE_field_time_value_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}/*set_FE_field_time_value_type */
-
-int get_FE_field_max_array_size(struct FE_field *field, int *max_number_of_array_values,
-	enum Value_type *value_type)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Given the field, search vaules_storage  for the largest array, and return it in
-max_number_of_array_values. Return the field value_type.
-====================================================================================*/
-{
-	int return_code, size, i, number_of_array_values;
-
-	Value_storage *values_storage;
-
-	ENTER(get_FE_field_max_array_size);
-	if (field)
-	{
-		if (field->number_of_values)
-		{
-			return_code = 1;
-			*value_type = field->value_type;
-			switch (field->value_type)
-			{
-			case DOUBLE_ARRAY_VALUE:
-			case FE_VALUE_ARRAY_VALUE:
-			case FLT_ARRAY_VALUE:
-			case SHORT_ARRAY_VALUE:
-			case INT_ARRAY_VALUE:
-			case UNSIGNED_ARRAY_VALUE:
-			case STRING_VALUE:
-			{
-				*max_number_of_array_values = 0;
-				size = get_Value_storage_size(*value_type,
-					(struct FE_time_sequence *)NULL);
-				values_storage = field->values_storage;
-				for (i = 0; i<field->number_of_values; i++)
-				{
-					if (field->value_type == STRING_VALUE)
-					{
-						char *the_string, **str_address;
-						/* get the string's length*/
-						str_address = (char **)(values_storage);
-						the_string = *str_address;
-						number_of_array_values = static_cast<int>(strlen(the_string)) + 1;/* +1 for null termination*/
-						if (number_of_array_values > *max_number_of_array_values)
-						{
-							*max_number_of_array_values = number_of_array_values;
-						}
-					}
-					else
-					{
-						/* get the number of array values  for the specified array in vaules_storage */
-						number_of_array_values = *((int *)values_storage);
-						if (number_of_array_values > *max_number_of_array_values)
-						{
-							*max_number_of_array_values = number_of_array_values;
-						}
-					}
-					values_storage += (i*size);
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE, " get_FE_field_max_array_size. Not an array type)");
-				number_of_array_values = 0;
-				return_code = 0;
-			} break;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, " get_FE_field_max_array_size. No values at field");
-
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, " get_FE_field_max_array_size. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* get_FE_field_max_array_size */
-
-int get_FE_field_array_attributes(struct FE_field *field, int value_number,
-	int *number_of_array_values, enum Value_type *value_type)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Get the value_type and the number of array values for the array in field->values_storage
-specified by value_number.
-Give an error if field->values_storage isn't storing array types.
-====================================================================================*/
-{
-
-	int return_code, size;
-
-	Value_storage *values_storage;
-
-	ENTER(get_FE_field_array_attributes);
-	if (field&&(0<=value_number)&&(value_number<=field->number_of_values))
-	{
-		if (field->number_of_values)
-		{
-			return_code = 1;
-			*value_type = field->value_type;
-			switch (field->value_type)
-			{
-			case DOUBLE_ARRAY_VALUE:
-			case FE_VALUE_ARRAY_VALUE:
-			case FLT_ARRAY_VALUE:
-			case SHORT_ARRAY_VALUE:
-			case INT_ARRAY_VALUE:
-			case UNSIGNED_ARRAY_VALUE:
-			{
-				/* get the correct offset*/
-				size = get_Value_storage_size(*value_type,
-					(struct FE_time_sequence *)NULL);
-				values_storage = field->values_storage+(value_number*size);
-				/* get the number of array values  for the specified array in vaules_storage */
-				*number_of_array_values = *((int *)values_storage);
-			} break;
-			case STRING_VALUE:
-			{
-				char *the_string, **str_address;
-				/* get the correct offset*/
-				size = get_Value_storage_size(*value_type,
-					(struct FE_time_sequence *)NULL);
-				values_storage = field->values_storage+(value_number*size);
-				/* get the string*/
-				str_address = (char **)(values_storage);
-				the_string = *str_address;
-				*number_of_array_values = static_cast<int>(strlen(the_string)) + 1;/* +1 for null termination*/
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE, "get_FE_field_array_attributes. Not an array type)");
-				number_of_array_values = 0;
-				return_code = 0;
-			} break;
-			}
-		}
-		else
-		{
-			return_code = 0;
-			display_message(ERROR_MESSAGE, "get_FE_field_array_attributes. No values at the field");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "get_FE_field_array_attributes. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* get_FE_field_array_attributes */
-
-int get_FE_field_string_value(struct FE_field *field, int value_number,
-	char **string)
-/*******************************************************************************
-LAST MODIFIED : 22 September 1999
-
-DESCRIPTION :
-Returns a copy of the string stored at <value_number> in the <field>.
-Up to the calling function to DEALLOCATE the returned string.
-Returned <*string> may be a valid NULL if that is what is in the field.
-==============================================================================*/
-{
-	int return_code, size;
-	char *the_string, **string_address;
-
-	ENTER(get_FE_field_string_value);
-	return_code = 0;
-	if (field&&(0<=value_number)&&(value_number<field->number_of_values)&&string)
-	{
-		/* get the pointer to the stored string */
-		size = get_Value_storage_size(STRING_VALUE, (struct FE_time_sequence *)NULL);
-		string_address = (char **)(field->values_storage+value_number*size);
-		if (NULL != (the_string = *string_address))
-		{
-			if (ALLOCATE(*string, char, strlen(the_string)+1))
-			{
-				strcpy(*string, the_string);
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_field_string_value.  Not enough memory");
-			}
-		}
-		else
-		{
-			/* no string, so successfully return NULL */
-			*string = (char *)NULL;
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_string_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_field_string_value */
 
 int set_FE_field_string_value(struct FE_field *field, int value_number,
 	char *string)
@@ -2360,7 +1327,7 @@ Copies and sets the <string> stored at <value_number> in the <field>.
 
 	ENTER(set_FE_field_string_value);
 	return_code = 0;
-	if (field&&(0<=value_number)&&(value_number<field->number_of_values))
+	if (field && (field->value_type == STRING_VALUE) && (0<=value_number)&&(value_number<field->number_of_values))
 	{
 		/* get the pointer to the stored string */
 		size = get_Value_storage_size(STRING_VALUE, (struct FE_time_sequence *)NULL);
@@ -2401,158 +1368,6 @@ Copies and sets the <string> stored at <value_number> in the <field>.
 	return (return_code);
 } /* set_FE_field_string_value */
 
-int get_FE_field_element_xi_value(struct FE_field *field, int number,
-	cmzn_element **element, FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Gets the specified global value for the <field>.
-==============================================================================*/
-{
-	int i, number_of_xi_dimensions, return_code;
-	Value_storage *values_storage;
-
-	ENTER(get_FE_field_element_xi_value);
-	if (field&&(0<=number)&&(number<field->number_of_values)
-		&&(field->value_type==ELEMENT_XI_VALUE))
-	{
-		if (field->number_of_values)
-		{
-			return_code = 1;
-
-			/* get the correct offset*/
-			values_storage = field->values_storage + (number*(sizeof(cmzn_element *) +
-				MAXIMUM_ELEMENT_XI_DIMENSIONS * sizeof(FE_value)));
-
-			/* copy the element and xi out */
-			*element = *((cmzn_element **)values_storage);
-			values_storage += sizeof(cmzn_element *);
-			number_of_xi_dimensions = (*element) ? (*element)->getDimension() : 0;
-			if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
-			{
-				/* Extract the xi values */
-				for (i = 0; i < number_of_xi_dimensions; i++)
-				{
-					xi[i] = *((FE_value *)values_storage);
-					values_storage += sizeof(FE_value);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_field_element_xi_value.  Number of xi dimensions of element exceeds maximum");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_field_element_xi_value. no values at field");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_element_xi_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}/* get_FE_field_element_xi_value */
-
-int set_FE_field_element_xi_value(struct FE_field *field, int number,
-	cmzn_element *element, FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 14 September 1999
-
-DESCRIPTION :
-Sets the specified global value for the <field>, to the passed Element and xi.
-The <field> must be of the correct FE_field_type to have such values and
-<number> must be within the range valid for that type.
-==============================================================================*/
-{
-	int i, number_of_xi_dimensions, return_code;
-	Value_storage  *values_storage;
-
-	ENTER(set_FE_field_element_xi_value);
-	if (field&&(0<=number)&&(number<=field->number_of_values)
-		&&(field->value_type==ELEMENT_XI_VALUE) && element && xi)
-	{
-		return_code = 1;
-		number_of_xi_dimensions = element->getDimension();
-		if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
-		{
-
-			/* get the correct offset*/
-			values_storage = field->values_storage + (number*(sizeof(cmzn_element *) +
-				MAXIMUM_ELEMENT_XI_DIMENSIONS * sizeof(FE_value)));
-
-			/* copy the element in ensuring correct accessing */
-			REACCESS(cmzn_element)(((cmzn_element **)values_storage), element);
-			values_storage += sizeof(struct Element *);
-			/* Write in the xi values */
-			for (i = 0; i<MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
-			{
-				if (i<number_of_xi_dimensions)
-				{
-					*((FE_value *)values_storage) = xi[i];
-				}
-				else
-				{
-					/* set spare xi values to 0 */
-					*((FE_value *)values_storage) = 0.0;
-				}
-				values_storage += sizeof(FE_value);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_field_element_xi_value.  Number of xi dimensions of element exceeds maximum");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, " set_FE_field_element_xi_value. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* set_FE_field_element_xi_value */
-
-int get_FE_field_FE_value_value(struct FE_field *field, int number,
-	FE_value *value)
-/*******************************************************************************
-LAST MODIFIED : 2 September 1999
-
-DESCRIPTION :
-Gets the specified global FE_value <value> from <field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_field_FE_value_value);
-	if (field&&(FE_VALUE_VALUE==field->value_type)&&field->values_storage&&
-		(0<=number)&&(number<=field->number_of_values)&&value)
-	{
-		*value = *((FE_value *)(field->values_storage+(number*sizeof(FE_value))));
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_FE_value_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_field_FE_value_value */
-
 int set_FE_field_FE_value_value(struct FE_field *field, int number,
 	FE_value value)
 /*******************************************************************************
@@ -2561,7 +1376,7 @@ LAST MODIFIED : 2 September 1999
 DESCRIPTION :
 Sets the specified global FE_value <value> in <field>.
 The <field> must be of type FE_VALUE_VALUE to have such values and
-<number> must be within the range from get_FE_field_number_of_values.
+<number> must be within the range from FE_field::getNumberOfValues.
 ==============================================================================*/
 {
 	int return_code;
@@ -2584,34 +1399,6 @@ The <field> must be of type FE_VALUE_VALUE to have such values and
 	return (return_code);
 } /* set_FE_field_FE_value_value */
 
-int get_FE_field_int_value(struct FE_field *field, int number, int *value)
-/*******************************************************************************
-LAST MODIFIED : 2 September 1999
-
-DESCRIPTION :
-Gets the specified global int <value> from <field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_field_int_value);
-	if (field&&(INT_VALUE==field->value_type)&&field->values_storage&&
-		(0<=number)&&(number<=field->number_of_values)&&value)
-	{
-		*value = *((int *)(field->values_storage+(number*sizeof(int))));
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_int_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_field_int_value */
-
 int set_FE_field_int_value(struct FE_field *field, int number, int value)
 /*******************************************************************************
 LAST MODIFIED : 2 September 1999
@@ -2619,7 +1406,7 @@ LAST MODIFIED : 2 September 1999
 DESCRIPTION :
 Sets the specified global int <value> in <field>.
 The <field> must be of type INT_VALUE to have such values and
-<number> must be within the range from get_FE_field_number_of_values.
+<number> must be within the range from FE_field::getNumberOfValues.
 ==============================================================================*/
 {
 	int return_code;
@@ -2642,140 +1429,13 @@ The <field> must be of type INT_VALUE to have such values and
 	return (return_code);
 } /* set_FE_field_int_value */
 
-int get_FE_field_time_FE_value(struct FE_field *field, int number, FE_value *value)
-/*******************************************************************************
-LAST MODIFIED : 10 June 1999
-
-DESCRIPTION :
-Gets the specified global time value for the <field>.
-==============================================================================*/
-{
-	int return_code;
-	Value_storage *times;
-
-	ENTER(get_FE_field_time_FE_value);
-	if (field&&(0<=number)&&(number<field->number_of_times))
-	{
-		if (field->number_of_times)
-		{
-			return_code = 1;
-			/* get the correct offset*/
-			times = field->times+(number*sizeof(FE_value));
-			/* copy the value in*/
-			*value = *((FE_value *)times);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_field_time_FE_value.  no times at field");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_time_FE_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}/*get_FE_field_time_FE_value */
-
-int set_FE_field_time_FE_value(struct FE_field *field, int number, FE_value value)
-/*******************************************************************************
-LAST MODIFIED : l0 June 1999
-
-DESCRIPTION :
-Sets the specified global time value for the <field>, to the passed FE_value
-The field value MUST have been previously allocated with set_FE_field_number_of_times
-==============================================================================*/
-{
-
-	int return_code;
-	FE_value *times;
-
-	ENTER(set_FE_field_time_FE_value);
-	if (field&&(0<=number)&&(number<=field->number_of_times))
-	{
-		return_code = 1;
-		if (field->time_value_type!=FE_VALUE_VALUE)
-		{
-			display_message(ERROR_MESSAGE, " set_FE_field_time_FE_value. "
-				" value type doesn't match");
-			return_code = 0;
-		}
-		/* get the correct offset*/
-		times = (FE_value *)(field->times+(number*sizeof(FE_value)));
-		/* copy the value in*/
-		*times = value;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, " set_FE_field_time_FE_value. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* set_FE_field_time_FE_value */
-
 const char *get_FE_field_name(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 19 February 1999
-
-DESCRIPTION :
-Returns a pointer to the name for the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
 {
-	const char *name;
-
-	ENTER(get_FE_field_name);
 	if (field)
-	{
-		name = field->name;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_name.  Invalid argument(s)");
-		name = (const char *)NULL;
-	}
-	LEAVE;
-
-	return (name);
-}/*get_FE_field_name */
-
-int set_FE_field_name(struct FE_field *field, const char *name)
-{
-	char *temp;
-	int return_code;
-
-	ENTER(set_FE_field_name);
-	if (field&&name)
-	{
-		temp = duplicate_string(name);
-		if (temp)
-		{
-			DEALLOCATE(field->name);
-			field->name = temp;
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "set_FE_field_name.  Not enough memory");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "set_FE_field_name.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_name */
+		return field->getName();
+	display_message(ERROR_MESSAGE, "get_FE_field_name.  Invalid argument(s)");
+	return nullptr;
+}
 
 int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
@@ -2793,8 +1453,8 @@ This type of field is used for storing eg. grid_point_number.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		return_code=(INT_VALUE==field->value_type)&&
-			(1==field->number_of_components);
+		return_code=(INT_VALUE==field->getValueType())&&
+			(1 == field->getNumberOfComponents());
 	}
 	else
 	{
@@ -2814,63 +1474,3 @@ int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 		return 1;
 	return 0;
 }
-
-int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Conditional function returning true if the <field> is a anatomical field
-(defined by having a CM_field_type of anatomical), has a Value_type of
-FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_is_anatomical_fibre_field);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(CM_ANATOMICAL_FIELD==field->cm_field_type)&&
-			(FE_VALUE_VALUE==field->value_type)&&
-			(1<=field->number_of_components)&&
-			(3>=field->number_of_components)&&
-			(FIBRE==field->coordinate_system.type);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_is_anatomical_fibre_field.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_is_anatomical_fibre_field */
-
-int FE_field_is_embedded(struct FE_field *field, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 5 June 2003
-
-DESCRIPTION :
-Returns true if the values returned by <field> are a location in an FE_region,
-either an element_xi value, or eventually a node.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_field_is_embedded);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code = (ELEMENT_XI_VALUE == field->value_type);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "FE_field_is_embedded.  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_is_embedded */

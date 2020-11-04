@@ -366,7 +366,7 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
 bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 {
 	(*this->output_file) << fieldIndex << ") " << get_FE_field_name(field);
-	(*this->output_file) << ", " << ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(field));
+	(*this->output_file) << ", " << ENUMERATOR_STRING(CM_field_type)(field->get_CM_field_type());
 	/* optional constant/indexed, Index_field=~, #Values=# */
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	switch (fe_field_type)
@@ -396,55 +396,47 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 		return false;
 	} break;
 	}
-	struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(field);
-	if (coordinate_system)
+	const Coordinate_system& coordinate_system = field->getCoordinateSystem();
+	switch (coordinate_system.type)
 	{
-		switch (coordinate_system->type)
+		case CYLINDRICAL_POLAR:
 		{
-			case CYLINDRICAL_POLAR:
-			{
-				(*this->output_file) << ", cylindrical polar";
-			} break;
-			case FIBRE:
-			{
-				(*this->output_file) << ", fibre";
-			} break;
-			case OBLATE_SPHEROIDAL:
-			{
-				char num_string[100];
-				sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system->parameters.focus);
-				(*this->output_file) << ", oblate spheroidal, focus=" << num_string;
-			} break;
-			case PROLATE_SPHEROIDAL:
-			{
-				char num_string[100];
-				sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system->parameters.focus);
-				(*this->output_file) << ", prolate spheroidal, focus=" << num_string;
-			} break;
-			case RECTANGULAR_CARTESIAN:
-			{
-				(*this->output_file) << ", rectangular cartesian";
-			} break;
-			case SPHERICAL_POLAR:
-			{
-				(*this->output_file) << ", spherical polar";
-			} break;
-			case NOT_APPLICABLE:
-			{
-				/* write nothing */
-			} break;
-			default:
-			{
-				display_message(WARNING_MESSAGE,
-					"EXWriter::writeFieldHeader.  Unknown coordinate system type: ignoring");
-				/* write nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"EXWriter::writeFieldHeader.  Missing field coordinate system: ignoring.");
+			(*this->output_file) << ", cylindrical polar";
+		} break;
+		case FIBRE:
+		{
+			(*this->output_file) << ", fibre";
+		} break;
+		case OBLATE_SPHEROIDAL:
+		{
+			char num_string[100];
+			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
+			(*this->output_file) << ", oblate spheroidal, focus=" << num_string;
+		} break;
+		case PROLATE_SPHEROIDAL:
+		{
+			char num_string[100];
+			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
+			(*this->output_file) << ", prolate spheroidal, focus=" << num_string;
+		} break;
+		case RECTANGULAR_CARTESIAN:
+		{
+			(*this->output_file) << ", rectangular cartesian";
+		} break;
+		case SPHERICAL_POLAR:
+		{
+			(*this->output_file) << ", spherical polar";
+		} break;
+		case NOT_APPLICABLE:
+		{
+			/* write nothing */
+		} break;
+		default:
+		{
+			display_message(WARNING_MESSAGE,
+				"EXWriter::writeFieldHeader.  Unknown coordinate system type: ignoring");
+			/* write nothing */
+		} break;
 	}
 
 	// In EX Versions < 2, value type was optional if coordinate system output for field
@@ -456,7 +448,7 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 	(*this->output_file) << ", #Components=" << componentCount;
 	if (ELEMENT_XI_VALUE == valueType)
 	{
-		const FE_mesh *hostMesh = FE_field_get_element_xi_host_mesh(field);
+		const FE_mesh *hostMesh = field->getElementXiHostMesh();
 		if (!hostMesh)
 		{
 			display_message(ERROR_MESSAGE, "EXWriter::writeFieldHeader.  Missing host mesh for element xi field");
@@ -483,96 +475,62 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 		return false;
 	}
 	
-	const int number_of_values = get_FE_field_number_of_values(field);
+	const int number_of_values = field->getNumberOfValues();
 	/* only output values for fields with them; ie. not for GENERAL_FE_FIELD */
 	if (0<number_of_values)
 	{
 		Value_type valueType = get_FE_field_value_type(field);
 		switch (valueType)
 		{
-			case ELEMENT_XI_VALUE:
+			case FE_VALUE_VALUE:
 			{
-				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-				cmzn_element *element;
-				const FE_mesh *hostMesh = FE_field_get_element_xi_host_mesh(field);
-				if (!hostMesh)
+				char num_string[100];
+				const FE_value *fieldValues = field->getRealValues();
+				if (!fieldValues)
 				{
-					display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Missing host mesh for element xi field");
+					display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting field FE_values");
 					return false;
 				}
 				for (int k=0;k<number_of_values;k++)
 				{
-					if (get_FE_field_element_xi_value(field,k,&element,xi))
-					{
-						if (!this->writeElementXiValue(hostMesh, element ? element->getIndex() : DS_LABEL_IDENTIFIER_INVALID, xi))
-							return false;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting element_xi value");
-						return false;
-					}
-				}
-			} break;
-			case FE_VALUE_VALUE:
-			{
-				FE_value value;
-
-				for (int k=0;k<number_of_values;k++)
-				{
-					if (get_FE_field_FE_value_value(field,k,&value))
-					{
-						char num_string[100];
-						sprintf(num_string, "%" FE_VALUE_STRING, value);
-						(*this->output_file) << " " << num_string;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting FE_value");
-						return false;
-					}
+					sprintf(num_string, "%" FE_VALUE_STRING, fieldValues[k]);
+					(*this->output_file) << " " << num_string;
 				}
 			} break;
 			case INT_VALUE:
 			{
-				int value;
-
+				const int *fieldValues = field->getIntValues();
+				if (!fieldValues)
+				{
+					display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting field ints");
+					return false;
+				}
 				for (int k=0;k<number_of_values;k++)
 				{
-					if (get_FE_field_int_value(field,k,&value))
-					{
-						(*this->output_file) << " " << value;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Error getting int");
-						return false;
-					}
+					(*this->output_file) << " " << fieldValues[k];
 				}
 			} break;
 			case STRING_VALUE:
 			{
-				char *the_string = 0;
+				const char **fieldValues = field->getStringValues();
+				if (!fieldValues)
+				{
+					display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Could not get string values");
+					return false;
+				}
 				for (int k=0;k<number_of_values;k++)
 				{
-					if (get_FE_field_string_value(field,k,&the_string))
+					if (fieldValues[k])
 					{
-						if (the_string)
-						{
-							make_valid_token(&the_string);
-							(*this->output_file) << " " << the_string;
-							DEALLOCATE(the_string);
-						}
-						else
-						{
-							/* output empty string */
-							(*this->output_file) << " \"\"";
-						}
+						char *s = duplicate_string(fieldValues[k]);
+						make_valid_token(&s);
+						(*this->output_file) << " " << s;
+						DEALLOCATE(s);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Could not get string");
-						return false;
+						/* output empty string */
+						(*this->output_file) << " \"\"";
 					}
 				}
 			} break;
@@ -658,7 +616,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 {
 	if (!this->writeFieldHeader(fieldIndex, field))
 		return false;
-	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 	if (!meshFieldData)
 		return false;
 
@@ -900,7 +858,7 @@ ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
 		FE_field *field = this->writableFields[f];
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 		if (!meshFieldData)
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
@@ -1018,7 +976,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 		if (!meshFieldData)
 			continue; // field not defined on mesh
 		const int componentCount = get_FE_field_number_of_components(field);
@@ -1092,7 +1050,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 	FE_field *field, int componentNumber)
 {
-	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 	const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
 	const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
 	const int valueCount = eft->getNumberOfElementDOFs();
@@ -1218,7 +1176,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 		FE_field *field = *fieldIter;
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 		const int componentCount = get_FE_field_number_of_components(field);
 		for (int c = 0; c < componentCount; ++c)
 		{
@@ -1460,7 +1418,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 	}
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	const int componentCount = get_FE_field_number_of_components(field);
-	const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+	const FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeNodeHeaderField.  Field is not defined at node");
@@ -1516,7 +1474,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 {
 	const int componentCount = get_FE_field_number_of_components(field);
-	const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+	const FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Field %s not defined at node %d",
@@ -1531,7 +1489,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 	{
 		FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		cmzn_element *element;
-		const FE_mesh *hostMesh = FE_field_get_element_xi_host_mesh(field);
+		const FE_mesh *hostMesh = field->getElementXiHostMesh();
 		if (!hostMesh)
 		{
 			display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Missing host mesh for element xi field");
@@ -1688,7 +1646,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (!FE_field_has_parameters_at_node(field, node))
+			if (!(node->getNodeField(field)))
 				return false;
 		}
 	} break;
@@ -1698,7 +1656,7 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 		for (int i = 0; i < number_of_fields; ++i)
 		{
 			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
-			if (FE_field_has_parameters_at_node(field, node))
+			if (node->getNodeField(field))
 				return true;
 		}
 		return false;
@@ -1784,7 +1742,7 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		if (FE_field_has_parameters_at_node(field, node))
+		if (node->getNodeField(field))
 			this->headerFields.push_back(field);
 	}
 

@@ -20,7 +20,7 @@ Defines fields for looking up values at given locations.
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
@@ -42,9 +42,9 @@ class Computed_field_nodal_lookup : public Computed_field_core
 public:
 	FE_node *lookup_node;
 
-	Computed_field_nodal_lookup(FE_node *lookup_node) :
+	Computed_field_nodal_lookup(FE_node *lookup_nodeIn) :
 		Computed_field_core(),
-		lookup_node(ACCESS(FE_node)(lookup_node))
+		lookup_node(lookup_nodeIn->access())
 	{
 	}
 
@@ -98,7 +98,7 @@ private:
 
 Computed_field_nodal_lookup::~Computed_field_nodal_lookup()
 {
-	DEACCESS(FE_node)(&lookup_node);
+	cmzn_node::deaccess(lookup_node);
 }
 
 Computed_field_core* Computed_field_nodal_lookup::copy()
@@ -263,7 +263,7 @@ int Computed_field_nodal_lookup::check_dependency()
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
 				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
-				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->lookup_node)))
+				if (nodeChangeLog->isIndexChange(this->lookup_node->getIndex()))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}
@@ -335,7 +335,7 @@ public:
 	Computed_field_quaternion_SLERP(
 		FE_node *nodal_lookup_node) :
 		Computed_field_core(),
-		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node))
+		nodal_lookup_node(nodal_lookup_node->access())
 	{
 	};
 
@@ -390,7 +390,7 @@ private:
 
 Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP()
 {
-	DEACCESS(FE_node)(&(nodal_lookup_node));
+	cmzn_node::deaccess((nodal_lookup_node));
 }
 
 Computed_field_core* Computed_field_quaternion_SLERP::copy()
@@ -603,7 +603,7 @@ int Computed_field_quaternion_SLERP::check_dependency()
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
 				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
-				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->nodal_lookup_node)))
+				if (nodeChangeLog->isIndexChange(this->nodal_lookup_node->getIndex()))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}

@@ -30,8 +30,7 @@ finite element fields defined on or interpolated over them.
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
-#include "region/cmiss_region_private.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 
 /*
@@ -179,7 +178,7 @@ void FE_region::update()
 					}
 				}
 			if (changed)
-				cmzn_region_FE_region_change(this->cmiss_region);
+				this->cmiss_region->FeRegionChange();
 		}
 	}
 }
@@ -211,7 +210,6 @@ FE_region::FE_region(cmzn_region *region, FE_region *base_fe_region) :
 	cmiss_region(region),
 	fe_time(CREATE(FE_time_sequence_package)()),
 	fe_field_list(CREATE(LIST(FE_field))()),
-	fe_field_info(0),
 	bases_and_shapes(base_fe_region ? base_fe_region->bases_and_shapes->access() : FE_region_bases_and_shapes::create()),
 	change_level(0),
 	fe_field_changes(0),
@@ -257,12 +255,10 @@ FE_region::~FE_region()
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
 		FE_mesh::deaccess(this->meshes[dimension - 1]);
 
-	if (this->fe_field_info)
-	{
-		/* remove its pointer to this fe_region because being destroyed */
-		FE_field_info_clear_FE_region(this->fe_field_info);
-		DEACCESS(FE_field_info)(&(this->fe_field_info));
-	}
+	// remove FE_fields' pointers to this region
+	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(this->fe_field_list);
+	for (cmzn_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
+		(*field_iter)->set_FE_region(nullptr);
 
 	FE_region_bases_and_shapes::deaccess(this->bases_and_shapes);
 
@@ -291,36 +287,6 @@ struct CHANGE_LOG(FE_field) *FE_region::extractFieldChangeLog()
 	CHANGE_LOG_MERGE_ALL_CHANGE(FE_field)(returnChangeLog);
 	this->createFieldChangeLog();
 	return returnChangeLog;
-}
-
-/*
-Private functions
------------------
-*/
-
-struct FE_field_info *FE_region_get_FE_field_info(struct FE_region *fe_region)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Returns a struct FE_field_info for <fe_region>.
-This is an object private to FE_region that is common between all fields
-owned by FE_region. FE_fields access this object, but this object maintains
-a non-ACCESSed pointer to <fe_region> so fields can determine which FE_region
-they belong to.
-==============================================================================*/
-{
-	struct FE_field_info *fe_field_info = 0;
-	if (fe_region)
-	{
-		if (!fe_region->fe_field_info)
-		{
-			fe_region->fe_field_info =
-				ACCESS(FE_field_info)(CREATE(FE_field_info)(fe_region));
-		}
-		fe_field_info = fe_region->fe_field_info;
-	}
-	return (fe_field_info);
 }
 
 /*
@@ -385,7 +351,7 @@ int FE_region_end_change_no_notify(struct FE_region *fe_region)
 bool FE_field_has_cached_changes(FE_field *fe_field)
 {
 	FE_region *fe_region;
-	if (fe_field && (fe_region = FE_field_get_FE_region(fe_field)) && (fe_region->change_level))
+	if (fe_field && (fe_region = fe_field->get_FE_region()) && (fe_region->change_level))
 	{
 		int change = 0;
 		CHANGE_LOG_QUERY(FE_field)(fe_region->fe_field_changes, fe_field, &change);
@@ -446,33 +412,35 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 	struct FE_region *fe_region, const char *name, enum Value_type value_type,
 	int number_of_components)
 {
-	struct FE_field *fe_field;
-
-	ENTER(FE_region_get_FE_field_with_general_properties);
-	fe_field = (struct FE_field *)NULL;
+	FE_field *fe_field = nullptr;
 	if (fe_region && name && (0 < number_of_components))
 	{
 		fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(name,
 			fe_region->fe_field_list);
 		if (fe_field)
 		{
-			if ((get_FE_field_FE_field_type(fe_field) != GENERAL_FE_FIELD) ||
-				(get_FE_field_value_type(fe_field) != value_type) ||
-				(get_FE_field_number_of_components(fe_field) != number_of_components))
+			if ((get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD) &&
+				(get_FE_field_value_type(fe_field) == value_type) &&
+				(get_FE_field_number_of_components(fe_field) == number_of_components))
 			{
-				fe_field = (struct FE_field *)NULL;
+				fe_field->access();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "FE_region_get_FE_field_with_general_properties.  "
+					"Existing field '%s' has different properties", name);
+				fe_field = nullptr;
 			}
 		}
 		else
 		{
-			fe_field = CREATE(FE_field)(name, fe_region);
+			fe_field = FE_field::create(name, fe_region);
 			if (!(set_FE_field_value_type(fe_field, value_type) &&
 				set_FE_field_number_of_components(fe_field, number_of_components) &&
 				set_FE_field_type_general(fe_field) &&
 				FE_region_merge_FE_field(fe_region, fe_field)))
 			{
-				DESTROY(FE_field)(&fe_field);
-				fe_field = (struct FE_field *)NULL;
+				FE_field::deaccess(&fe_field);
 			}
 		}
 	}
@@ -481,8 +449,6 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 		display_message(ERROR_MESSAGE,
 			"FE_region_get_FE_field_with_general_properties.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_field);
 }
 
@@ -492,7 +458,7 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *merged_fe_field = 0;
 	if (fe_region && fe_field)
 	{
-		if (FE_field_get_FE_region(fe_field) == fe_region)
+		if (fe_field->get_FE_region() == fe_region)
 		{
 			merged_fe_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
 				get_FE_field_name(fe_field), fe_region->fe_field_list);
@@ -503,10 +469,10 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 				{
 					/* can only change fundamentals -- number of components, value type
 						 if merged_fe_field is not accessed by any other objects */
-					if ((1 == FE_field_get_access_count(merged_fe_field)) ||
+					if ((1 == merged_fe_field->getAccessCount()) ||
 						FE_fields_match_fundamental(merged_fe_field, fe_field))
 					{
-						if (FE_field_copy_without_identifier(merged_fe_field, fe_field))
+						if (merged_fe_field->copyProperties(fe_field))
 						{
 #if defined (DEBUG_CODE)
 					/*???debug*/printf("FE_region_merge_FE_field: %p OBJECT_NOT_IDENTIFIER_CHANGED field %p\n",fe_region,merged_fe_field);
@@ -575,22 +541,18 @@ bool FE_region_is_FE_field_in_use(struct FE_region *fe_region,
 					return true;
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 			{
-				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, fe_region->meshes[dim]);
+				FE_mesh_field_data *meshFieldData = fe_field->getMeshFieldData(fe_region->meshes[dim]);
 				if ((meshFieldData) && meshFieldData->isDefinedOnElements())
 					return true;
 			}
 		}
 		else
 		{
-			struct FE_region *referenced_fe_region = FE_field_get_FE_region(fe_field);
+			struct FE_region *referenced_fe_region = fe_field->get_FE_region();
 			if ((referenced_fe_region != NULL) && (referenced_fe_region != fe_region))
 			{
-				char *field_name;
-				GET_NAME(FE_field)(fe_field, &field_name);
 				display_message(ERROR_MESSAGE,
-					"FE_region_is_FE_field_in_use.  Field %s is from another region",
-					field_name);
-				DEALLOCATE(field_name);
+					"FE_region_is_FE_field_in_use.  Field %s is from another region", fe_field->getName());
 			}
 		}
 	}
@@ -696,7 +658,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(
 					fe_region->fe_field_list, field))
 				{
-					return_code = set_FE_field_name(field, new_name);
+					return_code = field->setName(new_name);
 					LIST_END_IDENTIFIER_CHANGE(FE_field,name)(fe_region->fe_field_list);
 					if (return_code)
 					{
@@ -1030,37 +992,23 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 			{
 				FE_region_begin_change(fe_region);
 
+				const int componentsCount = fe_field->getNumberOfComponents();
+
 				// create field for accumulating node values for averaging
-				FE_field *node_accumulate_fe_field =
-					CREATE(FE_field)("cmzn_smooth_node_accumulate", fe_region);
-				if (!(set_FE_field_value_type(node_accumulate_fe_field, FE_VALUE_VALUE) &&
-					set_FE_field_number_of_components(node_accumulate_fe_field,
-						get_FE_field_number_of_components(fe_field))))
-					return_code = 0;
-				ACCESS(FE_field)(node_accumulate_fe_field);
+				FE_field *node_accumulate_fe_field = FE_region_get_FE_field_with_general_properties(
+					fe_region, "cmzn_smooth_node_accumulate", FE_VALUE_VALUE, componentsCount);
 
 				/* create a field to store an integer value per component of fe_field */
-				FE_field *element_count_fe_field =
-					CREATE(FE_field)("cmzn_smooth_element_count", fe_region);
-				if (!(set_FE_field_value_type(element_count_fe_field, INT_VALUE) &&
-					set_FE_field_number_of_components(element_count_fe_field,
-						get_FE_field_number_of_components(fe_field))))
-					return_code = 0;
-				ACCESS(FE_field)(element_count_fe_field);
+				FE_field *element_count_fe_field = FE_region_get_FE_field_with_general_properties(
+					fe_region, "cmzn_smooth_element_count", INT_VALUE, componentsCount);
 
 				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
 				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();
-				if (!elementIter) 
-					return_code = 0;
+
 				fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, fe_mesh);
-				if (!meshFieldData)
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_smooth_FE_field.  FE_field is not defined on mesh");
-					return_code = 0;
-				}
-				if (return_code)
+				FE_mesh_field_data *meshFieldData = fe_field->getMeshFieldData(fe_mesh);
+
+				if ((node_accumulate_fe_field) && (element_count_fe_field) && (elementIter) && (meshFieldData))
 				{
 					FE_element *element;
 					const int componentCount = get_FE_field_number_of_components(fe_field);
@@ -1092,6 +1040,12 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 						}
 					}
 				}
+				else
+				{
+					if (!meshFieldData)
+						display_message(ERROR_MESSAGE, "FE_region_smooth_FE_field.  FE_field is not defined on mesh");
+					return_code = 0;
+				}
 				cmzn_elementiterator_destroy(&elementIter);
 
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
@@ -1102,7 +1056,7 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				cmzn_node *node = 0;
 				while ((0 != (node = cmzn_nodeiterator_next_non_access(nodeIter))))
 				{
-					if (FE_field_has_parameters_at_node(fe_field, node))
+					if (node->getNodeField(fe_field))
 					{
 						if (FE_node_smooth_FE_field(node, fe_field, time, node_accumulate_fe_field, element_count_fe_field))
 							fe_nodeset->nodeFieldChange(node, fe_field);  // redundant, probably
@@ -1115,8 +1069,8 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				}
 				cmzn_nodeiterator_destroy(&nodeIter);
 
-				DEACCESS(FE_field)(&element_count_fe_field);
-				DEACCESS(FE_field)(&node_accumulate_fe_field);
+				FE_field::deaccess(&element_count_fe_field);
+				FE_field::deaccess(&node_accumulate_fe_field);
 
 				FE_region_end_change(fe_region);
 			}
@@ -1221,18 +1175,19 @@ static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 			&& FE_field_merge_into_FE_region(indexerField, fe_region_void)))
 			return 0;
 	}
-	targetField = CREATE(FE_field)(fieldName, fe_region);
+	targetField = FE_field::create(fieldName, fe_region);
 	// don't want to be warned about this changing, so set here:
-	set_FE_field_CM_field_type(targetField, get_FE_field_CM_field_type(sourceField));
-	if (!(FE_field_copy_without_identifier(targetField, sourceField) &&
+	targetField->set_CM_field_type(sourceField->get_CM_field_type());
+	if (!(targetField->copyProperties(sourceField) &&
 		ADD_OBJECT_TO_LIST(FE_field)(targetField, fe_region->fe_field_list)))
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_field_merge_into_FE_region.  Failed to create field %s for target region", fieldName);
-		DESTROY(FE_field)(&targetField);
+		FE_field::deaccess(&targetField);
 		return 0;
 	}
 	fe_region->FE_field_change(targetField, CHANGE_LOG_OBJECT_ADDED(FE_field));
+	FE_field::deaccess(&targetField);
 	fe_region->update();
 	return 1;
 }

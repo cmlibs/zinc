@@ -16,7 +16,7 @@
 #include "finite_element/finite_element.h"
 #include "general/message.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 

@@ -19,7 +19,7 @@ Data structure shared by several region export modules.
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "region/cmiss_region_write_info.h"
 #include "general/message.h"
 

@@ -377,7 +377,7 @@ Computed_field_set_coordinate_system for further details.
 ==============================================================================*/
 
 int Computed_field_set_coordinate_system(struct Computed_field *field,
-	struct Coordinate_system *coordinate_system);
+	const Coordinate_system *coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 19 January 1999
 

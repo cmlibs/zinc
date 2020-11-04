@@ -37,7 +37,6 @@
 #include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
@@ -1005,7 +1004,7 @@ int render_to_finite_elements(cmzn_region_id source_region,
 	FE_value surface_density, FE_value surface_density_scale_factor)
 {
 	int return_code;
-	cmzn_scene_id scene = cmzn_region_get_scene_private(source_region);
+	cmzn_scene_id scene = source_region->getScene();
 	if (region && coordinate_field && scene)
 	{
 		return_code = build_Scene(scene, filter);

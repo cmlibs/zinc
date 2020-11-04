@@ -8,7 +8,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 SET( GENERAL_SRCS
-	source/general/any_object.cpp
 	source/general/callback.cpp
 	source/general/child_process.cpp
 	source/general/compare.cpp
@@ -33,10 +32,6 @@ SET( GENERAL_SRCS
 	source/jsoncpp/jsoncpp.cpp
 	source/stream/stream_private.cpp )
 SET( GENERAL_HDRS
-	source/general/any_object.h
-	source/general/any_object_definition.h
-	source/general/any_object_private.h
-	source/general/any_object_prototype.h
 	source/general/block_array.hpp
 	source/general/callback.h
 	source/general/callback_class.hpp

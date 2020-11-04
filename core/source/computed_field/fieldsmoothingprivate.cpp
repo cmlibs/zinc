@@ -78,7 +78,7 @@ int cmzn_field_smooth(cmzn_field_id field, cmzn_fieldsmoothing_id fieldsmoothing
 	Computed_field_get_type_finite_element(field, &fe_field);
 	if (!fe_field)
 		return CMZN_ERROR_ARGUMENT;
-	if (!FE_region_smooth_FE_field(FE_field_get_FE_region(fe_field), fe_field,
+	if (!FE_region_smooth_FE_field(fe_field->get_FE_region(), fe_field,
 		fieldsmoothing->getTime()))
 		return CMZN_ERROR_GENERAL;
 	return CMZN_OK;

@@ -28,7 +28,7 @@
 #include "general/message.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #if defined (USE_OPENCASCADE)
 #include "cad/computed_field_cad_topology.h"
 #include "cad/element_identifier.h"
@@ -814,7 +814,7 @@ int Computed_field_node_group::addObject(cmzn_node *object)
 {
 	if (!isNodeCompatible(object))
 		return CMZN_ERROR_ARGUMENT;
-	int return_code = this->labelsGroup->setIndex(get_FE_node_index(object), true);
+	int return_code = this->labelsGroup->setIndex(object->getIndex(), true);
 	if (CMZN_OK == return_code)
 	{
 		this->invalidateIterators();
@@ -905,7 +905,7 @@ int Computed_field_node_group::addNodesConditional(cmzn_field_id conditional_fie
 			if (!cmzn_field_evaluate_boolean(conditional_field, cache))
 				continue;
 		}
-		const int result = this->labelsGroup->setIndex(get_FE_node_index(node), true);
+		const int result = this->labelsGroup->setIndex(node->getIndex(), true);
 		if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
 		{
 			return_code = result;
@@ -928,7 +928,7 @@ int Computed_field_node_group::removeObject(cmzn_node *object)
 {
 	if (!isNodeCompatible(object))
 		return CMZN_ERROR_ARGUMENT;
-	int return_code = this->labelsGroup->setIndex(get_FE_node_index(object), false);
+	int return_code = this->labelsGroup->setIndex(object->getIndex(), false);
 	if (CMZN_OK == return_code)
 	{
 		this->invalidateIterators();
@@ -975,8 +975,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 				if (!cmzn_field_evaluate_boolean(conditional_field, cache))
 					continue;
 			}
-			const DsLabelIndex index = get_FE_node_index(node);
-			const int result = this->labelsGroup->setIndex(index, false);
+			const int result = this->labelsGroup->setIndex(node->getIndex(), false);
 			if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
 			{
 				return_code = result;
@@ -1005,8 +1004,7 @@ int Computed_field_node_group::removeNodesInLabelsGroup(DsLabelsGroup &removeNod
 	cmzn_node_id node = 0;
 	while (0 != (node = iter->nextNode()))
 	{
-		const DsLabelIndex index = get_FE_node_index(node);
-		const int result = this->labelsGroup->setIndex(index, false);
+		const int result = this->labelsGroup->setIndex(node->getIndex(), false);
 		if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
 		{
 			return_code = result;

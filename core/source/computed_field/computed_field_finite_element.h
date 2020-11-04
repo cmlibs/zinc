@@ -26,9 +26,9 @@ Global functions
 
 /**
  * internal-only constructor for creating wrapper field for an FE_field
- * Call only from cmzn_region_FE_region_change
+ * Call only from cmzn_region::FeRegionChange
  */
-cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
+cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
 	cmzn_fieldmodule *fieldmodule, struct FE_field *fe_field);
 
 int Computed_field_is_type_finite_element(struct Computed_field *field);
@@ -177,7 +177,7 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);
 
 /** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
-const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
 
 /** Discover and set destination host mesh from source field, or check it matches if already set.
   * @return  Result OK on success, any other value on failure. */

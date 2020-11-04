@@ -15,7 +15,7 @@ Functions for updating values of one computed field from those of another.
 #define COMPUTED_FIELD_UPDATE_H
 
 #include "finite_element/finite_element.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "selection/element_point_ranges_selection.h"
 #include "general/message.h"
 

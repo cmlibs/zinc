@@ -979,7 +979,7 @@ struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 			"Element_point_ranges_from_grid_field_ranges.  Invalid argument(s)");
 		return 0;
 	}
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	FE_mesh_field_data *meshFieldData = grid_field->getMeshFieldData(element->getMesh());
 	if (!meshFieldData)
 		return 0;
 	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));
@@ -1102,7 +1102,7 @@ int Element_point_ranges_grid_to_multi_range(
 	if (!(FE_element_is_top_level(element, (void *)0)
 		&& (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS == element_point_ranges->id.sampling_mode)))
 		return 1;
-	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	const FE_mesh_field_data *meshFieldData = grid_field->getMeshFieldData(element->getMesh());
 	if (!meshFieldData)
 		return 1;
 	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));
@@ -1165,7 +1165,7 @@ int FE_element_grid_to_multi_range(struct FE_element *element,
 	if (!FE_element_is_top_level(element, (void *)0))
 		return 1;
 
-	const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(grid_field, element->getMesh());
+	const FE_mesh_field_data *meshFieldData = grid_field->getMeshFieldData(element->getMesh());
 	if (!meshFieldData)
 		return 1;
 	const auto component = static_cast<FE_mesh_field_data::Component<int> *>(meshFieldData->getComponentBase(0));

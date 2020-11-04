@@ -319,7 +319,7 @@ public:
 		Computed_field_core(),
 		fe_field(ACCESS(FE_field)(fe_field))
 	{
-		FE_field_add_wrapper(fe_field);
+		fe_field->addWrapper();
 		type = CMZN_FIELD_TYPE_INVALID;
 	};
 
@@ -362,7 +362,7 @@ private:
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
-		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		const Value_type value_type = this->fe_field->getValueType();
 		FieldValueCache *parentValueCache = (fieldCache.getParentCache()) ? this->field->getValueCache(*fieldCache.getParentCache()) : 0;
 		switch (value_type)
 		{
@@ -395,7 +395,7 @@ private:
 
 	virtual int setComponentName(int componentNumber, const char *name)
 	{
-		if (set_FE_field_component_name(this->fe_field, componentNumber - 1, name))
+		if (this->fe_field->setComponentName(componentNumber - 1, name))
 		{
 			return CMZN_OK;
 		}
@@ -418,7 +418,7 @@ private:
 
 	virtual void propagate_coordinate_system()
 	{
-		set_FE_field_coordinate_system(fe_field, &(field->coordinate_system));
+		this->fe_field->setCoordinateSystem(field->coordinate_system);
 	}
 
 	int get_native_discretization_in_element(
@@ -429,8 +429,7 @@ private:
 		if (field)
 		{
 			// propagate changes from FE_field
-			FE_region *fe_region = FE_field_get_FE_region(this->fe_field);
-			CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(fe_region);
+			CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(this->fe_field->get_FE_region());
 			int change = 0;
 			CHANGE_LOG_QUERY(FE_field)(fe_field_changes, this->fe_field, &change);
 			if (change & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))
@@ -444,40 +443,40 @@ private:
 
 	virtual bool is_non_linear() const
 	{
-		return FE_field_uses_non_linear_basis(fe_field) == 1;
+		return fe_field->usesNonlinearBasis();
 	}
 
 	virtual int set_name(const char *name)
 	{
-		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
+		return FE_region_set_FE_field_name(this->fe_field->get_FE_region(), fe_field, name);
 	};
 
 	virtual bool isTypeCoordinate() const
 	{
-		return (get_FE_field_CM_field_type(this->fe_field) == CM_COORDINATE_FIELD);
+		return (this->fe_field->get_CM_field_type() == CM_COORDINATE_FIELD);
 	}
 
 	virtual int setTypeCoordinate(bool value)
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
+		CM_field_type cm_field_type = this->fe_field->get_CM_field_type();
 		if (value)
 		{
 			if (cm_field_type != CM_COORDINATE_FIELD)
-				set_FE_field_CM_field_type(fe_field, CM_COORDINATE_FIELD);
+				this->fe_field->set_CM_field_type(CM_COORDINATE_FIELD);
 		}
 		else
 		{
 			if (cm_field_type == CM_COORDINATE_FIELD)
-				set_FE_field_CM_field_type(fe_field, CM_GENERAL_FIELD);
+				this->fe_field->set_CM_field_type(CM_GENERAL_FIELD);
 		}
 		return CMZN_OK;
 	}
 
 	virtual cmzn_field_value_type get_value_type() const
 	{
-		enum Value_type fe_value_type = get_FE_field_value_type(fe_field);
+		const Value_type fe_value_type = this->fe_field->getValueType();
 		cmzn_field_value_type value_type = CMZN_FIELD_VALUE_TYPE_INVALID;
 		switch (fe_value_type)
 		{
@@ -534,10 +533,10 @@ Clear the type specific data used by this type.
 			 * finite_element field wrappers & we don't want to clean up the
 			 * FE_field until the last wrapper is destroyed.
 			 */
-			int number_of_remaining_wrappers = FE_field_remove_wrapper(fe_field);
+			const int number_of_remaining_wrappers = fe_field->removeWrapper();
 			if (0 == number_of_remaining_wrappers)
 			{
-				struct FE_region *fe_region = FE_field_get_FE_region(fe_field);
+				struct FE_region *fe_region = this->fe_field->get_FE_region();
 				if (fe_region && FE_region_contains_FE_field(fe_region, fe_field) &&
 					(!FE_region_is_FE_field_in_use(fe_region, fe_field)))
 				{
@@ -612,7 +611,7 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 	else if (node_location = cache.get_location_node())
 	{
 		// true and able to be evaluated only if all components have a VALUE parameter
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node_location->get_node(), this->fe_field);
+		const FE_node_field *node_field = node_location->get_node()->getNodeField(this->fe_field);
 		if (node_field)
 		{
 			return node_field->getValueMinimumVersionsCount(CMZN_NODE_VALUE_LABEL_VALUE) > 0;
@@ -622,31 +621,9 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 }
 
 int Computed_field_finite_element::has_multiple_times()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the fe_field
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_finite_element::has_multiple_times);
-	if (field)
-	{
-		return_code=FE_field_has_multiple_times(fe_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_finite_element::has_multiple_times.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::has_multiple_times */
+	return this->fe_field->hasMultipleTimes();
+}
 
 int Computed_field_finite_element::has_numerical_components()
 /*******************************************************************************
@@ -661,7 +638,7 @@ DESCRIPTION :
 	if (field)
 	{
 		return_code=Value_type_is_numeric_simple(
-			get_FE_field_value_type(fe_field));
+			this->fe_field->getValueType());
 	}
 	else
 	{
@@ -688,7 +665,7 @@ The FE_field must also not be in use.
 	if (field)
 	{
 		/* check the fe_field can be destroyed */
-		fe_region = FE_field_get_FE_region(fe_field);
+		fe_region = this->fe_field->get_FE_region();
 		if (fe_region)
 		{
 			/* ask owning FE_region if fe_field is used in nodes and elements */
@@ -721,7 +698,7 @@ The FE_field must also not be in use.
 int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
-	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	const Value_type value_type = this->fe_field->getValueType();
 	const Field_location_element_xi* element_xi_location;
 	const Field_location_node *node_location;
 	switch (value_type)
@@ -910,7 +887,7 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 {
 	// derivative must be w.r.t. mesh which owns this element
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	const Value_type value_type = this->fe_field->getValueType();
 	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
 		&& ((fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
 		&& (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh())))
@@ -947,7 +924,7 @@ int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int
 		display_message(ERROR_MESSAGE, "FieldFiniteElement getNodeParameters.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	const Value_type value_type = this->fe_field->getValueType();
 	if (FE_VALUE_VALUE != value_type)
 	{
 		display_message(ERROR_MESSAGE, "FieldFiniteElement getNodeParameters.  Not implemented for field value type");
@@ -972,7 +949,7 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 		display_message(ERROR_MESSAGE, "FieldFiniteElement setNodeParameters.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	const Value_type value_type = this->fe_field->getValueType();
 	if (FE_VALUE_VALUE != value_type)
 	{
 		display_message(ERROR_MESSAGE, "FieldFiniteElement setNodeParameters.  Not implemented for field value type");
@@ -987,9 +964,7 @@ bool Computed_field_finite_element::hasParametersAtLocation(cmzn_fieldcache& cac
 {
 	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location)
-	{
-		return FE_field_has_parameters_at_node(fe_field, node_location->get_node());
-	}
+		return node_location->get_node()->getNodeField(this->fe_field);
 	return false;
 }
 
@@ -1001,7 +976,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	}
 	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(valueCache);
 	FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
-	enum Value_type value_type = get_FE_field_value_type(fe_field);
+	const Value_type value_type = this->fe_field->getValueType();
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
 	if (element_xi_location = cache.get_location_element_xi())
@@ -1009,7 +984,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
 
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(this->fe_field, element->getMesh());
+		const FE_mesh_field_data *meshFieldData = this->fe_field->getMeshFieldData(element->getMesh());
 		if (!meshFieldData) // field not defined on any elements of mesh
 		{
 			result = FIELD_ASSIGNMENT_RESULT_FAIL;
@@ -1120,7 +1095,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
 		FE_value time = node_location->get_time();
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
+		const FE_node_field *node_field = node->getNodeField(this->fe_field);
 		if (!node_field)
 		{
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
@@ -1213,8 +1188,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 {
 	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location &&
-		(get_FE_field_value_type(fe_field) == ELEMENT_XI_VALUE) &&
-		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
+		(this->fe_field->getValueType() == ELEMENT_XI_VALUE) &&
+		(this->fe_field->get_FE_field_type() == GENERAL_FE_FIELD))
 	{
 		if (cache.assignInCacheOnly() ||
 			set_FE_nodal_element_xi_value(node_location->get_node(), fe_field,
@@ -1230,8 +1205,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 {
 	const Field_location_node *node_location = cache.get_location_node();
 	if (node_location &&
-		(get_FE_field_value_type(fe_field) == STRING_VALUE) &&
-		(get_FE_field_FE_field_type(fe_field) == GENERAL_FE_FIELD))
+		(this->fe_field->getValueType() == STRING_VALUE) &&
+		(this->fe_field->get_FE_field_type() == GENERAL_FE_FIELD))
 	{
 		if (cache.assignInCacheOnly() ||
 			set_FE_nodal_string_value(node_location->get_node(),
@@ -1257,7 +1232,7 @@ int Computed_field_finite_element::get_native_discretization_in_element(
 {
 	if (this->field && element && element->getMesh() && number_in_xi)
 	{
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(this->fe_field, element->getMesh());
+		const FE_mesh_field_data *meshFieldData = this->fe_field->getMeshFieldData(element->getMesh());
 		if (!meshFieldData)
 			return 0; // invalid element or not defined in any element of mesh
 		const int componentCount = this->field->number_of_components;
@@ -1289,46 +1264,26 @@ int Computed_field_finite_element::get_native_discretization_in_element(
 }
 
 int Computed_field_finite_element::list()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	char *field_name;
-	int return_code;
-
-	ENTER(List_Computed_field_finite_element);
 	if (field)
 	{
-		return_code=GET_NAME(FE_field)(fe_field,&field_name);
-		if (return_code)
-		{
-			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-			DEALLOCATE(field_name);
-		}
+		display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",this->fe_field->getName());
 		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
-			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(fe_field)));
-		Value_type value_type = get_FE_field_value_type(fe_field);
+			ENUMERATOR_STRING(CM_field_type)(this->fe_field->get_CM_field_type()));
+		Value_type value_type = this->fe_field->getValueType();
 		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
 			Value_type_string(value_type));
 		if (ELEMENT_XI_VALUE == value_type)
 		{
-			const FE_mesh *hostMesh = FE_field_get_element_xi_host_mesh(this->fe_field);
+			const FE_mesh *hostMesh = this->fe_field->getElementXiHostMesh();
 			display_message(INFORMATION_MESSAGE,"    host mesh : %s\n", hostMesh ? hostMesh->getName() : "unknown");
 		}
-		return_code = 1;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_finite_element.  Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_finite_element */
+	display_message(ERROR_MESSAGE,
+		"list_Computed_field_finite_element.  Invalid arguments.");
+	return 0;
+}
 
 char *Computed_field_finite_element::get_command_string()
 /*******************************************************************************
@@ -1352,10 +1307,10 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " number_of_components %d ", number_of_components);
 		append_string(&command_string, temp_string, &error);
 		append_string(&command_string, ENUMERATOR_STRING(CM_field_type)(
-			get_FE_field_CM_field_type(fe_field)), &error);
+			this->fe_field->get_CM_field_type()), &error);
 		append_string(&command_string, " ", &error);
 		append_string(&command_string,
-			Value_type_string(get_FE_field_value_type(fe_field)), &error);
+			Value_type_string(this->fe_field->getValueType()), &error);
 		append_string(&command_string, " component_names", &error);
 		for (i = 0; i < number_of_components; i++)
 		{
@@ -1381,7 +1336,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
+cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
 	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
 {
 	cmzn_field *field = 0;
@@ -1389,10 +1344,10 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
 		FE_region *fe_region = region->get_FE_region();
-		if (FE_field_get_FE_region(fe_field) != fe_region)
+		if (fe_field->get_FE_region() != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_fieldmodule_create_field_finite_element_internal.  Region mismatch");
+				"cmzn_fieldmodule_create_field_finite_element_wrapper.  Region mismatch");
 			return 0;
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -1405,8 +1360,8 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 		{
 			Computed_field_finite_element *fieldFiniteElement=
 				static_cast<Computed_field_finite_element*>(field->core);
-			enum Value_type fe_value_type = get_FE_field_value_type(fieldFiniteElement->fe_field);
-			switch (fe_value_type)
+			const Value_type value_type = get_FE_field_value_type(fieldFiniteElement->fe_field);
+			switch (value_type)
 			{
 				case ELEMENT_XI_VALUE:
 					fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
@@ -1426,7 +1381,7 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_internal(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_finite_element_internal.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_finite_element_wrapper.  Invalid argument(s)");
 	}
 	return (field);
 }
@@ -1451,12 +1406,13 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 	if (fe_field)
 	{
 		Coordinate_system coordinate_system = cmzn_fieldmodule_get_coordinate_system(field_module);
-		set_FE_field_coordinate_system(fe_field, &coordinate_system);
+		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, number_of_components,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
+		FE_field::deaccess(&fe_field);
 	}
 	DEALLOCATE(field_name);
 	if (no_default_name)
@@ -1497,7 +1453,7 @@ cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field)
 		Computed_field_finite_element* core =
 			dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core &&
-			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == FE_VALUE_VALUE))
 		{
 			cmzn_field_access(field);
@@ -1563,7 +1519,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 		if (field && field->core)
 		{
 			auto fieldFiniteElement = static_cast<Computed_field_finite_element*>(field->core);
-			if (CMZN_OK == FE_field_set_element_xi_host_mesh(fieldFiniteElement->fe_field, cmzn_mesh_get_FE_mesh_internal(mesh)))
+			if (CMZN_OK == fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh)))
 			{
 				fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
 				return field;
@@ -1584,7 +1540,7 @@ cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_fie
 		Computed_field_finite_element* core =
 			dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core &&
-			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == ELEMENT_XI_VALUE))
 		{
 			cmzn_field_access(field);
@@ -1614,8 +1570,7 @@ cmzn_mesh_id cmzn_field_stored_mesh_location_get_mesh(
 	cmzn_mesh_id mesh = 0;
 	if (stored_mesh_location_field)
 	{
-		FE_mesh *fe_mesh = const_cast<FE_mesh *>(FE_field_get_element_xi_host_mesh(
-			cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field));
+		FE_mesh *fe_mesh = cmzn_field_stored_mesh_location_core_cast(stored_mesh_location_field)->fe_field->getElementXiHostMesh();
 		mesh = cmzn_mesh_create(fe_mesh);
 	}
 	return mesh;
@@ -1642,7 +1597,7 @@ cmzn_field_stored_string_id cmzn_field_cast_stored_string(cmzn_field_id field)
 		Computed_field_finite_element* core =
 			dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core &&
-			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
+			(core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == STRING_VALUE))
 		{
 			cmzn_field_access(field);
@@ -1946,7 +1901,7 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
-		valueCache.values[0] = (FE_value)FE_node_get_access_count(node);
+		valueCache.values[0] = (FE_value)node->getAccessCount();
 	}
 	else
 	{
@@ -2058,11 +2013,8 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
-		{
-			Computed_field_set_coordinate_system(field,
-				get_FE_field_coordinate_system(fe_field));
-		}
+		if (this->field)
+			Computed_field_set_coordinate_system(this->field, &fe_field->getCoordinateSystem());
 	}
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
@@ -2153,7 +2105,7 @@ bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 	if (node_location = cache.get_location_node())
 	{
 		cmzn_node *node = node_location->get_node();
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
+		const FE_node_field *node_field = node->getNodeField(this->fe_field);
 		if (node_field)
 		{
 			// defined if at least one component has version of value label defined
@@ -2184,7 +2136,7 @@ DESCRIPTION :
 	if (field)
 	{
 		return_code=Value_type_is_numeric_simple(
-			get_FE_field_value_type(fe_field));
+			this->fe_field->getValueType());
 	}
 	else
 	{
@@ -2208,7 +2160,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
 		FE_value time = node_location->get_time();
-		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		const Value_type value_type = this->fe_field->getValueType();
 		switch (value_type)
 		{
 		case DOUBLE_VALUE:
@@ -2286,7 +2238,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
 		const FE_value time = node_location->get_time();
-		enum Value_type value_type = get_FE_field_value_type(fe_field);
+		const Value_type value_type = this->fe_field->getValueType();
 		int return_code = CMZN_ERROR_GENERAL;
 		switch (value_type)
 		{
@@ -2355,39 +2307,19 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 }
 
 int Computed_field_node_value::list()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	char *field_name;
-	int return_code;
-
-	ENTER(List_Computed_field_node_value);
 	if (field)
 	{
-		return_code=GET_NAME(FE_field)(fe_field,&field_name);
-		if (return_code)
-		{
-			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-				ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel));
-			display_message(INFORMATION_MESSAGE,"    version : %d\n", this->versionNumber + 1);
-			DEALLOCATE(field_name);
-		}
-		return_code = 1;
+		display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",this->fe_field->getName());
+		display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel));
+		display_message(INFORMATION_MESSAGE,"    version : %d\n", this->versionNumber + 1);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_node_value.  Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_node_value */
+	display_message(ERROR_MESSAGE,
+		"list_Computed_field_node_value.  Invalid arguments.");
+	return 0;
+}
 
 char *Computed_field_node_value::get_command_string()
 /*******************************************************************************
@@ -2408,7 +2340,8 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string,
 			computed_field_node_value_type_string, &error);
 		append_string(&command_string, " fe_field ", &error);
-		if (GET_NAME(FE_field)(fe_field, &field_name))
+		field_name = duplicate_string(this->fe_field->getName());
+		if (field_name)
 		{
 			make_valid_token(&field_name);
 			append_string(&command_string, field_name, &error);
@@ -2431,31 +2364,9 @@ Returns allocated command string for reproducing field. Includes type.
 } /* Computed_field_node_value::get_command_string */
 
 int Computed_field_node_value::has_multiple_times()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Check the fe_field
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_node_value::has_multiple_times);
-	if (field)
-	{
-		return_code=FE_field_has_multiple_times(fe_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value::has_multiple_times.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_node_value::has_multiple_times */
+	return this->fe_field->hasMultipleTimes();
+}
 
 } //namespace
 
@@ -3923,7 +3834,7 @@ int Computed_field_wraps_fe_field(
 }
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
-	void *dummy)
+	void *)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3932,30 +3843,16 @@ Iterator/conditional function returning true if <field> is a wrapper for a
 coordinate type fe_field.
 ==============================================================================*/
 {
-	Computed_field_finite_element* core;
-	int return_code;
-
-	ENTER(Computed_field_has_coordinate_fe_field);
-	USE_PARAMETER(dummy);
 	if (field)
 	{
-		return_code = 0;
-		core = dynamic_cast<Computed_field_finite_element*>(field->core);
+		Computed_field_finite_element* core = dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core)
-		{
-			return_code = FE_field_is_coordinate_field(core->fe_field, NULL);
-		}
+			return core->fe_field->isTypeCoordinate();
+		return 0;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_coordinate_fe_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_has_coordinate_fe_field */
+	display_message(ERROR_MESSAGE, "Computed_field_has_coordinate_fe_field.  Invalid argument(s)");
+	return 0;
+}
 
 int Computed_field_has_element_xi_fe_field(struct Computed_field *field,
 	void *dummy)
@@ -3978,8 +3875,7 @@ element_xi type fe_field.
 		core = dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core)
 		{
-			enum Value_type field_value_type = get_FE_field_value_type(core->fe_field);
-			return_code = (field_value_type == ELEMENT_XI_VALUE);
+			return_code = (core->fe_field->getValueType() == ELEMENT_XI_VALUE);
 		}
 	}
 	else
@@ -4012,7 +3908,7 @@ Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 		if((1==field->number_of_components)&&
 			(core = dynamic_cast<Computed_field_finite_element*>(field->core)))
 		{
-			return_code = (INT_VALUE==get_FE_field_value_type(core->fe_field));
+			return_code = (INT_VALUE == core->fe_field->getValueType());
 		}
 		else
 		{
@@ -4039,7 +3935,7 @@ int Computed_field_is_scalar_integer_grid_in_element(
 		Computed_field_finite_element* core;
 		if ((1 == field->number_of_components)
 			&& (core = dynamic_cast<Computed_field_finite_element*>(field->core))
-			&& (INT_VALUE == get_FE_field_value_type(core->fe_field))
+			&& (INT_VALUE == core->fe_field->getValueType())
 			&& FE_element_field_is_grid_based(element, core->fe_field))
 			return 1;
 	}
@@ -4077,7 +3973,7 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 				fe_field = FIRST_OBJECT_IN_LIST_THAT(FE_field)(
 						(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
 						fe_field_list);
-				const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, fe_field);
+				const FE_node_field *node_field = node->getNodeField(fe_field);
 				if (node_field)
 				{
 					time_sequence = node_field->time_sequence;
@@ -4373,14 +4269,14 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	return (measure_string ? duplicate_string(measure_string) : 0);
 }
 
-const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
 {
 	if (field && field->core && (CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
 		Computed_field_finite_element *fieldFiniteElement = dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (fieldFiniteElement)
 		{
-			return FE_field_get_element_xi_host_mesh(fieldFiniteElement->fe_field);
+			return fieldFiniteElement->fe_field->getElementXiHostMesh();
 		}
 		Computed_field_find_mesh_location *fieldFindMeshLocation = dynamic_cast<Computed_field_find_mesh_location*>(field->core);
 		if (fieldFindMeshLocation)
@@ -4389,7 +4285,7 @@ const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
 		}
 	}
 	display_message(ERROR_MESSAGE, "cmzn_field_get_host_FE_mesh.  Invalid argument(s)");
-	return 0;
+	return nullptr;
 }
 
 int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field)
@@ -4401,13 +4297,13 @@ int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination
 		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Invalid argument(s)");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	const FE_mesh *source_fe_mesh = cmzn_field_get_host_FE_mesh(source_field);
+	FE_mesh *source_fe_mesh = cmzn_field_get_host_FE_mesh(source_field);
 	if (!source_fe_mesh)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field_discover_element_xi_host_mesh_from_source.  Source field does not have a host mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	const FE_mesh *destination_fe_mesh = cmzn_field_get_host_FE_mesh(destination_field);
+	FE_mesh *destination_fe_mesh = cmzn_field_get_host_FE_mesh(destination_field);
 	if (destination_fe_mesh != source_fe_mesh)
 	{
 		if (!destination_fe_mesh)
@@ -4420,7 +4316,7 @@ int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination
 					"Destination is not a stored mesh location field");
 				return CMZN_ERROR_ARGUMENT;
 			}
-			if (CMZN_OK == FE_field_set_element_xi_host_mesh(destination_fe_field, source_fe_mesh))
+			if (CMZN_OK == destination_fe_field->setElementXiHostMesh(source_fe_mesh))
 			{
 				display_message(WARNING_MESSAGE, "Discovered host mesh '%s' for element_xi / stored mesh location field '%s'. Should be explicitly set.",
 					source_fe_mesh->getName(), destination_field->name);

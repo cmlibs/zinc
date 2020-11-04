@@ -19,7 +19,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "element/element_operations.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"

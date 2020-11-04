@@ -27,8 +27,6 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
-#include "general/any_object_private.h"
-#include "general/any_object_definition.h"
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -214,7 +212,7 @@ int Minimisation::construct_dof_arrays()
 					if ((1 == conditionalComponents) && (conditionalValues[0] == 0.0))
 						continue; // scalar conditional field is zero => skip
 				}
-				const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, fe_field);
+				const FE_node_field *node_field = node->getNodeField(fe_field);
 				if (node_field)
 				{
 					for (int c = 0; c < componentCount; ++c)

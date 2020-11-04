@@ -76,7 +76,6 @@ struct FE_region
 	/* field information */
 	struct FE_time_sequence_package *fe_time;
 	struct LIST(FE_field) *fe_field_list;
-	struct FE_field_info *fe_field_info;
 
 	/* FE bases and shapes shared by all regions */
 	FE_region_bases_and_shapes *bases_and_shapes;
@@ -156,19 +155,6 @@ struct FE_region
 Private functions
 -----------------
 */
-
-struct FE_field_info *FE_region_get_FE_field_info(
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Returns a struct FE_field_info for <fe_region>.
-This is an object private to FE_region that is common between all fields
-owned by FE_region. FE_fields access this object, but this object maintains
-a non-ACCESSed pointer to <fe_region> so fields can determine which FE_region
-they belong to.
-==============================================================================*/
 
 /**
  * Private function for use by computed_field_finite_element field wrapping

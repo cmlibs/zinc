@@ -19,6 +19,7 @@ Spectrum functions and support code.
 #include <list>
 #include <vector>
 #include <math.h>
+#include "opencmiss/zinc/scene.h"
 #include "opencmiss/zinc/spectrum.h"
 #include "opencmiss/zinc/status.h"
 #include "description_io/spectrum_json_io.hpp"
@@ -29,7 +30,6 @@ Spectrum functions and support code.
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/graphics_library.h"
-#include "graphics/graphics_module.h"
 #include "graphics/material.h"
 #include "graphics/spectrum_component.h"
 #include "graphics/spectrum.h"

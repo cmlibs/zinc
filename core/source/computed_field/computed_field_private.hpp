@@ -27,7 +27,7 @@ Types used only internally to computed fields.
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /**
  * Argument to field modifier functions supplying region, default name,
@@ -461,11 +461,11 @@ enum Computed_field_attribute_flags
 };
 
 struct Computed_field
-/*******************************************************************************
-LAST MODIFIED : 23 August 2006
+	/*******************************************************************************
+	LAST MODIFIED : 23 August 2006
 
-DESCRIPTION :
-==============================================================================*/
+	DESCRIPTION :
+	==============================================================================*/
 {
 	/* the name/identifier of the Computed_field */
 	const char *name;
@@ -570,6 +570,11 @@ DESCRIPTION :
 		return false;
 	}
 
+	const char *getName() const
+	{
+		return this->name;
+	}
+
 	int isNumerical()
 	{
 		return core->has_numerical_components();
@@ -616,6 +621,13 @@ DESCRIPTION :
 	 * @return  CMZN_OK or other status code on failure.
 	 */
 	int setOptionalSourceField(int index, Computed_field *sourceField);
+
+	/** Return owning field manager. Must check not nullptr before use as
+	 * can be cleared during clean-up. */
+	struct MANAGER(Computed_field) *getManager() const
+	{
+		return this->manager;
+	}
 
 }; /* struct Computed_field */
 

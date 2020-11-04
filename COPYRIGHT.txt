@@ -3,7 +3,7 @@ OpenCMISS-Zinc Library
 The Initial Developer is:
 Auckland UniServices Ltd, Auckland, New Zealand.
  
-Portions created by the Initial Developer are Copyright (C) 1990-2014
+Portions created by the Initial Developer are Copyright (C) 1990-2020
 the Initial Developer. All Rights Reserved.
 
 Additional contributor(s):

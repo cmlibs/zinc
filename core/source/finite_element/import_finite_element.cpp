@@ -855,7 +855,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 	}
 	// const_cast is dirty, but mesh is constant as far as field is concerned,
 	// however this function can create blank elements in mesh
-	FE_mesh *hostMesh = const_cast<FE_mesh*>(FE_field_get_element_xi_host_mesh(field));
+	FE_mesh *hostMesh = field->getElementXiHostMesh();
 	DsLabelIdentifier elementIdentifier;
 	if (this->exVersion >= 2)
 	{
@@ -942,7 +942,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 		{
 			// host mesh is set from first element
 			hostMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
-			if (!FE_field_set_element_xi_host_mesh(field, hostMesh))
+			if (!field->setElementXiHostMesh(hostMesh))
 				return false;
 		}
 	}
@@ -1269,7 +1269,7 @@ FE_field *EXReader::readField()
 	enum FE_field_type fe_field_type = UNKNOWN_FE_FIELD;
 	enum Value_type value_type = UNKNOWN_VALUE;
 	FE_value focus;
-	const FE_mesh *elementXiHostMesh = 0;
+	FE_mesh *elementXiHostMesh = nullptr;
 	int number_of_components, number_of_indexed_values;
 	struct Coordinate_system coordinate_system;
 	FE_field *field = 0;
@@ -1352,8 +1352,7 @@ FE_field *EXReader::readField()
 				if (!indexer_field)
 				{
 					/* create and merge an appropriate indexer field */
-					FE_field *temp_indexer_field = CREATE(FE_field)(next_block, this->fe_region);
-					ACCESS(FE_field)(temp_indexer_field);
+					FE_field *temp_indexer_field = FE_field::create(next_block, this->fe_region);
 					if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
 						set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
 						(indexer_field = FE_region_merge_FE_field(this->fe_region,
@@ -1361,7 +1360,7 @@ FE_field *EXReader::readField()
 					{
 						return_code = 0;
 					}
-					DEACCESS(FE_field)(&temp_indexer_field);
+					FE_field::deaccess(&temp_indexer_field);
 				}
 				if (return_code)
 				{
@@ -1564,15 +1563,14 @@ FE_field *EXReader::readField()
 	if (return_code)
 	{
 		/* create the field */
-		field = CREATE(FE_field)(field_name, this->fe_region);
-		ACCESS(FE_field)(field);
+		field = FE_field::create(field_name, this->fe_region);
 		if (!set_FE_field_value_type(field, value_type))
 		{
 			return_code = 0;
 		}
 		if (elementXiHostMesh)
 		{
-			if (!FE_field_set_element_xi_host_mesh(field, elementXiHostMesh))
+			if (!field->setElementXiHostMesh(elementXiHostMesh))
 			{
 				return_code = 0;
 			}
@@ -1591,19 +1589,13 @@ FE_field *EXReader::readField()
 		{
 			return_code = 0;
 		}
-		if (!set_FE_field_CM_field_type(field, cm_field_type))
-		{
-			return_code = 0;
-		}
-		if (!((set_FE_field_coordinate_system(field, &coordinate_system))))
-		{
-			return_code = 0;
-		}
+		field->set_CM_field_type(cm_field_type);
+		field->setCoordinateSystem(coordinate_system);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
 				"EXReader::readField.  Could not create field '%s'", field_name);
-			DEACCESS(FE_field)(&field);
+			FE_field::deaccess(&field);
 		}
 	}
 	DEALLOCATE(field_name);
@@ -1628,26 +1620,12 @@ bool EXReader::readFieldValues()
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
 		FE_field *field = this->headerFields[f];
-		const int number_of_values = get_FE_field_number_of_values(field);
+		const int number_of_values = field->getNumberOfValues();
 		if (0 < number_of_values)
 		{
 			Value_type value_type = get_FE_field_value_type(field);
 			switch (value_type)
 			{
-				case ELEMENT_XI_VALUE:
-				{
-					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-					struct FE_element *element;
-					for (int k = 0; k < number_of_values; ++k)
-					{
-						if (!(this->readElementXiValue(field, element, xi)
-							&& set_FE_field_element_xi_value(field, k, element, xi)))
-						{
-							display_message(ERROR_MESSAGE, "EX Reader.  Error reading field element_xi value.  %s", this->getFileLocation());
-							return false;
-						}
-					}
-				} break;
 				case FE_VALUE_VALUE:
 				{
 					FE_value value;
@@ -1793,7 +1771,7 @@ bool EXReader::readNodeHeaderField()
 		{
 			trim_string_in_place(componentName);
 			if ((strlen(componentName) == 0)
-				|| (!set_FE_field_component_name(field, component_number, componentName)))
+				|| (!field->setComponentName(component_number, componentName)))
 				result = false;
 		}
 		else
@@ -1930,8 +1908,8 @@ bool EXReader::readNodeHeaderField()
 		if (mergedField)
 		{
 			// must switch field
-			ACCESS(FE_field)(mergedField);
-			DEACCESS(FE_field)(&field);
+			mergedField->access();
+			FE_field::deaccess(&field);
 			field = mergedField;
 			mergedField = 0;
 		}
@@ -1973,7 +1951,7 @@ bool EXReader::readNodeHeaderField()
 	}
 	if (componentName)
 		DEALLOCATE(componentName);
-	DEACCESS(FE_field)(&field);
+	FE_field::deaccess(&field);
 	return result;
 }
 
@@ -2042,7 +2020,7 @@ cmzn_node *EXReader::readNode()
 	const bool existingNode = (returnNode != 0);
 	if (returnNode)
 	{
-		ACCESS(FE_node)(returnNode);
+		returnNode->access();
 	}
 	else
 	{
@@ -2064,7 +2042,7 @@ cmzn_node *EXReader::readNode()
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+		const FE_node_field *node_field = node->getNodeField(field);
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
@@ -2267,7 +2245,7 @@ cmzn_node *EXReader::readNode()
 		}
 	}
 	if (!result)
-		DEACCESS(FE_node)(&returnNode);
+		cmzn_node::deaccess(returnNode);
 	return returnNode;
 }
 
@@ -2737,8 +2715,8 @@ bool EXReader::readElementHeaderField()
 		if (0 == strcmp(get_FE_field_name(tmpField), get_FE_field_name(field)))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Field %s appears more than once in header.  %s",
-				get_FE_field_name(field), this->getFileLocation());
-			DEACCESS(FE_field)(&field);
+				field->getName(), this->getFileLocation());
+			FE_field::deaccess(&field);
 			return false;
 		}
 	}
@@ -2761,7 +2739,7 @@ bool EXReader::readElementHeaderField()
 		{
 			trim_string_in_place(componentName);
 			if ((strlen(componentName) == 0)
-				|| (!set_FE_field_component_name(field, c, componentName)))
+				|| (!field->setComponentName(c, componentName)))
 				result = false;
 		}
 		else
@@ -3490,8 +3468,8 @@ bool EXReader::readElementHeaderField()
 		FE_field *mergedField = FE_region_merge_FE_field(this->fe_region, field);
 		if (mergedField)
 		{
-			ACCESS(FE_field)(mergedField);
-			DEACCESS(FE_field)(&field);
+			mergedField->access();
+			FE_field::deaccess(&field);
 			field = mergedField;
 			mergedField = 0;
 		}
@@ -3550,7 +3528,7 @@ bool EXReader::readElementHeaderField()
 	}
 	for (int c = 0; c < componentCount; ++c)
 		cmzn_elementfieldtemplate::deaccess(componentEFTs[c]);
-	DEACCESS(FE_field)(&field);
+	FE_field::deaccess(&field);
 	return result;
 }
 
@@ -3770,7 +3748,7 @@ bool EXReader::readElementIdentifier(DsLabelIdentifier &elementIdentifier)
   * @return  True on success, false on failure. */
 bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber)
 {
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this->mesh);
+	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
 	const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
 	const FE_element_field_template *eft = mft->getElementfieldtemplate(elementIndex);
 	const int valueCount = eft->getNumberOfElementDOFs();
@@ -4298,7 +4276,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 					cmzn_nodeset_group *nodesetGroup = exReader.getNodesetGroup();
 					if (nodesetGroup)
 						cmzn_nodeset_group_add_node(nodesetGroup, node);
-					DEACCESS(FE_node)(&node);
+					cmzn_node::deaccess(node);
 				}
 				else
 				{

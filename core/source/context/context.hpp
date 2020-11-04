@@ -22,17 +22,20 @@ struct cmzn_graphics_module;
 
 struct cmzn_context
 {
+	friend struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_selection(
+		cmzn_context *context);
+	friend struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
+		cmzn_context *context);
+private:
 	const char *id;
 	cmzn_logger *logger;
-	struct cmzn_region *root_region;
+	cmzn_region *defaultRegion;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
 	cmzn_timekeepermodule *timekeepermodule;
-
-private:
-	std::list<cmzn_region *> allRegions; // list of regions created for context, not accessed
-	struct cmzn_graphics_module *graphics_module;
+	std::list<cmzn_region *> allRegions; // list of all regions created for context, not accessed
+	cmzn_graphics_module *graphics_module;
 	int access_count;
 
 	cmzn_context(const char *idIn);
@@ -62,20 +65,45 @@ public:
 	static cmzn_context *create(const char *id);
 
 	cmzn_region *createRegion();
+
 	void removeRegion(cmzn_region *region);
 
-	cmzn_graphics_module *getGraphicsmodule();
-};
+	cmzn_graphics_module *getGraphicsmodule()
+	{
+		return this->graphics_module;
+	}
 
-/***************************************************************************//**
- * Returns a handle to the default graphics module.
- *
- * @param context  Handle to a context object.
- * @return  The handle to the default graphics module of the context if
- *    successfully called, otherwise 0.
- */
-cmzn_graphics_module * cmzn_context_get_graphics_module(
-	cmzn_context_id context);
+	/** Get any region from context from which to copy FE_region information */
+	cmzn_region *getBaseRegion() const
+	{
+		return (this->allRegions.size() > 0) ? this->allRegions.front() : nullptr;
+	}
+
+	/** Get default region or nullptr if none */
+	cmzn_region *getDefaultRegion() const
+	{
+		return this->defaultRegion;
+	}
+
+	/** Set default region if you wish context to manage it */
+	int cmzn_context::setDefaultRegion(cmzn_region *regionIn);
+
+	cmzn_logger *getLogger() const
+	{
+		return this->logger;
+	}
+
+	const std::list<cmzn_region *>& getRegionsList() const
+	{
+		return this->allRegions;
+	}
+
+	cmzn_timekeepermodule *getTimekeepermodule() const
+	{
+		return this->timekeepermodule;
+	}
+	
+};
 
 /***************************************************************************//**
  * Return the element point ranges selection in context.
@@ -87,7 +115,7 @@ struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_sel
 	cmzn_context *context);
 
 /***************************************************************************//**
- * Return the IO_stream_package in context.
+ * Return the IO_stream_package in context. Used by Cmgui only.
  *
  * @param context  Pointer to a cmiss_context object.
  * @return  the default IO_stream_package if successfully, otherwise NULL.

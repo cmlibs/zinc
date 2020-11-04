@@ -31,7 +31,7 @@ namespace {
 	int FE_field_add_unique_mft_to_vector(struct FE_field *field, void *data_void)
 	{
 		auto data = static_cast<AdjacentElements1d *>(data_void);
-		const FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, data->getMesh());
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(data->getMesh());
 		if (meshFieldData)
 		{
 			const int componentCount = get_FE_field_number_of_components(field);
@@ -51,7 +51,7 @@ int FE_field_add_to_list_if_coordinate(FE_field *field, void *feFieldListVoid)
 	LIST(FE_field) *feFieldList = static_cast<LIST(FE_field) *>(feFieldListVoid);
 	if (field && feFieldList)
 	{
-		if (FE_field_is_coordinate_field(field, 0))
+		if (field->isTypeCoordinate())
 		{
 			if (!ADD_OBJECT_TO_LIST(FE_field)(field, feFieldList))
 				return 0;

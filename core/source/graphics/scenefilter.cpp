@@ -20,9 +20,9 @@
 #include "general/manager_private.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphics.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "graphics/scenefilter.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_scenefilter, cmzn_scenefiltermodule, struct cmzn_scenefilter_change_detail *);
 

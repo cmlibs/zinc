@@ -13,8 +13,9 @@
 #include <limits>
 
 #include "opencmiss/zinc/result.h"
+#include "finite_element/finite_element.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
-#include "finite_element/finite_element_field_private.hpp"
+#include "finite_element/finite_element_field.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_value_storage.hpp"
 #include "general/debug.h"
@@ -81,8 +82,8 @@ void FE_element_field_evaluation::clear()
 		DEALLOCATE(this->component_number_in_xi);
 	}
 	DEACCESS(FE_field)(&(this->field));
-	DEACCESS(FE_element)(&(this->element));
-	DEACCESS(FE_element)(&(this->field_element));
+	cmzn_element::deaccess(this->element);
+	cmzn_element::deaccess(this->field_element);
 	if (this->component_number_of_values)
 	{
 		DEALLOCATE(this->component_number_of_values);
@@ -140,7 +141,7 @@ void FE_element_field_evaluation::clear()
 	}
 }
 
-int FE_element_field_evaluation::calculate_values(FE_field *field,
+int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 	cmzn_element *element, FE_value time, cmzn_element *top_level_element)
 {
 	FE_value *blending_matrix, *inherited_value, *inherited_values,
@@ -151,19 +152,19 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 
-	if (!((element) && (field)))
+	if (!((element) && (fieldIn)))
 	{
 		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  Invalid argument(s)");
 		return 0;
 	}
 	FE_value coordinate_transformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	cmzn_element *fieldElement = field->getOrInheritOnElement(element,
+	cmzn_element *fieldElement = fieldIn->getOrInheritOnElement(element,
 		/*inherit_face_number*/-1, top_level_element, coordinate_transformation);
 	if (!fieldElement)
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_field_evaluation::calculate_values.  Field %s not defined on %d-D element %d",
-			field->name, element->getDimension(), element->getIdentifier());
+			fieldIn->getName(), element->getDimension(), element->getIdentifier());
 		return 0;
 	}
 	const FE_mesh *mesh = element->getMesh();
@@ -182,14 +183,14 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 	int return_code = 1;
 	const int elementDimension = element->getDimension();
 	const int fieldElementDimension = fieldElement->getDimension();
-	const int number_of_components = field->number_of_components;
-	switch (field->fe_field_type)
+	const int number_of_components = fieldIn->getNumberOfComponents();
+	switch (fieldIn->get_FE_field_type())
 	{
 		case CONSTANT_FE_FIELD:
 		{
 			/* constant fields do not use the values except to remember the
 					element and field they are for */
-			this->field=ACCESS(FE_field)(field);
+			this->field = fieldIn->access();
 			this->element = element->access();
 			// store field_element since we are now able to suggest through the
 			// top_level_element clue which one we get. Must compare element
@@ -216,12 +217,12 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 		} break;
 		case INDEXED_FE_FIELD:
 		{
-			if (this->calculate_values(field->indexer_field, element,
+			if (this->calculate_values(fieldIn->getIndexerField(), element,
 				time, top_level_element))
 			{
 				/* restore pointer to original field - has the indexer_field in
 						it anyway */
-				REACCESS(FE_field)(&(this->field),field);
+				REACCESS(FE_field)(&(this->field), fieldIn);
 			}
 			else
 			{
@@ -252,10 +253,10 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 					component_number_in_xi[i] = NULL;
 				}
 				this->component_number_in_xi = component_number_in_xi;
-				this->field = field->access();
+				this->field = fieldIn->access();
 				this->element = element->access();
 				this->field_element = fieldElement->access();
-				this->time_dependent = FE_field_has_multiple_times(this->field);
+				this->time_dependent = fieldIn->hasMultipleTimes();
 				this->time = time;
 				this->destroy_standard_basis_arguments = fieldElementDimension > elementDimension;
 				this->number_of_components = number_of_components;
@@ -274,7 +275,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 					grid_maximum_number_of_values *= 2;
 				}
 
-				const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
+				const FE_mesh_field_data *meshFieldData = fieldIn->getMeshFieldData(fieldElement->getMesh());
 				FE_basis *previous_basis = 0;
 				return_code=1;
 				int **component_grid_offset_in_xi = 0;
@@ -336,7 +337,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 						FE_mesh_field_data::ComponentBase *componentBase = meshFieldData->getComponentBase(component_number);
 						const int valuesCount = componentEFT->getNumberOfElementDOFs();
 						// following could be done as a virtual function
-						switch (field->value_type)
+						switch (fieldIn->getValueType())
 						{
 						case FE_VALUE_VALUE:
 							{
@@ -398,12 +399,12 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 						{
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 						{
-							if (0 == (*number_of_values_address = global_to_element_map_values(field, component_number,
+							if (0 == (*number_of_values_address = global_to_element_map_values(fieldIn, component_number,
 								componentEFT, fieldElement, time, nodeset, *values_address)))
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
 									"Could not calculate node-based values for field %s in %d-D element %d",
-									field->name, fieldElementDimension, fieldElement->getIdentifier());
+									fieldIn->getName(), fieldElementDimension, fieldElement->getIdentifier());
 								return_code = 0;
 								break;
 							}
@@ -411,10 +412,10 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
 						{
 							// element-based mapping stores the parameters ready for use in the element
-							if (field->value_type != FE_VALUE_VALUE)
+							if (fieldIn->getValueType() != FE_VALUE_VALUE)
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
-									"Element-based non-grid field %s only implemented for real values", field->name);
+									"Element-based non-grid field %s only implemented for real values", fieldIn->getName());
 								return_code = 0;
 								break;
 							}
@@ -424,7 +425,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
 									"Element-based field %s has no values at %d-D element %d",
-									field->name, fieldElementDimension, fieldElement->getIdentifier());
+									fieldIn->getName(), fieldElementDimension, fieldElement->getIdentifier());
 								return_code = 0;
 								break;
 							}
@@ -453,28 +454,30 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 						} break;
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 						{
-							if (field->value_type != FE_VALUE_VALUE)
+							if (fieldIn->getValueType() != FE_VALUE_VALUE)
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
-									"Field-based field %s only implemented for real values", field->name);
+									"Field-based field %s only implemented for real values", fieldIn->getName());
 								return_code = 0;
 								break;
 							}
-							if (!get_FE_field_FE_value_value(field, component_number, *values_address))
+							const FE_value *fieldValues = fieldIn->getRealValues();
+							if (!fieldValues)
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
 									"Field-based field %s has no values at %d-D element %d",
-									field->name, fieldElementDimension, fieldElement->getIdentifier());
+									fieldIn->getName(), fieldElementDimension, fieldElement->getIdentifier());
 								return_code = 0;
 								break;
 							}
+							**values_address = fieldValues[component_number];
 							*number_of_values_address = 1;
 						} break;
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID:
 						{
 							display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
 								"Invalid parameter mapping mode for field %s in %d-D element %d",
-								field->name, fieldElementDimension, fieldElement->getIdentifier());
+								fieldIn->getName(), fieldElementDimension, fieldElement->getIdentifier());
 							return_code = 0;
 						} break;
 						}
@@ -592,7 +595,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *field,
 				"FE_element_field_evaluation::calculate_values.  Unknown field type");
 			return_code=0;
 		} break;
-	} /* switch (field->fe_field_type) */
+	} /* switch (fieldIn->get_FE_field_type()) */
 	return (return_code);
 }
 
@@ -604,58 +607,66 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 		offset, this_comp_no, xi_offset;
 	FE_value xi_coordinate;
 	if ((this->field) && xi_coordinates && values &&
-		((INT_VALUE == this->field->value_type)))
+		((INT_VALUE == this->field->getValueType())))
 	{
-		if ((0<=component_number)&&(component_number<this->field->number_of_components))
+		const int componentsCount = this->field->getNumberOfComponents();
+		if ((0 <= component_number) && (component_number < componentsCount))
 		{
 			comp_no = component_number;
-				components_to_calculate = 1;
+			components_to_calculate = 1;
 		}
 		else
 		{
 			comp_no = 0;
-				components_to_calculate = this->field->number_of_components;
+			components_to_calculate = this->field->getNumberOfComponents();
 		}
-		switch (this->field->fe_field_type)
+		switch (this->field->get_FE_field_type())
 		{
 		case CONSTANT_FE_FIELD:
 		{
-			return_code = 1;
-			for (i = 0; (i<components_to_calculate)&&return_code; i++)
+			const int *fieldValues = this->field->getIntValues();
+			if ((fieldValues) && (componentsCount <= field->getNumberOfValues()))
 			{
-				if (!get_FE_field_int_value(this->field, comp_no, &values[i]))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_field_evaluation::evaluate_int.  "
-						"Could not get values for constant field %s", this->field->name);
-					return_code = 0;
-				}
-				comp_no++;
+				for (i = 0; i < components_to_calculate; i++)
+					values[i] = fieldValues[comp_no++];
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_evaluation::evaluate_int.  "
+					"Invalid values for constant field %s", this->field->getName());
+				return_code = 0;
+				break;
 			}
 		} break;
 		case INDEXED_FE_FIELD:
 		{
 			int index;
-
 			FE_field *indexed_field = this->field;
-			REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
+			REACCESS(FE_field)(&(this->field), indexed_field->getIndexerField());
 			if (this->evaluate_int(/*component_number*/0, xi_coordinates, &index))
 			{
 				/* index numbers start at 1 */
-				if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
+				const int indexedValuesCount = indexed_field->getNumberOfIndexedValues();
+				if ((1 <= index) && (index <= indexedValuesCount))
 				{
-					return_code = 1;
-					int value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
-					for (i = 0; (i<components_to_calculate)&&return_code; i++)
+					const int *fieldValues = indexed_field->getIntValues();
+					if ((fieldValues) && (indexedValuesCount*componentsCount < field->getNumberOfValues()))
 					{
-						if (!get_FE_field_int_value(indexed_field, value_no, &values[i]))
+						int value_no = index-1 + comp_no*indexedValuesCount;
+						for (i = 0; i < components_to_calculate; i++)
 						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_evaluation::evaluate_int.  "
-								"Could not get values for constant field %s", indexed_field->name);
-							return_code = 0;
+							values[i] = fieldValues[value_no];
+							value_no += indexedValuesCount;
 						}
-						value_no += indexed_field->number_of_indexed_values;
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_evaluation::evaluate_int.  "
+							"Invalid values for indexed field %s", indexed_field->getName());
 					}
 				}
 				else
@@ -663,7 +674,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 					display_message(ERROR_MESSAGE,
 						"FE_element_field_evaluation::evaluate_int.  "
 						"Index field %s gave out-of-range index %d in field %s",
-						indexed_field->indexer_field->name, index, indexed_field->name);
+						indexed_field->getIndexerField()->getName(), index, indexed_field->getName());
 				}
 			}
 			else
@@ -671,7 +682,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 				display_message(ERROR_MESSAGE,
 					"FE_element_field_evaluation::evaluate_int.  "
 					"Could not calculate indexer field %s for field %s at %d-D element %",
-					indexed_field->indexer_field->name, indexed_field->name,
+					indexed_field->getIndexerField()->getName(), indexed_field->getName(),
 					this->element->getDimension(),
 					this->element->getIdentifier());
 			}
@@ -742,7 +753,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 		const int dimension = this->element->getDimension();
 		const int number_of_derivatives = this->get_number_of_derivatives(derivative_order, dimension);
 		int comp_no, components_to_calculate;
-		if ((0<=component_number)&&(component_number<this->field->number_of_components))
+		if ((0<=component_number)&&(component_number<this->field->getNumberOfComponents()))
 		{
 			comp_no=component_number;
 			components_to_calculate=1;
@@ -750,9 +761,9 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 		else
 		{
 			comp_no=0;
-			components_to_calculate=this->field->number_of_components;
+			components_to_calculate=this->field->getNumberOfComponents();
 		}
-		switch (this->field->fe_field_type)
+		switch (this->field->get_FE_field_type())
 		{
 			case GENERAL_FE_FIELD:
 			{
@@ -810,7 +821,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 
 						// fill component values from grid parameters in this grid cell
 						// these are for linear Lagrange interpolation for dimension
-						const int size = get_Value_storage_size(this->field->value_type, (struct FE_time_sequence *)NULL);
+						const int size = get_Value_storage_size(this->field->getValueType(), (struct FE_time_sequence *)NULL);
 						const Value_storage **component_grid_values_storage = this->component_grid_values_storage + this_comp_no;
 						const int number_of_values = *number_of_element_values_ptr;
 						FE_value *set_element_values = *element_values_ptr;
@@ -913,50 +924,43 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 			{
 				if (derivative_order <= 0)
 				{
-					if (this->field->fe_field_type == CONSTANT_FE_FIELD)
+					const FE_value *fieldValues = this->field->getRealValues();
+					if (!fieldValues)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_evaluation::evaluate_real.  "
+							"Could not get values for constant or indexed field %s", this->field->getName());
+						return_code = 0;
+						break;
+					}
+					else if (this->field->get_FE_field_type() == CONSTANT_FE_FIELD)
 					{
 						for (int i = 0; i < components_to_calculate; ++i)
-						{
-							if (!get_FE_field_FE_value_value(this->field, comp_no, &values[i]))
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_field_evaluation::evaluate_real.  "
-									"Could not get values for constant field %s", this->field->name);
-								return_code = 0;
-								break;
-							}
-							comp_no++;
-						}
+							values[i] = fieldValues[comp_no++];
 					}
-					else // (this->field->fe_field_type == INDEXED_FE_FIELD)
+					else // (this->field->get_FE_field_type() == INDEXED_FE_FIELD)
 					{
 						int index;
 						FE_field *indexed_field = this->field;
-						REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
+						REACCESS(FE_field)(&(this->field), indexed_field->getIndexerField());
 						if (this->evaluate_int(/*component_number*/0, xi_coordinates, &index))
 						{
 							/* index numbers start at 1 */
-							if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
+							const int indexedValuesCount = indexed_field->getNumberOfIndexedValues();
+							if ((1 <= index) && (index <= indexedValuesCount))
 							{
-								int value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
+								int value_no = index-1 + comp_no*indexedValuesCount;
 								for (int i = 0; i < components_to_calculate; ++i)
 								{
-									if (!get_FE_field_FE_value_value(indexed_field, value_no, &values[i]))
-									{
-										display_message(ERROR_MESSAGE,
-											"calculate_FE_element_field.  "
-											"Could not get values for indexed field %s", indexed_field->name);
-										return_code = 0;
-										break;
-									}
-									value_no += indexed_field->number_of_indexed_values;
+									values[i] = fieldValues[value_no];
+									value_no += indexedValuesCount;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
 									"Index field %s gave out-of-range index %d in field %s",
-									indexed_field->indexer_field->name, index, indexed_field->name);
+									indexed_field->getIndexerField()->getName(), index, indexed_field->getName());
 								return_code = 0;
 							}
 						}
@@ -964,7 +968,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						{
 							display_message(ERROR_MESSAGE, "FE_element_field_evaluation::evaluate_real.  "
 								"Could not calculate indexer field %s for field %s at %d-D element %",
-								indexed_field->indexer_field->name, indexed_field->name,
+								indexed_field->getIndexerField()->getName(), indexed_field->getName(),
 								this->element->getDimension(), this->element->getIdentifier());
 							return_code = 0;
 						}
@@ -1001,11 +1005,11 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 int FE_element_field_evaluation::evaluate_string(int component_number,
 	const FE_value *xi_coordinates, char **values)
 {
-	int comp_no, components_to_calculate, i, j, return_code;
+	int comp_no, components_to_calculate, i, return_code;
 	return_code = 0;
-	if ((this->field) && (xi_coordinates) && (values) && (STRING_VALUE == this->field->value_type))
+	if ((this->field) && (xi_coordinates) && (values) && (STRING_VALUE == this->field->getValueType()))
 	{
-		if ((0<=component_number)&&(component_number<field->number_of_components))
+		if ((0<=component_number)&&(component_number<field->getNumberOfComponents()))
 		{
 			comp_no = component_number;
 			components_to_calculate = 1;
@@ -1013,26 +1017,26 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 		else
 		{
 			comp_no = 0;
-			components_to_calculate = field->number_of_components;
+			components_to_calculate = field->getNumberOfComponents();
 		}
-		switch (field->fe_field_type)
+		switch (field->get_FE_field_type())
 		{
 		case CONSTANT_FE_FIELD:
 		{
-			return_code = 1;
-			for (i = 0; (i<components_to_calculate)&&return_code; i++)
+			const char **fieldValues = field->getStringValues();
+			if (!fieldValues)
 			{
-				if (!get_FE_field_string_value(field, comp_no, &values[i]))
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_FE_element_field_string_values.  "
-						"Could not get values for constant field %s", field->name);
-					return_code = 0;
-					for (j = 0; j<i; j++)
-					{
-						DEALLOCATE(values[j]);
-					}
-				}
+				display_message(ERROR_MESSAGE,
+					"calculate_FE_element_field_string_values.  "
+					"Could not get values for constant field %s", field->getName());
+				return_code = 0;
+				break;
+			}
+			return_code = 1;
+			for (i = 0; i < components_to_calculate; i++)
+			{
+				const char *s = fieldValues[comp_no];
+				values[i] = (s) ? duplicate_string(s) : nullptr;
 				comp_no++;
 			}
 		} break;
@@ -1041,28 +1045,29 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 			int index, value_no;
 
 			FE_field *indexed_field = this->field;
-			REACCESS(FE_field)(&(this->field), indexed_field->indexer_field);
+			REACCESS(FE_field)(&(this->field), indexed_field->getIndexerField());
 			if (this->evaluate_int(/*component_number*/0, xi_coordinates, &index))
 			{
+				const char **fieldValues = indexed_field->getStringValues();
+				if (!fieldValues)
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_FE_element_field_string_values.  "
+						"Could not get values for indexed field %s", indexed_field->getName());
+					return_code = 0;
+					break;
+				}
 				/* index numbers start at 1 */
-				if ((1<=index)&&(index<=indexed_field->number_of_indexed_values))
+				const int indexedValuesCount = indexed_field->getNumberOfIndexedValues();
+				if ((1 <= index) && (index <= indexedValuesCount))
 				{
 					return_code = 1;
-					value_no = index-1 + comp_no*indexed_field->number_of_indexed_values;
-					for (i = 0; (i<components_to_calculate)&&return_code; i++)
+					value_no = index-1 + comp_no*indexedValuesCount;
+					for (i = 0; i < components_to_calculate; i++)
 					{
-						if (!get_FE_field_string_value(indexed_field, value_no, &values[i]))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_evaluation::evaluate_string.  "
-								"Could not get values for indexed field %s", indexed_field->name);
-							return_code = 0;
-							for (j = 0; j<i; j++)
-							{
-								DEALLOCATE(values[j]);
-							}
-						}
-						value_no += indexed_field->number_of_indexed_values;
+						const char *s = fieldValues[value_no];
+						values[i] = (s) ? duplicate_string(s) : nullptr;
+						value_no += indexedValuesCount;
 					}
 				}
 				else
@@ -1070,7 +1075,7 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 					display_message(ERROR_MESSAGE,
 						"FE_element_field_evaluation::evaluate_string.  "
 						"Index field %s gave out-of-range index %d in field %s",
-						indexed_field->indexer_field->name, index, indexed_field->name);
+						indexed_field->getIndexerField()->getName(), index, indexed_field->getName());
 				}
 			}
 			else
@@ -1078,7 +1083,7 @@ int FE_element_field_evaluation::evaluate_string(int component_number,
 				display_message(ERROR_MESSAGE,
 					"FE_element_field_evaluation::evaluate_string.  "
 					"Could not calculate index field %s for field %s at %d-D element %",
-					indexed_field->indexer_field->name, indexed_field->name,
+					indexed_field->getIndexerField()->getName(), indexed_field->getName(),
 					this->element->getDimension(),
 					this->element->getIdentifier());
 			}
@@ -1115,15 +1120,15 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 	if ((xi_coordinates) && (out_string) && (this->field))
 	{
 		(*out_string) = 0;
-		if ((0<=component_number)&&(component_number<this->field->number_of_components))
+		if ((0<=component_number)&&(component_number<this->field->getNumberOfComponents()))
 		{
 			components_to_calculate=1;
 		}
 		else
 		{
-			components_to_calculate=this->field->number_of_components;
+			components_to_calculate=this->field->getNumberOfComponents();
 		}
-		switch (this->field->value_type)
+		switch (this->field->getValueType())
 		{
 			case FE_VALUE_VALUE:
 			{
@@ -1226,7 +1231,7 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_field_evaluation::evaluate_as_string.  Unknown value type %s",
-					Value_type_string(this->field->value_type));
+					Value_type_string(this->field->getValueType()));
 			} break;
 		}
 		if (!return_code)

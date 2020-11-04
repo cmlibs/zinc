@@ -24,30 +24,158 @@
 #include "general/mystring.h"
 #include "general/object.h"
 
-FE_node_template::FE_node_template(FE_nodeset *nodeset_in, struct FE_node_field_info *node_field_info) :
-	cmzn::RefCounted(),
-	nodeset(nodeset_in->access()),
-	template_node(create_template_FE_node(node_field_info))
+FE_node_field_info::FE_node_field_info(FE_nodeset *nodesetIn, struct LIST(FE_node_field) *nodeFieldListIn,
+	int numberOfValuesIn) :
+	number_of_values(numberOfValuesIn),
+	values_storage_size(get_FE_node_field_list_values_storage_size(nodeFieldListIn)),
+	node_field_list(nodeFieldListIn),
+	nodeset(nodesetIn),
+	access_count(1)
 {
 }
 
-FE_node_template::FE_node_template(FE_nodeset *nodeset_in, struct FE_node *node) :
+FE_node_field_info::~FE_node_field_info()
+{
+	if (0 == this->access_count)
+	{
+		if (this->nodeset)
+			this->nodeset->remove_FE_node_field_info(this);
+		DESTROY(LIST(FE_node_field))(&(this->node_field_list));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "~FE_node_field_info.  Non-zero access count");
+	}
+}
+
+FE_node_field_info *FE_node_field_info::create(FE_nodeset *nodesetIn, struct LIST(FE_node_field) *nodeFieldListIn,
+	int numberOfValuesIn)
+{
+	struct LIST(FE_node_field) *newNodeFieldList = CREATE_LIST(FE_node_field)();
+	if ((!newNodeFieldList) ||
+		(nodeFieldListIn) && (!COPY_LIST(FE_node_field)(newNodeFieldList, nodeFieldListIn)))
+	{
+		display_message(ERROR_MESSAGE, "FE_node_field_info::create.  Failed to copy node field lists");
+		return nullptr;
+	}
+	return new FE_node_field_info(nodesetIn, newNodeFieldList, numberOfValuesIn);
+}
+
+bool FE_node_field_info::hasMatchingNodeFieldList(struct LIST(FE_node_field) *nodeFieldListIn) const
+{
+	if (NUMBER_IN_LIST(FE_node_field)(this->node_field_list) ==
+		NUMBER_IN_LIST(FE_node_field)(nodeFieldListIn))
+	{
+		if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(FE_node_field_is_in_list,
+			(void *)(this->node_field_list), nodeFieldListIn))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+namespace {
+
+	/** Log field in <node_field> as RELATED_OBJECT_CHANGED in FE_region. */
+	int FE_node_field_log_FE_field_change_related(
+		struct FE_node_field *node_field, void *fe_region_void)
+	{
+		static_cast<FE_region *>(fe_region_void)->FE_field_change_related(node_field->field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		return 1;
+	}
+
+}
+
+void FE_node_field_info::logFieldsChangeRelated(FE_region *fe_region) const
+{
+	FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+		FE_node_field_log_FE_field_change_related, static_cast<void *>(fe_region),
+		this->node_field_list);
+}
+
+cmzn_node::~cmzn_node()
+{
+	// all nodes should be either templates with invalid index,
+	// or have been invalidated by nodeset prior to being destroyed
+	if (0 != this->access_count)
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_node::~cmzn_node.  Node has non-zero access count %d", this->access_count);
+	}
+	else if (DS_LABEL_IDENTIFIER_INVALID != this->index)
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_node::~cmzn_node.  Node has not been invalidated. Index = %d", this->index);
+	}
+	else
+	{
+		if (this->fields) // for template nodes only
+			this->invalidate();
+	}
+}
+
+void cmzn_node::invalidate()
+{
+	if (this->fields)
+	{
+		FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+			FE_node_field_free_values_storage_arrays,
+			(void *)this->values_storage, this->fields->node_field_list);
+		FE_node_field_info::deaccess(this->fields);
+	}
+	DEALLOCATE(this->values_storage);
+	this->index = DS_LABEL_INDEX_INVALID;
+}
+
+cmzn_node* cmzn_node::createFromTemplate(DsLabelIndex index, cmzn_node *template_node)
+{
+	// Assumes DS_LABEL_INDEX_INVALID == -1
+	if ((index < DS_LABEL_INDEX_INVALID) || (nullptr == template_node) || (nullptr == template_node->fields))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node::createFromTemplate.  Invalid argument(s)");
+		return nullptr;
+	}
+	cmzn_node *node = new cmzn_node();
+	node->index = index;
+	node->fields = template_node->fields->access();
+	if (template_node->values_storage)
+	{
+		if (!allocate_and_copy_FE_node_values_storage(template_node, &node->values_storage))
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_node::createFromTemplate.  Could not copy values from template node");
+			/* values_storage may be corrupt, so clear it */
+			node->values_storage = nullptr;
+			cmzn_node::deaccess(node);
+		}
+	}
+	return node;
+}
+
+FE_node_template::FE_node_template(FE_nodeset *nodeset_in, struct FE_node_field_info *node_field_info) :
 	cmzn::RefCounted(),
 	nodeset(nodeset_in->access()),
-	template_node(create_FE_node_from_template(DS_LABEL_INDEX_INVALID, node))
+	template_node(cmzn_node::createTemplate(node_field_info))
+{
+}
+
+FE_node_template::FE_node_template(FE_nodeset *nodeset_in, cmzn_node *node) :
+	cmzn::RefCounted(),
+	nodeset(nodeset_in->access()),
+	template_node(cmzn_node::createFromTemplate(DS_LABEL_INDEX_INVALID, node))
 {
 }
 
 FE_node_template::~FE_node_template()
 {
 	FE_nodeset::deaccess(this->nodeset);
-	DEACCESS(FE_node)(&(this->template_node));
+	cmzn_node::deaccess(this->template_node);
 }
 
 FE_nodeset::FE_nodeset(FE_region *fe_region) :
 	fe_region(fe_region),
 	domainType(CMZN_FIELD_DOMAIN_TYPE_INVALID),
-	node_field_info_list(CREATE(LIST(FE_node_field_info))()),
 	last_fe_node_field_info(0),
 	changeLog(0),
 	activeNodeIterators(0),
@@ -71,10 +199,11 @@ FE_nodeset::~FE_nodeset()
 
 	this->clear();
 
-	FOR_EACH_OBJECT_IN_LIST(FE_node_field_info)(
-		FE_node_field_info_clear_FE_nodeset, (void *)NULL,
-		this->node_field_info_list);
-	DESTROY(LIST(FE_node_field_info))(&(this->node_field_info_list));
+	for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+		iter != this->node_field_info_list.end(); ++iter)
+	{
+		(*iter)->nodeset = nullptr;
+	}
 }
 
 /** Private: assumes current change log pointer is null or invalid */
@@ -106,30 +235,31 @@ DsLabelsChangeLog *FE_nodeset::extractChangeLog()
 struct FE_node_field_info *FE_nodeset::get_FE_node_field_info(
 	int number_of_values, struct LIST(FE_node_field) *fe_node_field_list)
 {
-	int existing_number_of_values;
-	struct FE_node_field_info *fe_node_field_info = 0;
-	struct FE_node_field_info *existing_fe_node_field_info;
-	if (fe_node_field_list)
+	struct FE_node_field_info *existing_fe_node_field_info = nullptr;
+	for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+		iter != this->node_field_info_list.end(); ++iter)
 	{
-		existing_fe_node_field_info =
-			FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-				FE_node_field_info_has_matching_FE_node_field_list,
-				(void *)fe_node_field_list, this->node_field_info_list);
+		if (fe_node_field_list)
+		{
+			if ((*iter)->hasMatchingNodeFieldList(fe_node_field_list))
+			{
+				existing_fe_node_field_info = *iter;
+				break;
+			}
+		}
+		else if (0 == NUMBER_IN_LIST(FE_node_field)((*iter)->node_field_list))
+		{
+			existing_fe_node_field_info = *iter;
+			break;
+		}
 	}
-	else
-	{
-		existing_fe_node_field_info =
-			FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-				FE_node_field_info_has_empty_FE_node_field_list, (void *)NULL,
-				this->node_field_info_list);
-	}
+	struct FE_node_field_info *fe_node_field_info = nullptr;
 	if (existing_fe_node_field_info)
 	{
-		existing_number_of_values =
-			FE_node_field_info_get_number_of_values(existing_fe_node_field_info);
+		const int existing_number_of_values = existing_fe_node_field_info->getNumberOfValues();
 		if (number_of_values == existing_number_of_values)
 		{
-			fe_node_field_info = ACCESS(FE_node_field_info)(existing_fe_node_field_info);
+			fe_node_field_info = existing_fe_node_field_info->access();
 		}
 		else
 		{
@@ -140,17 +270,11 @@ struct FE_node_field_info *FE_nodeset::get_FE_node_field_info(
 	}
 	else
 	{
-		fe_node_field_info = CREATE(FE_node_field_info)(this,
+		fe_node_field_info = FE_node_field_info::create(this,
 			fe_node_field_list, number_of_values);
 		if (fe_node_field_info)
 		{
-			if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(fe_node_field_info,
-				this->node_field_info_list))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_nodeset::get_FE_node_field_info.  Could not add to FE_region");
-				DEACCESS(FE_node_field_info)(&fe_node_field_info);
-			}
+			this->node_field_info_list.push_back(fe_node_field_info);
 		}
 		else
 		{
@@ -182,30 +306,32 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
 
 	if (node_field_info_address &&
-		(NULL != (existing_node_field_info = *node_field_info_address)))
+		(nullptr != (existing_node_field_info = *node_field_info_address)))
 	{
 		return_code = 1;
-		if (FE_node_field_info_used_only_once(existing_node_field_info))
+		if (existing_node_field_info->usedOnce())
 		{
 			FE_node_field_info_add_node_field(existing_node_field_info,
 				new_node_field, new_number_of_values);
-			new_node_field_info =
-				FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-					FE_node_field_info_has_matching_FE_node_field_list,
-					(void *)FE_node_field_info_get_node_field_list(existing_node_field_info),
-					this->node_field_info_list);
+			for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+				iter != this->node_field_info_list.end(); ++iter)
+			{
+				if ((*iter)->hasMatchingNodeFieldList(existing_node_field_info->node_field_list))
+				{
+					new_node_field_info = *iter;
+					break;
+				}
+			}
 			if (new_node_field_info)
 			{
-				REACCESS(FE_node_field_info)(node_field_info_address,
-					new_node_field_info);
+				FE_node_field_info::reaccess(*node_field_info_address, new_node_field_info);
 			}
 		}
 		else
 		{
 			/* Need to copy after all */
 			struct LIST(FE_node_field) *node_field_list = CREATE_LIST(FE_node_field)();
-			if (COPY_LIST(FE_node_field)(node_field_list,
-					FE_node_field_info_get_node_field_list(existing_node_field_info)))
+			if (COPY_LIST(FE_node_field)(node_field_list, existing_node_field_info->node_field_list))
 			{
 				/* add the new node field */
 				if (ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, node_field_list))
@@ -215,7 +341,7 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 					if (new_node_field_info)
 					{
 						if (*node_field_info_address)
-							DEACCESS(FE_node_field_info)(node_field_info_address);
+							FE_node_field_info::deaccess(*node_field_info_address);
 						*node_field_info_address = new_node_field_info;
 					}
 				}
@@ -246,12 +372,12 @@ struct FE_node_field_info *FE_nodeset::clone_FE_node_field_info(
 	if (fe_node_field_info)
 	{
 		struct LIST(FE_node_field) *fe_node_field_list = FE_node_field_list_clone_with_FE_field_list(
-			FE_node_field_info_get_node_field_list(fe_node_field_info),
+			fe_node_field_info->node_field_list,
 			fe_region->fe_field_list, fe_region->fe_time);
 		if (fe_node_field_list)
 		{
 			clone_fe_node_field_info = this->get_FE_node_field_info(
-				FE_node_field_info_get_number_of_values(fe_node_field_info),
+				fe_node_field_info->getNumberOfValues(),
 				fe_node_field_list);
 			DESTROY(LIST(FE_node_field))(&fe_node_field_list);
 		}
@@ -274,12 +400,11 @@ struct FE_node_field_info *FE_nodeset::clone_FE_node_field_info(
  * Called when the access_count of <fe_node_field_info> drops to 1 so that
  * <fe_region> can destroy FE_node_field_info not in use.
  */
-int FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_field_info)
+void FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_field_info)
 {
 	if (fe_node_field_info == this->last_fe_node_field_info)
 		this->last_fe_node_field_info = 0;
-	return REMOVE_OBJECT_FROM_LIST(FE_node_field_info)(
-		fe_node_field_info, this->node_field_info_list);
+	this->node_field_info_list.remove(fe_node_field_info);
 }
 
 /** Assumes called by FE_region destructor, and change notification is disabled. */
@@ -357,18 +482,17 @@ void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change)
  * <field_info_node>. For changes to the contents of <node>, <field_info_node>
  * should contain the changed fields, consistent with merging it into <node>.
 */
-void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change, FE_node *field_info_node)
+void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change, cmzn_node *field_info_node)
 {
 	if (this->fe_region && this->changeLog && field_info_node)
 	{
 		this->changeLog->setIndexChange(nodeIndex, change);
 		// for efficiency, the following marks field changes only if field info is different from last
-		struct FE_node_field_info *temp_fe_node_field_info =
-			FE_node_get_FE_node_field_info(field_info_node);
+		struct FE_node_field_info *temp_fe_node_field_info = field_info_node->getNodeFieldInfo();
 		if (temp_fe_node_field_info != this->last_fe_node_field_info)
 		{
-			FE_node_field_info_log_FE_field_change_related(temp_fe_node_field_info, fe_region);
 			this->last_fe_node_field_info = temp_fe_node_field_info;
+			temp_fe_node_field_info->logFieldsChangeRelated(this->fe_region);
 		}
 		this->fe_region->FE_region_change();
 		this->fe_region->update();
@@ -379,11 +503,11 @@ void FE_nodeset::nodeChange(DsLabelIndex nodeIndex, int change, FE_node *field_i
  * Call this instead of nodeChange when exactly one field, <fe_field> of
  * <node> has changed.
  */
-void FE_nodeset::nodeFieldChange(FE_node *node, FE_field *fe_field)
+void FE_nodeset::nodeFieldChange(cmzn_node *node, FE_field *fe_field)
 {
 	if (this->fe_region && this->changeLog)
 	{
-		this->changeLog->setIndexChange(get_FE_node_index(node), DS_LABEL_CHANGE_TYPE_RELATED);
+		this->changeLog->setIndexChange(node->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED);
 		fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->fe_region->update();
 	}
@@ -391,21 +515,23 @@ void FE_nodeset::nodeFieldChange(FE_node *node, FE_field *fe_field)
 
 bool FE_nodeset::is_FE_field_in_use(struct FE_field *fe_field)
 {
-	if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-		FE_node_field_info_has_FE_field, (void *)fe_field,
-		this->node_field_info_list))
+	for (std::list<FE_node_field_info*>::iterator iter = this->node_field_info_list.begin();
+		iter != this->node_field_info_list.end(); ++iter)
 	{
-		/* since nodes may still exist in the change_log,
-		   must now check that no remaining nodes use fe_field */
-		/* for now, if there are nodes then fe_field is in use */
-		if (0 < this->getSize())
-			return true;
+		if ((*iter)->getNodeField(fe_field))
+		{
+			// since nodes may still exist in the change_log,
+			// must now check that no remaining nodes use fe_field
+			// for now, if there are nodes then fe_field is in use
+			if (0 < this->getSize())
+				return true;
+		}
 	}
 	return false;
 }
 
 // @return  Number of element references to node at nodeIndex
-int FE_nodeset::getElementUsageCount(DsLabelIndex nodeIndex)
+int FE_nodeset::getElementUsageCount(DsLabelIndex nodeIndex) const
 {
 	if (nodeIndex >= 0)
 	{
@@ -465,7 +591,7 @@ void FE_nodeset::clear()
 	if (0 < this->labels.getSize())
 	{
 		const DsLabelIndex indexLimit = this->labels.getIndexSize();
-		FE_node *node;
+		cmzn_node *node;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)
 		{
 			if (this->fe_nodes.getValue(index, node) && (node))
@@ -473,8 +599,8 @@ void FE_nodeset::clear()
 				// must invalidate nodes in case elements holding on to them
 				// BUT! Don't invalidate nodes that have been merged into another region
 				if (FE_node_get_FE_nodeset(node) == this)
-					FE_node_invalidate(node);
-				DEACCESS(FE_node)(&node);
+					node->invalidate();
+				cmzn_node::deaccess(node);
 			}
 		}
 	}
@@ -482,11 +608,11 @@ void FE_nodeset::clear()
 	this->labels.clear();
 }
 
-int FE_nodeset::change_FE_node_identifier(struct FE_node *node, DsLabelIdentifier new_identifier)
+int FE_nodeset::change_FE_node_identifier(cmzn_node *node, DsLabelIdentifier new_identifier)
 {
 	if ((FE_node_get_FE_nodeset(node) == this) && (new_identifier >= 0))
 	{
-		const DsLabelIndex nodeIndex = get_FE_node_index(node);
+		const DsLabelIndex nodeIndex = node->getIndex();
 		const DsLabelIdentifier currentIdentifier = this->getNodeIdentifier(nodeIndex);
 		if (currentIdentifier >= 0)
 		{
@@ -515,7 +641,7 @@ int FE_nodeset::change_FE_node_identifier(struct FE_node *node, DsLabelIdentifie
 }
 
 /** Creates a template that is a copy of the existing node */
-FE_node_template *FE_nodeset::create_FE_node_template(FE_node *node)
+FE_node_template *FE_nodeset::create_FE_node_template(cmzn_node *node)
 {
 	if (FE_node_get_FE_nodeset(node) != this)
 		return 0;
@@ -538,16 +664,16 @@ FE_node_template *FE_nodeset::create_FE_node_template()
  * with FE_region_begin/end_change.
  * @return  Accessed node, or 0 on error.
  */
-FE_node *FE_nodeset::get_or_create_FE_node_with_identifier(DsLabelIdentifier identifier)
+cmzn_node *FE_nodeset::get_or_create_FE_node_with_identifier(DsLabelIdentifier identifier)
 {
-	struct FE_node *node = 0;
+	cmzn_node *node = 0;
 	if (-1 <= identifier)
 	{
 		if (identifier >= 0)
 			node = this->findNodeByIdentifier(identifier);
 		if (node)
 		{
-			ACCESS(FE_node)(node);
+			node->access();
 		}
 		else
 		{
@@ -574,9 +700,9 @@ FE_node *FE_nodeset::get_or_create_FE_node_with_identifier(DsLabelIdentifier ide
 * used by an existing node.
 * @return  Accessed node, or 0 on error.
 */
-FE_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_template *node_template)
+cmzn_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_template *node_template)
 {
-	struct FE_node *new_node = 0;
+	cmzn_node *new_node = 0;
 	if ((-1 <= identifier) && node_template)
 	{
 		if (node_template->nodeset == this)
@@ -584,16 +710,16 @@ FE_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_templa
 			DsLabelIndex nodeIndex = (identifier < 0) ? this->labels.createLabel() : this->labels.createLabel(identifier);
 			if (nodeIndex >= 0)
 			{
-				new_node = ::create_FE_node_from_template(nodeIndex, node_template->get_template_node());
+				new_node = cmzn_node::createFromTemplate(nodeIndex, node_template->get_template_node());
 				if ((new_node) && this->fe_nodes.setValue(nodeIndex, new_node))
 				{
-					ACCESS(FE_node)(new_node);
+					new_node->access();
 					this->nodeAddedChange(new_node);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE, "FE_nodeset::create_FE_node.  Failed to add node to list.");
-					DEACCESS(FE_node)(&new_node);
+					cmzn_node::deaccess(new_node);
 					this->labels.removeLabel(nodeIndex);
 				}
 			}
@@ -615,7 +741,7 @@ FE_node *FE_nodeset::create_FE_node(DsLabelIdentifier identifier, FE_node_templa
 	return (new_node);
 }
 
-int FE_nodeset::merge_FE_node_template(struct FE_node *destination, FE_node_template *fe_node_template)
+int FE_nodeset::merge_FE_node_template(cmzn_node *destination, FE_node_template *fe_node_template)
 {
 	if (fe_node_template
 		&& (fe_node_template->nodeset == this)
@@ -623,7 +749,7 @@ int FE_nodeset::merge_FE_node_template(struct FE_node *destination, FE_node_temp
 	{
 		if (::merge_FE_node(destination, fe_node_template->get_template_node()))
 		{
-			this->nodeChange(get_FE_node_index(destination), DS_LABEL_CHANGE_TYPE_RELATED, fe_node_template->get_template_node());
+			this->nodeChange(destination->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED, fe_node_template->get_template_node());
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_GENERAL;
@@ -636,7 +762,7 @@ int FE_nodeset::merge_FE_node_template(struct FE_node *destination, FE_node_temp
  *@return  Result code OK if undefined CMZN_NOT_FOUND if field undefined or
  *any other error if failed.
  */
-int FE_nodeset::undefineFieldAtNode(struct FE_node *node, struct FE_field *fe_field)
+int FE_nodeset::undefineFieldAtNode(cmzn_node *node, struct FE_field *fe_field)
 {
 	int result = ::undefine_FE_field_at_node(node, fe_field);
 	if (result == CMZN_OK)
@@ -645,16 +771,16 @@ int FE_nodeset::undefineFieldAtNode(struct FE_node *node, struct FE_field *fe_fi
 }
 
 /**
- * Calls <iterator_function> with <user_data> for each FE_node in <region>.
+ * Calls <iterator_function> with <user_data> for each cmzn_node in <region>.
  */
-int FE_nodeset::for_each_FE_node(LIST_ITERATOR_FUNCTION(FE_node) iterator_function, void *user_data_void)
+int FE_nodeset::for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_function, void *user_data_void)
 {
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
 		return 0;
 	int return_code = 1;
 	DsLabelIndex nodeIndex;
-	FE_node *node;
+	cmzn_node *node;
 	while ((nodeIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
 		node = this->getNode(nodeIndex);
@@ -679,19 +805,19 @@ int FE_nodeset::for_each_FE_node(LIST_ITERATOR_FUNCTION(FE_node) iterator_functi
  * Private function which avoids checking whether node is in nodeset.
  * @return OK on success ERROR_IN_USE if in use by element
  */
-int FE_nodeset::remove_FE_node_private(struct FE_node *node)
+int FE_nodeset::remove_FE_node_private(cmzn_node *node)
 {
-	const DsLabelIndex nodeIndex = get_FE_node_index(node);
+	const DsLabelIndex nodeIndex = node->getIndex();
 	if (this->getElementUsageCount(nodeIndex) > 0)
 		return CMZN_ERROR_IN_USE;
 	// must notify of change before invalidating node otherwise has no fields
 	// assumes within begin/end change
 	this->nodeRemovedChange(node);
-	// clear FE_node entry but deaccess at end of this function
+	// clear cmzn_node entry but deaccess at end of this function
 	this->fe_nodes.setValue(nodeIndex, 0);
-	FE_node_invalidate(node);
+	node->invalidate();
 	this->labels.removeLabel(nodeIndex);
-	DEACCESS(FE_node)(&node);
+	cmzn_node::deaccess(node);
 	return CMZN_OK;
 }
 
@@ -700,7 +826,7 @@ int FE_nodeset::remove_FE_node_private(struct FE_node *node)
  * @return OK on success ERROR_IN_USE if in use by element,
  * or other error if more serious failure.
  */
-int FE_nodeset::destroyNode(struct FE_node *node)
+int FE_nodeset::destroyNode(cmzn_node *node)
 {
 	if (this->containsNode(node))
 	{
@@ -726,7 +852,7 @@ int FE_nodeset::destroyAllNodes()
 	FE_region_begin_change(this->fe_region);
 	// can't use an iterator as invalidated when node removed
 	const DsLabelIndex indexLimit = this->labels.getIndexSize();
-	FE_node *node;
+	cmzn_node *node;
 	const bool contiguous = this->labels.isContiguous();
 	for (DsLabelIndex index = 0; index < indexLimit; ++index)
 	{
@@ -765,7 +891,7 @@ int FE_nodeset::destroyNodesInGroup(DsLabelsGroup& labelsGroup)
 	FE_region_begin_change(this->fe_region);
 	// can't use an iterator as invalidated when node removed
 	DsLabelIndex index = -1; // DS_LABEL_INDEX_INVALID
-	FE_node *node;
+	cmzn_node *node;
 	while (labelsGroup.incrementIndex(index))
 	{
 		node = this->getNode(index);
@@ -803,12 +929,19 @@ int FE_nodeset::get_last_FE_node_identifier()
 	return 0;
 }
 
-bool FE_nodeset::FE_field_has_multiple_times(struct FE_field *fe_field)
+bool FE_nodeset::FE_field_has_multiple_times(struct FE_field *fe_field) const
 {
-	if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-		FE_node_field_info_has_FE_field_with_multiple_times,
-		(void *)fe_field, this->node_field_info_list))
-		return true;
+	for (std::list<FE_node_field_info*>::const_iterator iter = this->node_field_info_list.begin();
+		iter != this->node_field_info_list.end(); ++iter)
+	{
+		const FE_node_field *node_field = (*iter)->getNodeField(fe_field);
+		if (node_field)
+		{
+			if (node_field->time_sequence)
+				return true;
+			break;
+		}
+	}
 	return false;
 }
 
@@ -855,7 +988,7 @@ struct FE_nodeset::Merge_FE_node_external_data
 		if (this->matching_node_field_info)
 		{
 			for (int i = 2*this->number_of_matching_node_field_info - 1; 0 <= i; --i)
-				DEACCESS(FE_node_field_info)(&(this->matching_node_field_info[i]));
+				FE_node_field_info::deaccess(this->matching_node_field_info[i]);
 			DEALLOCATE(this->matching_node_field_info);
 		}
 	}
@@ -927,9 +1060,9 @@ struct FE_nodeset::Merge_FE_node_external_data
 			2*(this->number_of_matching_node_field_info + 1)))
 		{
 			matching_node_field_info[this->number_of_matching_node_field_info*2] =
-				ACCESS(FE_node_field_info)(source_node_field_info);
+				source_node_field_info->access();
 			matching_node_field_info[this->number_of_matching_node_field_info*2 + 1] =
-				ACCESS(FE_node_field_info)(target_node_field_info);
+				target_node_field_info->access();
 			this->matching_node_field_info = matching_node_field_info;
 			++(this->number_of_matching_node_field_info);
 			return true;
@@ -952,17 +1085,17 @@ struct FE_nodeset::Merge_FE_node_external_data
  * nodes from it. Operations such as findNodeByIdentifier will no longer
  * work as the node is given a new index for this nodeset.
  */
-int FE_nodeset::merge_FE_node_external(struct FE_node *node,
+int FE_nodeset::merge_FE_node_external(cmzn_node *node,
 	Merge_FE_node_external_data &data)
 {
 	int return_code = 1;
-	struct FE_node_field_info *old_node_field_info = FE_node_get_FE_node_field_info(node);
+	struct FE_node_field_info *old_node_field_info = node->getNodeFieldInfo();
 	if (old_node_field_info)
 	{
-		const DsLabelIndex sourceNodeIndex = get_FE_node_index(node);
+		const DsLabelIndex sourceNodeIndex = node->getIndex();
 		const DsLabelIdentifier identifier = get_FE_node_identifier(node);
-		FE_node *global_node = this->findNodeByIdentifier(identifier);
-		const DsLabelIndex newNodeIndex = (global_node) ? get_FE_node_index(global_node) :
+		cmzn_node *global_node = this->findNodeByIdentifier(identifier);
+		const DsLabelIndex newNodeIndex = (global_node) ? global_node->getIndex() :
 			this->labels.createLabel(identifier);
 		if (newNodeIndex < 0)
 		{
@@ -973,7 +1106,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 		// 1. Convert node to use a new FE_node_field_info from this nodeset
 		FE_node_field_info *node_field_info = data.get_matching_FE_node_field_info(old_node_field_info);
 		if (node_field_info)
-			ACCESS(FE_node_field_info)(node_field_info);
+			node_field_info->access();
 		else
 		{
 			node_field_info = this->clone_FE_node_field_info(old_node_field_info);
@@ -981,7 +1114,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 			{
 				if (!data.add_matching_FE_node_field_info(old_node_field_info, node_field_info))
 				{
-					DEACCESS(FE_node_field_info)(&node_field_info);
+					FE_node_field_info::deaccess(node_field_info);
 				}
 			}
 			else
@@ -993,7 +1126,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 		if (node_field_info)
 		{
 			/* substitute the new node field info */
-			FE_node_set_FE_node_field_info(node, node_field_info);
+			node->setNodeFieldInfo(node_field_info);
 			return_code = 1;
 			/* substitute global elements etc. in embedded fields */
 			const size_t embeddedFieldCount = data.targetEmbeddedFields.size();
@@ -1001,7 +1134,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 			{
 				// note after substituting node field info, we use the targetEmbeddedField
 				FE_field *targetEmbeddedField = data.targetEmbeddedFields[f];
-				if (FE_field_has_parameters_at_node(targetEmbeddedField, node))
+				if (node->getNodeField(targetEmbeddedField))
 				{
 					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
 					cmzn_element *sourceElement;
@@ -1010,7 +1143,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 					{
 						if (sourceElement)
 						{
-							FE_mesh *targetHostMesh = const_cast<FE_mesh*>(FE_field_get_element_xi_host_mesh(targetEmbeddedField));
+							FE_mesh *targetHostMesh = targetEmbeddedField->getElementXiHostMesh();
 							const DsLabelIdentifier elementIdentifier = sourceElement->getIdentifier();
 							cmzn_element *targetElement = targetHostMesh->findElementByIdentifier(elementIdentifier);
 							// target element should exist as FE_mesh::mergePart1Elements should have been called first
@@ -1041,28 +1174,28 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 			if (return_code)
 			{
 				if (global_node)
-					ACCESS(FE_node_field_info)(old_node_field_info);
-				set_FE_node_index(node, newNodeIndex);
+					old_node_field_info->access();
+				node->setIndex(newNodeIndex);
 				if (global_node)
 				{
 					if (::merge_FE_node(global_node, node, /*optimised_merge*/1))
 					{
-						this->nodeChange(get_FE_node_index(global_node), DS_LABEL_CHANGE_TYPE_RELATED, node);
+						this->nodeChange(global_node->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED, node);
 					}
 					else
 					{
 						return_code = 0;
 					}
 					// must restore the previous information for clean-up
-					FE_node_set_FE_node_field_info(node, old_node_field_info);
-					DEACCESS(FE_node_field_info)(&old_node_field_info);
-					set_FE_node_index(node, sourceNodeIndex);
+					node->setNodeFieldInfo(old_node_field_info);
+					FE_node_field_info::deaccess(old_node_field_info);
+					node->setIndex(sourceNodeIndex);
 				}
 				else
 				{
 					if (this->fe_nodes.setValue(newNodeIndex, node))
 					{
-						ACCESS(FE_node)(node);
+						node->access();
 						this->nodeAddedChange(node);
 					}
 					else
@@ -1073,7 +1206,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 					}
 				}
 			}
-			DEACCESS(FE_node_field_info)(&node_field_info);
+			FE_node_field_info::deaccess(node_field_info);
 		}
 		else
 		{
@@ -1091,6 +1224,20 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+void FE_nodeset::getHighestNodeFieldDerivativeAndVersion(FE_field *field,
+	int& highestDerivative, int& highestVersion) const
+{
+	highestDerivative = 0;
+	highestVersion = 0;
+	for (std::list<FE_node_field_info*>::const_iterator iter = this->node_field_info_list.begin();
+		iter != this->node_field_info_list.end(); ++iter)
+	{
+		const FE_node_field *node_field = (*iter)->getNodeField(field);
+		if (node_field)
+			node_field->expandHighestDerivativeAndVersion(highestDerivative, highestVersion);
+	}
 }
 
 /*
@@ -1117,8 +1264,8 @@ bool FE_nodeset::canMerge(FE_nodeset &source)
 		if (!targetNode)
 			continue;
 		// fast path: check if the node_field_info have already been proven compatible */
-		sourceInfo = FE_node_get_FE_node_field_info(sourceNode);
-		targetInfo = FE_node_get_FE_node_field_info(targetNode);
+		sourceInfo = sourceNode->getNodeFieldInfo();
+		targetInfo = targetNode->getNodeFieldInfo();
 		infoAddress = compatible_node_field_info;
 		bool compatible = false;
 		for (int i = 0; i < number_of_compatible_node_field_info; ++i)
