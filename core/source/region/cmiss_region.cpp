@@ -22,7 +22,7 @@
 #include "computed_field/field_derivative.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_finite_element.h"
-#include "context/context.h"
+#include "context/context.hpp"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"

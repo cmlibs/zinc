@@ -20,7 +20,7 @@ FILE : scene.h
 #include "general/object.h"
 #include "graphics/graphics.h"
 #include "graphics/graphics_library.h"
-#include "context/context.h"
+#include "context/context.hpp"
 #include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/types/timenotifierid.h"
 #include "general/enumerator_private.hpp"
@@ -555,6 +555,37 @@ int Scene_get_number_of_graphics_with_line_vertices_in_tree(cmzn_scene_id scene,
 /* Only glyphs with surfaces are compatible at this moment */
 int Scene_get_number_of_exportable_glyph_resources(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter);
+
+class Render_graphics_compile_members;
+class Render_graphics_opengl;
+
+int cmzn_scene_compile_scene(cmzn_scene *scene,
+	Render_graphics_compile_members *renderer);
+
+int cmzn_scene_compile_graphics(cmzn_scene *scene,
+	Render_graphics_compile_members *renderer, int force_rebuild);
+
+int execute_scene_exporter_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int execute_scene_threejs_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int execute_cmzn_scene(cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int cmzn_scene_graphics_render_opengl(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer);
+
+int cmzn_scene_compile_tree(cmzn_scene *scene,
+	Render_graphics_compile_members *renderer);
+
+int build_Scene(cmzn_scene *scene, cmzn_scenefilter *filter);
 
 #endif /* !defined (SCENE_H) */
 

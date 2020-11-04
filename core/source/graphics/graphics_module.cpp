@@ -24,7 +24,7 @@
 #include "graphics/shader_program.hpp"
 #include "graphics/shader_uniforms.hpp"
 #include "graphics/spectrum.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "graphics/scenefilter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region.hpp"

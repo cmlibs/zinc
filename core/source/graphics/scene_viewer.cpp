@@ -50,7 +50,6 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/graphics_library.h"
 #include "graphics/light.hpp"
 #include "graphics/scene.h"
-#include "graphics/scene.hpp"
 #include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"

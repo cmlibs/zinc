@@ -22,7 +22,6 @@ Renders gtObjects to Wavefront OBJ file
 #include "graphics/material.h"
 #include "graphics/render_wavefront.h"
 #include "graphics/scene.h"
-#include "graphics/scene.hpp"
 #include "graphics/spectrum.h"
 #include "general/message.h"
 #include "graphics/graphics_object_private.hpp"

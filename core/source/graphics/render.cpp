@@ -19,7 +19,7 @@
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
-#include "graphics/scene.hpp"
+#include "graphics/scene.h"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render.hpp"

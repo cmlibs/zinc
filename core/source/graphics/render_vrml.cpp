@@ -31,7 +31,6 @@ Renders gtObjects to VRML file
 #include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include "graphics/scene.h"
-#include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 
 /*

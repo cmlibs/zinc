@@ -15,7 +15,7 @@ FILE : graphics_module.h
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/shader.h"
 #include "general/object.h"
-#include "context/context.h"
+#include "context/context.hpp"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"

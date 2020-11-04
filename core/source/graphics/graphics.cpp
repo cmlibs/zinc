@@ -53,7 +53,7 @@
 #include "graphics/graphics_object.hpp"
 #include "graphics/scene.h"
 #include "graphics/graphics.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"

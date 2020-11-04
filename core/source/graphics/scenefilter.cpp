@@ -20,7 +20,7 @@
 #include "general/manager_private.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphics.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "graphics/scenefilter.hpp"
 #include "region/cmiss_region.hpp"
 

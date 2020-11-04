@@ -31,7 +31,6 @@ GL rendering calls - API specific.
 #include "graphics/material.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/scene.h"
-#include "graphics/scene.hpp"
 #include "graphics/scene_coordinate_system.hpp"
 #include "graphics/spectrum.hpp"
 #include "graphics/texture.hpp"

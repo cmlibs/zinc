@@ -36,7 +36,7 @@ FILE : scene.cpp
 #include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphics.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "graphics/scene_viewer.h"
 #include "graphics/scene.h"
 #include "general/callback_private.h"
@@ -57,7 +57,7 @@ FILE : scene.cpp
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "graphics/selection.hpp"
-#include "graphics/scene.hpp"
+#include "graphics/scene.h"
 #include "graphics/render_gl.h"
 #include "graphics/tessellation.hpp"
 

@@ -23,7 +23,7 @@ Renders gtObjects to STL stereolithography file.
 #include "graphics/scene.h"
 #include "general/message.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/scene.hpp"
+#include "graphics/scene.h"
 
 namespace {
 
