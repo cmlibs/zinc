@@ -51,7 +51,7 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/graphics.h"
 #include "graphics/graphics_module.hpp"
 #include "general/message.h"

@@ -69,7 +69,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphics.h
 	source/graphics/graphics_module.hpp
-	source/graphics/scene.h
+	source/graphics/scene.hpp
 	source/stream/scene_stream.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h

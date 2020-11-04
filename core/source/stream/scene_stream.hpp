@@ -13,7 +13,7 @@
 #if !defined (CMZN_SCENE_STREAM_HPP)
 #define CMZN_SCENE_STREAM_HPP
 
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/scenepicker.h"
 #include "stream/stream_private.hpp"

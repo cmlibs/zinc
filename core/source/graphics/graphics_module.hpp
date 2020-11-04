@@ -21,7 +21,7 @@ FILE : graphics_module.h
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/light.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "region/cmiss_region.hpp"
 #include "selection/element_point_ranges_selection.h"
 #include "time/time_keeper.hpp"

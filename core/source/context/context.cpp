@@ -19,7 +19,7 @@
 #include "general/object.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/graphics_module.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/timekeeper.h"
 

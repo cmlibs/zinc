@@ -17,7 +17,7 @@ Structure describing an interactive event containing:
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "general/debug.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "interaction/interactive_event.h"
 #include "general/message.h"
 

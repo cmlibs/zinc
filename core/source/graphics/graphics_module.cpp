@@ -18,7 +18,7 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
 #include "graphics/shader.hpp"
 #include "graphics/shader_program.hpp"

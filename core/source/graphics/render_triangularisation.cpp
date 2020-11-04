@@ -11,7 +11,7 @@
 #include "opencmiss/zinc/scene.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/triangle_mesh.hpp"
 #include "graphics/graphics_object_private.hpp"

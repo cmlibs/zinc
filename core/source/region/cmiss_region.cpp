@@ -26,7 +26,7 @@
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_region.h"

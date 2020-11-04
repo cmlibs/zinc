@@ -16,7 +16,7 @@
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
 #include "general/message.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"

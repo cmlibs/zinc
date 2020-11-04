@@ -38,7 +38,7 @@ FILE : scene.cpp
 #include "graphics/graphics.h"
 #include "graphics/graphics_module.hpp"
 #include "graphics/scene_viewer.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
@@ -57,7 +57,7 @@ FILE : scene.cpp
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "graphics/selection.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/tessellation.hpp"
 

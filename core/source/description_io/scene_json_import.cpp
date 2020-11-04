@@ -16,7 +16,7 @@
 #include "opencmiss/zinc/region.hpp"
 #include "description_io/graphics_json_import.hpp"
 #include "description_io/scene_json_import.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/status.h"
 
 int SceneJsonImport::import(const std::string &jsonString)

@@ -23,7 +23,7 @@
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #if defined (USE_OPENCASCADE)
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_nodeset.hpp"

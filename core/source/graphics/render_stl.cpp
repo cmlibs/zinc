@@ -16,14 +16,13 @@ Renders gtObjects to STL stereolithography file.
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
-#include "graphics/render_stl.h"
-#include "graphics/scene.h"
-#include "general/message.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/scene.h"
+#include "graphics/render_stl.h"
+#include "graphics/scene.hpp"
 
 namespace {
 
