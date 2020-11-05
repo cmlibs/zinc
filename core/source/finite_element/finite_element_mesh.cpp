@@ -1902,7 +1902,7 @@ cmzn_element *FE_mesh::get_first_FE_element_that(
 			display_message(ERROR_MESSAGE, "FE_mesh::for_each_FE_element.  No element at index");
 			break;
 		}
-		if (conditional_function(element, user_data_void))
+		if ((!conditional_function) || conditional_function(element, user_data_void))
 			break;
 	}
 	cmzn::Deaccess(iter);

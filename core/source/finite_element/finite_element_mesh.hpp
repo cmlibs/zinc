@@ -1077,6 +1077,8 @@ public:
 
 	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
 
+	/** @return First element in mesh for which function returns true / non-zero.
+	 * @param conditional_function  If none, return first element, if any. */
 	cmzn_element *get_first_FE_element_that(
 		LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void);
 
