@@ -86,7 +86,7 @@ public:
 	}
 
 	/** Set default region if you wish context to manage it */
-	int cmzn_context::setDefaultRegion(cmzn_region *regionIn);
+    int setDefaultRegion(cmzn_region *regionIn);
 
 	cmzn_logger *getLogger() const
 	{
