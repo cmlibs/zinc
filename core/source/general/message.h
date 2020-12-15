@@ -21,6 +21,8 @@ Global types
 ------------
 */
 
+#ifndef MESSAGE_TYPE_ENUM
+#define MESSAGE_TYPE_ENUM
 enum Message_type
 /*******************************************************************************
 LAST MODIFIED : 31 May 1996
@@ -33,6 +35,8 @@ The different message types.
 	WARNING_MESSAGE = 1,
 	INFORMATION_MESSAGE = 2
 }; /* enum Message_type */
+
+#endif
 
 typedef int (Display_message_function)(const char *,enum Message_type, void *);
 /*******************************************************************************
