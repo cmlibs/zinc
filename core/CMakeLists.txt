@@ -120,6 +120,8 @@ if( ZINC_BUILD_SHARED_LIBRARY )
     set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
         COMPILE_DEFINITIONS "ZINC_SHARED_OBJECT"
         DEFINE_SYMBOL "ZINC_EXPORTS")
+    export(TARGETS ${ZINC_SHARED_TARGET}
+        FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake")
 endif()
 
 if( ZINC_BUILD_STATIC_LIBRARY )
@@ -127,7 +129,10 @@ if( ZINC_BUILD_STATIC_LIBRARY )
     set(ZINC_STATIC_TARGET_NAME ${ZINC_STATIC_TARGET} PARENT_SCOPE)
     add_library( ${ZINC_STATIC_TARGET} STATIC ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS} )
     target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
-    target_include_directories(${ZINC_STATIC_TARGET} PUBLIC ${FREETYPE_INCLUDE_DIRS})
+    target_include_directories(${ZINC_STATIC_TARGET}
+        PUBLIC ${FREETYPE_INCLUDE_DIRS}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/api>
+        )
     add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
     if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # No target compile features in this setting.
@@ -140,6 +145,8 @@ if( ZINC_BUILD_STATIC_LIBRARY )
     endif()
     set_target_properties( ${ZINC_STATIC_TARGET} PROPERTIES
         OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
+    export(TARGETS ${ZINC_STATIC_TARGET}
+        FILE "${PROJECT_BINARY_DIR}/zinc-targets.cmake" APPEND)
 endif()
 
 set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES

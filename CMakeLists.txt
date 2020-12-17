@@ -103,6 +103,21 @@ foreach( p LIB BIN INC CMAKE )
     endif()
 endforeach()
 
+# Find dependencies default
+if (APPLE)
+    set(ZLIB_FIND_SYSTEM OFF)
+    set(BZIP2_FIND_SYSTEM OFF)
+    set(LIBXML2_FIND_SYSTEM ON)
+    set(FIELDML-API_FIND_SYSTEM OFF)
+    set(FTGL_FIND_SYSTEM OFF)
+    set(FREETYPE_FIND_SYSTEM ON)
+    set(OPTPP_FIND_SYSTEM OFF)
+    set(GLEW_FIND_SYSTEM OFF)
+    set(NETGEN_FIND_SYSTEM OFF)
+    set(IMAGEMAGICK_FIND_SYSTEM OFF)
+    set(ITK_FIND_SYSTEM OFF)
+endif()
+
 # Must have dependencies
 find_package(ZLIB ${ZLIB_VERSION} REQUIRED)
 find_package(BZip2 ${BZIP2_VERSION} REQUIRED)
@@ -118,7 +133,7 @@ if(WIN32)
     set(GLEW_STATIC TRUE)
 endif()
 set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew)
-set(ZINC_DEPS ZLIB BZip2 LibXml2 Fieldml-API FTGL OPTPP GLEW)
+set(ZINC_DEPS ZLIB BZip2 LibXml2 Fieldml-API FTGL Freetype OPTPP GLEW)
 
 set(USE_MSAA TRUE)
 
@@ -283,7 +298,7 @@ set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/core/source/api;${PROJECT_BINARY
 set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
 set(ZINC_INSTALL_BIN_DIR bin)# "Installation directory for executables"
 set(ZINC_INSTALL_INC_DIR include)# "Installation directory for header files"
-set(ZINC_EXPORT_SET_NAME zinc-config)
+set(ZINC_EXPORT_SET_NAME zinc-targets)
 
 add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
@@ -308,10 +323,6 @@ endif()
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
-# Create the build tree imported targets
-export(TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}
-    FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
-
 # Register the Zinc project with the CMake database
 export(PACKAGE ${ZINC_BASE_NAME})
 
@@ -333,21 +344,17 @@ file(WRITE ${DEPFILE}
     "include(CMakeFindDependencyMacro)\n"
     "set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\n"
 )
-file(APPEND ${DEPFILE} "
-if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
-    if (TARGET ${ZINC_STATIC_TARGET_NAME})
-        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
-    endif ()
-endif ()
-"
-)
 
 file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
 foreach(ZINCDEP ${ZINC_DEPS})
     if (${ZINCDEP}_FOUND)
         if (DEFINED ${ZINCDEP}_DIR)
-            file(RELATIVE_PATH _REL_PATH "${CMAKE_INSTALL_PREFIX}" "${${ZINCDEP}_DIR}")
-            file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \${${PROJECT_NAME}_IMPORT_PREFIX}/${_REL_PATH})\n")
+            if(IS_ABSOLUTE "${${ZINCDEP}_DIR}")
+                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \"${${ZINCDEP}_DIR}\")\n")
+            else()
+                file(RELATIVE_PATH _REL_PATH "${CMAKE_INSTALL_PREFIX}" "${${ZINCDEP}_DIR}")
+                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \${${PROJECT_NAME}_IMPORT_PREFIX}/${_REL_PATH})\n")
+            endif()
         endif ()
         string(TOUPPER ${ZINCDEP} ZINCDEP_UPPER)
         file(APPEND ${DEPFILE} "    set(${ZINCDEP_UPPER}_FIND_SYSTEM ${${ZINCDEP_UPPER}_FIND_SYSTEM})\n    find_dependency(${ZINCDEP})\n")
@@ -363,6 +370,29 @@ install(FILES
         DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
         COMPONENT DevelopmentSDK
 )
+
+# Create the build tree imported targets
+set(ZINC_CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/zinc-config.cmake)
+file(WRITE ${ZINC_CONFIG_FILE}
+    "get_filename_component(_HERE \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)\n"
+    "include(\"\${_HERE}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake\")\n"
+    "include(\"\${_HERE}/${ZINC_EXPORT_SET_NAME}.cmake\")\n"
+)
+file(APPEND ${ZINC_CONFIG_FILE} "
+if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
+    if (TARGET ${ZINC_STATIC_TARGET_NAME})
+        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
+    endif ()
+endif ()
+"
+)
+
+install(FILES
+        ${ZINC_CONFIG_FILE}
+        DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
+        COMPONENT DevelopmentSDK
+)
+
 
 # Packaging for the Zinc library
 include(cmake/ZincPackaging.cmake)
