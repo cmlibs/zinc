@@ -1246,7 +1246,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			for (int c = 0; c < componentCount; ++c)
 			{
 				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
-				FE_value *dst = derivativeValueCache.values + (c*componentCount + d)*lowerDerivativeTermCount;
+				FE_value *dst = derivativeValueCache.values + (c*elementDimension + d)*lowerDerivativeTermCount;
 				if (k == 0)
 				{
 					for (int v = 0; v < lowerDerivativeTermCount; ++v)
