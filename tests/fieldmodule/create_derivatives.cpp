@@ -27,7 +27,9 @@
 #include <opencmiss/zinc/differentialoperator.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
 
 #include "test_resources.h"
 
@@ -413,6 +415,60 @@ TEST(cmzn_fieldmodule_create_field_gradient, valid_args)
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
+}
+
+// Zinc issue #163 numerical derivative use for gradient of gradient indexed
+// values incorrectly if elementDimension != componentsCount
+TEST(ZincFieldGradient, gradientOfGradient)
+{
+	ZincTestSetupCpp zinc;
+
+	int result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE));
+	EXPECT_EQ(CMZN_OK, result);
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	Field deformed = zinc.fm.findFieldByName("deformed");
+	Field displacement = deformed - coordinates;
+	EXPECT_TRUE(displacement.isValid());
+	Field displacementGradient1 = zinc.fm.createFieldGradient(displacement, coordinates);
+	EXPECT_TRUE(displacementGradient1.isValid());
+	EXPECT_EQ(9, displacementGradient1.getNumberOfComponents());
+	Field displacementGradient2 = zinc.fm.createFieldGradient(displacementGradient1, coordinates);
+	EXPECT_TRUE(displacementGradient2.isValid());
+	EXPECT_EQ(27, displacementGradient2.getNumberOfComponents());
+
+	const double xi[2][3] =
+	{
+		{ 0.5, 0.5, 0.5 },
+		{ 0.1, 0.2, 0.3 }
+	};
+	const double displGrad1Answer[2][9] = {
+		{-0.0132767,-0.0274628, 0.0112656,-0.0299884,-0.0401232,-0.0101377,-0.0005196, 0.0508512,-0.0255976},
+		{-0.1066798,-0.0086179, 0.0600045,-0.0210395, 0.1247084, 0.0950958, 0.2936052, 0.0786568, 0.1425584} };
+	const double displGrad2Answer[2][27] = {
+		{-0.1494242,-0.0611968,-0.1640609,-0.0611968,-0.0046702,-0.1575785,-0.1640609,-0.1575785,-0.1622634,
+		 -0.1411490, 0.2206460, 0.2305718, 0.2206460,-0.4751799, 0.2183105, 0.2305718, 0.2183105,-0.0874906,
+		 -0.0244105, 0.9511653, 0.7109450, 0.9511653,-0.1729542, 0.8192559, 0.7109450, 0.8192559, 0.3452878},
+		{ 0.6763522,-0.0832618, 1.4575007,-0.0832618, 0.2925900,-0.1729627, 1.4575007,-0.1729627,-1.1215458,
+		 -0.2739081, 1.0910543, 0.2909908, 1.0910543,-0.7688550, 0.1861709, 0.2909908, 0.1861709,-0.6266895,
+		 -2.0214297, 0.6055436,-0.2633694, 0.6055436,-1.1092826,-0.2157290,-0.2633694,-0.2157290,-1.3034022} };
+	double displGrad1[9], displGrad2[27];
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	const double TOL = 1.0E-6;
+	for (int i = 0; i < 2; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, xi[i]));
+		EXPECT_EQ(RESULT_OK, displacementGradient1.evaluateReal(fieldcache, 9, displGrad1));
+		for (int c = 0; c < 9; ++c)
+			EXPECT_NEAR(displGrad1Answer[i][c], displGrad1[c], TOL);
+		EXPECT_EQ(RESULT_OK, displacementGradient2.evaluateReal(fieldcache, 27, displGrad2));
+		for (int c = 0; c < 27; ++c)
+			EXPECT_NEAR(displGrad2Answer[i][c], displGrad2[c], TOL);
+	}
 }
 
 // Issue 3317: Gradient field calculations for grid based scalar fields are not
