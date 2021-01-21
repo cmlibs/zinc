@@ -66,6 +66,13 @@ DESCRIPTION :
 	{
 		FE_value focus;
 	} parameters;
+
+	Coordinate_system(enum Coordinate_system_type typeIn = RECTANGULAR_CARTESIAN, FE_value focusIn = 1.0) :
+		type(typeIn)
+	{
+		this->parameters.focus = focusIn;
+	}
+
 }; /* struct Coordinate_system */
 
 enum Projection_type

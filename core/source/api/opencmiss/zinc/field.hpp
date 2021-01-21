@@ -19,8 +19,6 @@ namespace Zinc
 
 class Differentialoperator;
 class Element;
-class Fieldassignment;
-class Fieldcache;
 class FieldComponent;
 class FieldConstant;
 class FieldEdgeDiscontinuity;
@@ -39,6 +37,9 @@ class FieldNodeGroup;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
+class Fieldassignment;
+class Fieldcache;
+class Fieldparameters;
 class Fieldmodule;
 class Fieldsmoothing;
 
@@ -192,6 +193,8 @@ public:
 		return cmzn_field_set_coordinate_system_type(id,
 			static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
 	}
+
+	inline Fieldparameters getFieldparameters();
 
 	int getNumberOfComponents()
 	{

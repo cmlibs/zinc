@@ -32,6 +32,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/field_derivative.cpp
 	source/computed_field/field_module.cpp
 	source/computed_field/fieldassignmentprivate.cpp
+	source/computed_field/fieldparametersprivate.cpp
 	source/computed_field/fieldsmoothingprivate.cpp
 	source/computed_field/computed_field_find_xi.cpp
 	source/computed_field/computed_field_finite_element.cpp
@@ -64,6 +65,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/field_derivative.hpp
 	source/computed_field/field_module.hpp
 	source/computed_field/fieldassignmentprivate.hpp
+	source/computed_field/fieldparametersprivate.hpp
 	source/computed_field/fieldsmoothingprivate.hpp
 	source/computed_field/computed_field_find_xi.h
 	source/computed_field/computed_field_finite_element.h

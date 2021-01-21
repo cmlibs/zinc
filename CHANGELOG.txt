@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.3.0
+Add field parameters interface.
+
 v3.2.0
 Add support for cubic Hermite serendipity basis.
 Add support for higher derivative evaluation w.r.t. element chart coordinates.

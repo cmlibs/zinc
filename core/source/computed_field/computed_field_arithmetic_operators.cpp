@@ -226,8 +226,8 @@ cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
 			"cmzn_fieldmodule_create_field_power.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 
 	return (field);
 }
@@ -460,8 +460,8 @@ cmzn_field *cmzn_fieldmodule_create_field_multiply(
 			"cmzn_fieldmodule_create_field_multiply.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 
 	return (field);
 }
@@ -695,8 +695,8 @@ cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
 			"cmzn_fieldmodule_create_field_divide.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 
 	return (field);
 }
@@ -939,8 +939,8 @@ cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmo
 			"cmzn_fieldmodule_create_field_weighted_add.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 
 	return (field);
 }

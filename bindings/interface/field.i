@@ -27,6 +27,7 @@
 %import "fieldassignment.i"
 %import "fieldcache.i"
 %import "fieldmodule.i"
+%import "fieldparameters.i"
 %import "fieldsmoothing.i"
 %import "region.i"
 %import "streamimage.i"
@@ -56,6 +57,7 @@
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/fieldassignment.hpp"
 #include "opencmiss/zinc/fieldcache.hpp"
+#include "opencmiss/zinc/fieldparameters.hpp"
 #include "opencmiss/zinc/fieldsmoothing.hpp"
 #include "opencmiss/zinc/streamimage.hpp"
 %}
