@@ -1059,7 +1059,7 @@ int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueC
 
 int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
@@ -1073,7 +1073,7 @@ int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, R
 		const FE_value *aDerivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *b = source2Cache->values;
 		const FE_value *bDerivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		int termCount = fieldDerivative.getTermCount();
+		int termCount = fieldDerivative.getMeshTermCount();
 		for (int d = 0; d < termCount; ++d)
 		{
 			// use the product rule
@@ -1628,13 +1628,14 @@ int Computed_field_transpose::evaluateDerivative(cmzn_fieldcache& cache, RealFie
 	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 	if (sourceDerivativeCache)
 	{
-		FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int termCount = derivativeCache->getTermCount();
 		const FE_value *sourceDerivatives = sourceDerivativeCache->values;
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
 		const int m = this->source_number_of_rows;
 		const int n = getSourceField(0)->number_of_components / m;
-		const int termCount = fieldDerivative.getTermCount();
 		/* transpose derivatives in same way as values */
 		for (int i = 0; i < n; ++i)
 		{

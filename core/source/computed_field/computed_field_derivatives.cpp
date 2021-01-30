@@ -349,7 +349,7 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		if (this->xi_index < element_dimension)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-			const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+			const FieldDerivative& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 			if (sourceDerivativeCache)
 			{
@@ -398,20 +398,19 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 {
 	// Only implemented for derivative w.r.t. element xi coordinates of same mesh
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	if (element_xi_location && (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI))
+	if (element_xi_location && fieldDerivative.isMeshOnly())
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		const FE_mesh *mesh = element->getMesh();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		const FieldDerivativeMesh& fieldDerivativeMesh = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
-		const FieldDerivative *higherFieldDerivative = mesh->getFieldDerivative(fieldDerivative.getOrder() + 1);
-		if (((fieldDerivativeMesh.getMesh() == mesh) && (higherFieldDerivative)) && (this->xi_index < element_dimension))
+		const FieldDerivative *higherFieldDerivative = mesh->getFieldDerivative(fieldDerivative.getMeshOrder() + 1);
+		if (((fieldDerivative.getMesh() == mesh) && (higherFieldDerivative)) && (this->xi_index < element_dimension))
 		{
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *higherFieldDerivative);
 			if (sourceDerivativeCache)
 			{
 				FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-				const int termCount = fieldDerivative.getTermCount();
+				const int termCount = fieldDerivative.getMeshTermCount();
 				// the derivative for this field becomes the first/innermost derivative:
 				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
 				for (int i = 0; i < field->number_of_components; ++i)
@@ -646,7 +645,7 @@ int Computed_field_curl::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
 		const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateDerivativeTree(*workingCache, fieldDerivative));
 		if (sourceDerivativeCache && coordinateValueCache)
@@ -922,7 +921,7 @@ int Computed_field_divergence::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
 		const RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluateDerivativeTree(*workingCache, fieldDerivative));
 		if (sourceDerivativeCache && coordinateValueCache)
@@ -1331,7 +1330,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
-		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
 		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
 		if (sourceDerivativeCache && coordinateDerivativeCache)

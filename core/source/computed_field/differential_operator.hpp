@@ -59,11 +59,9 @@ public:
 		return CMZN_OK;
 	}
 
-	int getElementDimension() const
+	int getMeshDimension() const
 	{
-		if (this->fieldDerivative->getType() == FieldDerivative::TYPE_ELEMENT_XI)
-			return static_cast<FieldDerivativeMesh*>(this->fieldDerivative)->getElementDimension();
-		return 0;
+		return this->fieldDerivative->getMeshDimension();
 	}
 
 	FieldDerivative& getFieldDerivative() const

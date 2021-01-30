@@ -609,8 +609,8 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 	if ((this->field) && xi_coordinates && values &&
 		((INT_VALUE == this->field->getValueType())))
 	{
-		const int componentsCount = this->field->getNumberOfComponents();
-		if ((0 <= component_number) && (component_number < componentsCount))
+		const int componentCount = this->field->getNumberOfComponents();
+		if ((0 <= component_number) && (component_number < componentCount))
 		{
 			comp_no = component_number;
 			components_to_calculate = 1;
@@ -625,7 +625,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 		case CONSTANT_FE_FIELD:
 		{
 			const int *fieldValues = this->field->getIntValues();
-			if ((fieldValues) && (componentsCount <= field->getNumberOfValues()))
+			if ((fieldValues) && (componentCount <= field->getNumberOfValues()))
 			{
 				for (i = 0; i < components_to_calculate; i++)
 					values[i] = fieldValues[comp_no++];
@@ -652,7 +652,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 				if ((1 <= index) && (index <= indexedValuesCount))
 				{
 					const int *fieldValues = indexed_field->getIntValues();
-					if ((fieldValues) && (indexedValuesCount*componentsCount < field->getNumberOfValues()))
+					if ((fieldValues) && (indexedValuesCount*componentCount < field->getNumberOfValues()))
 					{
 						int value_no = index-1 + comp_no*indexedValuesCount;
 						for (i = 0; i < components_to_calculate; i++)

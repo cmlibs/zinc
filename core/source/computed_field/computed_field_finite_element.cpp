@@ -889,8 +889,7 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	const Value_type value_type = this->fe_field->getValueType();
 	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
-		&& ((fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
-		&& (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh())))
+		&& (fieldDerivative.isMeshOnly() && (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())))
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
 		FE_value *derivatives = feValueCache.getDerivativeValueCache(fieldDerivative)->values;
@@ -902,7 +901,7 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 		if ((element_field_evaluation) &&
 			element_field_evaluation->evaluate_real(
 				/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-				fieldDerivative.getOrder(), derivatives))
+				fieldDerivative.getMeshOrder(), derivatives))
 		{
 			return 1;
 		}
@@ -2548,7 +2547,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
 	const RealFieldValueCache *sourceValueCache;
-	const FieldDerivativeMesh& fieldDerivative = *fe_mesh->getFieldDerivative(/*order*/1);
+	const FieldDerivative& fieldDerivative = *fe_mesh->getFieldDerivative(/*order*/1);
 	if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
 		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
 	else
@@ -2573,7 +2572,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	RealFieldValueCache parent2SourceValueCache(numberOfComponents);
 	RealFieldValueCache *parentSourceValueCaches[2] =
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
-	const FieldDerivativeMesh& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
+	const FieldDerivative& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
 	for (int i = 0; i < 2; ++i)
 		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative)))
 			return 0;
@@ -3529,32 +3528,34 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	if (fieldDerivative.isMeshOnly())  // GRC review
 	{
 		// directly evaluate only derivative w.r.t. mesh which owns element at location
 		// first derivatives are 1.0 in the xi direction, otherwise 0.0
 		// derivatives w.r.t. face xi currently handled by fallback finite difference
 		const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-		if ((element_xi_location) && (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh()))
+		if (element_xi_location)
 		{
-			FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-			// start with all derivatives zero
-			const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
-			for (int i = 0; i < valuesCount; ++i)
-				derivatives[i] = 0.0;
-			// first derivatives have 1.0 on main diagonal up to element_dimension
-			if (fieldDerivative.getOrder() == 1)
+			if (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())
 			{
-				const int elementDimension = element_xi_location->get_element_dimension();
-				for (int i = 0; i < elementDimension; ++i)
-					derivatives[i*(elementDimension + 1)] = 1.0;
+				FE_value *derivatives = derivativeCache->values;
+				// start with all derivatives zero
+				derivativeCache->zeroValues();
+				// first derivatives have 1.0 on main diagonal up to element_dimension
+				if (fieldDerivative.getMeshOrder() == 1)
+				{
+					const int elementDimension = element_xi_location->get_element_dimension();
+					for (int i = 0; i < elementDimension; ++i)
+						derivatives[i*(elementDimension + 1)] = 1.0;
+				}
+				return 1;
 			}
-			return 1;
+			return 0;  // could be a related element/face/line mesh
 		}
-		return 0;
 	}
 	// all other derivatives are zero
-	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	derivativeCache->zeroValues();
 	return 1;
 }
 

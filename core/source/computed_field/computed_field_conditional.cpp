@@ -172,10 +172,12 @@ int Computed_field_if::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValue
 		const DerivativeValueCache *source3DerivativeCache = evaluateField3 ? getSourceField(2)->evaluateDerivative(cache, fieldDerivative) : nullptr;
 		if (((!evaluateField2) || source2DerivativeCache) && ((!evaluateField3) || source3DerivativeCache))
 		{
-			const int termCount = fieldDerivative.getTermCount();
-			FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+			DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+			FE_value *derivatives = derivativeCache->values;
+			const int componentCount = this->field->number_of_components;
+			const int termCount = derivativeCache->getTermCount();
 			const FE_value *sourceDerivatives = nullptr;
-			for (int i = 0; i < field->number_of_components; ++i)
+			for (int i = 0; i < componentCount; ++i)
 			{
 				if (i < switchField->number_of_components)
 					sourceDerivatives = (source1Cache->values[i]) ? source2DerivativeCache->values : source3DerivativeCache->values;

@@ -992,15 +992,15 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 			{
 				FE_region_begin_change(fe_region);
 
-				const int componentsCount = fe_field->getNumberOfComponents();
+				const int componentCount = fe_field->getNumberOfComponents();
 
 				// create field for accumulating node values for averaging
 				FE_field *node_accumulate_fe_field = FE_region_get_FE_field_with_general_properties(
-					fe_region, "cmzn_smooth_node_accumulate", FE_VALUE_VALUE, componentsCount);
+					fe_region, "cmzn_smooth_node_accumulate", FE_VALUE_VALUE, componentCount);
 
 				/* create a field to store an integer value per component of fe_field */
 				FE_field *element_count_fe_field = FE_region_get_FE_field_with_general_properties(
-					fe_region, "cmzn_smooth_element_count", INT_VALUE, componentsCount);
+					fe_region, "cmzn_smooth_element_count", INT_VALUE, componentCount);
 
 				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
 				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();

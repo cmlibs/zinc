@@ -1248,14 +1248,14 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	std::string name(this->getName());
 	this->labels.setName(name + ".elements");
 	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
-		this->fieldDerivatives[i] = new FieldDerivativeMesh(this, /*order*/(i + 1), (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
+		this->fieldDerivatives[i] = FieldDerivative::createMeshDerivative(this, (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
 }
 
 FE_mesh::~FE_mesh()
 {
 	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
 	{
-		this->fieldDerivatives[i]->clearMesh();
+		this->fieldDerivatives[i]->clearMeshPrivate();
 		FieldDerivative *tmp = this->fieldDerivatives[i];
 		FieldDerivative::deaccess(tmp);
 	}

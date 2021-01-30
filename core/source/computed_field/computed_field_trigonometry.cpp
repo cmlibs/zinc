@@ -82,14 +82,14 @@ int Computed_field_sin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_sin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			const FE_value dsin_u = cos(sourceCache->values[i]);
@@ -275,14 +275,14 @@ int Computed_field_cos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_cos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			const FE_value dcos_u = -sin(sourceCache->values[i]);
@@ -468,14 +468,14 @@ int Computed_field_tan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_tan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			const FE_value cosSourceValue = cos(sourceCache->values[i]);
@@ -661,14 +661,14 @@ int Computed_field_asin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_asin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			// avoid division by zero - make derivative zero there
@@ -856,14 +856,14 @@ int Computed_field_acos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_acos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			// avoid division by zero - make derivative zero there
@@ -1051,14 +1051,14 @@ int Computed_field_atan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_atan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
 		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			const FE_value u = sourceCache->values[i];
@@ -1246,7 +1246,7 @@ int Computed_field_atan2::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 
 int Computed_field_atan2::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
@@ -1255,7 +1255,7 @@ int Computed_field_atan2::evaluateDerivative(cmzn_fieldcache& cache, RealFieldVa
 		const FE_value *source1Derivative = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivative = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
 		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getTermCount();
+		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int i = 0; i < field->number_of_components; i++)
 		{
 			const FE_value u = source1Cache->values[i];

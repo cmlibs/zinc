@@ -740,7 +740,7 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
-	FieldDerivativeMesh *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
+	FieldDerivative *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
 
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
@@ -1204,7 +1204,7 @@ public:
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
 
 	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
-	FieldDerivativeMesh *getFieldDerivative(int order) const
+	FieldDerivative *getFieldDerivative(int order) const
 	{
 		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
 			return nullptr;

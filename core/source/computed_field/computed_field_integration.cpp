@@ -431,7 +431,7 @@ time is supplied in the workingCache
 		{
 			xi_vector[k] = final_xi[k] - initial_xi[k];
 		}
-		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		for (m = 0 ; m < number_of_gauss_points ; m++)
 		{
 			final_position = gauss_positions[number_of_gauss_points - 1][m];

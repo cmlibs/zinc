@@ -103,7 +103,7 @@ cmzn_region::~cmzn_region()
 	const int size = static_cast<int>(this->fieldDerivatives.size());
 	for (int i = 0; i < size; ++i)
 		if (this->fieldDerivatives[i])
-			this->fieldDerivatives[i]->setRegionAndCacheIndex();
+			this->fieldDerivatives[i]->setRegionAndCacheIndexPrivate();
 
 	// GRC move to changes object?
 	REACCESS(cmzn_region)(&this->changes.child_added, NULL);
@@ -535,11 +535,11 @@ void cmzn_region::addFieldDerivative(FieldDerivative *fieldDerivative)
 	for (int i = 0; i < size; ++i)
 		if (!this->fieldDerivatives[i])
 		{
-			fieldDerivative->setRegionAndCacheIndex(this, i);
+			fieldDerivative->setRegionAndCacheIndexPrivate(this, i);
 			return;
 		}
 	this->fieldDerivatives.push_back(fieldDerivative);
-	fieldDerivative->setRegionAndCacheIndex(this, size);
+	fieldDerivative->setRegionAndCacheIndexPrivate(this, size);
 }
 
 /** Called only by ~FieldDerivative */
@@ -557,7 +557,7 @@ void cmzn_region::removeFieldDerivative(FieldDerivative *fieldDerivative)
 		display_message(ERROR_MESSAGE, "cmzn_region::removeFieldDerivative.  Invalid field derivative");
 		return;
 	}
-	fieldDerivative->setRegionAndCacheIndex();
+	fieldDerivative->setRegionAndCacheIndexPrivate();
 	// ???GRC Future: clear derivative caches
 	this->fieldDerivatives[cacheIndex] = nullptr;
 }

@@ -1094,13 +1094,12 @@ int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCach
 
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getType() != FieldDerivative::TYPE_ELEMENT_XI)
+	if (!fieldDerivative.isMeshOnly())
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for mesh chart derivatives");
 		return 0;
 	}
-	const FieldDerivativeMesh &fieldDerivativeElementXi = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 	{
@@ -1108,7 +1107,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
 		return 0;
 	}
-	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.getElementDimension())
+	if (element_xi_location->get_element_dimension() != fieldDerivative.getMeshDimension())
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
@@ -1125,7 +1124,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	}
 	workingCache->setTime(cache.getTime());
 	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
-	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getTermCount() : 1;
+	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getMeshTermCount() : 1;
 	const int componentCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
 	const int elementDimension = element_xi_location->get_element_dimension();
@@ -1411,8 +1410,8 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	int result = cmzn_field_evaluate_real(field, cache, number_of_values, values);
 	if (result != CMZN_OK)
 		return result;
-	const FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
-	const int termCount = fieldDerivative->getTermCount();
+	const FieldDerivative *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
+	const int termCount = fieldDerivative->getMeshTermCount();
 	if ((number_of_derivatives != termCount) || (!derivatives))
 	{
 		result = CMZN_ERROR_ARGUMENT;
@@ -1465,7 +1464,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, fieldDerivative);
 		if (derivativeValueCache)
 		{
-			const int termCount = fieldDerivative.getTermCount();
+			const int termCount = fieldDerivative.getMeshTermCount();  // GRC temporary until variable number supported.
 			const int term = differential_operator->getTerm();
 			const int componentCount = field->number_of_components;
 			const FE_value *derivatives = derivativeValueCache->values + term;

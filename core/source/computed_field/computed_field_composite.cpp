@@ -239,11 +239,13 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 
 int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	FE_value *derivatives = derivativeCache->values;
+	const int componentCount = field->number_of_components;
+	const int termCount = derivativeCache->getTermCount();
 	int sourceFieldNumber = -1;
 	const DerivativeValueCache *sourceDerivativeValueCache = nullptr;
-	const int derivativeTermCount = fieldDerivative.getTermCount();
-	for (int c = 0; c < field->number_of_components; ++c)
+	for (int c = 0; c < componentCount; ++c)
 	{
 		if (0 <= this->source_field_numbers[c])
 		{
@@ -254,16 +256,16 @@ int Computed_field_composite::evaluateDerivative(cmzn_fieldcache& cache, RealFie
 				if (!sourceDerivativeValueCache)
 					return 0;
 			}
-			const FE_value *sourceDerivative = sourceDerivativeValueCache->values + derivativeTermCount*source_value_numbers[c];
-			for (int d = 0; d < derivativeTermCount; ++d)
-				derivative[d] = sourceDerivative[d];
+			const FE_value *sourceDerivatives = sourceDerivativeValueCache->values + termCount*source_value_numbers[c];
+			for (int d = 0; d < termCount; ++d)
+				derivatives[d] = sourceDerivatives[d];
 		}
 		else
 		{
-			for (int d = 0; d < derivativeTermCount; ++d)
-				derivative[d] = 0.0;
+			for (int d = 0; d < termCount; ++d)
+				derivatives[d] = 0.0;
 		}
-		derivative += derivativeTermCount;
+		derivatives += termCount;
 	}
 	return 1;
 }

@@ -17,15 +17,17 @@
 #include "computed_field/field_derivative.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
+#include "general/message.h"
 #include "region/cmiss_region.hpp"
 
 
-FieldDerivative::FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn, FieldDerivative *lowerDerivative) :
+FieldDerivative::FieldDerivative(cmzn_region *regionIn, FE_mesh *meshIn, int meshOrderIn, FieldDerivative *lowerDerivativeIn) :
 	region(nullptr),  // set by cmzn_region_add_field_derivative
-	lowerDerivative((orderIn > 1) ? lowerDerivative->access() : nullptr),
+	lowerDerivative((lowerDerivativeIn) ? lowerDerivativeIn->access() : nullptr),
 	cacheIndex(-1),
-	order(orderIn),
-	type(typeIn),
+	mesh(meshIn),
+	meshDimension((meshIn) ? meshIn->getDimension() : 0),
+	meshOrder(meshOrderIn),
 	access_count(1)
 {
 	regionIn->addFieldDerivative(this);
@@ -39,6 +41,27 @@ FieldDerivative::~FieldDerivative()
 		FieldDerivative::deaccess(this->lowerDerivative);
 }
 
+FieldDerivative *FieldDerivative::createMeshDerivative(FE_mesh *mesh, FieldDerivative *lowerDerivative)
+{
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "FieldDerivative::createMeshDerivative.  Missing mesh");
+		return nullptr;
+	}
+	int meshOrder = 1;
+	if (lowerDerivative)
+	{
+		if ((lowerDerivative->mesh) && (lowerDerivative->mesh != mesh))
+		{
+			display_message(ERROR_MESSAGE, "FieldDerivative::createMeshDerivative.  Cannot create derivative w.r.t. multiple meshes");
+			return nullptr;
+		}
+		meshOrder += lowerDerivative->meshOrder;
+	}
+	cmzn_region *region = FE_region_get_cmzn_region(mesh->get_FE_region());
+	return new FieldDerivative(region, mesh, meshOrder, lowerDerivative);
+}
+
 int FieldDerivative::deaccess(FieldDerivative* &field_derivative)
 {
 	if (!field_derivative)
@@ -50,9 +73,11 @@ int FieldDerivative::deaccess(FieldDerivative* &field_derivative)
 	return CMZN_OK;
 }
 
-FieldDerivativeMesh::FieldDerivativeMesh(FE_mesh *meshIn, int orderIn, FieldDerivative *lowerDerivative) :
-	FieldDerivative(FE_region_get_cmzn_region(meshIn->get_FE_region()), orderIn, TYPE_ELEMENT_XI, lowerDerivative),
-	mesh(meshIn),
-	elementDimension(mesh->getDimension())
+int FieldDerivative::getMeshTermCount() const
 {
+	int termCount = 1;
+	for (int d = 0; d < this->meshOrder; ++d)
+		termCount *= this->meshDimension;
+	return termCount;
 }
+

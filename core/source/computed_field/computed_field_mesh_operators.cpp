@@ -198,12 +198,12 @@ class IntegralTermBase
 protected:
 	Computed_field_mesh_integral& meshIntegral;
 	const int dimension;
-	const int componentsCount;
+	const int componentCount;
 	cmzn_fieldcache& cache;
 	cmzn_field *integrandField;
 	cmzn_field *coordinateField;
 	const int coordinatesCount;
-	const FieldDerivativeMesh& fieldDerivativeMesh;
+	const FieldDerivative& fieldDerivativeMesh;
 	cmzn_element *element;
 	unsigned int point_index;  // point index within element
 
@@ -211,7 +211,7 @@ public:
 	IntegralTermBase(Computed_field_mesh_integral& meshIntegralIn, cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
 		meshIntegral(meshIntegralIn),
 		dimension(cmzn_mesh_get_dimension(meshIntegral.getMesh())),
-		componentsCount(meshIntegralIn.getField()->number_of_components),
+		componentCount(meshIntegralIn.getField()->number_of_components),
 		cache(*(valueCache.getExtraCache())),
 		integrandField(meshIntegral.getSourceField(0)),
 		coordinateField(meshIntegral.getSourceField(1)),
@@ -284,7 +284,7 @@ public:
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		values(valueCache.values)
 	{
-		for (int i = 0; i < componentsCount; i++)
+		for (int i = 0; i < componentCount; i++)
 			values[i] = 0;
 	}
 
@@ -295,7 +295,7 @@ public:
 		if (integrandValues)
 		{
 			const FE_value weight_dLAV = weight*dLAV;
-			for (int i = 0; i < this->componentsCount; ++i)
+			for (int i = 0; i < this->componentCount; ++i)
 				this->values[i] += integrandValues[i]*weight_dLAV;
 			return true;
 		}
@@ -482,13 +482,13 @@ public:
 		FE_value *integrandValues = baseProcess(xi, dLAV);
 		if (integrandValues)
 		{
-			this->remainingValuesCount -= this->componentsCount;
+			this->remainingValuesCount -= this->componentCount;
 			if (this->remainingValuesCount < 0)
 				return false;
 			const FE_value sqrt_weight_dLAV = (weight < 0.0) ? -sqrt(-weight*dLAV) : sqrt(weight*dLAV);
-			for (int i = 0; i < this->componentsCount; ++i)
+			for (int i = 0; i < this->componentCount; ++i)
 				this->termValues[i] = integrandValues[i]*sqrt_weight_dLAV;
-			this->termValues += this->componentsCount;
+			this->termValues += this->componentCount;
 			return true;
 		}
 		return false;
@@ -526,7 +526,7 @@ public:
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		values(valueCache.values)
 	{
-		for (int i = 0; i < componentsCount; i++)
+		for (int i = 0; i < componentCount; i++)
 			values[i] = 0;
 	}
 
@@ -537,7 +537,7 @@ public:
 		if (integrandValues)
 		{
 			const FE_value weight_dLAV = weight*dLAV;
-			for (int i = 0; i < this->componentsCount; ++i)
+			for (int i = 0; i < this->componentCount; ++i)
 				this->values[i] += (integrandValues[i]*integrandValues[i])*weight_dLAV;
 			return true;
 		}

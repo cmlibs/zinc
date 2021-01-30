@@ -97,7 +97,7 @@ int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, F
 
 int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getOrder() > 1)
+	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
 		return 0;  // fallback to numerical derivatives
 	cmzn_field_id sourceField = getSourceField(0);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
@@ -112,13 +112,13 @@ int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache
 		{
 			FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
 			const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-			const int termCount = fieldDerivative.getTermCount();
+			const int termCount = fieldDerivative.getMeshTermCount();
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
 				for (int j = 0; j < termCount; ++j)
 				{
 					*derivative =
-						dx_dX[i*3    ]*sourceDerivatives[j              ] +
+						dx_dX[i*3    ]*sourceDerivatives[j               ] +
 						dx_dX[i*3 + 1]*sourceDerivatives[j + termCount  ] +
 						dx_dX[i*3 + 2]*sourceDerivatives[j + termCount*2];
 					++derivative;

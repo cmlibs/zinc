@@ -21,46 +21,62 @@ class FE_mesh;
 
 class FieldDerivative
 {
-	friend struct cmzn_region;
-public:
-	// enumeration of all derivative types 
-	enum Type
-	{
-		TYPE_INVALID = 0,
-		TYPE_ELEMENT_XI = 1
-	};
-
-protected:
+private:
 	cmzn_region *region;  // non-accessed pointer to owning region
 	FieldDerivative *lowerDerivative;  // next lower field derivative, accessed
 	int cacheIndex;  // unique index of values in field value cache for region; 0 == value
-	int order;  // total order of derivative
-	Type type;  // store for efficient type checking
+	//int order;  // total order of derivative
+	FE_mesh *mesh;  // non-accessed as mesh manages FieldDerivative with mesh
+	int meshDimension;  // cached from mesh
+	int meshOrder;  // order of derivatives w.r.t. mesh chart
 	int access_count;
 
 	/**
 	 * @param region  Owning region for this derivative.
+	 * @param meshIn  Mesh for chart derivative, or nullptr if none.
 	 * @param lowerDerivative  Must be supplied if orderIn > 1.
 	 */
-	FieldDerivative(cmzn_region *regionIn, int orderIn, Type typeIn, FieldDerivative *lowerDerivative);
+	FieldDerivative(cmzn_region *regionIn, FE_mesh *meshIn, int meshOrderIn, FieldDerivative *lowerDerivativeIn);
 
-private:
-	FieldDerivative(); // not implemented
-	FieldDerivative(const FieldDerivative &source); // not implemented
-	FieldDerivative& operator=(const FieldDerivative &source); // not implemented
+	~FieldDerivative();
+
+	FieldDerivative();  // not implemented
+	FieldDerivative(const FieldDerivative &source);  // not implemented
+	FieldDerivative& operator=(const FieldDerivative &source);  // not implemented
+
+public:
+
+	/** Create derivative w.r.t. mesh chart.
+	 * @param mesh  Mesh whose chart is to be derived from.
+	 * @param lowerDerivative  Optional lower field derivative to differentiate
+	 * further. Note: may only be a derivative w.r.t. the same mesh if any.
+	 * @return 
+	 */
+	static FieldDerivative *createMeshDerivative(FE_mesh *mesh, FieldDerivative *lowerDerivative);
+
+	FieldDerivative *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(FieldDerivative* &field_derivative);
+
+	/** Only to be called by mesh on destruction */
+	void clearMeshPrivate()
+	{
+		this->mesh = nullptr;
+		this->meshDimension = 0;
+		this->meshOrder = 0;
+	}
 
 	// should only be called by owning region
 	// default arguments clear the region and cache index
-	void setRegionAndCacheIndex(cmzn_region *regionIn=nullptr, int cacheIndexIn=-1)
+	void setRegionAndCacheIndexPrivate(cmzn_region *regionIn = nullptr, int cacheIndexIn = -1)
 	{
 		this->region = regionIn;
 		this->cacheIndex = cacheIndexIn;
 	}
-
-public:
-
-	// abstract virtual destructor declaration
-	virtual ~FieldDerivative();
 
 	int getCacheIndex() const
 	{
@@ -73,71 +89,35 @@ public:
 		return this->lowerDerivative;
 	}
 
-	int getOrder() const
-	{
-		return this->order;
-	}
-
-	/** @return  Non-accessed owning region, or nullptr if invalid. */
-	cmzn_region *getRegion() const
-	{
-		return this->region;
-	}
-
-	/** @return  Number of individually evaluatable terms. 0 if variable */
-	virtual int getTermCount() const = 0;
-
-	Type getType() const
-	{
-		return this->type;
-	}
-
-	FieldDerivative *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(FieldDerivative* &field_derivative);
-};
-
-/** Derivative w.r.t. mesh element xi */
-class FieldDerivativeMesh : public FieldDerivative
-{
-	friend class FE_mesh;
-private:
-	FE_mesh *mesh;  // not accessed as it owns this object
-	const int elementDimension;
-
-	void clearMesh()
-	{
-		this->mesh = nullptr;
-	}
-
-	FieldDerivativeMesh(); // not implemented
-	FieldDerivativeMesh(const FieldDerivativeMesh &source); // not implemented
-	FieldDerivativeMesh& operator=(const FieldDerivativeMesh &source); // not implemented
-
-public:
-	FieldDerivativeMesh(FE_mesh *meshIn, int orderIn, FieldDerivative *lowerDerivative);
-
-	int getElementDimension() const
-	{
-		return this->elementDimension;
-	}
-
-	/** @return  Non-accessed FE_mesh *, or nullptr if invalidated */
+	/** @return  Non-accessed mesh if derivative w.r.t. mesh chart, otherwise nullptr */
 	FE_mesh *getMesh() const
 	{
 		return this->mesh;
 	}
 
-	virtual int getTermCount() const
+	int getMeshDimension() const
 	{
-		int termCount = this->elementDimension;
-		for (int d = 1; d < this->order; ++d)
-			termCount *= this->elementDimension;
-		return termCount;
+		return this->meshDimension;
+	}
+
+	/** Get order of derivative w.r.t. mesh, >= 0 */
+	int getMeshOrder() const
+	{
+		return this->meshOrder;
+	}
+
+	bool isMeshOnly() const
+	{
+		return true;  // until parameter derivatives added
+	}
+
+	/** @return  Number of individually evaluatable terms for mesh derivative part */
+	int getMeshTermCount() const;
+
+	/** @return  Non-accessed owning region, or nullptr if invalid. */
+	cmzn_region *getRegion() const
+	{
+		return this->region;
 	}
 
 };

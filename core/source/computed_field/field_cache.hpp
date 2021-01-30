@@ -85,14 +85,26 @@ class DerivativeValueCache
 {
 public:
 	FE_value *values;
-	int valuesCount;
+	const int componentCount;
 	int evaluationCounter;  // set to cmzn_fieldcache::locationCounter when evaluated
+	int termCount;  // number of derivative terms
+	int termCountAllocated;
 
-	DerivativeValueCache(int valuesCountIn) :
-		values(new FE_value[valuesCountIn]),
-		valuesCount(valuesCountIn),
-		evaluationCounter(-1)
+private:
+	DerivativeValueCache(); // not implemented
+	DerivativeValueCache(const DerivativeValueCache &source); // not implemented
+	DerivativeValueCache& operator=(const DerivativeValueCache &source); // not implemented
+
+public:
+
+	DerivativeValueCache(int componentCountIn, int termCountIn) :
+		values(nullptr),
+		componentCount(componentCountIn),
+		evaluationCounter(-1),
+		termCount(0),
+		termCountAllocated(0)
 	{
+		this->setTermCount(termCountIn);
 	}
 
 	~DerivativeValueCache()
@@ -100,41 +112,67 @@ public:
 		delete[] values;
 	}
 
+	void copyValues(const DerivativeValueCache& source)
+	{
+		const int valueCount = this->componentCount*this->termCount;
+		for (int i = 0; i < valueCount; ++i)
+			this->values[i] = source.values[i];
+	}
+
+	int getComponentCount() const
+	{
+		return this->componentCount;
+	}
+
+	int getTermCount() const
+	{
+		return this->termCount;
+	}
+
+	int getValueCount() const
+	{
+		return this->componentCount*this->termCount;
+	}
+
 	void resetEvaluationCounter()
 	{
 		this->evaluationCounter = -1;
 	}
 
-	void copyValues(const DerivativeValueCache& source)
+	/** For variable number of derivative terms */
+	void setTermCount(int termCountIn)
 	{
-		for (int i = 0; i < this->valuesCount; ++i)
-			this->values[i] = source.values[i];
+		if (termCountIn > this->termCountAllocated)
+		{
+			FE_value *newValues = new FE_value[this->componentCount*termCountIn];
+			delete[] this->values;
+			this->values = newValues;
+			this->termCountAllocated = termCountIn;
+		}
+		this->termCount = termCountIn;
 	}
-
+		
 	void zeroValues()
 	{
-		for (int i = 0; i < this->valuesCount; ++i)
+		const int valueCount = this->componentCount*this->termCount;
+		for (int i = 0; i < valueCount; ++i)
 			this->values[i] = 0.0;
 	}
 
-private:
-	DerivativeValueCache(); // not implemented
-	DerivativeValueCache(const DerivativeValueCache &source); // not implemented
-	DerivativeValueCache& operator=(const DerivativeValueCache &source); // not implemented
 };
 
 class RealFieldValueCache : public FieldValueCache
 {
 public:
 	FE_value *values;
+	const int componentCount;
 	std::vector<DerivativeValueCache *> derivatives;
 	Computed_field_find_element_xi_cache *find_element_xi_cache;
-	int componentCount;
 
-	RealFieldValueCache(int componentCount) :
+	RealFieldValueCache(int componentCountIn) :
 		FieldValueCache(),
-		componentCount(componentCount),
-		values(new FE_value[componentCount]),
+		values(new FE_value[componentCountIn]),
+		componentCount(componentCountIn),
 		find_element_xi_cache(0)
 	{
 	}
@@ -167,7 +205,7 @@ public:
 
 	void copyValues(const RealFieldValueCache& source)
 	{
-		for (int i = 0; i < componentCount; ++i)
+		for (int i = 0; i < this->componentCount; ++i)
 			values[i] = source.values[i];
 	}
 
@@ -185,7 +223,7 @@ public:
 
 	void setValues(const FE_value *values_in)
 	{
-		for (int i = 0; i < componentCount; ++i)
+		for (int i = 0; i < this->componentCount; ++i)
 			values[i] = values_in[i];
 	}
 
@@ -201,7 +239,10 @@ public:
 		if (this->derivatives.size() <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
 		if (!this->derivatives[cacheIndex])
-			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount*fieldDerivative.getTermCount());
+		{
+			// GRC this will change with variable numbers of derivative terms
+			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, fieldDerivative.getMeshTermCount());
+		}
 		return this->derivatives[cacheIndex];
 	}
 

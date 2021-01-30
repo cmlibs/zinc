@@ -14,7 +14,8 @@
 
 cmzn_differentialoperator* cmzn_differentialoperator::create(FieldDerivative *fieldDerivativeIn, int termIn)
 {
-	if ((!fieldDerivativeIn) || (termIn < 0) || (termIn >= fieldDerivativeIn->getTermCount()))
+	if ((!fieldDerivativeIn) || (!fieldDerivativeIn->isMeshOnly()) ||
+		(termIn < 0) || (termIn >= fieldDerivativeIn->getMeshTermCount()))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_differentialoperator::create.  Invalid arguments");
 		return nullptr;
