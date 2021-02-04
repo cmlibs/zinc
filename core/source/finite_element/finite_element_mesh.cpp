@@ -1668,7 +1668,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 		if (1 == this->elementShapeFacesCount)
 		{
 			// must now store per-element shape
-			if (!this->elementShapeMap.setValues(0, this->labels.getIndexSize() - 1, 0))
+			if (!this->elementShapeMap.setValues(0, this->labels.getIndexSize(), 0))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::setElementShape  Failed to make per-element shape map");
 				return 0;

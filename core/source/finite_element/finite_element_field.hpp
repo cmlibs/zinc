@@ -29,6 +29,8 @@ Global types
  */
 struct FE_region;
 
+class FE_field_parameters;
+
 /** Information about what the field represents physically.
  * It is derived from how fields are used in cm, but does not correspond to a
  * field type in cm or identify fields in cm.
@@ -104,6 +106,10 @@ private:
 	// Future: limit to being defined on a single mesh; requires change to current usage
 	FE_mesh_field_data *meshFieldData[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
+	// non-accessed handle to object indexing parameters, when exists
+	// clients access it, and it accesses this FE_field
+	FE_field_parameters *fe_field_parameters;
+
 	/* the number of computed fields wrapping this FE_field */
 	int number_of_wrappers;
 	/* the number of structures that point to this field.  The field cannot be
@@ -119,6 +125,7 @@ protected:
 		component_names(nullptr),
 		element_xi_host_mesh(nullptr),
 		values_storage(nullptr),
+		fe_field_parameters(nullptr),
 		access_count(0)
 	{
 		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
@@ -194,12 +201,20 @@ public:
 	/** @return  true on success, otherwise false */
 	bool setComponentName(int componentIndex, const char *componentName);
 
+	/* @return  Accessed handle to existing or new field parameters for field */
+	FE_field_parameters *get_FE_field_parameters();
+
+	/** Only to be called by ~FE_field_parameters */
+	void clear_FE_field_parameters()
+	{
+		this->fe_field_parameters = nullptr;
+	}
+
 	/** Writes a text description of field to console/logger */
 	void list() const;
 
 	/** Returns true if field varies with time on any nodes */
 	bool hasMultipleTimes();
-
 
 	/**
 	 * Copies the field definition from source to destination, except for name,

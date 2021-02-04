@@ -10,6 +10,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/status.h"
+#include "finite_element/finite_element_field_parameters.hpp"
 #include "finite_element/finite_element_field_private.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region_private.h"
@@ -97,6 +98,7 @@ FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
 	values_storage(nullptr),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
+	fe_field_parameters(nullptr),
 	number_of_wrappers(0),
 	access_count(1)
 {
@@ -385,6 +387,14 @@ bool FE_field::setComponentName(int componentIndex, const char *componentName)
 	}
 	display_message(ERROR_MESSAGE, "FE_field::setComponentName.  Invalid argument(s)");
 	return false;
+}
+
+FE_field_parameters *FE_field::get_FE_field_parameters()
+{
+	if (this->fe_field_parameters)
+		return this->fe_field_parameters->access();
+	this->fe_field_parameters = FE_field_parameters::create(this);
+	return this->fe_field_parameters;
 }
 
 void FE_field::list() const

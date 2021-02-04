@@ -11,6 +11,7 @@
 #ifndef CMZN_FIELDPARAMETERS_H__
 #define CMZN_FIELDPARAMETERS_H__
 
+#include "types/elementid.h"
 #include "types/fieldparametersid.h"
 #include "types/fieldid.h"
 
@@ -61,6 +62,16 @@ ZINC_API int cmzn_fieldparameters_destroy(
 */
 ZINC_API cmzn_field_id cmzn_fieldparameters_get_field(
 	cmzn_fieldparameters_id fieldparameters);
+
+/**
+ * Return the number of parameters for the field in element.
+ *
+ * @param fieldparameters  The field parameters object to query.
+ * @param element  The element to query.
+ * @return  Number of field parameters in element or -1 on error.
+ */
+ZINC_API int cmzn_fieldparameters_get_number_of_element_parameters(
+	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element);
 
 /**
  * Return the number of parameters for the field.

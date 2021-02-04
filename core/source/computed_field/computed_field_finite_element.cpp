@@ -1453,7 +1453,7 @@ cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field)
 			dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core &&
 			(core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD) &&
-			(get_FE_field_value_type(core->fe_field) == FE_VALUE_VALUE))
+			(core->fe_field->getValueType() == FE_VALUE_VALUE))
 		{
 			cmzn_field_access(field);
 			return (reinterpret_cast<cmzn_field_finite_element_id>(field));

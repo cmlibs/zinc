@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_NODESET_HPP)
 #define FINITE_ELEMENT_NODESET_HPP
 
+#include "opencmiss/zinc/types/fieldid.h"  // for cmzn_field_domain_type
 #include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/status.h"
 #include "datastore/labels.hpp"

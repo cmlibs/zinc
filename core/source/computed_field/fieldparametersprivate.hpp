@@ -12,37 +12,46 @@
 #if !defined (CMZN_FIELDPARAMETERSPRIVATE_HPP)
 #define CMZN_FIELDPARAMETERSPRIVATE_HPP
 
-#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/fieldparameters.h"
+
+class FE_field_parameters;
 
 struct cmzn_fieldparameters
 {
 private:
-	cmzn_field *field;  // accessed field owning these parameters, currently must be finite element type
+	cmzn_field *field;  // accessed field owning these parameters, currently only finite element type allowed
+	FE_field_parameters *feFieldParameters;  // accessed finite element field parameters
 	int access_count;
 
-	cmzn_fieldparameters(cmzn_field *fieldIn);
+	cmzn_fieldparameters(cmzn_field *fieldIn, FE_field_parameters *feFieldParametersIn);
 
 	~cmzn_fieldparameters();
 
 public:
 
-	/** @param fieldIn  Finite element type field */
+	/** Only to be called by cmzn_field.
+	 * Checks fieldIn is real, general finite element type.
+	 * @param fieldIn  Finite element type field
+	 * @return  Accessed field parameters or nullptr if invalid field or failed. */
 	static cmzn_fieldparameters *create(cmzn_field *fieldIn);
 
-	cmzn_fieldparameters_id access()
+	cmzn_fieldparameters *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_fieldparameters_id &fieldparameters);
+	static int deaccess(cmzn_fieldparameters* &fieldparameters);
 
 	/** @return  Non-accessed field */
 	cmzn_field *getField() const
 	{
 		return this->field;
 	}
+
+	int getNumberOfElementParameters(cmzn_element *element) const;
 
 	int getNumberOfParameters() const;
 

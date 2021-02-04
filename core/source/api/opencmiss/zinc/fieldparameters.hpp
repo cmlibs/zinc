@@ -10,6 +10,7 @@
 #ifndef CMZN_FIELDPARAMETERS_HPP__
 #define CMZN_FIELDPARAMETERS_HPP__
 
+#include "opencmiss/zinc/element.hpp"
 #include "opencmiss/zinc/fieldparameters.h"
 #include "opencmiss/zinc/field.hpp"
 
@@ -73,6 +74,11 @@ public:
 	Field getField() const
 	{
 		return Field(cmzn_fieldparameters_get_field(this->id));
+	}
+
+	int getNumberOfElementParameters(const Element& element)
+	{
+		return cmzn_fieldparameters_get_number_of_element_parameters(this->id, element.getId());
 	}
 
 	int getNumberOfParameters()

@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldparameters.hpp>
@@ -25,11 +26,14 @@ TEST(ZincFieldparameters, validAPI)
 
 	Field coordinates = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Element element = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
 
 	Fieldparameters fieldparameters = coordinates.getFieldparameters();
 	EXPECT_TRUE(fieldparameters.isValid());
-
-	EXPECT_EQ(-1, fieldparameters.getNumberOfParameters());  // not yet implemented
+	EXPECT_EQ(-1, fieldparameters.getNumberOfElementParameters(element));  // not yet implemented
+	EXPECT_EQ(24, fieldparameters.getNumberOfParameters());
 
 	Field fieldOut = fieldparameters.getField();
 	EXPECT_TRUE(fieldOut.isValid());
@@ -40,13 +44,26 @@ TEST(ZincFieldparameters, invalidAPI)
 {
 	ZincTestSetupCpp zinc;
 
+	FieldFiniteElement fieldFiniteElement = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_TRUE(fieldFiniteElement.isValid());
+	Fieldparameters fieldparameters = fieldFiniteElement.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
 	Field noField;
 	EXPECT_FALSE(noField.isValid());
 	Fieldparameters noFieldparameters = noField.getFieldparameters();
 	EXPECT_FALSE(noFieldparameters.isValid());
-	EXPECT_EQ(-1, noFieldparameters.getNumberOfParameters());
 	Field fieldOut = noFieldparameters.getField();
 	EXPECT_FALSE(fieldOut.isValid());
+	Element noElement;
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	Element element = mesh3d.createElement(1, elementtemplate);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(-1, fieldparameters.getNumberOfElementParameters(noElement));
+	EXPECT_EQ(-1, noFieldparameters.getNumberOfElementParameters(element));
+	EXPECT_EQ(-1, noFieldparameters.getNumberOfElementParameters(noElement));
+	EXPECT_EQ(-1, noFieldparameters.getNumberOfParameters());
 
 	const double one = 1.0;
 	FieldConstant fieldConstant = zinc.fm.createFieldConstant(1, &one);
