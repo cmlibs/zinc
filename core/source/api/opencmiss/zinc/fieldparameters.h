@@ -68,7 +68,8 @@ ZINC_API cmzn_field_id cmzn_fieldparameters_get_field(
  *
  * @param fieldparameters  The field parameters object to query.
  * @param element  The element to query.
- * @return  Number of field parameters in element or -1 on error.
+ * @return  Number of field parameters in element, including 0 if
+ * not defined or no parameters, or -1 if invalid arguments given.
  */
 ZINC_API int cmzn_fieldparameters_get_number_of_element_parameters(
 	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element);

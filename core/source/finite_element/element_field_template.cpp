@@ -29,7 +29,7 @@ namespace {
 	template<typename VALUETYPE> VALUETYPE *copy_array(VALUETYPE *sourceValues, int count)
 	{
 		if (!sourceValues)
-			return 0;
+			return nullptr;
 		VALUETYPE *values = new VALUETYPE[count];
 		memcpy(values, sourceValues, count*sizeof(VALUETYPE));
 		return values;
@@ -97,6 +97,11 @@ FE_element_field_template::FE_element_field_template(FE_mesh *meshIn, FE_basis *
 	totalLocalScaleFactorIndexes(0),
 	legacyGridNumberInXi(0),
 	legacyModifyThetaMode(FE_BASIS_MODIFY_THETA_MODE_INVALID),
+	parameterCount(0),
+	parameterTermCounts(nullptr),
+	parameterTermOffsets(nullptr),
+	parameterFunctionTermsSize(0),
+	parameterFunctionTerms(nullptr),
 	access_count(1)
 {
 	this->setParameterMappingMode(CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE);
@@ -130,6 +135,11 @@ FE_element_field_template::FE_element_field_template(const FE_element_field_temp
 	totalLocalScaleFactorIndexes(source.totalLocalScaleFactorIndexes),
 	legacyGridNumberInXi(copy_array(source.legacyGridNumberInXi, source.dimension)),
 	legacyModifyThetaMode(source.legacyModifyThetaMode),
+	parameterCount(source.parameterCount),
+	parameterTermCounts(copy_array(source.parameterTermCounts, source.parameterCount)),
+	parameterTermOffsets(copy_array(source.parameterTermOffsets, source.parameterCount)),
+	parameterFunctionTermsSize(source.parameterFunctionTermsSize),
+	parameterFunctionTerms(copy_array(source.parameterFunctionTerms, source.parameterFunctionTermsSize)),
 	access_count(1)
 {
 	if (this->mesh) // may already be orphaned
@@ -144,6 +154,7 @@ FE_element_field_template::~FE_element_field_template()
 	delete[] this->termCounts;
 	delete[] this->termOffsets;
 	this->clearNodeMapping();
+	this->clearParameterMaps();
 	this->clearScaling();
 	delete this->legacyGridNumberInXi;
 }
@@ -157,6 +168,18 @@ void FE_element_field_template::clearNodeMapping()
 	this->nodeValueLabels = 0;
 	delete[] this->nodeVersions;
 	this->nodeVersions = 0;
+}
+
+void FE_element_field_template::clearParameterMaps()
+{
+	this->parameterCount = 0;
+	delete[] this->parameterTermCounts;
+	this->parameterTermCounts = nullptr;
+	delete[] this->parameterTermOffsets;
+	this->parameterTermOffsets = nullptr;
+	this->parameterFunctionTermsSize = 0;
+	delete[] this->parameterFunctionTerms;
+	this->parameterFunctionTerms = nullptr;
 }
 
 void FE_element_field_template::clearScaling()
@@ -798,6 +821,34 @@ int FE_element_field_template::sortNodeIndexes(std::vector<int>& extNodeIndexes)
 	return CMZN_OK;
 }
 
+int FE_element_field_template::getParameterTermCount(int parameterIndex) const
+{
+	if ((!this->locked) || (parameterIndex < 0) || (this->parameterCount <= parameterIndex))
+		return 0;
+	if (this->parameterTermCounts)
+		return this->parameterTermCounts[parameterIndex];
+	return 1;
+}
+
+int FE_element_field_template::getParameterTermFunctionAndTerm(int parameterIndex, int parameterTerm, int &term) const
+{
+	if ((!this->locked) || (parameterIndex < 0) || (this->parameterCount <= parameterIndex)
+		|| (parameterIndex < 0))
+		return -1;
+	if (this->parameterTermCounts)
+	{
+		if (parameterTerm >= this->parameterTermCounts[parameterIndex])
+			return -1;
+		const int offset = this->parameterTermOffsets[parameterIndex] + 2*parameterTerm;
+		term = this->parameterFunctionTerms[offset + 1];
+		return this->parameterFunctionTerms[offset];
+	}
+	if (parameterTerm > 0)
+		return -1;
+	term = 0;
+	return parameterIndex;
+}
+
 bool FE_element_field_template::validateAndLock()
 {
 	if (this->locked)
@@ -920,6 +971,75 @@ bool FE_element_field_template::validateAndLock()
 			}
 		}
 	}
+	// calculate parameter maps
+	this->parameterCount = this->numberOfFunctions;  // default
+	this->parameterFunctionTermsSize = 0;
+	if (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	{
+		// number of parameters cannot exceed totalTermCount, so allocate to this and possibly waste a little
+		this->parameterTermCounts = new int[this->totalTermCount];
+		this->parameterTermOffsets = new int[this->totalTermCount];
+		this->parameterFunctionTerms = new int[2*this->totalTermCount];  // 2x for function, term
+		if (!((this->parameterTermCounts) && (this->parameterTermOffsets) && (this->parameterFunctionTerms)))
+		{
+			display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Failed to allocate parameter maps");
+			valid = false;
+		}
+		else
+		{
+			bool oneTermPerFunction = true;  // until proven false
+			this->parameterCount = 0;
+			for (int f = 0; f < this->numberOfFunctions; ++f)
+			{
+				if (oneTermPerFunction && (this->termCounts[f] != 1))
+					oneTermPerFunction = false;
+				for (int t = 0; t < this->termCounts[f]; ++t)
+				{
+					const int ft = this->termOffsets[f] + t;
+					int p = 0;
+					for (; p < this->parameterCount; ++p)
+					{
+						const int pftOffset = this->parameterTermOffsets[p];  // first parameter term only
+						const int ftExisting = this->termOffsets[this->parameterFunctionTerms[pftOffset]] + this->parameterFunctionTerms[pftOffset + 1];
+						if ((this->localNodeIndexes[ft] == this->localNodeIndexes[ftExisting])
+							&& (this->nodeValueLabels[ft] == this->nodeValueLabels[ftExisting])
+							&& (this->nodeVersions[ft] == this->nodeVersions[ftExisting]))
+						{
+							break;
+						}
+					}
+					int pftOffset;
+					if (p < this->parameterCount)
+					{
+						// insert new term for existing parameter p: offset later parameter function terms
+						for (int np = p + 1; np < this->parameterCount; ++np)
+							this->parameterTermOffsets[np] += 2;
+						pftOffset = this->parameterTermOffsets[p] + 2*parameterTermCounts[p];
+						for (int os = this->parameterFunctionTermsSize - 1; os >= pftOffset; --os)
+							this->parameterFunctionTerms[os + 2] = this->parameterFunctionTerms[os];
+						++(this->parameterTermCounts[p]);
+					}
+					else
+					{
+						// add new parameter with one term
+						this->parameterTermCounts[this->parameterCount] = 1;
+						this->parameterTermOffsets[this->parameterCount] = this->parameterFunctionTermsSize;
+						++(this->parameterCount);
+						pftOffset = this->parameterFunctionTermsSize;
+					}
+					this->parameterFunctionTerms[pftOffset    ] = f;
+					this->parameterFunctionTerms[pftOffset + 1] = t;
+					this->parameterFunctionTermsSize += 2;
+				}
+			}
+			if (oneTermPerFunction && (this->parameterCount == this->numberOfFunctions))
+			{
+				// can clear maps and use default behaviour
+				this->clearParameterMaps();
+				this->parameterCount = this->numberOfFunctions;
+			}
+		}
+	}
 	if (valid)
 	{
 		this->locked = true;
@@ -929,6 +1049,7 @@ bool FE_element_field_template::validateAndLock()
 		// free these as only exist if validated and locked since not dynamically resizing
 		delete[] this->scaleFactorLocalNodeIndexes;
 		this->scaleFactorLocalNodeIndexes = 0;
+		this->clearParameterMaps();
 	}
 	return valid;
 }

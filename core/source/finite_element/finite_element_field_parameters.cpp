@@ -83,9 +83,28 @@ int FE_field_parameters::deaccess(FE_field_parameters* &fe_field_parameters)
 
 int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 {
-	this->checkMaps();
-	display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented");
-	return -1;
+	const FE_mesh_field_data *meshFieldData = (element) ? this->field->getMeshFieldData(element->getMesh()) : nullptr;
+	if (!meshFieldData)
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Element is invalid or not from this region");
+		return -1;
+	}
+	int elementParameterCount = 0;
+	const int componentCount = this->field->getNumberOfComponents();
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const FE_mesh_field_template *meshFieldTemplate = meshFieldData->getComponentMeshfieldtemplate(c);
+		const FE_element_field_template *eft = meshFieldTemplate->getElementfieldtemplate(element->getIndex());
+		if (!eft)
+			return 0;  // not defined on this element
+		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+		{
+			display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented for non-nodal parameters");
+			return -1;
+		}
+		elementParameterCount += eft->getParameterCount();
+	}
+	return elementParameterCount;
 }
 
 int FE_field_parameters::getNumberOfParameters()

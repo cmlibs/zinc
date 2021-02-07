@@ -32,7 +32,7 @@ TEST(ZincFieldparameters, validAPI)
 
 	Fieldparameters fieldparameters = coordinates.getFieldparameters();
 	EXPECT_TRUE(fieldparameters.isValid());
-	EXPECT_EQ(-1, fieldparameters.getNumberOfElementParameters(element));  // not yet implemented
+	EXPECT_EQ(24, fieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(24, fieldparameters.getNumberOfParameters());
 
 	Field fieldOut = fieldparameters.getField();
