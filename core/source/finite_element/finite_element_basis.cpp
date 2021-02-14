@@ -35,72 +35,6 @@ Module types
 ------------
 */
 
-struct FE_basis
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating basis function values from xi
-coordinates.  For each of basis there will be only one copy stored in a global
-list.
-==============================================================================*/
-{
-	/* an integer array that specifies the basis as a "product" of the bases for
-		the different coordinates.  The first entry is the number_of_xi_coordinates.
-		The other entries are the upper triangle of a <number_of_xi_coordinates> by
-		<number_of_xi_coordinates> matrix.  The entries on the diagonal specify the
-		basis type for each coordinate and entries in the same row/column indicate
-		associated coordinates eg.
-		1.  CUBIC_HERMITE       0              0
-		                  CUBIC_HERMITE        0
-		                                LINEAR_LAGRANGE
-			has cubic variation in xi1 and xi2 and linear variation in xi3 (8 nodes).
-		2.  CUBIC_HERMITE_SERENDIPITY        0                    1
-		                              LINEAR_LAGRANGE             0
-		                                              CUBIC_HERMITE_SERENDIPITY
-		    has linear variation in xi2 and 2-D cubic hermite serendipity
-		    variation for xi1 and xi3 (8 nodes).
-		3.  CUBIC_HERMITE        0               0
-		                  LINEAR_SIMPLEX         1
-		                                  LINEAR_SIMPLEX
-		    has cubic variation in xi1 and 2-D linear simplex variation for xi2 and
-		    xi3 (6 nodes)
-		4.  POLYGON        0           5
-		            LINEAR_LAGRANGE    0
-		                            POLYGON
-		    has linear variation in xi2 and a 2-D 5-gon for xi1 and xi3 (12 nodes,
-		    5-gon has 5 peripheral nodes and a centre node) */
-	int *type;
-	/* the number of basis functions */
-	int number_of_basis_functions;
-	/* the blending matrix is a linear mapping from the basis used (eg. cubic
-		Hermite) to the standard basis (eg. Chebyshev polynomials).  In some cases,
-		for example a non-polynomial basis, this may be NULL, which indicates the
-		identity matrix */
-	FE_value *blending_matrix;
-	/* this array gives the row number of the last non-zero value for each of the
-		number_of_standard_basis_functions columns in blending_matrix, if exists */
-	int *blending_matrix_column_size;
-	/* to calculate the values of the "standard" basis functions */
-	int number_of_standard_basis_functions;
-	void *arguments;
-	Standard_basis_function *standard_basis;
-	// node index for n'th basis function dof: increasing from 0
-	int *parameterNodes;
-	// derivative type for n'th basis function dof
-	// uses bits to indicate derivative: bit 0=dxi1, bit 1=dxi2, bit 2=dxi3
-	// will need development if significantly different bases are added
-	int *parameterDerivatives;
-
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(FE_basis) *manager;
-	int manager_change_status;
-
-	/* the number of structures that point to this basis.  The basis cannot be
-		destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct FE_basis */
-
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_basis);
 
 FULL_DECLARE_MANAGER_TYPE(FE_basis);
@@ -1072,7 +1006,7 @@ const FE_value *Standard_basis_function_evaluation::evaluate_full(
 	}
 	if (derivative_order_in > this->derivative_order_maximum)
 	{
-		if (derivative_order_in > MAXIMUM_FIELD_DERIVATIVE_ORDER)  // limit to avoid large allocations
+		if (derivative_order_in > MAXIMUM_MESH_DERIVATIVE_ORDER)  // limit to avoid large allocations
 		{
 			display_message(WARNING_MESSAGE, "FE_basis_function_values::evaluate_full.  Derivative order too high");
 			return 0;

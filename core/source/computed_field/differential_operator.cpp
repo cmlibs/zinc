@@ -12,10 +12,23 @@
 #include "computed_field/differential_operator.hpp"
 #include "opencmiss/zinc/status.h"
 
+cmzn_differentialoperator::cmzn_differentialoperator(FieldDerivative *fieldDerivativeIn, int termIn) :
+	fieldDerivative(fieldDerivativeIn->access()),
+	term(termIn),
+	access_count(1)
+{
+}
+
+cmzn_differentialoperator::~cmzn_differentialoperator()
+{
+	FieldDerivative::deaccess(this->fieldDerivative);
+}
+
 cmzn_differentialoperator* cmzn_differentialoperator::create(FieldDerivative *fieldDerivativeIn, int termIn)
 {
-	if ((!fieldDerivativeIn) || (!fieldDerivativeIn->isMeshOnly()) ||
-		(termIn < 0) || (termIn >= fieldDerivativeIn->getMeshTermCount()))
+	if ((!fieldDerivativeIn)
+		|| ((!fieldDerivativeIn->isMeshOnly()) && (termIn >= 0))
+		|| (fieldDerivativeIn->isMeshOnly() && (termIn >= fieldDerivativeIn->getMeshTermCount())))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_differentialoperator::create.  Invalid arguments");
 		return nullptr;

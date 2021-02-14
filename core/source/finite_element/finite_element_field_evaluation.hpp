@@ -82,6 +82,12 @@ class FE_element_field_evaluation
 	int *element_value_offsets;
 	/* the values for each component */
 	FE_value **component_values;
+	/* the mapping and basis used for general field components in top-level element only */
+	// non-accessed; concurrency risk if not following rules of single thread only when modifying
+	const FE_element_field_template **component_efts; // set only for general field in top-level element
+	// scale factors cached for components in current element or nullptr if none
+	// Note: components with the same efts share pointers to the same scale factors
+	const FE_value **component_scale_factors;
 	/* the standard basis function for each component */
 	Standard_basis_function **component_standard_basis_functions;
 	/* the arguments for the standard basis function for each component */
@@ -158,15 +164,18 @@ public:
 	 * other value to evaluate all components.
 	 * @param xi_coordinates  Element chart location to evaluate at.
 	 * @param basis_function_evaluation  Standard basis function evaluation cache.
-	 * @param derivative_order  Derivative order w.r.t. xi starting at <=0 for
-	 * values, 1 for first derivatives etc.
+	 * @param mesh_derivative_order  Derivative order w.r.t. mesh chart starting
+	 * at 0 for values, 1 for first derivatives etc.
+	 * @param parameter_derivative_order  Derivative order w.r.t. parameters for
+	 * field, either 0 for none, 1 for first order. As finite element field is a
+	 * linear function of parameters, higher derivatives are zero.
 	 * @param values  Caller-supplied space to store the real values. Length
 	 * must be at least N components * dimension^derivative_order. Derivative
 	 * values vary fastest with the first xi index; values for each component
 	 * are consecutive. */
 	int evaluate_real(int component_number, const FE_value *xi_coordinates,
 		Standard_basis_function_evaluation &basis_function_evaluation,
-		int derivative_order, FE_value *values);
+		int mesh_derivative_order, int parameter_derivative_order, FE_value *values);
 
 	/** Returns allocated copies of the string values of the field in the element.
 	 * @param component_number  Component number to evaluate starting at 0, or any
@@ -199,7 +208,6 @@ public:
 	 * @param monomial_info  Must point to a block of memory big enough to take
 	 * 1 + MAXIMUM_ELEMENT_XI_DIMENSIONS integers. */
 	int get_monomial_component_info(int component_number, int *monomial_info) const;
-
 };
 
 #endif /* !defined (FINITE_ELEMENT_FIELD_EVALUATION_HPP) */

@@ -1432,7 +1432,7 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
-	if ((mesh) && (1 <= order) && (order <= MAXIMUM_FIELD_DERIVATIVE_ORDER))
+	if ((mesh) && ((-1 == order) || ((1 <= order) && (order <= MAXIMUM_MESH_DERIVATIVE_ORDER))))
 	{
 		FieldDerivative *fieldDerivative = mesh->get_FE_mesh()->getFieldDerivative(order);
 		if (fieldDerivative)
@@ -2040,7 +2040,7 @@ int cmzn_element_get_scale_factors(cmzn_element_id element,
 		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	return eftData->getElementScaleFactors(element->getIndex(), valuesOut);
+	return eftData->getOrCreateElementScaleFactors(element->getIndex(), valuesOut);
 }
 	
 int cmzn_element_set_scale_factors(cmzn_element_id element,

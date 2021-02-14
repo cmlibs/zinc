@@ -18,6 +18,8 @@
 #include "opencmiss/zinc/types/regionid.h"
 
 class FE_mesh;
+struct cmzn_fieldparameters;
+class Field_location;
 
 class FieldDerivative
 {
@@ -27,16 +29,26 @@ private:
 	int cacheIndex;  // unique index of values in field value cache for region; 0 == value
 	//int order;  // total order of derivative
 	FE_mesh *mesh;  // non-accessed as mesh manages FieldDerivative with mesh
-	int meshDimension;  // cached from mesh
-	int meshOrder;  // order of derivatives w.r.t. mesh chart
+	const int meshDimension;  // cached from mesh
+	const int meshOrder;  // order of derivatives w.r.t. mesh chart
+	cmzn_fieldparameters *fieldparameters;  // non-accessed as managed by it
+	const int parameterOrder; // order of derivatives w.r.t. field parameters
 	int access_count;
 
 	/**
+	 * Note that if mesh and fieldparameters defined, mesh derivative is applied first,
+	 * so parameter derivatives cycle faster in results.
 	 * @param region  Owning region for this derivative.
 	 * @param meshIn  Mesh for chart derivative, or nullptr if none.
+	 * @param meshOrderIn  Order of derivative wrt mesh, must be 0 if no mesh.
+	 * @param fieldparametersIn  Field parameters derivative is wrt, or nullptr if none.
+	 * @param meshOrderIn  Order of derivative wrt parameters, must be 0 if no mesh.
 	 * @param lowerDerivative  Must be supplied if orderIn > 1.
 	 */
-	FieldDerivative(cmzn_region *regionIn, FE_mesh *meshIn, int meshOrderIn, FieldDerivative *lowerDerivativeIn);
+	FieldDerivative(cmzn_region *regionIn,
+		FE_mesh *meshIn, int meshOrderIn,
+		cmzn_fieldparameters *fieldparametersIn, int parameterOrderIn,
+		FieldDerivative *lowerDerivativeIn);
 
 	~FieldDerivative();
 
@@ -46,13 +58,23 @@ private:
 
 public:
 
-	/** Create derivative w.r.t. mesh chart.
-	 * @param mesh  Mesh whose chart is to be derived from.
+	/** Create derivative with respect to mesh chart.
+	 * @param mesh  Mesh whose chart the derivative is w.r.t..
 	 * @param lowerDerivative  Optional lower field derivative to differentiate
-	 * further. Note: may only be a derivative w.r.t. the same mesh if any.
-	 * @return 
+	 * further. Note: may only be a derivative w.r.t. the same mesh if any, and
+	 * not w.r.t. field parameters.
+	 * @return  Accessed pointer to FieldDerivative, or nullptr if failed.
 	 */
 	static FieldDerivative *createMeshDerivative(FE_mesh *mesh, FieldDerivative *lowerDerivative);
+
+	/** Create derivative with respect to field parameters.
+	 * @param fieldparameters  Field parameters derivative is w.r.t.
+	 * @param lowerDerivative  Optional lower field derivative to differentiate
+	 * further. Note: may only be a derivative w.r.t. the same parameters if any;
+	 * may also include derivative w.r.t. mesh chart.
+	 * @return  Accessed pointer to FieldDerivative, or nullptr if failed.
+	 */
+	static FieldDerivative *createParametersDerivative(cmzn_fieldparameters *fieldparameters, FieldDerivative *lowerDerivative);
 
 	FieldDerivative *access()
 	{
@@ -62,12 +84,11 @@ public:
 
 	static int deaccess(FieldDerivative* &field_derivative);
 
-	/** Only to be called by mesh on destruction */
-	void clearMeshPrivate()
+	/** Only to be called by owning mesh or field parameters on destruction */
+	void clearOwnerPrivate()
 	{
 		this->mesh = nullptr;
-		this->meshDimension = 0;
-		this->meshOrder = 0;
+		this->fieldparameters = nullptr;
 	}
 
 	// should only be called by owning region
@@ -112,13 +133,36 @@ public:
 	}
 
 	/** @return  Number of individually evaluatable terms for mesh derivative part */
-	int getMeshTermCount() const;
+	int getMeshTermCount() const
+	{
+		int termCount = 1;
+		for (int d = 0; d < this->meshOrder; ++d)
+			termCount *= this->meshDimension;
+		return termCount;
+	}
+
+	/** @return  Non-accessed field parameters is w.r.t. them, otherwise nullptr */
+	cmzn_fieldparameters *getFieldparameters() const
+	{
+		return this->fieldparameters;
+	}
+
+	/** Get order of derivative w.r.t. parameters, >= 0 */
+	int getParameterOrder() const
+	{
+		return this->parameterOrder;
+	}
 
 	/** @return  Non-accessed owning region, or nullptr if invalid. */
 	cmzn_region *getRegion() const
 	{
 		return this->region;
 	}
+
+	/** Get general term count which may depend on location, e.g.
+	 * fieldparameters are only available at mesh location and can vary between
+	 * elements.  */
+	int getTermCount(const Field_location& fieldLocation) const;
 
 };
 

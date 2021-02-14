@@ -19,6 +19,7 @@ to file.
 #include "general/value.h"
 #include "opencmiss/zinc/types/regionid.h"
 #include "opencmiss/zinc/types/fieldid.h"
+#include "finite_element/finite_element_constants.hpp"
 
 /*
 Global types

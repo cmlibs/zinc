@@ -10,6 +10,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/element.h"
+#include "computed_field/field_derivative.hpp"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
@@ -658,7 +660,28 @@ int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elem
 	return CMZN_OK;
 }
 
-int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut)
+int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut) const
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_mesh *mesh = this->eft->getMesh();
+	if (!mesh)
+		return CMZN_ERROR_ARGUMENT;
+	const DsLabelIndex *scaleFactorIndexes = this->getElementScaleFactorIndexes(elementIndex);
+	if (!scaleFactorIndexes)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element has no scale factors");
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const int count = this->eft->getNumberOfLocalScaleFactors();
+	for (int i = 0; i < count; ++i)
+	{
+		valuesOut[i] = mesh->getScaleFactor(scaleFactorIndexes[i]);
+	}
+	return CMZN_OK;
+}
+
+int FE_mesh_element_field_template_data::getOrCreateElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut)
 {
 	if (elementIndex < 0)
 		return CMZN_ERROR_ARGUMENT;
@@ -669,7 +692,7 @@ int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex ele
 	const DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
-		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element has no scale factors");
+		display_message(ERROR_MESSAGE, "Element getOrCreateElementScaleFactors.  Element has no scale factors");
 		return result;
 	}
 	const int count = this->eft->getNumberOfLocalScaleFactors();
@@ -1247,17 +1270,16 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	this->createChangeLog();
 	std::string name(this->getName());
 	this->labels.setName(name + ".elements");
-	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+	for (int i = 0; i < MAXIMUM_MESH_DERIVATIVE_ORDER; ++i)
 		this->fieldDerivatives[i] = FieldDerivative::createMeshDerivative(this, (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
 }
 
 FE_mesh::~FE_mesh()
 {
-	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+	for (int i = 0; i < MAXIMUM_MESH_DERIVATIVE_ORDER; ++i)
 	{
-		this->fieldDerivatives[i]->clearMeshPrivate();
-		FieldDerivative *tmp = this->fieldDerivatives[i];
-		FieldDerivative::deaccess(tmp);
+		this->fieldDerivatives[i]->clearOwnerPrivate();
+		FieldDerivative::deaccess(this->fieldDerivatives[i]);
 	}
 	// safely detach from parent/face meshes
 	if (this->parentMesh)
@@ -2896,6 +2918,19 @@ int FE_mesh::destroyElementsInGroup(DsLabelsGroup& labelsGroup)
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	FE_region_end_change(this->fe_region);
 	return (return_code);
+}
+
+FieldDerivative *FE_mesh::getHigherFieldDerivative(const FieldDerivative& fieldDerivative)
+{
+	if ((fieldDerivative.getMesh()) && (fieldDerivative.getMesh() != this))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::getHigherFieldDerivative.  Cannot create derivative w.r.t. multiple meshes");
+		return nullptr;
+	}
+	if (fieldDerivative.getFieldparameters())
+		return fieldDerivative.getFieldparameters()->getFieldDerivativeMixed(this,
+			fieldDerivative.getMeshOrder() + 1, fieldDerivative.getParameterOrder());
+	return this->getFieldDerivative(fieldDerivative.getMeshOrder() + 1);
 }
 
 DsLabelIndex FE_mesh::createScaleFactorIndex()

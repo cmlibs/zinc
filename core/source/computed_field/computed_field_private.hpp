@@ -716,7 +716,7 @@ inline const FieldValueCache *cmzn_field::evaluate(cmzn_fieldcache& cache)
 inline const DerivativeValueCache *cmzn_field::evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
-	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
+	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative, cache.get_location());
 	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
 		|| cache.hasRegionModifications())
 	{

@@ -233,16 +233,19 @@ public:
 		return this->derivatives[fieldDerivative.getCacheIndex()];
 	}
 
-	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative)
+	/**
+	 * @param location  Location to evaluate derivative at; some derivatives have a variable number of terms depending on it.
+	 */
+	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative, const Field_location& location)
 	{
 		const int cacheIndex = fieldDerivative.getCacheIndex();
 		if (this->derivatives.size() <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
+		const int termCount = fieldDerivative.getTermCount(location);
 		if (!this->derivatives[cacheIndex])
-		{
-			// GRC this will change with variable numbers of derivative terms
-			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, fieldDerivative.getMeshTermCount());
-		}
+			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, termCount);
+		else
+			this->derivatives[cacheIndex]->setTermCount(termCount);
 		return this->derivatives[cacheIndex];
 	}
 
@@ -319,36 +322,34 @@ public:
 	/** Copy location from another field cache */
 	void copyLocation(const cmzn_fieldcache &source);
 
-	/** @return Pointer to element xi location, or 0 if not this type of location */
+	/** @return  Const reference to current cache location */
+	const Field_location& get_location() const
+	{
+		return *(this->location);
+	}
+
+	/** @return  Pointer to element xi location, or nullptr if not this type of location */
 	const Field_location_element_xi *get_location_element_xi() const
 	{
-		if (this->location->get_type() == Field_location::TYPE_ELEMENT_XI)
-			return static_cast<Field_location_element_xi *>(this->location);
-		return 0;
+		return this->location->cast_element_xi();
 	}
 
-	/** @return Pointer to field values location, or 0 if not this type of location */
+	/** @return  Pointer to field values location, or nullptr if not this type of location */
 	const Field_location_field_values *get_location_field_values() const
 	{
-		if (this->location->get_type() == Field_location::TYPE_FIELD_VALUES)
-			return static_cast<Field_location_field_values *>(this->location);
-		return 0;
+		return this->location->cast_field_values();
 	}
 
-	/** @return Pointer to node location, or 0 if not this type of location */
+	/** @return  Pointer to node location, or nullptr if not this type of location */
 	const Field_location_node *get_location_node() const
 	{
-		if (this->location->get_type() == Field_location::TYPE_NODE)
-			return static_cast<Field_location_node *>(this->location);
-		return 0;
+		return this->location->cast_node();
 	}
 
-	/** @return Pointer to time location, or 0 if not this type of location */
+	/** @return  Pointer to time location, or nullptr if not this type of location */
 	const Field_location_time *get_location_time() const
 	{
-		if (this->location->get_type() == Field_location::TYPE_TIME)
-			return static_cast<Field_location_time *>(this->location);
-		return 0;
+		return this->location->cast_time();
 	}
 
 	inline int getLocationCounter() const

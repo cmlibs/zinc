@@ -10,6 +10,7 @@
 #ifndef CMZN_FIELDPARAMETERS_HPP__
 #define CMZN_FIELDPARAMETERS_HPP__
 
+#include "opencmiss/zinc/differentialoperator.hpp"
 #include "opencmiss/zinc/element.hpp"
 #include "opencmiss/zinc/fieldparameters.h"
 #include "opencmiss/zinc/field.hpp"
@@ -69,6 +70,11 @@ public:
 	cmzn_fieldparameters_id getId() const
 	{
 		return id;
+	}
+
+	Differentialoperator getDerivativeOperator(int order)
+	{
+		return Differentialoperator(cmzn_fieldparameters_get_derivative_operator(this->id, order));
 	}
 
 	Field getField() const

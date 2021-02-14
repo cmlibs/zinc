@@ -12,7 +12,9 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/result.h"
+#include "computed_field/field_derivative.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
+#include "computed_field/differential_operator.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element_field.hpp"
@@ -25,10 +27,36 @@ cmzn_fieldparameters::cmzn_fieldparameters(cmzn_field *fieldIn, FE_field_paramet
 	feFieldParameters(feFieldParametersIn),  // take over access count
 	access_count(1)
 {
+	for (int i = 0; i < MAXIMUM_PARAMETER_DERIVATIVE_ORDER; ++i)
+		this->fieldDerivatives[i] = FieldDerivative::createParametersDerivative(this, (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
+	for (int meshIndex = 0; meshIndex < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++meshIndex)
+	{
+		this->meshes[meshIndex] = nullptr;
+		for (int mo = 0; mo < MAXIMUM_MESH_DERIVATIVE_ORDER; ++mo)
+			for (int po = 0; po < MAXIMUM_PARAMETER_DERIVATIVE_ORDER; ++po)
+				this->mixedFieldDerivatives[meshIndex][mo][po] = nullptr;
+	}
 }
 
 cmzn_fieldparameters::~cmzn_fieldparameters()
 {
+	for (int meshIndex = 0; meshIndex < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++meshIndex)
+		if (this->meshes[meshIndex])
+		{
+			for (int mo = 0; mo < MAXIMUM_MESH_DERIVATIVE_ORDER; ++mo)
+				for (int po = 0; po < MAXIMUM_PARAMETER_DERIVATIVE_ORDER; ++po)
+					if (this->mixedFieldDerivatives[meshIndex][mo][po])
+					{
+						this->mixedFieldDerivatives[meshIndex][mo][po]->clearOwnerPrivate();
+						FieldDerivative::deaccess(this->mixedFieldDerivatives[meshIndex][mo][po]);
+					}
+			FE_mesh::deaccess(this->meshes[meshIndex]);
+		}
+	for (int i = 0; i < MAXIMUM_PARAMETER_DERIVATIVE_ORDER; ++i)
+	{
+		this->fieldDerivatives[i]->clearOwnerPrivate();
+		FieldDerivative::deaccess(this->fieldDerivatives[i]);
+	}
 	FE_field_parameters::deaccess(this->feFieldParameters);
 	this->field->clearFieldparameters();
 	cmzn_field::deaccess(&(this->field));
@@ -59,6 +87,34 @@ int cmzn_fieldparameters::deaccess(cmzn_fieldparameters* &fieldparameters)
 	return CMZN_RESULT_OK;
 }
 
+FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, int meshOrder, int parameterOrder)
+{
+	if ((!mesh) || (mesh->get_FE_region() != this->feFieldParameters->getField()->get_FE_region())
+		|| (meshOrder < 1) || (meshOrder > MAXIMUM_MESH_DERIVATIVE_ORDER)
+		|| ((parameterOrder < 1) || (parameterOrder > MAXIMUM_PARAMETER_DERIVATIVE_ORDER)))
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters getFieldDerivativeMixed:  Invalid arguments");
+		return nullptr;
+	}
+	const int meshIndex = mesh->getDimension() - 1;
+	if (!this->meshes[meshIndex])
+		this->meshes[meshIndex] = mesh->access();  // so mesh exists while this holds mesh derivatives for it
+	FieldDerivative *fieldDerivative = this->mixedFieldDerivatives[meshIndex][meshOrder - 1][parameterOrder - 1];
+	if (!fieldDerivative)
+	{
+		FieldDerivative *lowerDerivative = (parameterOrder > 1) ?
+			this->getFieldDerivativeMixed(mesh, meshOrder, parameterOrder - 1) : mesh->getFieldDerivative(meshOrder);
+		if (!lowerDerivative)
+			return nullptr;
+		fieldDerivative = this->mixedFieldDerivatives[meshIndex][meshOrder - 1][parameterOrder - 1] =
+			FieldDerivative::createParametersDerivative(this, lowerDerivative);
+		FieldDerivative::deaccess(lowerDerivative);
+		if (!fieldDerivative)
+			return nullptr;
+	}
+	return fieldDerivative;
+}
+
 int cmzn_fieldparameters::getNumberOfElementParameters(cmzn_element *element) const
 {
 	return this->feFieldParameters->getNumberOfElementParameters(element);
@@ -86,6 +142,19 @@ int cmzn_fieldparameters_destroy(cmzn_fieldparameters_id *fieldparameters_addres
 	if (!fieldparameters_address)
 		return CMZN_RESULT_ERROR_ARGUMENT;
 	return cmzn_fieldparameters::deaccess(*fieldparameters_address);
+}
+
+cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operator(
+	cmzn_fieldparameters_id fieldparameters, int order)
+{
+	if (fieldparameters)
+	{
+		FieldDerivative *fieldDerivative = fieldparameters->getFieldDerivative(order);
+		if (fieldDerivative)
+			return cmzn_differentialoperator::create(fieldDerivative, -1);
+	}
+	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
+	return nullptr;
 }
 
 cmzn_field_id cmzn_fieldparameters_get_field(

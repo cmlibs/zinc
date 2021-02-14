@@ -13,11 +13,11 @@
 
 #include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/status.h"
-#include "computed_field/field_derivative.hpp"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
+#include "finite_element/finite_element_constants.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -30,6 +30,8 @@
 class FE_mesh;
 
 class FE_mesh_field_template;
+
+class FieldDerivative;
 
 /**
  * Template for creating a new element in the given FE_mesh, or redefining
@@ -401,7 +403,14 @@ public:
 	  * @param elementIndex  The element to get scale factors for.
 	  * @param valuesOut  Array to receive scale factors. Must have enough space for correct number in EFT.
 	  * @return  Result OK on success, any other value on failure. */
-	int getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut);
+	int getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut) const;
+
+	/** Get all scale factors for this element field template in the given element,
+	  * creating new scale factor indexes with zero values as needed.
+	  * @param elementIndex  The element to get scale factors for.
+	  * @param valuesOut  Array to receive scale factors. Must have enough space for correct number in EFT.
+	  * @return  Result OK on success, any other value on failure. */
+	int getOrCreateElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut);
 
 	/** Set all scale factors for this element field template in the given element.
 	  * Notifies all fields at this element changed.
@@ -409,6 +418,14 @@ public:
 	  * @param valuesIn  Array of scale factors to set. Required to have correct number for EFT.
 	  * @return  Result OK on success, any other value on failure. */
 	int setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *valuesIn);
+
+	/** Gets array of scale factor indexes for element, if available.
+	  * @param elementIndex  Label index for element. Not checked.
+	  * @return  Pointer to array of global scale factor indexes for element, or nullptr if failed. NOT to be freed. */
+	const DsLabelIndex *getElementScaleFactorIndexes(DsLabelIndex elementIndex) const
+	{
+		return this->localToGlobalScaleFactors.getArray(elementIndex);
+	}
 
 	/** Gets or creates array of scale factor indexes for element. If creating, guarantees
 	  * to create full array of valid indexes. Fails if any scale factor
@@ -420,7 +437,7 @@ public:
 	  * @param result  Result OK on success, ERROR_NOT_FOUND if cannot create due to absent
 	  * nodes or other data, otherwise any other error.
 	  * @param elementIndex  Label index for element. Not checked.
-	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
+	  * @return  Pointer to array of global scale factor indexes for element, or nullptr if failed. NOT to be freed. */
 	DsLabelIndex *getOrCreateElementScaleFactorIndexes(int &result, DsLabelIndex elementIndex)
 	{
 		DsLabelIndex *scaleFactorIndexes = this->localToGlobalScaleFactors.getArray(elementIndex);
@@ -740,7 +757,7 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
-	FieldDerivative *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
+	FieldDerivative *fieldDerivatives[MAXIMUM_MESH_DERIVATIVE_ORDER];
 
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
@@ -1203,13 +1220,19 @@ public:
 
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
 
-	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
+	/** @return  Non-accessed field derivative w.r.t. mesh chart of given order */
 	FieldDerivative *getFieldDerivative(int order) const
 	{
-		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
+		if ((order < 1) || (order > MAXIMUM_MESH_DERIVATIVE_ORDER))
 			return nullptr;
 		return this->fieldDerivatives[order - 1];
 	}
+
+	/** Get derivative w.r.t. mesh chart followed by supplied field derivative operation.
+	 * @param fieldDerivative  Derivative to apply after. If it involves mesh derivatives,
+	 * they must be for this mesh.
+	 * @return  Non-accessed field derivative or nullptr on error */
+	FieldDerivative *getHigherFieldDerivative(const FieldDerivative& fieldDerivative);
 
 	/** @param scaleFactorIndex  Not checked. Must be valid. */
 	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const

@@ -1782,11 +1782,12 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
  * functions used by the EFT basis. Note this is a reference and will be
  * reallocated if basis uses a blending function. Either way, caller is
  * required to deallocate.
+ * @param scaleFactors  Pointer to element scale factors.
  * @return  Number of values calculated or 0 if error.
  */
 int global_to_element_map_values(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element, FE_value time,
-	const FE_nodeset *nodeset, FE_value*& elementValues)
+	const FE_nodeset *nodeset, const FE_value *scaleFactors, FE_value*& elementValues)
 {
 	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
@@ -1813,18 +1814,13 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			field->getName(), componentNumber + 1, element->getIdentifier());
 		return 0;
 	}
-	std::vector<FE_value> scaleFactorsVector(eft->getNumberOfLocalScaleFactors());
-	FE_value *scaleFactors = 0;
-	if (0 < eft->getNumberOfLocalScaleFactors())
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	if ((scaleFactorCount) && (!scaleFactors))
 	{
-		scaleFactors = scaleFactorsVector.data();
-		if (CMZN_OK != meshEFTData->getElementScaleFactors(elementIndex, scaleFactors))
-		{
-			display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-				"Element %d is missing scale factors for field %s component %d.",
-				element->getIdentifier(), field->getName(), componentNumber + 1);
-			return 0;
-		}
+		display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+			"Element %d is missing scale factors for field %s component %d.",
+			element->getIdentifier(), field->getName(), componentNumber + 1);
+		return 0;
 	}
 
 	const int basisFunctionCount = eft->getNumberOfFunctions();
@@ -1898,7 +1894,7 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			{
 				termValue = reinterpret_cast<FE_value *>(node->values_storage + nft->valuesOffset)[valueIndex];
 			}
-			if (scaleFactors)
+			if (scaleFactorCount)
 			{
 				const int termScaleFactorCount = eft->termScaleFactorCounts[tt];
 				for (int s = 0; s < termScaleFactorCount; ++s)
@@ -6111,7 +6107,8 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 			xi[2] = (FE_value)((n & 4)/4);
 			basis_function_evaluation.invalidate();
 			if (!fe_element_field_evaluation->evaluate_real(componentNumber,
-				xi, basis_function_evaluation, /*derivative_order*/0, &(component_value[n])))
+				xi, basis_function_evaluation, /*derivative_order*/0,
+				/*parameter_derivative_order*/0, &(component_value[n])))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_smooth_FE_field.  Could not calculate element field");

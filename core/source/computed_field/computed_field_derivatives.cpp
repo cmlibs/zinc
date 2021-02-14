@@ -401,26 +401,27 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 	if (element_xi_location && fieldDerivative.isMeshOnly())
 	{
 		cmzn_element* element = element_xi_location->get_element();
-		const FE_mesh *mesh = element->getMesh();
-		const int element_dimension = element_xi_location->get_element_dimension();
-		const FieldDerivative *higherFieldDerivative = mesh->getFieldDerivative(fieldDerivative.getMeshOrder() + 1);
-		if (((fieldDerivative.getMesh() == mesh) && (higherFieldDerivative)) && (this->xi_index < element_dimension))
+		FE_mesh *mesh = element->getMesh();
+		const int elementDimension = mesh->getDimension();
+		const FieldDerivative *sourceFieldDerivative = mesh->getHigherFieldDerivative(fieldDerivative);
+		if ((sourceFieldDerivative) && (this->xi_index < elementDimension))
 		{
-			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *higherFieldDerivative);
+			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *sourceFieldDerivative);
 			if (sourceDerivativeCache)
 			{
-				FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-				const int termCount = fieldDerivative.getMeshTermCount();
-				// the derivative for this field becomes the first/innermost derivative:
-				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
-				for (int i = 0; i < field->number_of_components; ++i)
+				DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+				const int termCount = derivativeCache->getTermCount();
+				const int sourceTermCount = sourceDerivativeCache->getTermCount();
+				// the extra mesh derivative added here becomes the first/outermost index
+				FE_value *derivatives = derivativeCache->values;
+				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index*termCount;
+				const int componentCount = field->number_of_components;
+				for (int i = 0; i < componentCount; ++i)
 				{
 					for (int j = 0; j < termCount; ++j)
-					{
-						*derivative = sourceDerivatives[j*element_dimension];
-						derivative++;
-					}
-					sourceDerivatives += element_dimension*termCount;
+						derivatives[j] = sourceDerivatives[j];
+					derivatives += termCount;
+					sourceDerivatives += sourceTermCount;
 				}
 				return 1;
 			}

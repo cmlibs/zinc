@@ -1124,7 +1124,6 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	}
 	workingCache->setTime(cache.getTime());
 	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
-	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getMeshTermCount() : 1;
 	const int componentCount = this->field->number_of_components;
 	cmzn_element *element = element_xi_location->get_element();
 	const int elementDimension = element_xi_location->get_element_dimension();
@@ -1145,16 +1144,18 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 			else
 				perturbedXi[d] += xiPerturbation;
 			workingCache->setMeshLocation(element, perturbedXi);
+			int lowerDerivativeTermCount = 1;
 			if (lowerFieldDerivative)
 			{
-				const DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
-				if (!derivativeValueCache)
+				const DerivativeValueCache *derivativeCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
+				if (!derivativeCache)
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
 					return 0;
 				}
-				lowerValues = derivativeValueCache->values;
+				lowerValues = derivativeCache->values;
+				lowerDerivativeTermCount = derivativeCache->getTermCount();
 			}
 			else
 			{
@@ -1166,20 +1167,26 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 				}
 				lowerValues = lowerValueCache->values;
 			}
-			// values cycle over components slowest, then this outermost derivative, then lower derivatives
+			// values cycle over components slowest, then lower derivatives, fastest over this finite difference derivative
 			for (int c = 0; c < componentCount; ++c)
 			{
 				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
-				FE_value *dst = derivativeValueCache.values + (c*elementDimension + d)*lowerDerivativeTermCount;
+				FE_value *dst = derivativeValueCache.values + c*elementDimension*lowerDerivativeTermCount + d;
 				if (k == 0)
 				{
 					for (int v = 0; v < lowerDerivativeTermCount; ++v)
-						dst[v] = src[v];
+					{
+						*dst = src[v];
+						dst += elementDimension;
+					}
 				}
 				else
 				{
 					for (int v = 0; v < lowerDerivativeTermCount; ++v)
-						dst[v] = weight*(src[v] - dst[v]);
+					{
+						*dst = weight*(src[v] - *dst);
+						dst += elementDimension;
+					}
 				}
 			}
 			perturbedXi[d] = xi[d];
@@ -1454,9 +1461,10 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_differentialoperator_id differential_operator,
 	cmzn_fieldcache_id cache, int number_of_values, double *values)
 {
-	if (cmzn_fieldcache_check(field, cache) && differential_operator &&
-		(number_of_values >= field->number_of_components) && values &&
-		field->core->has_numerical_components())
+	if (cmzn_fieldcache_check(field, cache)
+		&& (differential_operator)
+		&& (number_of_values > 0) && (values)
+		&& field->core->has_numerical_components())
 	{
 		FieldDerivative& fieldDerivative = differential_operator->getFieldDerivative();
 		if (field->manager->owner != fieldDerivative.getRegion())
@@ -1464,16 +1472,38 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, fieldDerivative);
 		if (derivativeValueCache)
 		{
-			const int termCount = fieldDerivative.getMeshTermCount();  // GRC temporary until variable number supported.
-			const int term = differential_operator->getTerm();
+			// with some derivatives, don't know number of terms until evaluated, so check here:
 			const int componentCount = field->number_of_components;
-			const FE_value *derivatives = derivativeValueCache->values + term;
-			for (int c = 0; c < componentCount; ++c)
-				values[c] = derivatives[c*termCount];
+			const int termCount = derivativeValueCache->getTermCount();
+			const int term = differential_operator->getTerm();
+			if (term < 0)
+			{
+				const int valueCount = componentCount*termCount;
+				if (number_of_values < valueCount)
+				{
+					display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Too few values requested");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const FE_value *derivatives = derivativeValueCache->values;
+				for (int v = 0; v < valueCount; ++v)
+					values[v] = derivatives[v];
+			}
+			else
+			{
+				if (number_of_values < componentCount)
+				{
+					display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Too few values requested");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const FE_value *derivatives = derivativeValueCache->values + term;
+				for (int c = 0; c < componentCount; ++c)
+					values[c] = derivatives[c*termCount];
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_GENERAL;
 	}
+	display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Invalid arguments");
 	return CMZN_ERROR_ARGUMENT;
 }
 

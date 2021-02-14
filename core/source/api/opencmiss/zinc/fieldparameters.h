@@ -11,6 +11,7 @@
 #ifndef CMZN_FIELDPARAMETERS_H__
 #define CMZN_FIELDPARAMETERS_H__
 
+#include "types/differentialoperatorid.h"
 #include "types/elementid.h"
 #include "types/fieldparametersid.h"
 #include "types/fieldid.h"
@@ -52,6 +53,17 @@ ZINC_API cmzn_fieldparameters_id cmzn_fieldparameters_access(
  */
 ZINC_API int cmzn_fieldparameters_destroy(
 	cmzn_fieldparameters_id *fieldparametersAddress);
+
+/**
+ * Returns a differential operator for evaluating derivatives of a field
+ * with respect to these field parameters, generally per-element.
+ *
+ * @param fieldparameters  The field parameters derivatives are w.r.t.
+ * @param order  The order of the derivative. Currently must be 1 or 2.
+ * @return  Handle to differential operator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operator(
+	cmzn_fieldparameters_id fieldparameters, int order);
 
 /**
 * Get the field these field parameters are for.

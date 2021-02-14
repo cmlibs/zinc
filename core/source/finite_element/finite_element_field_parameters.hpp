@@ -62,6 +62,12 @@ public:
 
 	static int deaccess(FE_field_parameters* &fe_field_parameters);
 
+	/** @return  Non-accessed FE_field */
+	FE_field *getField() const
+	{
+		return this->field;
+	}
+
 	int getNumberOfElementParameters(cmzn_element *element);
 
 	int getNumberOfParameters();

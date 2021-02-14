@@ -99,8 +99,9 @@ int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 			return 0;  // not defined on this element
 		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 		{
-			display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented for non-nodal parameters");
-			return -1;
+			display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented for non-nodal parameters: ",
+				"Element %d component %d", element->getIdentifier(), c + 1);
+			continue;
 		}
 		elementParameterCount += eft->getParameterCount();
 	}

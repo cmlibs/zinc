@@ -21,6 +21,11 @@
 #include "finite_element/finite_element_basis.hpp"
 #include "general/value.h"
 
+class Field_location_element_xi;
+class Field_location_field_values;
+class Field_location_node;
+class Field_location_time;
+
 class Field_location
 {
 public:
@@ -65,6 +70,19 @@ public:
 	{
 		return this->type;
 	}
+
+	/** @return  Pointer to element xi location, or nullptr if not this type of location */
+	inline const Field_location_element_xi *cast_element_xi() const;
+
+	/** @return  Pointer to field values location, or nullptr if not this type of location */
+	inline const Field_location_field_values *cast_field_values() const;
+
+	/** @return  Pointer to node location, or nullptr if not this type of location */
+	inline const Field_location_node *cast_node() const;
+
+	/** @return Pointer to time location, or nullptr if not this type of location */
+	inline const Field_location_time *cast_time() const;
+
 };
 
 class Field_location_element_xi : public Field_location
@@ -150,6 +168,13 @@ public:
 
 };
 
+const Field_location_element_xi *Field_location::cast_element_xi() const
+{
+	if (this->get_type() == TYPE_ELEMENT_XI)
+		return static_cast<const Field_location_element_xi *>(this);
+	return nullptr;
+}
+
 /** A location represented by values of a single field */
 class Field_location_field_values : public Field_location
 {
@@ -198,6 +223,13 @@ public:
 
 };
 
+const Field_location_field_values *Field_location::cast_field_values() const
+{
+	if (this->get_type() == TYPE_FIELD_VALUES)
+		return static_cast<const Field_location_field_values *>(this);
+	return nullptr;
+}
+
 class Field_location_node : public Field_location
 {
 private:
@@ -223,6 +255,13 @@ public:
 	}
 };
 
+const Field_location_node *Field_location::cast_node() const
+{
+	if (this->get_type() == TYPE_NODE)
+		return static_cast<const Field_location_node *>(this);
+	return nullptr;
+}
+
 class Field_location_time : public Field_location
 {
 public:
@@ -231,5 +270,12 @@ public:
 	{
 	}
 };
+
+const Field_location_time *Field_location::cast_time() const
+{
+	if (this->get_type() == TYPE_TIME)
+		return static_cast<const Field_location_time *>(this);
+	return nullptr;
+}
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */

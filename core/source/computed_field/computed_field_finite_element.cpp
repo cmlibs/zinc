@@ -20,6 +20,7 @@
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
@@ -783,7 +784,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 						{
 							return_code = element_field_evaluation->evaluate_real(
 								/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-								/*derivative_order*/0, feValueCache.values);
+								/*mesh_derivative_order*/0, /*parameter_derivative_order*/0, feValueCache.values);
 						} break;
 						case INT_VALUE:
 						{
@@ -889,20 +890,32 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	const Value_type value_type = this->fe_field->getValueType();
 	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
-		&& (fieldDerivative.isMeshOnly() && (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())))
+		&& ((!fieldDerivative.getMesh()) || (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())))
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-		FE_value *derivatives = feValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const FE_value* xi = element_xi_location->get_xi();
-		FE_element_field_evaluation *element_field_evaluation =
-			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
-				element_xi_location->get_top_level_element());
-		if ((element_field_evaluation) &&
-			element_field_evaluation->evaluate_real(
-				/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-				fieldDerivative.getMeshOrder(), derivatives))
+		DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
+		cmzn_fieldparameters *fieldparameters = fieldDerivative.getFieldparameters();
+		// current finite element field is a linear function of parameters
+		if ((!fieldparameters) || ((fieldparameters->getField() == this->field) && (fieldDerivative.getParameterOrder() <= 1)))
 		{
+			FE_value *derivatives = derivativeCache->values;
+			const FE_value* xi = element_xi_location->get_xi();
+			FE_element_field_evaluation *element_field_evaluation =
+				feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
+					fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
+					element_xi_location->get_top_level_element());
+			if ((element_field_evaluation) &&
+				element_field_evaluation->evaluate_real(
+					/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
+					fieldDerivative.getMeshOrder(), fieldDerivative.getParameterOrder(), derivatives))
+			{
+				return 1;
+			}
+
+		}
+		else
+		{
+			derivativeCache->zeroValues();
 			return 1;
 		}
 	}
@@ -2574,7 +2587,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
 	const FieldDerivative& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
 	for (int i = 0; i < 2; ++i)
-		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative)))
+		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative, *element_xi_location)))
 			return 0;
 	const FE_value *elementToParentsXi[2];
 	int qualifyingParents = 0;

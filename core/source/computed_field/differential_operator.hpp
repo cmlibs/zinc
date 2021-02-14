@@ -25,21 +25,13 @@ private:
 	int term; // starting at 0 or negative for all
 	int access_count;
 
-	cmzn_differentialoperator(FieldDerivative *fieldDerivativeIn, int termIn) :
-		fieldDerivative(fieldDerivativeIn->access()),
-		term(termIn),
-		access_count(1)
-	{
-	}
+	cmzn_differentialoperator(FieldDerivative *fieldDerivativeIn, int termIn);
 
-	~cmzn_differentialoperator()
-	{
-		FieldDerivative::deaccess(this->fieldDerivative);
-	}
+	~cmzn_differentialoperator();
 
 public:
 
-	/** @param term_in  Term from 0 to number-1, or negative for all terms */
+	/** @param termIn  Term from 0 to number-1, or negative for all terms. Must be negative for non-mesh derivative */
 	static cmzn_differentialoperator* create(FieldDerivative *fieldDerivativeIn, int termIn);
 
 	cmzn_differentialoperator_id access()
@@ -67,6 +59,12 @@ public:
 	FieldDerivative& getFieldDerivative() const
 	{
 		return *this->fieldDerivative;
+	}
+
+	/** @return  Non-accessed region this is from */
+	cmzn_region *getRegion()
+	{
+		return this->fieldDerivative->getRegion();
 	}
 
 	int getTerm() const
