@@ -108,7 +108,6 @@ FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, in
 			return nullptr;
 		fieldDerivative = this->mixedFieldDerivatives[meshIndex][meshOrder - 1][parameterOrder - 1] =
 			FieldDerivative::createParametersDerivative(this, lowerDerivative);
-		FieldDerivative::deaccess(lowerDerivative);
 		if (!fieldDerivative)
 			return nullptr;
 	}
