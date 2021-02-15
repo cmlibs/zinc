@@ -791,7 +791,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 	if ((this->field) && (xi_coordinates) && (values))
 	{
 		const int dimension = this->element->getDimension();
-		const int number_of_derivatives = this->get_number_of_derivatives(mesh_derivative_order, dimension);
+		const int number_of_mesh_derivatives = this->get_number_of_mesh_derivatives(mesh_derivative_order, dimension);
 		const int componentCount = this->field->getNumberOfComponents();
 		int comp_no, components_to_calculate;
 		if ((0<=component_number)&&(component_number < componentCount))
@@ -901,7 +901,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						{
 							// calculate field value as a dot product of the element and basis values
 							const FE_value *basis_value = basis_values;
-							for (int k = 0; k < number_of_derivatives; ++k)
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								const FE_value *element_value = *element_values_ptr;
 								FE_value sum = 0.0;
@@ -940,7 +940,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						const int valueCount = *number_of_element_values_ptr;
 						if (parameter_derivative_order)
 						{
-							for (int k = 0; k < number_of_derivatives; ++k)
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								// need to compute derivatives w.r.t. all components' parameters
 								for (int pc = 0; pc < componentCount; ++pc)
@@ -993,7 +993,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						else
 						{
 							// calculate field value as a dot product of the element and basis values
-							for (int k = 0; k < number_of_derivatives; ++k)
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								const FE_value *element_value = *element_values_ptr;
 								// performance critical dot product: keep simple & let compiler optimise it
@@ -1071,7 +1071,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 				else
 				{
 					/* derivatives are zero for constant and indexed fields */
-					const int values_count = number_of_derivatives*components_to_calculate;
+					const int values_count = number_of_mesh_derivatives*components_to_calculate;
 					for (int i = 0; 0 < values_count; ++i)
 						values[i] = 0.0;
 				}

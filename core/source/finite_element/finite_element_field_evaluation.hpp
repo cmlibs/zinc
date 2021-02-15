@@ -135,7 +135,7 @@ public:
 			&& ((!this->time_dependent) || (time_in == this->time));
 	}
 
-	static inline int get_number_of_derivatives(int derivative_order, int dimension)
+	static inline int get_number_of_mesh_derivatives(int derivative_order, int dimension)
 	{
 		int number_of_derivatives = 1;
 		for (int d = 0; d < derivative_order; ++d)
