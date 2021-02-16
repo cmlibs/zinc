@@ -228,8 +228,8 @@ ZINC_API cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
  *
  * @param mesh  Handle to the mesh to get differential operator from.
  * @param order  The order of the derivative. Currently must be 1.
- * @param term  Which of the (dimensions)^order differential operators is
- * required, starting at 1, or -1 to evaluate all terms.
+ * @param term  Which of the (dimensions)^order terms is required,
+ * starting at 1, or -1 to evaluate all terms.
  * For order 1, the term corresponds to a element chart/xi direction.
  * @return  Handle to differential operator, or NULL/invalid handle on failure.
  */
