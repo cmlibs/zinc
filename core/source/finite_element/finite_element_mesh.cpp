@@ -20,6 +20,7 @@
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"
+#include <algorithm>
 
 /*
 Module types
@@ -1238,6 +1239,65 @@ int FE_mesh_field_template::getElementsDefinedCount() const
 	return count;
 }
 
+void FE_mesh_embedded_node_field::addNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex)
+{
+	DsLabelIndex **nodeIndexesAddress = this->map.getOrCreateAddress(elementIndex);
+	DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+	if (nodeIndexes)
+	{
+		const DsLabelIndex size = nodeIndexes[0];
+		if (size == nodeIndexes[1])
+		{
+			DsLabelIndex *tmpNodeIndexes = new DsLabelIndex[2 + size + growStep];
+			memcpy(tmpNodeIndexes, nodeIndexes, (2 + size)*sizeof(DsLabelIndex));
+			delete[] nodeIndexes;
+			nodeIndexes = *nodeIndexesAddress = tmpNodeIndexes;
+			nodeIndexes[1] += growStep;
+		}
+		nodeIndexes[2 + size] = nodeIndex;
+		++(nodeIndexes[0]);  // size
+	}
+	else
+	{
+		nodeIndexes = *nodeIndexesAddress = new DsLabelIndex[2 + growStep];
+		nodeIndexes[0] = 1;
+		nodeIndexes[1] = growStep;
+		nodeIndexes[2] = nodeIndex;
+	}
+}
+
+void FE_mesh_embedded_node_field::removeNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex)
+{
+	DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+	DsLabelIndex *nodeIndexes = (nodeIndexesAddress) ? *nodeIndexesAddress : nullptr;
+	if (!nodeIndexes)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh_embedded_nodes::removeNode.  "
+			"Element index %d has no nodes; node index %d", elementIndex, nodeIndex);
+		return;
+	}
+	// find nodeIndex in array, not sorted
+	const DsLabelIndex size = nodeIndexes[0];
+	const DsLabelIndex limit = size + 2;
+	for (int i = 2; i < limit; ++i)
+	{
+		if (nodeIndexes[i] == nodeIndex)
+		{
+			if (size == 1)
+			{
+				// free only when down to zero size
+				delete[] nodeIndexes;
+				*nodeIndexesAddress = nullptr;
+				return;
+			}
+			memmove(nodeIndexes + i, nodeIndexes + i + 1, (limit - i - 1)*sizeof(DsLabelIndex));
+			--(nodeIndexes[0]);  // size
+		}
+	}
+	display_message(ERROR_MESSAGE, "FE_mesh_embedded_nodes::removeNode.  "
+		"Element index %d has no entry for node index %d", elementIndex, nodeIndex);
+}
+
 DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementIndex, int faceNumber)
 {
 	// could remove following test if good arguments guaranteed
@@ -1486,6 +1546,35 @@ void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 	}
 	display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Field template not found");
 }
+
+FE_mesh_embedded_node_field *FE_mesh::addEmbeddedNodeField(FE_field *field, FE_nodeset *nodeset)
+{
+	if ((field) && (field->get_FE_region() == this->fe_region) &&
+		(nodeset) && (nodeset->get_FE_region() == this->fe_region))
+	{
+		FE_mesh_embedded_node_field *embeddedNodeField = new FE_mesh_embedded_node_field(field, nodeset);
+		this->embeddedNodeFields.push_back(embeddedNodeField);
+		return embeddedNodeField;
+	}
+	display_message(ERROR_MESSAGE, "FE_mesh::addEmbeddedNodeField.  Invalid arguments");
+	return nullptr;
+}
+
+void FE_mesh::removeEmbeddedNodeField(FE_mesh_embedded_node_field*& embeddedNodeField)
+{
+	std::list<FE_mesh_embedded_node_field *>::iterator iter = std::find(this->embeddedNodeFields.begin(), this->embeddedNodeFields.end(), embeddedNodeField);
+	if (iter != this->embeddedNodeFields.end())
+	{
+		this->embeddedNodeFields.erase(iter);
+		delete embeddedNodeField;
+		embeddedNodeField = nullptr;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::addEmbeddedNodeField.  Embedded node field not found");
+	}
+}
+
 
 /** @return  True if fields defined identically for the two elements
   * @param elementIndex1, elementIndex2  Element indexes to compare. Not checked, must be valid. */

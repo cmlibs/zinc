@@ -27,9 +27,13 @@
 #include <set>
 #include <vector>
 
+struct FE_field;
+
 class FE_mesh;
 
 class FE_mesh_field_template;
+
+class FE_nodeset;
 
 class FieldDerivative;
 
@@ -617,6 +621,40 @@ public:
 
 };
 
+/** Stores reverse map from element index to arrays of embedded node indexes
+ * for a given field (of element_xi value type) and nodeset.
+ * These objects are held by the mesh while the FE_field holds a handle to it.
+ * The FE_field which must call FE_mesh::removeEmbeddedNodeField to free it */
+class FE_mesh_embedded_node_field
+{
+	friend class FE_mesh;
+
+	FE_field *field;  // non-accessed field giving locations in the owning mesh
+	FE_nodeset *nodeset;  // not accessed nodes or elements
+	// map from element to allocated array of node indexes
+	// strictly growning except freed when down to zero size
+	// first 2 values are size, allocated size
+	dynarray_block_array<DsLabelIndex, DsLabelIndex*> map;
+
+	const int growStep = 16;  // step size of node arrays growth
+
+	FE_mesh_embedded_node_field(FE_field *fieldIn, FE_nodeset *nodesetIn) :
+		field(fieldIn),
+		nodeset(nodesetIn)
+	{
+	}
+
+public:
+
+	/** add nodeIndex to the list of indexes for elementIndex. *
+	 * Client must guarantee nodeIndex is valid and not already in array. */
+	void addNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex);
+
+	/** remove nodeIndex from list of indexes for elementIndex. *
+	 * Client must guarantee nodeIndex is valid and not already in array. */
+	void removeNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex);
+
+};
 
 /**
  * A set of elements in the FE_region.
@@ -729,6 +767,11 @@ private:
 	FE_mesh_element_field_template_data **elementFieldTemplateData;
 
 	std::list<FE_mesh_field_template*> meshFieldTemplates;
+
+	// vector of reverse maps from elements to arrays of node indexes held
+	// for all field of element_xi type for nodeset with nodes embedded in this mesh
+	// indexes are given out for lifetime of nodeset x field
+	std::list<FE_mesh_embedded_node_field*> embeddedNodeFields;
 
 	DsLabelIndex scaleFactorsCount;  // actual number of scale factors. Note can be holes in scaleFactors array
 	DsLabelIndex scaleFactorsIndexSize;  // allocated size of scale factors array, including holes
@@ -875,6 +918,19 @@ public:
 	FE_mesh_field_template *getOrCreateBlankMeshFieldTemplate();
 
 	void removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate);
+
+	/** Adds to mesh FE_mesh_embedded_node_field object for the field and nodeset,
+	 * held by the mesh so knows which fields embed nodes in this mesh.
+	 * Fields may optionally maintain reverse maps from elements to nodes in this
+	 * structure.
+	 * @return  FE_mesh_embedded_node_field for field to store. Field must call
+	 * removeEmbeddedNodeField to free.
+	 */
+	FE_mesh_embedded_node_field *addEmbeddedNodeField(FE_field *field, FE_nodeset *nodeset);
+	
+	/** Remove the embeddedNodeField from mesh and delete.
+	 * @param embeddedNodeField  Client pointer to embedded node field. Cleared by this function */
+	void removeEmbeddedNodeField(FE_mesh_embedded_node_field*& embeddedNodeField);
 
 	bool equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const;
 

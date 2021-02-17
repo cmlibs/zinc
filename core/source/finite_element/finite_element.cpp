@@ -3679,14 +3679,30 @@ int set_FE_nodal_element_xi_value(struct FE_node *node,
 			CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
 		{
 			/* copy in the element_xi_value */
-			REACCESS(FE_element)((struct FE_element **)valuesStorage, element);
-			valuesStorage += sizeof(struct FE_element *);
-			for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			cmzn_element** elementAddress = reinterpret_cast<cmzn_element**>(valuesStorage);
+			cmzn_element *oldElement = *elementAddress;
+			if (element != oldElement)
 			{
-				/* set spare xi values to 0 */
-				*((FE_value *)valuesStorage) = (i < dimension) ? xi[i] : 0.0;
-				valuesStorage += sizeof(FE_value);
+				FE_mesh_embedded_node_field *embeddedNodeField = field->getEmbeddedNodeField(node->getNodeset());
+				if (oldElement)
+				{
+					cmzn_element::deaccess(*elementAddress);
+					// handle merge case were element from another region is temporarily present
+					if (oldElement->getMesh()->get_FE_region() == node->getNodeset()->get_FE_region())
+						embeddedNodeField->removeNode(oldElement->getIndex(), node->getIndex());
+				}
+				if (element)
+				{
+					*elementAddress = element->access();
+					embeddedNodeField->addNode(element->getIndex(), node->getIndex());
+				}
 			}
+			FE_value *xiStored = reinterpret_cast<FE_value*>(elementAddress + 1);
+			for (int i = 0; i < dimension; ++i)
+				xiStored[i] = xi[i];
+			// set spare xi values to zero
+			for (int i = dimension; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+				xiStored[i] = 0.0;
 			// notify of changes, but only for valid nodes (i.e. not template nodes)
 			if (node->getIndex() >= 0)
 			{

@@ -96,7 +96,10 @@ private:
 	int number_of_values;
 	/* the type of the values returned by the field */
 	enum Value_type value_type;
-	/* for value_type== ELEMENT_XI_VALUE, host mesh, or 0 if not determined from legacy input */
+	// with element_xi_host_mesh, embedded node field data for 0=nodes, 1=datapoints
+	FE_mesh_embedded_node_field *embeddedNodeFields[2];
+	// for value_type == ELEMENT_XI_VALUE, accessed host mesh
+	// or nullptr if not yet determined from legacy input
 	FE_mesh *element_xi_host_mesh;
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
@@ -315,6 +318,14 @@ public:
 	 * @return  Standard result code.
 	 */
 	int setElementXiHostMesh(FE_mesh *hostMesh);
+
+	/**
+	 * If field is of value_type ELEMENT_XI_VALUE and element_xi_host_mesh is set,
+	 * returns pointer to embedded node information for it in host mesh, otherwise
+	 * nullptr.
+	 * @param nodeset  Nodeset from same region. Not checked.
+	 **/
+	FE_mesh_embedded_node_field *getEmbeddedNodeField(FE_nodeset *nodeset) const;
 
 	FE_field *getIndexerField() const
 	{
