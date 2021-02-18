@@ -141,6 +141,15 @@ bool FE_region_changes::propagateToDimension(int dimension)
 	return true;
 }
 
+void FE_region::clearCachedChanges()
+{
+	CHANGE_LOG_CLEAR(FE_field)(this->fe_field_changes);
+	for (int n = 0; n < 2; ++n)
+		this->nodesets[n]->clearChangeLog();
+	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		this->meshes[dim]->clearChangeLog();
+}
+
 /**
  * Tells parent region about changes to fields, nodes and elements.
  * No messages sent if change level is positive, or no changes have been made.
@@ -334,16 +343,6 @@ int FE_region_end_change(struct FE_region *fe_region)
 		{
 			display_message(ERROR_MESSAGE, "FE_region_end_change.  Change not enabled");
 		}
-	}
-	return 0;
-}
-
-int FE_region_end_change_no_notify(struct FE_region *fe_region)
-{
-	if (fe_region)
-	{
-		--(fe_region->change_level);
-		return 1;
 	}
 	return 0;
 }

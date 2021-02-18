@@ -414,6 +414,11 @@ public:
 		}
 	}
 
+	void clearChangeLog()
+	{
+		this->createChangeLog();
+	}
+
 	// in following change is a logical OR of values from enum DsLabelChangeType
 	void nodeChange(DsLabelIndex nodeIndex, int change);
 	void nodeChange(DsLabelIndex nodeIndex, int change, cmzn_node *field_info_node);

@@ -1288,10 +1288,13 @@ void FE_mesh_embedded_node_field::removeNode(DsLabelIndex elementIndex, DsLabelI
 				// free only when down to zero size
 				delete[] nodeIndexes;
 				*nodeIndexesAddress = nullptr;
-				return;
 			}
-			memmove(nodeIndexes + i, nodeIndexes + i + 1, (limit - i - 1)*sizeof(DsLabelIndex));
-			--(nodeIndexes[0]);  // size
+			else
+			{
+				memmove(nodeIndexes + i, nodeIndexes + i + 1, (limit - i - 1)*sizeof(DsLabelIndex));
+				--(nodeIndexes[0]);  // size
+			}
+			return;
 		}
 	}
 	display_message(ERROR_MESSAGE, "FE_mesh_embedded_nodes::removeNode.  "
@@ -1321,7 +1324,7 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	lastMergedElementTemplate(0),
 	parentMesh(0),
 	faceMesh(0),
-	changeLog(0),
+	changeLog(nullptr),
 	element_type_node_sequence_list(0),
 	definingFaces(false),
 	activeElementIterators(0),
@@ -1730,9 +1733,10 @@ void FE_mesh::clear()
 	this->labels.clear();
 }
 
-/** Private: assumes current change log pointer is null or invalid */
+/** Private: can be used to clear cached changes */
 void FE_mesh::createChangeLog()
 {
+	cmzn::Deaccess(this->changeLog);
 	this->changeLog = DsLabelsChangeLog::create(&this->labels);
 	if (!this->changeLog)
 		display_message(ERROR_MESSAGE, "FE_mesh::createChangeLog.  Failed to create change log");
@@ -1742,7 +1746,7 @@ DsLabelsChangeLog *FE_mesh::extractChangeLog()
 {
 	// take access count of changelog when extracting
 	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = 0;
+	this->changeLog = nullptr;
 	this->lastMergedElementTemplate = 0; // ensures field notifications are recorded if template is merged again
 	this->createChangeLog();
 	return returnChangeLog;

@@ -234,6 +234,9 @@ int get_FE_nodal_element_xi_value(struct FE_node *node,
 /**
  * Sets a particular element_xi_value (<version>, <type>) for the field
  * <component> at the <node>.
+ * Important: only call this for global node, element, field all from the same
+ * region. Requires careful use if called during external node merge.
+ * If not followed, reverse maps from element to nodes are messed up.
  */
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	FE_field *field, int component_number,

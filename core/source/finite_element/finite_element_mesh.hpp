@@ -867,6 +867,11 @@ public:
 
 	void detach_from_FE_region();
 
+	void clearChangeLog()
+	{
+		this->createChangeLog();
+	}
+
 	int addElementfieldtemplate(FE_element_field_template *eft);
 
 	int removeElementfieldtemplate(FE_element_field_template *eft);

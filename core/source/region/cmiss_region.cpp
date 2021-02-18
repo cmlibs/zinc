@@ -252,11 +252,7 @@ void cmzn_region::updateClients()
 			display_message(WARNING_MESSAGE, "cmzn_region_update.  Hierarchical change level mismatch");
 		}
 		changes = this->changes;
-		/* must clear flags in the region before changes go out */
-		this->changes.name_changed = 0;
-		this->changes.children_changed = 0;
-		this->changes.child_added = (struct cmzn_region *)NULL;
-		this->changes.child_removed = (struct cmzn_region *)NULL;
+		this->changes.clear();  // next changes in the region must be cleared before notification
 		/* send the callbacks */
 		CMZN_CALLBACK_LIST_CALL(cmzn_region_change)(
 			this->change_callback_list, this, &changes);
@@ -291,6 +287,12 @@ void cmzn_region::endChangeFields()
 	MANAGER_END_CACHE(Computed_field)(this->field_manager);
 }
 
+void cmzn_region::clearCachedChanges()
+{
+	this->changes.clear();
+	this->fe_region->clearCachedChanges();
+}
+
 int cmzn_region::endChange()
 {
 	if (0 < this->change_level)
@@ -307,20 +309,6 @@ int cmzn_region::endChange()
 			"Region::endChange.  Change level is already zero");
 		return CMZN_ERROR_GENERAL;
 	}
-}
-
-// special version for use during merge
-void cmzn_region::beginChangeNoNotify()
-{
-	++(this->change_level);
-	FE_region_begin_change(this->fe_region);
-}
-
-// special version for use during merge
-void cmzn_region::endChangeNoNotify()
-{
-	--(this->change_level);
-	FE_region_end_change_no_notify(this->fe_region);
 }
 
 /**
@@ -1478,7 +1466,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 	cmzn_region_id source_region)
 {
 	int return_code = 1;
-	source_region->beginChangeNoNotify();
+	source_region->beginChange();
 
 	if (!FE_region_merge(target_region->get_FE_region(), source_region->get_FE_region()))
 	{
@@ -1516,7 +1504,9 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 		cmzn_region_destroy(&target_child);
 	}
 	cmzn_region_destroy(&source_child);
-	source_region->endChangeNoNotify();
+
+	source_region->clearCachedChanges();  // so no notifications sent with endChange below
+	source_region->endChange();
 	return (return_code);
 }
 

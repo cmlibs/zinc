@@ -3687,9 +3687,7 @@ int set_FE_nodal_element_xi_value(struct FE_node *node,
 				if (oldElement)
 				{
 					cmzn_element::deaccess(*elementAddress);
-					// handle merge case were element from another region is temporarily present
-					if (oldElement->getMesh()->get_FE_region() == node->getNodeset()->get_FE_region())
-						embeddedNodeField->removeNode(oldElement->getIndex(), node->getIndex());
+					embeddedNodeField->removeNode(oldElement->getIndex(), node->getIndex());
 				}
 				if (element)
 				{

@@ -116,6 +116,11 @@ struct FE_region
 
 	struct CHANGE_LOG(FE_field) *extractFieldChangeLog();
 
+	/**
+	 * Clear cached changes to prevent notifications about them
+	 */
+	void clearCachedChanges();
+
 	void update();
 
 	/** records change but does no update check; call FE_region::update if needed */

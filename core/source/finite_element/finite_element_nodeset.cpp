@@ -220,7 +220,7 @@ DsLabelsChangeLog *FE_nodeset::extractChangeLog()
 {
 	// take access count of changelog when extracting
 	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = 0;
+	this->changeLog = nullptr;
 	this->createChangeLog();
 	return returnChangeLog;
 }
@@ -971,9 +971,12 @@ struct FE_nodeset::Merge_FE_node_external_data
 	   Note these are ACCESSed */
 	struct FE_node_field_info **matching_node_field_info;
 	int number_of_matching_node_field_info;
-	// arrays of embedded element_xi fields in target region, merged from those in source
-	// this is used to substitute global elements
-	std::vector<FE_field *> targetEmbeddedFields;
+	// arrays of embedded element_xi fields in pairs for source and target region
+	std::vector<FE_field *> sourceTargetEmbeddedFields;
+	// working space for pairs of source and target host elements for embedded nodes
+	std::vector<cmzn_element*> sourceTargetHostElements;
+	// working space for xi coordinates for embedded nodes
+	std::vector<FE_value> hostXi;
 
 	Merge_FE_node_external_data(FE_nodeset &sourceIn, FE_region *target_fe_region_in) :
 		source(sourceIn),
@@ -998,7 +1001,10 @@ struct FE_nodeset::Merge_FE_node_external_data
 		FE_field *targetEmbeddedField = FE_region_get_FE_field_from_name(this->target_fe_region, get_FE_field_name(sourceEmbeddedField));
 		if (!targetEmbeddedField)
 			return false;
-		this->targetEmbeddedFields.push_back(targetEmbeddedField);
+		this->sourceTargetEmbeddedFields.push_back(sourceEmbeddedField);
+		this->sourceTargetEmbeddedFields.push_back(targetEmbeddedField);
+		this->sourceTargetHostElements.resize(this->sourceTargetHostElements.size() + 2);
+		this->hostXi.resize(this->hostXi.size() + MAXIMUM_ELEMENT_XI_DIMENSIONS);
 		return true;
 	}
 
@@ -1084,146 +1090,145 @@ struct FE_nodeset::Merge_FE_node_external_data
  * destroy the source nodeset immediately after calling this function on any
  * nodes from it. Operations such as findNodeByIdentifier will no longer
  * work as the node is given a new index for this nodeset.
+ * @param node  Node from another region to merge in.
  */
 int FE_nodeset::merge_FE_node_external(cmzn_node *node,
 	Merge_FE_node_external_data &data)
 {
-	int return_code = 1;
-	struct FE_node_field_info *old_node_field_info = node->getNodeFieldInfo();
-	if (old_node_field_info)
+	struct FE_node_field_info *sourceNodeFieldInfo = node->getNodeFieldInfo();
+	if (!sourceNodeFieldInfo)
 	{
-		const DsLabelIndex sourceNodeIndex = node->getIndex();
-		const DsLabelIdentifier identifier = get_FE_node_identifier(node);
-		cmzn_node *global_node = this->findNodeByIdentifier(identifier);
-		const DsLabelIndex newNodeIndex = (global_node) ? global_node->getIndex() :
-			this->labels.createLabel(identifier);
-		if (newNodeIndex < 0)
-		{
-			display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed to get node label.");
-			return 0;
-		}
+		display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Invalid node");
+		return 0;
+	}
 
-		// 1. Convert node to use a new FE_node_field_info from this nodeset
-		FE_node_field_info *node_field_info = data.get_matching_FE_node_field_info(old_node_field_info);
-		if (node_field_info)
-			node_field_info->access();
-		else
+	// get pairs of source & target host elements for this node and clear source element during merge
+	// target element is set later on target node so reverse element->node maps are updated
+	const size_t embeddedFieldSize = data.sourceTargetEmbeddedFields.size();
+	for (size_t f = 0; f < embeddedFieldSize; f += 2)
+	{
+		cmzn_element *sourceElement = nullptr;
+		cmzn_element *targetElement = nullptr;
+		FE_field *sourceEmbeddedField = data.sourceTargetEmbeddedFields[f];
+		if (node->getNodeField(sourceEmbeddedField))
 		{
-			node_field_info = this->clone_FE_node_field_info(old_node_field_info);
-			if (node_field_info)
+			FE_value* xi = data.hostXi.data() + (f/2)*MAXIMUM_ELEMENT_XI_DIMENSIONS;  // stored for later
+			// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
+			if (get_FE_nodal_element_xi_value(node, sourceEmbeddedField, /*component_number*/0, &sourceElement, xi))
 			{
-				if (!data.add_matching_FE_node_field_info(old_node_field_info, node_field_info))
+				if (sourceElement)
 				{
-					FE_node_field_info::deaccess(node_field_info);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_nodeset::merge_FE_node_external.  Could not clone node_field_info");
-			}
-		}
-		if (node_field_info)
-		{
-			/* substitute the new node field info */
-			node->setNodeFieldInfo(node_field_info);
-			return_code = 1;
-			/* substitute global elements etc. in embedded fields */
-			const size_t embeddedFieldCount = data.targetEmbeddedFields.size();
-			for (size_t f = 0; f < embeddedFieldCount; ++f)
-			{
-				// note after substituting node field info, we use the targetEmbeddedField
-				FE_field *targetEmbeddedField = data.targetEmbeddedFields[f];
-				if (node->getNodeField(targetEmbeddedField))
-				{
-					// embedded fields have 1 component, just a VALUE (no derivatives) and no versions
-					cmzn_element *sourceElement;
-					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-					if (get_FE_nodal_element_xi_value(node, targetEmbeddedField, /*component_number*/0, &sourceElement, xi))
+					FE_field *targetEmbeddedField = data.sourceTargetEmbeddedFields[f + 1];
+					FE_mesh *targetHostMesh = targetEmbeddedField->getElementXiHostMesh();
+					targetElement = targetHostMesh->findElementByIdentifier(sourceElement->getIdentifier());
+					// target element should exist as FE_mesh::mergePart1Elements should have been called first
+					if (!targetElement)
 					{
-						if (sourceElement)
-						{
-							FE_mesh *targetHostMesh = targetEmbeddedField->getElementXiHostMesh();
-							const DsLabelIdentifier elementIdentifier = sourceElement->getIdentifier();
-							cmzn_element *targetElement = targetHostMesh->findElementByIdentifier(elementIdentifier);
-							// target element should exist as FE_mesh::mergePart1Elements should have been called first
-							if (targetElement)
-							{
-								if (!set_FE_nodal_element_xi_value(node, targetEmbeddedField,
-									/*component_number*/0, targetElement, xi))
-								{
-									return_code = 0;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
+						display_message(ERROR_MESSAGE,
+							"FE_nodeset::merge_FE_node_external.  Missing global element for embedded node.");
+						return 0;
 					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			}
-			if (return_code)
-			{
-				if (global_node)
-					old_node_field_info->access();
-				node->setIndex(newNodeIndex);
-				if (global_node)
-				{
-					if (::merge_FE_node(global_node, node, /*optimised_merge*/1))
-					{
-						this->nodeChange(global_node->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED, node);
-					}
-					else
-					{
-						return_code = 0;
-					}
-					// must restore the previous information for clean-up
-					node->setNodeFieldInfo(old_node_field_info);
-					FE_node_field_info::deaccess(old_node_field_info);
-					node->setIndex(sourceNodeIndex);
+					// clear source element for merge; xi has been stored separately for setting later
+					set_FE_nodal_element_xi_value(node, sourceEmbeddedField, /*component_number*/0, /*element*/nullptr, xi);
 				}
 				else
 				{
-					if (this->fe_nodes.setValue(newNodeIndex, node))
-					{
-						node->access();
-						this->nodeAddedChange(node);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed to add node to list.");
-						this->labels.removeLabel(newNodeIndex);
-						return_code = 0;
-					}
+					// hack to guarantee target is set later; so can read a blank location over an element location
+					sourceElement += 1;
 				}
 			}
-			FE_node_field_info::deaccess(node_field_info);
+		}
+		data.sourceTargetHostElements[f] = sourceElement;
+		data.sourceTargetHostElements[f + 1] = targetElement;
+	}
+
+	// get target node index from existing global node, or new index if none and set
+	const DsLabelIndex sourceNodeIndex = node->getIndex();
+	const DsLabelIdentifier identifier = node->getIdentifier();
+	cmzn_node *globalNode = this->findNodeByIdentifier(identifier);
+	const DsLabelIndex targetNodeIndex = (globalNode) ? globalNode->getIndex() :
+		this->labels.createLabel(identifier);
+	if (targetNodeIndex < 0)
+	{
+		display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed to get node index.");
+		return 0;
+	}
+	int return_code = 1;
+	// set target index; temporarily if merging into global node
+	node->setIndex(targetNodeIndex);
+
+	// convert node to use an equivalent node field info for target nodeset
+	FE_node_field_info *targetNodeFieldInfo = data.get_matching_FE_node_field_info(sourceNodeFieldInfo);
+	if (targetNodeFieldInfo)
+	{
+		targetNodeFieldInfo->access();
+	}
+	else
+	{
+		targetNodeFieldInfo = this->clone_FE_node_field_info(sourceNodeFieldInfo);
+		if (!((targetNodeFieldInfo) && data.add_matching_FE_node_field_info(sourceNodeFieldInfo, targetNodeFieldInfo)))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_nodeset::merge_FE_node_external.  Could not clone node field info");
+			return_code = 0;
+		}
+	}
+	if (globalNode)
+		sourceNodeFieldInfo->access();  // so it stays around to restore later
+	node->setNodeFieldInfo(targetNodeFieldInfo);
+
+	// merge
+	if (globalNode)
+	{
+		if (::merge_FE_node(globalNode, node, /*optimised_merge*/1))
+		{
+			this->nodeChange(globalNode->getIndex(), DS_LABEL_CHANGE_TYPE_RELATED, node);
 		}
 		else
 		{
 			return_code = 0;
 		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed");
-		}
+		// must restore the previous information for clean-up, don't care about old host elements
+		node->setNodeFieldInfo(sourceNodeFieldInfo);
+		FE_node_field_info::deaccess(sourceNodeFieldInfo);
+		node->setIndex(sourceNodeIndex);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_nodeset::merge_FE_node_external.  Invalid argument(s)");
-		return_code = 0;
+		// transfer ownership of source node to this target nodeset
+		// node will not be invalidated when source nodeset is cleared; see: FE_nodeset::clear();
+		if (this->fe_nodes.setValue(targetNodeIndex, node))
+		{
+			node->access();
+			this->nodeAddedChange(node);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed to add node to list.");
+			this->labels.removeLabel(targetNodeIndex);
+			return_code = 0;
+		}
 	}
-	return (return_code);
+	FE_node_field_info::deaccess(targetNodeFieldInfo);
+
+	// set target host elements for embedded locations
+	// if there is no global node, the incoming node is used directly
+	cmzn_node *targetNode = (globalNode) ? globalNode : node;
+	for (size_t f = 0; f < embeddedFieldSize; f += 2)
+	{
+		cmzn_element *sourceElement = data.sourceTargetHostElements[f];
+		cmzn_element *targetElement = data.sourceTargetHostElements[f + 1];
+		if (targetElement != sourceElement)
+		{
+			FE_value* xi = data.hostXi.data() + (f/2)*MAXIMUM_ELEMENT_XI_DIMENSIONS;  // stored from earlier
+			FE_field *targetEmbeddedField = data.sourceTargetEmbeddedFields[f + 1];
+			set_FE_nodal_element_xi_value(targetNode, targetEmbeddedField, /*component_number*/0, targetElement, xi);
+		}
+	}
+
+	if (!return_code)
+		display_message(ERROR_MESSAGE, "FE_nodeset::merge_FE_node_external.  Failed");
+	return return_code;
 }
 
 void FE_nodeset::getHighestNodeFieldDerivativeAndVersion(FE_field *field,
