@@ -115,13 +115,20 @@ cmzn_node::~cmzn_node()
 	}
 }
 
+int FE_node_field_invalidate(FE_node_field *nodeField, void *nodeVoid)
+{
+	cmzn_node *node = static_cast<cmzn_node*>(nodeVoid);
+	if (nodeField->field->getValueType() == ELEMENT_XI_VALUE)
+		return set_FE_nodal_element_xi_value(node, nodeField->field, /*component_number*/0, /*element*/nullptr, /*xi*/nullptr);
+	return FE_node_field_free_values_storage_arrays(nodeField, node->values_storage);
+}
+
 void cmzn_node::invalidate()
 {
 	if (this->fields)
 	{
 		FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-			FE_node_field_free_values_storage_arrays,
-			(void *)this->values_storage, this->fields->node_field_list);
+			FE_node_field_invalidate, static_cast<void*>(this), this->fields->node_field_list);
 		FE_node_field_info::deaccess(this->fields);
 	}
 	DEALLOCATE(this->values_storage);
@@ -1129,7 +1136,7 @@ int FE_nodeset::merge_FE_node_external(cmzn_node *node,
 						return 0;
 					}
 					// clear source element for merge; xi has been stored separately for setting later
-					set_FE_nodal_element_xi_value(node, sourceEmbeddedField, /*component_number*/0, /*element*/nullptr, xi);
+					set_FE_nodal_element_xi_value(node, sourceEmbeddedField, /*component_number*/0, /*element*/nullptr, /*xi*/nullptr);
 				}
 				else
 				{

@@ -1278,8 +1278,9 @@ void FE_mesh_embedded_node_field::removeNode(DsLabelIndex elementIndex, DsLabelI
 	}
 	// find nodeIndex in array, not sorted
 	const DsLabelIndex size = nodeIndexes[0];
-	const DsLabelIndex limit = size + 2;
-	for (int i = 2; i < limit; ++i)
+	const DsLabelIndex last = size + 1;
+	// reverse order to speed up element clean-up
+	for (int i = last; 1 < i; --i)
 	{
 		if (nodeIndexes[i] == nodeIndex)
 		{
@@ -1291,7 +1292,7 @@ void FE_mesh_embedded_node_field::removeNode(DsLabelIndex elementIndex, DsLabelI
 			}
 			else
 			{
-				memmove(nodeIndexes + i, nodeIndexes + i + 1, (limit - i - 1)*sizeof(DsLabelIndex));
+				memmove(nodeIndexes + i, nodeIndexes + i + 1, (last - i)*sizeof(DsLabelIndex));
 				--(nodeIndexes[0]);  // size
 			}
 			return;
@@ -1365,6 +1366,16 @@ FE_mesh::~FE_mesh()
 	}
 
 	this->clear();
+
+	if (this->embeddedNodeFields.size() > 0)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::~FE_mesh.  Unexpected embedded node fields remaining");
+		for (std::list<FE_mesh_embedded_node_field *>::iterator iter = this->embeddedNodeFields.begin();
+			iter != this->embeddedNodeFields.end(); ++iter)
+		{
+			delete *iter;
+		}
+	}
 
 	// destroy shared element mapping data
 	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
@@ -1699,6 +1710,13 @@ void FE_mesh::clear()
 				if (parentsArrayAddress && *parentsArrayAddress)
 					delete[] *parentsArrayAddress;
 			}
+		}
+		// clear embedding of nodes in this mesh
+		for (int i = 0; i < 2; ++i)
+		{
+			// this is not very efficient
+			FE_nodeset_clear_embedded_locations(this->fe_region->nodesets[i],
+				this->fe_region->fe_field_list, /*hostMesh*/this);
 		}
 		cmzn_element *element;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)
@@ -2878,19 +2896,43 @@ int FE_mesh::define_faces()
 	return return_code;
 }
 
+namespace {
+
 struct FE_mesh_and_element_index
 {
 	FE_mesh *mesh;
 	const DsLabelIndex elementIndex;
 };
 
-int FE_field_clear_element_varying_data(struct FE_field *field, void *mesh_and_element_index_void)
+int FE_field_clear_element_varying_data(FE_field *field, void *mesh_and_element_index_void)
 {
 	auto args = static_cast<FE_mesh_and_element_index*>(mesh_and_element_index_void);
-	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(args->mesh);
+	FE_mesh *mesh = args->mesh;
+	const DsLabelIndex elementIndex = args->elementIndex;
+	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(mesh);
 	if (meshFieldData)
-		meshFieldData->clearElementData(args->elementIndex);
+		meshFieldData->clearElementData(elementIndex);
+	if ((field->getValueType() == ELEMENT_XI_VALUE) && (field->getElementXiHostMesh() == args->mesh))
+	{
+		// clear embedding of nodes & data points in this element
+		for (int i = 0; i < 2; ++i)
+		{
+			FE_nodeset *nodeset = mesh->get_FE_region()->nodesets[i];
+			FE_mesh_embedded_node_field *embeddedNodeField = field->getEmbeddedNodeField(nodeset);
+			if (embeddedNodeField)
+			{
+				DsLabelIndex nodeIndex;
+				while ((nodeIndex = embeddedNodeField->getLastNodeIndex(elementIndex)) >= 0)
+				{
+					// this removes the node index from the embeddedNodeField, so loop should end
+					set_FE_nodal_element_xi_value(nodeset->getNode(nodeIndex), field, /*component*/0, /*element*/nullptr, /*xi*/nullptr);
+				}
+			}
+		}
+	}
 	return 1;
+}
+
 }
 
 /**
@@ -2908,10 +2950,6 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
 	cmzn_element *element = this->fe_elements.getValue(elementIndex);
 	if (element)
 	{
-		element->invalidate();
-		this->fe_elements.setValue(elementIndex, 0);
-		cmzn_element::deaccess(element);
-		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
 		// clear data for this element stored with field, e.g. per-element DOFs
 		FE_mesh_and_element_index mesh_and_element_index = { this, elementIndex };
 		FE_region_for_each_FE_field(this->fe_region, FE_field_clear_element_varying_data, &mesh_and_element_index);
@@ -2922,6 +2960,10 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
 			FE_mesh_field_template *mft = *mftIter;
 			mft->setElementfieldtemplateIndex(elementIndex, FE_mesh_field_template::ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
 		}
+		element->invalidate();
+		this->fe_elements.setValue(elementIndex, 0);
+		cmzn_element::deaccess(element);
+		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
 		if (this->parentMesh)
 			this->clearElementParents(elementIndex);
 		if (this->faceMesh)

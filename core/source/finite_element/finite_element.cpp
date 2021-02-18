@@ -4037,7 +4037,7 @@ Iterator function for adding the number of <node> to <multi_range>.
 } /* add_FE_node_number_to_Multi_range */
 
 int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
-	struct LIST(FE_field) *field_list)
+	struct LIST(FE_field) *field_list, FE_mesh *hostMesh)
 {
 	if (!field_list || !fe_nodeset)
 		return 0;
@@ -4047,17 +4047,18 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
 	{
 		FE_field *field = *field_iter;
 		if ((ELEMENT_XI_VALUE == field->getValueType()) &&
-			(GENERAL_FE_FIELD == field->get_FE_field_type()))
+			(GENERAL_FE_FIELD == field->get_FE_field_type()) &&
+			((!hostMesh) || (field->getElementXiHostMesh() == hostMesh)))
 		{
 			cmzn_nodeiterator *node_iter = fe_nodeset->createNodeiterator();
 			cmzn_node_id node = 0;
+			// inefficient to loop over all nodes; set_FE_nodal_element_xi_value silently fails if field not defined
 			while (0 != (node = node_iter->nextNode()))
 			{
 				// don't clear embedded locations on nodes now owned by a different nodeset
 				// as happens when merging from a separate region
 				if (node->fields->nodeset == fe_nodeset)
-					set_FE_nodal_element_xi_value(node, field, /*componentNumber*/0,
-						(struct FE_element *)0, xi);
+					set_FE_nodal_element_xi_value(node, field, /*component*/0, /*element*/nullptr, /*xi*/nullptr);
 			}
 			cmzn_nodeiterator_destroy(&node_iter);
 		}

@@ -293,9 +293,10 @@ Iterator function for adding the number of <node> to <multi_range>.
  * Note to handle merging from a separate region where both the source and
  * target region reference the same nodes, only embedded locations in nodes
  * belonging to the supplied nodeset are cleared.
+ * @param hostMesh  Optional host mesh to limit to.
  */
 int FE_nodeset_clear_embedded_locations(FE_nodeset *nodeset,
-	struct LIST(FE_field) *field_list);
+	struct LIST(FE_field) *field_list, FE_mesh *hostMesh = nullptr);
 
 /**
  * @return  true if definition of fields in source node are compatible with

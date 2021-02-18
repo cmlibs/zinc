@@ -654,6 +654,20 @@ public:
 	 * Client must guarantee nodeIndex is valid and not already in array. */
 	void removeNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex);
 
+	/** Get the last node index for element, which is the most efficient to remove.
+	 * @return  Index of last node in map for element, or -1 if none */
+	DsLabelIndex getLastNodeIndex(DsLabelIndex elementIndex) const
+	{
+		DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+		if (!nodeIndexesAddress)
+			return -1;
+		DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+		if (!nodeIndexes)
+			return -1;
+		// following requires removeNode to free array when last node removed
+		const DsLabelIndex size = nodeIndexes[0];
+		return nodeIndexes[size + 1];
+	}
 };
 
 /**
