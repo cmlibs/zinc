@@ -19,16 +19,16 @@ Region: /
   z.  Value index=3, #Derivatives=0, #Versions=1
  2) host_location, field, rectangular cartesian, element_xi, #Components=1; mesh dimension=2
   1.  Value index=4, #Derivatives=0, #Versions=1
- Node: 1001
+ Node: 5
  0.25 0.25 0.25
  F 1 2 0.25 0.25
- Node: 1002
+ Node: 6
  0.75 0.25 0.25
  F 1 2 0.75 0.25
- Node: 1003
+ Node: 7
  0.25 0.75 0.25
  F 1 2 0.25 0.75
- Node: 1004
+ Node: 8
  0.75 0.75 0.25
  F 1 2 0.75 0.75
  Shape. Dimension=1, line

@@ -34,6 +34,7 @@ class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
 class FieldMeshIntegral;
 class FieldNodeGroup;
+class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
@@ -275,6 +276,7 @@ public:
 	inline FieldImagefilterThreshold castImagefilterThreshold();
 	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
+	inline FieldNodesetOperator castNodesetOperator();
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();

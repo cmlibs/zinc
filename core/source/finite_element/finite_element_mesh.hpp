@@ -668,6 +668,30 @@ public:
 		const DsLabelIndex size = nodeIndexes[0];
 		return nodeIndexes[size + 1];
 	}
+
+	/** Get pointer to node indexes stored for elementIndex, and size.
+	 * @param size  On return, size is set to the number of indexes.
+	 * @return  Pointer to internal array of node indexes, or nullptr if none. Do not
+	 * keep beyond function or through modifications as it may be reallocated. */
+	const DsLabelIndex *getNodeIndexes(DsLabelIndex elementIndex, int& size)
+	{
+		if (elementIndex >= 0)
+		{
+			DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+			if (nodeIndexesAddress)
+			{
+				DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+				if (nodeIndexes)
+				{
+					size = nodeIndexes[0];
+					return nodeIndexes + 2;
+				}
+			}
+		}
+		size = 0;
+		return nullptr;
+	}
+
 };
 
 /**

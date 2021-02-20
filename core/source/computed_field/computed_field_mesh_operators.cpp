@@ -421,7 +421,7 @@ public:
 
 	virtual int get_number_of_sum_square_terms(cmzn_fieldcache& cache) const;
 
-	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
+	virtual int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);

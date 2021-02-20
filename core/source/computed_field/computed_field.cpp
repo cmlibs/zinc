@@ -2596,8 +2596,8 @@ void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
 
 int cmzn_field::setOptionalSourceField(int index, cmzn_field *sourceField)
 {
-	if ((index > 0) && ((index == this->number_of_source_fields) ||
-		(index == (this->number_of_source_fields + 1))))
+	if ((index == this->number_of_source_fields) ||
+		(index == (this->number_of_source_fields + 1)))
 	{
 		if (sourceField)
 		{

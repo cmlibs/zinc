@@ -630,7 +630,7 @@ public:
 	 *
 	 * @param index  Index of optional source field, starting at 1. Must be equal
 	 * or one greater than the number of source fields.
-	 * @param sourceField  The source field to set, or 0 to clear.
+	 * @param sourceField  The source field to set, or nullptr to clear.
 	 * @return  CMZN_OK or other status code on failure.
 	 */
 	int setOptionalSourceField(int index, cmzn_field *sourceField);

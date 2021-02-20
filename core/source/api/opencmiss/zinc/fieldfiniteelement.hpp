@@ -131,6 +131,11 @@ public:
 
 class FieldFindMeshLocation : public Field
 {
+	inline cmzn_field_find_mesh_location_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_find_mesh_location_id>(id);
+	}
+
 public:
 
 	FieldFindMeshLocation() : Field(0)
@@ -148,22 +153,20 @@ public:
 		SEARCH_MODE_NEAREST = CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST
 	};
 
-	Mesh getMesh()
+	Mesh getMesh() const
 	{
-		return Mesh(cmzn_field_find_mesh_location_get_mesh(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id)));
+		return Mesh(cmzn_field_find_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
-	SearchMode getSearchMode()
+	SearchMode getSearchMode() const
 	{
 		return static_cast<SearchMode>(cmzn_field_find_mesh_location_get_search_mode(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id)));
+			this->getDerivedId()));
 	}
 
 	int setSearchMode(SearchMode searchMode)
 	{
-		return cmzn_field_find_mesh_location_set_search_mode(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id),
+		return cmzn_field_find_mesh_location_set_search_mode(this->getDerivedId(),
 			static_cast<cmzn_field_find_mesh_location_search_mode>(searchMode));
 	}
 };
@@ -187,6 +190,11 @@ public:
 
 class FieldStoredMeshLocation : public Field
 {
+	inline cmzn_field_stored_mesh_location_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_stored_mesh_location_id>(id);
+	}
+
 public:
 
 	FieldStoredMeshLocation() : Field(0)
@@ -197,10 +205,9 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_stored_mesh_location_id))
 	{	}
 
-	Mesh getMesh()
+	Mesh getMesh() const
 	{
-		return Mesh(cmzn_field_stored_mesh_location_get_mesh(
-			reinterpret_cast<cmzn_field_stored_mesh_location_id>(id)));
+		return Mesh(cmzn_field_stored_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
 };

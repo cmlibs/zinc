@@ -8,10 +8,13 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldnodesetoperators.h"
 #include "opencmiss/zinc/nodeset.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/field_module.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #include "computed_field/computed_field.h"
@@ -98,7 +101,101 @@ public:
 		}
 		return return_code;
 	}
+
+	/** Get current node-to-element map, which if valid means evaluating at elements.
+	 * @return  Non-accessed handle to element map field, or nullptr if none */
+	cmzn_field *getElementEvaluationMap() const
+	{
+		return (2 == this->field->number_of_source_fields) ? this->field->source_fields[1] : nullptr;
+	}
+
+	/** Set field to be evaluated at elements using the supplied map, or not.
+	 * @param elementMapField  Field giving map from nodes to elements where
+	 * field can be evaluated (currently field must be stored mesh location type),
+	 * or nullptr to disable */
+	int setElementEvaluationMap(cmzn_field *elementMapField)
+	{
+		if (elementMapField)
+		{
+			if (elementMapField->getManager() != this->field->getManager())
+			{
+				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementEvaluationMap:  Element map field is from a different region");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			cmzn_field_stored_mesh_location *storedMeshLocation = cmzn_field_cast_stored_mesh_location(elementMapField);
+			if (!storedMeshLocation)
+			{
+				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementEvaluationMap:  Element map field must be stored mesh location type");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			cmzn_field_stored_mesh_location_destroy(&storedMeshLocation);
+		}
+		return this->field->setOptionalSourceField(2, elementMapField);
+	}
+
+protected:
+	template <class TermOperator> int evaluateNodesetOperator(cmzn_fieldcache& cache, FieldValueCache& inValueCache, TermOperator& tempOperator);
 };
+
+template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodesetOperator(
+	cmzn_fieldcache& cache, FieldValueCache& inValueCache, TermOperator& termOperator)
+{
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	cmzn_field_id sourceField = getSourceField(0);
+	cmzn_field *elementMap = this->getElementEvaluationMap();
+	if (elementMap)
+	{
+		// evaluate at element, operator applies to nodes with mapping to element
+		FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(this->nodeset);
+		cmzn_field_node_group *nodeGroup = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
+		FE_field *feField = nullptr;
+		Computed_field_get_type_finite_element(elementMap, &feField);
+		if (!feField)
+		{
+			display_message(ERROR_MESSAGE, "FieldNodesetEvaluator evaluate:  Invalid element evaluation map field");
+			return 0;
+		}
+		FE_mesh *hostMesh = feField->getElementXiHostMesh();
+		FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
+		if (!embeddedNodeField)
+			return 1;  // no values
+		const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
+		if (!element_xi_location)
+			return 0;
+		cmzn_element *element = element_xi_location->get_element();
+		if (element->getMesh() != hostMesh)
+			return 0;  // not implemented; in future could map nodes embedded in faces
+		// iterate over reverse map of element to nodes maintained in embeddedNodeField
+		int size = 0;
+		const DsLabelIndex *nodeIndexes = embeddedNodeField->getNodeIndexes(element->getIndex(), size);
+		for (int i = 0; i < size; ++i)
+		{
+			const DsLabelIndex nodeIndex = nodeIndexes[i];
+			if ((nodeGroup) && !Computed_field_node_group_core_cast(nodeGroup)->containsIndex(nodeIndex))
+				continue;
+			extraCache.setNode(feNodeset->getNode(nodeIndex));
+			const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
+			if (sourceValueCache)
+				termOperator.processTerm(sourceValueCache->values);
+		}
+	}
+	else
+	{
+		// iterate over whole nodeset
+		cmzn_nodeiterator *iterator = cmzn_nodeset_create_nodeiterator(this->nodeset);
+		cmzn_node *node = 0;
+		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+		{
+			extraCache.setNode(node);
+			const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
+			if (sourceValueCache)
+				termOperator.processTerm(sourceValueCache->values);
+		}
+		cmzn_nodeiterator_destroy(&iterator);
+	}
+	return 1;
+}
 
 bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_fieldcache& cache)
 {
@@ -186,57 +283,46 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
-	{
-		evaluate_sum(cache, inValueCache);
-		return 1;
-	}
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-protected:
-	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum, but is for nodeset_mean */
-	int evaluate_sum(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_nodeset_sum::evaluate_sum(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
+class TermOperatorSum
+{
+	const int valuesCount;
+	FE_value *values;
+
+public:
+	TermOperatorSum(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] += sourceValues[i];
+	}
+};
+
+int Computed_field_nodeset_sum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
-	extraCache.setTime(cache.getTime());
-	int number_of_terms = 0;
-	const int number_of_components = field->number_of_components;
-	FE_value *values = valueCache.values;
-	cmzn_field_id sourceField = getSourceField(0);
-	int i;
-	for (i = 0; i < number_of_components; i++)
-	{
-		values[i] = 0;
-	}
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
-	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-	{
-		extraCache.setNode(node);
-		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
-		if (sourceValueCache)
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				values[i] += sourceValueCache->values[i];
-			}
-			++number_of_terms;
-		}
-	}
-	cmzn_nodeiterator_destroy(&iterator);
-	return number_of_terms;
+	TermOperatorSum termSum(this->field->number_of_components, valueCache.values);
+	return this->evaluateNodesetOperator(cache, inValueCache, termSum);
 }
+
 
 const char computed_field_nodeset_mean_type_string[] = "nodeset_mean";
 
-class Computed_field_nodeset_mean : public Computed_field_nodeset_sum
+class Computed_field_nodeset_mean : public Computed_field_nodeset_operator
 {
 public:
 	Computed_field_nodeset_mean(cmzn_nodeset_id nodeset_in) :
-		Computed_field_nodeset_sum(nodeset_in)
+		Computed_field_nodeset_operator(nodeset_in)
 	{
 	}
 
@@ -252,8 +338,7 @@ public:
 
 	int compare(Computed_field_core* other_core)
 	{
-		Computed_field_nodeset_sum *other =
-			dynamic_cast<Computed_field_nodeset_mean*>(other_core);
+		Computed_field_nodeset_mean *other = dynamic_cast<Computed_field_nodeset_mean*>(other_core);
 		if (other)
 			return cmzn_nodeset_match(nodeset, other->get_nodeset());
 		return 0;
@@ -263,21 +348,54 @@ public:
 
 };
 
+class TermOperatorSumCount
+{
+	const int valuesCount;
+	FE_value *values;
+	int termCount;
+
+public:
+	TermOperatorSumCount(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn),
+		termCount(0)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] += sourceValues[i];
+		++(this->termCount);
+	}
+
+	int getTermCount() const
+	{
+		return this->termCount;
+	}
+};
+
 int Computed_field_nodeset_mean::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	int number_of_terms = evaluate_sum(cache, inValueCache);
-	if (number_of_terms > 0)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	TermOperatorSumCount termSumCount(this->field->number_of_components, valueCache.values);
+	const int result = this->evaluateNodesetOperator(cache, inValueCache, termSumCount);
+	if (result)
 	{
-		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_value scaling = 1.0 / (FE_value)number_of_terms;
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		const int termCount = termSumCount.getTermCount();
+		if (termCount > 0)
 		{
-			valueCache.values[i] *= scaling;
+			const FE_value scaling = 1.0 / static_cast<FE_value>(termCount);
+			for (int i = 0; i < this->field->number_of_components; ++i)
+				valueCache.values[i] *= scaling;
+			return 1;
 		}
-		return 1;
 	}
 	return 0;
 }
+
 
 const char computed_field_nodeset_sum_squares_type_string[] = "nodeset_sum_squares";
 
@@ -315,33 +433,45 @@ public:
 
 	virtual int get_number_of_sum_square_terms(cmzn_fieldcache& cache) const;
 
-	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
+	virtual int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
-	{
-		evaluate_sum_squares(cache, inValueCache);
-		return 1;
-	}
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-protected:
-	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum_squares, but is for nodeset_mean_squares */
-	int evaluate_sum_squares(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 	cmzn_fieldcache& cache) const
 {
+	// terms are only used with LEAST_SQUARES_QUASI_NEWTON optimisation
+	// if ElementEvaluationMap is set, restricts sum to nodes with a valid element location in it
+	cmzn_field *elementMap = this->getElementEvaluationMap();
+	FE_field *elementXiField = nullptr;
+	if (elementMap)
+	{
+		Computed_field_get_type_finite_element(elementMap, &elementXiField);
+		if (!elementXiField)
+		{
+			display_message(ERROR_MESSAGE, "FieldNodesetEvaluator get_number_of_sum_square_terms:  Invalid element evaluation map field");
+			return 0;
+		}
+		FE_mesh *hostMesh = elementXiField->getElementXiHostMesh();
+		if (!hostMesh)
+			return 0;  // no values
+	}
 	int number_of_terms = 0;
 	cmzn_field_id sourceField = field->source_fields[0];
 	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
+	cmzn_element *element;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
-		cache.setNode(node);
-		if (sourceField->core->is_defined_at_location(cache))
+		if ((!elementXiField) || (get_FE_nodal_element_xi_value(node, elementXiField, /*component*/0, &element, xi) && (element)))
 		{
-			++number_of_terms;
+			cache.setNode(node);
+			if (sourceField->core->is_defined_at_location(cache))
+				++number_of_terms;
 		}
 	}
 	cmzn_nodeiterator_destroy(&iterator);
@@ -351,6 +481,22 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	cmzn_fieldcache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
+	// terms are only used with LEAST_SQUARES_QUASI_NEWTON optimisation
+	// if ElementEvaluationMap is set, restricts sum to nodes with a valid element location in it
+	cmzn_field *elementMap = this->getElementEvaluationMap();
+	FE_field *elementXiField = nullptr;
+	if (elementMap)
+	{
+		Computed_field_get_type_finite_element(elementMap, &elementXiField);
+		if (!elementXiField)
+		{
+			display_message(ERROR_MESSAGE, "FieldNodesetEvaluator get_number_of_sum_square_terms:  Invalid element evaluation map field");
+			return 0;
+		}
+		FE_mesh *hostMesh = elementXiField->getElementXiHostMesh();
+		if (!hostMesh)
+			return 1;  // no values
+	}
 	cmzn_fieldcache& extraCache = *(valueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	int return_code = 1;
@@ -362,23 +508,28 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	int i;
 	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
+	cmzn_element *element;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
-		extraCache.setNode(node);
-		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
-		if (sourceValueCache)
+		if ((!elementXiField) || (get_FE_nodal_element_xi_value(node, elementXiField, /*component*/0, &element, xi) && (element)))
 		{
-			if (number_of_terms >= max_terms)
+			extraCache.setNode(node);
+			const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
+			if (sourceValueCache)
 			{
-				return_code = 0;
-				break;
+				if (number_of_terms >= max_terms)
+				{
+					return_code = 0;
+					break;
+				}
+				for (i = 0; i < number_of_components; i++)
+				{
+					*value = sourceValueCache->values[i];
+					++value;
+				}
+				++number_of_terms;
 			}
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				*value = sourceValueCache->values[i];
-				++value;
-			}
-			++number_of_terms;
 		}
 	}
 	cmzn_nodeiterator_destroy(&iterator);
@@ -389,38 +540,34 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	return return_code;
 }
 
-int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
+class TermOperatorSumSquares
+{
+	const int valuesCount;
+	FE_value *values;
+
+public:
+	TermOperatorSumSquares(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] += sourceValues[i]*sourceValues[i];
+	}
+};
+
+int Computed_field_nodeset_sum_squares::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
-	extraCache.setTime(cache.getTime());
-	int number_of_terms = 0;
-	const int number_of_components = field->number_of_components;
-	FE_value *values = valueCache.values;
-	cmzn_field_id sourceField = getSourceField(0);
-	int i;
-	for (i = 0; i < number_of_components; i++)
-	{
-		values[i] = 0;
-	}
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
-	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-	{
-		extraCache.setNode(node);
-		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
-		if (sourceValueCache)
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				values[i] += sourceValueCache->values[i]*sourceValueCache->values[i];
-			}
-			++number_of_terms;
-		}
-	}
-	cmzn_nodeiterator_destroy(&iterator);
-	return number_of_terms;
+	TermOperatorSumSquares termSumSquares(this->field->number_of_components, valueCache.values);
+	return this->evaluateNodesetOperator(cache, inValueCache, termSumSquares);
 }
+
 
 const char computed_field_nodeset_mean_squares_type_string[] = "nodeset_mean_squares";
 
@@ -451,7 +598,7 @@ public:
 		return 0;
 	}
 
-	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
+	virtual int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -461,17 +608,16 @@ public:
 int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms(
 	cmzn_fieldcache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
-	int return_code = evaluate_sum_square_terms(cache, valueCache, number_of_values, values);
+	int return_code = Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(cache, valueCache, number_of_values, values);
 	if (return_code)
 	{
-		int number_of_terms = number_of_values / field->number_of_components;
-		if (number_of_terms > 0)
+		const int termCount = number_of_values / field->number_of_components;
+		if (termCount > 0)
 		{
-			FE_value scaling = 1.0 / sqrt((FE_value)number_of_terms);
+			// use square root to get term values before squaring
+			const FE_value scaling = 1.0 / sqrt(static_cast<FE_value>(termCount));
 			for (int i = 0 ; i < number_of_values ; i++)
-			{
 				values[i] *= scaling;
-			}
 		}
 		else
 		{
@@ -481,17 +627,46 @@ int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms(
 	return (return_code);
 }
 
+class TermOperatorSumSquaresCount
+{
+	const int valuesCount;
+	FE_value *values;
+	int termCount;
+
+public:
+	TermOperatorSumSquaresCount(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn),
+		termCount(0)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] = 0.0;
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		for (int i = 0; i < this->valuesCount; ++i)
+			this->values[i] += sourceValues[i]*sourceValues[i];
+		++(this->termCount);
+	}
+
+	int getTermCount() const
+	{
+		return this->termCount;
+	}
+};
+
 int Computed_field_nodeset_mean_squares::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	int number_of_terms = evaluate_sum_squares(cache, inValueCache);
-	if (number_of_terms > 0)
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	TermOperatorSumSquaresCount termSumSquaresCount(this->field->number_of_components, valueCache.values);
+	int result = this->evaluateNodesetOperator(cache, inValueCache, termSumSquaresCount);
+	const int termCount = termSumSquaresCount.getTermCount();
+	if (termCount > 0)
 	{
-		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_value scaling = 1.0 / (FE_value)number_of_terms;
-		for (int i = 0 ; i < field->number_of_components ; i++)
-		{
+		const FE_value scaling = 1.0 / static_cast<FE_value>(termCount);
+		for (int i = 0; i < this->field->number_of_components; i++)
 			valueCache.values[i] *= scaling;
-		}
 		return 1;
 	}
 	return 0;
@@ -530,49 +705,50 @@ public:
 
 };
 
+class TermOperatorMinimum
+{
+	const int valuesCount;
+	FE_value *values;
+	bool first;
+
+public:
+	TermOperatorMinimum(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn),
+		first(true)
+	{
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		if (this->first)
+		{
+			for (int i = 0; i < this->valuesCount; ++i)
+				values[i] = sourceValues[i];
+			this->first = false;
+		}
+		else
+		{
+			for (int i = 0; i < this->valuesCount; ++i)
+				if (sourceValues[i] < this->values[i])
+					this->values[i] = sourceValues[i];
+		}
+	}
+
+	bool noValues() const
+	{
+		return this->first;
+	}
+};
+
 int Computed_field_nodeset_minimum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
-	extraCache.setTime(cache.getTime());
-	cmzn_field_id sourceField = getSourceField(0);
-
-	bool initialise = true;
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
-	int node_count = 0;
-	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-	{
-		node_count++;
-		extraCache.setNode(node);
-		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
-		if (sourceValueCache)
-		{
-			for (int i = 0 ; i < field->number_of_components ; i++)
-			{
-				if (initialise)
-				{
-					valueCache.values[i] = sourceValueCache->values[i];
-				}
-				else if (sourceValueCache->values[i] < valueCache.values[i])
-				{
-					valueCache.values[i] = sourceValueCache->values[i];
-				}
-			}
-			if (initialise)
-			{
-				initialise = false;
-			}
-		}
-	}
-	cmzn_nodeiterator_destroy(&iterator);
-
-	if (node_count > 0)
-	{
-		return 1;
-	}
-
-	return 0;
+	TermOperatorMinimum termMinimum(this->field->number_of_components, valueCache.values);
+	const int result = this->evaluateNodesetOperator(cache, inValueCache, termMinimum);
+	if (termMinimum.noValues())
+		return 0;
+	return result;
 }
 
 const char computed_field_nodeset_maximum_type_string[] = "nodeset_max";
@@ -608,52 +784,101 @@ public:
 
 };
 
+class TermOperatorMaximum
+{
+	const int valuesCount;
+	FE_value *values;
+	bool first;
+
+public:
+	TermOperatorMaximum(int valuesCountIn, FE_value *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn),
+		first(true)
+	{
+	}
+
+	inline void processTerm(const FE_value *sourceValues)
+	{
+		if (this->first)
+		{
+			for (int i = 0; i < this->valuesCount; ++i)
+				values[i] = sourceValues[i];
+			this->first = false;
+		}
+		else
+		{
+			for (int i = 0; i < this->valuesCount; ++i)
+				if (sourceValues[i] > this->values[i])
+					this->values[i] = sourceValues[i];
+		}
+	}
+
+	bool noValues() const
+	{
+		return this->first;
+	}
+};
+
 int Computed_field_nodeset_maximum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
-	extraCache.setTime(cache.getTime());
-	cmzn_field_id sourceField = getSourceField(0);
-
-	bool initialise = true;
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
-	int node_count = 0;
-	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-	{
-		node_count++;
-		extraCache.setNode(node);
-		const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
-		if (sourceValueCache)
-		{
-			for (int i = 0 ; i < field->number_of_components ; i++)
-			{
-				if (initialise)
-				{
-					valueCache.values[i] = sourceValueCache->values[i];
-				}
-				else if (sourceValueCache->values[i] > valueCache.values[i])
-				{
-					valueCache.values[i] = sourceValueCache->values[i];
-				}
-			}
-			if (initialise)
-			{
-				initialise = false;
-			}
-		}
-	}
-	cmzn_nodeiterator_destroy(&iterator);
-
-	if (node_count > 0)
-	{
-		return 1;
-	}
-
-	return 0;
+	TermOperatorMaximum termMaximum(this->field->number_of_components, valueCache.values);
+	const int result = this->evaluateNodesetOperator(cache, inValueCache, termMaximum);
+	if (termMaximum.noValues())
+		return 0;
+	return result;
 }
 
 } //namespace
+
+cmzn_field_nodeset_operator_id cmzn_field_cast_nodeset_operator(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_nodeset_operator*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_nodeset_operator_id>(field));
+	}
+	return nullptr;
+}
+
+int cmzn_field_nodeset_operator_destroy(
+	cmzn_field_nodeset_operator_id *nodeset_operator_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(nodeset_operator_field_address));
+}
+
+inline Computed_field_nodeset_operator *Computed_field_nodeset_operator_core_cast(
+	cmzn_field_nodeset_operator *nodeset_operator_field)
+{
+	return (static_cast<Computed_field_nodeset_operator*>(
+		reinterpret_cast<Computed_field*>(nodeset_operator_field)->core));
+}
+
+cmzn_field_id
+cmzn_field_nodeset_operator_get_element_evaluation_map(
+	cmzn_field_nodeset_operator_id nodeset_operator_field)
+{
+	if (!nodeset_operator_field)
+		return nullptr;
+	Computed_field_nodeset_operator *nodeset_operator_core =
+		Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
+	cmzn_field *element_map_field = nodeset_operator_core->getElementEvaluationMap();
+	if (element_map_field)
+		element_map_field->access();
+	return element_map_field;
+}
+
+int cmzn_field_nodeset_operator_set_element_evaluation_map(
+	cmzn_field_nodeset_operator_id nodeset_operator_field,
+	cmzn_field_id element_map_field)
+{
+	if (!nodeset_operator_field)
+		return CMZN_ERROR_ARGUMENT;
+	Computed_field_nodeset_operator *nodeset_operator_core =
+		Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
+	return nodeset_operator_core->setElementEvaluationMap(element_map_field);
+}
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,

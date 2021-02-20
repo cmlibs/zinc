@@ -15,6 +15,8 @@
 #include <opencmiss/zinc/fieldcache.h>
 #include <opencmiss/zinc/fieldmodule.h>
 #include <opencmiss/zinc/fieldfiniteelement.h>
+#include <opencmiss/zinc/fieldnodesetoperators.h>
+#include <opencmiss/zinc/mesh.h>
 #include <opencmiss/zinc/node.h>
 #include <opencmiss/zinc/nodeset.h>
 #include <opencmiss/zinc/region.h>
@@ -213,24 +215,25 @@ TEST(issue3614, read_embedded_nodes)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinates);
 	cmzn_field_id hostLocation = cmzn_fieldmodule_find_field_by_name(zinc.fm, "host_location");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
+	cmzn_field_stored_mesh_location_id storedMeshLocation = cmzn_field_cast_stored_mesh_location(hostLocation);
+	EXPECT_NE(static_cast<cmzn_field_stored_mesh_location_id>(0), storedMeshLocation);
 	EXPECT_EQ(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION, cmzn_field_get_value_type(hostLocation));
 	cmzn_field_id hostCoordinates = cmzn_fieldmodule_create_field_embedded(zinc.fm, coordinates, hostLocation);
-	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), hostCoordinates);
 
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 
 	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
-	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1003);
+	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 7);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node);
 	result = cmzn_fieldcache_set_node(cache, node);
 	EXPECT_EQ(CMZN_OK, result);
 	double xi[2];
-	cmzn_element_id temp_element = cmzn_field_evaluate_mesh_location(hostLocation, cache, 2, xi);
-	EXPECT_EQ(1, cmzn_element_get_identifier(temp_element));
+	cmzn_element_id element = cmzn_field_evaluate_mesh_location(hostLocation, cache, 2, xi);
+	EXPECT_EQ(1, cmzn_element_get_identifier(element));
 	ASSERT_DOUBLE_EQ(0.25, xi[0]);
 	ASSERT_DOUBLE_EQ(0.75, xi[1]);
-	cmzn_element_destroy(&temp_element);
 
 	double x[3] = { 0.0, 0.0, 0.0 };
 	result = cmzn_field_evaluate_real(hostCoordinates, cache, 3, x);
@@ -239,10 +242,40 @@ TEST(issue3614, read_embedded_nodes)
 	ASSERT_DOUBLE_EQ(0.75, x[1]);
 	ASSERT_DOUBLE_EQ(0.0, x[2]);
 
+	// test the element to embedded node map has been defined correctly:
+	cmzn_field_id cmissNumber = cmzn_fieldmodule_find_field_by_name(zinc.fm, "cmiss_number");
+	EXPECT_NE(static_cast<cmzn_field_id>(0), cmissNumber);
+	cmzn_field_id sumCmissNumber = cmzn_fieldmodule_create_field_nodeset_sum(zinc.fm, cmissNumber, nodeset);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), sumCmissNumber);
+	cmzn_field_nodeset_operator_id nodesetOperator = cmzn_field_cast_nodeset_operator(sumCmissNumber);
+	EXPECT_NE(static_cast<cmzn_field_nodeset_operator_id>(0), nodesetOperator);
+	EXPECT_EQ(CMZN_OK, cmzn_field_nodeset_operator_set_element_evaluation_map(nodesetOperator, hostLocation));
+
+	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
+	EXPECT_EQ(CMZN_OK, cmzn_fieldcache_set_element(fieldcache, element));
+	double sum;
+	const double TOL = 1.0E-6;
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(sumCmissNumber, fieldcache, 1, &sum));
+	EXPECT_NEAR(26.0, sum, TOL);  // 5 + 6 + 7 + 8
+	cmzn_nodeset_destroy_node(nodeset, node);
+	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(sumCmissNumber, fieldcache, 1, &sum));
+	EXPECT_NEAR(19.0, sum, TOL);  // 5 + 6 + 8
+
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(zinc.fm, 2);
+	EXPECT_EQ(CMZN_OK, cmzn_mesh_destroy_element(mesh, element));
+	// element is destroyed so evaluation fails
+	EXPECT_EQ(CMZN_ERROR_GENERAL, cmzn_field_evaluate_real(sumCmissNumber, fieldcache, 1, &sum));
+
+	cmzn_mesh_destroy(&mesh);
+	cmzn_fieldcache_destroy(&fieldcache);
+	cmzn_field_nodeset_operator_destroy(&nodesetOperator);
+	cmzn_field_destroy(&sumCmissNumber);
+	cmzn_element_destroy(&element);
 	cmzn_node_destroy(&node);
 	cmzn_nodeset_destroy(&nodeset);
 	cmzn_fieldcache_destroy(&cache);
 	cmzn_field_destroy(&hostCoordinates);
+	cmzn_field_stored_mesh_location_destroy(&storedMeshLocation);
 	cmzn_field_destroy(&hostLocation);
 	cmzn_field_destroy(&coordinates);
 }
