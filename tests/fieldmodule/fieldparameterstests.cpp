@@ -272,8 +272,8 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 		{ 0.7, 0.2 },
 		{ 0.9, 1.0 }
 	};
-	const double TOL = 1.0E-10;
-	const double COARSE_TOL = 4.0E-6;
+	const double TOL = 1.0E-12;
+	const double COARSE_TOL = 1.0E-9;
 	for (int i = 0; i < 4; ++i)
 	{
 		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 2, xi[i]));
@@ -372,7 +372,7 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 								expectedValue *= scaleFactors[2];
 							//std::cerr << "c " << c << " i " << i << " p " << p << std::endl;
 							EXPECT_NEAR(expectedValue, outDerivativesMesh1Parameters1[v], TOL);
-							EXPECT_NEAR(2.0*expectedValue, twoDerivativesMesh1Parameters1[v], TOL);
+							EXPECT_NEAR(2.0*expectedValue, twoDerivativesMesh1Parameters1[v], COARSE_TOL);
 							++v;
 						}
 					}

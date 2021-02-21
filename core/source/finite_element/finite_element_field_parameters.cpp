@@ -16,6 +16,7 @@
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/message.h"
+#include <vector>
 
 
 FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
@@ -37,7 +38,6 @@ FE_field_parameters::~FE_field_parameters()
 
 void FE_field_parameters::generateMaps()
 {
-	// GRC todo: calculate perturbationDelta
 	this->nodeParameterMap.clear();
 	this->parameterNodeMap.clear();
 	FE_region *feRegion = this->field->get_FE_region();
@@ -48,6 +48,12 @@ void FE_field_parameters::generateMaps()
 	DsLabelIndex nodeValuesCount = 0;
 	cmzn_node *node;
 	DsLabelIndex parameterIndex = 0;
+	// calculate value ranges to calculate perturbationDelta
+	const int componentCount = this->field->getNumberOfComponents();
+	std::vector<FE_value> minimumValues;
+	std::vector<FE_value> maximumValues;
+	std::vector<FE_value> values(componentCount);
+	int nodeRangeCount = 0;
 	while ((node = nodeIter->nextNode()) != nullptr)
 	{
 		if (node->fields != lastFieldInfo)
@@ -59,9 +65,46 @@ void FE_field_parameters::generateMaps()
 		this->nodeParameterMap.setValue(node->getIndex(), parameterIndex);
 		this->parameterNodeMap.setValues(parameterIndex, nodeValuesCount, node->getIndex());
 		parameterIndex += nodeValuesCount;
+		if (get_FE_nodal_FE_value_value(node, this->field, /*component*/-1, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, /*time*/0.0, values.data()))
+		{
+			if (nodeRangeCount)
+			{
+				for (int c = 0; c < componentCount; ++c)
+				{
+					if (values[c] < minimumValues[c])
+						minimumValues[c] = values[c];
+					else if (values[c] > maximumValues[c])
+						maximumValues[c] = values[c];
+				}
+			}
+			else
+			{
+				minimumValues = values;
+				maximumValues = values;
+			}
+			++nodeRangeCount;
+		}
 	}
 	this->parametersCount = parameterIndex;
 	this->fieldModifyCounter = 0;  // concurrency point
+	// following could be improved knowing the number of elements
+	// basically want a fraction of typical or minimum element span
+	FE_value maxRange = 0.0;
+	if (nodeRangeCount > 1)
+		for (int c = 0; c < componentCount; ++c)
+		{
+			const FE_value range = maximumValues[c] - minimumValues[c];
+			if (range > maxRange)
+				maxRange = range;
+		}
+	if ((maxRange == 0.0) && (nodeRangeCount))
+		for (int c = 0; c < componentCount; ++c)
+		{
+			const FE_value range = fabs(maximumValues[c]);
+			if (range > maxRange)
+				maxRange = range;
+		}
+	this->perturbationDelta = ((maxRange > 0.0) ? maxRange : 1.0)*1.0E-6;
 }
 
 FE_field_parameters *FE_field_parameters::create(FE_field *fieldIn)
