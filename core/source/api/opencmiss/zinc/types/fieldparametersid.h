@@ -16,6 +16,7 @@
  *
  * Interface to parameters of a field allowing solvers to index them,
  * and to access derivative operators with respect to element parameters.
+ * Note that only node-based field parameters are supported at present.
  */
 struct cmzn_fieldparameters;
 typedef struct cmzn_fieldparameters *cmzn_fieldparameters_id;

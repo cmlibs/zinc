@@ -485,6 +485,7 @@ public:
 			this->sharedWorkingCache = new cmzn_fieldcache(this->region, this);
 		return this->sharedWorkingCache;
 	}
+
 };
 
 /** Return private extraCache for evaluating fields at different locations and different time. */

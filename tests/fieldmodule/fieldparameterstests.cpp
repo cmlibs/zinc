@@ -10,6 +10,7 @@
 
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldparameters.hpp>
@@ -222,12 +223,18 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 	const double scaleFactors[] = { -1.0, 1.5, 1.1 };
 	EXPECT_EQ(RESULT_OK, element.setScaleFactors(eft, 3, scaleFactors));
 
+	// get 2*coordinates to check what are current numerical derivatives against 2*exact derivatives
+	// this only tests numerical derivatives until higher order product derivatives implemented for multiply
+	const double two = 2.0;
+	Field twoCoordinates = coordinates*zinc.fm.createFieldConstant(1, &two);
+	EXPECT_TRUE(twoCoordinates.isValid());
+
 	// get zinc first and second derivative fields
-	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
-	FieldDerivative meshDerivatives1[2], meshDerivatives2[2][2];
+	FieldDerivative meshDerivatives1[2], meshDerivatives2[2][2], twoMeshDerivatives1[2];
 	for (int i = 0; i < 2; ++i)
 	{
 		meshDerivatives1[i] = zinc.fm.createFieldDerivative(coordinates, i + 1);
+		twoMeshDerivatives1[i] = zinc.fm.createFieldDerivative(twoCoordinates, i + 1);
 		EXPECT_TRUE(meshDerivatives1[i].isValid());
 		for (int j = 0; j < 2; ++j)
 		{
@@ -235,6 +242,7 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 			EXPECT_TRUE(meshDerivatives2[i][j].isValid());
 		}
 	}
+
 	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
 
 	Fieldparameters fieldparameters = coordinates.getFieldparameters();
@@ -250,8 +258,10 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 	EXPECT_TRUE(parameterDerivative1.isValid());
 
 	double outDerivativeParameters1[54];
+	double twoDerivativeParameters1[54];
 	double tmpDerivatives[54];
 	double outDerivativesMesh1Parameters1[108];
+	double twoDerivativesMesh1Parameters1[108];
 	double outDerivativesMesh2Parameters1[216];
 	// test that first derivatives of components w.r.t. their parameters equal the scaled sums
 	// of the basis functions they are terms of but are zero w.r.t. other components' parameters
@@ -262,11 +272,13 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 		{ 0.7, 0.2 },
 		{ 0.9, 1.0 }
 	};
-	const double TOL = 1.0E-12;
+	const double TOL = 1.0E-10;
+	const double COARSE_TOL = 4.0E-6;
 	for (int i = 0; i < 4; ++i)
 	{
 		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 2, xi[i]));
 		EXPECT_EQ(RESULT_OK, coordinates.evaluateDerivative(parameterDerivative1, fieldcache, 54, outDerivativeParameters1));
+		EXPECT_EQ(RESULT_OK, twoCoordinates.evaluateDerivative(parameterDerivative1, fieldcache, 54, twoDerivativeParameters1));
 		// evaluate mixed parameter derivatives of mesh derivatives, working around limitation
 		// of using legacy derivative field for one term at a time
 		for (int i = 0; i < 2; ++i)
@@ -275,6 +287,10 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 			for (int c = 0; c < 3; ++c)
 				for (int p = 0; p < 18; ++p)
 					outDerivativesMesh1Parameters1[c*36 + i*18 + p] = tmpDerivatives[c*18 + p];
+			EXPECT_EQ(RESULT_OK, twoMeshDerivatives1[i].evaluateDerivative(parameterDerivative1, fieldcache, 54, tmpDerivatives));
+			for (int c = 0; c < 3; ++c)
+				for (int p = 0; p < 18; ++p)
+					twoDerivativesMesh1Parameters1[c*36 + i*18 + p] = tmpDerivatives[c*18 + p];
 			for (int j = 0; j < 2; ++j)
 			{
 				EXPECT_EQ(RESULT_OK, meshDerivatives2[i][j].evaluateDerivative(parameterDerivative1, fieldcache, 54, tmpDerivatives));
@@ -294,7 +310,7 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 			{ -3.0 + 4.0*xi1, 4.0 - 8.0*xi1, -1.0 + 4.0*xi1 },
 			{ 4.0, -8.0, 4.0 }
 		};
-		// basis phi2[order][fucnction]
+		// basis phi2[order][function]
 		const double phi2[3][2] =
 		{
 			{ 1.0 - xi2, xi2 },
@@ -319,7 +335,9 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 						else if (p == 5)
 							expectedValue *= scaleFactors[2];
 						//std::cerr << "c " << c << " p " << p << std::endl;
-						EXPECT_NEAR(expectedValue, outDerivativeParameters1[v++], TOL);
+						EXPECT_NEAR(expectedValue, outDerivativeParameters1[v], TOL);
+						EXPECT_NEAR(2.0*expectedValue, twoDerivativeParameters1[v], TOL);
+						++v;
 					}
 				}
 				else
@@ -353,7 +371,9 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 							else if (p == 5)
 								expectedValue *= scaleFactors[2];
 							//std::cerr << "c " << c << " i " << i << " p " << p << std::endl;
-							EXPECT_NEAR(expectedValue, outDerivativesMesh1Parameters1[v++], TOL);
+							EXPECT_NEAR(expectedValue, outDerivativesMesh1Parameters1[v], TOL);
+							EXPECT_NEAR(2.0*expectedValue, twoDerivativesMesh1Parameters1[v], TOL);
+							++v;
 						}
 					}
 					else

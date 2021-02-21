@@ -327,7 +327,7 @@ int Computed_field_multiply_components::evaluate(cmzn_fieldcache& cache, FieldVa
 
 int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
@@ -337,15 +337,18 @@ int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cach
 		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivative = derivativeCache->values;
+		const int componentCount = field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			for (int j = 0; j < number_of_xi; ++j)
+			for (int j = 0; j < termCount; ++j)
 			{
+				// product rule
 				*derivative =
-					source1Derivatives[i * number_of_xi + j] * source2values[i] +
-					source2Derivatives[i * number_of_xi + j] * source1values[i];
+					source1Derivatives[i*termCount + j] * source2values[i] +
+					source2Derivatives[i*termCount + j] * source1values[i];
 				derivative++;
 			}
 		}

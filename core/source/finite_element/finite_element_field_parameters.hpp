@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_FIELD_PARAMETERS_HPP)
 #define FINITE_ELEMENT_FIELD_PARAMETERS_HPP
 
+#include "opencmiss/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
 #include "general/block_array.hpp"
 
@@ -32,6 +33,7 @@ class FE_field_parameters
 	// map from parameter to node
 	block_array<DsLabelIndex, DsLabelIndex> parameterNodeMap;
 	int fieldModifyCounter;  // incremented when field structure changes; rebuild maps when non-zero
+	FE_value perturbationDelta;
 	int access_count;
 
 	FE_field_parameters(FE_field *fieldIn);
@@ -68,9 +70,16 @@ public:
 		return this->field;
 	}
 
+	/** @return  Number of parameters >=0, or -1 if error */
 	int getNumberOfElementParameters(cmzn_element *element);
 
 	int getNumberOfParameters();
+
+	/** @return  Positive delta to apply when perturbing parameters to calculate numerical derivatives */
+	FE_value getPerturbationDelta() const
+	{
+		return this->perturbationDelta;
+	}
 
 };
 

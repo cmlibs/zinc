@@ -124,6 +124,11 @@ int cmzn_fieldparameters::getNumberOfParameters() const
 	return this->feFieldParameters->getNumberOfParameters();
 }
 
+FE_value cmzn_fieldparameters::getPerturbationDelta() const
+{
+	return this->feFieldParameters->getPerturbationDelta();
+}
+
 /*
 Global functions
 ----------------

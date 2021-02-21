@@ -334,7 +334,7 @@ public:
 
 	/** @param componentNumber  Component number >= 0 or negative to set all components
 	  * @param versionNumber  Version number >= 0 */
-		int setNodeParameters(cmzn_fieldcache& cache, int componentNumber,
+	int setNodeParameters(cmzn_fieldcache& cache, int componentNumber,
 		cmzn_node_value_label valueLabel, int versionNumber,
 		int valuesCount, const double *valuesIn);
 
@@ -911,7 +911,6 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 			{
 				return 1;
 			}
-
 		}
 		else
 		{
@@ -4350,4 +4349,27 @@ int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination
 		}
 	}
 	return CMZN_OK;
+}
+
+FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cmzn_field *field, cmzn_fieldcache *fieldcache)
+{
+	Computed_field_finite_element* core;
+	const Field_location_element_xi *element_xi_location;
+	if (!((field) && (fieldcache)
+		&& (core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		&& (core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD)
+		&& (core->fe_field->getValueType() == FE_VALUE_VALUE)
+		&& (element_xi_location = fieldcache->get_location_element_xi())))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_field_get_cache_FE_element_field_evaluation.  Invalid argument(s)");
+		return nullptr;
+	}
+	FiniteElementRealFieldValueCache *feValueCache = FiniteElementRealFieldValueCache::cast(field->getValueCache(*fieldcache));
+	if (!feValueCache)
+		return nullptr;
+	cmzn_element_id element = element_xi_location->get_element();
+	cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
+	const FE_value time = element_xi_location->get_time();
+	const FE_value* xi = element_xi_location->get_xi();
+	return feValueCache->element_field_evaluation_cache->get_element_field_evaluation(core->fe_field, element, time, top_level_element);
 }

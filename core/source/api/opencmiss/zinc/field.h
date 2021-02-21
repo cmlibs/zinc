@@ -194,11 +194,13 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
 /**
  * Evaluate derivatives of a real-valued field.
  * CURRENT LIMITATIONS:
- * 1. Mesh differential operator must be obtained from mesh owning element.
- * Cannot yet evaluate derivatives with respect to parent element chart.
- * 2. Not implemented for all field operators. Mesh derivatives generally
- * fall back to an approximate finite difference calculation, but field
- * parameter derivatives do not.
+ * 1. Mesh differential operator must be obtained from mesh owning element
+ * derivative is evaluated on. Cannot yet evaluate derivatives with respect to
+ * parent element chart.
+ * 2. Field parameter derivatives can only be evaluated on the top-level
+ * element the field is defined on, not on faces or lines inheriting the field.
+ * 3. Not implemented for all field operators and cache locations; falls back
+ * to approximate finite difference calculation for many cases.
  *
  * @param field  The field to evaluate derivatives for. Must be real valued.
  * @param differential_operator  The differential operator identifying which
@@ -213,8 +215,8 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
  * @param values  Array of real values to evaluate derivatives into. For
  * multiple terms, output values cycle slowest by components, then by earliest
  * derivative index etc.
- * @return  Status CMZN_OK on success, any other value on failure including
- * if field is not defined at cache location.
+ * @return  Result OK on success, any other value on failure including case
+ * of field not being defined at cache location.
  */
 ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_differentialoperator_id differential_operator,

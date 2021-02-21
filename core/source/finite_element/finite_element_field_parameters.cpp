@@ -24,6 +24,7 @@ FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/-1),
 	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/-1),
 	fieldModifyCounter(1),  // force maps to be rebuilt
+	perturbationDelta(1.0E-5),
 	access_count(1)
 {
 }
@@ -36,6 +37,7 @@ FE_field_parameters::~FE_field_parameters()
 
 void FE_field_parameters::generateMaps()
 {
+	// GRC todo: calculate perturbationDelta
 	this->nodeParameterMap.clear();
 	this->parameterNodeMap.clear();
 	FE_region *feRegion = this->field->get_FE_region();

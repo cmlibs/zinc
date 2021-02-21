@@ -129,7 +129,7 @@ public:
 
 	bool isMeshOnly() const
 	{
-		return true;  // until parameter derivatives added
+		return (this->mesh) && (!this->fieldparameters);
 	}
 
 	/** @return  Number of individually evaluatable terms for mesh derivative part */
@@ -163,6 +163,12 @@ public:
 	 * fieldparameters are only available at mesh location and can vary between
 	 * elements.  */
 	int getTermCount(const Field_location& fieldLocation) const;
+
+	/** Get total order of derivative */
+	int getTotalOrder() const
+	{
+		return this->meshOrder + this->parameterOrder;
+	}
 
 };
 

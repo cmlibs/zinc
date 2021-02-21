@@ -51,6 +51,7 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	component_scale_factors(nullptr),
 	component_standard_basis_functions(nullptr),
 	component_standard_basis_function_arguments(nullptr),
+	parameterPerturbationCount(0),
 	access_count(1)
 {
 	this->last_grid_xi[0] = std::numeric_limits<FE_value>::quiet_NaN();  // to force initial grid xi to be invalid
@@ -161,6 +162,11 @@ void FE_element_field_evaluation::clear()
 		this->component_scale_factors = nullptr;
 	}
 	this->number_of_components = 0;
+	if (this->parameterPerturbationCount > 0)
+	{
+		display_message(WARNING_MESSAGE, "FE_element_field_evaluation::clear.  Parameter perturbation still active.");
+		this->parameterPerturbationCount = 0;
+	}
 }
 
 int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
@@ -940,6 +946,13 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						const int valueCount = *number_of_element_values_ptr;
 						if (parameter_derivative_order)
 						{
+							if (this->element != this->field_element)
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_evaluation::evaluate_real.  Can only evaluate parameter derivatives on top-level element field is defined on");
+								return_code = 0;
+								break;
+							}
 							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								// need to compute derivatives w.r.t. all components' parameters
@@ -979,7 +992,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 											for (int termScaleFactorIndex = 0; termScaleFactorIndex < termScalingCount; ++termScaleFactorIndex)
 											{
 												const int scaleFactorIndex = eft->getTermScaleFactorIndex(func, term, termScaleFactorIndex);
-												sum *= this->component_scale_factors[pc][scaleFactorIndex];
+												sum *= this->component_scale_factors[this_comp_no][scaleFactorIndex];
 											}
 											parameterDerivative += sum;
 										}
@@ -1003,6 +1016,68 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 								*calculated_value = sum;
 								++calculated_value;
 								basis_value += valueCount;
+							}
+							if (this->parameterPerturbationCount)
+							{
+								if (this->element != this->field_element)
+								{
+									display_message(ERROR_MESSAGE,
+										"FE_element_field_evaluation::evaluate_real.  Can only apply parameter perturbations on top-level element field is defined on");
+									return_code = 0;
+									break;
+								}
+								const FE_value *basis_value = basis_values;
+								FE_value *perturb_calculated_value = calculated_value - number_of_mesh_derivatives;
+								for (int k = 0; k < number_of_mesh_derivatives; ++k)
+								{
+									// add perturbations: delta*parameterDerivative[parameterIndex]
+									for (int pp = 0; pp < this->parameterPerturbationCount; ++pp)
+									{
+										const int parameterIndex = this->parameterPerturbationIndex[pp];
+										int componentParameterIndex = parameterIndex;
+										for (int pc = 0; pc < this_comp_no; ++pc)
+											componentParameterIndex -= this->component_efts[pc]->getParameterCount();
+										const FE_element_field_template *eft = this->component_efts[this_comp_no];
+										const int componentParameterCount = eft->getParameterCount();
+										if ((componentParameterIndex < 0) || (componentParameterIndex >= componentParameterCount))
+											continue;  // derivative w.r.t. other components' parameters are zero => no perturbation
+										FE_value delta = this->parameterPerturbationDelta[pp];
+										// optimisation: apply consecutive permutations to same parameter index together
+										if ((pp < (this->parameterPerturbationCount - 1)) &&
+											(this->parameterPerturbationIndex[pp + 1] == parameterIndex))
+										{
+											++pp;
+											if (this->parameterPerturbationDelta[pp + 1] == -delta)
+												continue;  // no perturbation if +/- same delta
+											delta += this->parameterPerturbationDelta[pp];
+										}
+										const FE_basis *feBasis = eft->getBasis();
+										const FE_value *blendingMatrix = feBasis->getBlendingMatrix();
+										const int parameterTermCount = eft->getParameterTermCount(componentParameterIndex);
+										// sum over 1 or more scaled basis functions that this parameter is a term in
+										FE_value parameterDerivative = 0.0;
+										for (int pt = 0; pt < parameterTermCount; ++pt)
+										{
+											int term;
+											const int func = eft->getParameterTermFunctionAndTerm(componentParameterIndex, pt, term);
+											const FE_value *blendingValue = blendingMatrix + func*valueCount;
+											// performance critical dot product: keep simple & let compiler optimise it
+											FE_value sum = 0.0;
+											for (int j = 0; j < valueCount; ++j)
+												sum += blendingValue[j]*basis_value[j];
+											const int termScalingCount = eft->getTermScalingCount(func, term);
+											for (int termScaleFactorIndex = 0; termScaleFactorIndex < termScalingCount; ++termScaleFactorIndex)
+											{
+												const int scaleFactorIndex = eft->getTermScaleFactorIndex(func, term, termScaleFactorIndex);
+												sum *= this->component_scale_factors[this_comp_no][scaleFactorIndex];
+											}
+											parameterDerivative += sum;
+										}
+										*perturb_calculated_value += delta*parameterDerivative;
+									}
+									++perturb_calculated_value;
+									basis_value += valueCount;
+								}
 							}
 						}
 					}
@@ -1384,11 +1459,6 @@ int FE_element_field_evaluation::get_component_values(int component_number,
 	return (return_code);
 }
 
-/** If component_number is monomial, integer values describing the monomial basis
- * are returned. The first number is the dimension, the following numbers are the
- * order of the monomial in each direction, where 3=cubic, for example.
- * <monomial_info> should point to a block of memory big enough to take
- * 1 + MAXIMUM_ELEMENT_XI_DIMENSIONS integers. */
 int FE_element_field_evaluation::get_monomial_component_info(int component_number,
 	int *monomial_info) const
 {
@@ -1427,4 +1497,41 @@ int FE_element_field_evaluation::get_monomial_component_info(int component_numbe
 			this->number_of_components, monomial_info);
 	}
 	return (return_code);
+}
+
+bool FE_element_field_evaluation::addParameterPerturbation(int parameterIndex, FE_value parameterDelta)
+{
+	if (!this->element)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Values not yet calculated");
+		return false;
+	}
+	if (this->parameterPerturbationCount >= MAXIMUM_PARAMETER_DERIVATIVE_ORDER)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Too many perturbations");
+		return false;
+	}
+	int parameterCount = 0;
+	if (this->component_efts)
+		for (int c = 0; c <this->number_of_components; ++c)
+			parameterCount += this->component_efts[c]->getParameterCount();
+	if ((parameterIndex < 0) || (parameterIndex >= parameterCount))
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Parameter index out of range");
+		return false;
+	}
+	this->parameterPerturbationIndex[this->parameterPerturbationCount] = parameterIndex;
+	this->parameterPerturbationDelta[this->parameterPerturbationCount] = parameterDelta;
+	++(this->parameterPerturbationCount);
+	return true;
+}
+
+void FE_element_field_evaluation::removeParameterPerturbation()
+{
+	if (this->parameterPerturbationCount <= 0)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::removeParameterPerturbation.  No perturbation active.");
+		return;
+	}
+	--(this->parameterPerturbationCount);
 }

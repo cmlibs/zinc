@@ -398,11 +398,12 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 {
 	// Only implemented for derivative w.r.t. element xi coordinates of same mesh
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	if (element_xi_location && fieldDerivative.isMeshOnly())
+	if (element_xi_location)
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		FE_mesh *mesh = element->getMesh();
 		const int elementDimension = mesh->getDimension();
+		// following fails if there is a mesh mismatch:
 		const FieldDerivative *sourceFieldDerivative = mesh->getHigherFieldDerivative(fieldDerivative);
 		if ((sourceFieldDerivative) && (this->xi_index < elementDimension))
 		{

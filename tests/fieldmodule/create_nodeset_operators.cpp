@@ -330,7 +330,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	int result;
 	for (f = 0; f < 24; ++f)
 	{
-		std::cerr << "f " << f << "\n";
+		//std::cerr << "f " << f << "\n";
 		result = nodesetOperators[f].evaluateReal(fieldcache, 1, values + f);
 		EXPECT_EQ(RESULT_OK, result);
 		EXPECT_NEAR(expectedValues1[f], values[f], TOL);
@@ -353,7 +353,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 	};
 	for (f = 0; f < 24; ++f)
 	{
-		std::cerr << "f " << f << "\n";
+		//std::cerr << "f " << f << "\n";
 		result = nodesetOperators[f].evaluateReal(fieldcache, 1, values + f);
 		if (expectedValues2[f] < 0.0)
 		{

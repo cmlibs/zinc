@@ -12,6 +12,7 @@
 #if !defined (CMZN_FIELDPARAMETERSPRIVATE_HPP)
 #define CMZN_FIELDPARAMETERSPRIVATE_HPP
 
+#include "opencmiss/zinc/zincconfigure.h"
 #include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/types/fieldid.h"
 #include "opencmiss/zinc/fieldparameters.h"
@@ -69,9 +70,13 @@ public:
 	 * The derivative is held by parameters until parameters object destroyed */
 	FieldDerivative *getFieldDerivativeMixed(FE_mesh *mesh, int meshOrder, int parameterOrder);
 
+	/** @return  Number of parameters >=0, or -1 if error */
 	int getNumberOfElementParameters(cmzn_element *element) const;
 
 	int getNumberOfParameters() const;
+
+	/** @return  Positive delta to apply when perturbing parameters to calculate numerical derivatives */
+	FE_value getPerturbationDelta() const;
 
 };
 

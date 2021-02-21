@@ -24,7 +24,8 @@ extern "C" {
 
 /**
  * Get field parameters object for field.
- * Currently only supported by finite element field type. 
+ * Currently only supported by finite element field type.
+ * Note that only node-based field parameters are supported at present.
  *
  * @param field  The field to get parameters object for.
  * @return  Handle to new field parameters object, or NULL/invalid handle on

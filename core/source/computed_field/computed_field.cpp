@@ -124,10 +124,12 @@ like the number of components.
 #include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/compare.h"
@@ -1094,23 +1096,19 @@ int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCach
 
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
-	if (!fieldDerivative.isMeshOnly())
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for mesh chart derivatives");
-		return 0;
-	}
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
+			"Field evaluateDerivativeFiniteDifference:  Only implemented for element location");
 		return 0;
 	}
-	if (element_xi_location->get_element_dimension() != fieldDerivative.getMeshDimension())
+	cmzn_element *element = element_xi_location->get_element();
+	const FE_mesh *mesh = fieldDerivative.getMesh();
+	if ((mesh) && (element->getMesh() != mesh))
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
+			"Field evaluateDerivativeFiniteDifference:  Only implemented for derivative and location on the same mesh");
 		return 0;
 	}
 	// evaluate field at perturbed locations in extra working cache
@@ -1125,71 +1123,112 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	workingCache->setTime(cache.getTime());
 	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
 	const int componentCount = this->field->number_of_components;
-	cmzn_element *element = element_xi_location->get_element();
 	const int elementDimension = element_xi_location->get_element_dimension();
 	const FE_value *xi = element_xi_location->get_xi();
 	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	for (int d = 0; d < elementDimension; ++d)
 		perturbedXi[d] = xi[d];
-	const FE_value xiPerturbation = 1.0E-5;
-	const FE_value weight = 0.5 / xiPerturbation;
+	// values set differently for parameter or mesh derivative applied:
+	FE_value perturbationDelta;
+	int derivativeCount;
+	FE_element_field_evaluation *parameterFieldEvaluation;
+	cmzn_fieldparameters *fieldParameters = fieldDerivative.getFieldparameters();
+	if (fieldParameters)
+	{
+		// parameter derivatives are always applied first here so outside/after mesh derivatives
+		perturbationDelta = fieldParameters->getPerturbationDelta();
+		derivativeCount = fieldParameters->getNumberOfElementParameters(element);
+		if (derivativeCount <= 0)  // GRC or is zero a success?
+			return 0;
+		// need to set element location first
+		workingCache->setMeshLocation(element, perturbedXi);
+		parameterFieldEvaluation = cmzn_field_get_cache_FE_element_field_evaluation(fieldParameters->getField(), workingCache);
+		if (!parameterFieldEvaluation)
+		{
+			display_message(ERROR_MESSAGE, "Field evaluateDerivativeFiniteDifference:  Failed to get parameter field evaluation");
+			return 0;
+		}
+	}
+	else
+	{
+		perturbationDelta = 1.0E-5;
+		derivativeCount = elementDimension;
+	}
+	const FE_value plusDelta = +perturbationDelta;
+	const FE_value minusDelta = -perturbationDelta;
+	const FE_value weight = 0.5/perturbationDelta;
 	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
 	const FE_value *lowerValues = nullptr;
-	for (int d = 0; d < elementDimension; ++d)
+	for (int d = 0; d < derivativeCount; ++d)
 	{
+		// -/+ perturbation of lower derivative
 		for (int k = 0; k < 2; ++k)
 		{
-			if (k == 0)
-				perturbedXi[d] -= xiPerturbation;
-			else
-				perturbedXi[d] += xiPerturbation;
-			workingCache->setMeshLocation(element, perturbedXi);
+			if (fieldParameters)
+				parameterFieldEvaluation->addParameterPerturbation(/*parameterIndex*/d, (k == 0) ? minusDelta : plusDelta);
+			else  // (mesh)
+				perturbedXi[d] += (k == 0) ? minusDelta : plusDelta;
+			workingCache->setMeshLocation(element, perturbedXi);  // must call locationChanged() for parameter
 			int lowerDerivativeTermCount = 1;
 			if (lowerFieldDerivative)
 			{
 				const DerivativeValueCache *derivativeCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
-				if (!derivativeCache)
+				if (derivativeCache)
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
-					return 0;
-				}
-				lowerValues = derivativeCache->values;
-				lowerDerivativeTermCount = derivativeCache->getTermCount();
-			}
-			else
-			{
-				if (!this->field->evaluate(*workingCache))
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field values");
-					return 0;
-				}
-				lowerValues = lowerValueCache->values;
-			}
-			// values cycle over components slowest, then lower derivatives, fastest over this finite difference derivative
-			for (int c = 0; c < componentCount; ++c)
-			{
-				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
-				FE_value *dst = derivativeValueCache.values + c*elementDimension*lowerDerivativeTermCount + d;
-				if (k == 0)
-				{
-					for (int v = 0; v < lowerDerivativeTermCount; ++v)
-					{
-						*dst = src[v];
-						dst += elementDimension;
-					}
+					lowerValues = derivativeCache->values;
+					lowerDerivativeTermCount = derivativeCache->getTermCount();
 				}
 				else
 				{
-					for (int v = 0; v < lowerDerivativeTermCount; ++v)
+					display_message(ERROR_MESSAGE,
+						"Field evaluateDerivativeFiniteDifference:  Could not evaluate field lower derivative values");
+					lowerValues = nullptr;
+				}
+			}
+			else
+			{
+				if (this->field->evaluate(*workingCache))
+				{
+					lowerValues = lowerValueCache->values;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Field evaluateDerivativeFiniteDifference:  Could not evaluate field values");
+					lowerValues = nullptr;
+				}
+			}
+			if (lowerValues)
+			{
+				// values cycle over components slowest, then lower derivatives, fastest over this finite difference derivative
+				for (int c = 0; c < componentCount; ++c)
+				{
+					const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
+					FE_value *dst = derivativeValueCache.values + c*derivativeCount*lowerDerivativeTermCount + d;
+					if (k == 0)
 					{
-						*dst = weight*(src[v] - *dst);
-						dst += elementDimension;
+						for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						{
+							*dst = src[v];
+							dst += derivativeCount;
+						}
+					}
+					else
+					{
+						for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						{
+							*dst = weight*(src[v] - *dst);
+							dst += derivativeCount;
+						}
 					}
 				}
 			}
-			perturbedXi[d] = xi[d];
+			if (fieldParameters)
+				parameterFieldEvaluation->removeParameterPerturbation();
+			else
+				perturbedXi[d] = xi[d];
+			if (!lowerValues)
+				return 0;  // can only return here now parameter perturbation is removed
 		}
 	}
 	return 1;
