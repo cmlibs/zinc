@@ -232,13 +232,13 @@ TEST(issue3614, read_embedded_nodes)
 	double xi[2];
 	cmzn_element_id element = cmzn_field_evaluate_mesh_location(hostLocation, cache, 2, xi);
 	EXPECT_EQ(1, cmzn_element_get_identifier(element));
-	ASSERT_DOUBLE_EQ(0.25, xi[0]);
+	ASSERT_DOUBLE_EQ(0.9, xi[0]);
 	ASSERT_DOUBLE_EQ(0.75, xi[1]);
 
 	double x[3] = { 0.0, 0.0, 0.0 };
 	result = cmzn_field_evaluate_real(hostCoordinates, cache, 3, x);
 	EXPECT_EQ(CMZN_OK, result);
-	ASSERT_DOUBLE_EQ(0.25, x[0]);
+	ASSERT_DOUBLE_EQ(0.9, x[0]);
 	ASSERT_DOUBLE_EQ(0.75, x[1]);
 	ASSERT_DOUBLE_EQ(0.0, x[2]);
 

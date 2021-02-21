@@ -60,7 +60,17 @@ void FE_field_parameters::generateMaps()
 		{
 			lastFieldInfo = node->fields;
 			nodeField = node->getNodeField(this->field);
+			if (!nodeField)
+			{
+				// not defined on node
+				nodeValuesCount = 0;
+				continue;
+			}
 			nodeValuesCount = nodeField->getTotalValuesCount();
+		}
+		else if (nodeValuesCount == 0)
+		{
+			continue;  // not defined on node
 		}
 		this->nodeParameterMap.setValue(node->getIndex(), parameterIndex);
 		this->parameterNodeMap.setValues(parameterIndex, nodeValuesCount, node->getIndex());

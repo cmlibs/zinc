@@ -628,37 +628,32 @@ int Computed_field_dot_product::evaluate(cmzn_fieldcache& cache, FieldValueCache
 
 int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return 0;  // fall back to numerical derivatives
 	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (source1Cache && source2Cache)
 	{
-		FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int termCount = derivativeCache->getTermCount();
 		const int vectorComponentCount = getSourceField(0)->number_of_components;
-		const int termCount = fieldDerivative.getMeshTermCount();
 		for (int j = 0; j < termCount; ++j)
 			derivatives[j] = 0.0;
 		const FE_value *source1Values = source1Cache->values;
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Values = source2Cache->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
 		for (int i = 0; i < vectorComponentCount; ++i)
 		{
 			for (int j = 0; j < termCount; ++j)
 			{
-				derivatives[j] += (*source1Values)*(*source2Derivatives);
+				// product rule, then sum
+				derivatives[j] += (*source1Values)*(*source2Derivatives) + (*source2Values)*(*source1Derivatives);
+				++source1Derivatives;
 				++source2Derivatives;
 			}
 			++source1Values;
-		}
-		const FE_value *source2Values = source2Cache->values;
-		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
-		for (int i = 0; i < vectorComponentCount; ++i)
-		{
-			for (int j = 0; j < termCount; ++j)
-			{
-				derivatives[j] += (*source2Values)*(*source1Derivatives);
-				++source1Derivatives;
-			}
 			++source2Values;
 		}
 		return 1;

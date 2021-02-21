@@ -11,11 +11,13 @@
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
-#include <opencmiss/zinc/fieldparameters.hpp>
-#include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldnodesetoperators.hpp>
+#include <opencmiss/zinc/fieldparameters.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 #include "test_resources.h"
@@ -428,5 +430,109 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 							for (int p = 0; p < 6; ++p)
 								EXPECT_DOUBLE_EQ(0.0, outDerivativesMesh2Parameters1[v++]);
 						}
+	}
+}
+
+// Test evaluation of 2nd parameter derivatives of sum error squared on element
+// which gives an element stiffness matrix used in fitting without smoothing
+TEST(Fieldparameters, SumErrorSquaredMatrixVector)
+{
+	ZincTestSetupCpp zinc;
+
+	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Field dataCoordinates = zinc.fm.findFieldByName("data_coordinates");
+	EXPECT_TRUE(dataCoordinates.isValid());
+	FieldStoredMeshLocation hostLocation = zinc.fm.findFieldByName("host_location").castStoredMeshLocation();
+	EXPECT_TRUE(hostLocation.isValid());
+	FieldEmbedded hostCoordinates = zinc.fm.createFieldEmbedded(coordinates, hostLocation);
+	EXPECT_TRUE(hostCoordinates.isValid());
+	FieldSubtract delta = hostCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct errorSquared = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(errorSquared.isValid());
+
+	Mesh mesh = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	FieldNodesetSum sumErrorSquared = zinc.fm.createFieldNodesetSum(errorSquared, nodeset);
+	EXPECT_TRUE(sumErrorSquared.isValid());
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.setElementEvaluationMap(hostLocation));
+
+	Fieldparameters fieldparameters = coordinates.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	EXPECT_EQ(12, fieldparameters.getNumberOfElementParameters(element));
+	EXPECT_EQ(12, fieldparameters.getNumberOfParameters());
+
+	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
+	EXPECT_TRUE(parameterDerivative1.isValid());
+	Differentialoperator parameterDerivative2 = fieldparameters.getDerivativeOperator(/*order*/2);
+	EXPECT_TRUE(parameterDerivative2.isValid());
+
+	double outVector[12], outMatrix[144];
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+
+	// get dataCoordinates, hostCoordinates and xi for embedded nodes 5-8
+	const double TOL = 1.0E-11;
+	const double COARSE_TOL = 1.0E-6;
+	double dataCoordinatesValue[4][3];
+	double hostCoordinatesValue[4][3];
+	double xi[4][2];
+	double phi[4][4];
+	int p = 0;
+	for (int i = 5; i <= 8; ++i, ++p)
+	{
+		EXPECT_EQ(RESULT_OK, fieldcache.setNode(nodeset.findNodeByIdentifier(i)));
+		Element tmpElement = hostLocation.evaluateMeshLocation(fieldcache, 2, xi[p]);
+		EXPECT_EQ(element, tmpElement);
+		EXPECT_EQ(RESULT_OK, dataCoordinates.evaluateReal(fieldcache, 3, dataCoordinatesValue[p]));
+		EXPECT_EQ(RESULT_OK, hostCoordinates.evaluateReal(fieldcache, 3, hostCoordinatesValue[p]));
+		for (int c = 0; c < 2; ++c)
+			EXPECT_NEAR(xi[p][c], hostCoordinatesValue[p][c], TOL);
+		phi[p][0] = (1.0 - xi[p][0])*(1.0 - xi[p][1]);
+		phi[p][1] = xi[p][0]*(1.0 - xi[p][1]);
+		phi[p][2] = (1.0 - xi[p][0])*xi[p][1];
+		phi[p][3] = xi[p][0]*xi[p][1];
+	}
+	double outValue;
+	const double expectedValue = 0.5563;
+	EXPECT_EQ(RESULT_OK, fieldcache.setElement(element));
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outValue));
+	EXPECT_NEAR(expectedValue, outValue, TOL);
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateDerivative(parameterDerivative1, fieldcache, 12, outVector));
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateDerivative(parameterDerivative2, fieldcache, 144, outMatrix));
+
+	int v = 0;
+	int m = 0;
+	for (int c = 0; c < 3; ++c)
+	{
+		for (int i = 0; i < 4; ++i)
+		{
+			double expectedVectorValue = 0.0;
+			for (int p = 0; p < 4; ++p)
+				expectedVectorValue += 2.0*phi[p][i]*(hostCoordinatesValue[p][c] - dataCoordinatesValue[p][c]);
+			//std::cerr << "c " << c << " i " << i << std::endl;
+			EXPECT_NEAR(expectedVectorValue, outVector[v++], TOL);
+			for (int d = 0; d < 3; ++d)
+			{
+				for (int j = 0; j < 4; ++j)
+				{
+					double expectedMatrixValue = 0.0;
+					if (c == d)
+						for (int p = 0; p < 4; ++p)
+							expectedMatrixValue += 2.0*phi[p][i]*phi[p][j];
+					//std::cerr << "c " << c << " i " << i << " d " << d << " j " << j << std::endl;
+					EXPECT_NEAR(expectedMatrixValue, outMatrix[m++], COARSE_TOL);
+				}
+			}
+		}
 	}
 }

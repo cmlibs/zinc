@@ -1047,7 +1047,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 											(this->parameterPerturbationIndex[pp + 1] == parameterIndex))
 										{
 											++pp;
-											if (this->parameterPerturbationDelta[pp + 1] == -delta)
+											if (this->parameterPerturbationDelta[pp] == -delta)
 												continue;  // no perturbation if +/- same delta
 											delta += this->parameterPerturbationDelta[pp];
 										}
