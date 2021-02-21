@@ -273,7 +273,7 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 		{ 0.9, 1.0 }
 	};
 	const double TOL = 1.0E-12;
-	const double COARSE_TOL = 1.0E-9;
+	const double COARSE_TOL = 1.0E-10;
 	for (int i = 0; i < 4; ++i)
 	{
 		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 2, xi[i]));

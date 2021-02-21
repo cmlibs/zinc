@@ -104,7 +104,7 @@ void FE_field_parameters::generateMaps()
 			if (range > maxRange)
 				maxRange = range;
 		}
-	this->perturbationDelta = ((maxRange > 0.0) ? maxRange : 1.0)*1.0E-6;
+	this->perturbationDelta = ((maxRange > 0.0) ? maxRange : 1.0)*1.0E-5;
 }
 
 FE_field_parameters *FE_field_parameters::create(FE_field *fieldIn)
