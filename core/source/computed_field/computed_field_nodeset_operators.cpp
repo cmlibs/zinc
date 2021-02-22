@@ -79,7 +79,10 @@ public:
 		return valueCache;
 	}
 
-	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache)
+	{
+		return true;
+	}
 
 	int list();
 
@@ -102,30 +105,32 @@ public:
 		return return_code;
 	}
 
-	/** Get current node-to-element map, which if valid means evaluating at elements.
+	/** Get current node-to-element map field, allowing evaluation at elements,
+	 * applying only to nodes mapped to the element.
 	 * @return  Non-accessed handle to element map field, or nullptr if none */
-	cmzn_field *getElementEvaluationMap() const
+	cmzn_field *getElementMapField() const
 	{
 		return (2 == this->field->number_of_source_fields) ? this->field->source_fields[1] : nullptr;
 	}
 
-	/** Set field to be evaluated at elements using the supplied map, or not.
+	/** Set or unset node-to-element map field, allowing evaluation at elements,
+	 * applying only to nodes mapped to the element.
 	 * @param elementMapField  Field giving map from nodes to elements where
 	 * field can be evaluated (currently field must be stored mesh location type),
 	 * or nullptr to disable */
-	int setElementEvaluationMap(cmzn_field *elementMapField)
+	int setElementMapField(cmzn_field *elementMapField)
 	{
 		if (elementMapField)
 		{
 			if (elementMapField->getManager() != this->field->getManager())
 			{
-				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementEvaluationMap:  Element map field is from a different region");
+				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementMapField:  Element map field is from a different region");
 				return CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_field_stored_mesh_location *storedMeshLocation = cmzn_field_cast_stored_mesh_location(elementMapField);
 			if (!storedMeshLocation)
 			{
-				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementEvaluationMap:  Element map field must be stored mesh location type");
+				display_message(ERROR_MESSAGE, "FieldNodesetOperator setElementMapField:  Element map field must be stored mesh location type");
 				return CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_field_stored_mesh_location_destroy(&storedMeshLocation);
@@ -143,9 +148,16 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	cmzn_field_id sourceField = getSourceField(0);
-	cmzn_field *elementMap = this->getElementEvaluationMap();
-	if (elementMap)
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
+	cmzn_field *elementMap = this->getElementMapField();
+	if ((elementMap) && (element_xi_location))
 	{
+		cmzn_element *element = element_xi_location->get_element();
+		if (!element->getMesh())
+		{
+			display_message(ERROR_MESSAGE, "FieldNodesetEvaluator evaluate:  Invalid element");
+			return 0;  // invalid element
+		}
 		// evaluate at element, operator applies to nodes with mapping to element
 		FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(this->nodeset);
 		cmzn_field_node_group *nodeGroup = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
@@ -160,12 +172,8 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 		FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
 		if (!embeddedNodeField)
 			return 1;  // no values
-		const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
-		if (!element_xi_location)
-			return 0;
-		cmzn_element *element = element_xi_location->get_element();
 		if (element->getMesh() != hostMesh)
-			return 0;  // not implemented; in future could map nodes embedded in faces
+			return 1;  // future: map nodes embedded in faces
 		// iterate over reverse map of element to nodes maintained in embeddedNodeField
 		int size = 0;
 		const DsLabelIndex *nodeIndexes = embeddedNodeField->getNodeIndexes(element->getIndex(), size);
@@ -195,28 +203,6 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 		cmzn_nodeiterator_destroy(&iterator);
 	}
 	return 1;
-}
-
-bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_fieldcache& cache)
-{
-	// Checks if source field is defined at a node in nodeset
-	FieldValueCache &inValueCache = *(field->getValueCache(cache));
-	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
-	extraCache.setTime(cache.getTime());
-	int return_code = 0;
-	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
-	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-	{
-		extraCache.setNode(node);
-		if (getSourceField(0)->core->is_defined_at_location(extraCache))
-		{
-			return_code = 1;
-			break;
-		}
-	}
-	cmzn_nodeiterator_destroy(&iterator);
-	return return_code == 1;
 }
 
 /** Lists a description of the nodeset_operator arguments */
@@ -445,7 +431,7 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 {
 	// terms are only used with LEAST_SQUARES_QUASI_NEWTON optimisation
 	// if ElementEvaluationMap is set, restricts sum to nodes with a valid element location in it
-	cmzn_field *elementMap = this->getElementEvaluationMap();
+	cmzn_field *elementMap = this->getElementMapField();
 	FE_field *elementXiField = nullptr;
 	if (elementMap)
 	{
@@ -483,7 +469,7 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 {
 	// terms are only used with LEAST_SQUARES_QUASI_NEWTON optimisation
 	// if ElementEvaluationMap is set, restricts sum to nodes with a valid element location in it
-	cmzn_field *elementMap = this->getElementEvaluationMap();
+	cmzn_field *elementMap = this->getElementMapField();
 	FE_field *elementXiField = nullptr;
 	if (elementMap)
 	{
@@ -660,14 +646,17 @@ int Computed_field_nodeset_mean_squares::evaluate(cmzn_fieldcache& cache, FieldV
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	TermOperatorSumSquaresCount termSumSquaresCount(this->field->number_of_components, valueCache.values);
-	int result = this->evaluateNodesetOperator(cache, inValueCache, termSumSquaresCount);
-	const int termCount = termSumSquaresCount.getTermCount();
-	if (termCount > 0)
+	const int result = this->evaluateNodesetOperator(cache, inValueCache, termSumSquaresCount);
+	if (result)
 	{
-		const FE_value scaling = 1.0 / static_cast<FE_value>(termCount);
-		for (int i = 0; i < this->field->number_of_components; i++)
-			valueCache.values[i] *= scaling;
-		return 1;
+		const int termCount = termSumSquaresCount.getTermCount();
+		if (termCount > 0)
+		{
+			const FE_value scaling = 1.0 / static_cast<FE_value>(termCount);
+			for (int i = 0; i < this->field->number_of_components; i++)
+				valueCache.values[i] *= scaling;
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -856,20 +845,20 @@ inline Computed_field_nodeset_operator *Computed_field_nodeset_operator_core_cas
 }
 
 cmzn_field_id
-cmzn_field_nodeset_operator_get_element_evaluation_map(
+cmzn_field_nodeset_operator_get_element_map_field(
 	cmzn_field_nodeset_operator_id nodeset_operator_field)
 {
 	if (!nodeset_operator_field)
 		return nullptr;
 	Computed_field_nodeset_operator *nodeset_operator_core =
 		Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
-	cmzn_field *element_map_field = nodeset_operator_core->getElementEvaluationMap();
+	cmzn_field *element_map_field = nodeset_operator_core->getElementMapField();
 	if (element_map_field)
 		element_map_field->access();
 	return element_map_field;
 }
 
-int cmzn_field_nodeset_operator_set_element_evaluation_map(
+int cmzn_field_nodeset_operator_set_element_map_field(
 	cmzn_field_nodeset_operator_id nodeset_operator_field,
 	cmzn_field_id element_map_field)
 {
@@ -877,7 +866,7 @@ int cmzn_field_nodeset_operator_set_element_evaluation_map(
 		return CMZN_ERROR_ARGUMENT;
 	Computed_field_nodeset_operator *nodeset_operator_core =
 		Computed_field_nodeset_operator_core_cast(nodeset_operator_field);
-	return nodeset_operator_core->setElementEvaluationMap(element_map_field);
+	return nodeset_operator_core->setElementMapField(element_map_field);
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
@@ -992,5 +981,19 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 			new Computed_field_nodeset_maximum(nodeset));
 	}
 	return field;
+}
+
+int cmzn_field_is_valid_nodeset_operator_element_map(cmzn_field_id field, void *)
+{
+	if (field)
+	{
+		cmzn_field_stored_mesh_location *stored_mesh_location = cmzn_field_cast_stored_mesh_location(field);
+		if (stored_mesh_location)
+		{
+			cmzn_field_stored_mesh_location_destroy(&stored_mesh_location);
+			return 1;
+		}
+	}
+	return 0;
 }
 

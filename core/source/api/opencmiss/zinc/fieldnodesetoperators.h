@@ -63,24 +63,28 @@ ZINC_API int cmzn_field_nodeset_operator_destroy(
 	cmzn_field_nodeset_operator_id *nodeset_operator_field_address);
 
 /**
- * Get field mapping from nodes to elements, if any, which if valid means nodeset
- * operator is evaluated per element.
+ * Get field mapping from nodes to elements, if any, which if valid means
+ * nodeset operator is evaluated per element at element/mesh locations, but
+ * over the whole nodeset at any other location.
  *
  * @param nodeset_operator_field  Nodeset operator field to query.
  * @return  Handle to element map field if nodeset operator is in element mode,
  * otherwise null/invalid handle.
  */
-ZINC_API cmzn_field_id cmzn_field_nodeset_operator_get_element_evaluation_map(
+ZINC_API cmzn_field_id cmzn_field_nodeset_operator_get_element_map_field(
 	cmzn_field_nodeset_operator_id nodeset_operator_field);
 
 /**
- * Set nodeset operator to be evaluated at element locations, evaluating over
- * the nodes with locations in the element given by the element map field
- * (currently must be stored mesh location field), or clear the map field to
- * evaluate over the entire nodeset.
- * When evaluating at an element in this mode, the reverse map from elements to
- * nodes is used to only perform the operator on nodes from the nodeset that
- * are in the element.
+ * Set or unset field mapping from nodes to elements. If a valid element map
+ * field is set, then when evaluating the field at an element/mesh location,
+ * the operator is evaluated in that element, applying only to nodes mapped
+ * into it. A reverse element->node map is maintained internally for this.
+ * Operators such as sum have a zero value where no nodes are mapped,
+ * which includes elements outside the host mesh of the map. Other operators
+ * including mean, minimum, maximum do not have valid values where no nodes
+ * are mapped.
+ * If no element map field is set (default), or if evaluating at a non-element
+ * location, the operator applies over all nodes as normal.
  *
  * @param nodeset_operator_field  Nodeset operator field to modify.
  * @param element_map_field  Field mapping from nodes to element locations for
@@ -88,7 +92,7 @@ ZINC_API cmzn_field_id cmzn_field_nodeset_operator_get_element_evaluation_map(
  * Pass null/invalid handle to clear element mode.
  * @return  Result OK on success, otherwise any other error code.
  */
-ZINC_API int cmzn_field_nodeset_operator_set_element_evaluation_map(
+ZINC_API int cmzn_field_nodeset_operator_set_element_map_field(
 	cmzn_field_nodeset_operator_id nodeset_operator_field,
 	cmzn_field_id element_map_field);
 

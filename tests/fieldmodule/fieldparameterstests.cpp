@@ -493,7 +493,7 @@ TEST(Fieldparameters, SumErrorSquaredMatrixVector)
 	EXPECT_TRUE(nodeset.isValid());
 	FieldNodesetSum sumErrorSquared = zinc.fm.createFieldNodesetSum(errorSquared, nodeset);
 	EXPECT_TRUE(sumErrorSquared.isValid());
-	EXPECT_EQ(RESULT_OK, sumErrorSquared.setElementEvaluationMap(hostLocation));
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.setElementMapField(hostLocation));
 
 	Fieldparameters fieldparameters = coordinates.getFieldparameters();
 	EXPECT_TRUE(fieldparameters.isValid());

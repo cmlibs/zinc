@@ -255,9 +255,9 @@ TEST(NodesetOperators, args)
 	EXPECT_FALSE(nodesetSum.isValid());
 	nodesetSum = zinc.fm.createFieldNodesetSum(constant, nodeset);
 	EXPECT_TRUE(nodesetSum.isValid());
-	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nodesetSum.setElementEvaluationMap(constant));
-	EXPECT_EQ(RESULT_OK, nodesetSum.setElementEvaluationMap(storedMeshLocation));
-	EXPECT_EQ(storedMeshLocation, nodesetSum.getElementEvaluationMap());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nodesetSum.setElementMapField(constant));
+	EXPECT_EQ(RESULT_OK, nodesetSum.setElementMapField(storedMeshLocation));
+	EXPECT_EQ(storedMeshLocation, nodesetSum.getElementMapField());
 }
 
 // Test evaluation of all nodeset operators with combinations of embedded nodes and groups
@@ -309,7 +309,7 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 				nodesetOperators[f] = zinc.fm.createFieldNodesetMaximum(cmissNumber, useNodeset);
 			EXPECT_TRUE(nodesetOperators[f].isValid());
 			if (j >= 2)
-				EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementEvaluationMap(hostLocation));
+				EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementMapField(hostLocation));
 			++f;
 		}
 	Fieldcache fieldcache = zinc.fm.createFieldcache();

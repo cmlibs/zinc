@@ -39,14 +39,14 @@ public:
 	{
 	}
 
-	Field getElementEvaluationMap() const
+	Field getElementMapField() const
 	{
-		return Field(cmzn_field_nodeset_operator_get_element_evaluation_map(this->getDerivedId()));
+		return Field(cmzn_field_nodeset_operator_get_element_map_field(this->getDerivedId()));
 	}
 		
-	int setElementEvaluationMap(const Field& elementMapField)
+	int setElementMapField(const Field& elementMapField)
 	{
-		return cmzn_field_nodeset_operator_set_element_evaluation_map(
+		return cmzn_field_nodeset_operator_set_element_map_field(
 			this->getDerivedId(), elementMapField.getId());
 	}
 

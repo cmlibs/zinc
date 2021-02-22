@@ -249,7 +249,7 @@ TEST(issue3614, read_embedded_nodes)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), sumCmissNumber);
 	cmzn_field_nodeset_operator_id nodesetOperator = cmzn_field_cast_nodeset_operator(sumCmissNumber);
 	EXPECT_NE(static_cast<cmzn_field_nodeset_operator_id>(0), nodesetOperator);
-	EXPECT_EQ(CMZN_OK, cmzn_field_nodeset_operator_set_element_evaluation_map(nodesetOperator, hostLocation));
+	EXPECT_EQ(CMZN_OK, cmzn_field_nodeset_operator_set_element_map_field(nodesetOperator, hostLocation));
 
 	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	EXPECT_EQ(CMZN_OK, cmzn_fieldcache_set_element(fieldcache, element));
