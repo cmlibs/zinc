@@ -22,8 +22,8 @@
 FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 	field(fieldIn->access()),
 	parametersCount(0),
-	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/-1),
-	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/-1),
+	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
+	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
 	fieldModifyCounter(1),  // force maps to be rebuilt
 	perturbationDelta(1.0E-5),
 	access_count(1)
@@ -136,14 +136,122 @@ int FE_field_parameters::deaccess(FE_field_parameters* &fe_field_parameters)
 	return CMZN_RESULT_OK;
 }
 
+int FE_field_parameters::getElementParameterIndexes(cmzn_element *element, int valuesCount, int *valuesOut, int startIndex)
+{
+	if (!((element) && (valuesCount >= 0) && (valuesOut)))
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes:  Invalid argument(s)");
+		return CMZN_RESULT_ERROR_ARGUMENT;
+	}
+	const FE_mesh_field_data *meshFieldData = this->field->getMeshFieldData(element->getMesh());
+	if (!meshFieldData)
+		return CMZN_RESULT_ERROR_NOT_FOUND;
+	FE_region *feRegion = this->field->get_FE_region();
+	const FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(feRegion, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	int elementParameterCount = 0;
+	const DsLabelIndex elementIndex = element->getIndex();
+	FE_mesh *mesh = element->getMesh();
+	const int componentCount = this->field->getNumberOfComponents();
+	// cache last values to save lookup for subsequent components or nodes
+	const FE_element_field_template *lastEft = nullptr;
+	const DsLabelIndex *nodeIndexes = nullptr;
+	const FE_node_field_info *lastNodeFieldInfo = nullptr;
+	const FE_node_field *nodeField = nullptr;
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const FE_mesh_field_template *meshFieldTemplate = meshFieldData->getComponentMeshfieldtemplate(c);
+		const FE_element_field_template *eft = meshFieldTemplate->getElementfieldtemplate(element->getIndex());
+		if (!eft)
+			return CMZN_RESULT_ERROR_NOT_FOUND;
+		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+			continue;  // not implemented, skipped for now
+		const int componentParameterCount = eft->getParameterCount();
+		if ((elementParameterCount + componentParameterCount) > valuesCount)
+		{
+			display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes:  Too many values for output array size");
+			return CMZN_RESULT_ERROR_ARGUMENT;
+		}
+		if (eft != lastEft)
+		{
+			// optimisation for same eft in consecutive components
+			FE_mesh_element_field_template_data *meshEftData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
+			nodeIndexes = meshEftData->getElementNodeIndexes(elementIndex);
+			if (!nodeIndexes)
+			{
+				display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes.  "
+					"Element %d field %s component %d missing local-to-global node map.",
+					element->getIdentifier(), this->field->getName(), c + 1);
+				return CMZN_RESULT_ERROR_GENERAL;  // add ERROR_INCOMPLETE_DATA?
+			}
+			lastEft = eft;
+		}
+		for (int p = 0; p < componentParameterCount; ++p)
+		{
+			// only need first parameter term to get parameter index
+			int term;
+			const int func = eft->getParameterTermFunctionAndTerm(p, /*parameterTerm*/0, term);
+			const int localNodeIndex = eft->getTermLocalNodeIndex(func, term);
+			const DsLabelIndex nodeIndex = nodeIndexes[localNodeIndex];
+			cmzn_node *node = feNodeset->getNode(nodeIndex);
+			if (!node)
+			{
+				display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes.  "
+					"Element %d field %s component %d missing global node for local node %d.",
+					element->getIdentifier(), field->getName(), c + 1, localNodeIndex + 1);
+				return CMZN_RESULT_ERROR_GENERAL;  // add ERROR_INCOMPLETE_DATA?
+			}
+			if (node->getNodeFieldInfo() != lastNodeFieldInfo)
+			{
+				nodeField = node->getNodeField(field);
+				if (!nodeField)
+				{
+					display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes.  "
+						"Element %d field %s (component %d) not defined at node %d mapped by local node %d",
+						element->getIdentifier(), field->getName(), c + 1, node->getIdentifier(), localNodeIndex + 1);
+					return CMZN_RESULT_ERROR_GENERAL;  // add ERROR_INCOMPLETE_DATA?
+				}
+				lastNodeFieldInfo = node->getNodeFieldInfo();
+			}
+			const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(func, term);
+			const int version = eft->getTermNodeVersion(func, term);
+			const FE_node_field_template *nft = nodeField->getComponent(c);
+			const int valueIndex = nft->getValueIndex(nodeValueLabel, version);
+			if (valueIndex < 0)
+			{
+				display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes.  "
+					"Element %d field %s component %d parameter %s version %d not found at node %d mapped by local node %d",
+					element->getIdentifier(), field->getName(), c + 1, ENUMERATOR_STRING(cmzn_node_value_label)(nodeValueLabel),
+					version + 1, node->getIdentifier(), localNodeIndex + 1);
+				return CMZN_RESULT_ERROR_GENERAL;  // add ERROR_INCOMPLETE_DATA?
+			}
+			DsLabelIndex parameterIndex = this->nodeParameterMap.getValue(nodeIndex);
+			if (parameterIndex < 0)
+			{
+				display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexes.  "
+					"Element %d field %s component %d no parameters mapped for node %d mapped by local node %d",
+					element->getIdentifier(), field->getName(), c + 1, node->getIdentifier(), localNodeIndex + 1);
+				return CMZN_RESULT_ERROR_GENERAL;
+			}
+			// offset by previous component values counts
+			for (int pc = 0; pc < c; ++pc)
+				parameterIndex += nodeField->getComponent(pc)->getTotalValuesCount();
+			valuesOut[elementParameterCount] = parameterIndex + valueIndex + startIndex;
+			++elementParameterCount;
+		}
+	}
+	return CMZN_RESULT_OK;
+}
+
 int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 {
-	const FE_mesh_field_data *meshFieldData = (element) ? this->field->getMeshFieldData(element->getMesh()) : nullptr;
-	if (!meshFieldData)
+	if (!element)
 	{
-		display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Element is invalid or not from this region");
+		display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Invalid element");
 		return -1;
 	}
+	const FE_mesh_field_data *meshFieldData = this->field->getMeshFieldData(element->getMesh());
+	if (!meshFieldData)
+		return 0;  // not defined on this element's mesh
 	int elementParameterCount = 0;
 	const int componentCount = this->field->getNumberOfComponents();
 	for (int c = 0; c < componentCount; ++c)
@@ -154,9 +262,9 @@ int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 			return 0;  // not defined on this element
 		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 		{
-			display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented for non-nodal parameters: ",
-				"Element %d component %d", element->getIdentifier(), c + 1);
-			continue;
+			display_message(WARNING_MESSAGE, "Fieldparameters getNumberOfElementParameters:  Not implemented for non-nodal parameters: ",
+				"Element %d component %d. Skipping.", element->getIdentifier(), c + 1);
+			continue;  // not implemented, skipped for now
 		}
 		elementParameterCount += eft->getParameterCount();
 	}

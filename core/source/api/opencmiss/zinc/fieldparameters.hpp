@@ -77,6 +77,16 @@ public:
 		return Differentialoperator(cmzn_fieldparameters_get_derivative_operator(this->id, order));
 	}
 
+	int getElementParameterIndexes(const Element& element, int valuesCount, int *valuesOut)
+	{
+		return cmzn_fieldparameters_get_element_parameter_indexes(this->id, element.getId(), valuesCount, valuesOut);
+	}
+
+	int getElementParameterIndexesZero(const Element& element, int valuesCount, int *valuesOut)
+	{
+		return cmzn_fieldparameters_get_element_parameter_indexes_zero(this->id, element.getId(), valuesCount, valuesOut);
+	}
+
 	Field getField() const
 	{
 		return Field(cmzn_fieldparameters_get_field(this->id));

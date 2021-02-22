@@ -67,6 +67,40 @@ ZINC_API cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operat
 	cmzn_fieldparameters_id fieldparameters, int order);
 
 /**
+ * Get the array of parameter indexes in the order used in element, used to
+ * assemble vector and matrix values obtained from parameter derivatives.
+ * This variant returns one-based indexes (first index is 1).
+ *
+ * @param fieldparameters  The field parameters object to query.
+ * @param element  The element to query.
+ * @param valuesCount  The size of the valuesOut array to fill, must be at
+ * least the number of element parameters.
+ * @param valuesOut  Array to receive one-based indexes.
+ * @return  Result OK on success, ERROR_NOT_FOUND if field not defined at
+ * element, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_get_element_parameter_indexes(
+	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element,
+	int valuesCount, int *valuesOut);
+
+/**
+ * Get the array of parameter indexes in the order used in element, used to
+ * assemble vector and matrix values obtained from parameter derivatives.
+ * This variant returns zero-based indexes (first index is 0).
+ *
+ * @param fieldparameters  The field parameters object to query.
+ * @param element  The element to query.
+ * @param valuesCount  The size of the valuesOut array to fill, must be at
+ * least the number of element parameters.
+ * @param valuesOut  Array to receive zero-based indexes.
+ * @return  Result OK on success, ERROR_NOT_FOUND if field not defined at
+ * element, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_get_element_parameter_indexes_zero(
+	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element,
+	int valuesCount, int *valuesOut);
+
+/**
 * Get the field these field parameters are for.
 *
 * @param fieldparameters  The field parameters object to query.

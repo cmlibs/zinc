@@ -87,6 +87,11 @@ int cmzn_fieldparameters::deaccess(cmzn_fieldparameters* &fieldparameters)
 	return CMZN_RESULT_OK;
 }
 
+int cmzn_fieldparameters::getElementParameterIndexes(cmzn_element *element, int valuesCount, int *valuesOut, int startIndex)
+{
+	return this->feFieldParameters->getElementParameterIndexes(element, valuesCount, valuesOut, startIndex);
+}
+
 FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, int meshOrder, int parameterOrder)
 {
 	if ((!mesh) || (mesh->get_FE_region() != this->feFieldParameters->getField()->get_FE_region())
@@ -159,6 +164,26 @@ cmzn_differentialoperator_id cmzn_fieldparameters_get_derivative_operator(
 	}
 	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
 	return nullptr;
+}
+
+int cmzn_fieldparameters_get_element_parameter_indexes(
+	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element,
+	int valuesCount, int *valuesOut)
+{
+	if (fieldparameters)
+		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 1);
+	display_message(ERROR_MESSAGE, "Fieldparameters getElementParametersIndexes:  Invalid Fieldparameters");
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+int cmzn_fieldparameters_get_element_parameter_indexes_zero(
+	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element,
+	int valuesCount, int *valuesOut)
+{
+	if (fieldparameters)
+		return fieldparameters->getElementParameterIndexes(element, valuesCount, valuesOut, 0);
+	display_message(ERROR_MESSAGE, "Fieldparameters getElementParameterIndexesZero:  Invalid Fieldparameters");
+	return CMZN_RESULT_ERROR_ARGUMENT;
 }
 
 cmzn_field_id cmzn_fieldparameters_get_field(

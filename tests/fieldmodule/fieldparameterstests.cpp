@@ -45,6 +45,20 @@ TEST(ZincFieldparameters, validAPI)
 
 	EXPECT_EQ(24, fieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(24, fieldparameters.getNumberOfParameters());
+	int parameterIndexes[24], parameterIndexesZero[24];
+	// some quick invalid argument tests that require a valid element and field defined
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getElementParameterIndexes(element, 0, parameterIndexes));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getElementParameterIndexes(element, 8, parameterIndexes));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexes(element, 24, parameterIndexes));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(element, 24, parameterIndexesZero));
+	for (int p = 0; p < 24; ++p)
+	{
+		// global parameters cycle slowest by node, then by component
+		// element parameters cycle slowest by component, then by the order first used
+		const int np = (p % 8)*3 + (p / 8);
+		EXPECT_EQ(np + 1, parameterIndexes[p]);
+		EXPECT_EQ(np, parameterIndexesZero[p]);
+	}
 
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
 	EXPECT_TRUE(parameterDerivative1.isValid());
@@ -132,6 +146,11 @@ TEST(ZincFieldparameters, invalidAPI)
 	EXPECT_EQ(-1, noFieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(-1, noFieldparameters.getNumberOfElementParameters(noElement));
 	EXPECT_EQ(-1, noFieldparameters.getNumberOfParameters());
+	int parameterIndexes[8];
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getElementParameterIndexes(noElement, 8, parameterIndexes));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getElementParameterIndexes(element, -1, parameterIndexes));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getElementParameterIndexes(element, 8, nullptr));
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, fieldparameters.getElementParameterIndexes(element, 8, parameterIndexes));
 
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/0);
 	EXPECT_FALSE(parameterDerivative1.isValid());
@@ -255,6 +274,17 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 
 	EXPECT_EQ(18, fieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(18, fieldparameters.getNumberOfParameters());
+	int parameterIndexes[18], parameterIndexesZero[18];
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexes(element, 18, parameterIndexes));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(element, 18, parameterIndexesZero));
+	for (int p = 0; p < 18; ++p)
+	{
+		// global parameters cycle slowest by node, then by component
+		// element parameters cycle slowest by component, then by the order first used
+		const int np = (p % 6)*3 + (p / 6);
+		EXPECT_EQ(np + 1, parameterIndexes[p]);
+		EXPECT_EQ(np, parameterIndexesZero[p]);
+	}
 
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
 	EXPECT_TRUE(parameterDerivative1.isValid());
@@ -469,6 +499,17 @@ TEST(Fieldparameters, SumErrorSquaredMatrixVector)
 	EXPECT_TRUE(fieldparameters.isValid());
 	EXPECT_EQ(12, fieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(12, fieldparameters.getNumberOfParameters());
+	int parameterIndexes[12], parameterIndexesZero[12];
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexes(element, 12, parameterIndexes));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(element, 12, parameterIndexesZero));
+	for (int p = 0; p < 12; ++p)
+	{
+		// global parameters cycle slowest by node, then by component
+		// element parameters cycle slowest by component, then by the order first used
+		const int np = (p % 4)*3 + (p / 4);
+		EXPECT_EQ(np + 1, parameterIndexes[p]);
+		EXPECT_EQ(np, parameterIndexesZero[p]);
+	}
 
 	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
 	EXPECT_TRUE(parameterDerivative1.isValid());
@@ -534,5 +575,60 @@ TEST(Fieldparameters, SumErrorSquaredMatrixVector)
 				}
 			}
 		}
+	}
+}
+
+// Test getting parameter indexes for a multi-element field with different value types
+TEST(Fieldparameters, parameterIndexes)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	const int elementCount = mesh3d.getSize();
+	ASSERT_EQ(elementCount, 2);
+
+	Fieldparameters fieldparameters = coordinates.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	int parameterCount = fieldparameters.getNumberOfParameters();
+	EXPECT_EQ(144, parameterCount);
+	Elementiterator iter = mesh3d.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	Element element;
+
+	const int elementNodes[2][8] =
+	{
+		{ 1, 2, 4, 5, 7, 8, 10, 11 },
+		{ 2, 3, 5, 6, 8, 9, 11, 12 }
+	};
+
+	int parameterIndexes[96];
+	int parameterIndexesZero[96];
+	int elementIndex = 0;
+	while ((element = iter.next()).isValid())
+	{
+		const int elementParameterCount = fieldparameters.getNumberOfElementParameters(element);
+		EXPECT_EQ(96, elementParameterCount);
+		EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexes(element, 96, parameterIndexes));
+		EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexesZero(element, 96, parameterIndexesZero));
+		for (int p = 0; p < 96; ++p)
+		{
+			// global parameters cycle slowest by node, then by component, then value, then version fastest
+			// element parameters cycle slowest by component, then by the order first used
+			const int c = p / 32;  // component
+			const int r = p % 32;
+			const int ln = r / 4;  // local node
+			const int vl = r % 4;  // value label
+			const int gn = elementNodes[elementIndex][ln] - 1;
+			const int np = gn*12 + c*4 + vl;
+			//std::cerr << "Element " << element.getIdentifier() << " p " << p << std::endl;
+			EXPECT_EQ(np + 1, parameterIndexes[p]);
+			EXPECT_EQ(np, parameterIndexesZero[p]);
+		}
+		++elementIndex;
 	}
 }
