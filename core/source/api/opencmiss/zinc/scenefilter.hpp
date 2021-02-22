@@ -114,6 +114,11 @@ inline bool operator==(const Scenefilter& a, const Scenefilter& b)
 
 class ScenefilterOperator : public Scenefilter
 {
+	cmzn_scenefilter_operator_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_scenefilter_operator_id>(id);
+	}
+
 public:
 
 	ScenefilterOperator() : Scenefilter()
@@ -123,11 +128,6 @@ public:
 	explicit ScenefilterOperator(cmzn_scenefilter_operator_id operator_filter_id) :
 		Scenefilter(reinterpret_cast<cmzn_scenefilter_id>(operator_filter_id))
 	{ }
-
-	cmzn_scenefilter_operator_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_scenefilter_operator_id>(id);
-	}
 
 	int appendOperand(const Scenefilter& operand)
 	{

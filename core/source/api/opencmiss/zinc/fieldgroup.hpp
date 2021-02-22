@@ -24,6 +24,11 @@ namespace Zinc
 
 class FieldGroup : public Field
 {
+	inline cmzn_field_group_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_group_id>(id);
+	}
+
 public:
 
 	FieldGroup() : Field(0)
@@ -40,11 +45,6 @@ public:
 		SUBELEMENT_HANDLING_MODE_NONE = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE,
 		SUBELEMENT_HANDLING_MODE_FULL = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL
 	};
-
-	inline cmzn_field_group_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_group_id>(id);
-	}
 
 	bool isEmpty()
 	{

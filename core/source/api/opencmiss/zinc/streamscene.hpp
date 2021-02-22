@@ -21,6 +21,13 @@ namespace Zinc
 
 class StreaminformationScene : public Streaminformation
 {
+	friend class Scene;
+
+	cmzn_streaminformation_scene_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_streaminformation_scene_id>(id);
+	}
+
 public:
 	StreaminformationScene() : Streaminformation()
 	{ }
@@ -33,11 +40,6 @@ public:
 	bool isValid() const
 	{
 		return (0 != id);
-	}
-
-	cmzn_streaminformation_scene_id getDerivedId() const
-	{
-		return reinterpret_cast<cmzn_streaminformation_scene_id>(id);
 	}
 
 	enum IODataType

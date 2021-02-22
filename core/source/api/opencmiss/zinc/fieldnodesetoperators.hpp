@@ -21,8 +21,6 @@ namespace Zinc
 
 class FieldNodesetOperator : public Field
 {
-protected:
-
 	inline cmzn_field_nodeset_operator_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_field_nodeset_operator_id>(id);

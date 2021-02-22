@@ -21,6 +21,13 @@ namespace Zinc
 
 class StreaminformationRegion : public Streaminformation
 {
+	friend class Region;
+
+	inline cmzn_streaminformation_region_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_streaminformation_region_id>(this->id);
+	}
+
 public:
 	StreaminformationRegion() : Streaminformation()
 	{ }
@@ -33,11 +40,6 @@ public:
 	bool isValid() const
 	{
 		return (0 != id);
-	}
-
-	inline cmzn_streaminformation_region_id getDerivedId() const
-	{
-		return reinterpret_cast<cmzn_streaminformation_region_id>(this->id);
 	}
 
 	enum Attribute

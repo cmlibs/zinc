@@ -23,6 +23,11 @@ namespace Zinc
 
 class FieldFiniteElement : public Field
 {
+	inline cmzn_field_finite_element_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
+	}
+
 public:
 
 	FieldFiniteElement() : Field(0)
@@ -32,11 +37,6 @@ public:
 	explicit FieldFiniteElement(cmzn_field_finite_element_id field_finite_element_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_finite_element_id))
 	{	}
-
-	inline cmzn_field_finite_element_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
-	}
 
 	int getNodeParameters(const Fieldcache& cache, int componentNumber,
 		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut)
@@ -62,9 +62,13 @@ public:
 
 class FieldEdgeDiscontinuity : public Field
 {
-private:
 	friend FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
 		const Field& sourceField);
+
+	inline cmzn_field_edge_discontinuity_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_edge_discontinuity_id>(id);
+	}
 
 public:
 
@@ -75,11 +79,6 @@ public:
 	explicit FieldEdgeDiscontinuity(cmzn_field_edge_discontinuity_id field_edge_discontinuity_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_edge_discontinuity_id))
 	{	}
-
-	inline cmzn_field_edge_discontinuity_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_edge_discontinuity_id>(id);
-	}
 
 	enum Measure
 	{

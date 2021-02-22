@@ -38,6 +38,11 @@ public:
 
 class FieldComponent : public Field
 {
+	inline cmzn_field_component_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_component_id>(id);
+	}
+
 public:
 
 	FieldComponent() : Field(0)
@@ -47,11 +52,6 @@ public:
 	explicit FieldComponent(cmzn_field_component_id field_component_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_component_id))
 	{	}
-
-	inline cmzn_field_component_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_component_id>(id);
-	}
 
 	int getComponentIndex()
 	{

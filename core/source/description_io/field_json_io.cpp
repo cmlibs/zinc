@@ -436,9 +436,9 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 					derivedField.setConditionalField(sourcefields[1]);
 				}
 				if (typeSettings["Measure"].isString())
-					cmzn_field_edge_discontinuity_set_measure(derivedField.getDerivedId(),
+					derivedField.setMeasure(static_cast<OpenCMISS::Zinc::FieldEdgeDiscontinuity::Measure>(
 						cmzn_field_edge_discontinuity_measure_enum_from_string(
-							typeSettings["Measure"].asCString()));
+							typeSettings["Measure"].asCString())));
 				field = derivedField;
 			}
 			delete[] sourcefields;
@@ -761,7 +761,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		{
 			char *enumString = cmzn_field_edge_discontinuity_measure_enum_to_string(
-				cmzn_field_edge_discontinuity_get_measure(field.castEdgeDiscontinuity().getDerivedId()));
+				static_cast<cmzn_field_edge_discontinuity_measure>(field.castEdgeDiscontinuity().getMeasure()));
 			if (enumString)
 			{
 				typeSettings["Measure"] = enumString;

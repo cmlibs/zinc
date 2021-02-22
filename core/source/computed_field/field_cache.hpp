@@ -362,9 +362,11 @@ public:
 		return this->region;
 	}
 
+	/** clear location including resetting time to 0.0 */
 	void clearLocation()
 	{
 		this->location = &this->location_time;
+		this->location->set_time(0.0);
 		this->locationChanged();
 	}
 
