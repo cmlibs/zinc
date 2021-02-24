@@ -242,11 +242,12 @@ public:
 		if (this->derivatives.size() <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
 		const int termCount = fieldDerivative.getTermCount(location);
-		if (!this->derivatives[cacheIndex])
-			this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, termCount);
+		DerivativeValueCache *derivativeValueCache = this->derivatives[cacheIndex];
+		if (derivativeValueCache)
+			derivativeValueCache->setTermCount(termCount);
 		else
-			this->derivatives[cacheIndex]->setTermCount(termCount);
-		return this->derivatives[cacheIndex];
+			derivativeValueCache = this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, termCount);
+		return derivativeValueCache;
 	}
 
 private:

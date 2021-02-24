@@ -463,9 +463,10 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 	}
 }
 
-// Test evaluation of 2nd parameter derivatives of sum error squared on element
-// which gives an element stiffness matrix used in fitting without smoothing
-TEST(Fieldparameters, SumErrorSquaredMatrixVector)
+// Test evaluation of 2nd parameter derivatives of sum square of data point
+// coordinate projection error on element which gives an element stiffness
+// matrix used in fitting without smoothing
+TEST(Fieldparameters, parameterDerivativeSumSquareProjectionError)
 {
 	ZincTestSetupCpp zinc;
 

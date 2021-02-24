@@ -78,7 +78,10 @@ public:
 		return valueCache;
 	}
 
-	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache)
+	{
+		return true;
+	}
 
 	void appendNumbersOfPointsString(char **theString, int *error) const;
 
@@ -169,15 +172,29 @@ public:
 	}
 
 protected:
-	template <class ProcessTerm> int evaluateTerms(ProcessTerm &processTerm);
+	/** @param element_xi_location  If set, evaluate only at the supplied element */
+	template <class ProcessTerm> int evaluateTerms(ProcessTerm &processTerm, const Field_location_element_xi *element_xi_location);
 };
 
-template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(ProcessTerm &processTerm)
+template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(ProcessTerm &processTerm, const Field_location_element_xi *element_xi_location)
 {
+	IntegrationPointsCache integrationCache(this->quadratureRule, static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
+	if (element_xi_location)
+	{
+		cmzn_element *element = element_xi_location->get_element();
+		if (cmzn_mesh_contains_element(this->getMesh(), element))
+		{
+			IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
+			if (0 == shapePoints)
+				return 0;
+			processTerm.setElement(element);
+			shapePoints->forEachPoint(processTerm);
+		}
+		return 1;
+	}
 	int result = 1;
 	cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
 	cmzn_element_id element = 0;
-	IntegrationPointsCache integrationCache(this->quadratureRule, static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
 	while (0 != (element = iterator->nextElement()))
 	{
 		IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
@@ -311,12 +328,7 @@ public:
 int Computed_field_mesh_integral::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	IntegralTermSum sumTerms(*this, cache, RealFieldValueCache::cast(inValueCache));
-	return this->evaluateTerms(sumTerms);
-}
-
-bool Computed_field_mesh_integral::is_defined_at_location(cmzn_fieldcache& cache)
-{
-	return true;
+	return this->evaluateTerms(sumTerms, cache.get_location_element_xi());
 }
 
 void Computed_field_mesh_integral::appendNumbersOfPointsString(char **theString, int *error) const
@@ -505,7 +517,7 @@ int Computed_field_mesh_integral_squares::evaluate_sum_square_terms(
 {
 	IntegralTermAppendSquares appendSquares(*this, cache,
 		RealFieldValueCache::cast(inValueCache), number_of_values, values);
-	int result = this->evaluateTerms(appendSquares);
+	int result = this->evaluateTerms(appendSquares, /*location_element_xi*/nullptr);  // always integrate over whole mesh
 	if (result && (appendSquares.getRemainingValuesCount() != 0))
 	{
 		display_message(ERROR_MESSAGE, "Computed_field_mesh_integral_squares.evaluate_sum_square_terms  "
@@ -553,7 +565,7 @@ public:
 int Computed_field_mesh_integral_squares::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	IntegralTermSumSquares sumSquares(*this, cache, RealFieldValueCache::cast(inValueCache));
-	return this->evaluateTerms(sumSquares);
+	return this->evaluateTerms(sumSquares, cache.get_location_element_xi());
 }
 
 } // namespace
