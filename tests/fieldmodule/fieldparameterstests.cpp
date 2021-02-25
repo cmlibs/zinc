@@ -633,3 +633,73 @@ TEST(Fieldparameters, parameterIndexes)
 		++elementIndex;
 	}
 }
+
+// Test getting, adding and setting field parameters
+TEST(Fieldparameters, getaddsetParameters)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	const int elementCount = mesh3d.getSize();
+	ASSERT_EQ(elementCount, 2);
+
+	Fieldparameters noFieldparameters;
+	Fieldparameters fieldparameters = coordinates.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	int parameterCount = fieldparameters.getNumberOfParameters();
+	ASSERT_EQ(144, parameterCount);
+
+	double parameters1[144], parameters2[144];
+	const double TOL = 1.0E-12;
+
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, noFieldparameters.getParameters(144, parameters1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getParameters(144, nullptr));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.getParameters(120, parameters1));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getParameters(144, parameters1));
+
+	// test correct values are in parameters1, then copy to compare later
+	for (int n = 0; n < 12; ++n)
+	{
+		const int pStart = n*12;
+		// x
+		EXPECT_DOUBLE_EQ(1.0*(n % 3), parameters1[pStart]);
+		EXPECT_DOUBLE_EQ(1.0, parameters1[pStart + 1]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 2]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 3]);
+		// y
+		EXPECT_DOUBLE_EQ(1.0*((n / 3) % 2), parameters1[pStart + 4]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 5]);
+		EXPECT_DOUBLE_EQ(1.0, parameters1[pStart + 6]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 7]);
+		// z
+		EXPECT_DOUBLE_EQ(1.0*(n / 6), parameters1[pStart + 8]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 9]);
+		EXPECT_DOUBLE_EQ(0.0, parameters1[pStart + 10]);
+		EXPECT_DOUBLE_EQ(1.0, parameters1[pStart + 11]);
+	}
+	for (int i = 0; i < 144; ++i)
+		parameters2[i] = 0.5*parameters1[i];
+
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, noFieldparameters.addParameters(144, parameters2));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.addParameters(144, nullptr));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.addParameters(120, parameters2));
+	EXPECT_EQ(RESULT_OK, fieldparameters.addParameters(144, parameters2));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getParameters(144, parameters2));
+
+	for (int i = 0; i < 144; ++i)
+		EXPECT_NEAR(1.5*parameters1[i], parameters2[i], TOL);
+
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, noFieldparameters.setParameters(144, parameters1));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.setParameters(144, nullptr));
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, fieldparameters.setParameters(120, parameters1));
+	EXPECT_EQ(RESULT_OK, fieldparameters.setParameters(144, parameters1));
+	EXPECT_EQ(RESULT_OK, fieldparameters.getParameters(144, parameters2));
+
+	for (int i = 0; i < 144; ++i)
+		EXPECT_DOUBLE_EQ(parameters1[i], parameters2[i]);
+}

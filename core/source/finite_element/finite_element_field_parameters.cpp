@@ -21,7 +21,7 @@
 
 FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 	field(fieldIn->access()),
-	parametersCount(0),
+	parameterCount(0),
 	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
 	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
 	fieldModifyCounter(1),  // force maps to be rebuilt
@@ -95,7 +95,7 @@ void FE_field_parameters::generateMaps()
 			++nodeRangeCount;
 		}
 	}
-	this->parametersCount = parameterIndex;
+	this->parameterCount = parameterIndex;
 	this->fieldModifyCounter = 0;  // concurrency point
 	// following could be improved knowing the number of elements
 	// basically want a fraction of typical or minimum element span
@@ -274,5 +274,176 @@ int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 int FE_field_parameters::getNumberOfParameters()
 {
 	this->checkMaps();
-	return this->parametersCount;
+	return this->parameterCount;
+}
+
+template <class ProcessValuesOperator> int FE_field_parameters::processParameters(ProcessValuesOperator& processValues)
+{
+	if (!processValues.checkValues(this->parameterCount))
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters %s:  Invalid argument(s)", processValues.getApiName());
+		return CMZN_RESULT_ERROR_ARGUMENT;
+	}
+	FE_region *feRegion = this->field->get_FE_region();
+	FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(feRegion, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeiterator *nodeIter = feNodeset->createNodeiterator();
+	FE_node_field_info *lastFieldInfo = nullptr;
+	const FE_node_field *nodeField = nullptr;
+	DsLabelIndex nodeValuesCount = 0;
+	cmzn_node *node;
+	const int componentCount = this->field->getNumberOfComponents();
+	int valueIndex = 0;
+	while ((node = nodeIter->nextNode()) != nullptr)
+	{
+		if (node->fields != lastFieldInfo)
+		{
+			lastFieldInfo = node->fields;
+			nodeField = node->getNodeField(this->field);
+			if (!nodeField)
+			{
+				// not defined on node
+				nodeValuesCount = 0;
+				continue;
+			}
+			nodeValuesCount = nodeField->getTotalValuesCount();
+		}
+		else if (nodeValuesCount == 0)
+		{
+			continue;  // not defined on node
+		}
+		if ((valueIndex + nodeValuesCount) > this->parameterCount)
+		{
+			display_message(ERROR_MESSAGE, "Fieldparameters %s:  Not enough values supplied", processValues.getApiName());
+			return CMZN_RESULT_ERROR_ARGUMENT;
+		}
+		for (int c = 0; c < componentCount; ++c)
+		{
+			const FE_node_field_template *nft = nodeField->getComponent(c);
+			const int componentValuesCount = nft->getTotalValuesCount();
+			if (!processValues(node, this->field, c, /*time*/0.0, componentValuesCount, valueIndex))
+			{
+				display_message(ERROR_MESSAGE, "Fieldparameters %s:  Failed to process node field component", processValues.getApiName());
+				return CMZN_RESULT_ERROR_GENERAL;
+			}
+			valueIndex += componentValuesCount;
+		}
+	}
+	return CMZN_RESULT_OK;
+}
+
+namespace {
+
+template <typename ValueType> class ProcessValuesOperatorBase
+{
+protected:
+	const int valuesCount;
+	ValueType *values;
+
+public:
+	ProcessValuesOperatorBase(int valuesCountIn, ValueType *valuesIn) :
+		valuesCount(valuesCountIn),
+		values(valuesIn)
+	{
+	}
+
+	bool checkValues(int minimumValueCount)
+	{
+		return (this->values) && (this->valuesCount >= minimumValueCount);
+	}
+};
+
+template <typename ValueType> class ProcessValuesOperatorModify : public ProcessValuesOperatorBase<ValueType>
+{
+private:
+	FE_region *feRegion;
+
+public:
+	ProcessValuesOperatorModify(FE_region *feRegionIn, int valuesCountIn, ValueType *valuesIn) :
+		ProcessValuesOperatorBase(valuesCountIn, valuesIn),
+		feRegion(feRegionIn)
+	{
+		FE_region_begin_change(feRegion);
+	}
+
+	~ProcessValuesOperatorModify()
+	{
+		FE_region_end_change(feRegion);
+	}
+};
+
+}  // anonymous namespace
+
+int FE_field_parameters::addParameters(int valuesCount, const FE_value *valuesIn)
+{
+	class ProcessValuesOperatorAdd : public ProcessValuesOperatorModify<const FE_value>
+	{
+	public:
+		ProcessValuesOperatorAdd(FE_region *feRegionIn, int valuesCountIn, const FE_value *valuesIn) :
+			ProcessValuesOperatorModify(feRegionIn, valuesCountIn, valuesIn)
+		{
+		}
+
+		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
+		{
+			return cmzn_node_add_field_component_FE_value_values(node, field, componentNumber,
+				/*time*/0.0, processValuesCount, this->values + valueIndex);
+		}
+
+		const char *getApiName()
+		{
+			return "addParameters";
+		}
+	};
+	ProcessValuesOperatorAdd processAdd(this->field->get_FE_region(), valuesCount, valuesIn);
+	return this->processParameters(processAdd);
+}
+
+int FE_field_parameters::getParameters(int valuesCount, FE_value *valuesOut)
+{
+	class ProcessValuesOperatorGet : public ProcessValuesOperatorBase<FE_value>
+	{
+	public:
+		ProcessValuesOperatorGet(int valuesCountIn, FE_value *valuesIn) :
+			ProcessValuesOperatorBase(valuesCountIn, valuesIn)
+		{
+		}
+
+		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
+		{
+			return cmzn_node_get_field_component_FE_value_values(node, field, componentNumber,
+				/*time*/0.0, processValuesCount, this->values + valueIndex);
+		}
+
+		const char *getApiName()
+		{
+			return "getParameters";
+		}
+	};
+	ProcessValuesOperatorGet processGet(valuesCount, valuesOut);
+	return this->processParameters(processGet);
+}
+
+int FE_field_parameters::setParameters(int valuesCount, const FE_value *valuesIn)
+{
+	class ProcessValuesOperatorSet : public ProcessValuesOperatorModify<const FE_value>
+	{
+	public:
+		ProcessValuesOperatorSet(FE_region *feRegionIn, int valuesCountIn, const FE_value *valuesIn) :
+			ProcessValuesOperatorModify(feRegionIn, valuesCountIn, valuesIn)
+		{
+		}
+
+		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
+		{
+			return cmzn_node_set_field_component_FE_value_values(node, field, componentNumber,
+				/*time*/0.0, processValuesCount, this->values + valueIndex);
+		}
+
+		const char *getApiName()
+		{
+			return "setParameters";
+		}
+	};
+	ProcessValuesOperatorSet processSet(this->field->get_FE_region(), valuesCount, valuesIn);
+	return this->processParameters(processSet);
 }

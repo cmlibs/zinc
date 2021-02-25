@@ -129,6 +129,21 @@ int cmzn_fieldparameters::getNumberOfParameters() const
 	return this->feFieldParameters->getNumberOfParameters();
 }
 
+int cmzn_fieldparameters::addParameters(int valuesCount, const FE_value *valuesIn)
+{
+	return this->feFieldParameters->addParameters(valuesCount, valuesIn);
+}
+
+int cmzn_fieldparameters::getParameters(int valuesCount, FE_value *valuesOut)
+{
+	return this->feFieldParameters->getParameters(valuesCount, valuesOut);
+}
+
+int cmzn_fieldparameters::setParameters(int valuesCount, const FE_value *valuesIn)
+{
+	return this->feFieldParameters->setParameters(valuesCount, valuesIn);
+}
+
 FE_value cmzn_fieldparameters::getPerturbationDelta() const
 {
 	return this->feFieldParameters->getPerturbationDelta();
@@ -210,5 +225,35 @@ int cmzn_fieldparameters_get_number_of_parameters(
 	if (fieldparameters)
 		return fieldparameters->getNumberOfParameters();
 	display_message(ERROR_MESSAGE, "Fieldparameters getNumberOfParameters:  Invalid Fieldparameters");
+	return -1;
+}
+
+int cmzn_fieldparameters_add_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, const double *valuesIn)
+{
+	if (fieldparameters)
+		return fieldparameters->addParameters(valuesCount, valuesIn);
+	display_message(ERROR_MESSAGE, "Fieldparameters addParameters:  Invalid Fieldparameters");
+	return -1;
+}
+
+int cmzn_fieldparameters_get_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, double *valuesOut)
+{
+	if (fieldparameters)
+		return fieldparameters->getParameters(valuesCount, valuesOut);
+	display_message(ERROR_MESSAGE, "Fieldparameters addParameters:  Invalid Fieldparameters");
+	return -1;
+}
+
+int cmzn_fieldparameters_set_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, const double *valuesIn)
+{
+	if (fieldparameters)
+		return fieldparameters->setParameters(valuesCount, valuesIn);
+	display_message(ERROR_MESSAGE, "Fieldparameters setParameters:  Invalid Fieldparameters");
 	return -1;
 }

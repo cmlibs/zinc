@@ -4215,8 +4215,7 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field,
-		node->fields->node_field_list);
+	FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d",
@@ -4270,6 +4269,67 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 	return CMZN_OK;
 }
 
+template <typename VALUE_TYPE> int cmzn_node_add_field_component_values(
+	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
+	int valuesCount, const VALUE_TYPE *valuesIn)
+{
+	if (!(node && node->fields && node->values_storage
+		&& (0 <= componentNumber) && (componentNumber < field->getNumberOfComponents()) && (valuesIn)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_values<VALUE_TYPE>.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_node_field *node_field = node->getNodeField(field);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d", field->getName(), node->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const FE_node_field_template &nft = *(node_field->getComponent(componentNumber));
+	const int totalValuesCount = nft.getTotalValuesCount();
+	if (totalValuesCount != valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s component %d at node %d has %d values, %d are supplied",
+			field->getName(), componentNumber + 1, node->getIdentifier(), totalValuesCount, valuesCount);
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const VALUE_TYPE *source = valuesIn;
+	if (node_field->time_sequence)
+	{
+		int time_index = 0;
+		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		VALUE_TYPE **destArray = (VALUE_TYPE **)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			(*destArray)[time_index] += *source;
+			++destArray;
+			++source;
+		}
+	}
+	else
+	{
+		VALUE_TYPE *dest = (VALUE_TYPE *)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			*dest += *source;
+			++dest;
+			++source;
+		}
+	}
+	// notify of changes, but only for valid nodes (i.e. not template nodes)
+	if (node->getIndex() >= 0)
+	{
+		node->fields->nodeset->nodeFieldChange(node, field);
+	}
+	return CMZN_OK;
+}
+
 template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
 	int valuesCount, const VALUE_TYPE *valuesIn)
@@ -4280,8 +4340,7 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_values<VALUE_TYPE>.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-		field, node->fields->node_field_list);
+	FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE,
@@ -4342,6 +4401,18 @@ int cmzn_node_get_field_component_FE_value_values(cmzn_node *node,
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return cmzn_node_get_field_component_values(node, field, componentNumber, time, valuesCount, valuesOut);
+}
+
+int cmzn_node_add_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const FE_value *valuesIn)
+{
+	if (!(field && (field->getValueType() == FE_VALUE_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_FE_value_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_add_field_component_values(node, field, componentNumber, time, valuesCount, valuesIn);
 }
 
 int cmzn_node_set_field_component_FE_value_values(cmzn_node *node,

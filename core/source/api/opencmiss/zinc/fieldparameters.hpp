@@ -102,6 +102,20 @@ public:
 		return cmzn_fieldparameters_get_number_of_parameters(this->id);
 	}
 
+	int addParameters(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_fieldparameters_add_parameters(this->id, valuesCount, valuesIn);
+	}
+
+	int getParameters(int valuesCount, double *valuesOut)
+	{
+		return cmzn_fieldparameters_get_parameters(this->id, valuesCount, valuesOut);
+	}
+
+	int setParameters(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_fieldparameters_set_parameters(this->id, valuesCount, valuesIn);
+	}
 };
 
 inline Fieldparameters Field::getFieldparameters()

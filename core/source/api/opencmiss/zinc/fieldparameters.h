@@ -130,6 +130,50 @@ ZINC_API int cmzn_fieldparameters_get_number_of_element_parameters(
 ZINC_API int cmzn_fieldparameters_get_number_of_parameters(
 	cmzn_fieldparameters_id fieldparameters);
 
+/**
+ * Add incremental values to all field parameters.
+ *
+ * @param fieldparameters  The field parameters whose field will be modified.
+ * @param valuesCount  The size of the valuesIn array, must be at least the
+ * total number of parameters.
+ * @param valuesIn  Array containing increments to add to all field parameters,
+ * in their default index order i.e. given by get element parameter indexes
+ * functions.
+ * @return  Result OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_add_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, const double *valuesIn);
+
+/**
+ * Get all field parameters.
+ *
+ * @param fieldparameters  The field parameters to query.
+ * @param valuesCount  The size of the valuesOut array, must be at least the
+ * total number of parameters.
+ * @param valuesOut  Array to contain values of all field parameters, in their
+ * default index order i.e. given by get element parameter indexes functions.
+ * @return  Result OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_get_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Set all field parameters.
+ *
+ * @param fieldparameters  The field parameters whose field will be modified.
+ * @param valuesCount  The size of the valuesIn array, must be at least the
+ * total number of parameters.
+ * @param valuesIn  Array containing new values for all field parameters, in
+ * their default index order i.e. given by get element parameter indexes
+ * functions.
+ * @return  Result OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_set_parameters(
+	cmzn_fieldparameters_id fieldparameters,
+	int valuesCount, const double *valuesIn);
+
 #ifdef __cplusplus
 }
 #endif

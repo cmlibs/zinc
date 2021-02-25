@@ -346,6 +346,26 @@ int cmzn_node_set_field_component_FE_value_values(cmzn_node *node,
 	const FE_value *valuesIn);
 
 /**
+ * Add increment to all parameters for field component at node and time.
+ * Parameter order cycles slowest for derivative / value label, with versions
+ * for a given value label consecutive.
+ *
+ * @param node  The node which stores the field values.
+ * @param field  The fields whose values are to be set.
+ * @param componentNumber  The component number starting at 0.
+ * @param time  The time to set values at, ignored for non-time-varying field.
+ * For a time-varying field, must exactly equal a time at which parameters are
+ * stored.
+ * @param valuesCount  The size of the values array. Must match number of
+ * values for the component.
+ * @param valuesIn  The array of values to add.
+ * @return  Result OK on success, any other value on failure.
+ */
+int cmzn_node_add_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const FE_value *valuesIn);
+
+/**
  * Get all parameters for field component at node and time. Integer variant.
  * Parameter order cycles slowest for derivative / value label, with versions
  * for a given value label consecutive.

@@ -26,7 +26,7 @@ struct FE_field;
 class FE_field_parameters
 {
 	FE_field *field;  // accessed field owning these parameters
-	int parametersCount;
+	int parameterCount;  // total number of parameters
 	// map from node index to first parameter held at that node or -1 if none
 	// all node parameters are consecutive, components varying slowest
 	block_array<DsLabelIndex, DsLabelIndex> nodeParameterMap;
@@ -48,6 +48,13 @@ class FE_field_parameters
 		if (this->fieldModifyCounter)
 			this->generateMaps();
 	}
+
+	/** Generic method implementing common parts of add/get/set field parameters methods.
+	 * @param processValues  Class performing operation on values, implementing methods:
+	 * bool checkValues(int minimumValueCount)
+	 * operator()(node, field, componentNumber, time, processValuesCount, valueIndex)
+	 * const char *getApiName() */
+	template <class ProcessValuesOperator> int processParameters(ProcessValuesOperator& processValues);
 
 public:
 
@@ -83,6 +90,24 @@ public:
 	int getNumberOfElementParameters(cmzn_element *element);
 
 	int getNumberOfParameters();
+
+	/* Add incremental values to all field parameters.
+	 * @param valuesCount  The size of the valuesIn array >= total number of parameters.
+	 * @param valuesIn  Array containing increments to add, in index order.
+	 * @return Result OK on success, or error code. */
+	int addParameters(int valuesCount, const FE_value *valuesIn);
+
+	/* Get values of all field parameters.
+	 * @param valuesCount  The size of the valuesOut array >= total number of parameters.
+	 * @param valuesOut  Array to fill with parameter values, in index order.
+	 * @return Result OK on success, or error code. */
+	int getParameters(int valuesCount, FE_value *valuesOut);
+
+	/* Assign values to all field parameters.
+	 * @param valuesCount  The size of the valuesIn array >= total number of parameters.
+	 * @param valuesIn  Array containing new parameter values, in index order.
+	 * @return Result OK on success, or error code. */
+	int setParameters(int valuesCount, const FE_value *valuesIn);
 
 	/** @return  Positive delta to apply when perturbing parameters to calculate numerical derivatives */
 	FE_value getPerturbationDelta() const
