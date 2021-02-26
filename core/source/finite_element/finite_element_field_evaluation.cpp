@@ -437,9 +437,9 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 									const FE_mesh_element_field_template_data *mftData = fieldElement->getMesh()->getElementfieldtemplateData(eft->getIndexInMesh());
 									if (CMZN_OK != mftData->getElementScaleFactors(fieldElementIndex, scaleFactors))
 									{
-										display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-											"Element %d is missing scale factors for field %s component %d.",
-											element->getIdentifier(), field->getName(), component_number + 1);
+										display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
+											"Element %d dimension %d is missing scale factors for field %s component %d.",
+											fieldElement->getIdentifier(), fieldElement->getDimension(), field->getName(), component_number + 1);
 										return_code = 0;
 										break;
 									}

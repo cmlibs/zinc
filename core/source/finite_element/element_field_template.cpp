@@ -871,7 +871,7 @@ bool FE_element_field_template::validateAndLock()
 			// invalid node label denotes legacy case where version stores a node DOF index
 			if (nodeValueLabelsValid && (this->nodeValueLabels[tt] != CMZN_NODE_VALUE_LABEL_INVALID) &&
 				((this->nodeValueLabels[tt] < CMZN_NODE_VALUE_LABEL_VALUE)
-				|| (this->nodeValueLabels[tt] > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)))
+					|| (this->nodeValueLabels[tt] > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)))
 			{
 				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Node value label is invalid");
 				valid = nodeValueLabelsValid = false;
@@ -884,14 +884,19 @@ bool FE_element_field_template::validateAndLock()
 		}
 		if (0 < this->numberOfLocalScaleFactors)
 		{
+			std::vector<int> scaleFactorUseCounts(this->numberOfLocalScaleFactors, 0);
 			bool scaleFactorIndexesValid = true;
 			for (int si = 0; si < this->totalLocalScaleFactorIndexes; ++si)
 			{
-				if (scaleFactorIndexesValid &&
-					((this->localScaleFactorIndexes[si] < 0) || (this->localScaleFactorIndexes[si] >= this->numberOfLocalScaleFactors)))
+				const int localScaleFactorIndex = this->localScaleFactorIndexes[si];
+				if ((0 <= localScaleFactorIndex) && (localScaleFactorIndex < this->numberOfLocalScaleFactors))
+				{
+					++(scaleFactorUseCounts[localScaleFactorIndex]);
+				}
+				else if (scaleFactorIndexesValid)
 				{
 					display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Term local scale factor index out of range");
-					valid = scaleFactorIndexesValid = false;
+					valid = scaleFactorIndexesValid = false;  // so only warn once
 				}
 			}
 			bool hasNodeScaleFactors = false;
@@ -899,6 +904,11 @@ bool FE_element_field_template::validateAndLock()
 			bool scaleFactorIdentifiersValidOther = true;
 			for (int s = 0; s < this->numberOfLocalScaleFactors; ++s)
 			{
+				if (scaleFactorUseCounts[s] == 0)
+				{
+					display_message(WARNING_MESSAGE, "Elementfieldtemplate validate:  Local scale factor %d is not used", s + 1);
+					//valid = false;  // enforce later
+				}
 				if (isScaleFactorTypeElement(this->scaleFactorTypes[s]))
 				{
 					if (scaleFactorIdentifiersValidElement && (this->scaleFactorIdentifiers[s] != 0))
@@ -971,72 +981,75 @@ bool FE_element_field_template::validateAndLock()
 			}
 		}
 	}
-	// calculate parameter maps
-	this->parameterCount = this->numberOfFunctions;  // default
-	this->parameterFunctionTermsSize = 0;
-	if (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
+	if (valid)
 	{
-		// number of parameters cannot exceed totalTermCount, so allocate to this and possibly waste a little
-		this->parameterTermCounts = new int[this->totalTermCount];
-		this->parameterTermOffsets = new int[this->totalTermCount];
-		this->parameterFunctionTerms = new int[2*this->totalTermCount];  // 2x for function, term
-		if (!((this->parameterTermCounts) && (this->parameterTermOffsets) && (this->parameterFunctionTerms)))
+		// calculate parameter maps
+		this->parameterCount = this->numberOfFunctions;  // default
+		this->parameterFunctionTermsSize = 0;
+		if (CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE == this->mappingMode)
 		{
-			display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Failed to allocate parameter maps");
-			valid = false;
-		}
-		else
-		{
-			bool oneTermPerFunction = true;  // until proven false
-			this->parameterCount = 0;
-			for (int f = 0; f < this->numberOfFunctions; ++f)
+			// number of parameters cannot exceed totalTermCount, so allocate to this and possibly waste a little
+			this->parameterTermCounts = new int[this->totalTermCount];
+			this->parameterTermOffsets = new int[this->totalTermCount];
+			this->parameterFunctionTerms = new int[2*this->totalTermCount];  // 2x for function, term
+			if (!((this->parameterTermCounts) && (this->parameterTermOffsets) && (this->parameterFunctionTerms)))
 			{
-				if (oneTermPerFunction && (this->termCounts[f] != 1))
-					oneTermPerFunction = false;
-				for (int t = 0; t < this->termCounts[f]; ++t)
-				{
-					const int ft = this->termOffsets[f] + t;
-					int p = 0;
-					for (; p < this->parameterCount; ++p)
-					{
-						const int pftOffset = this->parameterTermOffsets[p];  // first parameter term only
-						const int ftExisting = this->termOffsets[this->parameterFunctionTerms[pftOffset]] + this->parameterFunctionTerms[pftOffset + 1];
-						if ((this->localNodeIndexes[ft] == this->localNodeIndexes[ftExisting])
-							&& (this->nodeValueLabels[ft] == this->nodeValueLabels[ftExisting])
-							&& (this->nodeVersions[ft] == this->nodeVersions[ftExisting]))
-						{
-							break;
-						}
-					}
-					int pftOffset;
-					if (p < this->parameterCount)
-					{
-						// insert new term for existing parameter p: offset later parameter function terms
-						for (int np = p + 1; np < this->parameterCount; ++np)
-							this->parameterTermOffsets[np] += 2;
-						pftOffset = this->parameterTermOffsets[p] + 2*parameterTermCounts[p];
-						for (int os = this->parameterFunctionTermsSize - 1; os >= pftOffset; --os)
-							this->parameterFunctionTerms[os + 2] = this->parameterFunctionTerms[os];
-						++(this->parameterTermCounts[p]);
-					}
-					else
-					{
-						// add new parameter with one term
-						this->parameterTermCounts[this->parameterCount] = 1;
-						this->parameterTermOffsets[this->parameterCount] = this->parameterFunctionTermsSize;
-						++(this->parameterCount);
-						pftOffset = this->parameterFunctionTermsSize;
-					}
-					this->parameterFunctionTerms[pftOffset    ] = f;
-					this->parameterFunctionTerms[pftOffset + 1] = t;
-					this->parameterFunctionTermsSize += 2;
-				}
+				display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Failed to allocate parameter maps");
+				valid = false;
 			}
-			if (oneTermPerFunction && (this->parameterCount == this->numberOfFunctions))
+			else
 			{
-				// can clear maps and use default behaviour
-				this->clearParameterMaps();
-				this->parameterCount = this->numberOfFunctions;
+				bool oneTermPerFunction = true;  // until proven false
+				this->parameterCount = 0;
+				for (int f = 0; f < this->numberOfFunctions; ++f)
+				{
+					if (oneTermPerFunction && (this->termCounts[f] != 1))
+						oneTermPerFunction = false;
+					for (int t = 0; t < this->termCounts[f]; ++t)
+					{
+						const int ft = this->termOffsets[f] + t;
+						int p = 0;
+						for (; p < this->parameterCount; ++p)
+						{
+							const int pftOffset = this->parameterTermOffsets[p];  // first parameter term only
+							const int ftExisting = this->termOffsets[this->parameterFunctionTerms[pftOffset]] + this->parameterFunctionTerms[pftOffset + 1];
+							if ((this->localNodeIndexes[ft] == this->localNodeIndexes[ftExisting])
+								&& (this->nodeValueLabels[ft] == this->nodeValueLabels[ftExisting])
+								&& (this->nodeVersions[ft] == this->nodeVersions[ftExisting]))
+							{
+								break;
+							}
+						}
+						int pftOffset;
+						if (p < this->parameterCount)
+						{
+							// insert new term for existing parameter p: offset later parameter function terms
+							for (int np = p + 1; np < this->parameterCount; ++np)
+								this->parameterTermOffsets[np] += 2;
+							pftOffset = this->parameterTermOffsets[p] + 2*parameterTermCounts[p];
+							for (int os = this->parameterFunctionTermsSize - 1; os >= pftOffset; --os)
+								this->parameterFunctionTerms[os + 2] = this->parameterFunctionTerms[os];
+							++(this->parameterTermCounts[p]);
+						}
+						else
+						{
+							// add new parameter with one term
+							this->parameterTermCounts[this->parameterCount] = 1;
+							this->parameterTermOffsets[this->parameterCount] = this->parameterFunctionTermsSize;
+							++(this->parameterCount);
+							pftOffset = this->parameterFunctionTermsSize;
+						}
+						this->parameterFunctionTerms[pftOffset] = f;
+						this->parameterFunctionTerms[pftOffset + 1] = t;
+						this->parameterFunctionTermsSize += 2;
+					}
+				}
+				if (oneTermPerFunction && (this->parameterCount == this->numberOfFunctions))
+				{
+					// can clear maps and use default behaviour
+					this->clearParameterMaps();
+					this->parameterCount = this->numberOfFunctions;
+				}
 			}
 		}
 	}
