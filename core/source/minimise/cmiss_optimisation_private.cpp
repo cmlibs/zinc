@@ -342,6 +342,9 @@ public:
 			case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 				enum_string = "LEAST_SQUARES_QUASI_NEWTON";
 				break;
+			case CMZN_OPTIMISATION_METHOD_NEWTON:
+				enum_string = "NEWTON";
+				break;
 			default:
 				break;
 		}

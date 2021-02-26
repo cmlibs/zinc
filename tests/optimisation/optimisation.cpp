@@ -28,6 +28,7 @@
 #include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldnodesetoperators.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include <opencmiss/zinc/optimisation.hpp>
 
 #include "test_resources.h"
@@ -43,6 +44,8 @@ TEST(cmzn_optimisation, arguments)
 	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_QUASI_NEWTON, cmzn_optimisation_get_method(optimisation));
 	EXPECT_EQ(OK, result = cmzn_optimisation_set_method(optimisation, CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON, cmzn_optimisation_get_method(optimisation));
+	EXPECT_EQ(OK, result = cmzn_optimisation_set_method(optimisation, CMZN_OPTIMISATION_METHOD_NEWTON));
+	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_NEWTON, cmzn_optimisation_get_method(optimisation));
 
 	cmzn_optimisation_destroy(&optimisation);
 }
@@ -486,4 +489,55 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 	EXPECT_EQ(RESULT_OK, s.evaluateReal(cache, 1, &sValueOut));
 	EXPECT_NEAR(1.0, sValueOut, tolerance);
 	cmzn_deallocate(solutionReport);
+}
+
+// Use NEWTON method to solve least squares fit of square bilinear element field to 4 points project at known locations onto it
+TEST(Fieldparameters, parameterDerivativeSumSquareProjectionError)
+{
+	ZincTestSetupCpp zinc;
+
+	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Field dataCoordinates = zinc.fm.findFieldByName("data_coordinates");
+	EXPECT_TRUE(dataCoordinates.isValid());
+	FieldStoredMeshLocation hostLocation = zinc.fm.findFieldByName("host_location").castStoredMeshLocation();
+	EXPECT_TRUE(hostLocation.isValid());
+	FieldEmbedded hostCoordinates = zinc.fm.createFieldEmbedded(coordinates, hostLocation);
+	EXPECT_TRUE(hostCoordinates.isValid());
+	FieldSubtract delta = hostCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct errorSquared = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(errorSquared.isValid());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	FieldNodesetSum sumErrorSquared = zinc.fm.createFieldNodesetSum(errorSquared, nodeset);
+	EXPECT_TRUE(sumErrorSquared.isValid());
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.setElementMapField(hostLocation));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double outSum;
+	const double TOL = 1.0E-11;
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
+	EXPECT_NEAR(0.5563, outSum, TOL);
+
+	// solve optimisation
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(sumErrorSquared));
+	EXPECT_EQ(OK, optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	EXPECT_EQ(OK, optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s", solutionReport);
+
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
+	EXPECT_NEAR(0.0, outSum, TOL);
 }

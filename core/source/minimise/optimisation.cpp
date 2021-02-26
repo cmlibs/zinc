@@ -17,8 +17,18 @@
 #include <math.h>
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/fieldcache.hpp"
+#include "opencmiss/zinc/fieldarithmeticoperators.hpp"
+#include "opencmiss/zinc/fieldcomposite.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/fieldparameters.hpp"
+#include "opencmiss/zinc/fieldvectoroperators.hpp"
+#include "opencmiss/zinc/node.hpp"
+#include "opencmiss/zinc/nodeset.hpp"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
@@ -52,6 +62,7 @@ using namespace std;
 
 using NEWMAT::ColumnVector;
 using namespace ::OPTPP;
+using namespace OpenCMISS::Zinc;
 
 // global variable needed to pass minimisation object to Opt++ init functions.
 static void* GlobalVariableMinimisation = NULL;
@@ -130,7 +141,6 @@ void Minimisation::touch_independent_fields()
 
 int Minimisation::runOptimisation()
 {
-	cmzn_fieldmodule_begin_change(field_module);
 	// Minimise the objective function
 	int return_code = 0;
 	switch (this->optimisation.getMethod())
@@ -141,13 +151,15 @@ int Minimisation::runOptimisation()
 	case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 		return_code = minimise_LSQN();
 		break;
+	case CMZN_OPTIMISATION_METHOD_NEWTON:
+		return_code = minimise_Newton();
+		break;
 	default:
 		display_message(ERROR_MESSAGE, "cmzn_optimisation::runOptimisation. "
 			"Unknown minimisation method.");
 		break;
 	}
-	touch_independent_fields();
-	cmzn_fieldmodule_end_change(field_module);
+	touch_independent_fields();  // not needed for Newton?
 	this->do_fieldassignments();
 	if (!return_code)
 	{
@@ -435,11 +447,12 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 	result = NLPFunction;
 }
 
-/***************************************************************************//**
+/**
  * Naive wrapper around a quasi-Newton minimisation.
  */
 int Minimisation::minimise_QN()
 {
+	cmzn_fieldmodule_begin_change(field_module);
 	char message[] = { "Solution from quasi-newton" };
 	// need a handle on this object...
 	// FIXME: need to find and use "user data" in the Opt++ methods.
@@ -473,6 +486,7 @@ int Minimisation::minimise_QN()
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
 	//list_dof_values();
+	cmzn_fieldmodule_end_change(field_module);
 	return 1;
 }
 
@@ -521,11 +535,12 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	result = NLPFunction;
 }
 
-/***************************************************************************//**
- * Least-squares minimisation using Opt++
+/**
+ * Least-Squares Quasi-Newton minimisation using Opt++
  */
 int Minimisation::minimise_LSQN()
 {
+	cmzn_fieldmodule_begin_change(field_module);
 	int iterationCounter = 0;
 	char message[] = { "Solution from newton least squares" };
 	// need a handle on this object...
@@ -559,6 +574,151 @@ int Minimisation::minimise_LSQN()
 	for (i = 0; i < total_dof; i++)
 		this->set_dof_value(i, solution(i + 1));
 	//list_dof_values();
+	cmzn_fieldmodule_end_change(field_module);
 	return 1;
 }
 
+/**
+ * Newton minimisation directly using Zinc field parameter derivatives and Newmat.
+ */
+int Minimisation::minimise_Newton()
+{
+	if (this->optimisation.independentFields.size() != 1)
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Newton method only works with one dependent field");
+		return 0;
+	}
+	Fieldmodule fieldmodule(cmzn_fieldmodule_access(this->field_module));
+	Field dependentField(cmzn_field_access(this->optimisation.independentFields.front().independentField));
+	Fieldparameters fieldparameters = dependentField.getFieldparameters();
+	if (!fieldparameters.isValid())
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Could not get fieldparameters for dependent field which must be finite element type");
+		return 0;
+	}
+	const int globalParameterCount = fieldparameters.getNumberOfParameters();
+	display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d", globalParameterCount);
+
+	Mesh mesh;
+	// use highest dimension mesh with elements in it
+	for (int d = 3; d >= 1; --d)
+	{
+		mesh = fieldmodule.findMeshByDimension(d);
+		if (mesh.getSize() > 0)
+			break;
+	}
+
+	fieldmodule.beginChange();
+	// get scalar objectiveFields, summing all objectiveField components if needed
+	Field objectiveField;
+	if (this->objectiveFields.size() == 1)
+	{
+		ObjectiveFieldData *objective = *(this->objectiveFields.begin());
+		objectiveField = Field(cmzn_field_access(objective->field));
+		if (objectiveField.getNumberOfComponents() > 1)
+			objectiveField = fieldmodule.createFieldSumComponents(objectiveField);
+	}
+	else
+	{
+		bool allScalar = true;
+		std::vector<Field> fields;
+		for (ObjectiveFieldDataVector::iterator iter = this->objectiveFields.begin();
+			iter != this->objectiveFields.end(); ++iter)
+		{
+			ObjectiveFieldData *objective = *(this->objectiveFields.begin());
+			objectiveField = Field(cmzn_field_access(objective->field));
+			if (objectiveField.getNumberOfComponents() > 1)
+				allScalar = false;
+			fields.push_back(objectiveField);
+		}
+		if (allScalar && (fields.size() == 2))
+			objectiveField = fieldmodule.createFieldAdd(fields[0], fields[1]);
+		else
+			objectiveField = fieldmodule.createFieldSumComponents(fieldmodule.createFieldConcatenate(static_cast<int>(fields.size()), fields.data()));
+		fields.clear();
+	}
+	fieldmodule.endChange();
+	if (!objectiveField.isValid())
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to get scalar objective field");
+		return 0;
+	}
+
+	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
+	Differentialoperator parameterDerivative2 = fieldparameters.getDerivativeOperator(/*order*/2);
+
+	NEWMAT::ColumnVector globalJacobian(globalParameterCount);
+	globalJacobian = 0.0;
+	NEWMAT::SquareMatrix globalHessian(globalParameterCount);
+	globalHessian = 0.0;
+
+	Fieldcache fieldcache = fieldmodule.createFieldcache();
+	std::vector<int> elementParameterIndexes;  // grows to fit maximum elementParametersCount
+	std::vector<double> elementJacobian;  // grows to fit maximum elementParametersCount
+	std::vector<double> elementHessian;  // grows to fit maximum elementParametersCount*elementParametersCount
+	Element element;
+	Elementiterator iter = mesh.createElementiterator();
+	int return_code = 1;
+	const int elementCount = mesh.getSize();
+	int elementIndex = 0;
+	while ((element = iter.next()).isValid())
+	{
+		++elementIndex;
+		display_message(INFORMATION_MESSAGE, "Element %d (%d/%d)\n", element.getIdentifier(), elementIndex, elementCount);
+		fieldcache.setElement(element);
+		const int elementParametersCount = fieldparameters.getNumberOfElementParameters(element);
+		if (elementParametersCount <= 0)
+			continue;  // GRC handle -1 error?
+		if (elementParametersCount > elementParameterIndexes.size())
+		{
+			elementParameterIndexes.resize(elementParametersCount);
+			elementJacobian.resize(elementParametersCount);
+			elementHessian.resize(elementParametersCount*elementParametersCount);
+		}
+		fieldparameters.getElementParameterIndexes(element, elementParametersCount, elementParameterIndexes.data());
+
+		const int result1 = objectiveField.evaluateDerivative(parameterDerivative1, fieldcache, elementParametersCount, elementJacobian.data());
+		if (result1 != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Jacobian");
+			return_code = 0;
+		}
+		const int result2 = objectiveField.evaluateDerivative(parameterDerivative2, fieldcache, elementParametersCount*elementParametersCount, elementHessian.data());
+		if (result2 != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to evaluate element Hessian");
+			return_code = 0;
+		}
+
+		// assemble
+		const double *elementHessianRow = elementHessian.data();
+		for (int i = 0; i < elementParametersCount; ++i)
+		{
+			const int row = elementParameterIndexes[i];
+			globalJacobian(row) -= elementJacobian[i];
+			for (int j = 0; j < elementParametersCount; ++j)
+				globalHessian(row, elementParameterIndexes[j]) += elementHessianRow[j];
+			elementHessianRow += elementParametersCount;
+		}
+	}
+	if (!return_code)
+		return return_code;
+
+	// solve
+	NEWMAT::CroutMatrix LUmatrix = globalHessian;
+	if (LUmatrix.IsSingular())
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Solution is singular.");
+		return 0;
+	}
+	NEWMAT::ColumnVector increment = LUmatrix.i()*globalJacobian;
+
+	const int result = fieldparameters.addParameters(globalParameterCount, increment.data());
+	if (result != CMZN_OK)
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Failed to add solution vector.");
+		return 0;
+	}
+
+	return 1;
+}

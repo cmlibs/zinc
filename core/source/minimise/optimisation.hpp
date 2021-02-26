@@ -131,6 +131,8 @@ private:
 
 	int minimise_LSQN();
 
+	int minimise_Newton();
+
 };
 
 #endif /* OPTIMISATION_HPP_ */

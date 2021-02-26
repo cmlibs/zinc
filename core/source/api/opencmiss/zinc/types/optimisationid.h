@@ -32,21 +32,26 @@ enum cmzn_optimisation_method
 {
 	CMZN_OPTIMISATION_METHOD_INVALID = 0,
 	/*!< Invalid or unspecified optimisation method.
-		*/
+	 */
 	CMZN_OPTIMISATION_METHOD_QUASI_NEWTON = 1,
 	/*!< The default optimisation method. Suitable for most problems with a small
-		* set of independent parameters.
-		* Given a scalar valued objective function (scalar sum of all objective
-		* fields' components), finds the set of DOFs for the independent field(s)
-		* which minimises the objective function value.
-		*/
-	CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2
+	 * set of independent parameters.
+	 * Given a scalar valued objective function (scalar sum of all objective
+	 * fields' components), finds the set of DOFs for the independent field(s)
+	 * which minimises the objective function value.
+	 */
+	CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
 	/*!< A least squares method better suited to larger problems.
-		* Finds the set of independent field(s) DOF values which minimises the
-		* squares of the objective components supplied. Works specially with fields
-		* giving sum-of-squares e.g. nodeset_sum_squares, nodeset_mean_squares to
-		* supply individual terms before squaring to the optimiser.
-		*/
+	 * Finds the set of independent field(s) DOF values which minimises the
+	 * squares of the objective components supplied. Works specially with fields
+	 * giving sum-of-squares e.g. nodeset_sum_squares, nodeset_mean_squares to
+	 * supply individual terms before squaring to the optimiser.
+	 */
+	CMZN_OPTIMISATION_METHOD_NEWTON = 3,
+	/*!< Solves iteratively using Newton's method, directly computing the Hessian
+	 * matrix and Jacobian vector which are solved to obtain incremental change to
+	 * parameters. Suitable for large problems.
+	 */
 };
 
 /**

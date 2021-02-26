@@ -97,7 +97,8 @@ public:
 	int setMethod(cmzn_optimisation_method methodIn)
 	{
 		if ((methodIn == CMZN_OPTIMISATION_METHOD_QUASI_NEWTON) ||
-			(methodIn == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON))
+			(methodIn == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON) ||
+			(methodIn == CMZN_OPTIMISATION_METHOD_NEWTON))
 		{
 			this->method = methodIn;
 			return CMZN_OK;
