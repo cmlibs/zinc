@@ -523,6 +523,7 @@ void cmzn_region::addFieldDerivative(FieldDerivative *fieldDerivative)
 	for (int i = 0; i < size; ++i)
 		if (!this->fieldDerivatives[i])
 		{
+			this->fieldDerivatives[i] = fieldDerivative;
 			fieldDerivative->setRegionAndCacheIndexPrivate(this, i);
 			return;
 		}
