@@ -597,7 +597,7 @@ int Minimisation::minimise_Newton()
 		return 0;
 	}
 	const int globalParameterCount = fieldparameters.getNumberOfParameters();
-	display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d", globalParameterCount);
+	display_message(INFORMATION_MESSAGE, "Optimisation optimise NEWTON:  Parameters count %d\n", globalParameterCount);
 
 	Mesh mesh;
 	// use highest dimension mesh with elements in it
@@ -609,7 +609,7 @@ int Minimisation::minimise_Newton()
 	}
 
 	fieldmodule.beginChange();
-	// get scalar objectiveFields, summing all objectiveField components if needed
+	// get scalar objective field, summing all objective field components if needed
 	Field objectiveField;
 	if (this->objectiveFields.size() == 1)
 	{
@@ -625,7 +625,7 @@ int Minimisation::minimise_Newton()
 		for (ObjectiveFieldDataVector::iterator iter = this->objectiveFields.begin();
 			iter != this->objectiveFields.end(); ++iter)
 		{
-			ObjectiveFieldData *objective = *(this->objectiveFields.begin());
+			ObjectiveFieldData *objective = *iter;
 			objectiveField = Field(cmzn_field_access(objective->field));
 			if (objectiveField.getNumberOfComponents() > 1)
 				allScalar = false;
