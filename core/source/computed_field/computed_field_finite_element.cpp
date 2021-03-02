@@ -385,6 +385,19 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		// assumes derivatives are evaluated in elements
+		// Future:  tabulate highest order basis in use esp. if all per-element constant
+		if ((this->fe_field->getValueType() == FE_VALUE_VALUE) || (this->fe_field->getValueType() == SHORT_VALUE))
+		{
+			if (fieldDerivative.getFieldparameters() && (fieldDerivative.getFieldparameters()->getField() == this->field))
+				return fieldDerivative.getMeshOrder() + 1;  // since linear with own parameters
+			return fieldDerivative.getMeshOrder();
+		}
+		return 0;  // all other value types are either stored in nodes only, or have zero mesh derivatives (e.g. integer)
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -914,6 +927,17 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 		}
 		else
 		{
+			derivativeCache->zeroValues();
+			return 1;
+		}
+	}
+	else
+	{
+		const Field_location_node *node_location = cache.get_location_node();
+		if ((node_location) && (value_type == FE_VALUE_VALUE))
+		{
+			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
+			DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
 			derivativeCache->zeroValues();
 			return 1;
 		}
@@ -1713,6 +1737,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -1893,6 +1922,13 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -1918,6 +1954,13 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	{
 		valueCache.values[0] = 0;
 	}
+	return 1;
+}
+
+int Computed_field_access_count::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// assume all derivatives are zero
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 
@@ -2899,6 +2942,15 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getProductTreeOrder(
+			this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative),
+			this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative));
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2973,6 +3025,31 @@ int Computed_field_embedded::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		}
 	}
 	return 0;
+}
+
+// implemented for parameter derivatives of constant mesh location, used in fitting
+int Computed_field_embedded::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if ((fieldDerivative.getMeshOrder() > 0) || (this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative) > 0))
+		return 0;  // fall back to numerical derivatives as xi must not be interpreted on the host element, or expression too complex
+	const Field_location_node *fieldLocationNode = cache.get_location_node();
+	if ((!fieldLocationNode) || (!fieldLocationNode->get_host_element()))
+		return 0;  // can only evaluate at node locations embedded in an element; see check below
+	const MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (!meshLocationValueCache)
+		return 0;
+	if (meshLocationValueCache->element != fieldLocationNode->get_host_element())
+		return 0;
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
+	extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
+	extraCache.setTime(cache.getTime());
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(extraCache, fieldDerivative);
+	if (!sourceDerivativeCache)
+		return 0;
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	derivativeCache->copyValues(*sourceDerivativeCache);
+	return 1;
 }
 
 int Computed_field_embedded::list()
@@ -3509,6 +3586,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getMeshOrder() ? 1 : 0;
+	}
 
 	int list();
 
@@ -4062,6 +4144,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list()
 	{
 		return 1;
@@ -4165,6 +4252,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
 
 	int list()
 	{

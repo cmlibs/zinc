@@ -132,6 +132,19 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		// start at constant 0, increase to maximum source field order, if any
+		int order = 0;
+		for (int i = 0; i < this->field->number_of_source_fields; ++i)
+		{
+			const int sourceOrder = this->field->source_fields[i]->getDerivativeTreeOrder(fieldDerivative);
+			if (sourceOrder > order)
+				order = sourceOrder;
+		}
+		return order;
+	}
+
 	int list();
 
 	char* get_command_string();

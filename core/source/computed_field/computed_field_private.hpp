@@ -271,6 +271,12 @@ public:
 	 * @param fieldDerivative  The field derivative operator. */
 	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
 
+	/** Get the highest order of derivatives with non-zero terms for the
+	 * derivative tree evaluated for fieldDerivative. For example, returns
+	 * zero for a constant field, 1 if the field only has the first derivative
+	 * in the tree. Overridden for field operators with potentially lower orders */
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative);
+
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
 	{
@@ -572,6 +578,15 @@ public:
 				return true;
 		}
 		return false;
+	}
+
+	/** Get the highest order of derivatives with non-zero terms for the
+	 * derivative tree evaluated for fieldDerivative. For example, returns
+	 * zero for a constant field, 1 if the field only has the first derivative
+	 * in the tree. */
+	int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->core->getDerivativeTreeOrder(fieldDerivative);
 	}
 
 	/* @return  Accessed handle to existing or new field parameters for field, or nullptr if wrong type of field */

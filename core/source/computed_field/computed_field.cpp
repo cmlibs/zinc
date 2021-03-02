@@ -1096,15 +1096,34 @@ int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCach
 
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
+	const FE_mesh *mesh = fieldDerivative.getMesh();
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	if (!element_xi_location)
+	const Field_location_node* node_location = nullptr;
+	cmzn_element *element = nullptr;
+	const FE_value *xi = nullptr;
+	cmzn_node *node = nullptr;
+	if (element_xi_location)
+	{
+		element = element_xi_location->get_element();
+		xi = element_xi_location->get_xi();
+	}
+	else if (node_location = cache.get_location_node())
+	{
+		node = node_location->get_node();
+		element = node_location->get_host_element();
+		if (mesh)
+		{
+			display_message(ERROR_MESSAGE,
+				"Field evaluateDerivativeFiniteDifference:  Cannot evaluate mesh derivatives at embedded node locations");
+			return 0;
+		}
+	}
+	if (!element)
 	{
 		display_message(ERROR_MESSAGE,
-			"Field evaluateDerivativeFiniteDifference:  Only implemented for element location");
+			"Field evaluateDerivativeFiniteDifference:  Only implemented for element location or node location with host element");
 		return 0;
 	}
-	cmzn_element *element = element_xi_location->get_element();
-	const FE_mesh *mesh = fieldDerivative.getMesh();
 	if ((mesh) && (element->getMesh() != mesh))
 	{
 		display_message(ERROR_MESSAGE,
@@ -1123,11 +1142,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	workingCache->setTime(cache.getTime());
 	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
 	const int componentCount = this->field->number_of_components;
-	const int elementDimension = element_xi_location->get_element_dimension();
-	const FE_value *xi = element_xi_location->get_xi();
 	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	for (int d = 0; d < elementDimension; ++d)
-		perturbedXi[d] = xi[d];
 	// values set differently for parameter or mesh derivative applied:
 	FE_value perturbationDelta;
 	int derivativeCount;
@@ -1140,8 +1155,16 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		derivativeCount = fieldParameters->getNumberOfElementParameters(element);
 		if (derivativeCount <= 0)  // GRC or is zero a success?
 			return 0;
-		// need to set element location first
-		workingCache->setMeshLocation(element, perturbedXi);
+		// need to set element location first to obtain FE_element_field_evaluation for
+		if (node_location)
+		{
+			const int elementDimension = element->getDimension();
+			// need any valid xi coordinate
+			for (int d = 0; d < elementDimension; ++d)
+				perturbedXi[d] = 0.0;
+			xi = perturbedXi;
+		}
+		workingCache->setMeshLocation(element, xi);
 		parameterFieldEvaluation = cmzn_field_get_cache_FE_element_field_evaluation(fieldParameters->getField(), workingCache);
 		if (!parameterFieldEvaluation)
 		{
@@ -1151,6 +1174,9 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	}
 	else
 	{
+		const int elementDimension = mesh->getDimension();
+		for (int d = 0; d < elementDimension; ++d)
+			perturbedXi[d] = xi[d];
 		perturbationDelta = 1.0E-5;
 		derivativeCount = elementDimension;
 	}
@@ -1165,10 +1191,19 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		for (int k = 0; k < 2; ++k)
 		{
 			if (fieldParameters)
+			{
 				parameterFieldEvaluation->addParameterPerturbation(/*parameterIndex*/d, (k == 0) ? minusDelta : plusDelta);
+				// the following must call locationChanged:
+				if (element_xi_location)
+					workingCache->setMeshLocation(element, xi);
+				else
+					workingCache->setNodeWithHostElement(node, element);
+			}
 			else  // (mesh)
+			{
 				perturbedXi[d] += (k == 0) ? minusDelta : plusDelta;
-			workingCache->setMeshLocation(element, perturbedXi);  // must call locationChanged() for parameter
+				workingCache->setMeshLocation(element, perturbedXi);
+			}
 			int lowerDerivativeTermCount = 1;
 			if (lowerFieldDerivative)
 			{
@@ -1232,6 +1267,20 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		}
 	}
 	return 1;
+}
+
+// default valid for most complicated or transcendental functions:
+// use the maximum source field order, maximised up to the mesh order or total order
+int Computed_field_core::getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+{
+	int order = 0;
+	for (int i = 0; i < this->field->number_of_source_fields; ++i)
+	{
+		const int sourceMaximumOrder = fieldDerivative.getMaximumTreeOrder(this->field->source_fields[i]->getDerivativeTreeOrder(fieldDerivative));
+		if (sourceMaximumOrder > order)
+			order = sourceMaximumOrder;
+	}
+	return order;
 }
 
 int Computed_field_has_string_value_type(struct cmzn_field *field,

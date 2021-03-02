@@ -110,6 +110,49 @@ public:
 		return this->lowerDerivative;
 	}
 
+	/* Get the tree order for a function of maximum complexity applying to a
+	 * source field with the given tree order: if non-zero round up to the
+	 * nearest mesh order, if not total order */
+	virtual int getMaximumTreeOrder(int sourceOrder) const
+	{
+		if (sourceOrder == 0)
+			return 0;
+		if (sourceOrder <= this->meshOrder)
+			return this->meshOrder;
+		return this->getTotalOrder();
+	}
+
+	/* Get the tree order for a function giving the product of two source fields
+	 * with the given tree orders: sum, but limit to the lower of mesh order or
+	 * mesh order + parameter order if both source orders are below the line */
+	virtual int getProductTreeOrder(int sourceOrder1, int sourceOrder2) const
+	{
+		if (sourceOrder1 == 0)
+			return sourceOrder2;
+		if (sourceOrder2 == 0)
+			return sourceOrder1;
+		if (sourceOrder1 <= this->meshOrder)
+		{
+			if (sourceOrder2 <= this->meshOrder)
+			{
+				const int productOrder = sourceOrder1 + sourceOrder2;
+				if (productOrder < this->meshOrder)
+					return productOrder;
+				return this->meshOrder;
+			}
+			return sourceOrder2;
+		}
+		else if (sourceOrder2 <= this->meshOrder)
+		{
+			return sourceOrder1;
+		}
+		const int productOrder = sourceOrder1 + sourceOrder2 - this->meshOrder;
+		const int totalOrder = this->getTotalOrder();
+		if (productOrder < totalOrder)
+			return productOrder;
+		return totalOrder;
+	}
+
 	/** @return  Non-accessed mesh if derivative w.r.t. mesh chart, otherwise nullptr */
 	FE_mesh *getMesh() const
 	{
@@ -159,9 +202,9 @@ public:
 		return this->region;
 	}
 
-	/** Get general term count which may depend on location, e.g.
+	/** Get general term count which may depend on location, e.g. 
 	 * fieldparameters are only available at mesh location and can vary between
-	 * elements.  */
+	 * elements. */
 	int getTermCount(const Field_location& fieldLocation) const;
 
 	/** Get total order of derivative */

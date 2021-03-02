@@ -429,6 +429,20 @@ public:
 		return CMZN_OK;
 	}
 
+	/** Set node and the element it is embedded in so number of derivatives
+	 * w.r.t. host element parameters can be determined */
+	int setNodeWithHostElement(cmzn_node_id node, cmzn_element_id element)
+	{
+		this->location_node.set_node_with_host_element(node, element);
+		if (this->location != &this->location_node)
+		{
+			this->location_node.set_time(this->location->get_time());
+			this->location = &this->location_node;
+		}
+		this->locationChanged();
+		return CMZN_OK;
+	}
+
 	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);
 
 	FieldValueCache* getValueCache(int cacheIndex) const

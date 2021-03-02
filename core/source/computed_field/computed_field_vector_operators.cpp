@@ -604,6 +604,13 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getProductTreeOrder(
+			this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative),
+			this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative));
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -628,37 +635,95 @@ int Computed_field_dot_product::evaluate(cmzn_fieldcache& cache, FieldValueCache
 
 int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getTotalOrder() > 1)
-		return 0;  // fall back to numerical derivatives
-	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
-	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
-	if (source1Cache && source2Cache)
+	cmzn_field *sourceField1 = this->getSourceField(0);
+	cmzn_field *sourceField2 = this->getSourceField(1);
+	const int source1Order = sourceField1->getDerivativeTreeOrder(fieldDerivative);
+	const int source2Order = (sourceField1 == sourceField2) ? source1Order : sourceField2->getDerivativeTreeOrder(fieldDerivative);
+	// evaluate various cases with product rule, then sum
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	FE_value *derivatives = derivativeCache->values;
+	const int vectorComponentCount = sourceField1->number_of_components;
+	if ((source1Order == 0) || (source2Order == 0))
 	{
-		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
-		FE_value *derivatives = derivativeCache->values;
+		// case 1: one factor is constant
+		derivativeCache->zeroValues();
+		if ((source1Order == 0) && (source2Order == 0))
+			return 1;  // case 1b: zero derivatives if both factors are constant
+		cmzn_field *constSourceField = (source1Order == 0) ? sourceField1 : sourceField2;
+		cmzn_field *derivSourceField = (source1Order == 0) ? sourceField2 : sourceField1;
+		const RealFieldValueCache *constSourceCache = RealFieldValueCache::cast(constSourceField->evaluate(cache));
+		const DerivativeValueCache *derivSourceDerivativeCache = derivSourceField->evaluateDerivative(cache, fieldDerivative);
+		if (!((constSourceCache) && (derivSourceDerivativeCache)))
+			return 0;
 		const int termCount = derivativeCache->getTermCount();
-		const int vectorComponentCount = getSourceField(0)->number_of_components;
-		for (int j = 0; j < termCount; ++j)
-			derivatives[j] = 0.0;
-		const FE_value *source1Values = source1Cache->values;
-		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
-		const FE_value *source2Values = source2Cache->values;
-		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *derivSourceDerivatives = derivSourceDerivativeCache->values;
 		for (int i = 0; i < vectorComponentCount; ++i)
 		{
+			const FE_value constValue = constSourceCache->values[i];
 			for (int j = 0; j < termCount; ++j)
-			{
-				// product rule, then sum
-				derivatives[j] += (*source1Values)*(*source2Derivatives) + (*source2Values)*(*source1Derivatives);
-				++source1Derivatives;
-				++source2Derivatives;
-			}
-			++source1Values;
-			++source2Values;
+				derivatives[j] += constValue*derivSourceDerivatives[j];
+			derivSourceDerivatives += termCount;
 		}
 		return 1;
 	}
-	return 0;
+	const int totalDerivativeOrder = fieldDerivative.getTotalOrder();
+	if (totalDerivativeOrder == 1)
+	{
+		// case 2: regular first derivative
+		derivativeCache->zeroValues();
+		const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(sourceField1->evaluateDerivativeTree(cache, fieldDerivative));
+		const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(sourceField2->evaluateDerivativeTree(cache, fieldDerivative));
+		if (!((source1Cache) && (source2Cache)))
+			return 0;
+		const int termCount = derivativeCache->getTermCount();
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		for (int i = 0; i < vectorComponentCount; ++i)
+		{
+			const FE_value source1Value = source1Cache->values[i];
+			const FE_value source2Value = source2Cache->values[i];
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] += source1Value*source2Derivatives[j] + source2Value*source1Derivatives[j];
+			source1Derivatives += termCount;
+			source2Derivatives += termCount;
+		}
+		return 1;
+	}
+	if ((source1Order == 1) && (source2Order == 1))
+	{
+		// case 3: both factors have non-zero first derivatives only
+		derivativeCache->zeroValues();
+		// only non-zero for total order 2 w.r.t. all mesh, or all parameters
+		if ((totalDerivativeOrder > 2) || (fieldDerivative.getParameterOrder() == 1))
+			return 1;  // case 3b: higher derivatives are zero
+		// only need mixed term from higher order product rule
+		const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
+		const DerivativeValueCache *source1DerivativeCache = sourceField1->evaluateDerivative(cache, *lowerFieldDerivative);
+		const DerivativeValueCache *source2DerivativeCache = sourceField2->evaluateDerivative(cache, *lowerFieldDerivative);
+		if (!((source1DerivativeCache) && (source2DerivativeCache)))
+			return 0;
+		const int sourceTermCount = source1DerivativeCache->getTermCount();
+		const FE_value *source1Derivatives = source1DerivativeCache->values;
+		const FE_value *source2Derivatives = source2DerivativeCache->values;
+		for (int i = 0; i < vectorComponentCount; ++i)
+		{
+			FE_value *derivative = derivatives;
+			for (int j = 0; j < sourceTermCount; ++j)
+			{
+				const FE_value source1Derivativej = source1Derivatives[j];
+				const FE_value source2Derivativej = source2Derivatives[j];
+				for (int k = 0; k < sourceTermCount; ++k)
+				{
+					*derivative += source1Derivativej*source2Derivatives[k] + source2Derivativej*source1Derivatives[k];
+					++derivative;
+				}
+			}
+			source1Derivatives += sourceTermCount;
+			source2Derivatives += sourceTermCount;
+		}
+		return 1;
+	}
+	return 0;  // fall back to numerical derivatives
 }
 
 int Computed_field_dot_product::list(
@@ -1063,6 +1128,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
 
 	int list();
 

@@ -991,6 +991,13 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getProductTreeOrder(
+			this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative),
+			this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative));
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -1562,6 +1569,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
 
 	int list();
 

@@ -234,11 +234,13 @@ class Field_location_node : public Field_location
 {
 private:
 	cmzn_node *node;  // not accessed
+	cmzn_element *host_element;  // optional; not accessed
 
 public:
 	Field_location_node() :
 		Field_location(TYPE_NODE),
-		node(0)
+		node(nullptr),
+		host_element(nullptr)
 	{
 	}
 
@@ -252,7 +254,23 @@ public:
 	void set_node(cmzn_node *node_in)
 	{
 		this->node = node_in;
+		this->host_element = nullptr;
 	}
+
+	/** Set node with host element the node is embedded in.
+	 * @param node_in  Node pointer. Client must ensure exists while pointer held.
+	 * @param element_in  Element pointer. Client must ensure exists while pointer held */
+	void set_node_with_host_element(cmzn_node *node_in, cmzn_element *element_in)
+	{
+		this->node = node_in;
+		this->host_element = element_in;
+	}
+
+	cmzn_element *get_host_element() const
+	{
+		return this->host_element;
+	}
+
 };
 
 const Field_location_node *Field_location::cast_node() const

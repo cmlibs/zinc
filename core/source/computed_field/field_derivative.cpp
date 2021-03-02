@@ -115,9 +115,20 @@ int FieldDerivative::getTermCount(const Field_location& fieldLocation) const
 	if (this->fieldparameters)
 	{
 		const Field_location_element_xi *fieldLocationElementXi = fieldLocation.cast_element_xi();
+		cmzn_element *element = nullptr;
 		if (fieldLocationElementXi)
 		{
-			const int elementParametersCount = this->fieldparameters->getNumberOfElementParameters(fieldLocationElementXi->get_element());
+			element = fieldLocationElementXi->get_element();
+		}
+		else
+		{
+			const Field_location_node *fieldLocationNode = fieldLocation.cast_node();
+			if (fieldLocationNode)
+				element = fieldLocationNode->get_host_element();
+		}
+		if (element)
+		{
+			const int elementParametersCount = this->fieldparameters->getNumberOfElementParameters(element);
 			for (int d = 0; d < this->parameterOrder; ++d)
 				termCount *= elementParametersCount;
 		}

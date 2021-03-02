@@ -306,6 +306,13 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getProductTreeOrder(
+			this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative),
+			this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative));
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -782,6 +789,19 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		// use maximum source field order
+		int order = 0;
+		for (int i = 0; i < this->field->number_of_source_fields; ++i)
+		{
+			const int sourceOrder = this->field->source_fields[i]->getDerivativeTreeOrder(fieldDerivative);
+			if (sourceOrder > order)
+				order = sourceOrder;
+		}
+		return order;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -1050,6 +1070,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
 
 	int list();
 
@@ -1868,6 +1893,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2146,6 +2176,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
 
 	int list();
 

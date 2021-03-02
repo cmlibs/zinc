@@ -140,6 +140,8 @@ public:
 
 protected:
 	template <class TermOperator> int evaluateNodesetOperator(cmzn_fieldcache& cache, FieldValueCache& inValueCache, TermOperator& tempOperator);
+	template <class TermOperator> int evaluateDerivativeNodesetOperator(cmzn_fieldcache& cache, FieldValueCache& inValueCache,
+		TermOperator& tempOperator, const FieldDerivative& fieldDerivative);
 };
 
 template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodesetOperator(
@@ -182,7 +184,7 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 			const DsLabelIndex nodeIndex = nodeIndexes[i];
 			if ((nodeGroup) && !Computed_field_node_group_core_cast(nodeGroup)->containsIndex(nodeIndex))
 				continue;
-			extraCache.setNode(feNodeset->getNode(nodeIndex));
+			extraCache.setNodeWithHostElement(feNodeset->getNode(nodeIndex), element);
 			const RealFieldValueCache* sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(extraCache));
 			if (sourceValueCache)
 				termOperator.processTerm(sourceValueCache->values);
@@ -201,6 +203,54 @@ template <class TermOperator> int Computed_field_nodeset_operator::evaluateNodes
 				termOperator.processTerm(sourceValueCache->values);
 		}
 		cmzn_nodeiterator_destroy(&iterator);
+	}
+	return 1;
+}
+
+template <class TermOperator> int Computed_field_nodeset_operator::evaluateDerivativeNodesetOperator(
+	cmzn_fieldcache& cache, FieldValueCache& inValueCache, TermOperator& termOperator, const FieldDerivative& fieldDerivative)
+{
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
+	extraCache.setTime(cache.getTime());
+	cmzn_field_id sourceField = getSourceField(0);
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
+	cmzn_field *elementMap = this->getElementMapField();
+	if (!((elementMap) && (element_xi_location)))
+		return 0;
+	cmzn_element *element = element_xi_location->get_element();
+	if (!element->getMesh())
+	{
+		display_message(ERROR_MESSAGE, "FieldNodesetEvaluator evaluateDerivative:  Invalid element");
+		return 0;  // invalid element
+	}
+	// evaluate at element, operator applies to nodes with mapping to element
+	FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(this->nodeset);
+	cmzn_field_node_group *nodeGroup = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
+	FE_field *feField = nullptr;
+	Computed_field_get_type_finite_element(elementMap, &feField);
+	if (!feField)
+	{
+		display_message(ERROR_MESSAGE, "FieldNodesetEvaluator evaluateDerivative:  Invalid element evaluation map field");
+		return 0;
+	}
+	FE_mesh *hostMesh = feField->getElementXiHostMesh();
+	FE_mesh_embedded_node_field *embeddedNodeField = feField->getEmbeddedNodeField(feNodeset);
+	if (!embeddedNodeField)
+		return 1;  // no values
+	if (element->getMesh() != hostMesh)
+		return 1;  // future: map nodes embedded in faces
+	// iterate over reverse map of element to nodes maintained in embeddedNodeField
+	int size = 0;
+	const DsLabelIndex *nodeIndexes = embeddedNodeField->getNodeIndexes(element->getIndex(), size);
+	for (int i = 0; i < size; ++i)
+	{
+		const DsLabelIndex nodeIndex = nodeIndexes[i];
+		if ((nodeGroup) && !Computed_field_node_group_core_cast(nodeGroup)->containsIndex(nodeIndex))
+			continue;
+		extraCache.setNodeWithHostElement(feNodeset->getNode(nodeIndex), element);
+		const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(extraCache, fieldDerivative);
+		if (sourceDerivativeCache)
+			termOperator.processTerm(sourceDerivativeCache->values);
 	}
 	return 1;
 }
@@ -271,6 +321,13 @@ public:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+	}
+
 };
 
 class TermOperatorSum
@@ -299,6 +356,14 @@ int Computed_field_nodeset_sum::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	TermOperatorSum termSum(this->field->number_of_components, valueCache.values);
 	return this->evaluateNodesetOperator(cache, inValueCache, termSum);
+}
+
+int Computed_field_nodeset_sum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	TermOperatorSum termSum(derivativeCache->getValueCount(), derivativeCache->values);
+	return this->evaluateDerivativeNodesetOperator(cache, inValueCache, termSum, fieldDerivative);
 }
 
 
@@ -423,6 +488,12 @@ public:
 		int number_of_values, FE_value *values);
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		const int sourceOrder = this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative);
+		return fieldDerivative.getProductTreeOrder(sourceOrder, sourceOrder);
+	}
 
 };
 

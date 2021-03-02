@@ -202,6 +202,12 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		// can only have derivatives w.r.t. mesh xi at present
+		return fieldDerivative.getMeshOrder();
+	}
+
 	int list();
 
 	char* get_command_string();
