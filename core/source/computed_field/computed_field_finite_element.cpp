@@ -3662,7 +3662,7 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
-	if (fieldDerivative.isMeshOnly())  // GRC review
+	if (fieldDerivative.isMeshOnly())
 	{
 		// directly evaluate only derivative w.r.t. mesh which owns element at location
 		// first derivatives are 1.0 in the xi direction, otherwise 0.0

@@ -1086,13 +1086,14 @@ int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueC
 
 int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
 	{
-		FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
 		const int m = this->number_of_rows;
 		const int s = getSourceField(0)->number_of_components / m;
 		const int n = getSourceField(1)->number_of_components / s;
@@ -1100,7 +1101,7 @@ int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, R
 		const FE_value *aDerivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *b = source2Cache->values;
 		const FE_value *bDerivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		int termCount = fieldDerivative.getMeshTermCount();
+		const int termCount = derivativeCache->getTermCount();
 		for (int d = 0; d < termCount; ++d)
 		{
 			// use the product rule

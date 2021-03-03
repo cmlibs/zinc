@@ -82,24 +82,24 @@ int Computed_field_sin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_sin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0 ; i < field->number_of_components ; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0 ; i < componentCount; ++i)
 		{
-			const FE_value dsin_u = cos(sourceCache->values[i]);
-			for (int j = 0 ; j < termCount; j++)
-			{
-				/* d(sin u)/dx = cos u * du/dx */
-				*derivative = dsin_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			// d(sin u)/dx = cos u * du/dx
+			const FE_value cos_u = cos(sourceCache->values[i]);
+			for (int j = 0 ; j < termCount; ++j)
+				derivatives[j] = cos_u * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -275,24 +275,24 @@ int Computed_field_cos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_cos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			const FE_value dcos_u = -sin(sourceCache->values[i]);
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(cos u)/dx = -sin u * du/dx */
-				*derivative = dcos_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			// d(cos u)/dx = -sin u * du/dx
+			const FE_value _sin_u = -sin(sourceCache->values[i]);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = _sin_u * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -468,25 +468,25 @@ int Computed_field_tan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_tan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			const FE_value cosSourceValue = cos(sourceCache->values[i]);
-			const FE_value dtan_u = 1.0 / (cosSourceValue*cosSourceValue);
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(tan u)/dx = sec^2 u * du/dx */
-				*derivative = dtan_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			// d(tan u)/dx = sec^2 u * du/dx
+			const FE_value cos_u = cos(sourceCache->values[i]);
+			const FE_value sec2_u = 1.0 / (cos_u*cos_u);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = sec2_u * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -661,26 +661,26 @@ int Computed_field_asin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_asin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
+			// d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx
 			// avoid division by zero - make derivative zero there
 			const FE_value u = sourceCache->values[i];
-			const FE_value dasin_u = (u != 1.0) ? 1.0/sqrt(1.0 - u*u) : 0.0;
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(asin u)/dx = 1.0/sqrt(1.0 - u^2) * du/dx */
-				*derivative = dasin_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			const FE_value one__sqrt_1_u2 = (u != 1.0) ? 1.0/sqrt(1.0 - u*u) : 0.0;
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = one__sqrt_1_u2 * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -856,26 +856,26 @@ int Computed_field_acos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_acos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
+			// d(acos u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx
 			// avoid division by zero - make derivative zero there
 			const FE_value u = sourceCache->values[i];
-			const FE_value dacos_u = (u != 1.0) ? -1.0/sqrt(1.0 - u*u) : 0.0;
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(acos u)/dx = -1.0/sqrt(1.0 - u^2) * du/dx */
-				*derivative = dacos_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			const FE_value _one__sqrt_1_u2 = (u != 1.0) ? -1.0/sqrt(1.0 - u*u) : 0.0;
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = _one__sqrt_1_u2 * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -1051,25 +1051,25 @@ int Computed_field_atan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_atan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceDerivative = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
+			// d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx
 			const FE_value u = sourceCache->values[i];
-			const FE_value datan_u = 1.0/(1.0 + u*u);
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(atan u)/dx = 1.0/(1.0 + u^2) * du/dx */
-				*derivative = datan_u * (*sourceDerivative);
-				++sourceDerivative;
-				++derivative;
-			}
+			const FE_value one__1_u2 = 1.0/(1.0 + u*u);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = one__1_u2 * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -1246,29 +1246,31 @@ int Computed_field_atan2::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 
 int Computed_field_atan2::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (source1Cache && source2Cache)
 	{
-		const FE_value *source1Derivative = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
-		const FE_value *source2Derivative = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int termCount = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; i++)
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
+			// d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( u^2 + v^2 )
 			const FE_value u = source1Cache->values[i];
 			const FE_value v = source2Cache->values[i];
-			const FE_value one_denominator = 1.0 / (v*v + u*u);
-			for (int j = 0; j < termCount; j++)
-			{
-				/* d(atan (u/v))/dx =  ( v * du/dx - u * dv/dx ) / ( v^2 + u^2 ) */
-				*derivative = (v * (*source1Derivative) - u * (*source2Derivative)) * one_denominator;
-				++source1Derivative;
-				++source2Derivative;
-				++derivative;
-			}
+			const FE_value u2_v2 = u*u + v*v;
+			const FE_value u__u2_v2 = u / u2_v2;
+			const FE_value v__u2_v2 = v / u2_v2;
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = v__u2_v2 * source1Derivatives[j] - u__u2_v2 * source2Derivatives[j];
+			derivatives += termCount;
+			source1Derivatives += termCount;
+			source2Derivatives += termCount;
 		}
 		return 1;
 	}

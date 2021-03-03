@@ -97,7 +97,7 @@ int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, F
 
 int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	cmzn_field_id sourceField = getSourceField(0);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
@@ -105,24 +105,29 @@ int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache
 	{
 		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		FE_value dx_dX[9];
+		const int sourceComponentCount = sourceField->number_of_components;
 		if (convert_Coordinate_system(&(sourceField->coordinate_system),
-			sourceField->number_of_components, sourceCache->values,
+			sourceComponentCount, sourceCache->values,
 			&(field->coordinate_system), field->number_of_components, valueCache.values,
 			dx_dX))
 		{
-			FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-			const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-			const int termCount = fieldDerivative.getMeshTermCount();
-			for (int i = 0; i < field->number_of_components; ++i)
+			const DerivativeValueCache *sourceDerivativeCache = sourceCache->getDerivativeValueCache(fieldDerivative);
+			DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+			derivativeCache->zeroValues();
+			FE_value *derivatives = derivativeCache->values;
+			const int componentCount = this->field->number_of_components;
+			const int termCount = derivativeCache->getTermCount();
+			for (int i = 0; i < componentCount; ++i)
 			{
-				for (int j = 0; j < termCount; ++j)
+				const FE_value *sourceDerivatives = sourceDerivativeCache->values;
+				for (int k = 0; k < sourceComponentCount; ++k)
 				{
-					*derivative =
-						dx_dX[i*3    ]*sourceDerivatives[j               ] +
-						dx_dX[i*3 + 1]*sourceDerivatives[j + termCount  ] +
-						dx_dX[i*3 + 2]*sourceDerivatives[j + termCount*2];
-					++derivative;
+					const FE_value dx_dXik = dx_dX[i*3 + k];
+					for (int j = 0; j < termCount; ++j)
+						derivatives[j] += dx_dXik * sourceDerivatives[j];
+					sourceDerivatives += termCount;
 				}
+				derivatives += termCount;
 			}
 			return 1;
 		}

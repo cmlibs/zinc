@@ -90,30 +90,30 @@ int Computed_field_power::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 
 int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
 	{
-		const FE_value *source1values = source1Cache->values;
-		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			for (int j = 0; j < number_of_xi; ++j)
-			{
-				/* d(u^v)/dx =
-					*   v * u^(v-1) * du/dx   +   u^v * ln(u) * dv/dx
-					*/
-				*derivative =
-					source2values[i] * pow(source1values[i], source2Cache->values[i] - 1.0) * source1Derivatives[i * number_of_xi + j] +
-					pow(source1values[i], source2Cache->values[i]) * log(source1values[i]) * source2Derivatives[i * number_of_xi + j];
-				derivative++;
-			}
+			const FE_value u = source1Cache->values[i];
+			const FE_value v = source2Cache->values[i];
+			// d(u^v)/dx = v * u^(v-1) * du/dx   +   u^v * ln(u) * dv/dx
+			const FE_value constExpr1 = v * pow(u, v - 1.0);
+			const FE_value constExpr2 = pow(u, v) * log(u);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = constExpr1 * source1Derivatives[j] + constExpr2 * source2Derivatives[j];
+			derivatives += termCount;
+			source1Derivatives += termCount;
+			source2Derivatives += termCount;
 		}
 		return 1;
 	}
@@ -657,28 +657,28 @@ int Computed_field_divide_components::evaluate(cmzn_fieldcache& cache, FieldValu
 
 int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
 	{
-		const FE_value *source1values = source1Cache->values;
-		const FE_value *source2values = source2Cache->values;
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			const FE_value vsquared = source2values[i] * source2values[i];
-			for (int j = 0; j < number_of_xi; ++j)
-			{
-				*derivative = (
-					source1Derivatives[i * number_of_xi + j] * source2values[i] -
-					source2Derivatives[i * number_of_xi + j] * source1values[i]) / vsquared;
-				derivative++;
-			}
+			const FE_value v = source2Cache->values[i];
+			const FE_value u__v2 = source1Cache->values[i] / (v*v);
+			const FE_value one__v = 1.0 / v;
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = source1Derivatives[j] * one__v - source2Derivatives[j] * u__v2;
+			derivatives += termCount;
+			source1Derivatives += termCount;
+			source2Derivatives += termCount;
 		}
 		return 1;
 	}
@@ -2532,23 +2532,24 @@ int Computed_field_log::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourcevalues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			for (int j = 0; j < number_of_xi; ++j)
-			{
-				/* d(log u)/dx = 1 / u * du/dx */
-				*derivative = 1.0 / sourcevalues[i] * sourceDerivatives[i * number_of_xi + j];
-				++derivative;
-			}
+			// d(log u)/dx = 1 / u * du/dx
+			const FE_value one__u = 1.0 / sourceCache->values[i];
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = one__u * sourceDerivatives[j];
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -2735,24 +2736,24 @@ int Computed_field_sqrt::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 
 int Computed_field_sqrt::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourceValues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			const FE_value dsqrt_u = 0.5 / sqrt(sourceValues[i]);
-			for (int j = 0; j < number_of_xi; ++j)
-			{
-				/* d(sqrt u)/dx = du/dx / 2 sqrt(u) */
-				*derivative = sourceDerivatives[i * number_of_xi + j] * dsqrt_u;
-				derivative++;
-			}
+			// d(sqrt u)/dx = du/dx / 2 sqrt(u)
+			const FE_value one__2sqrt_u = 0.5 / sqrt(sourceCache->values[i]);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = sourceDerivatives[j] * one__2sqrt_u;
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
@@ -2939,23 +2940,24 @@ int Computed_field_exp::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
+	if (fieldDerivative.getTotalOrder() > 1)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
-		const FE_value *sourcevalues = sourceCache->values;
 		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
-		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const int number_of_xi = fieldDerivative.getMeshTermCount();
-		for (int i = 0; i < field->number_of_components; ++i)
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		FE_value *derivatives = derivativeCache->values;
+		const int componentCount = this->field->number_of_components;
+		const int termCount = derivativeCache->getTermCount();
+		for (int i = 0; i < componentCount; ++i)
 		{
-			for (int j = 0; j < number_of_xi; ++j)
-			{
-				/* d(exp u)/dx = du/dx exp(u) */
-				*derivative = sourceDerivatives[i * number_of_xi + j] * exp(sourcevalues[i]);
-				derivative++;
-			}
+			// d(exp u)/dx = du/dx exp(u)
+			const FE_value exp_u = exp(sourceCache->values[i]);
+			for (int j = 0; j < termCount; ++j)
+				derivatives[j] = sourceDerivatives[j] * exp_u;
+			derivatives += termCount;
+			sourceDerivatives += termCount;
 		}
 		return 1;
 	}
