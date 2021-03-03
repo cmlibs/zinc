@@ -901,48 +901,60 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 {
 	// derivative must be w.r.t. mesh which owns this element
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	const Value_type value_type = this->fe_field->getValueType();
-	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
-		&& ((!fieldDerivative.getMesh()) || (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())))
+	const Value_type valueType = this->fe_field->getValueType();
+	if (element_xi_location)
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-		DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
-		cmzn_fieldparameters *fieldparameters = fieldDerivative.getFieldparameters();
-		// current finite element field is a linear function of parameters
-		if ((!fieldparameters) || ((fieldparameters->getField() == this->field) && (fieldDerivative.getParameterOrder() <= 1)))
+		FE_element_field_evaluation *element_field_evaluation =
+			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
+				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
+				element_xi_location->get_top_level_element());
+		if (!element_field_evaluation)
+			return 0;
+		if ((valueType == FE_VALUE_VALUE) || (valueType == SHORT_VALUE))
 		{
-			FE_value *derivatives = derivativeCache->values;
-			const FE_value* xi = element_xi_location->get_xi();
-			FE_element_field_evaluation *element_field_evaluation =
-				feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-					fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
-					element_xi_location->get_top_level_element());
-			if ((element_field_evaluation) &&
-				element_field_evaluation->evaluate_real(
+			if ((fieldDerivative.getMesh()) && (element_xi_location->get_element()->getMesh() != fieldDerivative.getMesh()))
+				return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+			DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
+			cmzn_fieldparameters *fieldparameters = fieldDerivative.getFieldparameters();
+			// current finite element field is a linear function of parameters
+			if ((!fieldparameters) || ((fieldparameters->getField() == this->field) && (fieldDerivative.getParameterOrder() <= 1)))
+			{
+				FE_value *derivatives = derivativeCache->values;
+				const FE_value* xi = element_xi_location->get_xi();
+				if (element_field_evaluation->evaluate_real(
 					/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
 					fieldDerivative.getMeshOrder(), fieldDerivative.getParameterOrder(), derivatives))
+				{
+					return 1;
+				}
+				return 0;
+			}
+			else
 			{
+				derivativeCache->zeroValues();
 				return 1;
 			}
 		}
-		else
+		else if (valueType == INT_VALUE)
 		{
-			derivativeCache->zeroValues();
+			// all derivatives of int values are zero as field is constant with step changes
+			inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 			return 1;
 		}
 	}
-	else
+	else if ((valueType == FE_VALUE_VALUE)
+		|| (valueType == INT_VALUE)
+		|| (valueType == DOUBLE_VALUE)
+		|| (valueType == FLT_VALUE)
+		|| (valueType == SHORT_VALUE))
 	{
-		const Field_location_node *node_location = cache.get_location_node();
-		if ((node_location) && (value_type == FE_VALUE_VALUE))
-		{
-			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-			DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
-			derivativeCache->zeroValues();
-			return 1;
-		}
+		// assume all derivatives are zero
+		// future: handle derivatives w.r.t. own field parameters?
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
 	}
-	return 0;
+	return 0;  // non-numeric
 }
 
 int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
@@ -1922,7 +1934,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
 
 	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
 	{
@@ -1954,13 +1970,6 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	{
 		valueCache.values[0] = 0;
 	}
-	return 1;
-}
-
-int Computed_field_access_count::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
-{
-	// assume all derivatives are zero
-	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 
@@ -2097,6 +2106,8 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2277,6 +2288,23 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+int Computed_field_node_value::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const Value_type valueType = this->fe_field->getValueType();
+	if ((valueType == FE_VALUE_VALUE)
+		|| (valueType == INT_VALUE)
+		|| (valueType == DOUBLE_VALUE)
+		|| (valueType == FLT_VALUE)
+		|| (valueType == SHORT_VALUE))
+	{
+		// assume all derivatives are zero
+		// future: handle derivatives w.r.t. own field parameters?
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+	return 0;
 }
 
 enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
@@ -2575,6 +2603,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -3030,8 +3063,9 @@ int Computed_field_embedded::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 // implemented for parameter derivatives of constant mesh location, used in fitting
 int Computed_field_embedded::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
+	// handle xi not interpreted on the host element, or expression too complex
 	if ((fieldDerivative.getMeshOrder() > 0) || (this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative) > 0))
-		return 0;  // fall back to numerical derivatives as xi must not be interpreted on the host element, or expression too complex
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const Field_location_node *fieldLocationNode = cache.get_location_node();
 	if ((!fieldLocationNode) || (!fieldLocationNode->get_host_element()))
 		return 0;  // can only evaluate at node locations embedded in an element; see check below
@@ -3039,7 +3073,7 @@ int Computed_field_embedded::evaluateDerivative(cmzn_fieldcache& cache, RealFiel
 	if (!meshLocationValueCache)
 		return 0;
 	if (meshLocationValueCache->element != fieldLocationNode->get_host_element())
-		return 0;
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 	extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
@@ -3253,6 +3287,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return 0;  // non-numeric
+	}
 
 	int list();
 
@@ -3645,7 +3684,7 @@ int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, Re
 				}
 				return 1;
 			}
-			return 0;  // could be a related element/face/line mesh
+			return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);  // could be a related element/face/line mesh
 		}
 	}
 	// all other derivatives are zero

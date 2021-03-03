@@ -127,6 +127,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -294,6 +299,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -556,6 +566,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -780,6 +795,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -1067,7 +1087,7 @@ int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueC
 int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
 	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
 	if (source1Cache && source2Cache)
@@ -1311,6 +1331,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -1839,6 +1864,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2027,6 +2057,11 @@ private:
 	 }
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 

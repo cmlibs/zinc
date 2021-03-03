@@ -202,6 +202,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
 	{
 		// can only have derivatives w.r.t. mesh xi at present

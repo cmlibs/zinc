@@ -214,6 +214,12 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 	int list();
 
 	cmzn_field_id get_element_group_field_private(int dimension)

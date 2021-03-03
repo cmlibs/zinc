@@ -83,7 +83,7 @@ int Computed_field_sin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 int Computed_field_sin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -276,7 +276,7 @@ int Computed_field_cos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 int Computed_field_cos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -469,7 +469,7 @@ int Computed_field_tan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 int Computed_field_tan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -662,7 +662,7 @@ int Computed_field_asin::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 int Computed_field_asin::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -857,7 +857,7 @@ int Computed_field_acos::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 int Computed_field_acos::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -1052,7 +1052,7 @@ int Computed_field_atan::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVal
 int Computed_field_atan::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -1247,7 +1247,7 @@ int Computed_field_atan2::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 int Computed_field_atan2::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (source1Cache && source2Cache)

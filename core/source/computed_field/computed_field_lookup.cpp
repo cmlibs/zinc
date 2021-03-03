@@ -87,6 +87,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int has_multiple_times()
 	{
 		return 1;
@@ -374,6 +379,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 

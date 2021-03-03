@@ -64,6 +64,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -299,7 +304,7 @@ int Computed_field_cross_product::evaluate(cmzn_fieldcache& cache, FieldValueCac
 int Computed_field_cross_product::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const FE_value *sourceValues[3];
 	const FE_value *sourceDerivatives[3];
 	for (int i = 0; i < field->number_of_source_fields; ++i)
@@ -953,7 +958,7 @@ int Computed_field_magnitude::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 int Computed_field_magnitude::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
 	{
@@ -1324,6 +1329,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 

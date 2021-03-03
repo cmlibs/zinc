@@ -405,27 +405,28 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 		const int elementDimension = mesh->getDimension();
 		// following fails if there is a mesh mismatch:
 		const FieldDerivative *sourceFieldDerivative = mesh->getHigherFieldDerivative(fieldDerivative);
-		if ((sourceFieldDerivative) && (this->xi_index < elementDimension))
+		if (!sourceFieldDerivative)
+			return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+		if (this->xi_index < elementDimension)
 		{
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *sourceFieldDerivative);
-			if (sourceDerivativeCache)
+			if (!sourceDerivativeCache)
+				return 0;
+			DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+			const int termCount = derivativeCache->getTermCount();
+			const int sourceTermCount = sourceDerivativeCache->getTermCount();
+			// the extra mesh derivative added here becomes the first/outermost index
+			FE_value *derivatives = derivativeCache->values;
+			const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index*termCount;
+			const int componentCount = field->number_of_components;
+			for (int i = 0; i < componentCount; ++i)
 			{
-				DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
-				const int termCount = derivativeCache->getTermCount();
-				const int sourceTermCount = sourceDerivativeCache->getTermCount();
-				// the extra mesh derivative added here becomes the first/outermost index
-				FE_value *derivatives = derivativeCache->values;
-				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index*termCount;
-				const int componentCount = field->number_of_components;
-				for (int i = 0; i < componentCount; ++i)
-				{
-					for (int j = 0; j < termCount; ++j)
-						derivatives[j] = sourceDerivatives[j];
-					derivatives += termCount;
-					sourceDerivatives += sourceTermCount;
-				}
-				return 1;
+				for (int j = 0; j < termCount; ++j)
+					derivatives[j] = sourceDerivatives[j];
+				derivatives += termCount;
+				sourceDerivatives += sourceTermCount;
 			}
+			return 1;
 		}
 	}
 	return 0;
@@ -610,6 +611,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -886,6 +892,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 
@@ -1299,6 +1310,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 

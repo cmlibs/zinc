@@ -98,7 +98,7 @@ int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, F
 int Computed_field_coordinate_transformation::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	if ((!fieldDerivative.isMeshOnly()) || (fieldDerivative.getMeshOrder() > 1))
-		return 0;  // fallback to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	cmzn_field_id sourceField = getSourceField(0);
 	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
 	if (sourceCache)
@@ -335,6 +335,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 	int list();
 

@@ -1089,11 +1089,6 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, const FieldDerivative&)
-{
-	return 0;  // Invalid operation for non-real fields, or not available / fallback to finite difference
-}
-
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
 	const FE_mesh *mesh = fieldDerivative.getMesh();

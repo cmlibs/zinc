@@ -392,7 +392,7 @@ int Computed_field_mesh_integral::evaluateDerivative(cmzn_fieldcache& cache, Rea
 	cmzn_field *coordinateField = this->getSourceField(1);
 	const int coordinateOrder = coordinateField->getDerivativeTreeOrder(fieldDerivative);
 	if (coordinateOrder > 0)
-		return 0;  // fall back to numerical derivatives
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	DerivativeValueCache *derivativeValueCache = inValueCache.getDerivativeValueCache(fieldDerivative);
 	IntegralTermSumDerivatives sumDerivatives(*this, cache, inValueCache, fieldDerivative, derivativeValueCache);
 	return this->evaluateTerms(sumDerivatives, element_xi_location);
@@ -505,6 +505,12 @@ public:
 		int number_of_values, FE_value *values);
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		// must not inherit from MeshIntegral
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
 
 };
 

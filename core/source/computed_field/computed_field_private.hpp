@@ -261,8 +261,8 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
-	/** Override for real-valued fields */
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	/** Override for real-valued fields, or return zero for non-numeric fields */
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative) = 0;
 
 	/** Evaluate derivatives using finite differences. Only for real-valued fields
 	 * Only implemented for element_xi derivatives & locations.
@@ -735,11 +735,8 @@ inline const DerivativeValueCache *cmzn_field::evaluateDerivative(cmzn_fieldcach
 	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
 		|| cache.hasRegionModifications())
 	{
-		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative) ||
-			this->core->evaluateDerivativeFiniteDifference(cache, *realValueCache, fieldDerivative))
-		{
+		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative))
 			derivativeValueCache->evaluationCounter = cache.getLocationCounter();
-		}
 		else
 			return nullptr;
 	}
