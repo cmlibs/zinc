@@ -151,7 +151,7 @@ public:
 		}
 		this->termCount = termCountIn;
 	}
-		
+
 	void zeroValues()
 	{
 		const int valueCount = this->componentCount*this->termCount;
@@ -248,6 +248,12 @@ public:
 		else
 			derivativeValueCache = this->derivatives[cacheIndex] = new DerivativeValueCache(this->componentCount, termCount);
 		return derivativeValueCache;
+	}
+
+	void zeroValues()
+	{
+		for (int i = 0; i < this->componentCount; ++i)
+			this->values[i] = 0.0;
 	}
 
 private:

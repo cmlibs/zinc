@@ -247,13 +247,17 @@ nxn matrix <v> from largest absolute value to smallest.
 Adapted from "Numerical Recipes".
 ==============================================================================*/
 
-int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv);
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
+/**
+ * Calculates the inverse of 2X2 FE_value matrix <a>, returning it in <a_inv>.
+ * @return  1 on success, 0 on failure.
+ */
+int invert_FE_value_matrix2(const FE_value *a, FE_value *a_inv);
 
-DESCRIPTION :
-Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
-==============================================================================*/
+/**
+ * Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
+ * @return  1 on success, 0 on failure.
+ */
+int invert_FE_value_matrix3(const FE_value *a, FE_value *a_inv);
 
 int multiply_FE_value_matrix3(FE_value *a,FE_value *b,FE_value *result);
 /*******************************************************************************

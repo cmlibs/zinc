@@ -1311,10 +1311,7 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
-	{
-		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
-	}
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1326,10 +1323,10 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	int return_code = 0;
 	GradientRealFieldValueCache& valueCache = GradientRealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	cmzn_field_id source_field = getSourceField(0);
-	cmzn_field_id coordinate_field = getSourceField(1);
-	const int source_number_of_components = source_field->number_of_components;
-	const int coordinate_number_of_components = coordinate_field->number_of_components;
+	cmzn_field_id sourceField = this->getSourceField(0);
+	cmzn_field_id coordinateField = this->getSourceField(1);
+	const int sourceComponentCount = sourceField->number_of_components;
+	const int coordinateComponentCount = coordinateField->number_of_components;
 	if (element_xi_location)
 	{
 		cmzn_element* element = element_xi_location->get_element();
@@ -1348,99 +1345,77 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
+		if (top_level_element_dimension != coordinateComponentCount)
+		{
+			display_message(ERROR_MESSAGE, "FieldGradient evaluate  Cannot invert coordinate derivatives as element dimension is not equal to number of components");
+			return 0;
+		}
 		const FieldDerivative& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
-		const DerivativeValueCache *sourceDerivativeCache = source_field->evaluateDerivative(*workingCache, fieldDerivative);
-		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
+		const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(*workingCache, fieldDerivative);
+		const DerivativeValueCache *coordinateDerivativeCache = coordinateField->evaluateDerivative(*workingCache, fieldDerivative);
 		if (sourceDerivativeCache && coordinateDerivativeCache)
 		{
-			/*  Calculate the field. First verify we can invert the derivatives of
-				the coordinate field, which we can if dx_dxi is square */
-			double a[9], b[3], d;
-			int i, indx[3], j;
-			if (top_level_element_dimension == coordinate_number_of_components)
+			// invert to get derivatives of xi w.r.t. coordinates
+			const FE_value *dx_dxi = coordinateDerivativeCache->values;
+			FE_value dxi_dx[9];
+			return_code = 0;
+			if (coordinateComponentCount == 3)
+				return_code = invert_FE_value_matrix3(dx_dxi, dxi_dx);
+			else if (coordinateComponentCount == 2)
+				return_code = invert_FE_value_matrix2(dx_dxi, dxi_dx);
+			else if ((coordinateComponentCount == 1) && (fabs(*dx_dxi) > 0.0))
 			{
-				/* fill square matrix a with coordinate field derivatives w.r.t. xi */
-				for (i = 0; i < coordinate_number_of_components; i++)
-				{
-					for (j = 0; j < coordinate_number_of_components; j++)
-					{
-						a[i*coordinate_number_of_components + j] =
-							coordinateDerivativeCache->values[j*coordinate_number_of_components+i];
-					}
-				}
-				/* invert to get derivatives of xi w.r.t. coordinates */
-				FE_value *destination = valueCache.values;
-				if (LU_decompose(coordinate_number_of_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
-				{
-					return_code = 1;
-					FE_value *source = sourceDerivativeCache->values;
-					for (i = 0; i < source_number_of_components; i++)
-					{
-						for (j = 0; j < coordinate_number_of_components; j++)
-						{
-							b[j] = (double)(*source);
-							source++;
-						}
-						if (LU_backsubstitute(coordinate_number_of_components,a,indx,b))
-						{
-							for (j = 0; j < coordinate_number_of_components; j++)
-							{
-								*destination = (FE_value)b[j];
-								destination++;
-							}
-						}
-						else
-						{
-							return_code = 0;
-							break;
-						}
-					}
-				}
-				if (!return_code)
-				{
-					/* cannot invert at apex of heart, so set to zero to allow values
-						to be viewed elsewhere in mesh */
-					display_message(WARNING_MESSAGE,
-						"Computed_field_gradient::evaluate.  "
-						"Could not invert coordinate derivatives; setting gradient to 0");
-					for (i = 0; i < field->number_of_components; i++)
-					{
-						destination[i] = 0.0;
-					}
-					return_code = 1;
-				}
+				*dxi_dx = 1.0 / *dx_dxi;
+				return_code = 1;
 			}
-			else
+			if (!return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_gradient::evaluate.  "
-					"Cannot invert coordinate derivatives");
+				// cannot invert at e.g. apex of heart, so set to zero so can view values elsewhere
+				display_message(WARNING_MESSAGE,
+					"FieldGradient evaluate.  Could not invert coordinate derivatives; setting gradient to 0");
+				valueCache.zeroValues();
+				return 1;
 			}
+			FE_value *values = valueCache.values;
+			const FE_value *sourceDerivatives = sourceDerivativeCache->values;
+			for (int i = 0; i < sourceComponentCount; ++i)
+			{
+				for (int j = 0; j < coordinateComponentCount; ++j)
+				{
+					FE_value sum = 0.0;
+					for (int k = 0; k < coordinateComponentCount; ++k)
+						sum += sourceDerivatives[k]*dxi_dx[k*coordinateComponentCount + j];
+					values[j] = sum;
+				}
+				values += coordinateComponentCount;
+				sourceDerivatives += coordinateComponentCount;
+			}
+			return 1;
 		}
 	}
 	else // Do a finite difference calculation varying the coordinate field: should work with any location, provided field is a function of it
 	{
 		// temporary arrays are packed in GradientRealFieldValueCache::cacheValues:
 		FE_value *down_values = valueCache.cacheValues.data();
-		FE_value *up_values = down_values + source_number_of_components;
-		FE_value *coordinate_values = up_values + source_number_of_components;
+		FE_value *up_values = down_values + sourceComponentCount;
+		FE_value *coordinate_values = up_values + sourceComponentCount;
 
 		// evaluate current coordinates in original cache; allows in-cache values to be picked up
 		// see field assignment / computed_field_update
-		const RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinate_field->evaluate(cache));
+		const RealFieldValueCache *originalCoordinateValueCache = RealFieldValueCache::cast(coordinateField->evaluate(cache));
 		// do finite difference calculations in extraCache:
 		cmzn_fieldcache *extraCache = valueCache.getOrCreateSharedExtraCache(cache);
 		if ((originalCoordinateValueCache) && (extraCache))
 		{
-			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinate_field, cache);
+			const FE_value perturbationSize = valueCache.getPerturbationSize(*extraCache, coordinateField, cache);
 			extraCache->copyLocation(cache);
 			const FE_value *original_coordinate_values = originalCoordinateValueCache->values;
 			return_code = 1;
-			for (int i = 0; i < coordinate_number_of_components; ++i)
+			for (int i = 0; i < coordinateComponentCount; ++i)
 			{
 				coordinate_values[i] = original_coordinate_values[i];
 			}
-			for (int i = 0 ; i < coordinate_number_of_components ; ++i)
+			for (int i = 0 ; i < coordinateComponentCount ; ++i)
 			{
 				for (int k = 0 ; k < 2 ; ++k)
 				{
@@ -1457,13 +1432,13 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
 					extraCache->setAssignInCacheOnly(true);
-					if (CMZN_OK == cmzn_field_assign_real(coordinate_field, extraCache,
-						coordinate_number_of_components, coordinate_values))
+					if (CMZN_OK == cmzn_field_assign_real(coordinateField, extraCache,
+						coordinateComponentCount, coordinate_values))
 					{
-						const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(*extraCache));
+						const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(*extraCache));
 						if (sourceValueCache)
 						{
-							for (int m = 0; m < source_number_of_components; ++m)
+							for (int m = 0; m < sourceComponentCount; ++m)
 							{
 								field_values[m] = sourceValueCache->values[m];
 							}
@@ -1488,9 +1463,9 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					// restore original coordinate
 					coordinate_values[i] = original_coordinate_values[i];
 				}
-				for (int j = 0 ; j < source_number_of_components ; ++j)
+				for (int j = 0 ; j < sourceComponentCount ; ++j)
 				{
-					valueCache.values[j*coordinate_number_of_components + i] =
+					valueCache.values[j*coordinateComponentCount + i] =
 						(up_values[j] - down_values[j]) / (2.0*perturbationSize);
 				}
 			}
@@ -1498,6 +1473,93 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		}
 	}
 	return (return_code);
+}
+
+int Computed_field_gradient::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	cmzn_field_id coordinateField = this->getSourceField(1);
+	const int coordinateOrder = coordinateField->getDerivativeTreeOrder(fieldDerivative);
+	// GRC review getMesh check for curvature:
+	if ((!element_xi_location) || (coordinateOrder > 0) || (fieldDerivative.getMesh()))
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	cmzn_field_id sourceField = this->getSourceField(0);
+	const int sourceComponentCount = sourceField->number_of_components;
+	const int coordinateComponentCount = coordinateField->number_of_components;
+	cmzn_element* element = element_xi_location->get_element();
+	const int element_dimension = element_xi_location->get_element_dimension();
+	cmzn_element *top_level_element = element_xi_location->get_top_level_element();
+	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int top_level_element_dimension = 0;
+	FE_element_get_top_level_element_and_xi(element,
+		element_xi_location->get_xi(), element_dimension,
+		&top_level_element, top_level_xi, &top_level_element_dimension);
+	// this shouldn't happen as derivatives w.r.t. parameters can only be done on top-level-elements
+	if (top_level_element != element)
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+
+	//GradientRealFieldValueCache& valueCache = GradientRealFieldValueCache::cast(inValueCache);
+	if (top_level_element_dimension != coordinateComponentCount)
+	{
+		display_message(ERROR_MESSAGE, "FieldGradient evaluateDerivative  Cannot invert coordinate derivatives as element dimension is not equal to number of components");
+		return 0;
+	}
+	// need only first derivatives w.r.t. mesh to get dx/dxi to invert
+	const FieldDerivative& coordinateFieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+	FE_mesh *mesh = element->getMesh();
+	// following fails if there is a mesh mismatch (but not now as we don't yet allow mesh derivatives in):
+	const FieldDerivative *sourceFieldDerivative = mesh->getHigherFieldDerivative(fieldDerivative);
+	if (!sourceFieldDerivative)
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(cache, *sourceFieldDerivative);
+	const DerivativeValueCache *coordinateDerivativeCache = coordinateField->evaluateDerivative(cache, coordinateFieldDerivative);
+	if (sourceDerivativeCache && coordinateDerivativeCache)
+	{
+		// invert to get derivatives of xi w.r.t. coordinates
+		const FE_value *dx_dxi = coordinateDerivativeCache->values;
+		FE_value dxi_dx[9];
+		int return_code = 0;
+		if (coordinateComponentCount == 3)
+			return_code = invert_FE_value_matrix3(dx_dxi, dxi_dx);
+		else if (coordinateComponentCount == 2)
+			return_code = invert_FE_value_matrix2(dx_dxi, dxi_dx);
+		else if ((coordinateComponentCount == 1) && (fabs(*dx_dxi) > 0.0))
+		{
+			*dxi_dx = 1.0 / *dx_dxi;
+			return_code = 1;
+		}
+		DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+		if (!return_code)
+		{
+			// cannot invert at e.g. apex of heart, so set to zero so can view values elsewhere
+			display_message(WARNING_MESSAGE,
+				"FieldGradient evaluateDerivative.  Could not invert coordinate derivatives; setting gradient derivative to 0");
+			derivativeCache->zeroValues();
+			return 1;
+		}
+		const int termCount = derivativeCache->getTermCount();
+		const int sourceTermCount = sourceDerivativeCache->getTermCount();
+		FE_value *derivatives = derivativeCache->values;
+		const FE_value *sourceDerivatives = sourceDerivativeCache->values;
+		for (int i = 0; i < sourceComponentCount; ++i)
+		{
+			for (int j = 0; j < coordinateComponentCount; ++j)
+			{
+				for (int t = 0; t < termCount; ++t)
+				{
+					FE_value sum = 0.0;
+					// note: the mesh derivative changes slowest
+					for (int k = 0; k < coordinateComponentCount; ++k)
+						sum += sourceDerivatives[k*termCount + t]*dxi_dx[k*coordinateComponentCount + j];
+					derivatives[t] = sum;
+				}
+				derivatives += termCount;
+			}
+			sourceDerivatives += sourceTermCount;
+		}
+		return 1;
+	}
+	return 0;
 }
 
 int Computed_field_gradient::list()
