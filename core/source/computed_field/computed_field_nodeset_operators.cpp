@@ -319,9 +319,9 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
 	{

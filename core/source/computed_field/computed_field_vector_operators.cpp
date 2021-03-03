@@ -670,11 +670,11 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 	if (totalDerivativeOrder == 1)
 	{
 		// case 2: regular first derivative
-		derivativeCache->zeroValues();
 		const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(sourceField1->evaluateDerivativeTree(cache, fieldDerivative));
 		const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(sourceField2->evaluateDerivativeTree(cache, fieldDerivative));
 		if (!((source1Cache) && (source2Cache)))
 			return 0;
+		derivativeCache->zeroValues();
 		const int termCount = derivativeCache->getTermCount();
 		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
 		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
@@ -689,19 +689,22 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 		}
 		return 1;
 	}
-	if ((source1Order == 1) && (source2Order == 1))
+	if ((source1Order == 1) && (source2Order == 1) && ((totalDerivativeOrder > 2) || (fieldDerivative.getParameterOrder() == 1)))
 	{
-		// case 3: both factors have non-zero first derivatives only
+		// case 3: both factors have non-zero first derivatives only, but total order > 2 or mixed derivatives
 		derivativeCache->zeroValues();
-		// only non-zero for total order 2 w.r.t. all mesh, or all parameters
-		if ((totalDerivativeOrder > 2) || (fieldDerivative.getParameterOrder() == 1))
-			return 1;  // case 3b: higher derivatives are zero
-		// only need mixed term from higher order product rule
+		return 1;
+	}
+	if (totalDerivativeOrder == 2)
+	{
+		// case 4: second derivative w.r.t. mesh OR parameters, but not mixed
+		// start with mixed term from higher order produce rule and add higher terms as needed
 		const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
 		const DerivativeValueCache *source1DerivativeCache = sourceField1->evaluateDerivative(cache, *lowerFieldDerivative);
 		const DerivativeValueCache *source2DerivativeCache = sourceField2->evaluateDerivative(cache, *lowerFieldDerivative);
 		if (!((source1DerivativeCache) && (source2DerivativeCache)))
 			return 0;
+		derivativeCache->zeroValues();
 		const int sourceTermCount = source1DerivativeCache->getTermCount();
 		const FE_value *source1Derivatives = source1DerivativeCache->values;
 		const FE_value *source2Derivatives = source2DerivativeCache->values;
@@ -721,9 +724,31 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 			source1Derivatives += sourceTermCount;
 			source2Derivatives += sourceTermCount;
 		}
+		// add remaining second order terms as needed: value1*second_derivative2, second_derivative1*value2
+		for (int s = 0; s < 2; ++s)
+		{
+			if (((s == 0) && (source2Order < 2)) || ((s == 1) && (source1Order < 2)))
+				continue;
+			cmzn_field *constSourceField = (s == 0) ? sourceField1 : sourceField2;
+			cmzn_field *derivSourceField = (s == 0) ? sourceField2 : sourceField1;
+			const RealFieldValueCache *constSourceCache = RealFieldValueCache::cast(constSourceField->evaluate(cache));
+			const DerivativeValueCache *derivSourceDerivativeCache = derivSourceField->evaluateDerivative(cache, fieldDerivative);
+			if (!((constSourceCache) && (derivSourceDerivativeCache)))
+				return 0;
+			const int termCount = derivativeCache->getTermCount();
+			const FE_value *derivSourceDerivatives = derivSourceDerivativeCache->values;
+			derivatives = derivativeCache->values;
+			for (int i = 0; i < vectorComponentCount; ++i)
+			{
+				const FE_value constValue = constSourceCache->values[i];
+				for (int j = 0; j < termCount; ++j)
+					derivatives[j] += constValue*derivSourceDerivatives[j];
+				derivSourceDerivatives += termCount;
+			}
+		}
 		return 1;
 	}
-	return 0;  // fall back to numerical derivatives
+	return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);  // fall back to numerical derivatives
 }
 
 int Computed_field_dot_product::list(

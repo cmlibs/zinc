@@ -492,7 +492,7 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 }
 
 // Use NEWTON method to solve least squares fit of square bilinear element field to 4 points project at known locations onto it
-TEST(Fieldparameters, parameterDerivativeSumSquareProjectionError)
+TEST(ZincOptimisation, leastSquaresFitNewton)
 {
 	ZincTestSetupCpp zinc;
 

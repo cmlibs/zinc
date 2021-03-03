@@ -154,6 +154,8 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	// if the mesh is a mesh group, also need to propagate changes from it
 	virtual int check_dependency()
 	{
@@ -246,48 +248,63 @@ public:
 		this->point_index = 0;
 	}
 
-	/** @return pointer to integrand values */
-	inline FE_value *baseProcess(FE_value *xi, FE_value &dLAV)
+	/** @return  true on success, with valid value of dL/dA/dV in dLAV, otherwise false */
+	inline bool evaluateDLAV(FE_value *xi, FE_value &dLAV)
 	{
 		this->cache.setIndexedMeshLocation(this->point_index, this->element, xi);
 		(this->point_index)++;
-		const RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
 		const DerivativeValueCache *coordinateDerivativeCache = coordinateField->evaluateDerivative(cache, this->fieldDerivativeMesh);
-		if (integrandValueCache && coordinateDerivativeCache)
+		if (!coordinateDerivativeCache)
+			return false;
+		// note dx_dxi cycles over xi fastest
+		const FE_value *dx_dxi = coordinateDerivativeCache->values;
+		dLAV = 0.0; // dL (1-D), dA (2-D), dV (3-D)
+		if (this->dimension == 3)
 		{
-			// note dx_dxi cycles over xi fastest
-			const FE_value *dx_dxi = coordinateDerivativeCache->values;
-			dLAV = 0.0; // dL (1-D), dA (2-D), dV (3-D)
-			switch (this->dimension)
-			{
-			case 1:
-				for (int c = 0; c < coordinatesCount; ++c)
-					dLAV += dx_dxi[c]*dx_dxi[c];
-				dLAV = sqrt(dLAV);
-				break;
-			case 2:
-				if (coordinatesCount == 2)
-					dLAV = fabs(dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2]);
-				else
-				{
-					// dA = magnitude of dx_dxi1 (x) dx_dxi2
-					const FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
-					const FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
-					const FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
-					dLAV = sqrt(n1*n1 + n2*n2 + n3*n3);
-				}
-				break;
-			case 3:
-				dLAV = fabs(
-					dx_dxi[0]*(dx_dxi[4]*dx_dxi[8] - dx_dxi[7]*dx_dxi[5]) +
-					dx_dxi[3]*(dx_dxi[7]*dx_dxi[2] - dx_dxi[1]*dx_dxi[8]) +
-					dx_dxi[6]*(dx_dxi[1]*dx_dxi[5] - dx_dxi[4]*dx_dxi[2]));
-				break;
-			}
-			return integrandValueCache->values;
+			dLAV = fabs(
+				dx_dxi[0]*(dx_dxi[4]*dx_dxi[8] - dx_dxi[7]*dx_dxi[5]) +
+				dx_dxi[3]*(dx_dxi[7]*dx_dxi[2] - dx_dxi[1]*dx_dxi[8]) +
+				dx_dxi[6]*(dx_dxi[1]*dx_dxi[5] - dx_dxi[4]*dx_dxi[2]));
+			return true;
 		}
-		// abandon elements where integrand or coordinates not defined
-		return 0;
+		if (this->dimension == 2)
+		{
+			if (this->coordinatesCount == 2)
+				dLAV = fabs(dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2]);
+			else
+			{
+				// dA = magnitude of dx_dxi1 (x) dx_dxi2
+				const FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
+				const FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
+				const FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
+				dLAV = sqrt(n1*n1 + n2*n2 + n3*n3);
+			}
+			return true;
+		}
+		if (this->dimension == 1)
+		{
+			for (int c = 0; c < coordinatesCount; ++c)
+				dLAV += dx_dxi[c]*dx_dxi[c];
+			dLAV = sqrt(dLAV);
+			return true;
+		}
+		return false;
+	}
+
+	/** @return  Pointer to integrand value cache, or nullptr if failed (e.g. integrand or coordiantes not defined) */
+	inline const RealFieldValueCache *evaluateIntegrandDLAV(FE_value *xi, FE_value &dLAV)
+	{
+		if (!this->evaluateDLAV(xi, dLAV))
+			return nullptr;
+		return RealFieldValueCache::cast(this->integrandField->evaluate(this->cache));
+	}
+
+	/** @return  Pointer to integrand derivative value cache, or nullptr if failed (e.g. integrand or coordiantes not defined) */
+	inline const DerivativeValueCache *evaluateDerivativeIntegrandDLAV(const FieldDerivative& fieldDerivative, FE_value *xi, FE_value &dLAV)
+	{
+		if (!this->evaluateDLAV(xi, dLAV))
+			return nullptr;
+		return this->integrandField->evaluateDerivative(this->cache, fieldDerivative);
 	}
 };
 
@@ -308,15 +325,14 @@ public:
 	inline bool operator()(FE_value *xi, FE_value weight)
 	{
 		FE_value dLAV;
-		FE_value *integrandValues = baseProcess(xi, dLAV);
-		if (integrandValues)
-		{
-			const FE_value weight_dLAV = weight*dLAV;
-			for (int i = 0; i < this->componentCount; ++i)
-				this->values[i] += integrandValues[i]*weight_dLAV;
-			return true;
-		}
-		return false;
+		const RealFieldValueCache *integrandValueCache = this->evaluateIntegrandDLAV(xi, dLAV);
+		if (!integrandValueCache)
+			return false;
+		const FE_value *integrandValues = integrandValueCache->values;
+		const FE_value weight_dLAV = weight*dLAV;
+		for (int i = 0; i < this->componentCount; ++i)
+			this->values[i] += integrandValues[i]*weight_dLAV;
+		return true;
 	}
 
 	static inline bool invoke(void *termVoid, FE_value *xi, FE_value weight)
@@ -329,6 +345,57 @@ int Computed_field_mesh_integral::evaluate(cmzn_fieldcache& cache, FieldValueCac
 {
 	IntegralTermSum sumTerms(*this, cache, RealFieldValueCache::cast(inValueCache));
 	return this->evaluateTerms(sumTerms, cache.get_location_element_xi());
+}
+
+class IntegralTermSumDerivatives : public IntegralTermBase
+{
+	const FieldDerivative& fieldDerivative;
+	DerivativeValueCache *derivativeValueCache;
+
+public:
+	IntegralTermSumDerivatives(Computed_field_mesh_integral& meshIntegralIn,
+		cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache,
+		const FieldDerivative& fieldDerivativeIn, DerivativeValueCache *derivativeValueCacheIn) :
+		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
+		fieldDerivative(fieldDerivativeIn),
+		derivativeValueCache(derivativeValueCacheIn)
+	{
+		this->derivativeValueCache->zeroValues();
+	}
+
+	inline bool operator()(FE_value *xi, FE_value weight)
+	{
+		FE_value dLAV;
+		const DerivativeValueCache *integrandDerivativeValueCache = this->evaluateDerivativeIntegrandDLAV(this->fieldDerivative, xi, dLAV);
+		if (!integrandDerivativeValueCache)
+			return false;
+		const FE_value *integrandDerivatives = integrandDerivativeValueCache->values;
+		const FE_value weight_dLAV = weight*dLAV;
+		FE_value *derivatives = this->derivativeValueCache->values;
+		const int valueCount = this->derivativeValueCache->getValueCount();
+		for (int i = 0; i < valueCount; ++i)
+			derivatives[i] += integrandDerivatives[i]*weight_dLAV;
+		return true;
+	}
+
+	static inline bool invoke(void *termVoid, FE_value *xi, FE_value weight)
+	{
+		return (*(reinterpret_cast<IntegralTermSumDerivatives*>(termVoid)))(xi, weight);
+	}
+};
+
+int Computed_field_mesh_integral::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
+	if (!element_xi_location)
+		return 0;
+	cmzn_field *coordinateField = this->getSourceField(1);
+	const int coordinateOrder = coordinateField->getDerivativeTreeOrder(fieldDerivative);
+	if (coordinateOrder > 0)
+		return 0;  // fall back to numerical derivatives
+	DerivativeValueCache *derivativeValueCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	IntegralTermSumDerivatives sumDerivatives(*this, cache, inValueCache, fieldDerivative, derivativeValueCache);
+	return this->evaluateTerms(sumDerivatives, element_xi_location);
 }
 
 void Computed_field_mesh_integral::appendNumbersOfPointsString(char **theString, int *error) const
@@ -397,6 +464,7 @@ char *Computed_field_mesh_integral::get_command_string()
 	return (command_string);
 }
 
+
 const char computed_field_mesh_integral_squares_type_string[] = "mesh_integral_squares";
 
 class Computed_field_mesh_integral_squares : public Computed_field_mesh_integral
@@ -437,6 +505,7 @@ public:
 		int number_of_values, FE_value *values);
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
 };
 
 int Computed_field_mesh_integral_squares::get_number_of_sum_square_terms(cmzn_fieldcache& cache) const
@@ -491,19 +560,18 @@ public:
 	inline bool operator()(FE_value *xi, FE_value weight)
 	{
 		FE_value dLAV;
-		FE_value *integrandValues = baseProcess(xi, dLAV);
-		if (integrandValues)
-		{
-			this->remainingValuesCount -= this->componentCount;
-			if (this->remainingValuesCount < 0)
-				return false;
-			const FE_value sqrt_weight_dLAV = (weight < 0.0) ? -sqrt(-weight*dLAV) : sqrt(weight*dLAV);
-			for (int i = 0; i < this->componentCount; ++i)
-				this->termValues[i] = integrandValues[i]*sqrt_weight_dLAV;
-			this->termValues += this->componentCount;
-			return true;
-		}
-		return false;
+		const RealFieldValueCache *integrandValueCache = this->evaluateIntegrandDLAV(xi, dLAV);
+		if (!integrandValueCache)
+			return false;
+		const FE_value *integrandValues = integrandValueCache->values;
+		this->remainingValuesCount -= this->componentCount;
+		if (this->remainingValuesCount < 0)
+			return false;
+		const FE_value sqrt_weight_dLAV = (weight < 0.0) ? -sqrt(-weight*dLAV) : sqrt(weight*dLAV);
+		for (int i = 0; i < this->componentCount; ++i)
+			this->termValues[i] = integrandValues[i]*sqrt_weight_dLAV;
+		this->termValues += this->componentCount;
+		return true;
 	}
 
 	static inline bool invoke(void *termVoid, FE_value *xi, FE_value weight)
@@ -545,15 +613,14 @@ public:
 	inline bool operator()(FE_value *xi, FE_value weight)
 	{
 		FE_value dLAV;
-		FE_value *integrandValues = baseProcess(xi, dLAV);
-		if (integrandValues)
-		{
-			const FE_value weight_dLAV = weight*dLAV;
-			for (int i = 0; i < this->componentCount; ++i)
-				this->values[i] += (integrandValues[i]*integrandValues[i])*weight_dLAV;
-			return true;
-		}
-		return false;
+		const RealFieldValueCache *integrandValueCache = this->evaluateIntegrandDLAV(xi, dLAV);
+		if (!integrandValueCache)
+			return false;
+		const FE_value *integrandValues = integrandValueCache->values;
+		const FE_value weight_dLAV = weight*dLAV;
+		for (int i = 0; i < this->componentCount; ++i)
+			this->values[i] += (integrandValues[i]*integrandValues[i])*weight_dLAV;
+		return true;
 	}
 
 	static inline bool invoke(void *termVoid, FE_value *xi, FE_value weight)

@@ -296,8 +296,8 @@ TEST(ZincField, numerical_operators_with_derivatives)
 	Field_binary_operator field_binary_operators[field_binary_operator_count] =
 	{
 		// arithmetic operators
-		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
-		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
+		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
 		{ "multiply",    zinc.fm.createFieldMultiply(fielda, fieldb), binary_operator_multiply, 1.0E-12, 1.0E-7,  2.0E-2,  0.0, 0.0, 0.0 },
 		{ "divide",      zinc.fm.createFieldDivide(fielda, fieldb),   binary_operator_divide,   1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
 		{ "power",       zinc.fm.createFieldPower(fielda, fieldb),    binary_operator_power,    1.0E-12, 1.0E-5,  2.0E-2,  0.0, 0.0, 0.0 },
@@ -451,7 +451,7 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			if (v_error > op.max_v_error)
 				op.max_v_error = v_error;
 
-			//std::cerr << "operator: " << name  << "\n";
+			//std::cerr << "operator: " << name << "\n";
 			for (int d = 0; d < 3; ++d)
 			{
 				FieldDerivative d1_field = zinc.fm.createFieldDerivative(v_field, d + 1);
