@@ -28,6 +28,31 @@
 
 namespace {
 
+/** Derived real value cache with integration points cache */
+class MeshIntegralRealFieldValueCache : public RealFieldValueCache
+{
+public:
+	IntegrationPointsCache integrationCache;
+
+	MeshIntegralRealFieldValueCache(int componentCountIn, cmzn_element_quadrature_rule quadratureRuleIn,
+		int numbersOfPointsCountIn, const int *numbersOfPointsIn) :
+		RealFieldValueCache(componentCountIn),
+		integrationCache(quadratureRuleIn, numbersOfPointsCountIn, numbersOfPointsIn)
+	{
+	}
+
+	static MeshIntegralRealFieldValueCache* cast(FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<MeshIntegralRealFieldValueCache*>(valueCache);
+	}
+
+	static MeshIntegralRealFieldValueCache& cast(FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<MeshIntegralRealFieldValueCache&>(valueCache);
+	}
+
+};
+
 const char computed_field_mesh_integral_type_string[] = "mesh_integral";
 
 // assumes there are two source fields: 1. integrand and 2. coordinate
@@ -73,7 +98,9 @@ public:
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
-		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		MeshIntegralRealFieldValueCache *valueCache = new MeshIntegralRealFieldValueCache(
+			this->field->number_of_components, this->quadratureRule,
+			static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
 		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
@@ -175,12 +202,16 @@ public:
 
 protected:
 	/** @param element_xi_location  If set, evaluate only at the supplied element */
-	template <class ProcessTerm> int evaluateTerms(ProcessTerm &processTerm, const Field_location_element_xi *element_xi_location);
+	template <class ProcessTerm> int evaluateTerms(ProcessTerm &processTerm,
+		MeshIntegralRealFieldValueCache &valueCache, const Field_location_element_xi *element_xi_location);
 };
 
-template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(ProcessTerm &processTerm, const Field_location_element_xi *element_xi_location)
+template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(ProcessTerm &processTerm,
+	MeshIntegralRealFieldValueCache &valueCache, const Field_location_element_xi *element_xi_location)
 {
-	IntegrationPointsCache integrationCache(this->quadratureRule, static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
+	IntegrationPointsCache& integrationCache = valueCache.integrationCache;
+	integrationCache.setQuadrature(this->quadratureRule,
+		static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
 	if (element_xi_location)
 	{
 		cmzn_element *element = element_xi_location->get_element();
@@ -227,7 +258,7 @@ protected:
 	unsigned int point_index;  // point index within element
 
 public:
-	IntegralTermBase(Computed_field_mesh_integral& meshIntegralIn, cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
+	IntegralTermBase(Computed_field_mesh_integral& meshIntegralIn, cmzn_fieldcache& parentCache, MeshIntegralRealFieldValueCache& valueCache) :
 		meshIntegral(meshIntegralIn),
 		dimension(cmzn_mesh_get_dimension(meshIntegral.getMesh())),
 		componentCount(meshIntegralIn.getField()->number_of_components),
@@ -314,7 +345,7 @@ class IntegralTermSum : public IntegralTermBase
 
 public:
 	IntegralTermSum(Computed_field_mesh_integral& meshIntegralIn,
-			cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
+			cmzn_fieldcache& parentCache, MeshIntegralRealFieldValueCache& valueCache) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		values(valueCache.values)
 	{
@@ -343,8 +374,9 @@ public:
 
 int Computed_field_mesh_integral::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	IntegralTermSum sumTerms(*this, cache, RealFieldValueCache::cast(inValueCache));
-	return this->evaluateTerms(sumTerms, cache.get_location_element_xi());
+	MeshIntegralRealFieldValueCache& valueCache = MeshIntegralRealFieldValueCache::cast(inValueCache);
+	IntegralTermSum sumTerms(*this, cache, valueCache);
+	return this->evaluateTerms(sumTerms, valueCache, cache.get_location_element_xi());
 }
 
 class IntegralTermSumDerivatives : public IntegralTermBase
@@ -354,7 +386,7 @@ class IntegralTermSumDerivatives : public IntegralTermBase
 
 public:
 	IntegralTermSumDerivatives(Computed_field_mesh_integral& meshIntegralIn,
-		cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache,
+		cmzn_fieldcache& parentCache, MeshIntegralRealFieldValueCache& valueCache,
 		const FieldDerivative& fieldDerivativeIn, DerivativeValueCache *derivativeValueCacheIn) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		fieldDerivative(fieldDerivativeIn),
@@ -386,6 +418,7 @@ public:
 
 int Computed_field_mesh_integral::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
+	MeshIntegralRealFieldValueCache& valueCache = MeshIntegralRealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi *element_xi_location = cache.get_location_element_xi();
 	if (!element_xi_location)
 		return 0;
@@ -394,8 +427,8 @@ int Computed_field_mesh_integral::evaluateDerivative(cmzn_fieldcache& cache, Rea
 	if (coordinateOrder > 0)
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	DerivativeValueCache *derivativeValueCache = inValueCache.getDerivativeValueCache(fieldDerivative);
-	IntegralTermSumDerivatives sumDerivatives(*this, cache, inValueCache, fieldDerivative, derivativeValueCache);
-	return this->evaluateTerms(sumDerivatives, element_xi_location);
+	IntegralTermSumDerivatives sumDerivatives(*this, cache, valueCache, fieldDerivative, derivativeValueCache);
+	return this->evaluateTerms(sumDerivatives, valueCache, element_xi_location);
 }
 
 void Computed_field_mesh_integral::appendNumbersOfPointsString(char **theString, int *error) const
@@ -550,7 +583,7 @@ class IntegralTermAppendSquares : public IntegralTermBase
 
 public:
 	IntegralTermAppendSquares(Computed_field_mesh_integral& meshIntegralIn,
-			cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache,
+			cmzn_fieldcache& parentCache, MeshIntegralRealFieldValueCache& valueCache,
 			int termValuesCountIn, FE_value *termValuesIn) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		remainingValuesCount(termValuesCountIn),
@@ -589,9 +622,9 @@ public:
 int Computed_field_mesh_integral_squares::evaluate_sum_square_terms(
 	cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, int number_of_values, FE_value *values)
 {
-	IntegralTermAppendSquares appendSquares(*this, cache,
-		RealFieldValueCache::cast(inValueCache), number_of_values, values);
-	int result = this->evaluateTerms(appendSquares, /*location_element_xi*/nullptr);  // always integrate over whole mesh
+	MeshIntegralRealFieldValueCache& valueCache = MeshIntegralRealFieldValueCache::cast(inValueCache);
+	IntegralTermAppendSquares appendSquares(*this, cache, valueCache, number_of_values, values);
+	int result = this->evaluateTerms(appendSquares, valueCache, /*location_element_xi*/nullptr);  // always integrate over whole mesh
 	if (result && (appendSquares.getRemainingValuesCount() != 0))
 	{
 		display_message(ERROR_MESSAGE, "Computed_field_mesh_integral_squares.evaluate_sum_square_terms  "
@@ -608,7 +641,7 @@ class IntegralTermSumSquares : public IntegralTermBase
 
 public:
 	IntegralTermSumSquares(Computed_field_mesh_integral& meshIntegralIn,
-			cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
+			cmzn_fieldcache& parentCache, MeshIntegralRealFieldValueCache& valueCache) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		values(valueCache.values)
 	{
@@ -637,8 +670,9 @@ public:
 
 int Computed_field_mesh_integral_squares::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	IntegralTermSumSquares sumSquares(*this, cache, RealFieldValueCache::cast(inValueCache));
-	return this->evaluateTerms(sumSquares, cache.get_location_element_xi());
+	MeshIntegralRealFieldValueCache& valueCache = MeshIntegralRealFieldValueCache::cast(inValueCache);
+	IntegralTermSumSquares sumSquares(*this, cache, valueCache);
+	return this->evaluateTerms(sumSquares, valueCache, cache.get_location_element_xi());
 }
 
 } // namespace

@@ -258,6 +258,8 @@ public:
 
 private:
 	RealFieldValueCache(); // not implemented
+	RealFieldValueCache(const RealFieldValueCache &source); // not implemented
+	RealFieldValueCache& operator=(const RealFieldValueCache &source); // not implemented
 };
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;

@@ -105,11 +105,18 @@ private:
 	int numbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	bool variableNumbersOfPoints;
 
+	void clearCache();
+
 public:
 	IntegrationPointsCache(cmzn_element_quadrature_rule quadratureRuleIn,
 		int numbersOfPointsCountIn, const int *numbersOfPointsIn);
 
 	~IntegrationPointsCache();
+
+	/** Set the supplied quadrature rule and numbers of points.
+	 * Cache is cleared if values change */
+	void setQuadrature(cmzn_element_quadrature_rule quadratureRuleIn,
+		int numbersOfPointsCountIn, const int *numbersOfPointsIn);
 
 	/** @return number of points */
 	IntegrationShapePoints *getPoints(cmzn_element *element);
