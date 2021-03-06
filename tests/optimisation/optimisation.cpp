@@ -23,6 +23,7 @@
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmatrixoperators.hpp>
 #include <opencmiss/zinc/fieldmeshoperators.hpp>
@@ -540,4 +541,170 @@ TEST(ZincOptimisation, leastSquaresFitNewton)
 
 	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
 	EXPECT_NEAR(0.0, outSum, TOL);
+}
+
+// Use NEWTON method to solve least squares fit of two hermite cubes without cross derivatives
+// to data points in an ellipsoid shape.
+TEST(Fieldparameters, leastSquaresFitNewtonSmooth)
+{
+	ZincTestSetupCpp zinc;
+
+	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
+	const char *filename = TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE);
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(filename));
+
+	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(referenceCoordinates.isValid());
+	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
+	EXPECT_EQ(OK, zinc.root_region.readFile(filename));
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	const int elementCount = mesh3d.getSize();
+	EXPECT_EQ(elementCount, 2);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	zinc.fm.beginChange();
+
+	// generate regular data points over ellipse
+	FieldFiniteElement dataCoordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(dataCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setName("data_coordinates"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(3, "z"));
+	// want to store mesh locations at the data points
+	FieldStoredMeshLocation storedMeshLocationVolume = zinc.fm.createFieldStoredMeshLocation(mesh3d);
+	EXPECT_TRUE(storedMeshLocationVolume.isValid());
+	EXPECT_EQ(RESULT_OK, storedMeshLocationVolume.setName("host_location"));
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_TRUE(datapoints.isValid());
+	Nodetemplate nodetemplate = datapoints.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(dataCoordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(storedMeshLocationVolume));
+	const int pointsCountAlong = 16;
+	const int pointsCountAround = 16;
+	const double xRadius = 1.2;
+	const double yRadius = 0.9;
+	const double zRadius = 0.6;
+	const double xCentre = 1.0;
+	const double yCentre = 0.5;
+	const double zCentre = 0.5;
+	const double pi = 3.1415926535897932384626433832795;
+	const double radiansPerPointAlong = pi/static_cast<double>(pointsCountAlong);
+	const double radiansPerPointAround = 2.0*pi/static_cast<double>(pointsCountAround);
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	double x[3];
+	for (int i = 0; i < pointsCountAlong; ++i)
+	{
+		const double radiansAlong = (i + 0.5)*radiansPerPointAlong;
+		x[0] = xCentre + xRadius*cos(radiansAlong);
+		const double ySize = yRadius*sin(radiansAlong);
+		const double zSize = zRadius*sin(radiansAlong);
+		for (int j = 0; j < pointsCountAround; ++j)
+		{
+			const double radiansAround = (j + 0.5)*radiansPerPointAround;
+			x[1] = yCentre + ySize*cos(radiansAround);
+			x[2] = zCentre + zSize*sin(radiansAround);
+			Node node = datapoints.createNode(-1, nodetemplate);
+			EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+			EXPECT_EQ(RESULT_OK, dataCoordinates.assignReal(fieldcache, 3, x));
+		}
+	}
+
+	FieldGroup outside = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(outside.isValid());
+	EXPECT_EQ(RESULT_OK, outside.setName("outside"));
+	MeshGroup outsideMeshGroup = outside.createFieldElementGroup(mesh2d).getMeshGroup();
+	EXPECT_TRUE(outsideMeshGroup.isValid());
+	outsideMeshGroup.addElementsConditional(zinc.fm.createFieldIsExterior());
+	EXPECT_EQ(10, outsideMeshGroup.getSize());
+
+	FieldFindMeshLocation findMeshLocationOutside = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, outsideMeshGroup);
+	EXPECT_TRUE(findMeshLocationOutside.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationOutside.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+
+	// need these locations on the 3D elements
+	FieldEmbedded projectedSurfaceCoordinates = zinc.fm.createFieldEmbedded(coordinates, findMeshLocationOutside);
+	EXPECT_TRUE(projectedSurfaceCoordinates.isValid());
+	FieldFindMeshLocation findMeshLocationVolume = zinc.fm.createFieldFindMeshLocation(projectedSurfaceCoordinates, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationVolume.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationVolume.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_EXACT));
+	Fieldassignment fieldassignment = storedMeshLocationVolume.createFieldassignment(findMeshLocationVolume);
+	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(datapoints));
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	fieldassignment = Fieldassignment();
+
+	FieldEmbedded projectedCoordinates = zinc.fm.createFieldEmbedded(coordinates, storedMeshLocationVolume);
+	EXPECT_TRUE(projectedCoordinates.isValid());
+	FieldSubtract delta = projectedCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct delta_sq = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(delta_sq.isValid());
+
+	FieldNodesetSum outsideSurfaceFitObjective = zinc.fm.createFieldNodesetSum(delta_sq, datapoints);
+	EXPECT_TRUE(outsideSurfaceFitObjective.isValid());
+	EXPECT_EQ(RESULT_OK, outsideSurfaceFitObjective.setElementMapField(storedMeshLocationVolume));
+
+	// test getting element stiffness matrix for displacement gradient
+	FieldGradient dx_dX = zinc.fm.createFieldGradient(coordinates, referenceCoordinates);
+	EXPECT_TRUE(dx_dX.isValid());
+	FieldMultiply square_dx_dX = dx_dX * dx_dX;
+	EXPECT_TRUE(square_dx_dX.isValid());
+	const double alpha9[9] = { 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001 };
+	FieldConstant alpha = zinc.fm.createFieldConstant(9, alpha9);
+	EXPECT_TRUE(alpha.isValid());
+	FieldDotProduct sumScaledSquare_dx_dX = zinc.fm.createFieldDotProduct(alpha, square_dx_dX);
+	EXPECT_TRUE(sumScaledSquare_dx_dX.isValid());
+
+	FieldGradient d2x_dX2 = zinc.fm.createFieldGradient(dx_dX, referenceCoordinates);
+	EXPECT_TRUE(d2x_dX2.isValid());
+	FieldMultiply square_d2x_dX2 = d2x_dX2 * d2x_dX2;
+	EXPECT_TRUE(square_d2x_dX2.isValid());
+	const double beta27[27] = {
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 ,
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 };
+	FieldConstant beta = zinc.fm.createFieldConstant(27, beta27);
+	EXPECT_TRUE(beta.isValid());
+	FieldDotProduct sumScaledSquare_d2x_dX2 = zinc.fm.createFieldDotProduct(beta, square_d2x_dX2);
+	EXPECT_TRUE(sumScaledSquare_d2x_dX2.isValid());
+
+	FieldMeshIntegral smoothingObjective = zinc.fm.createFieldMeshIntegral(sumScaledSquare_dx_dX + sumScaledSquare_d2x_dX2, referenceCoordinates, mesh3d);
+	EXPECT_TRUE(smoothingObjective.isValid());
+	const int pointCount = 3;
+	EXPECT_EQ(RESULT_OK, smoothingObjective.setNumbersOfPoints(1, &pointCount));
+
+	zinc.fm.endChange();
+
+	// solve optimisation
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(outsideSurfaceFitObjective));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(smoothingObjective));
+
+	EXPECT_EQ(OK, optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	EXPECT_EQ(OK, optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s", solutionReport);
+
+	const double TOL = 1.0E-8;
+	double outSurfaceFitObjectiveValue;
+	EXPECT_EQ(RESULT_OK, outsideSurfaceFitObjective.evaluateReal(fieldcache, 1, &outSurfaceFitObjectiveValue));
+	EXPECT_NEAR(0.57100132382309376, outSurfaceFitObjectiveValue, TOL);
+
+	double outSmoothingObjectiveValue;
+	EXPECT_EQ(RESULT_OK, smoothingObjective.evaluateReal(fieldcache, 1, &outSmoothingObjectiveValue));
+	EXPECT_NEAR(0.31669258057011818, outSmoothingObjectiveValue, TOL);
 }
