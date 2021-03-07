@@ -14,8 +14,10 @@
 /**
  * @brief Describes the derivative of a field to evaluate.
  *
- * Describes the derivative of a field to evaluate. For example, del/del_xi1.
+ * Describes the derivative of a field to evaluate. For example, del/del_xi,
+ * del^2/del(parameters)^2.
  * @see cmzn_mesh_get_chart_differentialoperator
+ * @see cmzn_fieldparameters_get_derivative_operator
  * @see cmzn_field_evaluate_derivative
  */
 struct cmzn_differentialoperator;

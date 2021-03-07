@@ -258,6 +258,11 @@ TEST(NodesetOperators, args)
 	EXPECT_EQ(RESULT_ERROR_ARGUMENT, nodesetSum.setElementMapField(constant));
 	EXPECT_EQ(RESULT_OK, nodesetSum.setElementMapField(storedMeshLocation));
 	EXPECT_EQ(storedMeshLocation, nodesetSum.getElementMapField());
+
+	Field field1 = nodesetSum;
+	FieldNodesetOperator tmpNodesetSum = field1.castNodesetOperator();
+	EXPECT_EQ(nodesetSum, tmpNodesetSum);
+	EXPECT_EQ(storedMeshLocation, tmpNodesetSum.getElementMapField());
 }
 
 // Test evaluation of all nodeset operators with combinations of embedded nodes and groups
