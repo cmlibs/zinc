@@ -92,14 +92,14 @@ public:
 		return id;
 	}
 
-	Field getConditionalField(const Field& independentField)
+	Field getConditionalField(const Field& dependentField)
 	{
-		return Field(cmzn_optimisation_get_conditional_field(id, independentField.getId()));
+		return Field(cmzn_optimisation_get_conditional_field(id, dependentField.getId()));
 	}
 
-	int setConditionalField(const Field& independentField, const Field& conditionalField)
+	int setConditionalField(const Field& dependentField, const Field& conditionalField)
 	{
-		return cmzn_optimisation_set_conditional_field(id, independentField.getId(), conditionalField.getId());
+		return cmzn_optimisation_set_conditional_field(id, dependentField.getId(), conditionalField.getId());
 	}
 
 	int addFieldassignment(const Fieldassignment& fieldassignment)
@@ -140,6 +140,26 @@ public:
 	{
 		return cmzn_optimisation_set_attribute_real(id,
 			static_cast<cmzn_optimisation_attribute>(attribute), value);
+	}
+
+	Field getFirstDependentField()
+	{
+		return Field(cmzn_optimisation_get_first_dependent_field(id));
+	}
+
+	Field getNextDependentField(const Field& refField)
+	{
+		return Field(cmzn_optimisation_get_next_dependent_field(id, refField.getId()));
+	}
+
+	int addDependentField(const Field& field)
+	{
+		return (cmzn_optimisation_add_dependent_field(id, field.getId()));
+	}
+
+	int removeDependentField(const Field& field)
+	{
+		return (cmzn_optimisation_remove_dependent_field(id, field.getId()));
 	}
 
 	Field getFirstIndependentField()

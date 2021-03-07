@@ -114,7 +114,7 @@ public:
 
 	void list_dof_values();
 
-	void invalidate_independent_field_caches();
+	void invalidate_dependent_field_caches();
 
 	void do_fieldassignments();
 
@@ -125,7 +125,7 @@ private:
 
 	int construct_dof_arrays();
 
-	void touch_independent_fields();
+	void touch_dependent_fields();
 
 	int minimise_QN();
 

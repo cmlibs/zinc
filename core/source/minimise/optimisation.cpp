@@ -126,16 +126,16 @@ int Minimisation::prepareOptimisation()
 	return return_code;
 }
 
-/***************************************************************************//**
- * Ensures independent fields are marked as changed, so graphics update
+/**
+ * Ensures dependent fields are marked as changed, so graphics update
  */
-void Minimisation::touch_independent_fields()
+void Minimisation::touch_dependent_fields()
 {
-	IndependentAndConditionalFieldsList::iterator iter;
-	for (iter = optimisation.independentFields.begin();
-		iter != optimisation.independentFields.end(); ++iter)
+	DependentAndConditionalFieldsList::iterator iter;
+	for (iter = optimisation.dependentFields.begin();
+		iter != optimisation.dependentFields.end(); ++iter)
 	{
-		iter->independentField->setChanged();
+		iter->dependentField->setChanged();
 	}
 }
 
@@ -159,7 +159,7 @@ int Minimisation::runOptimisation()
 			"Unknown minimisation method.");
 		break;
 	}
-	touch_independent_fields();  // not needed for Newton?
+	touch_dependent_fields();  // not needed for Newton?
 	this->do_fieldassignments();
 	if (!return_code)
 	{
@@ -189,12 +189,12 @@ int Minimisation::construct_dof_arrays()
 		dof_initial_values = 0;
 	}
 	this->total_dof = 0;
-	IndependentAndConditionalFieldsList::iterator iter;
-	for (iter = optimisation.independentFields.begin();
-		iter != optimisation.independentFields.end(); ++iter)
+	DependentAndConditionalFieldsList::iterator iter;
+	for (iter = optimisation.dependentFields.begin();
+		iter != optimisation.dependentFields.end(); ++iter)
 	{
-		cmzn_field *independentField = iter->independentField;
-		const int componentCount = cmzn_field_get_number_of_components(independentField);
+		cmzn_field *dependentField = iter->dependentField;
+		const int componentCount = cmzn_field_get_number_of_components(dependentField);
 		cmzn_fieldcache_id cache = 0;
 		cmzn_field *conditionalField = iter->conditionalField;
 		FE_value *conditionalValues = 0;
@@ -205,11 +205,11 @@ int Minimisation::construct_dof_arrays()
 			conditionalValues = new FE_value[conditionalComponents];
 			cache = cmzn_fieldmodule_create_fieldcache(this->field_module);
 		}
-		if (Computed_field_is_type_finite_element(independentField))
+		if (Computed_field_is_type_finite_element(dependentField))
 		{
-			// should only have one independent field
+			// should only have one dependent field
 			FE_field *fe_field;
-			Computed_field_get_type_finite_element(independentField, &fe_field);
+			Computed_field_get_type_finite_element(dependentField, &fe_field);
 			cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 			cmzn_node_id node = 0;
@@ -288,9 +288,9 @@ int Minimisation::construct_dof_arrays()
 			cmzn_nodeiterator_destroy(&iterator);
 			cmzn_nodeset_destroy(&nodeset);
 		}
-		else if (Computed_field_is_constant(independentField))
+		else if (Computed_field_is_constant(dependentField))
 		{
-			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independentField);
+			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(dependentField);
 			if (constant_values_storage)
 			{
 				FE_value **temp_dof_storage_array;
@@ -325,9 +325,9 @@ int Minimisation::construct_dof_arrays()
 			}
 			else
 			{
-				char *field_name = cmzn_field_get_name(independentField);
+				char *field_name = cmzn_field_get_name(dependentField);
 				display_message(WARNING_MESSAGE, "Minimisation::construct_dof_arrays.  "
-					"Independent field '%s' is not a constant. Skipping.", field_name);
+					"Dependent field '%s' is not a constant. Skipping.", field_name);
 				DEALLOCATE(field_name);
 				return_code = 0;
 			}
@@ -335,7 +335,7 @@ int Minimisation::construct_dof_arrays()
 		else
 		{
 			display_message(ERROR_MESSAGE, "cmzn_optimisation::construct_dof_arrays. "
-				"Invalid independent field type.");
+				"Invalid dependent field type.");
 			return_code = 0;
 		}
 		delete[] conditionalValues;
@@ -356,15 +356,15 @@ void Minimisation::list_dof_values()
 }
 
 /***************************************************************************//**
- * Must call this function after updating independent field DOFs to ensure
+ * Must call this function after updating dependent field DOFs to ensure
  * dependent field caches are fully recalculated with the DOF changes.
  */
-void Minimisation::invalidate_independent_field_caches()
+void Minimisation::invalidate_dependent_field_caches()
 {
-	for (IndependentAndConditionalFieldsList::iterator iter = optimisation.independentFields.begin();
-		iter != optimisation.independentFields.end(); ++iter)
+	for (DependentAndConditionalFieldsList::iterator iter = optimisation.dependentFields.begin();
+		iter != optimisation.dependentFields.end(); ++iter)
 	{
-		iter->independentField->clearCaches();
+		iter->dependentField->clearCaches();
 	}
 }
 
@@ -386,7 +386,7 @@ int Minimisation::evaluate_objective_function(FE_value *valueAddress)
 {
 	int return_code = 1;
 	*valueAddress = 0.0;
-	invalidate_independent_field_caches();
+	invalidate_dependent_field_caches();
 	int offset = 0;
 	for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
 		iter != objectiveFields.end(); ++iter)
@@ -507,7 +507,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		minimisation->set_dof_value(i, x(i + 1));
 	}
 	//minimisation->list_dof_values();
-	minimisation->invalidate_independent_field_caches();
+	minimisation->invalidate_dependent_field_caches();
 	minimisation->do_fieldassignments();
 
 	int return_code = 1;
@@ -583,13 +583,13 @@ int Minimisation::minimise_LSQN()
  */
 int Minimisation::minimise_Newton()
 {
-	if (this->optimisation.independentFields.size() != 1)
+	if (this->optimisation.dependentFields.size() != 1)
 	{
 		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Newton method only works with one dependent field");
 		return 0;
 	}
 	Fieldmodule fieldmodule(cmzn_fieldmodule_access(this->field_module));
-	Field dependentField(cmzn_field_access(this->optimisation.independentFields.front().independentField));
+	Field dependentField(cmzn_field_access(this->optimisation.dependentFields.front().dependentField));
 	Fieldparameters fieldparameters = dependentField.getFieldparameters();
 	if (!fieldparameters.isValid())
 	{

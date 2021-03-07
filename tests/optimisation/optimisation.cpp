@@ -62,8 +62,10 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_EQ(Optimisation::METHOD_QUASI_NEWTON, optimisation.getMethod());
 	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON, optimisation.getMethod());
+	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(Optimisation::METHOD_NEWTON, optimisation.getMethod());
 
-	// made-up fields to test objective/independent field APIs
+	// made-up fields to test objective/dependent field APIs
 	FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
 	EXPECT_TRUE(f1.isValid());
 	FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
@@ -79,17 +81,17 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_TRUE(fcond.isValid());
 
 	Field temp;
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f1));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f2));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f3));
-	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.addIndependentField(f1));
-	temp = optimisation.getFirstIndependentField();
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f1));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f2));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f3));
+	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.addDependentField(f1));
+	temp = optimisation.getFirstDependentField();
 	EXPECT_EQ(f1, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f2, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f3, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_FALSE(temp.isValid());
 	temp = optimisation.getConditionalField(f1);
 	EXPECT_FALSE(temp.isValid());
@@ -102,13 +104,13 @@ TEST(ZincOptimisation, arguments)
 	temp = optimisation.getConditionalField(f2);
 	EXPECT_EQ(fcond, temp);
 
-	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.removeIndependentField(f4)); // not in use
-	EXPECT_EQ(OK, result = optimisation.removeIndependentField(f1));
-	temp = optimisation.getFirstIndependentField();
+	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.removeDependentField(f4)); // not in use
+	EXPECT_EQ(OK, result = optimisation.removeDependentField(f1));
+	temp = optimisation.getFirstDependentField();
 	EXPECT_EQ(f2, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f3, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_FALSE(temp.isValid());
 	temp = optimisation.getConditionalField(f2);
 	EXPECT_EQ(fcond, temp);
@@ -131,6 +133,32 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_EQ(f4, temp);
 	temp = optimisation.getNextObjectiveField(temp);
 	EXPECT_FALSE(temp.isValid());
+}
+
+TEST(ZincOptimisation, deprecatedIndependentFieldAPI)
+{
+	ZincTestSetupCpp zinc;
+
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	// made-up fields to test independent field APIs
+	FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(f1.isValid());
+	FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_TRUE(f2.isValid());
+	// Test Dependent and deprecated Independent field APIs do the same thing
+	EXPECT_EQ(OK, optimisation.addIndependentField(f1));
+	EXPECT_EQ(f1, optimisation.getFirstIndependentField());
+	EXPECT_EQ(f1, optimisation.getFirstDependentField());
+	EXPECT_EQ(OK, optimisation.addDependentField(f2));
+	EXPECT_EQ(f2, optimisation.getNextIndependentField(f1));
+	EXPECT_EQ(f2, optimisation.getNextDependentField(f1));
+	EXPECT_EQ(OK, optimisation.removeIndependentField(f1));
+	EXPECT_EQ(f2, optimisation.getFirstIndependentField());
+	EXPECT_EQ(f2, optimisation.getFirstDependentField());
+	EXPECT_EQ(OK, optimisation.removeDependentField(f2));
+	EXPECT_FALSE(optimisation.getFirstIndependentField().isValid());
+	EXPECT_FALSE(optimisation.getFirstDependentField().isValid());
 }
 
 // A non-linear optimisation for deformation of a tricubic Lagrange unit cube.
@@ -210,7 +238,7 @@ TEST(ZincOptimisation, tricubicFit)
 
 	EXPECT_EQ(OK, result = optimisation.addObjectiveField(end2Objective));
 	EXPECT_EQ(OK, result = optimisation.addObjectiveField(WObjective));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(coordinates));
 	EXPECT_EQ(OK, result = optimisation.setConditionalField(coordinates, xCondition));
 	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
@@ -342,7 +370,7 @@ TEST(ZincOptimisation, addFieldassignment)
 	EXPECT_TRUE(optimisation.isValid());
 	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addIndependentField(zOffset));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(zOffset));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignment));
 	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
 
@@ -474,7 +502,7 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 	EXPECT_TRUE(optimisation.isValid());
 	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addIndependentField(s));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(s));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignmentReset));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignmentTransform));
 	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
@@ -531,7 +559,7 @@ TEST(ZincOptimisation, leastSquaresFitNewton)
 	EXPECT_TRUE(optimisation.isValid());
 	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
 	EXPECT_EQ(OK, optimisation.addObjectiveField(sumErrorSquared));
-	EXPECT_EQ(OK, optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.addDependentField(coordinates));
 	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
 
 	EXPECT_EQ(OK, optimisation.optimise());
@@ -545,7 +573,7 @@ TEST(ZincOptimisation, leastSquaresFitNewton)
 
 // Use NEWTON method to solve least squares fit of two hermite cubes without cross derivatives
 // to data points in an ellipsoid shape.
-TEST(Fieldparameters, leastSquaresFitNewtonSmooth)
+TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
 {
 	ZincTestSetupCpp zinc;
 
@@ -691,7 +719,7 @@ TEST(Fieldparameters, leastSquaresFitNewtonSmooth)
 	EXPECT_EQ(OK, optimisation.addObjectiveField(outsideSurfaceFitObjective));
 	EXPECT_EQ(OK, optimisation.addObjectiveField(smoothingObjective));
 
-	EXPECT_EQ(OK, optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.addDependentField(coordinates));
 	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
 
 	EXPECT_EQ(OK, optimisation.optimise());

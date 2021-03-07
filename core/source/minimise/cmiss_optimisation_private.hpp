@@ -23,14 +23,14 @@
 #include "opencmiss/zinc/status.h"
 #include "computed_field/field_module.hpp"
 
-struct IndependentAndConditionalFields
+struct DependentAndConditionalFields
 {
-	cmzn_field_id independentField;
+	cmzn_field_id dependentField;
 	cmzn_field_id conditionalField;
 };
 
 typedef std::list<cmzn_field_id> FieldList;
-typedef std::list<IndependentAndConditionalFields> IndependentAndConditionalFieldsList;
+typedef std::list<DependentAndConditionalFields> DependentAndConditionalFieldsList;
 
 struct cmzn_optimisation
 {
@@ -38,7 +38,7 @@ friend class Minimisation;
 private:
 	cmzn_fieldmodule_id fieldModule;
 	cmzn_optimisation_method method;
-	IndependentAndConditionalFieldsList independentFields;
+	DependentAndConditionalFieldsList dependentFields;
 	FieldList objectiveFields;
 	std::list<cmzn_fieldassignment *> fieldassignments;
 	int access_count;
@@ -106,19 +106,19 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	cmzn_field_id getConditionalField(cmzn_field_id independentField) const;
+	cmzn_field_id getConditionalField(cmzn_field_id dependentField) const;
 
-	int setConditionalField(cmzn_field_id independentField, cmzn_field_id conditionalField);
+	int setConditionalField(cmzn_field_id dependentField, cmzn_field_id conditionalField);
 
 	int addFieldassignment(cmzn_fieldassignment *fieldassignment);
 
-	cmzn_field_id getFirstIndependentField() const;
+	cmzn_field_id getFirstDependentField() const;
 
-	cmzn_field_id getNextIndependentField(cmzn_field_id ref_field) const;
+	cmzn_field_id getNextDependentField(cmzn_field_id ref_field) const;
 
-	int addIndependentField(cmzn_field_id field);
+	int addDependentField(cmzn_field_id field);
 
-	int removeIndependentField(cmzn_field_id field);
+	int removeDependentField(cmzn_field_id field);
 
 	cmzn_field_id getFirstObjectiveField() const;
 
