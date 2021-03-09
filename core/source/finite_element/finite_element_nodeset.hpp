@@ -85,7 +85,7 @@ public:
 		{
 			if (--(info->access_count) == 0)
 				delete info;
-			info = 0;
+			info = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -245,7 +245,7 @@ public:
 		{
 			if (--(node->access_count) == 0)
 				delete node;
-			node = 0;
+			node = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -410,7 +410,7 @@ public:
 			--(nodeset->access_count);
 			if (nodeset->access_count <= 0)
 				delete nodeset;
-			nodeset = 0;
+			nodeset = nullptr;
 		}
 	}
 

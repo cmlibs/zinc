@@ -1428,8 +1428,14 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	FieldFindMeshLocation find_heart = zinc.fm.createFieldFindMeshLocation(plate_coordinates, coordinates, heart_mesh);
 	EXPECT_TRUE(find_heart.isValid());
 	// test cast function and type-specific APIs
-	ASSERT_EQ(find_heart, find_heart.castFindMeshLocation());
-	ASSERT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(find_heart, find_heart.castFindMeshLocation());
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(heart_mesh, find_heart.getSearchMesh());
+	EXPECT_EQ(RESULT_OK, find_heart.setSearchMesh(mesh2d));
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(mesh2d, find_heart.getSearchMesh());
+	EXPECT_EQ(RESULT_OK, find_heart.setSearchMesh(heart_mesh));
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
 	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_EXACT, find_heart.getSearchMode());
 	EXPECT_EQ(RESULT_OK, find_heart.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
 	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_NEAREST, find_heart.getSearchMode());
@@ -1530,6 +1536,60 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	}
 
 	zinc.fm.endChange();
+}
+
+// test findMeshLocation with searchMesh of different dimension
+TEST(ZincFieldFindMeshLocation, searchMesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(12, mesh1d.getSize());
+	EXPECT_EQ(6, mesh2d.getSize());
+	EXPECT_EQ(1, mesh3d.getSize());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	const double xValues[3] = { 0.3, 0.8, 0.1 };
+	FieldConstant constCoordinates = zinc.fm.createFieldConstant(3, xValues);
+	EXPECT_TRUE(constCoordinates.isValid());
+	FieldFindMeshLocation findMeshLocation = zinc.fm.createFieldFindMeshLocation(constCoordinates, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocation.isValid());
+	EXPECT_EQ(mesh3d, findMeshLocation.getMesh());
+	EXPECT_EQ(mesh3d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_EXACT, findMeshLocation.getSearchMode());
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_NEAREST, findMeshLocation.getSearchMode());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Element element;
+	double xi[3];
+	const double TOL = 1.0E-12;
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(xValues[1], xi[1], TOL);
+	EXPECT_NEAR(xValues[2], xi[2], TOL);
+
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMesh(mesh2d));
+	EXPECT_EQ(mesh2d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(xValues[1], xi[1], TOL);
+	EXPECT_NEAR(0.0, xi[2], TOL);
+
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMesh(mesh1d));
+	EXPECT_EQ(mesh1d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(1.0, xi[1], TOL);
+	EXPECT_NEAR(0.0, xi[2], TOL);
 }
 
 TEST(ZincFieldStoredMeshLocation, valid_arguments)

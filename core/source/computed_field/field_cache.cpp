@@ -95,20 +95,20 @@ char *StringFieldValueCache::getAsString() const
 
 void MeshLocationFieldValueCache::clear()
 {
-	cmzn_element_destroy(&element);
+	cmzn_element::deaccess(this->element);
 	FieldValueCache::clear();
 }
 
 char *MeshLocationFieldValueCache::getAsString() const
 {
-	if (!element)
-		return 0;
+	if (!this->element)
+		return nullptr;
 	char *valueAsString = 0;
 	int error = 0;
 	char tmp_string[50];
-	sprintf(tmp_string,"%d :", cmzn_element_get_identifier(element));
+	sprintf(tmp_string,"%d :", element->getIdentifier());
 	append_string(&valueAsString, tmp_string, &error);
-	int dimension = cmzn_element_get_dimension(element);
+	const int dimension = element->getDimension();
 	for (int i = 0; i < dimension; i++)
 	{
 		sprintf(tmp_string, " %g", xi[i]);
@@ -117,7 +117,7 @@ char *MeshLocationFieldValueCache::getAsString() const
 	return valueAsString;
 }
 
-cmzn_fieldcache::cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn) :
+cmzn_fieldcache::cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn) :
 	region(cmzn_region_access(regionIn)),
 	locationCounter(0),
 	modifyCounter(-1),
@@ -152,7 +152,7 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	cmzn_region_destroy(&region);
 }
 
-cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region_id regionIn)
+cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn)
 {
 	if (regionIn)
 		return new cmzn_fieldcache(regionIn);
@@ -200,8 +200,8 @@ void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
 }
 
 int cmzn_fieldcache::setIndexedMeshLocation(unsigned int index,
-	cmzn_element_id element, const double *chart_coordinates,
-	cmzn_element_id top_level_element)
+	cmzn_element *element, const double *chart_coordinates,
+	cmzn_element *top_level_element)
 {
 	if (!(element && chart_coordinates))
 		return CMZN_ERROR_ARGUMENT;
@@ -240,7 +240,7 @@ int cmzn_fieldcache::setIndexedMeshLocation(unsigned int index,
 	return CMZN_OK;
 }
 
-int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
+int cmzn_fieldcache::setFieldReal(cmzn_field *field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros

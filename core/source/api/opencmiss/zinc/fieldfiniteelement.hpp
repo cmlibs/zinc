@@ -157,6 +157,16 @@ public:
 		return Mesh(cmzn_field_find_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
+	Mesh getSearchMesh() const
+	{
+		return Mesh(cmzn_field_find_mesh_location_get_search_mesh(this->getDerivedId()));
+	}
+
+	int setSearchMesh(const Mesh& mesh)
+	{
+		return cmzn_field_find_mesh_location_set_search_mesh(this->getDerivedId(), mesh.getId());
+	}
+
 	SearchMode getSearchMode() const
 	{
 		return static_cast<SearchMode>(cmzn_field_find_mesh_location_get_search_mode(

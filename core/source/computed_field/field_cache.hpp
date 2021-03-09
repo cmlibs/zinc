@@ -267,7 +267,7 @@ typedef std::vector<FieldValueCache*> ValueCacheVector;
 struct cmzn_fieldcache
 {
 private:
-	cmzn_region_id region;  // accessed: not thread safe. Means region is guaranteed to exist.
+	cmzn_region *region;  // accessed: not thread safe. Means region is guaranteed to exist.
 	int locationCounter; // incremented whenever domain location changes
 	int modifyCounter; // set to match region when location changes; if region value changes, cache is invalid
 	Field_location_element_xi location_element_xi;
@@ -300,19 +300,19 @@ private:
 public:
 
 	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
-	cmzn_fieldcache(cmzn_region_id regionIn, cmzn_fieldcache *parentCacheIn = 0);
+	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = 0);
 
 	~cmzn_fieldcache();
 
-	static cmzn_fieldcache *create(cmzn_region_id regionIn);
+	static cmzn_fieldcache *create(cmzn_region *regionIn);
 
-	cmzn_fieldcache_id access()
+	cmzn_fieldcache *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_fieldcache_id &cache)
+	static int deaccess(cmzn_fieldcache*& cache)
 	{
 		if (!cache)
 			return CMZN_ERROR_ARGUMENT;
@@ -366,7 +366,8 @@ public:
 		return this->locationCounter;
 	}
 
-	cmzn_region_id getRegion() const
+	/** @return  Non-accessed region */
+	cmzn_region *getRegion() const
 	{
 		return this->region;
 	}
@@ -395,15 +396,15 @@ public:
 		}
 	}
 
-	int setElement(cmzn_element_id element)
+	int setElement(cmzn_element *element)
 	{
 		const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
 		return this->setMeshLocation(element, chart_coordinates);
 	}
 
 	/** @param topLevelElement  Optional top-level element to inherit fields from */
-	int setMeshLocation(cmzn_element_id element, const double *chart_coordinates,
-		cmzn_element_id top_level_element = 0)
+	int setMeshLocation(cmzn_element *element, const double *chart_coordinates,
+		cmzn_element *top_level_element = 0)
 	{
 		if (element && chart_coordinates)
 		{
@@ -422,10 +423,10 @@ public:
 	/** Set a mesh location where the chart_coordinates are likely to be the same at that index.
 	 * Allows pre-calculated basis functions to be kept.
 	 * @param topLevelElement  Optional top-level element to inherit fields from */
-	int setIndexedMeshLocation(unsigned int index, cmzn_element_id element, const double *chart_coordinates,
-		cmzn_element_id top_level_element = 0);
+	int setIndexedMeshLocation(unsigned int index, cmzn_element *element, const double *chart_coordinates,
+		cmzn_element *top_level_element = 0);
 
-	int setNode(cmzn_node_id node)
+	int setNode(cmzn_node *node)
 	{
 		this->location_node.set_node(node);
 		if (this->location != &this->location_node)
@@ -439,7 +440,7 @@ public:
 
 	/** Set node and the element it is embedded in so number of derivatives
 	 * w.r.t. host element parameters can be determined */
-	int setNodeWithHostElement(cmzn_node_id node, cmzn_element_id element)
+	int setNodeWithHostElement(cmzn_node *node, cmzn_element *element)
 	{
 		this->location_node.set_node_with_host_element(node, element);
 		if (this->location != &this->location_node)
@@ -451,7 +452,7 @@ public:
 		return CMZN_OK;
 	}
 
-	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);
+	int setFieldReal(cmzn_field *field, int numberOfValues, const double *values);
 
 	FieldValueCache* getValueCache(int cacheIndex) const
 	{
@@ -575,7 +576,7 @@ public:
 class MeshLocationFieldValueCache : public FieldValueCache
 {
 public:
-	cmzn_element_id element;
+	cmzn_element *element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 	MeshLocationFieldValueCache() :
@@ -586,10 +587,15 @@ public:
 
 	virtual ~MeshLocationFieldValueCache()
 	{
-		cmzn_element_destroy(&element);
+		cmzn_element::deaccess(this->element);
 	}
 
 	virtual void clear();
+
+	void clearElement()
+	{
+		cmzn_element::deaccess(this->element);
+	}
 
 	static const MeshLocationFieldValueCache* cast(const FieldValueCache* valueCache)
 	{
@@ -611,13 +617,16 @@ public:
 		return FIELD_VALUE_CACHE_CAST<MeshLocationFieldValueCache&>(valueCache);
 	}
 
-	void setMeshLocation(cmzn_element_id element_in, const FE_value *xi_in)
+	void setMeshLocation(cmzn_element *elementIn, const FE_value *xiIn)
 	{
-		REACCESS(FE_element)(&element, element_in);
-		int dimension = cmzn_element_get_dimension(element_in);
-		for (int i = 0; i < dimension; ++i)
+		cmzn_element::reaccess(this->element, elementIn);
+		if (elementIn)
 		{
-			xi[i] = xi_in[i];
+			const int dimension = elementIn->getDimension();
+			for (int i = 0; i < dimension; ++i)
+			{
+				this->xi[i] = xiIn[i];
+			}
 		}
 	}
 

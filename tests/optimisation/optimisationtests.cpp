@@ -655,17 +655,12 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
 	outsideMeshGroup.addElementsConditional(zinc.fm.createFieldIsExterior());
 	EXPECT_EQ(10, outsideMeshGroup.getSize());
 
-	FieldFindMeshLocation findMeshLocationOutside = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, outsideMeshGroup);
+	// need to find locations on the 2D outside mesh group but store locations on mesh3d
+	FieldFindMeshLocation findMeshLocationOutside = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, mesh3d);
 	EXPECT_TRUE(findMeshLocationOutside.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationOutside.setSearchMesh(outsideMeshGroup));
 	EXPECT_EQ(RESULT_OK, findMeshLocationOutside.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
-
-	// need these locations on the 3D elements
-	FieldEmbedded projectedSurfaceCoordinates = zinc.fm.createFieldEmbedded(coordinates, findMeshLocationOutside);
-	EXPECT_TRUE(projectedSurfaceCoordinates.isValid());
-	FieldFindMeshLocation findMeshLocationVolume = zinc.fm.createFieldFindMeshLocation(projectedSurfaceCoordinates, coordinates, mesh3d);
-	EXPECT_TRUE(findMeshLocationVolume.isValid());
-	EXPECT_EQ(RESULT_OK, findMeshLocationVolume.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_EXACT));
-	Fieldassignment fieldassignment = storedMeshLocationVolume.createFieldassignment(findMeshLocationVolume);
+	Fieldassignment fieldassignment = storedMeshLocationVolume.createFieldassignment(findMeshLocationOutside);
 	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(datapoints));
 	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
 	fieldassignment = Fieldassignment();

@@ -3213,21 +3213,36 @@ const char computed_field_find_mesh_location_type_string[] = "find_mesh_location
 class Computed_field_find_mesh_location : public Computed_field_core
 {
 private:
-	cmzn_mesh_id mesh;
-	enum cmzn_field_find_mesh_location_search_mode search_mode;
+	cmzn_mesh *mesh;  // mesh for storing locations in
+	cmzn_mesh *searchMesh;  // mesh for search for locations e.g. subset/faces
+	enum cmzn_field_find_mesh_location_search_mode searchMode;
 
 public:
 
-	Computed_field_find_mesh_location(cmzn_mesh_id mesh) :
+	Computed_field_find_mesh_location(cmzn_mesh *mesh) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		search_mode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
+		searchMesh(cmzn_mesh_access(mesh)),
+		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
 	{
 	};
 
-	virtual ~Computed_field_find_mesh_location();
+	Computed_field_find_mesh_location(const Computed_field_find_mesh_location& source) :
+		Computed_field_core(),
+		mesh(cmzn_mesh_access(source.mesh)),
+		searchMesh(cmzn_mesh_access(source.searchMesh)),
+		searchMode(source.searchMode)
+	{
+	};
 
-	cmzn_field_id get_source_field()
+	virtual ~Computed_field_find_mesh_location()
+	{
+		cmzn_mesh_destroy(&this->mesh);
+		cmzn_mesh_destroy(&this->searchMesh);
+	}
+
+	/** @return  Non-accessed field */
+	cmzn_field *getSourceField()
 	{
 		return field->source_fields[0];
 	}
@@ -3237,26 +3252,55 @@ public:
 		return CMZN_FIELD_TYPE_FIND_MESH_LOCATION;
 	}
 
-	cmzn_field_id get_mesh_field()
+	/** @return  Non-accessed field */
+	cmzn_field *getMeshField()
 	{
 		return field->source_fields[1];
 	}
 
-	cmzn_mesh_id get_mesh()
+	/** @return  Non accessed mesh */
+	cmzn_mesh *getMesh()
 	{
-		return mesh;
+		return this->mesh;
 	}
 
-	enum cmzn_field_find_mesh_location_search_mode get_search_mode() const
+	/** @return  Non-accessed search mesh */
+	cmzn_mesh *getSearchMesh()
 	{
-		return search_mode;
+		return this->searchMesh;
 	}
 
-	int set_search_mode(enum cmzn_field_find_mesh_location_search_mode search_mode_in)
+	int setSearchMesh(cmzn_mesh *searchMeshIn)
 	{
-		if (search_mode_in != search_mode)
+		if (searchMeshIn != this->searchMesh)
 		{
-			search_mode = search_mode_in;
+			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
+			FE_mesh *feSearchMesh = cmzn_mesh_get_FE_mesh_internal(searchMeshIn);
+			if ((!searchMeshIn)
+				|| (feSearchMesh->get_FE_region() != feMesh->get_FE_region())
+				|| (feSearchMesh->getDimension() > feMesh->getDimension()))
+			{
+				display_message(ERROR_MESSAGE, "FieldFindMeshLocation setSearchMesh  Invalid search mesh");
+				return CMZN_RESULT_ERROR_ARGUMENT;
+			}
+			cmzn_mesh_access(searchMeshIn);
+			cmzn_mesh_destroy(&this->searchMesh);
+			this->searchMesh = searchMeshIn;
+			this->field->setChanged();
+		}
+		return CMZN_RESULT_OK;
+	}
+
+	enum cmzn_field_find_mesh_location_search_mode getSearchMode() const
+	{
+		return this->searchMode;
+	}
+
+	int setSearchMode(enum cmzn_field_find_mesh_location_search_mode searchModeIn)
+	{
+		if (searchModeIn != this->searchMode)
+		{
+			this->searchMode = searchModeIn;
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -3266,7 +3310,7 @@ public:
 	{
 		if (this->field == other_field)
 			return true;
-		return this->get_source_field()->core->is_purely_function_of_field(other_field);
+		return this->getSourceField()->core->is_purely_function_of_field(other_field);
 	}
 
 private:
@@ -3332,20 +3376,15 @@ void FindMeshLocationFieldValueCache::clear()
 {
 	// clear extra cache value cache for mesh field
 	cmzn_fieldcache& extraCache = *this->getExtraCache();
-	cmzn_field *meshField = this->findMeshLocationField->get_mesh_field();
+	cmzn_field *meshField = this->findMeshLocationField->getMeshField();
 	FieldValueCache *meshFieldValueCache = meshField->getValueCache(extraCache);
 	meshFieldValueCache->clear();
 	MeshLocationFieldValueCache::clear();
 }
 
-Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
-{
-	cmzn_mesh_destroy(&mesh);
-}
-
 Computed_field_core* Computed_field_find_mesh_location::copy()
 {
-	return new Computed_field_find_mesh_location(mesh);
+	return new Computed_field_find_mesh_location(*this);
 }
 
 int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
@@ -3366,28 +3405,50 @@ bool Computed_field_find_mesh_location::is_defined_at_location(cmzn_fieldcache& 
 
 int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluate(cache));
-	if (sourceValueCache)
+	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField()->evaluate(cache));
+	if (!sourceValueCache)
+		return 0;
+	MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
+	meshLocationValueCache.clearElement();
+	cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
+	extraCache.setTime(cache.getTime());
+	cmzn_element *element;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache, sourceValueCache->values,
+		sourceValueCache->componentCount, &element, xi, this->searchMesh, /*propagate_field*/0,
+		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
+		&& (element)))
+		return 0;
+	FE_mesh *searchFeMesh = cmzn_mesh_get_FE_mesh_internal(this->searchMesh);
+	FE_mesh *ancestorFeMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
+	if (searchFeMesh != ancestorFeMesh)
 	{
-		MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
-		if (meshLocationValueCache.element)
+		FE_value elementToAncestor[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		cmzn_element *ancestorElement = element->getAncestorConversion(ancestorFeMesh, elementToAncestor);
+		if (!ancestorElement)
 		{
-			cmzn_element_destroy(&meshLocationValueCache.element);
+			display_message(ERROR_MESSAGE, "FieldFindMeshLocation evaluate.  Failed to map from search mesh to main mesh");
+			return 0;
 		}
-		cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
-		extraCache.setTime(cache.getTime());
-		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
-			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
-			meshLocationValueCache.xi, mesh, /*propagate_field*/0,
-			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
-			&& meshLocationValueCache.element)
+		if (elementToAncestor)
 		{
-			meshLocationValueCache.element->access();
-			return_code = 1;
+			const int searchDimension = element->getDimension();
+			const int ancestorDimension = ancestorElement->getDimension();
+			FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			for (int k = 0; k < searchDimension; ++k)
+				searchXi[k] = xi[k];
+			for (int j = 0; j < ancestorDimension; ++j)
+			{
+				const FE_value *row = elementToAncestor + j*(1 + searchDimension);
+				xi[j] = row[0];
+				for (int k = 0; k < searchDimension; ++k)
+					xi[j] += row[1 + k]*searchXi[k];
+			}
+			element = ancestorElement;
 		}
 	}
-	return (return_code);
+	meshLocationValueCache.setMeshLocation(element, xi);
+	return 1;
 }
 
 int Computed_field_find_mesh_location::list()
@@ -3396,7 +3457,7 @@ int Computed_field_find_mesh_location::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    search mode : ");
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
+		if (this->searchMode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			display_message(INFORMATION_MESSAGE, " find_nearest\n");
 		}
@@ -3409,9 +3470,9 @@ int Computed_field_find_mesh_location::list()
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
 		display_message(INFORMATION_MESSAGE,
-			"    mesh field : %s\n", get_mesh_field()->name);
+			"    mesh field : %s\n", getMeshField()->name);
 		display_message(INFORMATION_MESSAGE,
-			"    source field : %s\n", get_source_field()->name);
+			"    source field : %s\n", getSourceField()->name);
 		return_code = 1;
 	}
 	return (return_code);
@@ -3426,7 +3487,7 @@ char *Computed_field_find_mesh_location::get_command_string()
 	{
 		append_string(&command_string, computed_field_find_mesh_location_type_string, &error);
 
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
+		if (this->searchMode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
@@ -3440,13 +3501,13 @@ char *Computed_field_find_mesh_location::get_command_string()
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 
-		char *mesh_field_name = cmzn_field_get_name(get_mesh_field());
+		char *mesh_field_name = cmzn_field_get_name(this->getMeshField());
 		make_valid_token(&mesh_field_name);
 		append_string(&command_string, " mesh_field ", &error);
 		append_string(&command_string, mesh_field_name, &error);
 		DEALLOCATE(mesh_field_name);
 
-		char *source_field_name = cmzn_field_get_name(get_source_field());
+		char *source_field_name = cmzn_field_get_name(this->getSourceField());
 		make_valid_token(&source_field_name);
 		append_string(&command_string, " source_field ", &error);
 		append_string(&command_string, source_field_name, &error);
@@ -3521,14 +3582,28 @@ int cmzn_field_find_mesh_location_destroy(
 cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
 	cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	cmzn_mesh_id mesh = 0;
 	if (find_mesh_location_field)
-	{
-		mesh = find_mesh_location_field->get_core()->get_mesh();
-		cmzn_mesh_access(mesh);
-	}
-	return mesh;
+		return cmzn_mesh_access(find_mesh_location_field->get_core()->getMesh());
+	return nullptr;
 }
+
+cmzn_mesh_id cmzn_field_find_mesh_location_get_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field)
+{
+	if (find_mesh_location_field)
+		return cmzn_mesh_access(find_mesh_location_field->get_core()->getSearchMesh());
+	return nullptr;
+}
+
+int cmzn_field_find_mesh_location_set_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field,
+	cmzn_mesh_id search_mesh)
+{
+	if (find_mesh_location_field)
+		return find_mesh_location_field->get_core()->setSearchMesh(search_mesh);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 
 class cmzn_field_find_mesh_location_search_mode_conversion
 {
@@ -3570,7 +3645,7 @@ enum cmzn_field_find_mesh_location_search_mode
 		cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
 	if (find_mesh_location_field)
-		return find_mesh_location_field->get_core()->get_search_mode();
+		return find_mesh_location_field->get_core()->getSearchMode();
 	return CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID;
 }
 
@@ -3579,7 +3654,7 @@ int cmzn_field_find_mesh_location_set_search_mode(
 	enum cmzn_field_find_mesh_location_search_mode search_mode)
 {
 	if (find_mesh_location_field)
-		return find_mesh_location_field->get_core()->set_search_mode(search_mode);
+		return find_mesh_location_field->get_core()->setSearchMode(search_mode);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -4425,7 +4500,7 @@ FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
 		Computed_field_find_mesh_location *fieldFindMeshLocation = dynamic_cast<Computed_field_find_mesh_location*>(field->core);
 		if (fieldFindMeshLocation)
 		{
-			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->get_mesh());
+			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->getMesh());
 		}
 	}
 	display_message(ERROR_MESSAGE, "cmzn_field_get_host_FE_mesh.  Invalid argument(s)");

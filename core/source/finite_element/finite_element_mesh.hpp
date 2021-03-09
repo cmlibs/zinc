@@ -237,7 +237,7 @@ public:
 		{
 			if (--(element->access_count) == 0)
 				delete element;
-			element = 0;
+			element = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -275,6 +275,19 @@ public:
 	{
 		return this->mesh;
 	}
+
+	/**
+	 * Get the first ancestor of element on ancestorMesh and the mapping from
+	 * this element's xi coordinates to those of the ancestor in the form:
+	 * xi(ancestor) = b + A.xi(element) where b is in the first column of the
+	 * matrix and the rest is A. Recursive to handle 1-D to 3-D case.
+	 * @param ancestorMesh  The mesh the ancestor must be on.
+	 * @param elementToAncestor  If the returned element is different to this
+	 * element, returns the matrix above, otherwise nullptr. Must be at least
+	 * MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS in size.
+	 * @return  Ancestor element or nullptr if not found.
+	 */
+	cmzn_element *getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor);
 
 };
 

@@ -316,6 +316,67 @@ cmzn_element::~cmzn_element()
 	}
 }
 
+cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor)
+{
+	if (!((this) && (this->mesh) && (elementToAncestor)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  Invalid argument(s)");
+		return nullptr;
+	}
+	if (this->mesh == ancestorMesh)
+	{
+		elementToAncestor = nullptr;
+		return this;
+	}
+	FE_mesh *parentMesh = this->mesh->getParentMesh();
+	const DsLabelIndex *parents;
+	const int parentsCount = this->mesh->getElementParents(this->index, parents);
+	if ((!parentMesh) || (0 == parentsCount))
+		return nullptr;
+	for (int p = 0; p < parentsCount; ++p)
+	{
+		DsLabelIndex parentIndex = parents[p];
+		if (parentIndex < 0)
+			continue;
+		cmzn_element *parent = parentMesh->getElement(parentIndex);
+		FE_element_shape *parentShape = parentMesh->getElementShape(parentIndex);
+		const int faceNumber = parentMesh->getElementFaceNumber(parentIndex, this->index);
+		if ((parentShape) && (faceNumber >= 0))
+		{
+			cmzn_element *ancestorElement = (parentMesh == ancestorMesh) ? parent :
+				parent->getAncestorConversion(ancestorMesh, elementToAncestor);
+			if (!ancestorElement)
+				continue;
+			const FE_value *faceToElement = get_FE_element_shape_face_to_element(parentShape, faceNumber);
+			if (!faceToElement)
+				continue;
+			const int size = ancestorElement->getDimension();
+			if (parent == ancestorElement)
+			{
+				for (int i = size*size - 1; 0 <= i; --i)
+					elementToAncestor[i] = faceToElement[i];
+			}
+			else
+			{
+				// multiply faceToElement of ancestorElement (in elementToAncestor)
+				// by faceToElement from parent. This is the 1:3 case
+				for (int i = 0; i < size; ++i)
+				{
+					elementToAncestor[i*2] = elementToAncestor[i*size] +
+						elementToAncestor[i*size+1]*faceToElement[0]+
+						elementToAncestor[i*size+2]*faceToElement[2];
+					elementToAncestor[i*2+1] =
+						elementToAncestor[i*size+1]*faceToElement[1]+
+						elementToAncestor[i*size+2]*faceToElement[3];
+				}
+			}
+			return ancestorElement;
+		}
+	}
+	display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  No ancestor found");
+	return nullptr;
+}
+
 /** Free dynamic memory or resources held per-element e.g. reduce node element usage counts
   * @param elementIndex  Not checked, must be >= 0 */
 void FE_mesh_element_field_template_data::clearElementVaryingData(DsLabelIndex elementIndex)
