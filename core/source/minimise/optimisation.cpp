@@ -127,7 +127,9 @@ int Minimisation::prepareOptimisation()
 }
 
 /**
- * Ensures dependent fields are marked as changed, so graphics update
+ * Ensures dependent fields are marked as changed, so graphics update.
+ * Only needed by QUASI_NEWTON and LEAST_SQUARES_QUASI_NEWTON which
+ * use unofficial methods to modify parameters at this time.
  */
 void Minimisation::touch_dependent_fields()
 {
@@ -147,9 +149,13 @@ int Minimisation::runOptimisation()
 	{
 	case CMZN_OPTIMISATION_METHOD_QUASI_NEWTON:
 		return_code = minimise_QN();
+		touch_dependent_fields();
+		this->do_fieldassignments();
 		break;
 	case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 		return_code = minimise_LSQN();
+		touch_dependent_fields();
+		this->do_fieldassignments();
 		break;
 	case CMZN_OPTIMISATION_METHOD_NEWTON:
 		return_code = minimise_Newton();
@@ -159,8 +165,6 @@ int Minimisation::runOptimisation()
 			"Unknown minimisation method.");
 		break;
 	}
-	touch_dependent_fields();  // not needed for Newton?
-	this->do_fieldassignments();
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
@@ -355,9 +359,11 @@ void Minimisation::list_dof_values()
 	}
 }
 
-/***************************************************************************//**
+/**
  * Must call this function after updating dependent field DOFs to ensure
  * dependent field caches are fully recalculated with the DOF changes.
+ * Only needed by QUASI_NEWTON and LEAST_SQUARES_QUASI_NEWTON which
+ * use unofficial methods to modify parameters at this time.
  */
 void Minimisation::invalidate_dependent_field_caches()
 {

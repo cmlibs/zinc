@@ -111,6 +111,7 @@ ZINC_API int cmzn_optimisation_set_conditional_field(
  * target field requires the source field to be a function of it; the solution
  * is to add two field assignments, the first resets target DOFs to their
  * initial values, the second assigns them to the source values.
+ * Field assignment is not supported by the NEWTON method.
  *
  * @param optimisation  The optimisation object to modify.
  * @param fieldassignment  Field assignment to apply. Must be for a field in
