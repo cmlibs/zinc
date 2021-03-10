@@ -943,11 +943,11 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 			return 1;
 		}
 	}
-	else if ((valueType == FE_VALUE_VALUE)
+	else if (((valueType == FE_VALUE_VALUE)
 		|| (valueType == INT_VALUE)
 		|| (valueType == DOUBLE_VALUE)
 		|| (valueType == FLT_VALUE)
-		|| (valueType == SHORT_VALUE))
+		|| (valueType == SHORT_VALUE)) && this->is_defined_at_location(cache))
 	{
 		// assume all derivatives are zero
 		// future: handle derivatives w.r.t. own field parameters?
@@ -2293,11 +2293,11 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 int Computed_field_node_value::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	const Value_type valueType = this->fe_field->getValueType();
-	if ((valueType == FE_VALUE_VALUE)
+	if (((valueType == FE_VALUE_VALUE)
 		|| (valueType == INT_VALUE)
 		|| (valueType == DOUBLE_VALUE)
 		|| (valueType == FLT_VALUE)
-		|| (valueType == SHORT_VALUE))
+		|| (valueType == SHORT_VALUE)) && this->is_defined_at_location(cache))
 	{
 		// assume all derivatives are zero
 		// future: handle derivatives w.r.t. own field parameters?
