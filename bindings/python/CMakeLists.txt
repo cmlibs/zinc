@@ -30,7 +30,6 @@ set(ZINC_PYTHON_PREFERRED_VERSION "" CACHE STRING "Identify your preferred versi
 # SWIG has already been found at this point.
 include(${SWIG_USE_FILE})
 
-findpython_clear_cache_variables()
 find_package(Python ${ZINC_PYTHON_PREFERRED_VERSION} COMPONENTS Interpreter Development QUIET)
 
 if("${Python_VERSION_MAJOR}" STREQUAL "3")
