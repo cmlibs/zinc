@@ -10,14 +10,18 @@
 
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
+#include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldnodesetoperators.hpp>
 #include <opencmiss/zinc/fieldparameters.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
 #include "test_resources.h"
@@ -118,6 +122,57 @@ TEST(ZincFieldparameters, validAPI)
 		for (int j = 0; j < 1728; ++j)
 			EXPECT_DOUBLE_EQ(0.0, outDerivativeParameters2[j]);
 	}
+}
+
+// Test that number of parameters updates when field is structurally changed
+// i.e. it's definition on nodes or elements changes
+TEST(ZincFieldparameters, fieldStructureChange)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement coordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Fieldparameters fieldparameters = coordinates.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	EXPECT_EQ(0, fieldparameters.getNumberOfParameters());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Nodetemplate nodetemplate1 = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplate1.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate1.defineField(coordinates));
+	Nodetemplate nodetemplate2 = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplate2.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate2.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplate2.setValueNumberOfVersions(coordinates, /*component*/1, Node::VALUE_LABEL_VALUE, 2));
+	EXPECT_EQ(RESULT_OK, nodetemplate2.setValueNumberOfVersions(coordinates, /*component*/2, Node::VALUE_LABEL_D_DS1, 1));
+	Nodetemplate nodetemplateUndefine = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplateUndefine.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplateUndefine.undefineField(coordinates));
+
+	Node node1 = nodeset.createNode(1, nodetemplate1);
+	EXPECT_TRUE(node1.isValid());
+	EXPECT_EQ(3, fieldparameters.getNumberOfParameters());
+	Node node2 = nodeset.createNode(2, nodetemplate1);
+	EXPECT_TRUE(node2.isValid());
+	EXPECT_EQ(6, fieldparameters.getNumberOfParameters());
+	Node node3 = nodeset.createNode(3, nodetemplate2);
+	EXPECT_TRUE(node3.isValid());
+	EXPECT_EQ(11, fieldparameters.getNumberOfParameters());
+	EXPECT_EQ(RESULT_OK, node1.merge(nodetemplate2));
+	EXPECT_EQ(13, fieldparameters.getNumberOfParameters());
+	EXPECT_EQ(RESULT_OK, node1.merge(nodetemplateUndefine));
+	EXPECT_EQ(8, fieldparameters.getNumberOfParameters());
+	EXPECT_EQ(RESULT_OK, nodeset.destroyNode(node2));
+	EXPECT_EQ(5, fieldparameters.getNumberOfParameters());
 }
 
 TEST(ZincFieldparameters, invalidAPI)

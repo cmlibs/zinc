@@ -4547,6 +4547,25 @@ int get_FE_node_identifier(struct FE_node *node)
 	return DS_LABEL_IDENTIFIER_INVALID;
 }
 
+/** If node_field is defined differently in the node, undefine it there so it
+ * can be redefined. This is done because merge code cannot yet handle changing
+ * the definition, but undefine + redefine works. */
+static int FE_node_field_undefine_nonmatching_FE_field_at_node(FE_node_field *node_field, void *node_void)
+{
+	cmzn_node *node = static_cast<cmzn_node *>(node_void);
+	FE_field *field = node_field->field;
+	FE_node_field *existing_node_field = node->getNodeField(field);
+	if (existing_node_field)
+	{
+		const int componentCount = field->getNumberOfComponents();
+		// undefine if any component does not match
+		for (int c = 0; c < componentCount; ++c)
+			if (!existing_node_field->getComponent(c)->matches(*node_field->getComponent(c)))
+				return (CMZN_OK == undefine_FE_field_at_node(node, field)) ? 1 : 0;
+	}
+	return 1;
+}
+
 int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge)
 {
 	int number_of_values, values_storage_size, return_code;
@@ -4563,6 +4582,15 @@ int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge
 		(source_fields->nodeset == fe_nodeset))
 	{
 		return_code = 1;
+		// undefine fields on destination which are being redefined differently in merge
+		if (!(FOR_EACH_OBJECT_IN_LIST(FE_node_field)(FE_node_field_undefine_nonmatching_FE_field_at_node,
+			static_cast<void *>(destination), source_fields->node_field_list)))
+		{
+			display_message(ERROR_MESSAGE, "merge_FE_node.  Failed to undefine field(s) being redefined");
+			return 0;
+		}
+		// this will have changed if fields were undefined:
+		destination_fields = destination->fields;
 		/* construct a node field list containing the fields from destination */
 		node_field_list = CREATE_LIST(FE_node_field)();
 		if (COPY_LIST(FE_node_field)(node_field_list,

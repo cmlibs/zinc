@@ -24,7 +24,6 @@ FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 	parameterCount(0),
 	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
 	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
-	fieldModifyCounter(1),  // force maps to be rebuilt
 	perturbationDelta(1.0E-5),
 	access_count(1)
 {
@@ -96,7 +95,6 @@ void FE_field_parameters::generateMaps()
 		}
 	}
 	this->parameterCount = parameterIndex;
-	this->fieldModifyCounter = 0;  // concurrency point
 	// following could be improved knowing the number of elements
 	// basically want a fraction of typical or minimum element span
 	FE_value maxRange = 0.0;
@@ -273,7 +271,8 @@ int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 
 int FE_field_parameters::getNumberOfParameters()
 {
-	this->checkMaps();
+	// force parameter maps to be rebuilt as simpler than working out when it's changed
+	this->generateMaps();
 	return this->parameterCount;
 }
 

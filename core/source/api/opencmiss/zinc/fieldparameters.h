@@ -25,7 +25,11 @@ extern "C" {
 /**
  * Get field parameters object for field.
  * Currently only supported by finite element field type.
- * Note that only node-based field parameters are supported at present.
+ * @note
+ * Only node-based field parameters are supported at present.
+ * @note
+ * The client must get the number of parameters before using any other API.
+ * @see cmzn_fieldparameters_get_number_of_parameters
  *
  * @param field  The field to get parameters object for.
  * @return  Handle to new field parameters object, or NULL/invalid handle on
@@ -111,7 +115,7 @@ ZINC_API cmzn_field_id cmzn_fieldparameters_get_field(
 	cmzn_fieldparameters_id fieldparameters);
 
 /**
- * Return the number of parameters for the field in element.
+ * Get the number of parameters for the field in element.
  *
  * @param fieldparameters  The field parameters object to query.
  * @param element  The element to query.
@@ -122,7 +126,13 @@ ZINC_API int cmzn_fieldparameters_get_number_of_element_parameters(
 	cmzn_fieldparameters_id fieldparameters, cmzn_element_id element);
 
 /**
- * Return the number of parameters for the field.
+ * Get the total number of parameters for the field, typically used to
+ * initialise sizes of the global solution matrix and vector.
+ * A call to this function is needed to build internal parameter maps, both
+ * initially and after changing definition of the field e.g. at nodes.
+ * This must be done before using other APIs for getting numbers and indexes
+ * of element parameters or to get/set/add parameters; the use of those other
+ * APIs is expected to be carried out only while the field is unchanging.
  *
  * @param fieldparameters  The field parameters object to query.
  * @return  Number of field parameters or -1 on error.

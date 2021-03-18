@@ -1255,10 +1255,11 @@ void FE_nodeset::getHighestNodeFieldDerivativeAndVersion(FE_field *field,
 /*
  * Check that definition of fields in nodes of source_fe_region match that
  * of equivalent fields in equivalent nodes of global_fe_region
- * ???GRC enforcing this is actually a limitation.
  */
 bool FE_nodeset::canMerge(FE_nodeset &source)
 {
+	return true;  // no limitations if field definitions have been matched
+#ifdef OLD_CODE
 	bool result = true;
 
 	/* for efficiency, pairs of FE_node_field_info from the source and target nodes
@@ -1319,6 +1320,7 @@ bool FE_nodeset::canMerge(FE_nodeset &source)
 	if (compatible_node_field_info)
 		DEALLOCATE(compatible_node_field_info);
 	return result;
+#endif
 }
 
 int FE_nodeset::merge(FE_nodeset &source)

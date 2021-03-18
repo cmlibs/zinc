@@ -32,7 +32,6 @@ class FE_field_parameters
 	block_array<DsLabelIndex, DsLabelIndex> nodeParameterMap;
 	// map from parameter to node
 	block_array<DsLabelIndex, DsLabelIndex> parameterNodeMap;
-	int fieldModifyCounter;  // incremented when field structure changes; rebuild maps when non-zero
 	FE_value perturbationDelta;
 	int access_count;
 
@@ -41,13 +40,6 @@ class FE_field_parameters
 	~FE_field_parameters();
 
 	void generateMaps();
-
-	/** call before using maps to generate on demand */
-	inline void checkMaps()
-	{
-		if (this->fieldModifyCounter)
-			this->generateMaps();
-	}
 
 	/** Generic method implementing common parts of add/get/set field parameters methods.
 	 * @param processValues  Class performing operation on values, implementing methods:
