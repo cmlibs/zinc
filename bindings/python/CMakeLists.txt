@@ -188,7 +188,7 @@ set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_PYTHON_DEVELOPER_VERSION}-$
 set(ADDITIONAL_PACKAGE_FILES
     CHANGES.txt
     LICENSE.txt
-    README.txt
+    README.rst
     docs/main.rst)
 
 # 1. Configure stage
