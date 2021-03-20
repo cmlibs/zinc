@@ -158,6 +158,8 @@ endif()
 # Determine the next available Python developer version for the bindings.
 if(ZINC_RELEASE)
     set(ZINC_PYTHON_DEVELOPER_VERSION "")
+elseif(ZINC_DEVELOPER_VERSION)
+    set(ZINC_PYTHON_DEVELOPER_VERSION "${ZINC_DEVELOPER_VERSION}")
 else()
     # This command will only work if you have the pypipackagemanagement installed into the
     # Python environment in use.  To get this package use

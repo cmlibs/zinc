@@ -239,6 +239,10 @@ endif()
 
 # Set this to TRUE if making a release of the Zinc library.
 set(ZINC_RELEASE FALSE)
+if (ZINC_RELEASE)
+    set(ZINC_DEVELOPER_VERSION "")
+endif()
+
 set(USE_MSAA TRUE)
 
 set(USE_GLEW TRUE)
@@ -440,6 +444,7 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "=====================================================")
     message(STATUS "Zinc has been configured with the following settings:")
     message(STATUS "")
+    message(STATUS "             Version: '${Zinc_VERSION}${ZINC_DEVELOPER_VERSION}'")
     message(STATUS "     Source revision: '${ZINC_REVISION}'")
     message(STATUS "         Target type: '${ZINC_BUILD_STRING}'")
     message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
