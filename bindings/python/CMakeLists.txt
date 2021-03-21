@@ -155,18 +155,10 @@ if(APPLE)
     set(PYZINC_ARCHITECTURE universal)
 endif()
 
-# Determine the next available Python developer version for the bindings.
-if(ZINC_RELEASE)
-    set(ZINC_PYTHON_DEVELOPER_VERSION "")
-else()
-    set(ZINC_PYTHON_DEVELOPER_VERSION "${ZINC_DEVELOPER_VERSION}")
-endif()
-message(STATUS "ZINC_PYTHON_DEVELOPER_VERSION: ${ZINC_PYTHON_DEVELOPER_VERSION}")
-
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
 set(PYPI_PACKAGE_NAME opencmiss.zinc)
-set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${ZINC_PYTHON_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
+set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${Zinc_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
 
 ################################################################
 # Generate the required package files

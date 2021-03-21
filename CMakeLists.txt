@@ -237,29 +237,11 @@ if (GIT_FOUND)
     endif ()
 endif()
 
-# Set this to TRUE if making a release of the Zinc library.
-set(ZINC_RELEASE FALSE)
+# Set ZINC_RELEASE to TRUE if making a release of the Zinc library.
 if (ZINC_RELEASE)
-    set(ZINC_DEVELOPER_VERSION "")
+    set(Zinc_DEVELOPER_VERSION "")
 else()
-    if(NOT ZINC_DEVELOPER_VERSION)
-        # This command will only work if you have the pypipackagemanagement installed into the
-        # Python environment in use.  To get this package use
-        #    pip install git+https://github.com/hsorby/pypipackagemanagement.git@v0.2.0#egg=pypipackagemanagement
-        execute_process(COMMAND ${Python_EXECUTABLE} -m pypipackagemanagement.pypiversionmanagement opencmiss.zinc
-            OUTPUT_VARIABLE COMMAND_OUTPUT RESULT_VARIABLE COMMAND_RESULT ERROR_VARIABLE COMMAND_ERROR)
-        if (COMMAND_RESULT EQUAL 0)
-            # Strip command output to just have the developer version number
-            string(REGEX MATCH "\.dev[0-9]+" _MATCH ${COMMAND_OUTPUT})
-            if (_MATCH)
-                set(ZINC_DEVELOPER_VERSION ${_MATCH})
-            else ()
-                set(ZINC_DEVELOPER_VERSION ".dev00")
-            endif ()
-        else ()
-            set(ZINC_DEVELOPER_VERSION ".dev000")
-        endif ()
-    endif()
+    set(Zinc_DEVELOPER_VERSION ".dev0")
 endif()
 
 set(USE_MSAA TRUE)
@@ -463,7 +445,7 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "=====================================================")
     message(STATUS "Zinc has been configured with the following settings:")
     message(STATUS "")
-    message(STATUS "             Version: '${Zinc_VERSION}${ZINC_DEVELOPER_VERSION}'")
+    message(STATUS "             Version: '${Zinc_VERSION}${Zinc_DEVELOPER_VERSION}'")
     message(STATUS "     Source revision: '${ZINC_REVISION}'")
     message(STATUS "         Target type: '${ZINC_BUILD_STRING}'")
     message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
