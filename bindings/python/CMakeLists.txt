@@ -12,7 +12,7 @@ if (CMAKE_CONFIGURATION_TYPES)
     set(CFG_INSTALL_DIR /\${CMAKE_INSTALL_CONFIG_NAME})
 endif ()
 # Bindings options
-set(ZINC_VIRTUALENV_INSTALL_PREFIX "${ZINC_VIRTUALENV_INSTALL_PREFIX}" CACHE PATH "Install prefix for the virtualenv Zinc library.")
+set(ZINC_VIRTUALENV_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/virtual_envs" CACHE PATH "Install prefix for the virtualenv Zinc library.")
 
 if (NOT DEFINED ZINC_USE_VIRTUALENV)
     set(ZINC_USE_VIRTUALENV TRUE)
@@ -21,7 +21,7 @@ set(ZINC_USE_VIRTUALENV ${ZINC_USE_VIRTUALENV} CACHE BOOL "Install Zinc into vir
 
 if (NOT EXISTS "${VIRTUALENV_EXEC}")
     set(ZINC_USE_VIRTUALENV FALSE CACHE BOOL "Install Zinc into virtual environment." FORCE)
-    message(STATUS "The program virtualenv was not found disabling it's use.")
+    message(STATUS "The program virtualenv was not found disabling its use.")
 endif ()
 
 # Create Python bindings for the Zinc library.
