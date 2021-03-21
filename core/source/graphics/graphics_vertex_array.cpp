@@ -233,7 +233,7 @@ Graphics_vertex_array::Graphics_vertex_array(Graphics_vertex_array_type type)
 
 int Graphics_vertex_array_internal::add_fast_search_id(int object_id)
 {
-	int current_location = id_map.size();
+	const int current_location = static_cast<int>(id_map.size());
 	id_map.insert(std::make_pair(object_id, current_location));
 	return 1;
 }
@@ -253,7 +253,7 @@ int Graphics_vertex_array_internal::find_first_fast_search_id_location(int targe
 int Graphics_vertex_array_internal::get_all_fast_search_id_locations(int target_id,
 	int *number_of_locations, int **locations)
 {
-	*number_of_locations = id_map.count(target_id);
+	*number_of_locations = static_cast<int>(id_map.count(target_id));
 	if (*number_of_locations > 0)
 	{
 		int current_location = 0;

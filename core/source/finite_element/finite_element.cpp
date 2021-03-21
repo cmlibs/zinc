@@ -17,10 +17,11 @@
 #include <cstdio>
 #include <vector>
 
+#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/status.h"
 #include "general/cmiss_set.hpp"
 #include "general/indexed_list_stl_private.hpp"
-#include "general/list_btree_private.hpp"
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
@@ -101,7 +102,6 @@ the point and the Xi coordinates of the point within the element.
 	struct FE_field_info *info;
 	/* CMISS field type */
 	enum CM_field_type cm_field_type;
-	struct FE_field_external_information *external;
 	enum FE_field_type fe_field_type;
 	/* following two for INDEXED_FE_FIELD only */
 	struct FE_field *indexer_field;
@@ -116,18 +116,21 @@ the point and the Xi coordinates of the point within the element.
 	int number_of_values;
 	/* the type of the values returned by the field */
 	enum Value_type value_type;
-	/* for value_type== ELEMENT_XI_VALUE, fixed mesh dimension, or 0 for any */
-	int element_xi_mesh_dimension;
+	/* for value_type== ELEMENT_XI_VALUE, host mesh, or 0 if not determined from legacy input */
+	const FE_mesh *element_xi_host_mesh;
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
 	Value_storage *values_storage;
-	/*???DB.  Have something like enum FE_nodal_value_type ? */
-	/*???DB.  Needs to be clarified for constant fields */
 	/* time series information.  If <number_of_times> is zero then constant in
 	 * time */
 	enum Value_type time_value_type;
 	int number_of_times;
 	Value_storage *times;
+
+	// field definition and data on FE_mesh[dimension - 1]
+	// Future: limit to being defined on a single mesh; requires change to current usage
+	FE_mesh_field_data *meshFieldData[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+
 	/* the number of computed fields wrapping this FE_field */
 	int number_of_wrappers;
 	/* the number of structures that point to this field.  The field cannot be
@@ -144,6 +147,19 @@ the point and the Xi coordinates of the point within the element.
 	{
 		return DEACCESS(FE_field)(field_address);
 	}
+
+	bool isTypeCoordinate() const
+	{
+		return (CM_COORDINATE_FIELD == this->cm_field_type)
+			&& (FE_VALUE_VALUE == this->value_type)
+			&& (1 <= this->number_of_components)
+			&& (3 >= this->number_of_components);
+	}
+
+	cmzn_element *getOrInheritOnElement(cmzn_element *element,
+		int inheritFaceNumber, cmzn_element *topLevelElement,
+		FE_value *coordinateTransformation);
+
 }; /* struct FE_field */
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
@@ -182,46 +198,6 @@ typedef cmzn_set<FE_field *,FE_field_compare_name> cmzn_set_FE_field;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_field);
 
-/**
- * Specifies how to find the value and derivatives for a field component at a
- * node. This only appears as part of a FE_node_field.
- */
-struct FE_node_field_component
-{
-	/* the offset for the global value within the list of all global values and
-		derivatives at the node */
-	int value;
-	/* the number of global derivatives.  NB The global derivatives are assumed to
-		follow directly after the global value in the list of all global values and
-		derivatives at the node */
-	int number_of_derivatives;
-	/* the number of versions at the node.  Different fields may use different
-		versions eg if the node is on the axis in prolate spheroidal coordinates
-		(mu=0 or mu=pi).  NB The different versions are assumed to follow directly
-		after each other (only need one starting <value>) and to have the same
-		<number_of derivatives> */
-	int number_of_versions;
-	/* the types the nodal values */
-	enum FE_nodal_value_type *nodal_value_types;
-};
-
-/**
- * Describes storage of global values and derivatives for a field at a node.
- */
-struct FE_node_field
-{
-	/* the field which this accesses values and derivatives for */
-	struct FE_field *field;
-	/* an array with <number_of_components> node field components */
-	struct FE_node_field_component *components;
-	/* the time dependence of all components below this point,
-	   if it is non-NULL then every value storage must be an array of
-	   values that matches this fe_time_sequence */
-	struct FE_time_sequence *time_sequence;
-	/* the number of structures that point to this node field.  The node field
-		cannot be destroyed while this is greater than 0 */
-	int access_count;
-};
 
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_node_field);
 
@@ -250,19 +226,6 @@ struct FE_node_field_info
 
 FULL_DECLARE_LIST_TYPE(FE_node_field_info);
 
-struct FE_node_field_creator
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int number_of_components;
-	int *numbers_of_versions;
-	int *numbers_of_derivatives;
-	enum FE_nodal_value_type **nodal_value_types;
-}; /* struct FE_node_field_creator */
-
 struct FE_node
 /*******************************************************************************
 LAST MODIFIED : 11 February 2003
@@ -270,15 +233,16 @@ LAST MODIFIED : 11 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	/* the unique number that identifies the node */
-	int cm_node_identifier;
+	/* index into nodeset labels, maps to unique identifier */
+	DsLabelIndex index;
 
 	/* the number of structures that point to this node.  The node cannot be
-		destroyed while this is greater than 0 */
+	   destroyed while this is greater than 0 */
 	int access_count;
 
 	/* the fields defined at the node */
 	struct FE_node_field_info *fields;
+
 	/* the global values and derivatives for the fields defined at the node */
 	Value_storage *values_storage;
 
@@ -293,261 +257,33 @@ DESCRIPTION :
 		return DEACCESS(FE_node)(node_address);
 	}
 
-	inline int get_identifier() const
+	inline DsLabelIdentifier getIdentifier() const
 	{
-		return cm_node_identifier;
+		if (this->fields)
+			return this->fields->fe_nodeset->getNodeIdentifier(this->index);
+		return DS_LABEL_IDENTIFIER_INVALID;
 	}
+
+	int getElementUsageCount()
+	{
+		if (this->fields)
+			return this->fields->fe_nodeset->getElementUsageCount(this->index);
+		return 0;
+	}
+
+	void incrementElementUsageCount()
+	{
+		if (this->fields)
+			this->fields->fe_nodeset->incrementElementUsageCount(this->index);
+	}
+
+	void decrementElementUsageCount()
+	{
+		if (this->fields)
+			this->fields->fe_nodeset->decrementElementUsageCount(this->index);
+	}
+
 }; /* struct FE_node */
-
-/** can tweak this to vary performance */
-const int CMZN_NODE_BTREE_ORDER = 10;
-
-typedef cmzn_btree<cmzn_node,int,CMZN_NODE_BTREE_ORDER> cmzn_set_cmzn_node;
-
-struct cmzn_nodeiterator : public cmzn_set_cmzn_node::ext_iterator
-{
-	int access_count;
-	cmzn_nodeiterator(cmzn_set_cmzn_node *container) :
-		cmzn_set_cmzn_node::ext_iterator(container),
-		access_count(1)
-	{
-	}
-
-	cmzn_nodeiterator_id access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_nodeiterator_id &iterator)
-	{
-		if (!iterator)
-			return 0;
-		--(iterator->access_count);
-		if (iterator->access_count <= 0)
-			delete iterator;
-		iterator = 0;
-		return 1;
-	}
-};
-
-FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
-
-/**
- * Stores the information for calculating element values by choosing nodal
- * values and applying a diagonal scale factor matrix.
- */
-struct Standard_node_to_element_map
-{
-	/* the index, within the list of nodes for the element, of the node at which
-		the values are stored */
-	int node_index;
-	/* the number of nodal values used (which is also the number of element values
-		calculated) */
-	int number_of_nodal_values;
-	/* Legacy array only allocated and used when reading legacy EX files.
-		array of indices for the nodal values, within the list of all values at
-		the node - index is an offset in whole FE_values relative to the absolute
-		value offset in the FE_node_field_component for the associated node (which
-		is a values storage/unsigned char). */
-	int *nodal_value_indices;
-	// Arrays specifying the nodal value type and version for the nodal values.
-	// Special case: FE_NODAL_UNKNOWN is used to mean use a zero parameter
-	// Internally, the first version is 0.
-	// When reading legacy EX files they are determined from the nodal value indices.
-	// @see FE_element_field_info_check_field_node_value_labels
-	FE_nodal_value_type *nodal_value_types;
-	int *nodal_versions;
-	/* array of indices for the scale factors.
-		 Note a negative index indicates a unit scale factor */
-	int *scale_factor_indices;
-};
-
-struct FE_element_node_scale_field_info;
-
-namespace {
-
-class ElementDOFMapEvaluationCache;
-class ElementDOFMapMatchCache;
-
-class ElementDOFMap
-{
-public:
-	virtual ~ElementDOFMap()
-	{
-	}
-
-	virtual ElementDOFMap *clone() = 0;
-
-	virtual ElementDOFMap *cloneWithNewNodeIndices(
-		FE_element_node_scale_field_info *mergeInfo,
-		FE_element_node_scale_field_info *sourceInfo) = 0;
-
-	/**
-	 * Must override to evaluate DOF.
-	 * @return  true if successfully evaluated, otherwise false
-	 */
-	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value) = 0;
-
-	/**
-	 * Override to set node which DOF is mapped from, or set to zero if none.
-	 * Default implementation is for non-node-based map.
-	 * @return  true if successfully evaluated, otherwise false.
-	 */
-	virtual bool evaluateNode(ElementDOFMapEvaluationCache& /*cache*/, FE_node*& node)
-	{
-		node = 0;
-		return true;
-	}
-
-	/**
-	 * Override to return whether this map is defined identically to another map,
-	 * i.e. is the same class with equal members.
-	 * @param otherMap  Map to compare with, usually the one in global use.
-	 * @return  true if maps match, otherwise false.
-	 */
-	virtual bool matches(ElementDOFMap *otherMap) = 0;
-
-	/**
-	 * Override to return whether this map is defined identically to another map,
-	 * i.e. is the same class with equivalent definition with supporting node
-	 * scale info.
-	 * @param otherMap  Map to compare with, usually the one in global use.
-	 * @param cache  Supporting node scale info and cache for matching.
-	 * @return  true if maps match, otherwise false.
-	 */
-	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache) = 0;
-
-	/** override to set flag for each local node in use */
-	virtual void setLocalNodeInUse(int /*numberOfLocalNodes*/, int * /*localNodeInUse*/)
-	{
-	}
-};
-
-} // namespace { }
-
-struct FE_element_field_component
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating element values, with respect to the
-<basis>, from global values (this calculation includes the application of scale
-factors).  There are two types - <NODE_BASED_MAP> and <GENERAL_LINEAR_MAP>.  For
-a node based map, the global values are associated with nodes.  For a general
-linear map, the global values do not have to be associated with nodes.  The node
-based maps could be specified as general linear maps, but the node based
-specification (required by CMISS) cannot be recovered from the general linear
-map specification (important when the front end is being used to create meshs).
-The <modify> function is called after the element values have been calculated
-with respect to the <basis> and before the element values are blended to be with
-respect to the standard basis.  The <modify> function is to allow for special
-cases, such as nodes that have multiple theta values in cylindrical polar,
-spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
-either lying on the z-axis or being the first and last node in a circle.
-==============================================================================*/
-{
-	/* the type of the global to element map */
-	enum Global_to_element_map_type type;
-	union
-	{
-		/* for a standard node based map */
-		struct
-		{
-			/* the number of nodes */
-			int number_of_nodes;
-			/* how to get the element values from the nodal values */
-			struct Standard_node_to_element_map **node_to_element_maps;
-		} standard_node_based;
-		/* for a general map */
-		struct
-		{
-			int number_of_maps; // redundant; equals number of basis functions
-			ElementDOFMap **maps;
-		} general_map_based;
-		/* for an element grid */
-		struct
-		{
-			/* the element is covered by a regular grid with <number_in_xi>
-				sub-elements in each direction */
-			int *number_in_xi;
-			/* the component is linear over each sub-element and the grid point values
-				are stored with the element starting at <value_index> */
-				/*???DB.  Other bases for the sub-elements are possible, but are not
-					currently used and would add to the complexity/compute time */
-			int value_index;
-		} element_grid_based;
-	} map;
-	/* the basis that the element values are with respect to */
-	struct FE_basis *basis;
-	/* the function for modifying element values */
-	FE_element_field_component_modify modify;
-private:
-	// accessed pointer to scale factor set; not used for ELEMENT_GRID_MAP
-	cmzn_mesh_scale_factor_set *scale_factor_set;
-public:
-
-	/** Note: incomplete constructor
-	 * @see CREATE(FE_element_field_component)
-	 */
-	FE_element_field_component() :
-		basis(0),
-		modify(0),
-		scale_factor_set(0)
-	{
-	}
-
-	/** Note: incomplete destructor
-	 * @see DESTROY(FE_element_field_component)
-	 */
-	~FE_element_field_component()
-	{
-		DEACCESS(FE_basis)(&(this->basis));
-		cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set);
-	}
-
-	/** @return  Non-accessed pointer to scale factor set, if any */
-	cmzn_mesh_scale_factor_set *get_scale_factor_set()
-	{
-		return this->scale_factor_set;
-	}
-
-	int set_scale_factor_set(cmzn_mesh_scale_factor_set *scale_factor_set_in)
-	{
-		if (this->type != ELEMENT_GRID_MAP)
-		{
-			if (scale_factor_set_in)
-				scale_factor_set_in->access();
-			if (this->scale_factor_set)
-				cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set);
-			this->scale_factor_set = scale_factor_set_in;
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_ARGUMENT;
-	}
-}; /* struct FE_element_field_component */
-
-struct FE_element_field
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating the value of a field at a point within a
-element.  The position of the point should be specified by Xi coordinates of the
-point within the element.
-==============================================================================*/
-{
-	/* the field which this is part of */
-	struct FE_field *field;
-	/* an array with <field->number_of_components> pointers to element field
-		components */
-	struct FE_element_field_component **components;
-	/* the number of structures that point to this element field.  The element
-		field cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct FE_element_field */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_field);
 
 struct FE_element_field_values
 /*******************************************************************************
@@ -585,9 +321,6 @@ calculated from the element field as required and are then destroyed.
 	char derivatives_calculated;
 	/* a flag added to specify if the element field component modify function is
 		ignored */
-		/*???DB.  Added for calculating derivatives with respect to nodal values.
-			See FE_element_field_values_set_no_modify */
-	char no_modify;
 	/* specify whether the standard basis arguments should be destroyed (element
 		field has been inherited) or not be destroyed (element field is defined for
 		the element and the basis arguments are being used) */
@@ -597,7 +330,7 @@ calculated from the element field as required and are then destroyed.
 	/* the number of values for each component */
 	int *component_number_of_values;
 	/* the values_storage for each component if grid-based */
-	Value_storage **component_grid_values_storage;
+	const Value_storage **component_grid_values_storage;
 	/* grid_offset_in_xi is allocated with 2^number_of_xi_coordinates integers
 		 giving the increment in index into the values stored with the top_level
 		 element for the grid. For top_level_elements the first value is 1, the
@@ -622,180 +355,6 @@ calculated from the element field as required and are then destroyed.
 }; /* struct FE_element_field_values */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_field_values);
-
-/**
- * The element fields defined on an element and how to calculate them.
- */
-struct FE_element_field_info
-{
-	/* list of the  element fields */
-	struct LIST(FE_element_field) *element_field_list;
-
-	/* the FE_mesh this FE_element_field_info and all elements using it belong to */
-	FE_mesh *fe_mesh;
-
-	/* the number of structures that point to this information.  The information
-		cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct FE_element_field_info */
-
-FULL_DECLARE_LIST_TYPE(FE_element_field_info);
-
-/**
- * The field values, nodes and scale factors for an element.
- * The element stores its FE_element_field_info, and optionally this structure
- * if fields are defined and need this supplemental information.
- */
-struct FE_element_node_scale_field_info
-{
-public:
-	/* values_storage.  Element based maps have indices into this array */
-	int values_storage_size;
-	Value_storage *values_storage;
-	/* nodes.  Node to element maps have indices into this array */
-	int number_of_nodes;
-	struct FE_node **nodes;
-private:
-	/* there may be a number of sets of scale factors */
-	int number_of_scale_factor_sets;
-	/* unique identifiers for scale factors stored here. All scale factor set
-	 * identifiers are listed with the mesh / FE_region. Accessed pointers */
-	cmzn_mesh_scale_factor_set **scale_factor_set_identifiers;
-	int *numbers_in_scale_factor_sets;
-	/* all scale factors are stored in this array.  Global to element maps have
-		indices into this array. General element map has relative offset into its
-		scale factor set */
-public:
-	int number_of_scale_factors;
-	FE_value *scale_factors;
-
-private:
-
-	FE_element_node_scale_field_info();
-
-	/**
-	 * Note that destructor does not clean up any dynamic values stored within
-	 * the values_storage; call destroyDynamic with FE_element_field_info if there are
-	 * dynamic arrays allocated in the values_storage, e.g. grid-based parameters.
-	 */
-	~FE_element_node_scale_field_info();
-
-public:
-
-	static FE_element_node_scale_field_info *create()
-	{
-		return new FE_element_node_scale_field_info();
-	}
-
-	static void destroy(FE_element_node_scale_field_info* &info)
-	{
-		delete info;
-		info = 0;
-	}
-
-	/**
-	 * Variant of destroy which cleans up dynamic arrays allocated in the
-	 * values_storage, e.g. grid-based parameters.
-	 */
-	static void destroyDynamic(FE_element_node_scale_field_info* &info,
-		FE_element_field_info *field_info);
-
-	/**
-	 * Creates a clone of this info without values storage array.
-	 * Used exclusively by merge_FE_element.
-	 */
-	FE_element_node_scale_field_info *cloneWithoutValuesStorage();
-
-	static FE_element_node_scale_field_info *createMergeWithoutValuesStorage(
-		FE_element_node_scale_field_info& targetInfo,
-		FE_element_node_scale_field_info& sourceInfo,
-		std::vector<cmzn_mesh_scale_factor_set*> &changedExistingScaleFactorSets);
-
-	/**
-	 * Must supply element field info to copy dynamic values storage arrays.
-	 */
-	FE_element_node_scale_field_info *clone(FE_element_field_info *field_info);
-
-	/**
-	 * @param numberOfNodes  Number of nodes >= current number.
-	 * @return  CMZN_OK on success, otherwise an error code.
-	 */
-	int setNumberOfNodes(int numberOfNodes);
-
-	int setNode(int nodeNumber, cmzn_node *node);
-
-	/**
-	 * Set all scale factor set identifiers and numbers and allocate storage for
-	 * scale factors.
-	 * @param  Array of scale factors to copy. If omitted values are initialised to 0.
-	 * @return CMZN_OK on success, otherwise any other error code.
-	 */
-	int setScaleFactorSets(int numberOfScaleFactorSetsIn,
-		cmzn_mesh_scale_factor_set **scaleFactorSetIdentifiersIn,
-		int *numbersInScaleFactorSetsIn, FE_value *scaleFactorsIn);
-
-	int getNumberOfScaleFactorSets() const
-	{
-		return number_of_scale_factor_sets;
-	}
-
-	int getNumberInScaleFactorSetAtIndex(int index)
-	{
-		if ((0 <= index) && (index < this->number_of_scale_factor_sets))
-		{
-			return this->numbers_in_scale_factor_sets[index];
-		}
-		return 0;
-	}
-
-	/** @return  Non-accessed pointer to set identifier, or 0 id none or error */
-	cmzn_mesh_scale_factor_set *getScaleFactorSetIdentifierAtIndex(int index)
-	{
-		if ((0 <= index) && (index < this->number_of_scale_factor_sets))
-		{
-			return this->scale_factor_set_identifiers[index];
-		}
-		return 0;
-	}
-
-	/** use with care only when merging from another region */
-	int setScaleFactorSetIdentifierAtIndex(int index, cmzn_mesh_scale_factor_set *scaleFactorSet)
-	{
-		if ((0 <= index) && (index < this->number_of_scale_factor_sets) && scaleFactorSet)
-		{
-			scaleFactorSet->access();
-			cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set_identifiers[index]);
-			this->scale_factor_set_identifiers[index] = scaleFactorSet;
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_ARGUMENT;
-	}
-
-	int getScaleFactorSetOffset(cmzn_mesh_scale_factor_set *scaleFactorSet, int &numberOfScaleFactors)
-	{
-		int offset = 0;
-		for (int i = 0; i < this->number_of_scale_factor_sets; ++i)
-		{
-			if (this->scale_factor_set_identifiers[i] == scaleFactorSet)
-			{
-				numberOfScaleFactors = this->numbers_in_scale_factor_sets[i];
-				return offset;
-			}
-			offset += this->numbers_in_scale_factor_sets[i];
-		}
-		numberOfScaleFactors = 0;
-		return 0;
-	}
-
-	FE_value *getScaleFactorsForSet(cmzn_mesh_scale_factor_set *scaleFactorSet, int &numberOfScaleFactors)
-	{
-		int offset = this->getScaleFactorSetOffset(scaleFactorSet, numberOfScaleFactors);
-		if (numberOfScaleFactors)
-			return this->scale_factors + offset;
-		return 0;
-	}
-
-};
 
 struct FE_element_shape
 /*******************************************************************************
@@ -872,29 +431,29 @@ coordinates from face coordinates.
 		translation b in the first column.  For a cube the translations could be
 		(not unique)
 		face 2 :  0 0 0 ,  face 3 : 1 0 0 ,  face 4 : 0 0 1 , 1(face) goes to 3 and
-							0 1 0             0 1 0             0 0 0   2(face) goes to 1 to
-							0 0 1             0 0 1             0 1 0   maintain right-
-																													handedness (3x1=2)
+		          0 1 0             0 1 0             0 0 0   2(face) goes to 1 to
+		          0 0 1             0 0 1             0 1 0   maintain right-
+		                                                      handedness (3x1=2)
 		face 5 :  0 0 1 ,  face 8 : 0 1 0 ,  face 9 : 0 1 0
-							1 0 0             0 0 1             0 0 1
-							0 1 0             0 0 0             1 0 0
+		          1 0 0             0 0 1             0 0 1
+		          0 1 0             0 0 0             1 0 0
 		For the 5-gon by linear the faces would be
 		face 5 :  0 1/5 0 ,  face 6 : 1/5 1/5 0 ,  face 7 : 2/5 1/5 0
-							1 0   0             1   0   0             1   0   0
-							0 0   1             0   0   1             0   0   1
+		          1 0   0             1   0   0             1   0   0
+		          0 0   1             0   0   1             0   0   1
 		face 8 :  3/5 1/5 0 ,  face 9 : 4/5 1/5 0
-							1   0   0             1   0   0
-							0   0   1             0   0   1
+		          1   0   0             1   0   0
+		          0   0   1             0   0   1
 		face 10 : 0 1 0 ,  face 11 : 0 1 0
-							0 0 1              0 0 1
-							0 0 0              1 0 0
+		          0 0 1              0 0 1
+		          0 0 0              1 0 0
 		For the tetrahedron the faces would be
 		face 2 :  0 0 0 ,  face 4 : 1 -1 -1 ,  face 8 : 0  0  1
-							0 1 0             0  0  0             1 -1 -1
-							0 0 1             0  1  0             0  0  0
+		          0 1 0             0  0  0             1 -1 -1
+		          0 0 1             0  1  0             0  0  0
 		face 15 : 0  1  0
-							0  0  1
-							1 -1 -1
+		          0  0  1
+		          1 -1 -1
 		The transformations are stored by row (ie. column number varying fastest) */
 	FE_value *face_to_element;
 	/* the number of structures that point to this shape.  The shape cannot be
@@ -904,52 +463,142 @@ coordinates from face coordinates.
 
 FULL_DECLARE_LIST_TYPE(FE_element_shape);
 
+
 /**
- * A region in space with functions defined on the region.  The region is
- * parameterized and the functions are known in terms of the parameterized
- * variables.
- * Note the shape is now held by the owning FE_mesh at the index.
+ * Get definition of field on element, or higher dimension element it is a face
+ * of, or a face of a face. If field is inherited, returns the xi coordinate
+ * transformation to the higher dimensional element.
+ * Can also force inheritance onto a specified face of the supplied element.
+ * Function is recursive.
+ *
+ * @param element  The element we want to evaluate on.
+ * @param inheritFaceNumber  If non-negative, inherit onto this face number
+ * of element, as if the face element were supplied to this function.
+ * @param topLevelElement  If supplied, forces field definition to be
+ * obtained from it, otherwise field is undefined.
+ * @param coordinateTransformation  If field is inherited from higher dimension
+ * element, gives mapping of element coordinates to return element coordinates.
+ * This is a matrix of dimension(return element) rows X dimension(element)+1
+ * columns. This represents an affine transformation, b + A xi for calculating
+ * the return element xi coordinates from those of element, where b is the
+ * first column of the <coordinate_transformation> matrix. Caller must pass an
+ * array of size sufficient for the expected dimensions, e.g.
+ * MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS.
+ * @return  The element the field is actually defined on, or 0 if not defined.
+ * Return element either matches supplied element or is an ancestor of it.
  */
-struct FE_element
+cmzn_element *FE_field::getOrInheritOnElement(cmzn_element *element,
+	int inheritFaceNumber, cmzn_element *topLevelElement,
+	FE_value *coordinateTransformation)
 {
-	/* index into mesh labels, maps to unique identifier */
-	DsLabelIndex index;
-	/* the number of structures that point to this element.  The element cannot be
-		destroyed while this is greater than 0 */
-	int access_count;
+	const FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+		return 0;
+	const int dim = mesh->getDimension() - 1;
+	// fast case of field directly defined on element:
+	// check first component only
+	// note this formerly only used topLevelElement for inheritance only
+	// i.e. would return initial element if it had field directly defined on it
+	const bool useDefinitionOnThisElement = ((!topLevelElement) || (element == topLevelElement))
+		&& (0 != this->meshFieldData[dim])
+		&& (this->meshFieldData[dim]->getComponentMeshfieldtemplate(0)->getElementEFTIndex(element->getIndex()) >= 0);
+	if (useDefinitionOnThisElement && (inheritFaceNumber < 0))
+		return element;
 
-	/* the field information for the element, also linking to owning FE_mesh */
-	struct FE_element_field_info *fields;
-	/* the nodes, scale factors and values for the element.  This is only set if
-		 the element has fields that require this supplemental information */
-	struct FE_element_node_scale_field_info *information;
-
-	inline FE_element *access()
+	FE_value parentCoordinateTransformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	cmzn_element *fieldElement = 0;
+	cmzn_element *parent = 0;
+	int faceNumber = inheritFaceNumber;
+	if (inheritFaceNumber >= 0)
 	{
-		++access_count;
-		return this;
+		parent = element;
+		if (useDefinitionOnThisElement)
+			fieldElement = element;
+		else // inherit onto this element, then onto specified face below to handle two coordinate transformations
+			fieldElement = this->getOrInheritOnElement(parent, /*inheritFaceNumber*/-1, topLevelElement, parentCoordinateTransformation);
 	}
-
-	static inline int deaccess(FE_element **element_address)
+	else
 	{
-		return DEACCESS(FE_element)(element_address);
+		const FE_mesh *parentMesh = mesh->getParentMesh();
+		if (!parentMesh)
+			return 0;
+		// try to inherit field from any of the element's parents
+		const DsLabelIndex *parents;
+		const int parentsCount = mesh->getElementParents(element->getIndex(), parents);
+		for (int p = 0; p < parentsCount; ++p)
+		{
+			parent = parentMesh->getElement(parents[p]);
+			fieldElement = this->getOrInheritOnElement(parent, /*inheritFaceNumber*/-1, topLevelElement, parentCoordinateTransformation);
+			if (fieldElement)
+			{
+				faceNumber = parentMesh->getElementFaceNumber(parents[p], element->getIndex());
+				break;
+			}
+		}
 	}
-
-	inline DsLabelIdentifier get_identifier() const
+	if (!fieldElement)
+		return 0;
+	FE_element_shape *parentShape = parent->getElementShape();
+	if (!parentShape)
 	{
-		if (this->fields)
-			return this->fields->fe_mesh->getElementIdentifier(this->index);
-		return DS_LABEL_IDENTIFIER_INVALID;
-	}
-
-	inline int getDimension()
-	{
-		if (this->fields)
-			return this->fields->fe_mesh->getDimension();
-		display_message(ERROR_MESSAGE, "cmzn_element::getDimension.  Invalid element");
+		display_message(ERROR_MESSAGE, "FE_field::getOrInheritOnElement.  Missing parent shape");
 		return 0;
 	}
-}; /* struct FE_element */
+	const int parentDimension = parentShape->dimension;
+	const int fieldElementDimension = fieldElement->getDimension();
+
+	const FE_value *faceToElement = (parentShape->face_to_element) +
+		(faceNumber*parentDimension*parentDimension);
+	if (fieldElementDimension > parentDimension)
+	{
+		// incorporate the face to element map in the coordinate transformation
+		const FE_value *parentValue = parentCoordinateTransformation;
+		FE_value *faceValue = coordinateTransformation;
+		const int faceDimension = parentDimension - 1;
+		// this had used DOUBLE_FOR_DOT_PRODUCT, but FE_value will be at least double precision now
+		FE_value sum;
+		const FE_value *faceToElementValue;
+		for (int i = fieldElementDimension; i > 0; --i)
+		{
+			/* calculate b entry for this row */
+			sum = *parentValue;
+			++parentValue;
+			faceToElementValue = faceToElement;
+			for (int k = parentDimension; k > 0; --k)
+			{
+				sum += (*parentValue)*(*faceToElementValue);
+				++parentValue;
+				faceToElementValue += parentDimension;
+			}
+			*faceValue = sum;
+			faceValue++;
+			/* calculate A entries for this row */
+			for (int j = faceDimension; j > 0; --j)
+			{
+				++faceToElement;
+				faceToElementValue = faceToElement;
+				parentValue -= parentDimension;
+				sum = 0.0;
+				for (int k = parentDimension; k > 0; --k)
+				{
+					sum += (*parentValue)*(*faceToElementValue);
+					++parentValue;
+					faceToElementValue += parentDimension;
+				}
+				*faceValue = sum;
+				++faceValue;
+			}
+			faceToElement -= faceDimension;
+		}
+	}
+	else
+	{
+		// use the face to element map as the transformation
+		memcpy(coordinateTransformation, faceToElement, parentDimension*parentDimension*sizeof(FE_value));
+	}
+	return fieldElement;
+}
+
 
 /**
  * @see struct FE_element_type_node_sequence.
@@ -1180,7 +829,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 
 	ENTER(free_value_storage_array);
 	if (values_storage&&(size=get_Value_storage_size(value_type, time_sequence))&&
-		(0<number_of_values))
+		(0<=number_of_values))
 	{
 		return_code=1;
 		the_values_storage = values_storage;
@@ -2039,11 +1688,14 @@ Reallocate an array of type value_type with number_of_values.  If
 <previous_number_of_values> + 1 to <new_number_of_values> are set to zero.
 The routine will potentially overallocate the array to accelerate when
 these arrays are expanded out one value at a time, many times over.
+Warning: reallocates previous array and moves to new_array. Use only when
+appending values to existing time array, when merging nodes from
+temporary region.
 =======================================================================*/
 {
 	int allocate_number_of_values, j, return_code;
 
-	ENTER(allocate_time_values_storage_array);
+	ENTER(reallocate_time_values_storage_array);
 	if (new_array && previous_array)
 	{
 		return_code = 1;
@@ -2069,7 +1721,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -2090,7 +1742,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -2111,7 +1763,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -2132,7 +1784,7 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
@@ -2153,33 +1805,32 @@ these arrays are expanded out one value at a time, many times over.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate_time_values_storage_array. Out of memory");
+						"reallocate_time_values_storage_array. Out of memory");
 					return_code = 0;
 				}
 			} break;
 			case STRING_VALUE:
 			{
 				display_message(ERROR_MESSAGE,
-					"allocate_time_values_storage_array. String type not implemented for multiple times yet.");
+					"reallocate_time_values_storage_array. String type not implemented for multiple times yet.");
 				return_code = 0;
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"allocate_time_values_storage_array. Invalid type");
+					"reallocate_time_values_storage_array. Invalid type");
 				return_code = 0;
 			} break;
 		} /*switch (the_value_type) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"allocate_time_values_storage_array."
+		display_message(ERROR_MESSAGE,"reallocate_time_values_storage_array."
 			"Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
 	return (return_code);
-} /* allocate_time_values_storage_array */
+}
 
 static int copy_value_storage_array(Value_storage *destination,
 	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
@@ -2271,7 +1922,7 @@ to destination in certain cases instead of copied; only call from merge_FE_node.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"copy_value_storage_array.  Copying time values to or from non"
+					"copy_value_storage_array.  Copying time values to or from "
 					"non time based values not implemented");
 			}
 		}
@@ -2747,213 +2398,45 @@ Initialises the contents to be zero for values, NULL for pointers.
 	return (values_storage);
 } /* make_value_storage_array */
 
-#if defined (DEBUG_CODE)
-int show_FE_nodal_FE_values(struct FE_node *node)
-/************************************************************************
-LAST MODIFIED : 19 April 1999
-
-DESCRIPTION
-A debug function to print a node's value storage (to stdout)
-=======================================================================*/
+/**
+ * Returns true if <node_field_1> and <node_field_2> are equivalent.
+ * Note that the component value pointers do not have to match since the
+ * position of the data in the values_storage can be different.
+ * Use with caution!
+ * @param compare_field_and_time_sequence  If set, compare field pointer
+ * and time sequence, otherwise ignore differences.
+ * @param compare_component_value_offset  If set, compare the value
+ * offsets into the node values_storage, otherwise ignore differences.
+ */
+static bool FE_node_fields_match(struct FE_node_field *node_field_1,
+	struct FE_node_field *node_field_2, bool compare_field_and_time_sequence,
+	bool compare_component_value_offset)
 {
-	int return_code = 0,limit,i;
-	FE_value *values;
-	ENTER(show_FE_nodal_FE_values);
-	if (node)
+	if (!((node_field_1) && (node_field_2)))
 	{
-		if (node->values_storage)
+		display_message(ERROR_MESSAGE, "FE_node_fields_match.  Invalid argument(s)");
+		return false;
+	}
+	if ((compare_field_and_time_sequence)
+		&& ((node_field_1->field != node_field_2->field)
+			|| (node_field_1->time_sequence != node_field_2->time_sequence)))
+	{
+		return false;
+	}
+	const int componentCount = node_field_1->field->number_of_components;
+	if (node_field_2->field->number_of_components != componentCount)
+	{
+		return false;
+	}
+	for (int c = 0; c < componentCount; ++c)
+	{
+		if (!(node_field_1->components[c].matches(node_field_2->components[c], compare_component_value_offset)))
 		{
-			limit = get_FE_node_number_of_values(node);
-			return_code = 1;
-			values = (FE_value*)(node->values_storage);
-			for (i=0;i<limit;i++)
-			{
-				printf("Nodal value[%d], = %f \n",i,*values);
-				values++;
-			}
-		}
-		else
-		{
-			printf("Node->values_storage = NULL \n");
+			return false;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"show_FE_nodal_values."
-			"Invalid arguments");
-	}
-	LEAVE;
-	return (return_code);
-} /* show_FE_nodal_field_FE_values */
-
-static int show_node_field(struct FE_node_field *node_field,void *count)
-/************************************************************************
-LAST MODIFIED : 19 April 1999
-
-DESCRIPTION
-A debug function to print a node fields (to stdout)
-=======================================================================*/
-{
-	int return_code,i;
-	struct FE_node_field_component *component;
-
-	int *the_count;
-
-	ENTER(show_node_field);
-	the_count = (int *)count;
-	printf("count = %d\n",*the_count);
-	if (node_field)
-	{
-		printf("node_field = %p \n",node_field);
-		if (node_field->field)
-		{
-			printf("   node_field->field = %p \n",node_field->field);
-			printf("   name = %s \n",node_field->field->name);
-			printf("   number of values = %d \n",node_field->field->number_of_values);
-			printf("   number of components = %d \n",node_field->field->number_of_components);
-			for (i=0;i<node_field->field->number_of_components;i++)
-			{
-				printf("      component %d: \n",i);
-				component = &(node_field->components[i]);
-				printf("      number of versions = %d \n",component->number_of_versions);
-				printf("      number of derivatives = %d \n",component->number_of_derivatives);
-			}
-		}
-		else
-		{
-			printf("node_field->field = NULL \n");
-		}
-		return_code =1;
-	}
-	else
-	{
-		printf("node_field = NULL \n");
-		return_code = 1;
-	}
-	(*the_count)++;
-	printf("\n");
-	LEAVE;
-	return (return_code);
+	return true;
 }
-
-int show_FE_nodal_node_fields(struct FE_node *node)
-/************************************************************************
-LAST MODIFIED : 19 April 1999
-
-DESCRIPTION
-A debug function to print all a node's node fields (to stdout)
-=======================================================================*/
-{
-	int return_code,count;
-	ENTER(show_FE_nodal_node_fields);
-	if (node)
-	{
-		if (node->fields)
-		{
-			count =0;
-			FOR_EACH_OBJECT_IN_LIST(FE_node_field)
-				(show_node_field,(void *)(&count),node->fields->node_field_list);
-		}
-		else
-		{
-			printf("Node->fields = NULL \n");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"show_FE_nodal_values."
-			"Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* show_FE_nodal_node_fields */
-#endif /* defined (DEBUG_CODE) */
-
-static int FE_node_fields_match(struct FE_node_field *node_field_1,
-	struct FE_node_field *node_field_2, int ignore_field_and_time_sequence,
-	int ignore_component_value)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2003
-
-DESCRIPTION :
-Returns true if <node_field_1> and <node_field_2> are equivalent.
-Note that the component value pointers do not have to match since the position
-of the data in the values_storage can be different.
-No comparison of field and time_sequence members will be made if
-<ignore_field_and_time_sequence> is set.
-No comparison of the component value, the offset into the nodal values_storage
-where the data is kept it <ignore_component_value> is set.
-Use with caution!
-==============================================================================*/
-{
-	enum FE_nodal_value_type *nodal_value_type_1, *nodal_value_type_2;
-	int i, j, number_of_components, return_code;
-	struct FE_node_field_component *component_1, *component_2;
-
-	ENTER(FE_node_fields_match);
-	return_code=0;
-	if (node_field_1 && node_field_2)
-	{
-		if (ignore_field_and_time_sequence ||
-			((node_field_1->field == node_field_2->field) &&
-				(node_field_1->time_sequence == node_field_2->time_sequence)))
-		{
-			if (((number_of_components =
-				get_FE_field_number_of_components(node_field_1->field)) ==
-				get_FE_field_number_of_components(node_field_2->field)) &&
-				(component_1 = node_field_1->components) &&
-				(component_2 = node_field_2->components))
-			{
-				return_code = 1;
-				for (i = number_of_components; (return_code) && (0 < i); i--)
-				{
-					if ((ignore_component_value ||
-						(component_1->value == component_2->value)) &&
-						(component_1->number_of_derivatives ==
-							component_2->number_of_derivatives) &&
-						(component_1->number_of_versions ==
-							component_2->number_of_versions))
-					{
-						nodal_value_type_1 = component_1->nodal_value_types;
-						nodal_value_type_2 = component_2->nodal_value_types;
-						if (nodal_value_type_1 && nodal_value_type_2)
-						{
-							j = 1 + component_1->number_of_derivatives;
-							while (return_code && (j > 0))
-							{
-								if (*nodal_value_type_1 != *nodal_value_type_2)
-								{
-									return_code = 0;
-								}
-								nodal_value_type_1++;
-								nodal_value_type_2++;
-								j--;
-							}
-						}
-						else if (nodal_value_type_1 || nodal_value_type_2)
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-					component_1++;
-					component_2++;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"FE_node_fields_match.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_fields_match */
 
 static int FE_node_field_is_in_list(struct FE_node_field *node_field,
 	void *node_field_list_void)
@@ -2977,7 +2460,7 @@ Returns true if a node field exactly matching <node_field> is found in
 		if ((node_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 			node_field->field, node_field_list)) &&
 			FE_node_fields_match(node_field, node_field_2,
-				/*ignore_field_and_time_sequence*/0, /*ignore_component_value*/0))
+				/*compare_field_and_time_sequence*/true, /*compare_component_value*/true))
 		{
 			return_code = 1;
 		}
@@ -2991,40 +2474,6 @@ Returns true if a node field exactly matching <node_field> is found in
 
 	return (return_code);
 } /* FE_node_field_is_in_list */
-
-static int FE_node_field_get_number_of_values(struct FE_node_field *node_field)
-/*******************************************************************************
-LAST MODIFIED : 14 September 2000
-
-DESCRIPTION :
-Returns the number of values sum of (1+number_of_derivatives)*number_of_versions
-for all components.
-==============================================================================*/
-{
-	int i,number_of_values;
-	struct FE_node_field_component *component;
-
-	ENTER(FE_node_field_get_number_of_values);
-	number_of_values=0;
-	if (node_field)
-	{
-		component = node_field->components;
-		for (i=node_field->field->number_of_components;0<i;i--)
-		{
-			number_of_values +=
-				(1+component->number_of_derivatives) * component->number_of_versions;
-			component++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_get_number_of_values.  Invalid argument");
-	}
-	LEAVE;
-
-	return (number_of_values);
-} /* FE_node_field_get_number_of_values */
 
 static int FE_node_field_set_FE_time_sequence(struct FE_node_field *node_field,
 	struct FE_time_sequence *time_sequence)
@@ -3078,8 +2527,7 @@ in the node, adjusted for word alignment, is added on to <*values_storage_size>.
 	{
 		if (GENERAL_FE_FIELD==field->fe_field_type)
 		{
-			this_values_storage_size =
-				FE_node_field_get_number_of_values(node_field) *
+			this_values_storage_size = node_field->getTotalValuesCount()*
 				get_Value_storage_size(field->value_type, node_field->time_sequence);
 			ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
 			(*values_storage_size) += this_values_storage_size;
@@ -3113,8 +2561,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 ==============================================================================*/
 {
 	enum Value_type value_type;
-	int i,number_of_components,number_of_values,return_code;
-	struct FE_node_field_component *component;
+	int number_of_values,return_code;
 	Value_storage *start_of_values_storage, *values_storage;
 
 	ENTER(FE_node_field_free_values_storage_arrays);
@@ -3126,15 +2573,14 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 		if (GENERAL_FE_FIELD==node_field->field->fe_field_type)
 		{
 			value_type = node_field->field->value_type;
-			number_of_components = node_field->field->number_of_components;
-			component = node_field->components;
-			for (i=0;i<number_of_components;i++)
+			const int componentCount = node_field->field->number_of_components;
+			for (int c = 0; c < componentCount; ++c)
 			{
+				const FE_node_field_template *component = node_field->getComponent(c);
 				if (NULL != (start_of_values_storage=(Value_storage *)start_of_values_storage_void))
 				{
-					values_storage = start_of_values_storage + component->value;
-					number_of_values=
-						(1+component->number_of_derivatives)*component->number_of_versions;
+					values_storage = start_of_values_storage + component->getValuesOffset();
+					number_of_values = component->getTotalValuesCount();
 					free_value_storage_array(values_storage,value_type,
 						node_field->time_sequence,number_of_values);
 					component++;
@@ -3232,9 +2678,9 @@ Assumes component nodal values are consecutive and start at first component.
 				{
 					/* destination in new_values_storage according to new_node_field */
 					destination =
-						copy_data->new_values_storage + new_node_field->components->value;
+						copy_data->new_values_storage + new_node_field->components->getValuesOffset();
 					value_type = field->value_type;
-					number_of_values = FE_node_field_get_number_of_values(new_node_field);
+					number_of_values = new_node_field->getTotalValuesCount();
 					if ((!add_node_field) ||
 						(old_node_field && new_node_field->time_sequence))
 					{
@@ -3242,7 +2688,7 @@ Assumes component nodal values are consecutive and start at first component.
 						if (copy_data->old_values_storage && old_node_field->components)
 						{
 							source = copy_data->old_values_storage +
-								old_node_field->components->value;
+								old_node_field->components->getValuesOffset();
 							return_code = copy_value_storage_array(destination, value_type,
 								new_node_field->time_sequence, old_node_field->time_sequence,
 								number_of_values, source, copy_data->optimised_merge);
@@ -3258,7 +2704,7 @@ Assumes component nodal values are consecutive and start at first component.
 						if (copy_data->add_values_storage && add_node_field->components)
 						{
 							source = copy_data->add_values_storage +
-								add_node_field->components->value;
+								add_node_field->components->getValuesOffset();
 							if (old_node_field && new_node_field->time_sequence)
 							{
 								return_code = copy_time_sequence_values_storage_arrays(
@@ -3301,13 +2747,13 @@ Assumes component nodal values are consecutive and start at first component.
 					if (add_node_field)
 					{
 						destination =
-							copy_data->old_values_storage + old_node_field->components->value;
+							copy_data->old_values_storage + old_node_field->components->getValuesOffset();
 						value_type = field->value_type;
-						number_of_values = FE_node_field_get_number_of_values(new_node_field);
+						number_of_values = new_node_field->getTotalValuesCount();
 						if (copy_data->add_values_storage && add_node_field->components)
 						{
 							source = copy_data->add_values_storage +
-								add_node_field->components->value;
+								add_node_field->components->getValuesOffset();
 							if (old_node_field->time_sequence)
 							{
 								return_code = copy_time_sequence_values_storage_arrays(
@@ -3521,128 +2967,7 @@ and any arrays in values_storage.
 	return (return_code);
 } /* allocate_and_copy_FE_node_values_storage */
 
-/***************************************************************************//**
- * If node_field is for a coordinate field, set it at supplied address if
- * currently none or name is alphabetically less than current field.
- * @param coordinate_field_address_void  struct FE_field **.
- */
-static int FE_node_field_get_first_coordinate_field(struct FE_node_field
-	*node_field, void *coordinate_field_address_void)
-{
-	int return_code;
-	struct FE_field **coordinate_field_address, *field;
-
-	ENTER(FE_node_field_get_first_coordinate_field);
-	coordinate_field_address = (struct FE_field **)coordinate_field_address_void;
-	if (node_field && coordinate_field_address)
-	{
-		return_code = 1;
-		field = node_field->field;
-		if (FE_field_is_coordinate_field(field, (void *)NULL))
-		{
-			if ((NULL == *coordinate_field_address) ||
-				(strcmp(field->name, (*coordinate_field_address)->name) < 0))
-			{
-				*coordinate_field_address = field;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_get_first_coordinate_field.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-static int FE_node_field_has_time(struct FE_node_field *node_field,void *dummy)
-/*******************************************************************************
-LAST MODIFIED: 16 June 1999
-
-DESCRIPTION:
-returns true if <node_field> has time information defined
-==============================================================================*/
-{
-	int return_code;
-	ENTER(FE_node_field_has_time);
-
-	if (node_field&&!dummy)
-	{
-		return_code = (node_field->field->number_of_times > 0);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_has_time. Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-}/* FE_node_field_has_time */
-
-static int assign_FE_node_field_component(
-	struct FE_node_field_component *component,
-	int value,int number_of_derivatives,int number_of_versions,
-	enum FE_nodal_value_type *nodal_value_types)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-Assigns the fields for the component
-???DB.  Do nodal_value_types better ?
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(assign_FE_node_field_component);
-
-	return_code = 1;
-	if (component && (0 <= value) && (0 <= number_of_derivatives) &&
-		(1 <= number_of_versions) && nodal_value_types)
-	{
-		if (!(component->nodal_value_types))
-		{
-			i=number_of_derivatives+1;
-			if (ALLOCATE(component->nodal_value_types,enum FE_nodal_value_type,i))
-			{
-				while (i>0)
-				{
-					i--;
-					(component->nodal_value_types)[i]=nodal_value_types[i];
-				}
-				component->value = value;
-				component->number_of_derivatives=number_of_derivatives;
-				component->number_of_versions=number_of_versions;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "assign_FE_node_field_component.  "
-					"Could not allocate memory for nodal value types");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"assign_FE_node_field_component.  Component already assigned");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"assign_FE_node_field_component.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* assign_FE_node_field_component */
-
-/***************************************************************************//**
+/**
  * Sorting function for FE_node_field and FE_element_field lists.
  * Returns:
  * -1 if field_1 < field_2
@@ -3664,177 +2989,151 @@ static int compare_FE_field(struct FE_field *field_1,struct FE_field *field_2)
 	return 0;
 }
 
-static struct FE_node_field *CREATE(FE_node_field)(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 19 January 1998
 
-DESCRIPTION :
-Allocates memory and assigns fields for a node field.  The components are
-allocated and set to "zero".
-???DB.  Not allocating any nodal value names.
-==============================================================================*/
+FE_node_field::FE_node_field(struct FE_field *fieldIn) :
+	field(ACCESS(FE_field)(fieldIn)),
+	components(new FE_node_field_template[fieldIn->number_of_components]),
+	time_sequence(0),
+	access_count(0)
 {
-	int number_of_components;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
+}
 
-	ENTER(CREATE(FE_node_field));
-	if (field)
-	{
-		number_of_components=field->number_of_components;
-		if (ALLOCATE(node_field,struct FE_node_field,1)&&
-			ALLOCATE(component,struct FE_node_field_component,number_of_components))
-		{
-			node_field->field=ACCESS(FE_field)(field);
-			node_field->time_sequence=(struct FE_time_sequence *)NULL;
-			node_field->components=component;
-			while (number_of_components>0)
-			{
-				component->value=0;
-				component->number_of_derivatives=0;
-				component->number_of_versions=0;
-				component->nodal_value_types=(enum FE_nodal_value_type *)NULL;
-				component++;
-				number_of_components--;
-			}
-			node_field->access_count=0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_node_field).  Could not allocate memory for node field");
-			DEALLOCATE(node_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_node_field).  Invalid argument(s)");
-		node_field=(struct FE_node_field *)NULL;
-	}
-	LEAVE;
-
-	return (node_field);
-} /* CREATE(FE_node_field) */
-
-static int DESTROY(FE_node_field)(struct FE_node_field **node_field_address)
-/*******************************************************************************
-LAST MODIFIED : 19 January 1998
-
-DESCRIPTION :
-Frees the memory for the node field and sets <*node_field_address> to NULL.
-==============================================================================*/
+FE_node_field::~FE_node_field()
 {
-	int i,return_code;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-
-	ENTER(DESTROY(FE_node_field));
-	if ((node_field_address)&&(node_field= *node_field_address))
+	DEACCESS(FE_field)(&(this->field));
+	delete[] this->components;
+	if (this->time_sequence)
 	{
-		if (0==node_field->access_count)
-		{
-			component=node_field->components;
-			for (i=node_field->field->number_of_components;i>0;i--)
-			{
-				DEALLOCATE(component->nodal_value_types);
-				component++;
-			}
-			/* free the components */
-			DEALLOCATE(node_field->components);
-			if (node_field->time_sequence)
-			{
-				DEACCESS(FE_time_sequence)(&(node_field->time_sequence));
-			}
-			(void)DEACCESS(FE_field)(&(node_field->field));
-			DEALLOCATE(*node_field_address);
-		}
-		else
-		{
-			*node_field_address=(struct FE_node_field *)NULL;
-		}
-		return_code=1;
+		DEACCESS(FE_time_sequence)(&(this->time_sequence));
 	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
+}
 
-	return (return_code);
-} /* DESTROY(FE_node_field) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_node_field)
-
-static struct FE_node_field *copy_create_FE_node_field_with_offset(
-	struct FE_node_field *source_node_field,int value_offset)
-/*******************************************************************************
-LAST MODIFIED : 14 September 2000
-
-DESCRIPTION :
-Creates an FE_node_field that is identical to <source_node_field> except that
-the <value_offset> is added to the value member of the components (which is
-an offset into the values_storage array at the node). For non-GENERAL_FE_FIELD
-types, the value is not changed.
-==============================================================================*/
+FE_node_field *FE_node_field::create(struct FE_field *fieldIn)
 {
-	int i,number_of_components;
-	struct FE_field *field;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component,*source_component;
-
-	ENTER(copy_create_FE_node_field_with_offset);
-	if (source_node_field&&(field=source_node_field->field))
+	if (!fieldIn)
 	{
-		if (NULL != (node_field=CREATE(FE_node_field)(field)))
+		display_message(ERROR_MESSAGE, "FE_node_field::create.  Missing field");
+		return 0;
+	}
+	FE_node_field *node_field = new FE_node_field(fieldIn);
+	if (!((node_field) && (node_field->components)))
+	{
+		display_message(ERROR_MESSAGE, "FE_node_field::create.  Failed.");
+		delete node_field;
+		return 0;
+	}
+	return node_field;
+}
+
+FE_node_field *FE_node_field::clone(const FE_node_field& source, int deltaValuesOffset)
+{
+	FE_node_field *node_field = FE_node_field::create(source.field);
+	if (!node_field)
+	{
+		return 0;
+	}
+	if (source.time_sequence)
+	{
+		node_field->time_sequence = ACCESS(FE_time_sequence)(source.time_sequence);
+	}
+	if (GENERAL_FE_FIELD != source.field->fe_field_type)
+	{
+		// though component->valuesOffset is currently irrelevant for these fields,
+		// keep it unchanged for future use
+		deltaValuesOffset = 0;
+	}
+	const int componentCount = get_FE_field_number_of_components(source.field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		node_field->components[c] = source.components[c];
+		node_field->components[c].addValuesOffset(deltaValuesOffset);
+	}
+	return node_field;
+}
+
+int FE_node_field::getValueMaximumVersionsCount(cmzn_node_value_label valueLabel) const
+{
+	int maximumVersionsCount = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int versionsCount = this->components[c].getValueNumberOfVersions(valueLabel);
+		if (versionsCount > maximumVersionsCount)
 		{
-			if (source_node_field->time_sequence)
-			{
-				node_field->time_sequence = ACCESS(FE_time_sequence)
-					(source_node_field->time_sequence);
-			}
-			if (GENERAL_FE_FIELD != field->fe_field_type)
-			{
-				/* though component->value is currently irrelevant for these fields,
-					 keep it unchanged for future use */
-				value_offset=0;
-			}
-			number_of_components=get_FE_field_number_of_components(field);
-			component=node_field->components;
-			source_component=source_node_field->components;
-			for (i=number_of_components;(0<i)&&node_field;i--)
-			{
-				if (!assign_FE_node_field_component(component,
-					source_component->value+value_offset,
-					source_component->number_of_derivatives,
-					source_component->number_of_versions,
-					source_component->nodal_value_types))
-				{
-					display_message(ERROR_MESSAGE,
-						"copy_create_FE_node_field_with_offset.  "
-						"Could not assign node field component");
-					DESTROY(FE_node_field)(&node_field);
-				}
-				component++;
-				source_component++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_FE_node_field_with_offset.  Could not create node field");
+			maximumVersionsCount = versionsCount;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"copy_create_FE_node_field_with_offset.  Invalid argument(s)");
-		node_field=(struct FE_node_field *)NULL;
-	}
-	LEAVE;
+	return maximumVersionsCount;
+}
 
-	return (node_field);
-} /* copy_create_FE_node_field_with_offset */
+int FE_node_field::getValueMinimumVersionsCount(cmzn_node_value_label valueLabel) const
+{
+	int minimumVersionsCount = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int versionsCount = this->components[c].getValueNumberOfVersions(valueLabel);
+		if (versionsCount == 0)
+		{
+			return 0;
+		}
+		if ((c == 0) || (versionsCount < minimumVersionsCount))
+		{
+			minimumVersionsCount = versionsCount;
+		}
+	}
+	return minimumVersionsCount;
+}
+
+int FE_node_field::getMaximumDerivativeNumber() const
+{
+	int maximumDerivativeNumber = 0;
+	const int componentCount = get_FE_field_number_of_components(this->field);
+	for (int c = 0; c < componentCount; ++c)
+	{
+		const int componentMaximumDerivativeNumber = this->components[c].getMaximumDerivativeNumber();
+		if (componentMaximumDerivativeNumber > maximumDerivativeNumber)
+		{
+			maximumDerivativeNumber = componentMaximumDerivativeNumber;
+		}
+	}
+	return maximumDerivativeNumber;
+}
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_node_field)
+{
+	if (object)
+	{
+		return object->access();
+	}
+	display_message(ERROR_MESSAGE, "ACCESS(FE_node_field).  Invalid argument");
+	return 0;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_node_field)
+{
+	if (object_address)
+	{
+		FE_node_field::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_node_field)
+{
+	if (object_address)
+	{
+		if (new_object)
+		{
+			new_object->access();
+		}
+		FE_node_field::deaccess(*object_address);
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_node_field, field, \
 	struct FE_field *, compare_FE_field)
@@ -3857,64 +3156,45 @@ Data for passing to FE_node_field_copy_with_equivalent_field.
 	struct LIST(FE_node_field) *node_field_list;
 };
 
+/**
+ * Creates a copy of <node_field> using the same named field in <fe_field_list>
+ * and adds it to <node_field_list>. Checks fields are equivalent.
+ * Also creates an equivalent FE_time_sequence in the new <fe_time> for this
+ * node field.
+ * <data_void> points at a struct FE_node_field_copy_with_equivalent_field_data.
+ */
 static int FE_node_field_copy_with_equivalent_field(
 	struct FE_node_field *node_field, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-Creates a copy of <node_field> using the same named field in <fe_field_list>
-and adds it to <node_field_list>. Checks fields are equivalent.
-Also creates an equivalent FE_time_sequence in the new <fe_time> for this
-node field.
-<data_void> points at a struct FE_node_field_copy_with_equivalent_field_data.
-==============================================================================*/
 {
-	int i, number_of_components, return_code;
-	struct FE_field *equivalent_field;
-	struct FE_node_field *copy_node_field;
+	int return_code;
 	struct FE_node_field_copy_with_equivalent_field_data *data;
-	struct FE_node_field_component *component, *copy_component;
 
-	ENTER(FE_node_field_copy_with_equivalent_field);
 	if (node_field && node_field->field &&
 		(data = (struct FE_node_field_copy_with_equivalent_field_data *)data_void))
 	{
 		return_code = 1;
-		if (NULL != (equivalent_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
-			node_field->field->name, data->fe_field_list)))
+		struct FE_field *equivalent_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field, name)(
+			node_field->field->name, data->fe_field_list);
+		if (equivalent_field)
 		{
 			if (FE_fields_match_exact(node_field->field, equivalent_field))
 			{
-				if (NULL != (copy_node_field = CREATE(FE_node_field)(equivalent_field)))
+				struct FE_node_field *copy_node_field = FE_node_field::clone(*node_field);
+				if (copy_node_field)
 				{
+					copy_node_field->setField(equivalent_field);
 					if (node_field->time_sequence)
 					{
-						if (!(copy_node_field->time_sequence = ACCESS(FE_time_sequence)(
-							get_FE_time_sequence_matching_FE_time_sequence(data->fe_time,
-								node_field->time_sequence))))
+						// following is not accessed:
+						FE_time_sequence *copy_time_sequence = get_FE_time_sequence_matching_FE_time_sequence(data->fe_time,
+							node_field->time_sequence);
+						if (copy_time_sequence)
+						{
+							FE_node_field_set_FE_time_sequence(copy_node_field, copy_time_sequence);
+						}
+						else
 						{
 							return_code = 0;
-						}
-					}
-					if (GENERAL_FE_FIELD == equivalent_field->fe_field_type)
-					{
-						number_of_components =
-							get_FE_field_number_of_components(equivalent_field);
-						component = node_field->components;
-						copy_component = copy_node_field->components;
-						for (i = number_of_components; (0 < i) && return_code; i--)
-						{
-							if (!assign_FE_node_field_component(copy_component,
-								component->value,
-								component->number_of_derivatives,
-								component->number_of_versions,
-								component->nodal_value_types))
-							{
-								return_code = 0;
-							}
-							component++;
-							copy_component++;
 						}
 					}
 					if (return_code)
@@ -3928,9 +3208,8 @@ node field.
 					if (!return_code)
 					{
 						display_message(ERROR_MESSAGE,
-							"FE_node_field_copy_with_equivalent_field.  "
-							"Could not copy node field component");
-						DESTROY(FE_node_field)(&copy_node_field);
+							"FE_node_field_copy_with_equivalent_field.  Could not copy node field");
+						delete copy_node_field;
 					}
 				}
 				else
@@ -3961,10 +3240,8 @@ node field.
 			"FE_node_field_copy_with_equivalent_field.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_node_field_copy_with_equivalent_field */
+}
 
 struct LIST(FE_node_field) *
 	FE_node_field_list_clone_with_FE_field_list(
@@ -4501,8 +3778,6 @@ in <fe_field_change_log>.
 	return (return_code);
 } /* FE_node_field_info_log_FE_field_changes */
 
-DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
-
 /**
  * Compare functions for listing struct FE_element_type_node_sequence in order:
  * - number_of_nodes changing slowest;
@@ -4545,19 +3820,20 @@ static int compare_FE_element_type_node_sequence_identifier(
 }
 
 struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
-	struct FE_element *element, int face_number)
+	int &result, struct FE_element *element, int face_number)
 {
+	result = CMZN_OK;
 	int i,node_number,*node_numbers,number_of_nodes,placed,j,k;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
 	struct FE_node **nodes_in_element;
 
-	ENTER(CREATE(FE_element_type_node_sequence));
 	if (element)
 	{
 		/* get list of nodes used by default coordinate field in element/face */
-		if (calculate_FE_element_field_nodes(element, face_number,
+		result = calculate_FE_element_field_nodes(element, face_number,
 			(struct FE_field *)NULL, &number_of_nodes, &nodes_in_element,
-			/*top_level_element*/(struct FE_element *)NULL) && (0 < number_of_nodes))
+			/*top_level_element*/(struct FE_element *)NULL);
+		if ((CMZN_OK == result) && (0 < number_of_nodes))
 		{
 			if (ALLOCATE(element_type_node_sequence, struct FE_element_type_node_sequence, 1) &&
 				ALLOCATE(node_numbers, int, number_of_nodes))
@@ -4572,7 +3848,7 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 				/* put the nodes in the identifier in ascending order */
 				for (i=0;element_type_node_sequence&&(i<number_of_nodes);i++)
 				{
-					node_number=(nodes_in_element[i])->cm_node_identifier;
+					node_number=(nodes_in_element[i])->getIdentifier();
 					node_numbers[i]=node_number;
 					/* SAB Reenabled the matching of differently ordered faces as
 						detecting the continuity correctly is more important than the
@@ -4604,7 +3880,7 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 #if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %d-D element %d has nodes: ",
-					element->getDimension(), element->get_identifier());
+					element->getDimension(), element->getIdentifier());
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -4626,8 +3902,10 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CREATE(FE_element_type_node_sequence).  "
-				"Could not get nodes in element");
+			if (CMZN_ERROR_NOT_FOUND != result)
+			{
+				display_message(ERROR_MESSAGE, "CREATE(FE_element_type_node_sequence).  Failed to get nodes in element");
+			}
 			element_type_node_sequence=(struct FE_element_type_node_sequence *)NULL;
 		}
 	}
@@ -4636,11 +3914,10 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 		display_message(ERROR_MESSAGE,
 			"CREATE(FE_element_type_node_sequence).  Invalid argument(s)");
 		element_type_node_sequence=(struct FE_element_type_node_sequence *)NULL;
+		result = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
-
 	return (element_type_node_sequence);
-} /* CREATE(FE_element_type_node_sequence) */
+}
 
 int DESTROY(FE_element_type_node_sequence)(
 	struct FE_element_type_node_sequence **element_type_node_sequence_address)
@@ -4756,88 +4033,43 @@ FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
 	FE_element_type_node_sequence *element_type_node_sequence)
 {
 	if (element_type_node_sequence_list && element_type_node_sequence)
+	{
 		return FIND_BY_IDENTIFIER_IN_LIST(FE_element_type_node_sequence, identifier)(
 			element_type_node_sequence->identifier, element_type_node_sequence_list);
+	}
 	return 0;
 }
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_field)
 
+/** Increases the values count by the number of values for node field */
 static int count_nodal_values(struct FE_node_field *node_field,
-	void *number_of_nodal_values)
-/*******************************************************************************
-LAST MODIFIED : 12 April 1996
-
-DESCRIPTION :
-Increases the <number_of_nodal_values> by the number of values for <node_field>.
-==============================================================================*/
+	void *values_count_void)
 {
-	int i,*number_of_values,return_code;
-	struct FE_node_field_component *component;
-
-	ENTER(count_nodal_values);
-	if (node_field&&(node_field->field)&&(component=node_field->components)&&
-		(number_of_values=(int *)number_of_nodal_values))
+	if (!((node_field) && (values_count_void)))
 	{
-		i=node_field->field->number_of_components;
-		while (i>0)
-		{
-			*number_of_values += (component->number_of_versions)*
-				((component->number_of_derivatives)+1);
-			component++;
-			i--;
-		}
-		return_code=1;
+		display_message(ERROR_MESSAGE, "count_nodal_values.  Invalid argument(s)");
+		return 0;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"count_nodal_values.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	*(static_cast<int *>(values_count_void)) += node_field->getTotalValuesCount();
+	return 1;
+}
 
-	return (return_code);
-} /* count_nodal_values */
-
+/** Increases the values size by the number of values for node field
+  * times the size of the node field value type. */
 static int count_nodal_size(struct FE_node_field *node_field,
-	void *number_of_nodal_values)
-/*******************************************************************************
-LAST MODIFIED : 26 October 1999
-
-DESCRIPTION :
-Increases the <number_of_nodal_values> by the number of values for <node_field>
-times the size of <node_field->field->value_type> .
-==============================================================================*/
+	void *values_size_void)
 {
-	int i,*number_of_values,return_code,size,this_values_storage_size;
-	struct FE_node_field_component *component;
-
-	ENTER(count_nodal_values);
-	if (node_field&&(node_field->field)&&(component=node_field->components)&&
-		(number_of_values=(int *)number_of_nodal_values))
+	if (!((node_field) && (values_size_void)))
 	{
-		size=get_Value_storage_size(node_field->field->value_type,
-			node_field->time_sequence);
-		this_values_storage_size=0;
-		for (i=node_field->field->number_of_components;0<i;i--)
-		{
-			this_values_storage_size += ((component->number_of_versions)*
-				((component->number_of_derivatives)+1))*size;
-			component++;
-		}
-		ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
-		*number_of_values += this_values_storage_size;
-		return_code=1;
+		display_message(ERROR_MESSAGE, "count_nodal_size.  Invalid argument(s)");
+		return 0;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"count_nodal_size.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* count_nodal_size */
+	const int valueTypeSize = get_Value_storage_size(node_field->field->value_type,
+		node_field->time_sequence);
+	*(static_cast<int *>(values_size_void)) += node_field->getTotalValuesCount()*valueTypeSize;
+	return 1;
+}
 
 struct Merge_FE_node_field_into_list_data
 {
@@ -4847,230 +4079,143 @@ struct Merge_FE_node_field_into_list_data
 	struct LIST(FE_node_field) *list;
 }; /* struct Merge_FE_node_field_into_list_data */
 
+/**
+ * Merge the node field into the list.
+ * If there is already a node_field for the field in <node_field>, checks the two
+ * are compatible and adds any new times that may be in the new field.
+ * If <node_field> introduces a new field to the list, it is added to the list
+ * with value offset to the <value_size> which it subsequently increases to fit
+ * the new data added for this node field. <number_of_values> is also increased
+ * appropriately.
+ */
 static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 	void *merge_FE_node_field_into_list_data)
-/*******************************************************************************
-LAST MODIFIED : 23 October 2002
-
-DESCRIPTION :
-Merges the <node_field> into the list.
-If there is already a node_field for the field in <node_field>, checks the two
-are compatible and adds any new times that may be in the new field.
-If <node_field> introduces a new field to the list, it is added to the list
-with value offset to the <value_size> which it subsequently increases to fit
-the new data added for this node field. <number_of_values> is also increased
-appropriately.
-==============================================================================*/
 {
-	int i, j, new_values_storage_size, return_code, size, this_number_of_values;
-	struct FE_field *field;
-	struct FE_node_field *existing_node_field, *new_node_field;
-	struct FE_node_field_component *component, *existing_component,
-		*new_component;
-	struct FE_time_sequence *merged_time_sequence;
-	struct Merge_FE_node_field_into_list_data *merge_data;
-
-	ENTER(merge_FE_node_field_into_list);
-	if (node_field&&(field=node_field->field) &&
-		(merge_data = (struct Merge_FE_node_field_into_list_data *)
-		merge_FE_node_field_into_list_data))
+	auto merge_data = static_cast<Merge_FE_node_field_into_list_data *>(merge_FE_node_field_into_list_data);
+	if (!((node_field) && (merge_data)))
 	{
-		/* check if the node field is in the list */
-		if (NULL != (existing_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			field, merge_data->list)))
+		display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  Invalid argument(s)");
+		return 0;
+	}
+	int return_code = 1;
+	FE_field *field = node_field->field;
+	const int componentCount = field->number_of_components;
+	/* check if the node field is in the list */
+	FE_node_field *existing_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field, merge_data->list);
+	if (existing_node_field)
+	{
+		// check that the components match
+		for (int c = 0; c < componentCount; ++c)
 		{
-			/* the node field is already in the list */
-			/* check that the components agree */
-			/*???DB.  Check names ? */
-			if ((component = node_field->components) &&
-				(existing_component = existing_node_field->components))
+			if (!existing_node_field->getComponent(c)->matches(*node_field->getComponent(c)))
 			{
-				i = field->number_of_components;
-				return_code = 1;
-				while (return_code && (i > 0))
-				{
-					if ((component->number_of_derivatives ==
-						existing_component->number_of_derivatives) &&
-						(component->number_of_versions ==
-							existing_component->number_of_versions))
-					{
-						component++;
-						existing_component++;
-						i--;
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
+				display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  Node field does not match");
 				return_code = 0;
-			}
-			if (return_code)
-			{
-				/* if the new node_field is a time based node field merge it in */
-				if (node_field->time_sequence)
-				{
-					if (existing_node_field->time_sequence)
-					{
-						/* Merging two time fields.  Make a node_field with the
-							 combined list */
-						if (NULL != (merged_time_sequence =
-							FE_region_get_FE_time_sequence_merging_two_time_series(
-								FE_field_get_FE_region(field), node_field->time_sequence,
-								existing_node_field->time_sequence)))
-						{
-							if (compare_FE_time_sequence(merged_time_sequence,
-									existing_node_field->time_sequence))
-							{
-								/* Time sequences are different */
-								merge_data->requires_merged_storage = 1;
-								new_node_field = copy_create_FE_node_field_with_offset(
-									existing_node_field, /*offset*/0);
-								REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
-									merged_time_sequence);
-								if (REMOVE_OBJECT_FROM_LIST(FE_node_field)(
-									existing_node_field, merge_data->list) &&
-									ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
-									merge_data->list))
-								{
-									/* Finished */
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"merge_FE_node_field_into_list.  "
-										"Unable to replace node_field in merged list.");
-									return_code = 0;
-								}
-							}
-							else
-							{
-								/* Can continue with the existing time_sequence */
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"merge_FE_node_field_into_list.  Unable to merge time arrays.");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						/* Overwriting a single valued field with a time based
-							 field, the values storage size will change, need to
-							 write the code */
-						display_message(ERROR_MESSAGE,
-							"merge_FE_node_field_into_list.  "
-							"Need to write code to overwrite non time field with "
-							"time based field");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					if (existing_node_field->time_sequence)
-					{
-						/* Overwriting a time based field with a single valued
-							 field, the values storage size will change, need to
-							 write the code */
-						display_message(ERROR_MESSAGE,
-							"merge_FE_node_field_into_list.  "
-							"Need to write code to overwrite time field with "
-							"non time based field");
-						return_code = 0;
-					}
-				}
+				break;
 			}
 		}
-		else
+		if (return_code)
 		{
-			/* the node field is not already in the list */
-			/* create a new node field with modified offsets */
-			merge_data->requires_merged_storage = 1;
-			if ((component = node_field->components) &&
-				(new_node_field = CREATE(FE_node_field)(field)))
+			/* if the new node_field is a time based node field merge it in */
+			if (node_field->time_sequence)
 			{
-				FE_node_field_set_FE_time_sequence(new_node_field,
-					node_field->time_sequence);
-				size = get_Value_storage_size(field->value_type,
-					node_field->time_sequence);
-				new_component = new_node_field->components;
-				i = field->number_of_components;
-				return_code = 1;
-				new_values_storage_size = 0;
-				while (return_code && (i > 0))
+				if (existing_node_field->time_sequence)
 				{
-					new_component->value =
-						merge_data->values_storage_size + new_values_storage_size;
-					new_component->number_of_derivatives =
-						component->number_of_derivatives;
-					new_component->number_of_versions =
-						component->number_of_versions;
-					this_number_of_values = ((component->number_of_versions)*
-						((component->number_of_derivatives) + 1));
-					new_values_storage_size += this_number_of_values*size;
-					merge_data->number_of_values += this_number_of_values;
-					if (component->nodal_value_types)
+					// Merge time sequences in new node field
+					FE_time_sequence *merged_time_sequence = FE_region_get_FE_time_sequence_merging_two_time_series(
+						FE_field_get_FE_region(field), node_field->time_sequence, existing_node_field->time_sequence);
+					if (merged_time_sequence)
 					{
-						/* assign nodal value names */
-						if (ALLOCATE(new_component->nodal_value_types,
-							enum FE_nodal_value_type,
-							new_component->number_of_derivatives + 1))
+						if (compare_FE_time_sequence(merged_time_sequence, existing_node_field->time_sequence))
 						{
-							for (j = new_component->number_of_derivatives; j >= 0; j--)
+							/* Time sequences are different */
+							merge_data->requires_merged_storage = 1;
+							FE_node_field *new_node_field = FE_node_field::clone(*existing_node_field);
+							REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
+								merged_time_sequence);
+							if (!(REMOVE_OBJECT_FROM_LIST(FE_node_field)(existing_node_field, merge_data->list)
+								&& ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, merge_data->list)))
 							{
-								(new_component->nodal_value_types)[j] =
-									(component->nodal_value_types)[j];
+								display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  "
+									"Unable to replace node_field in merged list.");
+								return_code = 0;
 							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"merge_FE_node_field_into_list.  "
-								"Could not allocate memory for nodal value types");
+							/* Can continue with the existing time_sequence */
 						}
 					}
-					component++;
-					new_component++;
-					i--;
-				}
-				if (return_code)
-				{
-					ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
-					merge_data->values_storage_size += new_values_storage_size;
-					/* add the new node field to the list */
-					if (!ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
-						merge_data->list))
+					else
 					{
-						DESTROY(FE_node_field)(&new_node_field);
+						display_message(ERROR_MESSAGE,
+							"merge_FE_node_field_into_list.  Unable to merge time arrays.");
 						return_code = 0;
 					}
 				}
 				else
 				{
-					DESTROY(FE_node_field)(&new_node_field);
+					// Not implemented. Values storage size will change.
+					display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  "
+						"Overwriting non time-varying field with time-varying field is not implemented");
+					return_code = 0;
 				}
 			}
 			else
 			{
-				return_code = 0;
+				if (existing_node_field->time_sequence)
+				{
+					// Not implemented. Values storage size will change.
+					display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  "
+						"Overwriting time-varying field with non time-varying field is not implemented");
+					return_code = 0;
+				}
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"merge_FE_node_field_into_list.  Invalid argument(s)");
-		return_code = 0;
+		/* the node field is not already in the list */
+		/* create a new node field with modified offsets */
+		merge_data->requires_merged_storage = 1;
+		FE_node_field *new_node_field = FE_node_field::create(field);
+		if (new_node_field)
+		{
+			FE_node_field_set_FE_time_sequence(new_node_field, node_field->time_sequence);
+			const int valueTypeSize = get_Value_storage_size(node_field->field->value_type, node_field->time_sequence);
+			int new_values_storage_size = 0;
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_node_field_template &sourceComponent = *(node_field->getComponent(c));
+				new_node_field->components[c] = sourceComponent;
+				new_node_field->components[c].setValuesOffset(merge_data->values_storage_size + new_values_storage_size);
+				new_values_storage_size += sourceComponent.getTotalValuesCount()*valueTypeSize;
+				merge_data->number_of_values += sourceComponent.getTotalValuesCount();
+			}
+			if (return_code)
+			{
+				ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
+				merge_data->values_storage_size += new_values_storage_size;
+				if (!ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, merge_data->list))
+				{
+					delete new_node_field;
+					new_node_field = 0;
+					return_code = 0;
+				}
+			}
+			else
+			{
+				delete new_node_field;
+				new_node_field = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
 	}
-	LEAVE;
-
-	return (return_code);
-} /* merge_FE_node_field_into_list */
+	return return_code;
+}
 
 #if !defined (WINDOWS_DEV_FLAG)
 /***************************************************************************//**
@@ -5079,31 +4224,18 @@ appropriately.
 static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 	void *dummy_void)
 {
-	char *component_name, *string_value;
-	const char *type_string;
-	enum FE_nodal_value_type *type;
-	FE_value time;
-	int i,version,k,number_of_components,number_of_times,number_of_versions,
-		return_code,time_index,xi_dimension,xi_index;
-	struct FE_element *embedding_element;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	Value_storage *values_storage, *value;
-
-	ENTER(list_FE_node_field);
 	USE_PARAMETER(dummy_void);
+	int return_code = 1;
 	if (node && field)
 	{
-		node_field = (struct FE_node_field *)NULL;
-		if (node->fields)
+		const FE_node_field *node_field = (node->fields) ?
+			FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field, node->fields->node_field_list) : 0;
+		if (node_field)
 		{
-			node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				field, node->fields->node_field_list);
-		}
-		if (node_field && node_field->components)
-		{
-			return_code=1;
+			const int valueTypeSize = get_Value_storage_size(node_field->field->value_type, node_field->time_sequence);
+			const int componentCount = field->number_of_components;
 			display_message(INFORMATION_MESSAGE,"  %s",field->name);
+			const char *type_string;
 			if (NULL != (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type)))
 			{
 				display_message(INFORMATION_MESSAGE,", %s",type_string);
@@ -5125,20 +4257,11 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 					"list_FE_node_field.  Invalid field coordinate system");
 				return_code=0;
 			}
-			number_of_components=field->number_of_components;
-			display_message(INFORMATION_MESSAGE,", #Components=%d\n",
-				number_of_components);
-			if (node_field->time_sequence)
-			{
-				number_of_times = FE_time_sequence_get_number_of_times(
-					node_field->time_sequence);
-			}
-			else
-			{
-				number_of_times = 1;
-			}
-			for (time_index = 0 ; return_code && (time_index < number_of_times) ;
-				  time_index++)
+			display_message(INFORMATION_MESSAGE, ", #Components=%d\n", componentCount);
+			const int number_of_times = (node_field->time_sequence) ?
+				FE_time_sequence_get_number_of_times(node_field->time_sequence) : 1;
+			FE_value time;
+			for (int time_index = 0; return_code && (time_index < number_of_times); ++time_index)
 			{
 				if (node_field->time_sequence)
 				{
@@ -5146,55 +4269,76 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 						time_index, &time);
 					display_message(INFORMATION_MESSAGE,"   Time: %g\n", time);
 				}
-				i=0;
-				node_field_component = node_field->components;
-				while (return_code&&(i<number_of_components))
+				for (int c = 0; (c < componentCount) && return_code; ++c)
 				{
-					if (NULL != (component_name=get_FE_field_component_name(field,i)))
+					const FE_node_field_template &component = *(node_field->getComponent(c));
+					char *componentName = get_FE_field_component_name(field, c);
+					if (componentName)
 					{
-						display_message(INFORMATION_MESSAGE,"    %s",component_name);
-						DEALLOCATE(component_name);
+						display_message(INFORMATION_MESSAGE,"    %s.  ", componentName);
+						DEALLOCATE(componentName);
 					}
-					number_of_versions=node_field_component->number_of_versions;
-					if (1<number_of_versions)
-					{
-						display_message(INFORMATION_MESSAGE,", #Versions=%d",
-							number_of_versions);
-					}
-					display_message(INFORMATION_MESSAGE,".  ");
-					/* display field based information */
 					if (field->number_of_values)
 					{
-						int count;
-
+						/* display field based information */
+						const int valuePerComponent = field->number_of_values / field->number_of_components;
 						display_message(INFORMATION_MESSAGE,"field based values: ");
 						switch (field->value_type)
 						{
 							case FE_VALUE_VALUE:
 							{
-								display_message(INFORMATION_MESSAGE,"\n");
-								display_message(INFORMATION_MESSAGE,"    ");
+								display_message(INFORMATION_MESSAGE, "\n    ");
+								const FE_value *values = reinterpret_cast<FE_value *>(field->values_storage) + c*valuePerComponent;
 								/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
-								for (count=0;count<field->number_of_values;count++)
+								for (int v = 0; v < valuePerComponent; ++v)
 								{
-									display_message(INFORMATION_MESSAGE," %" FE_VALUE_STRING,
-										*((FE_value *)(field->values_storage+
-											  count*sizeof(FE_value))));
-									if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-										(0==((count+1)%FE_VALUE_MAX_OUTPUT_COLUMNS)))
+									display_message(INFORMATION_MESSAGE, " %" FE_VALUE_STRING, values[v]);
+									if ((v == (valuePerComponent - 1)) ||
+										((0 < FE_VALUE_MAX_OUTPUT_COLUMNS) &&
+										(0 == ((v + 1) % FE_VALUE_MAX_OUTPUT_COLUMNS))))
 									{
-										display_message(INFORMATION_MESSAGE,"\n");
+										if (v < (valuePerComponent - 1))
+										{
+											display_message(INFORMATION_MESSAGE, "\n    ");
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE, "\n");
+										}
 									}
 								}
-								display_message(INFORMATION_MESSAGE,"\n");
+							} break;
+							case INT_VALUE:
+							{
+								display_message(INFORMATION_MESSAGE, "\n    ");
+								const int *values = reinterpret_cast<int *>(field->values_storage) + c*valuePerComponent;
+								/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+								for (int v = 0; v < valuePerComponent; ++v)
+								{
+									display_message(INFORMATION_MESSAGE, " %d", values[v]);
+									if ((v == (valuePerComponent - 1)) ||
+										((0 < FE_VALUE_MAX_OUTPUT_COLUMNS) &&
+										(0 == ((v + 1) % FE_VALUE_MAX_OUTPUT_COLUMNS))))
+									{
+										if (v < (valuePerComponent - 1))
+										{
+											display_message(INFORMATION_MESSAGE, "\n    ");
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE, "\n");
+										}
+									}
+								}
 							} break;
 							case STRING_VALUE:
 							{
 								display_message(INFORMATION_MESSAGE, "\n");
 								display_message(INFORMATION_MESSAGE, "    ");
-								for (count = 0; count < field->number_of_values; count++)
+								for (int v = 0; v < field->number_of_values; ++v)
 								{
-									if (get_FE_field_string_value(field, count, &string_value))
+									char *string_value;
+									if (get_FE_field_string_value(field, v, &string_value))
 									{
 										make_valid_token(&string_value);
 										display_message(INFORMATION_MESSAGE, " %s", string_value);
@@ -5210,127 +4354,113 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							} break;
 						}
 					}
-					/* display node based information*/
-					if ((values_storage=node->values_storage)&&(type=node_field_component->
-							 nodal_value_types))
+					else if (node->values_storage)
 					{
-						values_storage += node_field_component->value;
-						version=0;
-						while (return_code&&(version<number_of_versions))
+						/* display node based information*/
+						Value_storage *values_storage = node->values_storage + component.getValuesOffset();
+						const int valueLabelsCount = component.getValueLabelsCount();
+						for (int d = 0; d < valueLabelsCount; ++d)
 						{
-							if (1<number_of_versions)
+							cmzn_node_value_label valueLabel = component.getValueLabelAtIndex(d);
+							const int versionsCount = component.getVersionsCountAtIndex(d);
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								display_message(INFORMATION_MESSAGE,"\n      Version %d.  ",version+1);
-								type=node_field_component->nodal_value_types;
-							}
-							k=1+(node_field_component->number_of_derivatives);
-							while (return_code&&(k>0))
-							{
-								display_message(INFORMATION_MESSAGE,"%s=",
-									ENUMERATOR_STRING(FE_nodal_value_type)(*type));
-								/* display node based field information */
-								if (field->number_of_times)
+								display_message(INFORMATION_MESSAGE, "%s", ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel));
+								if (versionsCount > 1)
 								{
-									/* for the moment don't display the (generally massive) time
-										based */
-									/* field information */
-									display_message(INFORMATION_MESSAGE," Time based field ");
+									display_message(INFORMATION_MESSAGE, "(%d)", v + 1);
 								}
-								else
+								display_message(INFORMATION_MESSAGE, "=");
+								if (node_field->time_sequence)
 								{
-									if (node_field->time_sequence)
+									switch (field->value_type)
 									{
-										switch (field->value_type)
-										{
-											case FE_VALUE_VALUE:
-											{
-												display_message(INFORMATION_MESSAGE,"%g",
-													*(*((FE_value**)values_storage) + time_index));
-											} break;
-											case INT_VALUE:
-											{
-												display_message(INFORMATION_MESSAGE,"%d",
-													*(*((int **)values_storage) + time_index));
-											} break;
-											default:
-											{
-												display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
-													"Can't display times for this value type");
-											} break;
-										}/* switch*/
-									}
-									else /* (node_field->time_sequence) */
+									case FE_VALUE_VALUE:
 									{
-										switch (field->value_type)
-										{
-											case FE_VALUE_VALUE:
-											{
-												display_message(INFORMATION_MESSAGE,"%g",
-													*((FE_value*)values_storage));
-											} break;
-											case ELEMENT_XI_VALUE:
-											{
-												embedding_element = *((struct FE_element **)values_storage);
-												if (embedding_element)
-												{
-													xi_dimension = embedding_element->getDimension();
-													display_message(INFORMATION_MESSAGE,"%d-D %d xi",
-														xi_dimension, embedding_element->get_identifier());
-													value=values_storage+sizeof(struct FE_element *);
-													for (xi_index=0;xi_index<xi_dimension;xi_index++)
-													{
-														display_message(INFORMATION_MESSAGE," %g",
-															*((FE_value *)value));
-														value += sizeof(FE_value);
-													}
-												}
-												else
-												{
-													display_message(INFORMATION_MESSAGE,"UNDEFINED");
-												}
-											} break;
-											case INT_VALUE:
-											{
-												display_message(INFORMATION_MESSAGE,"%d",
-													*((int *)values_storage));
-											} break;
-											case STRING_VALUE:
-											{
-												char *name;
-
-												if (get_FE_nodal_string_value(node,field,
-														 /*component_number*/i,version,*type,&name))
-												{
-													display_message(INFORMATION_MESSAGE,name);
-													DEALLOCATE(name);
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"list_FE_node_field.  Could not get string value");
-													return_code=0;
-												}
-											} break;
-											default:
-											{
-												display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
-													"Can't display that Value_type yet. Write the code!");
-											} break;
-										}/* switch*/
-									} /* (node_field->time_sequence) */
-								} /* if (field->number_of_times) */
-								values_storage += get_Value_storage_size(field->value_type,
-									node_field->time_sequence);
-								type++;
-								k--;
-								if (k>0)
+										display_message(INFORMATION_MESSAGE, "%g",
+											*(*((FE_value**)values_storage) + time_index));
+									} break;
+									case INT_VALUE:
+									{
+										display_message(INFORMATION_MESSAGE, "%d",
+											*(*((int **)values_storage) + time_index));
+									} break;
+									default:
+									{
+										display_message(INFORMATION_MESSAGE, "list_FE_node_field: "
+											"Can't display times for this value type");
+									} break;
+									}/* switch*/
+								}
+								else /* (node_field->time_sequence) */
 								{
-									display_message(INFORMATION_MESSAGE,", ");
+									switch (field->value_type)
+									{
+									case FE_VALUE_VALUE:
+									{
+										display_message(INFORMATION_MESSAGE, "%g",
+											*((FE_value*)values_storage));
+									} break;
+									case ELEMENT_XI_VALUE:
+									{
+										cmzn_element *embedding_element = *((struct FE_element **)values_storage);
+										if (embedding_element)
+										{
+											int xi_dimension = embedding_element->getDimension();
+											display_message(INFORMATION_MESSAGE, "%d-D %d xi",
+												xi_dimension, embedding_element->getIdentifier());
+											Value_storage *value = values_storage+sizeof(struct FE_element *);
+											for (int xi_index = 0; xi_index<xi_dimension; xi_index++)
+											{
+												display_message(INFORMATION_MESSAGE, " %g",
+													*((FE_value *)value));
+												value += sizeof(FE_value);
+											}
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE, "UNDEFINED");
+										}
+									} break;
+									case INT_VALUE:
+									{
+										display_message(INFORMATION_MESSAGE, "%d",
+											*((int *)values_storage));
+									} break;
+									case STRING_VALUE:
+									{
+										char *string_value;
+										if (get_FE_nodal_string_value(node, field, c, &string_value))
+										{
+											display_message(INFORMATION_MESSAGE, string_value);
+											DEALLOCATE(string_value);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"list_FE_node_field.  Could not get string value");
+											return_code = 0;
+										}
+									} break;
+									default:
+									{
+										display_message(INFORMATION_MESSAGE, "list_FE_node_field: "
+											"Can't display that Value_type yet. Write the code!");
+									} break;
+									}/* switch*/
+								} /* (node_field->time_sequence) */
+								values_storage += valueTypeSize;
+								if (v < (versionsCount - 1))
+								{
+									display_message(INFORMATION_MESSAGE, ", ");
 								}
 							}
-							version++;
-						} /* while (return_code&&(version<number_of_versions)) */
-						display_message(INFORMATION_MESSAGE,"\n");
+							if (d < (valueLabelsCount - 1))
+							{
+								display_message(INFORMATION_MESSAGE, ", ");
+							}
+						}
+						display_message(INFORMATION_MESSAGE, "\n");
 					}
 					else
 					{
@@ -5343,16 +4473,14 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 							return_code=0;
 						}
 					}
-					node_field_component++;
-					i++;
-				}
+				} /* component */
 			} /* time_index */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"list_FE_node_field.  Field %s is not defined at node %d",
-				field->name, node->cm_node_identifier);
+				field->name, node->getIdentifier());
 			return_code=0;
 		}
 	}
@@ -5470,1110 +4598,248 @@ A NULL <type> means an unspecified shape of <dimension>.
 	return (shape);
 } /* find_FE_element_shape_in_list */
 
-namespace {
-
 /**
- * Cache to make ElementDOFMap::evaluate more efficient.
- */
-class ElementDOFMapEvaluationCache
-{
-public:
-	FE_element *element;
-	FE_field *field;
-	int componentNumber;
-	cmzn_mesh_scale_factor_set *scaleFactorSet;
-	FE_value time;
-	// cache node_field_info/component as next node is likely to re-use
-	FE_node_field_info *nodeFieldInfo;
-	FE_node_field_component *nodeFieldComponent;
-	// cache time sequence and indexes as requires binary search to find
-	FE_time_sequence *timeSequence;
-	int timeIndex1, timeIndex2;
-	FE_value timeXi;
-	// cache element node scale information to save lookups
-	FE_node **nodes;
-	int numberOfElementNodes;
-	FE_value *scaleFactors;
-	int numberOfScaleFactors;
-
-	ElementDOFMapEvaluationCache(FE_element *element,
-			FE_field *field, FE_value componentNumber = 0, cmzn_mesh_scale_factor_set *scaleFactorSet = 0, FE_value time = 0.0) :
-		element(element),
-		field(field),
-		componentNumber(componentNumber),
-		scaleFactorSet(scaleFactorSet),
-		time(time),
-		nodeFieldInfo(0),
-		nodeFieldComponent(0),
-		timeSequence(0),
-		scaleFactors(0),
-		numberOfScaleFactors(0)
-	{
-		FE_element_node_scale_field_info *info = element->information;
-		if (info)
-		{
-			this->nodes = info->nodes;
-			this->numberOfElementNodes = info->number_of_nodes;
-			// get scale factors for the current scale factor set
-			if (scaleFactorSet)
-			{
-				this->scaleFactors = info->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors);
-			}
-		}
-		else
-		{
-			this->nodes = 0;
-			this->numberOfElementNodes = 0;
-		}
-	}
-
-	inline void setTimesequence(FE_time_sequence *timeSequenceIn)
-	{
-		if (timeSequenceIn != this->timeSequence)
-		{
-			this->timeSequence = timeSequenceIn;
-			if (this->timeSequence)
-			{
-				FE_time_sequence_get_interpolation_for_time(this->timeSequence,
-					this->time, &this->timeIndex1, &this->timeIndex2, &this->timeXi);
-			}
-		}
-	}
-
-};
-
-/**
- * Cache to make ElementDOFMap::matchesWithInfo more efficient.
- */
-class ElementDOFMapMatchCache
-{
-public:
-	cmzn_mesh_scale_factor_set *scaleFactorSet;
-	FE_element_node_scale_field_info *info1;
-	FE_element_node_scale_field_info *info2;
-	FE_node **nodes1;
-	int numberOfElementNodes1;
-	FE_node **nodes2;
-	int numberOfElementNodes2;
-	int numberOfScaleFactors1;
-	FE_value *scaleFactors1;
-	int numberOfScaleFactors2;
-	FE_value *scaleFactors2;
-
-	/**
-	 * @param scaleFactorSet  The mesh scale factor set.
-	 * @param thisInfo  Node scale information supplying nodes and scale factors
-	 * for map1 (this).
-	 * @param info2  Node scale information supplying nodes and scale factors
-	 * for map2 (other).
-	 * @param globalNodes1  Optional list of global nodes. If supplied then the
-	 * node in this list of the same identifier as the node referenced by this map
-	 * with info1 is used. Used in "can be merged" code when non-global nodes are
-	 * in the element.
-	 */
-	ElementDOFMapMatchCache(cmzn_mesh_scale_factor_set *scaleFactorSet,
-			FE_element_node_scale_field_info *info1,
-			FE_element_node_scale_field_info *info2) :
-		scaleFactorSet(scaleFactorSet),
-		info1(info1),
-		info2(info2),
-		numberOfScaleFactors1(0),
-		scaleFactors1(0),
-		numberOfScaleFactors2(0),
-		scaleFactors2(0)
-	{
-		if (this->info1)
-		{
-			this->nodes1 = this->info1->nodes;
-			this->numberOfElementNodes1 = this->info1->number_of_nodes;
-			if (this->scaleFactorSet)
-			{
-				this->scaleFactors1 = this->info1->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors1);
-			}
-		}
-		else
-		{
-			this->nodes1 = 0;
-			this->numberOfElementNodes1 = 0;
-		}
-		if (this->info2)
-		{
-			this->nodes2 = this->info2->nodes;
-			this->numberOfElementNodes2 = this->info2->number_of_nodes;
-			if (this->scaleFactorSet)
-			{
-				this->scaleFactors2 = this->info2->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors2);
-			}
-		}
-		else
-		{
-			this->nodes2 = 0;
-			this->numberOfElementNodes2 = 0;
-		}
-	}
-};
-
-/**
- * DOF mapping taking a single node value by value type and version, and
- * optionally multiplying it by a single scale factor.
- */
-class NodeToElementDOFMap : public ElementDOFMap
-{
-	int nodeIndex;
-	FE_nodal_value_type valueType;
-	int version;
-	int scaleFactorIndex;
-
-public:
-	NodeToElementDOFMap(int nodeIndex) :
-		nodeIndex(nodeIndex),
-		valueType(FE_NODAL_VALUE),
-		version(0),
-		scaleFactorIndex(-1)
-	{
-	}
-
-	virtual ElementDOFMap *clone()
-	{
-		return new NodeToElementDOFMap(*this);
-	}
-
-	virtual ElementDOFMap *cloneWithNewNodeIndices(
-		FE_element_node_scale_field_info *mergeInfo,
-		FE_element_node_scale_field_info *sourceInfo)
-	{
-		NodeToElementDOFMap *newNodeMap = 0;
-		if (sourceInfo && sourceInfo->nodes && mergeInfo && mergeInfo->nodes)
-		{
-			if ((this->nodeIndex >= 0) && (this->nodeIndex < sourceInfo->number_of_nodes))
-			{
-				newNodeMap = new NodeToElementDOFMap(*this);
-				FE_node *node = sourceInfo->nodes[this->nodeIndex];
-				if (node)
-				{
-					FE_node **mergeNode = mergeInfo->nodes;
-					int mergeNodeIndex = 0;
-					for (int i = 0; i < mergeInfo->number_of_nodes; ++i)
-					{
-						if (node == mergeNode[i])
-						{
-							newNodeMap->nodeIndex = mergeNodeIndex;
-							break;
-						}
-						++mergeNodeIndex;
-					}
-				}
-				else
-				{
-					// Note sure if this is relevant here:
-					// [since using this function in define_FE_field_at_element,
-					// have to handle case of	NULL nodes by using existing node_index]
-					newNodeMap->nodeIndex = this->nodeIndex;
-				}
-			}
-		}
-		return newNodeMap;
-	}
-
-	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value)
-	{
-		if ((!cache.nodes) || (this->nodeIndex >= cache.numberOfElementNodes))
-		{
-			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
-				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-				this->nodeIndex + 1, cache.numberOfElementNodes);
-			return false;
-		}
-		FE_node *node = cache.nodes[this->nodeIndex];
-		if (node->fields != cache.nodeFieldInfo)
-		{
-			FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				cache.field, node->fields->node_field_list);
-			if (!node_field)
-			{
-				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
-					"Element %d field %s component %d: Field not defined on global node %d at local node index %d",
-					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-					node->cm_node_identifier, this->nodeIndex + 1);
-				return false;
-			}
-			cache.nodeFieldComponent = node_field->components + cache.componentNumber;
-			cache.nodeFieldInfo = node->fields;
-			cache.setTimesequence(node_field->time_sequence);
-		}
-		FE_nodal_value_type *valueTypes = cache.nodeFieldComponent->nodal_value_types;
-		if (!valueTypes)
-		{
-			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
-				"Element %d field %s component %d: Global node %d has no value/derivative types",
-				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-				node->cm_node_identifier);
-			return false;
-		}
-		int numberOfValueTypes = cache.nodeFieldComponent->number_of_derivatives + 1;
-		int i = 0;
-		while ((i < numberOfValueTypes) && (valueTypes[i] != this->valueType))
-		{
-			++i;
-		}
-		if ((i == numberOfValueTypes) || (this->version >= cache.nodeFieldComponent->number_of_versions))
-		{
-			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
-				"Element %d field %s component %d: Global node %d has no %s version %d",
-				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-				node->cm_node_identifier, ENUMERATOR_STRING(FE_nodal_value_type)(this->valueType),
-				this->version + 1);
-			return false;
-		}
-		void *nodeValues = node->values_storage + cache.nodeFieldComponent->value;
-		int valueIndex = i;
-		if (this->version)
-		{
-			valueIndex += this->version * (cache.nodeFieldComponent->number_of_derivatives + 1);
-		}
-		FE_value scaleFactor = 1.0;
-		if (this->scaleFactorIndex >= 0)
-		{
-			if (this->scaleFactorIndex >= cache.numberOfScaleFactors)
-			{
-				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
-					"Element %d field %s component %d: Scale factor index %d is out of range %d",
-					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-					this->scaleFactorIndex + 1, cache.numberOfScaleFactors);
-				return false;
-			}
-			scaleFactor *= cache.scaleFactors[this->scaleFactorIndex];
-		}
-		if (cache.timeSequence)
-		{
-			FE_value *array = *((static_cast<FE_value **>(nodeValues) + valueIndex));
-			value = scaleFactor*(
-				(1.0 - cache.timeXi)*array[cache.timeIndex1] +
-				(      cache.timeXi)*array[cache.timeIndex2]);
-		}
-		else
-		{
-			value = scaleFactor*(static_cast<FE_value *>(nodeValues)[valueIndex]);
-		}
-		return true;
-	}
-
-	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
-	{
-		if ((!cache.nodes) || (this->nodeIndex >= cache.numberOfElementNodes))
-		{
-			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluateNode.  "
-				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-				this->nodeIndex + 1, cache.numberOfElementNodes);
-			return false;
-		}
-		node = cache.nodes[this->nodeIndex];
-		return true;
-	}
-
-	virtual bool matches(ElementDOFMap *otherMap)
-	{
-		NodeToElementDOFMap *nodeMap2 = dynamic_cast<NodeToElementDOFMap *>(otherMap);
-		if (nodeMap2)
-		{
-			if ((this->nodeIndex == nodeMap2->nodeIndex) &&
-				(this->valueType == nodeMap2->valueType) &&
-				(this->version == nodeMap2->version) &&
-				(this->scaleFactorIndex == nodeMap2->scaleFactorIndex))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache)
-	{
-		NodeToElementDOFMap *nodeMap2 = dynamic_cast<NodeToElementDOFMap *>(otherMap);
-		if (nodeMap2)
-		{
-			FE_node *node1 = (this->nodeIndex < cache.numberOfElementNodes1) ? cache.nodes1[this->nodeIndex] : 0;
-			FE_node *node2 = (this->nodeIndex < cache.numberOfElementNodes2) ? cache.nodes2[this->nodeIndex] : 0;
-			if (node1 && node2 && (node1 == node2) &&
-				(this->valueType == nodeMap2->valueType) &&
-				(this->version == nodeMap2->version) &&
-				(this->scaleFactorIndex == nodeMap2->scaleFactorIndex))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
-	{
-		if (this->nodeIndex < numberOfLocalNodes)
-		{
-			localNodeInUse[this->nodeIndex] = 1;
-		}
-	}
-};
-
-/**
- * DOF mapping which sums values from 0 or more DOF maps.
- * For building general linear maps, hanging nodes etc.
- * Note: maps passed to this object belong to it and are destroyed with it.
- */
-class SumElementDOFMap : public ElementDOFMap
-{
-	int numberOfMaps;
-	ElementDOFMap **maps;
-
-public:
-	SumElementDOFMap() :
-		numberOfMaps(0),
-		maps(0)
-	{
-	}
-
-	SumElementDOFMap(SumElementDOFMap& source) :
-		numberOfMaps(source.numberOfMaps),
-		maps(0)
-	{
-		ALLOCATE(this->maps, ElementDOFMap*, this->numberOfMaps);
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			this->maps[i] = source.maps[i]->clone();
-		}
-	}
-
-	virtual ~SumElementDOFMap()
-	{
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			delete this->maps[i];
-		}
-		DEALLOCATE(maps);
-	}
-
-	virtual ElementDOFMap *clone()
-	{
-		return new SumElementDOFMap(*this);
-	}
-
-	virtual ElementDOFMap *cloneWithNewNodeIndices(
-		FE_element_node_scale_field_info *mergeInfo,
-		FE_element_node_scale_field_info *sourceInfo)
-	{
-		SumElementDOFMap *newSum = new SumElementDOFMap();
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			newSum->addMap(this->maps[i]->cloneWithNewNodeIndices(mergeInfo, sourceInfo));
-		}
-		return newSum;
-	}
-
-	/**
-	 * Add map to the list of maps in the sum. This object assumes ownership of the
-	 * map and will be responsible for destroying it.
-	 * @return  true on success, false on failure
-	 */
-	bool addMap(ElementDOFMap *map)
-	{
-		if (map)
-		{
-			ElementDOFMap **temp;
-			if (REALLOCATE(temp, this->maps, ElementDOFMap*, this->numberOfMaps + 1))
-			{
-				this->maps = temp;
-				this->maps[this->numberOfMaps] = map;
-				++(this->numberOfMaps);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value)
-	{
-		value = 0.0;
-		FE_value term;
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			if (!this->maps[i]->evaluate(cache, term))
-			{
-				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluate.  "
-					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-					i + 1);
-				return false;
-			}
-			value += term;
-		}
-		return true;
-	}
-
-	/** WARNING: returns only the first node from which DOFs are mapped, if any */
-	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
-	{
-		node = 0;
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			if (!this->maps[i]->evaluateNode(cache, node))
-			{
-				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluateNode.  "
-					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
-					i + 1);
-				return false;
-			}
-			if (node)
-			{
-				return true;
-			}
-		}
-		return true;
-	}
-
-	virtual bool matches(ElementDOFMap *otherMap)
-	{
-		SumElementDOFMap *otherSum = dynamic_cast<SumElementDOFMap *>(otherMap);
-		if (!otherSum || (this->numberOfMaps != otherSum->numberOfMaps))
-			return false;
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			if (!this->maps[i]->matches(otherSum->maps[i]))
-				return false;
-		}		
-		return true;
-	}
-
-	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache)
-	{
-		SumElementDOFMap *otherSum = dynamic_cast<SumElementDOFMap *>(otherMap);
-		if (!otherSum || (this->numberOfMaps != otherSum->numberOfMaps))
-			return false;
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			if (!this->maps[i]->matchesWithInfo(otherSum->maps[i], cache))
-				return false;
-		}		
-		return true;
-	}
-
-	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
-	{
-		for (int i = 0; i < this->numberOfMaps; ++i)
-		{
-			this->maps[i]->setLocalNodeInUse(numberOfLocalNodes, localNodeInUse);
-		}
-	}
-};
-
-} // namespace { }
-
-/**
- * The standard function for calculating the <element> <values> for the given
- * <component_number> of <element_field>. Calculates the <number_of_values> and
- * the <values> for the component.  The storage for the <values> is allocated by
- * the function.
+ * The standard function for mapping global parameters to get the local element
+ * parameters weighting the basis in the element field template.
  * Uses relative offsets into nodal values array in standard and general node to
  * element maps. Absolute offset for start of field component is obtained from
  * the node_field_component for the field at the node.
+ * Does not check arguments as called internally.
+ *
+ * @param field  The field to get values for.
+ * @param componentNumber  The component of the field to get values for, >= 0.
+ * @param eft  Element field template describing parameter mapping and basis.
+ * @param element  The element to get values for.
+ * @param time  The time at which to get parameter values.
+ * @param nodeset  The nodeset owning any node indexes mapped.
+ * @param elementValues  Pre-allocated array big enough for the number of basis
+ * functions used by the EFT basis. Note this is a reference and will be
+ * reallocated if basis uses a blending function. Either way, caller is
+ * required to deallocate.
+ * @return  Number of values calculated or 0 if error.
  */
-static int global_to_element_map_values(struct FE_element *element,
-	struct FE_element_field *element_field, FE_value time, int component_number,
-	int *number_of_values,FE_value **values)
+int global_to_element_map_values(FE_field *field, int componentNumber,
+	const FE_element_field_template *eft, cmzn_element *element, FE_value time,
+	const FE_nodeset *nodeset, FE_value*& elementValues)
 {
-	FE_field *field;
-	FE_element_field_component *component;
-	FE_value *element_values = 0;
-	int number_of_element_values = 0;
-	int return_code = 1;
-
-	if (element&&element_field&&(field=element_field->field)&&number_of_values&&
-		values&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&
-		(component=element_field->components[component_number]))
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
-		FE_basis *basis = component->basis;
-		/* retrieve the element values */
-		switch (component->type)
+		display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+			"Only implemented for node parameter, first found on field %s component %d at element %d.",
+			field->name, componentNumber + 1, element->getIdentifier());
+		return 0;
+	}
+	if (field->value_type != FE_VALUE_VALUE)
+	{
+		display_message(ERROR_MESSAGE, "global_to_element_map_values.  Field %s is not FE_value type, not implemented", field->name);
+		return 0;
+	}
+	FE_mesh *mesh = element->getMesh();
+	FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
+	FE_basis *basis = eft->getBasis();
+
+	const DsLabelIndex elementIndex = element->getIndex();
+	const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(elementIndex);
+	if (!nodeIndexes)
+	{
+		display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+			"Missing local-to-global node map for field %s component %d at element %d.",
+			field->name, componentNumber + 1, element->getIdentifier());
+		return 0;
+	}
+	std::vector<FE_value> scaleFactorsVector(eft->getNumberOfLocalScaleFactors());
+	FE_value *scaleFactors = 0;
+	if (0 < eft->getNumberOfLocalScaleFactors())
+	{
+		scaleFactors = scaleFactorsVector.data();
+		if (CMZN_OK != meshEFTData->getElementScaleFactors(elementIndex, scaleFactors))
 		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-				/* global values are associated with nodes */
-			{
-				FE_value *fe_value_array, *element_value, *scale_factors = 0;
-				int number_of_element_nodes, number_of_map_values = 0,
-					number_of_scale_factors,*scale_factor_index,scale_index,
-					value_index;
-				short *short_array;
-				struct FE_node *node = NULL,**nodes;
-				struct FE_node_field *node_field;
-				struct FE_node_field_component *node_field_component;
-				struct FE_node_field_info *node_field_info;
-				struct Standard_node_to_element_map *standard_node_map,
-					**standard_node_map_address;
-				void *global_values;
-				/* check information */
-				if ((element->information)&&(nodes=element->information->nodes)&&
-					((number_of_element_nodes=element->information->number_of_nodes)>0)&&
-					((0==(number_of_scale_factors=
-						  element->information->number_of_scale_factors))||
-						((0<number_of_scale_factors)&&
-							(scale_factors=element->information->scale_factors))))
-				{
-					/* calculate the number of element values by summing the numbers of
-						values retrieved from each node */
-					number_of_element_values=0;
-					standard_node_map_address=
-						component->map.standard_node_based.node_to_element_maps;
-					int j = component->map.standard_node_based.number_of_nodes;
-					return_code=1;
-					while (return_code&&(j>0))
-					{
-						if ((standard_node_map= *standard_node_map_address)&&
-							((number_of_map_values=
-								standard_node_map->number_of_nodal_values)>0)&&
-							(0<=standard_node_map->node_index)&&
-							(standard_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[standard_node_map->node_index])&&
-							(node->values_storage)&&(node->fields))
-						{
-							number_of_element_values += number_of_map_values;
-							standard_node_map_address++;
-							j--;
-						}
-						else
-						{
-							return_code = 0;
-							display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-								"Invalid standard node to element map");
-							if (standard_node_map)
-							{
-								if (number_of_map_values>0)
-								{
-									if ((0<=standard_node_map->node_index)&&
-										(standard_node_map->node_index<number_of_element_nodes))
-									{
-										if (node)
-										{
-											if (node->values_storage)
-											{
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-													"Node %d used by field %s in element %d has no field parameters.",
-													node->cm_node_identifier, field->name, element->get_identifier());
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-												"Node reference missing for field %s at element %d.",
-												field->name, element->get_identifier());
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-											"Node element map for field %s specifies a node index out of range for element %d.",
-											field->name, element->get_identifier());
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-										"No map values for element %d.",
-										element->get_identifier());
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-									"No standard node map for element %d.",
-									element->get_identifier());
-							}
-						}
-					}
-					if (return_code)
-					{
-						/* allocate storage for storing the element values */
-						if ((number_of_element_values>0)&&
-							(ALLOCATE(element_values,FE_value,number_of_element_values)))
-						{
-							element_value=element_values;
-							/* for each node retrieve the scaled nodal values */
-							standard_node_map_address=
-								component->map.standard_node_based.node_to_element_maps;
-							j=component->map.standard_node_based.number_of_nodes;
-							/* Need node_field_component to get absolute offset into nodal
-								values array. Also store node_field_info so we don't have to
-								get node_field_component each time if it is not changing */
-							node_field_info=(struct FE_node_field_info *)NULL;
-							node_field_component=(struct FE_node_field_component *)NULL;
-							FE_time_sequence *time_sequence = 0;
-							int time_index_one, time_index_two;
-							FE_value time_xi;
-							while (return_code&&(j>0))
-							{
-								/* retrieve the scaled nodal values */
-								standard_node_map= *standard_node_map_address;
-								node=nodes[standard_node_map->node_index];
-								scale_factor_index=standard_node_map->scale_factor_indices;
-								/* get node_field_component for absolute offsets into nodes */
-								if (node_field_info != node->fields)
-								{
-									if (node->fields && (node_field =
-										FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field, node->fields->node_field_list)) &&
-										node_field->components)
-									{
-										node_field_component = node_field->components + component_number;
-										node_field_info = node->fields;
-										if ((node_field->time_sequence != time_sequence) &&
-											(time_sequence = node_field->time_sequence))
-										{
-											FE_time_sequence_get_interpolation_for_time(time_sequence,
-												time, &time_index_one, &time_index_two, &time_xi);
-										}
-									}
-									else
-									{
-										/* field not defined at this node */
-										node_field_component=(struct FE_node_field_component *)NULL;
-									}
-								}
-								if (node_field_component)
-								{
-									/* add absolute value offset from node_field_component and
-										cast address into FE_value type */
-									global_values = node->values_storage + node_field_component->value;
-									FE_nodal_value_type *nodal_value_type_address = standard_node_map->nodal_value_types;
-									int *nodal_version_address = standard_node_map->nodal_versions;
-									int number_of_node_value_types = node_field_component->number_of_derivatives + 1;
-									int number_of_node_versions = node_field_component->number_of_versions;
-									int k = standard_node_map->number_of_nodal_values;
-									while (0 < k)
-									{
-										FE_nodal_value_type nodal_value_type = *nodal_value_type_address;
-										int version = *nodal_version_address;
-										if (FE_NODAL_UNKNOWN == nodal_value_type)
-										{
-											// special case of zero DOF
-											*element_value = 0;
-										}
-										else
-										{
-											int i = 0;
-											while ((node_field_component->nodal_value_types[i] != nodal_value_type) &&
-												(i < number_of_node_value_types))
-											{
-												++i;
-											}
-											if (i >= number_of_node_value_types)
-											{
-												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-													"Parameter '%s' not found for field %s at node %d, used from element %d",
-													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type), field->name,
-													node->cm_node_identifier, element->get_identifier());
-												return_code = 0;
-												break;
-											}
-											if ((version < 0) || (version > number_of_node_versions))
-											{
-												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-													"Parameter '%s' version %d is out of range (%d) for field %s at node %d, used from element %d",
-													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type),
-													version + 1, number_of_node_versions, field->name,
-													node->cm_node_identifier, element->get_identifier());
-												return_code = 0;
-												break;
-											}
-											// GRC future: versions per derivative change
-											value_index = version*number_of_node_value_types + i;
-											switch (field->value_type)
-											{
-												case FE_VALUE_VALUE:
-												{
-													if (time_sequence)
-													{
-														fe_value_array = *((static_cast<FE_value **>(global_values) + value_index));
-														*element_value = (1.0 - time_xi)*fe_value_array[time_index_one]
-															+ time_xi*fe_value_array[time_index_two];
-													}
-													else
-													{
-														*element_value = static_cast<FE_value *>(global_values)[value_index];
-													}
-												} break;
-												case SHORT_VALUE:
-												{
-													if (time_sequence)
-													{
-														short_array = *((static_cast<short **>(global_values)+value_index));
-														*element_value = (1.0 - time_xi)*(FE_value)short_array[time_index_one]
-															+ time_xi*static_cast<FE_value>(short_array[time_index_two]);
-													}
-													else
-													{
-														*element_value = static_cast<FE_value>(static_cast<short *>(global_values)[value_index]);
-													}
-												} break;
-												default:
-												{
-													display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-														"Unsupported value type %s in finite element field",
-														Value_type_string(field->value_type));
-													return_code = 0;
-												} break;
-											}
-											if ((0 <= (scale_index = *scale_factor_index)) &&
-												(scale_index < number_of_scale_factors))
-											{
-												(*element_value) *= scale_factors[scale_index];
-											}
-										}
-										++element_value;
-										++nodal_value_type_address;
-										++nodal_version_address;
-										++scale_factor_index;
-										--k;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"global_to_element_map_values.  Cannot evaluate field %s "
-										"in element %d because it is not defined at node %d",
-										field->name,element->get_identifier(),node->cm_node_identifier);
-									return_code=0;
-								}
-								standard_node_map_address++;
-								j--;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"global_to_element_map_values.  Could not allocate memory for values");
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_values.  Missing element information");
-					return_code=0;
-				}
-			} break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				ElementDOFMap **maps = component->map.general_map_based.maps;
-				number_of_element_values = component->map.general_map_based.number_of_maps;
-				ALLOCATE(element_values, FE_value, number_of_element_values);
-				if (element_values)
-				{
-					ElementDOFMapEvaluationCache cache(element, field, component_number,
-						component->get_scale_factor_set(), time);
-					for (int j = 0; j < number_of_element_values; ++j)
-					{
-						if (!maps[j]->evaluate(cache, element_values[j]))
-						{
-							return_code = 0;
-							break;
-						}
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			} break;
-		case ELEMENT_GRID_MAP:
-			{
-				display_message(ERROR_MESSAGE,
-					"global_to_element_map_values.  Not valid for grid");
-				return_code = 0;
-			} break;
+			display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+				"Element %d is missing scale factors for field %s component %d.",
+				element->getIdentifier(), field->name, componentNumber + 1);
+			return 0;
 		}
-		if (return_code)
+	}
+
+	const int basisFunctionCount = eft->getNumberOfFunctions();
+	int lastLocalNodeIndex = -1;
+	FE_node *node = 0;
+	// Cache last node_field_info since expensive to find and probably same as last node
+	// If same node_field_info, then same node field template
+	FE_node_field_info *node_field_info = 0;
+	const FE_node_field_template *nft = 0;
+	FE_time_sequence *time_sequence = 0;
+	int time_index_one, time_index_two;
+	FE_value time_xi;
+	int tt = 0; // total term, increments up to eft->totalTermCount
+	int tts = 0; // total term scaling, increments up to eft->totalLocalScaleFactorIndexes
+	for (int f = 0; f < basisFunctionCount; ++f)
+	{
+		FE_value termSum = 0.0;
+		const int termCount = eft->termCounts[f];
+		for (int t = 0; t < termCount; ++t)
 		{
-			/* if necessary, modify the calculated element values */
-			if (component->modify)
+			const int localNodeIndex = eft->localNodeIndexes[tt];
+			if (localNodeIndex != lastLocalNodeIndex)
 			{
-				return_code=(component->modify)(component,element,field,
-					time,number_of_element_values,element_values);
-			}
-			if (return_code)
-			{
-				if (FE_basis_get_number_of_functions(basis) == number_of_element_values)
+				const DsLabelIndex nodeIndex = nodeIndexes[localNodeIndex];
+				node = nodeset->getNode(nodeIndex);
+				if (!node)
 				{
-					int number_of_blended_element_values = FE_basis_get_number_of_blended_functions(basis);
-					if (number_of_blended_element_values > 0)
-					{
-						FE_value *blended_element_values = FE_basis_get_blended_element_values(basis, element_values);
-						*values=blended_element_values;
-						*number_of_values=number_of_blended_element_values;
-						DEALLOCATE(element_values);
-						if (!blended_element_values)
-						{
-							display_message(ERROR_MESSAGE,
-								"global_to_element_map_values.  Could not allocate memory for blended values");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						*values = element_values;
-						*number_of_values = number_of_element_values;
-					}
-				}
-				else
-				{
-					char *basis_string = FE_basis_get_description_string(basis);
 					display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-						"Incorrect number of element values (%d) for basis (%s)",
-						number_of_element_values, basis_string);
-					DEALLOCATE(basis_string);
-					DEALLOCATE(element_values);
-					return_code = 0;
+						"Missing node for field %s component %d in element %d, function %d term %d.",
+						field->name, componentNumber + 1, element->getIdentifier(), f + 1, t + 1);
+					return 0;
 				}
+				if (node_field_info != node->fields)
+				{
+					if (!node->fields)
+					{
+						display_message(ERROR_MESSAGE, "global_to_element_map_values.  Invalid node");
+						return 0;
+					}
+					const FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field, node->fields->node_field_list);
+					if (!node_field)
+					{
+						display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+							"Cannot evaluate field %s component %d in element %d because it is not defined at node %d",
+							field->name, componentNumber + 1, element->getIdentifier(), node->getIdentifier());
+						return 0;
+					}
+					node_field_info = node->fields;
+					nft = node_field->getComponent(componentNumber);
+					if ((node_field->time_sequence != time_sequence) &&
+						(time_sequence = node_field->time_sequence))
+					{
+						FE_time_sequence_get_interpolation_for_time(time_sequence,
+							time, &time_index_one, &time_index_two, &time_xi);
+					}
+				}
+				lastLocalNodeIndex = localNodeIndex;
+			}
+			const int valueIndex = nft->getValueIndex(eft->nodeValueLabels[tt], eft->nodeVersions[tt]);
+			if (valueIndex < 0)
+			{
+				display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+					"Parameter '%s' version %d not found for field %s component %d at node %d, used from element %d",
+					ENUMERATOR_STRING(cmzn_node_value_label)(eft->nodeValueLabels[tt]), eft->nodeVersions[tt] + 1,
+					field->name, componentNumber + 1, node->getIdentifier(), element->getIdentifier());
+				return 0;
+			}
+			FE_value termValue;
+			if (time_sequence)
+			{
+				// get address of field component parameters in node
+				const FE_value *timeValues = *(reinterpret_cast<FE_value **>(node->values_storage + nft->valuesOffset) + valueIndex);
+				termValue = (1.0 - time_xi)*timeValues[time_index_one] + time_xi*timeValues[time_index_two];
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"global_to_element_map_values.  Error modifying element values");
-				return_code=0;
+				termValue = reinterpret_cast<FE_value *>(node->values_storage + nft->valuesOffset)[valueIndex];
 			}
+			if (scaleFactors)
+			{
+				const int termScaleFactorCount = eft->termScaleFactorCounts[tt];
+				for (int s = 0; s < termScaleFactorCount; ++s)
+				{
+					termValue *= scaleFactors[eft->localScaleFactorIndexes[tts]];
+					++tts;
+				}
+			}
+			termSum += termValue;
+			++tt;
+		}
+		elementValues[f] = termSum;
+	}
+	if (eft->getLegacyModifyThetaMode() != FE_BASIS_MODIFY_THETA_MODE_INVALID)
+	{
+		if (!FE_basis_modify_theta_in_xi1(eft->basis, eft->getLegacyModifyThetaMode(), elementValues))
+		{
+			display_message(ERROR_MESSAGE, "global_to_element_map_values.  Error modifying element values");
+			return 0;
 		}
 	}
-	else
+	const int blendedElementValuesCount = FE_basis_get_number_of_blended_functions(basis);
+	if (blendedElementValuesCount > 0)
 	{
-		display_message(ERROR_MESSAGE,
-			"global_to_element_map_values.  Invalid argument(s)");
-		return_code=0;
+		FE_value *blendedElementValues = FE_basis_get_blended_element_values(basis, elementValues);
+		if (!blendedElementValues)
+		{
+			display_message(ERROR_MESSAGE,
+				"global_to_element_map_values.  Could not allocate memory for blended values");
+			return 0;
+		}
+		DEALLOCATE(elementValues);
+		elementValues = blendedElementValues;
+		return blendedElementValuesCount;
 	}
-	return (return_code);
+	return basisFunctionCount;
 }
 
 /**
- * The standard function for calculating the nodes used for a <component>.
- * Calculates the <number_of_values> and the node used to calculate each element
- * value for a <component>.  The storage for the nodes array
- * (<*element_values_address>) is allocated by the function.
- * Limitation: Only returns the first node contributing to the DOF for general
- * maps from multiple nodes.
+ * The standard function for calculating the nodes used for a field component.
+ * Determines a vector of nodes contributing to each basis function.
+ * Limitation: Only returns the first node contributing to each basis parameter
+ * for general maps from multiple nodes.
+ * Does not check arguments as called internally.
+ *
+ * @param field  The field to get values for.
+ * @param componentNumber  The component of the field to get values for, >= 0.
+ * @param eft  Element field template describing parameter mapping and basis.
+ * @param element  The element to get values for.
+ * @param nodeset  The nodeset owning any node indexes mapped.
+ * @param basisNodeCount  On success, the number of node indexes returned.
+ * @param basisNodeIndexes  On successful return, allocated to indexes of nodes.
+ * Up to caller to deallocate.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no nodes found, otherwise
+ * any other error code.
  */
-static int global_to_element_map_nodes(
-	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,int *number_of_values,
-	struct FE_node ***element_values_address)
+int global_to_element_map_nodes(FE_field *field, int componentNumber,
+	const FE_element_field_template *eft, cmzn_element *element,
+	int &basisNodeCount, DsLabelIndex *&basisNodeIndexes)
 {
-	int number_of_element_values = 0;
-	FE_node **element_values = 0;
-	int return_code = 1;
-	if (component&&element&&field&&number_of_values&&element_values_address)
+	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
-		/* retrieve the element values */
-		switch (component->type)
+		display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
+			"Only implemented for node parameter, first found on field %s component %d at element %d.",
+			field->name, componentNumber + 1, element->getIdentifier());
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const FE_mesh *mesh = element->getMesh();
+	const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
+
+	const DsLabelIndex elementIndex = element->getIndex();
+	const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(elementIndex);
+	if (!nodeIndexes)
+	{
+		//display_message(ERROR_MESSAGE, "global_to_element_map_nodes.  "
+		//	"Missing local-to-global node map for field %s component %d at element %d.",
+		//	field->name, componentNumber + 1, element->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const int basisFunctionCount = eft->getNumberOfFunctions();
+	basisNodeIndexes = new DsLabelIndex[basisFunctionCount];
+	if (!basisNodeIndexes)
+	{
+		return CMZN_ERROR_MEMORY;
+	}
+	int tt = 0; // total term, increments up to eft->totalTermCount
+	for (int f = 0; f < basisFunctionCount; ++f)
+	{
+		const int termCount = eft->termCounts[f];
+		if (0 < termCount)
 		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				int j,k,number_of_element_nodes,number_of_map_values;
-				struct FE_node **element_value,*node,**nodes;
-				/* check information */
-				if ((element->information)&&(nodes=element->information->nodes)&&
-					((number_of_element_nodes=element->information->number_of_nodes)>0))
-				{
-					/* calculate the number of element values by summing the numbers
-						of values retrieved from each node */
-					number_of_element_values=0;
-					Standard_node_to_element_map *standard_node_map,
-						**standard_node_map_address;
-					standard_node_map_address=
-						component->map.standard_node_based.node_to_element_maps;
-					j=component->map.standard_node_based.number_of_nodes;
-					while (return_code&&(j>0))
-					{
-						if ((standard_node_map= *standard_node_map_address)&&
-							((number_of_map_values=
-							standard_node_map->number_of_nodal_values)>0)&&
-							(0<=standard_node_map->node_index)&&
-							(standard_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[standard_node_map->node_index])&&
-							(node->values_storage)&&(node->fields))
-						{
-							number_of_element_values += number_of_map_values;
-							standard_node_map_address++;
-							j--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"global_to_element_map_nodes.  "
-								"Invalid standard node to element map");
-							return_code=0;
-						}
-					}
-					if (return_code)
-					{
-						/* allocate storage for storing the element values */
-						if ((number_of_element_values>0)&&(ALLOCATE(element_values,
-							struct FE_node *,number_of_element_values)))
-						{
-							element_value=element_values;
-							/* for each node retrieve the scaled nodal values */
-							standard_node_map_address=
-								component->map.standard_node_based.node_to_element_maps;
-							for (j=component->map.standard_node_based.number_of_nodes;j>0;
-								j--)
-							{
-								/* retrieve the scaled nodal values */
-								standard_node_map= *standard_node_map_address;
-								node=nodes[standard_node_map->node_index];
-								for (k=standard_node_map->number_of_nodal_values;k>0;k--)
-								{
-									*element_value=node;
-									element_value++;
-								}
-								standard_node_map_address++;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Could not allocate memory for values");
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_nodes.  Missing element information");
-					return_code=0;
-				}
-			} break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				// Warning: only returns first node contributing to DOF
-				// Not adequate for general maps from multiple nodes
-				ElementDOFMap **maps = component->map.general_map_based.maps;
-				number_of_element_values = component->map.general_map_based.number_of_maps;
-				ALLOCATE(element_values, struct FE_node *, number_of_element_values);
-				if (element_values)
-				{
-					ElementDOFMapEvaluationCache cache(element, field);
-					for (int j = 0; j < number_of_element_values; ++j)
-					{
-						if (!maps[j]->evaluateNode(cache, element_values[j]))
-						{
-							return_code = 0;
-							break;
-						}
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			} break;
-			case ELEMENT_GRID_MAP:
-			{
-				display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Not valid for grid");
-				return_code=0;
-			} break;
+			basisNodeIndexes[f] = nodeIndexes[eft->localNodeIndexes[tt]];
+			tt += termCount;
 		}
-		if (return_code)
+		else
 		{
-			*element_values_address=element_values;
-			*number_of_values=number_of_element_values;
+			basisNodeIndexes[f] = DS_LABEL_INDEX_INVALID; // no terms = 'zero' parameter
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"global_to_element_map_nodes.  Invalid argument(s)");
-		return_code=0;
-	}
-	return (return_code);
+	basisNodeCount = basisFunctionCount;
+	return CMZN_OK;
 }
-
-struct Check_element_grid_map_values_storage_data
-{
-	int check_sum,values_storage_size;
-}; /* struct Check_element_grid_map_values_storage_data */
-
-static int check_element_grid_map_values_storage(
-	struct FE_element_field *element_field,
-	void *check_element_grid_map_values_storage_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 December 2000
-
-DESCRIPTION :
-If the <element_field> is grid based, check that the index range is within the
-values_storage array and add the values_storage size it requires to the
-check_sum.
-==============================================================================*/
-{
-	int i,j,*number_in_xi,number_of_values,return_code,size,value_index,
-		values_storage_size;
-	struct Check_element_grid_map_values_storage_data *check_grid_data;
-	struct FE_element_field_component **component;
-
-	ENTER(check_element_grid_map_values_storage);
-	return_code=0;
-	if (element_field&&element_field->field&&(check_grid_data=
-		(struct Check_element_grid_map_values_storage_data *)
-		check_element_grid_map_values_storage_data_void))
-	{
-		return_code=1;
-		/* only GENERAL_FE_FIELD has components and can be grid-based */
-		if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
-		{
-			size=get_Value_storage_size(element_field->field->value_type,
-				(struct FE_time_sequence *)NULL);
-			component=element_field->components;
-			for (i=element_field->field->number_of_components;(0<i)&&return_code;i--)
-			{
-				if (ELEMENT_GRID_MAP==(*component)->type)
-				{
-					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
-					number_of_values=1;
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
-					for (j = number_of_xi_coordinates; j > 0; j--)
-					{
-						number_of_values *= (*number_in_xi)+1;
-						number_in_xi++;
-					}
-					value_index=((*component)->map).element_grid_based.value_index;
-					values_storage_size = number_of_values*size;
-					/* make sure values storage is word aligned for machine */
-					ADJUST_VALUE_STORAGE_SIZE(values_storage_size);
-					if ((value_index<check_grid_data->values_storage_size)&&
-						(value_index+values_storage_size <=
-							check_grid_data->values_storage_size))
-					{
-						check_grid_data->check_sum += values_storage_size;
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				component++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"check_element_grid_map_values_storage.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* check_element_grid_map_values_storage */
 
 static int for_FE_field_at_node_iterator(struct FE_node_field *node_field,
 	void *iterator_and_data_void)
@@ -6606,118 +4872,48 @@ FE_node_field iterator for for_each_FE_field_at_node.
 	return (return_code);
 } /* for_FE_field_at_node_iterator */
 
-static struct FE_node_field *FE_node_get_FE_node_field(struct FE_node *node,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns the FE_node_field structure describing how <fe_field> is defined at
-<node>. Returns NULL with no error if <fe_field> is not defined at <node>.
-==============================================================================*/
+/**
+ * Get pointer to the nodal values_storage and the matching time_sequence
+ * for the given field, component, value label, version at node.
+ * Writes no error message if field not defined or parameter does not exist,
+ * hence can be used to determine if defined/exists.
+ * @param version  Version number starting at 0.
+ * @return  Result OK on success, ERROR_NOT_FOUND if field or parameter
+ * not found, otherwise any other error.
+ */
+int find_FE_nodal_values_storage_dest(cmzn_node *node, FE_field *field,
+	int componentNumber, cmzn_node_value_label valueLabel, int version,
+	Value_storage*& valuesStorage, FE_time_sequence*& time_sequence)
 {
-	struct FE_node_field *node_field;
-
-	ENTER(FE_node_get_FE_node_field);
-	if (node && node->fields && fe_field)
+	if (!(node && node->fields && field && (0 <= componentNumber)
+		&& (componentNumber < field->number_of_components) && (0 <= version)
+		&& (GENERAL_FE_FIELD == field->fe_field_type)))
 	{
-		node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(fe_field,
-			node->fields->node_field_list);
+		display_message(ERROR_MESSAGE, "find_FE_nodal_values_storage_dest.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+		field, node->fields->node_field_list);
+	if (!node_field)
 	{
-		display_message(WARNING_MESSAGE,
-			"FE_node_get_FE_node_field.  Invalid argument(s)");
-		node_field = (struct FE_node_field *)NULL;
+		return CMZN_ERROR_NOT_FOUND;
 	}
-	LEAVE;
-
-	return (node_field);
-} /* FE_node_get_FE_node_field */
-
-static int find_FE_nodal_values_storage_dest(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,enum Value_type value_type,
-	Value_storage **values_storage, struct FE_time_sequence **time_sequence)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Returns a pointer to the nodal values_storage and the matching time_sequence
-for the given node, component, version, type and value_type.
-Returns 0 with no error in cases where the version or type is not stored, hence
-can use this function to determing if either are defined.
-==============================================================================*/
-{
-	enum FE_nodal_value_type *nodal_value_type;
-	int i,length,return_code,size;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	Value_storage *the_values_storage = (Value_storage *)NULL;
-
-	ENTER(find_FE_nodal_values_storage_dest);
-	return_code=0;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version))
+	const FE_node_field_template *nft = node_field->getComponent(componentNumber);
+	const int valueIndex = nft->getValueIndex(valueLabel, version);
+	if (valueIndex < 0)
 	{
-		if (NULL != (node_field = FE_node_get_FE_node_field(node, field)))
-		{
-			if (NULL != (node_field_component=node_field->components))
-			{
-				if (node_field->field->value_type == value_type)
-				{
-					node_field_component += component_number;
-					if (version < node_field_component->number_of_versions)
-					{
-						if (NULL != (nodal_value_type=node_field_component->nodal_value_types))
-						{
-							length=1+(node_field_component->number_of_derivatives);
-							i=0;
-							while ((i<length) && (type != nodal_value_type[i]))
-							{
-								i++;
-							}
-							if (i<length)
-							{
-								size = get_Value_storage_size(value_type,
-									node_field->time_sequence);
-								the_values_storage = node->values_storage +
-									(node_field_component->value) + ((version*length+i)*size);
-								*values_storage = the_values_storage;
-								*time_sequence = node_field->time_sequence;
-								return_code=1;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"find_FE_nodal_values_storage_dest.  "
-								"Missing nodal_value_type array");
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"find_FE_nodal_values_storage_dest.  value_type mismatch");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"find_FE_nodal_values_storage_dest.  Invalid node/field");
-			}
-		}
+		return CMZN_ERROR_NOT_FOUND;
 	}
-	else
+	if (!node->values_storage)
 	{
-		display_message(ERROR_MESSAGE,"find_FE_nodal_values_storage_dest.  "
-			"Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "find_FE_nodal_values_storage_dest.  Node has no values storage");
+		return CMZN_ERROR_GENERAL;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* find_FE_nodal_values_storage_dest */
+	const int valueTypeSize = get_Value_storage_size(field->value_type, node_field->time_sequence);
+	valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
+	time_sequence = node_field->time_sequence;
+	return CMZN_OK;
+}
 
 static char *get_automatic_component_name(char **component_names,
 	int component_no)
@@ -6760,61 +4956,6 @@ It is up to the calling function to deallocate the returned string.
 
 	return (component_name);
 } /* get_automatic_component_name */
-
-static int node_on_axis(struct FE_node *node,struct FE_field *field,
-	FE_value time, enum Coordinate_system_type coordinate_system_type)
-/*******************************************************************************
-LAST MODIFIED : 26 December 2000
-
-DESCRIPTION :
-Returns non-zero if the <node> is on the axis for the <field>/
-<coordinate_system_type> and zero otherwise.
-==============================================================================*/
-{
-	FE_value node_value;
-	int return_code;
-
-	ENTER(node_on_axis);
-	return_code=0;
-	switch (coordinate_system_type)
-	{
-		case CYLINDRICAL_POLAR:
-		{
-			calculate_FE_field(field,0,node,(struct FE_element *)NULL,
-				(FE_value *)NULL,time,&node_value);
-			if (0==node_value)
-			{
-				return_code=1;
-			}
-		} break;
-		case PROLATE_SPHEROIDAL:
-		case OBLATE_SPHEROIDAL:
-		{
-			calculate_FE_field(field,1,node,(struct FE_element *)NULL,
-				(FE_value *)NULL,time,&node_value);
-			if ((0==node_value)||(PI==node_value))
-			{
-				return_code=1;
-			}
-		} break;
-		case SPHERICAL_POLAR:
-		{
-			calculate_FE_field(field,2,node,(struct FE_element *)NULL,
-				(FE_value *)NULL,time,&node_value);
-			if ((-PI/2==node_value)||(PI/2==node_value))
-			{
-				return_code=1;
-			}
-		} break;
-		default:
-		{
-			// nothing to do; return 0
-		} break;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* node_on_axis */
 
 static int face_calculate_xi_normal(struct FE_element_shape *shape,
 	int face_number,FE_value *normal)
@@ -7209,105 +5350,6 @@ Private function only to be called by destroy_FE_region.
 	return (return_code);
 } /* FE_field_info_clear_FE_region */
 
-int get_FE_field_external_information(struct FE_field *field,
-	struct FE_field_external_information **external_information)
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Creates a copy of the <external_information> of the <field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_field_external_information);
-	return_code=0;
-	if (field&&external_information)
-	{
-		if (field->external)
-		{
-			if (field->external->duplicate)
-			{
-				*external_information=(field->external->duplicate)(field->external);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"get_FE_field_external_information.  "
-					"Invalid external field information");
-			}
-		}
-		else
-		{
-			*external_information=(struct FE_field_external_information *)NULL;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_external_information.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_field_external_information */
-
-int set_FE_field_external_information(struct FE_field *field,
-	struct FE_field_external_information *external_information)
-/*******************************************************************************
-LAST MODIFIED : 3 September 2001
-
-DESCRIPTION :
-Copies the <external_information> into the <field>.
-
-Should only call this function for unmanaged fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_field_external_information);
-	return_code=0;
-	if (field)
-	{
-		return_code=1;
-		if (field->external)
-		{
-			if (field->external->destroy)
-			{
-				(field->external->destroy)(&(field->external));
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_field_external_information.  "
-					"Invalid external field information");
-				return_code=0;
-			}
-		}
-		if (external_information)
-		{
-			if (external_information->duplicate)
-			{
-				field->external=(external_information->duplicate)(external_information);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_field_external_information.  "
-					"Invalid external_information");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_external_information.  Invalid argument");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_field_external_information */
-
 struct FE_field *CREATE(FE_field)(const char *name, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
@@ -7344,7 +5386,6 @@ FE_region.
 			field->indexer_field = (struct FE_field *)NULL;
 			field->number_of_indexed_values = 0;
 			field->cm_field_type = CM_GENERAL_FIELD;
-			field->external = (struct FE_field_external_information *)NULL;
 			field->number_of_components = 0;
 			/* don't allocate component names until we have custom names */
 			field->component_names = (char **)NULL;
@@ -7352,10 +5393,12 @@ FE_region.
 			field->number_of_values = 0;
 			field->values_storage = (Value_storage *)NULL;
 			field->value_type = UNKNOWN_VALUE;
-			field->element_xi_mesh_dimension = 0;
+			field->element_xi_host_mesh = 0;
 			field->number_of_times = 0;
 			field->time_value_type = UNKNOWN_VALUE;
 			field->times = (Value_storage *)NULL;
+			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+				field->meshFieldData[d] = 0;
 			field->number_of_wrappers = 0;
 			field->access_count = 0;
 			if (!return_code)
@@ -7388,8 +5431,7 @@ DESCRIPTION :
 Frees the memory for the field and sets <*field_address> to NULL.
 ==============================================================================*/
 {
-	char **component_name;
-	int i,return_code;
+	int return_code;
 	struct FE_field *field;
 
 	ENTER(DESTROY(FE_field));
@@ -7397,6 +5439,11 @@ Frees the memory for the field and sets <*field_address> to NULL.
 	{
 		if (0==field->access_count)
 		{
+			if (field->element_xi_host_mesh)
+				FE_mesh::deaccess(field->element_xi_host_mesh);
+			for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+				delete field->meshFieldData[d];
+
 			/* free the field name */
 			if (field->name)
 			{
@@ -7413,16 +5460,14 @@ Frees the memory for the field and sets <*field_address> to NULL.
 				DEALLOCATE(field->values_storage);
 			}
 
-			/* free the component names */
-			if (NULL != (component_name=field->component_names))
+			// free component names
+			if (field->component_names)
 			{
-				for (i=field->number_of_components;i>0;i--)
-				{
-					DEALLOCATE(*component_name);
-					component_name++;
-				}
+				for (int c = 0; c < field->number_of_components; ++c)
+					DEALLOCATE(field->component_names[c]);
 				DEALLOCATE(field->component_names);
 			}
+
 			DEALLOCATE(*field_address);
 			return_code=1;
 		}
@@ -7534,318 +5579,233 @@ DECLARE_CHANGE_LOG_FUNCTIONS(FE_field)
 
 int FE_field_copy_without_identifier(struct FE_field *destination,
 	struct FE_field *source)
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
-
-DESCRIPTION :
-Copies the contents but not the name identifier of <source> to <destination>.
-Function prototype should be in finite_element_private.h, so not public.
-???RC Change to macro so identifier member can vary?
-?COPY_WITHOUT_IDENTIFIER object_type,identifier
-==============================================================================*/
 {
-	char **component_names;
-	int i, return_code;
-	Value_storage *times, *values_storage;
-
-	ENTER(FE_field_copy_without_identifier);
-	if (destination && source)
-	{
-		return_code=1;
-		component_names=(char **)NULL;
-		values_storage=(Value_storage *)NULL;
-		times=(Value_storage *)NULL;
-		if (source->component_names)
-		{
-			if (ALLOCATE(component_names,char *,source->number_of_components))
-			{
-				for (i=0;i<source->number_of_components;i++)
-				{
-					component_names[i]=(char *)NULL;
-				}
-				/* copy the old names, clear any new ones */
-				for (i=0;i<(source->number_of_components)&&return_code;i++)
-				{
-					if (source->component_names[i])
-					{
-						if (ALLOCATE(component_names[i],char,
-							strlen(source->component_names[i])+1))
-						{
-							strcpy(component_names[i],source->component_names[i]);
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-		}
-		if (0<source->number_of_values)
-		{
-			if (!((values_storage=make_value_storage_array(source->value_type,
-				(struct FE_time_sequence *)NULL,source->number_of_values))&&
-				copy_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_values,source->values_storage, /*optimised_merge*/0)))
-			{
-				return_code=0;
-			}
-		}
-		if (0<source->number_of_times)
-		{
-			if (!((times=make_value_storage_array(source->time_value_type,
-				(struct FE_time_sequence *)NULL,source->number_of_times))&&
-				copy_value_storage_array(times,source->time_value_type,
-					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_times,source->times, /*optimised_merge*/0)))
-			{
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			REACCESS(FE_field_info)(&(destination->info), source->info);
-			if (destination->cm_field_type != source->cm_field_type)
-			{
-				display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
-					source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
-					ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
-				destination->cm_field_type = source->cm_field_type;
-			}
-			if (destination->external)
-			{
-				if (destination->external->destroy)
-				{
-					(destination->external->destroy)(&(destination->external));
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_field_copy_without_identifier.  "
-						"Invalid destination->external");
-				}
-			}
-			if (source->external)
-			{
-				if (source->external->duplicate)
-				{
-					destination->external=(source->external->duplicate)(
-						source->external);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_field_copy_without_identifier.  "
-						"Invalid source->external");
-				}
-			}
-			destination->fe_field_type=source->fe_field_type;
-			REACCESS(FE_field)(&(destination->indexer_field),
-				source->indexer_field);
-			destination->number_of_indexed_values=
-				source->number_of_indexed_values;
-			if (destination->component_names)
-			{
-				for (i = 0; i < destination->number_of_components; i++)
-				{
-					if (destination->component_names[i])
-					{
-						DEALLOCATE(destination->component_names[i]);
-					}
-				}
-				DEALLOCATE(destination->component_names);
-			}
-			destination->number_of_components=source->number_of_components;
-			destination->component_names=component_names;
-			COPY(Coordinate_system)(&(destination->coordinate_system),
-				&(source->coordinate_system));
-			destination->value_type=source->value_type;
-			destination->time_value_type=source->time_value_type;
-			/* replace old values_storage with new */
-			if (0<destination->number_of_values)
-			{
-				free_value_storage_array(destination->values_storage,
-					destination->value_type,(struct FE_time_sequence *)NULL,
-					destination->number_of_values);
-				DEALLOCATE(destination->values_storage);
-			}
-			destination->number_of_values=source->number_of_values;
-			destination->values_storage=values_storage;
-			/* replace old times with new */
-			if (0<destination->number_of_times)
-			{
-				free_value_storage_array(destination->times,
-					destination->time_value_type,(struct FE_time_sequence *)NULL,
-					destination->number_of_times);
-				DEALLOCATE(destination->times);
-			}
-			destination->number_of_times=source->number_of_times;
-			destination->times=times;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_field_copy_without_identifier.  "
-				"Could not copy dynamic contents");
-		}
-		if (!return_code)
-		{
-			if (component_names)
-			{
-				for (i=0;i<source->number_of_components;i++)
-				{
-					if (component_names[i])
-					{
-						DEALLOCATE(component_names[i]);
-					}
-				}
-				DEALLOCATE(component_names);
-			}
-			if (values_storage)
-			{
-				free_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_sequence *)NULL,source->number_of_values);
-				DEALLOCATE(values_storage);
-			}
-			if (times)
-			{
-				free_value_storage_array(times,source->time_value_type,
-					(struct FE_time_sequence *)NULL,source->number_of_times);
-				DEALLOCATE(times);
-			}
-		}
-	}
-	else
+	if (!(destination && destination->info && destination->info->fe_region
+		&& source && source->info && source->info->fe_region))
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_field_copy_without_identifier.  Invalid argument(s)");
-		return_code=0;
+		return 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_copy_without_identifier */
-
-int FE_field_matches_description(struct FE_field *field, const char *name,
-	enum FE_field_type fe_field_type,struct FE_field *indexer_field,
-	int number_of_indexed_values,enum CM_field_type cm_field_type,
-	struct Coordinate_system *coordinate_system,enum Value_type value_type,
-	int number_of_components,char **component_names,
-	int number_of_times,enum Value_type time_value_type,
-	struct FE_field_external_information *external)
-/*******************************************************************************
-LAST MODIFIED : 31 August 2001
-
-DESCRIPTION :
-Returns true if <field> has exactly the same <name>, <field_info>... etc. as
-those given in the parameters.
-==============================================================================*/
-{
-	char *component_name,*field_component_name;
-	int i,return_code;
-
-	ENTER(FE_field_matches_description);
-	/* does not match until proven so */
-	return_code=0;
-	if (field&&name&&coordinate_system&&(0<=number_of_times))
+	int return_code = 1;
+	const bool externalMerge = destination->info->fe_region != source->info->fe_region;
+	char **component_names=(char **)NULL;
+	if (source->component_names)
 	{
-		if (field->name&&(0==strcmp(field->name,name))&&
-			(fe_field_type==field->fe_field_type)&&
-			((INDEXED_FE_FIELD != fe_field_type)||
-				((indexer_field==field->indexer_field)&&
-					(number_of_indexed_values==field->number_of_indexed_values)))&&
-			(cm_field_type==field->cm_field_type)&&
-			Coordinate_systems_match(&(field->coordinate_system),coordinate_system)&&
-			(value_type == field->value_type)&&
-			(number_of_components==field->number_of_components)&&
-			(number_of_times==field->number_of_times)&&
-			(time_value_type == field->time_value_type))
+		ALLOCATE(component_names, char *, source->number_of_components);
+		if (!component_names)
+			return false;
+		for (int c = 0; c < source->number_of_components; ++c)
 		{
-			/* matches until disproven */
-			return_code=1;
-			/* check external */
-			if (external)
+			if (source->component_names[c])
 			{
-				if (field->external)
+				component_names[c] = duplicate_string(source->component_names[c]);
+				if (!component_names[c])
 				{
-					if ((external->compare)&&
-						(external->compare==field->external->compare))
-					{
-						if ((external->compare)(external,field->external))
-						{
-							return_code=0;
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					return_code=0;
+					for (int c2 = 0; c2 < c; ++c)
+						DEALLOCATE(component_names[c2]);
+					DEALLOCATE(component_names);
+					return_code = 0;
+					break;
 				}
 			}
 			else
 			{
-				if (field->external)
-				{
-					return_code=0;
-				}
-			}
-			/* check the component names match */
-			i=number_of_components;
-			while ((i>0)&&return_code)
-			{
-				i--;
-				if ((field_component_name=
-					get_automatic_component_name(field->component_names,i))&&
-					(component_name=get_automatic_component_name(component_names,i)))
-				{
-					if (strcmp(component_name,field_component_name))
-					{
-						return_code=0;
-					}
-					DEALLOCATE(component_name);
-				}
-				else
-				{
-					return_code=0;
-				}
-				DEALLOCATE(field_component_name);
+				component_names[c] = 0;
 			}
 		}
+	}
+	Value_storage *values_storage = 0;
+	Value_storage *times = 0;
+	if (0<source->number_of_values)
+	{
+		if (!((values_storage=make_value_storage_array(source->value_type,
+			(struct FE_time_sequence *)NULL,source->number_of_values))&&
+			copy_value_storage_array(values_storage,source->value_type,
+				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
+				source->number_of_values,source->values_storage, /*optimised_merge*/0)))
+		{
+			return_code=0;
+		}
+	}
+	if (0<source->number_of_times)
+	{
+		if (!((times=make_value_storage_array(source->time_value_type,
+			(struct FE_time_sequence *)NULL,source->number_of_times))&&
+			copy_value_storage_array(times,source->time_value_type,
+				(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
+				source->number_of_times,source->times, /*optimised_merge*/0)))
+		{
+			return_code=0;
+		}
+	}
+	FE_field *indexer_field = 0;
+	if (INDEXED_FE_FIELD == source->fe_field_type)
+	{
+		if (!source->indexer_field)
+			return_code = 0;
+		else
+		{
+			if (externalMerge)
+			{
+				indexer_field = FE_region_get_FE_field_from_name(destination->info->fe_region, source->indexer_field->name);
+				if (!indexer_field)
+					return_code = 0;
+			}
+			else
+			{
+				indexer_field = source->indexer_field;
+			}
+		}
+	}
+	const FE_mesh *element_xi_host_mesh = 0;
+	if (ELEMENT_XI_VALUE == source->value_type)
+	{
+		if (!source->element_xi_host_mesh)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_field_copy_without_identifier.  Source element:xi valued field %s does not have a host mesh", source->name);
+			return_code = 0;
+		}
+		else if (externalMerge)
+		{
+			// find equivalent host mesh in destination FE_region
+			// to be fixed in future when arbitrary meshes are allowed:
+			element_xi_host_mesh = FE_region_find_FE_mesh_by_dimension(destination->info->fe_region, source->element_xi_host_mesh->getDimension());
+			if (strcmp(element_xi_host_mesh->getName(), source->element_xi_host_mesh->getName()) != 0)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_field_copy_without_identifier.  Cannot find destination host mesh named %s for merging 'element:xi' valued field %s. Needs to be implemented.",
+					source->element_xi_host_mesh->getName(), source->name);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			element_xi_host_mesh = source->element_xi_host_mesh;
+		}
+	}
+	if (return_code)
+	{
+		// don't want to change info if merging to external region. In all other cases should be same info anyway
+		if (!externalMerge)
+			REACCESS(FE_field_info)(&(destination->info), source->info);
+		if (destination->cm_field_type != source->cm_field_type)
+		{
+			display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
+				source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
+				ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
+			destination->cm_field_type = source->cm_field_type;
+		}
+		destination->fe_field_type=source->fe_field_type;
+		REACCESS(FE_field)(&(destination->indexer_field), indexer_field);
+		destination->number_of_indexed_values=
+			source->number_of_indexed_values;
+		if (destination->component_names)
+		{
+			for (int i = 0; i < destination->number_of_components; i++)
+			{
+				if (destination->component_names[i])
+				{
+					DEALLOCATE(destination->component_names[i]);
+				}
+			}
+			DEALLOCATE(destination->component_names);
+		}
+		destination->number_of_components=source->number_of_components;
+		destination->component_names=component_names;
+		COPY(Coordinate_system)(&(destination->coordinate_system),
+			&(source->coordinate_system));
+		destination->value_type=source->value_type;
+		if (element_xi_host_mesh)
+			element_xi_host_mesh->access();
+		if (destination->element_xi_host_mesh)
+			FE_mesh::deaccess(destination->element_xi_host_mesh);
+		destination->element_xi_host_mesh = element_xi_host_mesh;
+		destination->time_value_type=source->time_value_type;
+		/* replace old values_storage with new */
+		if (0<destination->number_of_values)
+		{
+			free_value_storage_array(destination->values_storage,
+				destination->value_type,(struct FE_time_sequence *)NULL,
+				destination->number_of_values);
+			DEALLOCATE(destination->values_storage);
+		}
+		destination->number_of_values=source->number_of_values;
+		destination->values_storage=values_storage;
+		/* replace old times with new */
+		if (0<destination->number_of_times)
+		{
+			free_value_storage_array(destination->times,
+				destination->time_value_type,(struct FE_time_sequence *)NULL,
+				destination->number_of_times);
+			DEALLOCATE(destination->times);
+		}
+		destination->number_of_times=source->number_of_times;
+		destination->times=times;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_matches_description.  Invalid argument(s)");
+			"FE_field_copy_without_identifier.  Invalid source field or could not copy dynamic contents");
 	}
-	LEAVE;
-
+	if (!return_code)
+	{
+		if (component_names)
+		{
+			for (int i=0;i<source->number_of_components;i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+		}
+		if (values_storage)
+		{
+			free_value_storage_array(values_storage,source->value_type,
+				(struct FE_time_sequence *)NULL,source->number_of_values);
+			DEALLOCATE(values_storage);
+		}
+		if (times)
+		{
+			free_value_storage_array(times,source->time_value_type,
+				(struct FE_time_sequence *)NULL,source->number_of_times);
+			DEALLOCATE(times);
+		}
+	}
 	return (return_code);
-} /* FE_field_matches_description */
+}
 
 bool FE_fields_match_fundamental(struct FE_field *field1,
 	struct FE_field *field2)
 {
-	if (field1 && field2)
+	if (!(field1 && field2))
 	{
-		return
-			(field1->value_type == field2->value_type) &&
-			(field1->fe_field_type == field2->fe_field_type) &&
-			(field1->number_of_components == field2->number_of_components) &&
-			(0 != Coordinate_systems_match(&(field1->coordinate_system),
-				&(field2->coordinate_system)));
+		display_message(ERROR_MESSAGE,
+			"FE_fields_match_fundamental.  Missing field(s)");
+		return false;
 	}
-	display_message(ERROR_MESSAGE,
-		"FE_fields_match_fundamental.  Missing field(s)");
-	return false;
+	if (!((field1->value_type == field2->value_type)
+		&& (field1->fe_field_type == field2->fe_field_type)
+		&& (field1->number_of_components == field2->number_of_components)
+		&& (0 != Coordinate_systems_match(&(field1->coordinate_system),
+			&(field2->coordinate_system)))))
+		return false;
+	if (ELEMENT_XI_VALUE == field1->value_type)
+	{
+		if (!field1->element_xi_host_mesh)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_fields_match_fundamental.  Source element xi field %s does not have a host mesh", field1->name);
+			return false;
+		}
+		// This will need to be improved once multiple meshes or meshes from different regions are allowed:
+		if (field1->element_xi_host_mesh->getDimension() != field2->element_xi_host_mesh->getDimension())
+			return false;
+	}
+	return true;
 }
 
 bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
@@ -7872,19 +5832,6 @@ bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
 			(field1->time_value_type == field2->time_value_type))
 		{
 			// matches until disproven
-			if (field1->external)
-			{
-				if ((field2->external) && (field1->external->compare) &&
-					(field1->external->compare == field2->external->compare))
-				{
-					if ((field1->external->compare)(field1->external, field2->external))
-						return false;
-				}
-				else
-					return false;
-			}
-			else if (field2->external)
-				return false;
 			// check component names match
 			for (int i = field1->number_of_components; i <= 0; --i)
 			{
@@ -7928,113 +5875,6 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
 	return 0;
 }
 
-// forward declarations
-static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map);
-static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
-	Standard_node_to_element_map *map, FE_field *field, int componentIndex,
-	FE_element *element, FE_nodeset *target_fe_nodeset, FE_field *target_field);
-
-int FE_element_field_info_check_field_node_value_labels(
-	struct FE_element_field_info *element_field_info, FE_field *field,
-	struct FE_region *target_fe_region)
-{
-	if (element_field_info && field)
-	{
-		if (field->fe_field_type != GENERAL_FE_FIELD)
-			return 1; // only GENERAL field has components array
-		FE_element_field *element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element_field_info->element_field_list);
-		if (!element_field)
-			return 1; // field not defined so can ignore
-		bool needLabels = false;
-		// run loops to end to check have valid standard node maps
-		for (int i = 0; i < field->number_of_components; ++i)
-		{
-			FE_element_field_component *component = element_field->components[i];
-			if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
-				continue;
-			const int nodeCount = component->map.standard_node_based.number_of_nodes;
-			for (int n = 0; n < nodeCount; ++n)
-			{
-				Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
-				if (!map)
-					return 0;
-				if (map->nodal_value_indices)
-					needLabels = true;
-			}
-		}
-		if (needLabels)
-		{
-			// get node value types and versions from first element using this element_field
-			// and check all other elements are using it with the same value types and versions.
-			// following is expensive, but necessary to ensure node value types consistently used
-			FE_region *fe_region = field->info->fe_region;
-			int minDimension = 1;
-			bool success = true;
-			FE_nodeset *target_fe_nodeset = 0;
-			FE_field *target_field = 0;
-			if (target_fe_region)
-			{
-				target_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-					target_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				target_field = FE_region_get_FE_field_from_name(target_fe_region, field->name);
-			}
-			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (minDimension <= dimension) && success; --dimension)
-			{
-				FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
-				cmzn_elementiterator *elemIter = fe_mesh->createElementiterator();
-				cmzn_element *element;
-				while ((element = cmzn_elementiterator_next_non_access(elemIter)) && success)
-				{
-					// note element_field can be used in multiple element_field_info
-					if ((element->fields == element_field_info) || (element_field ==
-						FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field, element->fields->element_field_list)))
-					{
-						minDimension = dimension; // don't expect element_field is used for multiple dimensions
-						for (int i = 0; (i < field->number_of_components) && success; ++i)
-						{
-							FE_element_field_component *component = element_field->components[i];
-							if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
-								continue;
-							const int nodeCount = component->map.standard_node_based.number_of_nodes;
-							for (int n = 0; n < nodeCount; ++n)
-							{
-								Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
-								if (!Standard_node_to_element_map_determine_or_check_node_value_labels(
-									map, field, i, element, target_fe_nodeset, target_field))
-								{
-									success = false;
-									break;
-								}
-							}
-						}
-					}
-				}
-				cmzn_elementiterator_destroy(&elemIter);
-			}
-			if (!success)
-			{
-				// ensure value_type and version arrays in maps are cleared since not consistent
-				for (int i = 0; i < field->number_of_components; ++i)
-				{
-					FE_element_field_component *component = element_field->components[i];
-					if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
-						continue;
-					const int nodeCount = component->map.standard_node_based.number_of_nodes;
-					for (int n = 0; n < nodeCount; ++n)
-					{
-						Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
-						Standard_node_to_element_map_clear_node_value_labels(map);
-					}
-				}
-				return 0;
-			}
-		}
-		return 1;
-	}
-	return 0;
-}
-
 int FE_field_has_multiple_times(struct FE_field *fe_field)
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
@@ -8064,57 +5904,15 @@ list we will be looking at will not be global but will belong to the region.
 	return (return_code);
 } /* FE_field_has_multiple_times */
 
-static int FE_element_field_uses_non_linear_basis(
-	struct FE_element_field *element_field)
-{
-	if (element_field)
-	{
-		int i;
-		for (i = 0; i < element_field->field->number_of_components; i++)
-		{
-			if (FE_basis_is_non_linear(element_field->components[i]->basis))
-			{
-				return 1;
-			}
-		}
-	}
-	return 0;
-}
-
-static int FE_element_field_info_FE_field_uses_non_linear_basis(
-	struct FE_element_field_info *field_info, void *fe_field_void)
-{
-	struct FE_field *fe_field;
-	fe_field = (struct FE_field *)fe_field_void;
-	if (field_info && fe_field)
-	{
-		struct FE_element_field *element_field;
-		element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			fe_field, field_info->element_field_list);
-		if (element_field && FE_element_field_uses_non_linear_basis(element_field))
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-int FE_field_uses_non_linear_basis(struct FE_field *fe_field)
+bool FE_field_uses_non_linear_basis(struct FE_field *fe_field)
 {
 	if (fe_field && fe_field->info && fe_field->info->fe_region)
 	{
-		for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
-		{
-			FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_field->info->fe_region, dimension);
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field_info)(
-				FE_element_field_info_FE_field_uses_non_linear_basis, (void *)fe_field,
-				fe_mesh->get_FE_element_field_info_list_private()))
-			{
-				return 1;
-			}
-		}
+		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+			if ((fe_field->meshFieldData[d]) && fe_field->meshFieldData[d]->usesNonLinearBasis())
+				return true;
 	}
-	return 0;
+	return false;
 }
 
 int ensure_FE_field_is_in_list(struct FE_field *field, void *field_list_void)
@@ -8251,15 +6049,6 @@ int FE_node_get_access_count(struct FE_node *fe_node)
 	if (fe_node)
 	{
 		return fe_node->access_count;
-	}
-	return 0;
-}
-
-int FE_element_get_access_count(struct FE_element *fe_element)
-{
-	if (fe_element)
-	{
-		return fe_element->access_count;
 	}
 	return 0;
 }
@@ -8435,6 +6224,43 @@ Sets the coordinate system of the <field>.
 
 	return (return_code);
 } /* set_FE_field_coordinate_system */
+
+void FE_field_clearMeshFieldData(struct FE_field *field, FE_mesh *mesh)
+{
+	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
+	{
+		const int dim = mesh->getDimension() - 1;
+		if (field->meshFieldData[dim])
+		{
+			delete field->meshFieldData[dim];
+			field->meshFieldData[dim] = 0;
+			field->info->fe_region->FE_field_change(field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		}
+	}
+}
+
+FE_mesh_field_data *FE_field_createMeshFieldData(struct FE_field *field,
+	FE_mesh *mesh)
+{
+	// GRC check field type general, real/int only?
+	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
+	{
+		const int dim = mesh->getDimension() - 1;
+		if (!field->meshFieldData[dim])
+			field->meshFieldData[dim] = FE_mesh_field_data::create(field, mesh);
+		return field->meshFieldData[dim];
+	}
+	return 0;
+}
+
+FE_mesh_field_data *FE_field_getMeshFieldData(struct FE_field *field,
+	const FE_mesh *mesh)
+{
+	if (field && mesh && (mesh->get_FE_region() == field->info->fe_region))
+		return field->meshFieldData[mesh->getDimension() - 1];
+	display_message(ERROR_MESSAGE, "FE_field_getMeshFieldData.  Invalid argument(s)");
+	return 0;
+}
 
 int get_FE_field_number_of_components(struct FE_field *field)
 /*******************************************************************************
@@ -9035,6 +6861,7 @@ Should only call this function for unmanaged fields.
 		(1==get_FE_field_number_of_components(indexer_field))&&
 		(INT_VALUE==get_FE_field_value_type(indexer_field))&&
 		/* and to avoid possible endless loops... */
+		(indexer_field != field) &&
 		(INDEXED_FE_FIELD != get_FE_field_FE_field_type(indexer_field)))
 	{
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -9225,39 +7052,29 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 	return (return_code);
 }/* set_FE_field_value_type */
 
-int FE_field_get_element_xi_mesh_dimension(struct FE_field *field)
+const FE_mesh *FE_field_get_element_xi_host_mesh(struct FE_field *field)
 {
-	int element_xi_mesh_dimension;
-	if (field && (field->value_type == ELEMENT_XI_VALUE))
-	{
-		element_xi_mesh_dimension = field->element_xi_mesh_dimension;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_value_type.  Invalid argument(s)");
-		element_xi_mesh_dimension = 0;
-	}
-	return element_xi_mesh_dimension;
+	if (field)
+		return field->element_xi_host_mesh;
+	return 0;
 }
 
-int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
-	int mesh_dimension)
+int FE_field_set_element_xi_host_mesh(struct FE_field *field,
+	const FE_mesh *hostMesh)
 {
-	int return_code;
-	if (field && (field->value_type == ELEMENT_XI_VALUE) &&
-		(0 <= mesh_dimension) && (mesh_dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (!((field) && (field->value_type == ELEMENT_XI_VALUE) && (hostMesh)
+		&& (hostMesh->get_FE_region() == field->info->fe_region))) // Current limitation of same region can be removed later
 	{
-		field->element_xi_mesh_dimension = mesh_dimension;
-		return_code = 1;
+		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	if (field->element_xi_host_mesh)
 	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_field_value_type.  Invalid argument(s)");
-		return_code = 0;
+		display_message(ERROR_MESSAGE, "FE_field_set_element_xi_host_mesh.  Host mesh is already set");
+		return CMZN_ERROR_ALREADY_EXISTS;
 	}
-	return return_code;
+	field->element_xi_host_mesh = hostMesh->access();
+	return CMZN_OK;
 }
 
 struct FE_node_field_info_get_highest_node_derivative_and_version_data
@@ -9277,21 +7094,18 @@ int FE_node_field_info_get_highest_node_derivative_and_version(FE_node_field_inf
 	{
 		for (int c = 0; c < data->field->number_of_components; ++c)
 		{
-			FE_node_field_component *node_field_component = node_field->components + c;
-			if (!node_field_component->nodal_value_types)
+			const FE_node_field_template *nft = node_field->getComponent(c);
+			const int valueLabelsCount = nft->getValueLabelsCount();
+			for (int d = 0; d < valueLabelsCount; ++d)
 			{
-				display_message(ERROR_MESSAGE, "FE_node_field_info_get_highest_node_derivative_version.  Missing nodal value types");
-				return 0;
-			}
-			int number_of_values = node_field_component->number_of_derivatives + 1;
-			for (int v = 0; v < number_of_values; ++v)
-			{
-				int derivative = (node_field_component->nodal_value_types[v] - FE_NODAL_VALUE) + 1;
+				const cmzn_node_value_label valueLabel = nft->getValueLabelAtIndex(d);
+				const int derivative = (valueLabel - CMZN_NODE_VALUE_LABEL_VALUE) + 1;
 				if (derivative > data->highest_derivative)
 					data->highest_derivative = derivative;
+				const int versionsCount = nft->getVersionsCountAtIndex(d);
+				if  (versionsCount > data->highest_version)
+					data->highest_version = versionsCount;
 			}
-			if (node_field_component->number_of_versions > data->highest_version)
-				data->highest_version = node_field_component->number_of_versions;
 		}
 	}
 	return 1;
@@ -9528,140 +7342,6 @@ Give an error if field->values_storage isn't storing array types.
 	return (return_code);
 } /* get_FE_field_array_attributes */
 
-int get_FE_field_double_array_value(struct FE_field *field, int value_number,
-	double *array, int number_of_array_values)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Get the double array in field->values_storage specified by value_number, of
-of length number_of_array_values. If number_of_array_values > the stored arrays
-max length, gets the max length.
-MUST allocate space for the array before calling this function.
-
-Use get_FE_field_array_attributes() or get_FE_field_max_array_size()
-to get the size of an array.
-==============================================================================*/
-{
-
-	int return_code,size,the_array_number_of_values,array_size;
-
-
-	Value_storage *values_storage;
-	double *the_array,**array_address;
-
-	ENTER(get_FE_field_double_array_value);
-	if (field&&array&&(0<=value_number)&&(value_number<=field->number_of_values))
-	{
-		if (field->number_of_values)
-		{
-			return_code=1;
-			size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
-				(struct FE_time_sequence *)NULL);
-			/* get the correct offset*/
-			values_storage = field->values_storage+(value_number*size);
-			/* get the number of array values  for the specified array in vaules_storage */
-			the_array_number_of_values = *((int *)values_storage);
-			if (number_of_array_values>the_array_number_of_values)
-			{
-				number_of_array_values=the_array_number_of_values;
-			}
-			array_size = number_of_array_values*sizeof(double);
-
-			/* get the address to copy from*/
-			array_address = (double **)(values_storage+sizeof(int));
-			the_array = *array_address;
-			/*copy the data to the passed array */
-			memcpy(array,the_array,array_size);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"get_FE_field_double_array_value. No values at field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_field_double_array_value. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}/* get_FE_field_double_array_value */
-
-int set_FE_field_double_array_value(struct FE_field *field, int value_number,
-	double *array, int number_of_array_values)
-/*******************************************************************************
-LAST MODIFIED : 1 September 1999
-
-DESCRIPTION :
-Finds any existing double array at the place specified by  value_number in
-field->values_storage.
-Frees it.
-Allocates a new array, according to number_of_array_values.
-Copies the contents of the passed array to this allocated one.
-Copies number of array values, and the pointer to the allocated array to the
-specified  place in the field->values_storage.
-
-Therefore, should free the passed array, after passing it to this function.
-
-The <field> must be of the correct FE_field_type to have such values and
-<number> must be within the range valid for that type.
-==============================================================================*/
-{
-
-	int return_code,size,array_size;
-
-	double *pointer,*the_array,**array_address;
-
-	Value_storage *values_storage;
-	ENTER(set_FE_field_double_array_value);
-	if (field&&array&&(0<=value_number)&&(value_number<=field->number_of_values))
-	{
-		return_code=1;
-
-		if (field->value_type!=DOUBLE_ARRAY_VALUE)
-		{
-			display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. "
-				" value type doesn't match");
-			return_code=0;
-		}
-
-		size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
-			(struct FE_time_sequence *)NULL);
-
-		/* get the correct offset*/
-		values_storage = field->values_storage+(value_number*size);
-		/* get the pointer to stored the array, free any existing one */
-		array_address = (double **)(values_storage+sizeof(int));
-		pointer = *array_address;
-		if (pointer!=NULL)
-			DEALLOCATE(pointer);
-		/* copy the number of array values into field->values_storage*/
-		*((int *)values_storage) = number_of_array_values;
-		/* Allocate the space for the array, and copy the data in */
-		array_size = number_of_array_values*sizeof(double);
-		if (ALLOCATE(the_array,double,array_size))
-		{
-			memcpy(the_array,array,array_size);
-			/*copy the pointer to the array into field->values_storage  */
-			*array_address = the_array;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. Out of Memory )");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_field_double_array_value. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}/* set_FE_field_double_array_value */
-
 int get_FE_field_string_value(struct FE_field *field,int value_number,
 	char **string)
 /*******************************************************************************
@@ -9797,7 +7477,7 @@ Gets the specified global value for the <field>.
 			/* copy the element and xi out */
 			*element = *((struct FE_element **)values_storage);
 			values_storage += sizeof(struct FE_element *);
-			number_of_xi_dimensions = get_FE_element_dimension(*element);
+			number_of_xi_dimensions = (*element) ? (*element)->getDimension() : 0;
 			if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 			{
 				/* Extract the xi values */
@@ -9851,7 +7531,7 @@ The <field> must be of the correct FE_field_type to have such values and
 		&&(field->value_type==ELEMENT_XI_VALUE) && element && xi)
 	{
 		return_code=1;
-		number_of_xi_dimensions = get_FE_element_dimension(element);
+		number_of_xi_dimensions = element->getDimension();
 		if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 		{
 
@@ -10145,40 +7825,6 @@ int set_FE_field_name(struct FE_field *field, const char *name)
 
 	return (return_code);
 } /* set_FE_field_name */
-
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_field_component)
-/*****************************************************************************
-LAST MODIFIED : 2 February 1999
-
-DESCRIPTION :
-Returns the FE_field_component component name.
-Up to the calling function to deallocate the returned char string.
-============================================================================*/
-{
-	int return_code;
-
-	ENTER(GET_NAME(FE_field_component));
-	if (object&&name_ptr)
-	{
-		if (NULL != (*name_ptr=get_FE_field_component_name(object->field,object->number)))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GET_NAME(FE_field_component).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GET_NAME(FE_field_component) */
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_face_type)
 {
@@ -10490,419 +8136,130 @@ char *cmzn_field_domain_type_enum_to_string(
 	return (string ? duplicate_string(string) : 0);
 }
 
-struct FE_node_field_creator *CREATE(FE_node_field_creator)(
-	int number_of_components)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-An object for defining the components, number_of_versions,
-number_of_derivatives and their types at a node.
-By default each component has 1 version and no derivatives.
-==============================================================================*/
+/**
+ * Creates and returns a node with the specified <cm_node_identifier>.
+ * If <fe_nodeset> is supplied a blank node with the given identifier but no
+ * fields is returned. If <template_node> is supplied, a copy of it,
+ * including all fields and values but with the new identifier, is returned.
+ * Exactly one of <fe_nodeset> or <template_node> must be supplied and either
+ * directly or indirectly sets the owning nodeset for the new node.
+ * Note that <cm_node_identifier> must be non-negative.
+ */
+struct FE_node *CREATE(FE_node)()
 {
-	int i;
-	struct FE_node_field_creator *node_field_creator;
-
-	ENTER(CREATE(FE_node_field_creator));
-	if (number_of_components)
-	{
-		if ((ALLOCATE(node_field_creator, struct FE_node_field_creator, 1))&&
-			(ALLOCATE(node_field_creator->numbers_of_versions, int,
-			number_of_components)) &&
-			(ALLOCATE(node_field_creator->numbers_of_derivatives, int,
-			number_of_components))&&
-			(ALLOCATE(node_field_creator->nodal_value_types,
-			enum FE_nodal_value_type *, number_of_components)))
-		{
-			node_field_creator->number_of_components = number_of_components;
-			for (i = 0 ; node_field_creator && (i < number_of_components) ; i++)
-			{
-				node_field_creator->numbers_of_versions[i] = 1;
-				node_field_creator->numbers_of_derivatives[i] = 0;
-				if (ALLOCATE(node_field_creator->nodal_value_types[i],
-					enum FE_nodal_value_type, 1))
-				{
-					*(node_field_creator->nodal_value_types[i]) = FE_NODAL_VALUE;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_node_field_creator).  Unable to allocate arrays");
-					DEALLOCATE(node_field_creator);
-					node_field_creator = (struct FE_node_field_creator *)NULL;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_node_field_creator).  Unable to allocate arrays");
-			node_field_creator = (struct FE_node_field_creator *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_node_field_creator).  Invalid argument(s)");
-		node_field_creator = (struct FE_node_field_creator *)NULL;
-	}
-	LEAVE;
-
-	return (node_field_creator);
-} /* CREATE(FE_node_field_creator) */
-
-struct FE_node_field_creator *create_FE_node_field_creator_from_node_field(
-	struct FE_node *node, struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2001
-
-DESCRIPTION :
-Creates an FE_node_field_creator from <node>,<field>
-==============================================================================*/
-{
-	enum FE_nodal_value_type nodal_value_type;
-	int i,j,number_of_components,number_of_derivatives,number_of_versions;
-	struct FE_node_field_component *node_field_components;
-	struct FE_node_field_creator *node_field_creator;
-	struct FE_node_field *node_field;
-
-	ENTER(create_FE_node_field_creator_from_node_field);
-	node_field_creator = (struct FE_node_field_creator *)NULL;
-	if (node&&field&&node->fields)
-	{
-		if((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			node->fields->node_field_list))&&
-			(node_field_components=node_field->components))
-		{
-			number_of_components=field->number_of_components;
-			if (NULL != (node_field_creator=CREATE(FE_node_field_creator)(number_of_components)))
-			{
-				bool success = true;
-				for(i=0;(i<number_of_components)&&success;i++)
-				{
-					number_of_versions=node_field_components[i].number_of_versions;
-					if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, i, number_of_versions))
-						success = false;
-					number_of_derivatives=node_field_components[i].number_of_derivatives;
-					for(j=1;(j<=number_of_derivatives)&&success;j++)
-					{
-						nodal_value_type=node_field_components[i].nodal_value_types[j];
-						if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, i, nodal_value_type))
-							success = false;
-					}
-				}
-				if (!success)
-				{
-					DESTROY(FE_node_field_creator)(&node_field_creator);
-					display_message(ERROR_MESSAGE, "create_FE_node_field_creator_from_node_field.  Failed");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_FE_node_field_creator_from_node_field.  Unable to allocate");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_FE_node_field_creator_from_node_field. field not defined at node");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_FE_node_field_creator_from_node_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (node_field_creator);
-} /* create_FE_node_field_creator_from_node_field */
-
-int DESTROY(FE_node_field_creator)(
-	struct FE_node_field_creator **node_field_creator_address)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Frees the memory for the node field creator and sets
-<*node_field_creator_address> to NULL.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_node_field_creator *node_field_creator;
-
-	ENTER(DESTROY(FE_node_field_creator));
-	if ((node_field_creator_address)&&(node_field_creator =
-		*node_field_creator_address))
-	{
-		for (i = 0 ; i < node_field_creator->number_of_components ; i++)
-		{
-			DEALLOCATE(node_field_creator->nodal_value_types[i]);
-		}
-		DEALLOCATE(node_field_creator->nodal_value_types);
-		DEALLOCATE(node_field_creator->numbers_of_derivatives);
-		DEALLOCATE(node_field_creator->numbers_of_versions);
-		DEALLOCATE(*node_field_creator_address);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_node_field_creator) */
-
-int FE_node_field_creator_define_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type)
-{
-	if (node_field_creator && (component_number >= 0) &&
-		(component_number < node_field_creator->number_of_components))
-	{
-		int number_of_derivatives = node_field_creator->numbers_of_derivatives[component_number];
-		FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[component_number];
-		for (int i = 0; i <= number_of_derivatives; ++i)
-		{
-			if (nodal_value_types[i] == derivative_type)
-				return CMZN_ERROR_ALREADY_EXISTS;
-		}
-		// for compatibility with EX reader, must add new derivative last
-		FE_nodal_value_type *new_nodal_value_types;
-		if (REALLOCATE(new_nodal_value_types, nodal_value_types, enum FE_nodal_value_type, number_of_derivatives + 2))
-		{
-			new_nodal_value_types[number_of_derivatives + 1] = derivative_type;
-			node_field_creator->nodal_value_types[component_number] = new_nodal_value_types;
-			++(node_field_creator->numbers_of_derivatives[component_number]);
-			return CMZN_OK;
-		}
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-void FE_node_field_creator_undefine_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type)
-{
-	if (node_field_creator && (component_number >= 0) &&
-		 (component_number < node_field_creator->number_of_components))
-	{
-		int number_of_derivatives = node_field_creator->numbers_of_derivatives[component_number];
-		enum FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[component_number];
-		// start at 1 so can't underfine FE_NODAL_VALUE
-		for (int j = 1; j <= number_of_derivatives; ++j)
-		{
-			if (nodal_value_types[j] == derivative_type)
-			{
-				while (j < number_of_derivatives)
-				{
-					nodal_value_types[j] = nodal_value_types[j + 1];
-					++j;
-				}
-				--(node_field_creator->numbers_of_derivatives[component_number]);
-				return;
-			}
-		}
-	}
-}
-
-int FE_node_field_creator_get_number_of_derivatives(
-	struct FE_node_field_creator *node_field_creator, int component_number)
-{
-	if (node_field_creator && (0 <= component_number) &&
-		(component_number < node_field_creator->number_of_components))
-	{
-		return node_field_creator->numbers_of_derivatives[component_number];
-	}
-	return 0;
-}
-
-int FE_node_field_creator_define_versions(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	int number_of_versions)
-{
-	if (node_field_creator && (component_number >= 0) &&
-		 (component_number < node_field_creator->number_of_components))
-	{
-		node_field_creator->numbers_of_versions[component_number] =
-			number_of_versions;
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int FE_node_field_creator_get_number_of_versions(
-	struct FE_node_field_creator *node_field_creator, int component_number)
-{
-	int number_of_versions = 0;
-	if (node_field_creator && (component_number < node_field_creator->number_of_components))
-	{
-		if (component_number >= 0)
-		{
-			number_of_versions = node_field_creator->numbers_of_versions[component_number];
-		}
-		else
-		{
-			for (int i = 0; i < node_field_creator->number_of_components; ++i)
-			{
-				if (node_field_creator->numbers_of_versions[i] > number_of_versions)
-				{
-					number_of_versions = node_field_creator->numbers_of_versions[i];
-				}
-			}
-		}
-	}
-	return number_of_versions;
-}
-
-int FE_node_field_creator_has_derivative(
-	struct FE_node_field_creator *node_field_creator, int component_number,
-	enum FE_nodal_value_type derivative_type)
-{
-	if (node_field_creator && (component_number < node_field_creator->number_of_components))
-	{
-		int start = 0;
-		int limit = node_field_creator->number_of_components;
-		if (component_number >= 0)
-		{
-			start = component_number;
-			limit = component_number + 1;
-		}
-		for (int i = start; i < limit; ++i)
-		{
-			int number_of_derivatives = node_field_creator->numbers_of_derivatives[i];
-			enum FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[i];
-			for (int j = 0; j <= number_of_derivatives; ++j)
-			{
-				if (nodal_value_types[j] == derivative_type)
-					return 1;
-			}
-		}
-	}
-	return 0;
-}
-
-struct FE_node *CREATE(FE_node)(int cm_node_identifier,
-	FE_nodeset *fe_nodeset, struct FE_node *template_node)
-{
-	int return_code;
 	struct FE_node *node;
-
-	ENTER(CREATE(FE_node));
-	node = (struct FE_node *)NULL;
-	if ((0 <= cm_node_identifier) &&
-		(((!fe_nodeset) && template_node) || (fe_nodeset && (!template_node))))
+	if (ALLOCATE(node, struct FE_node, 1))
 	{
-		if (ALLOCATE(node, struct FE_node, 1))
-		{
-			return_code = 1;
-			/* clear the new node so we can destroy it if anything fails */
-			node->cm_node_identifier = cm_node_identifier;
-			node->fields = (struct FE_node_field_info *)NULL;
-			node->values_storage = (Value_storage *)NULL;
-			node->access_count = 0;
-			if (template_node)
-			{
-				if (!(node->fields =
-					ACCESS(FE_node_field_info)(template_node->fields)))
-				{
-					display_message(ERROR_MESSAGE, "CREATE(FE_node).  "
-						"Could not set field info from template node");
-					return_code = 0;
-				}
-				if (template_node->values_storage)
-				{
-					if (!allocate_and_copy_FE_node_values_storage(template_node,
-						&node->values_storage))
-					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(FE_node).  Could not copy values from template node");
-						/* values_storage may be corrupt, so clear it */
-						node->values_storage = (Value_storage *)NULL;
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				node->fields = fe_nodeset->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)0);
-				if (0 == node->fields)
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_node).  FE_nodeset could not supply node field info");
-					return_code = 0;
-				}
-			}
-			if (!return_code)
-			{
-				DESTROY(FE_node)(&node);
-				node = (struct FE_node *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_node).  Could not allocate memory for node");
-		}
+		// not a global node until nodeset gives a non-negative index:
+		node->index = DS_LABEL_INDEX_INVALID;
+		node->access_count = 1;
+		node->fields = (struct FE_node_field_info *)NULL;
+		node->values_storage = (Value_storage *)NULL;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "CREATE(FE_node).  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "CREATE(FE_node).  Could not allocate memory for node");
 	}
-	LEAVE;
-
 	return (node);
-} /* CREATE(FE_node) */
+}
 
+/**
+ * Frees the memory for the node, sets <*node_address> to NULL.
+ */
 int DESTROY(FE_node)(struct FE_node **node_address)
-/*******************************************************************************
-LAST MODIFIED : 11 October 2002
-
-DESCRIPTION :
-Frees the memory for the node, sets <*node_address> to NULL.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_node *node;
-
-	ENTER(DESTROY(FE_node));
 	if ((node_address) && (node = *node_address))
 	{
 		if (0 == node->access_count)
 		{
-			/* free the node values_storage */
-			//  following is also done by FE_node_invalidate:
-			if (node->fields)
+			// all nodes should be either templates with invalid index,
+			// or have been invalidated by mesh prior to being destroyed
+			if (DS_LABEL_IDENTIFIER_INVALID == node->index)
 			{
-				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-					FE_node_field_free_values_storage_arrays,
-					(void *)node->values_storage,node->fields->node_field_list);
-				DEACCESS(FE_node_field_info)(&(node->fields));
+				if (node->fields) // for template nodes only
+					FE_node_invalidate(node);
+				/* free the memory associated with the element */
+				DEALLOCATE(*node_address);
+				return_code = 1;
 			}
-			DEALLOCATE(node->values_storage);
-
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"DESTROY(FE_node).  node has not been invalidated. Index = %d", node->index);
+				*node_address = (struct FE_node *)NULL;
+				return_code = 0;
+			}
 			/* free the memory associated with the node */
 			DEALLOCATE(*node_address);
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(FE_node).  Node has non-zero access count %d",
+				node->access_count);
 			*node_address = (struct FE_node *)NULL;
+			return_code = 0;
 		}
-		return_code = 1;
 	}
 	else
 	{
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(FE_node) */
+}
 
-void FE_node_invalidate(struct FE_node *node)
+cmzn_node *create_template_FE_node(FE_node_field_info *node_field_info)
+{
+	if (!node_field_info)
+	{
+		display_message(ERROR_MESSAGE, "create_template_FE_node.  Invalid argument");
+		return 0;
+	}
+	cmzn_node *template_node = CREATE(FE_node)();
+	if (template_node)
+		template_node->fields = ACCESS(FE_node_field_info)(node_field_info);
+	return template_node;
+}
+
+cmzn_node *create_FE_node_from_template(DsLabelIndex index, cmzn_node *template_node)
+{
+	// Assumes DS_LABEL_INDEX_INVALID == -1
+	if ((index < DS_LABEL_INDEX_INVALID) || (0 == template_node))
+	{
+		display_message(ERROR_MESSAGE, "create_FE_node_from_template.  Invalid argument(s)");
+		return 0;
+	}
+	cmzn_node *node = CREATE(FE_node)();
+	if (node)
+	{
+		bool success = true;
+		node->index = index;
+		if (!(node->fields = ACCESS(FE_node_field_info)(template_node->fields)))
+		{
+			display_message(ERROR_MESSAGE, "create_FE_node_from_template.  Could not set field info from template node");
+			success = false;
+		}
+		if (template_node->values_storage)
+		{
+			if (!allocate_and_copy_FE_node_values_storage(template_node,
+				&node->values_storage))
+			{
+				display_message(ERROR_MESSAGE,
+					"create_FE_node_from_template.  Could not copy values from template node");
+				/* values_storage may be corrupt, so clear it */
+				node->values_storage = (Value_storage *)NULL;
+				success = false;
+			}
+		}
+		if (!success)
+			DEACCESS(FE_node)(&node);
+	}
+	return node;
+}
+
+void FE_node_invalidate(cmzn_node *node)
 {
 	if (node)
 	{
@@ -10914,222 +8271,18 @@ void FE_node_invalidate(struct FE_node *node)
 			DEACCESS(FE_node_field_info)(&(node->fields));
 		}
 		DEALLOCATE(node->values_storage);
+		node->index = DS_LABEL_INDEX_INVALID;
 	}
 }
 
 DECLARE_OBJECT_FUNCTIONS(FE_node)
-
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node)
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Creates an EXACT copy of the node.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_node_field_info *node_field_info;
-
-	ENTER(COPY(FE_node));
-	return_code=0;
-	/* check the arguments */
-	if (source&&destination)
-	{
-		DEACCESS(FE_node_field_info)(&(destination->fields));
-		/* free the node values_storage */
-		if (destination->fields)
-		{
-			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-				FE_node_field_free_values_storage_arrays,
-				(void *)destination->values_storage,destination->fields->node_field_list);
-		}
-		DEALLOCATE(destination->values_storage);
-
-		/* copy the new */
-		node_field_info=source->fields;
-		if ( allocate_and_copy_FE_node_values_storage(source,&(destination->values_storage)))
-		{
-			destination->fields=ACCESS(FE_node_field_info)(node_field_info);
-			destination->cm_node_identifier=source->cm_node_identifier;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"COPY(FE_node).  Could not do copy_FE_node_values_storage for node");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"COPY(FE_node).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* COPY(FE_node) */
-
-struct FE_node_field_copy_with_FE_field_list_data
-{
-	int number_of_values, values_storage_size;
-	struct LIST(FE_field) *fe_field_list;
-	struct LIST(FE_node_field) *node_field_list;
-};
-
-static int FE_node_field_copy_with_FE_field_list(
-	struct FE_node_field *node_field, void *copy_data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 March 2003
-
-DESCRIPTION :
-If the FE_field in <node_field> is in <fe_field_list>, makes a copy of it in
-the <node_field_list>. It is is a GENERAL_FE_FIELD, the value pointer for
-the copy is set to the current <value_storage_size>, and both it and the
-<number_of_values> are increased by the appropriate size for <node_field>.
-==============================================================================*/
-{
-	int number_of_values, return_code, values_storage_size;
-	struct FE_node_field *offset_node_field;
-	struct FE_node_field_copy_with_FE_field_list_data *copy_data;
-
-	ENTER(FE_node_field_copy_with_FE_field_list);
-	if (node_field && (copy_data =
-		(struct FE_node_field_copy_with_FE_field_list_data *)copy_data_void))
-	{
-		return_code = 1;
-		if (IS_OBJECT_IN_LIST(FE_field)(node_field->field,
-			copy_data->fe_field_list))
-		{
-			if (GENERAL_FE_FIELD == node_field->field->fe_field_type)
-			{
-				number_of_values = FE_node_field_get_number_of_values(node_field);
-				values_storage_size = number_of_values *
-					get_Value_storage_size(node_field->field->value_type,
-						node_field->time_sequence);
-				/* adjust size for proper word alignment in memory */
-				ADJUST_VALUE_STORAGE_SIZE(values_storage_size);
-
-				if ((offset_node_field =
-					copy_create_FE_node_field_with_offset(node_field,
-						copy_data->values_storage_size - node_field->components->value)) &&
-					ADD_OBJECT_TO_LIST(FE_node_field)(offset_node_field,
-						copy_data->node_field_list))
-				{
-					copy_data->number_of_values += number_of_values;
-					copy_data->values_storage_size += values_storage_size;
-				}
-				else
-				{
-					DESTROY(FE_node_field)(&offset_node_field);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				/* non-GENERAL FE_node_fields can be shared */
-				return_code = ADD_OBJECT_TO_LIST(FE_node_field)(node_field,
-					copy_data->node_field_list);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_field_copy_with_FE_field_list.  Failed");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_copy_with_FE_field_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_copy_with_FE_field_list */
-
-struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
-	struct LIST(FE_field) *fe_field_list)
-{
-	struct FE_node *copy_node;
-	struct FE_node_field_copy_with_FE_field_list_data copy_data;
-	FE_nodeset *fe_nodeset;
-	Value_storage *values_storage;
-
-	ENTER(FE_node_copy_with_FE_field_list);
-	copy_node = (struct FE_node *)NULL;
-	if (node && node->fields && (fe_nodeset = node->fields->fe_nodeset) &&
-		fe_field_list)
-	{
-		copy_data.number_of_values = 0;
-		copy_data.values_storage_size = 0;
-		copy_data.fe_field_list = fe_field_list;
-		copy_data.node_field_list = CREATE(LIST(FE_node_field))();
-		if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-			FE_node_field_copy_with_FE_field_list, (void *)&copy_data,
-				node->fields->node_field_list))
-		{
-			values_storage = (Value_storage *)NULL;
-			if ((0 == copy_data.values_storage_size) ||
-				(ALLOCATE(values_storage, Value_storage,
-					copy_data.values_storage_size) &&
-					merge_FE_node_values_storage(node, values_storage,
-						copy_data.node_field_list, (struct FE_node *)NULL,
-						/*optimised_merge*/0)))
-			{
-				/* create a node field info for the combined list */
-				struct FE_node_field_info *fe_node_field_info = fe_nodeset->get_FE_node_field_info(
-					copy_data.number_of_values, copy_data.node_field_list);
-				if (0 != fe_node_field_info)
-				{
-					copy_node = CREATE(FE_node)(node->cm_node_identifier, fe_nodeset,
-						(struct FE_node *)NULL);
-					if (NULL != copy_node)
-					{
-						/* fill in the fields and values storage */
-						REACCESS(FE_node_field_info)(&(copy_node->fields), fe_node_field_info);
-						copy_node->values_storage = values_storage;
-					}
-					DEACCESS(FE_node_field_info)(&fe_node_field_info);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_node_copy_with_FE_field_list.  Could not get node field info");
-					/* do not bother to clean up dynamic contents of values_storage */
-					DEALLOCATE(values_storage);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_copy_with_FE_field_list.  Could copy values_storage");
-				/* cannot clean up dynamic contents of values_storage */
-				DEALLOCATE(values_storage);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_copy_with_FE_field_list.  Error cloning node field list");
-		}
-		DESTROY(LIST(FE_node_field))(&(copy_data.node_field_list));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_copy_with_FE_field_list.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (copy_node);
-} /* FE_node_copy_with_FE_field_list */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node)
 /*****************************************************************************
 LAST MODIFIED : 5 November 1997
 
 DESCRIPTION :
-Returns the FE_node->cm_node_identifier identifier as a string.
+Returns the node identifier as a string.
 Up to the calling routine to deallocate the returned char string!
 ============================================================================*/
 {
@@ -11139,7 +8292,7 @@ Up to the calling routine to deallocate the returned char string!
 	ENTER(GET_NAME(FE_node));
 	if (object&&name_ptr)
 	{
-		sprintf(temp_string,"%i",object->cm_node_identifier);
+		sprintf(temp_string,"%i",object->getIdentifier());
 		if (ALLOCATE(*name_ptr,char,strlen(temp_string)+1))
 		{
 			strcpy(*name_ptr,temp_string);
@@ -11197,8 +8350,7 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 				if (node_field->access_count > 1)
 				{
 					/* Need to copy this node_field */
-					node_field_copy = copy_create_FE_node_field_with_offset(node_field,
-						/*value_offset*/0);
+					node_field_copy = FE_node_field::clone(*node_field);
 					REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field,
 						existing_node_field_info->node_field_list);
 					/* Update the time sequence */
@@ -11223,8 +8375,7 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 					if (NULL != (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 						new_node_field->field, node_field_list)))
 					{
-						node_field_copy = copy_create_FE_node_field_with_offset(node_field,
-							/*value_offset*/0);
+						node_field_copy = FE_node_field::clone(*node_field);
 						REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field, node_field_list);
 						/* Update the time sequence */
 						FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
@@ -11260,383 +8411,318 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 }
 
 int define_FE_field_at_node(struct FE_node *node, struct FE_field *field,
-	struct FE_time_sequence *fe_time_sequence,
-	struct FE_node_field_creator *fe_node_field_creator)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-Defines a field at a node (does not assign values)
-==============================================================================*/
+	const FE_node_field_template *componentTemplatesIn,
+	struct FE_time_sequence *time_sequence)
 {
-	enum FE_nodal_value_type **component_nodal_value_types;
-	enum FE_time_sequence_mapping time_sequence_mapping;
-	enum Value_type value_type;
-	int *component_number_of_derivatives,*component_number_of_versions,
-		existing_values_storage_size, i, j, new_number_of_times, new_values_storage_size,
-		number_of_values, number_of_values_in_component, previous_number_of_times,
-		return_code,size,total_number_of_values,value_size;
-	struct FE_node_field *existing_node_field, *merged_node_field, *new_node_field,
-		*node_field;
-	struct FE_node_field_component *component;
-	struct FE_node_field_info *node_field_info;
-	struct FE_region *fe_region;
-	struct FE_time_sequence *existing_time_sequence;
-	struct LIST(FE_node_field) *new_node_field_list;
-	struct Merge_FE_node_field_into_list_data merge_data;
-	Value_storage *new_value, *storage;
-
-	ENTER(define_FE_field_at_node);
-	return_code = 0;
-	if (node && field && (fe_region = FE_field_get_FE_region(field)) &&
-		(node_field_info = node->fields) &&
-		(node_field_info->fe_nodeset) &&
-		(node_field_info->fe_nodeset->get_FE_region() == fe_region) &&
-		(component_number_of_derivatives =
-			fe_node_field_creator->numbers_of_derivatives) &&
-		(component_number_of_versions =
-			fe_node_field_creator->numbers_of_versions) &&
-		(component_nodal_value_types =
-			fe_node_field_creator->nodal_value_types) &&
-		(field->number_of_components == fe_node_field_creator->number_of_components))
+	FE_region *fe_region;
+	FE_node_field_info *node_field_info;
+	if (!(node && field && (fe_region = FE_field_get_FE_region(field))
+		&& (node_field_info = node->fields) && (node_field_info->fe_nodeset)
+		&& (node_field_info->fe_nodeset->get_FE_region() == fe_region)
+		&& (componentTemplatesIn)))
 	{
-		new_values_storage_size = 0;
-		value_type = field->value_type;
-		size = get_Value_storage_size(value_type, fe_time_sequence);
-		return_code = 1;
-
-		/* create the node field */
-		if (NULL != (node_field = CREATE(FE_node_field)(field)))
+		display_message(ERROR_MESSAGE, "define_FE_field_at_node.  Invalid argument(s)");
+		return 0;
+	}
+	FE_node_field *node_field = FE_node_field::create(field);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE, "define_FE_field_at_node.  Could not create node_field");
+		return 0;
+	}
+	/* access now, deaccess at end to clean up if fails */
+	ACCESS(FE_node_field)(node_field);
+	int return_code = 1;
+	const int componentCount = get_FE_field_number_of_components(field);
+	Value_type value_type = field->value_type;
+	const int valueTypeSize = get_Value_storage_size(value_type, time_sequence);
+	if (time_sequence)
+	{
+		FE_node_field_set_FE_time_sequence(node_field, time_sequence);
+	}
+	int new_values_storage_size = 0;
+	int number_of_values = 0;
+	for (int c = 0; c < componentCount; ++c)
+	{
+		// GRC following was previously only done for if (GENERAL_FE_FIELD == field->fe_field_type)
+		node_field->components[c] = componentTemplatesIn[c];
+		if (GENERAL_FE_FIELD == field->fe_field_type)
 		{
-			/* access now, deaccess at end to clean up if fails */
-			ACCESS(FE_node_field)(node_field);
-			if (fe_time_sequence)
-			{
-				FE_node_field_set_FE_time_sequence(node_field,
-					fe_time_sequence);
-			}
-			number_of_values = 0;
-			if (GENERAL_FE_FIELD == field->fe_field_type)
-			{
-				i = field->number_of_components;
-				component = node_field->components;
-				while (return_code && (i > 0))
-				{
-					/*???DB.  Inline assign_FE_node_field_component and get rid of
-					  it ? */
-					return_code = assign_FE_node_field_component(component,
-						node_field_info->values_storage_size +
-						new_values_storage_size,
-						*component_number_of_derivatives,
-						*component_number_of_versions,
-						*component_nodal_value_types);
-					number_of_values_in_component = (*component_number_of_versions) *
-						(1+(*component_number_of_derivatives));
-					number_of_values += number_of_values_in_component;
-					new_values_storage_size += number_of_values_in_component*size;
-					component_number_of_derivatives++;
-					component_number_of_versions++;
-					component_nodal_value_types++;
-					component++;
-					i--;
-				}
-			}
-			if (return_code)
-			{
-				if (NULL != (existing_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-					field,node_field_info->node_field_list)))
-				{
-					if (existing_node_field->time_sequence)
-					{
-						existing_time_sequence = ACCESS(FE_time_sequence)(existing_node_field->time_sequence);
-					}
-					else
-					{
-						existing_time_sequence = (struct FE_time_sequence *)NULL;
-					}
-
-					/* Check they are consistent or we are only adding times */
-					/* Need to copy node field list in case it is modified  */
-					new_node_field_list = CREATE_LIST(FE_node_field)();
-					if (COPY_LIST(FE_node_field)(new_node_field_list,
-							node_field_info->node_field_list))
-					{
-						merge_data.requires_merged_storage = 0;
-						merge_data.values_storage_size = 0;
-						merge_data.number_of_values = node_field_info->number_of_values;
-						merge_data.list = new_node_field_list;
-						if (merge_FE_node_field_into_list(node_field, (void *)(&merge_data)))
-						{
-							if (merge_data.requires_merged_storage)
-							{
-								/* Time sequences are different or it would have failed */
-								/* get the node_field_info for the new list */
-								merged_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-									field, new_node_field_list);
-								FE_nodeset_get_FE_node_field_info_adding_new_times(
-									node_field_info->fe_nodeset, &node->fields,
-									merged_node_field);
-								new_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-									field, node->fields->node_field_list);
-								/* Update values storage, similar to copy_value_storage_array but
-								   we are updating existing storage and need to initialise the new values */
-								/* Offsets must not have changed so we can use the existing_node_field */
-								storage = node->values_storage + existing_node_field->components->value;
-								value_size=get_Value_storage_size(value_type, new_node_field->time_sequence);
-								time_sequence_mapping =
-									FE_time_sequences_mapping(existing_time_sequence, new_node_field->time_sequence);
-								switch (time_sequence_mapping)
-								{
-									case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
-									{
-										/* Do nothing, in fact we shouldn't get here as the merge_data.requires_merged_storage
-											should be false in this case */
-									} break;
-									case FE_TIME_SEQUENCE_MAPPING_APPEND:
-									{
-										previous_number_of_times = FE_time_sequence_get_number_of_times(existing_time_sequence);
-										new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
-										for (i=0;(i<number_of_values)&&return_code;i++)
-										{
-											reallocate_time_values_storage_array(value_type,
-												new_number_of_times, storage, storage,
-												/*initialise_storage*/1, previous_number_of_times);
-											storage += value_size;
-										}
-									} break;
-									default:
-									{
-										/* Need a temporary pointer as we will be allocating the new
-											memory, copying the existing values and then replacing the
-											pointer with the new value */
-										void *temp_storage;
-
-										/* Fallback default implementation */
-										for (i=0;(i<number_of_values)&&return_code;i++)
-										{
-											if (!(allocate_time_values_storage_array(value_type,
-														new_node_field->time_sequence,(Value_storage *)&temp_storage,/*initialise_storage*/1)&&
-													copy_time_sequence_values_storage_array(storage,value_type,
-														existing_time_sequence,new_node_field->time_sequence,(Value_storage *)&temp_storage)))
-											{
-												display_message(ERROR_MESSAGE,
-													"define_FE_field_at_node.  Failed to copy array");
-												return_code = 0;
-											}
-											/* Must free the src array now otherwise we will lose any reference to it */
-											free_value_storage_array(storage,value_type,existing_time_sequence,1);
-											/* Update the value storage with the new pointer */
-											*(void **)storage = temp_storage;
-											storage += value_size;
-										}
-									} break;
-								}
-							}
-							/* else existing time sequence includes new times so do nothing */
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
-								"Field already defined incompatibly at node.");
-						}
-					}
-					if (existing_time_sequence)
-					{
-						DEACCESS(FE_time_sequence)(&existing_time_sequence);
-					}
-				}
-				else
-				{
-					existing_values_storage_size = node_field_info->values_storage_size;
-					total_number_of_values = node_field_info->number_of_values + number_of_values;
-					if (node_field_info->fe_nodeset->get_FE_node_field_info_adding_new_field(
-						&node_field_info, node_field, total_number_of_values))
-					{
-						if (GENERAL_FE_FIELD == field->fe_field_type)
-						{
-							ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
-							if (REALLOCATE(new_value, node->values_storage, Value_storage,
-									node_field_info->values_storage_size +
-									new_values_storage_size))
-							{
-								node->values_storage = new_value;
-								/* initialize new values */
-								new_value += existing_values_storage_size;
-								for (i = number_of_values ; i > 0 ; i--)
-								{
-									if (fe_time_sequence)
-									{
-										allocate_time_values_storage_array(value_type,
-											fe_time_sequence, new_value, /*initialise_storage*/1);
-										new_value += size;
-									}
-									else
-									{
-										switch (value_type)
-										{
-											case ELEMENT_XI_VALUE:
-											{
-												*((struct FE_element **)new_value) =
-													(struct FE_element *)NULL;
-												new_value += sizeof(struct FE_element *);
-												for (j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; j++)
-												{
-													*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
-													new_value += sizeof(FE_value);
-												}
-											} break;
-											case FE_VALUE_VALUE:
-											{
-												*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
-												new_value += size;
-											} break;
-											case UNSIGNED_VALUE:
-											{
-												*((unsigned *)new_value) = 0;
-												new_value += size;
-											} break;
-											case INT_VALUE:
-											{
-												*((int *)new_value) = 0;
-												new_value += size;
-											} break;
-											case DOUBLE_VALUE:
-											{
-												*((double *)new_value) = 0;
-												new_value += size;
-											} break;
-											case FLT_VALUE:
-											{
-												*((float *)new_value) = 0;
-												new_value += size;
-											} break;
-											case SHORT_VALUE:
-											{
-												display_message(ERROR_MESSAGE,
-													"define_FE_field_at_node.  SHORT_VALUE: Code not "
-													"written yet. Beware alignmemt problems!");
-												return_code = 0;
-											} break;
-											case DOUBLE_ARRAY_VALUE:
-											{
-												double *array = (double *)NULL;
-												double **array_address;
-												int zero = 0;
-												/* copy number of array values to values_storage*/
-												*((int *)new_value) = zero;
-												/* copy pointer to array values to values_storage */
-												array_address =
-													(double **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case FE_VALUE_ARRAY_VALUE:
-											{
-												FE_value *array = (FE_value *)NULL;
-												FE_value **array_address;
-												int zero = 0;
-												*((int *)new_value) = zero;
-												array_address =
-													(FE_value **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case FLT_ARRAY_VALUE:
-											{
-												float *array = 0;
-												float **array_address;
-												int zero = 0;
-												*((int *)new_value) = zero;
-												array_address = (float **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case SHORT_ARRAY_VALUE:
-											{
-												short *array = (short *)NULL;
-												short **array_address;
-												int zero = 0;
-												*((int *)new_value) = zero;
-												array_address = (short **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case  INT_ARRAY_VALUE:
-											{
-												int *array = (int *)NULL;
-												int **array_address;
-												int zero = 0;
-												*((int *)new_value) = zero;
-												array_address = (int **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case  UNSIGNED_ARRAY_VALUE:
-											{
-												unsigned *array = (unsigned *)NULL;
-												unsigned **array_address;
-												int zero = 0;
-												*((int *)new_value) = zero;
-												array_address =
-													(unsigned **)(new_value + sizeof(int));
-												*array_address = array;
-												new_value += size;
-											} break;
-											case STRING_VALUE:
-											{
-												char **string_address;
-
-												string_address = (char **)(new_value);
-												*string_address = (char *)NULL;
-												new_value += size;
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"define_FE_field_at_node.  Unsupported value_type");
-												return_code = 0;
-											} break;
-										}
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
-									"Could not reallocate nodal values");
-								return_code = 0;
-							}
-						}
-						if (return_code)
-						{
-							/* already handled the accessing in FE_nodeset::get_FE_node_field_info_adding_new_field */
-							node->fields = node_field_info;
-						}
-						else
-						{
-							DEACCESS(FE_node_field_info)(&node_field_info);
-						}
-					}
-				}
-			}
-			DEACCESS(FE_node_field)(&node_field);
+			node_field->components[c].setValuesOffset(node_field_info->values_storage_size + new_values_storage_size);
+			new_values_storage_size += componentTemplatesIn[c].getTotalValuesCount()*valueTypeSize;
+			number_of_values += componentTemplatesIn[c].getTotalValuesCount();
 		}
-		else
+	}
+	FE_node_field *existing_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+		field, node_field_info->node_field_list);
+	if (existing_node_field)
+	{
+		FE_time_sequence *existing_time_sequence = (existing_node_field->time_sequence) ?
+			ACCESS(FE_time_sequence)(existing_node_field->time_sequence) : 0;
+		/* Check node fields are consistent or we are only adding times */
+		/* Need to copy node field list in case it is modified  */
+		struct LIST(FE_node_field) *new_node_field_list = CREATE_LIST(FE_node_field)();
+		if (COPY_LIST(FE_node_field)(new_node_field_list, node_field_info->node_field_list))
 		{
-			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_node.  Could not create node_field");
-			return_code = 0;
+			Merge_FE_node_field_into_list_data merge_data;
+			merge_data.requires_merged_storage = 0;
+			merge_data.values_storage_size = 0;
+			merge_data.number_of_values = node_field_info->number_of_values;
+			merge_data.list = new_node_field_list;
+			if (merge_FE_node_field_into_list(node_field, (void *)(&merge_data)))
+			{
+				if (merge_data.requires_merged_storage)
+				{
+					/* Time sequences are different or it would have failed */
+					/* get the node_field_info for the new list */
+					FE_node_field *merged_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+						field, new_node_field_list);
+					FE_nodeset_get_FE_node_field_info_adding_new_times(
+						node_field_info->fe_nodeset, &node->fields,
+						merged_node_field);
+					FE_node_field *new_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+						field, node->fields->node_field_list);
+					/* Update values storage, similar to copy_value_storage_array but
+						we are updating existing storage and need to initialise the new values */
+					/* Offsets must not have changed so we can use the existing_node_field */
+					Value_storage *storage;
+					storage = node->values_storage + existing_node_field->getComponent(0)->getValuesOffset();
+					enum FE_time_sequence_mapping time_sequence_mapping =
+						FE_time_sequences_mapping(existing_time_sequence, new_node_field->time_sequence);
+					switch (time_sequence_mapping)
+					{
+						case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
+						{
+							/* Do nothing, in fact we shouldn't get here as the merge_data.requires_merged_storage
+								should be false in this case */
+						} break;
+						case FE_TIME_SEQUENCE_MAPPING_APPEND:
+						{
+							const int previous_number_of_times = FE_time_sequence_get_number_of_times(existing_time_sequence);
+							const int new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
+							for (int i = 0; i < number_of_values; ++i)
+							{
+								reallocate_time_values_storage_array(value_type,
+									new_number_of_times, storage, storage,
+									/*initialise_storage*/1, previous_number_of_times);
+								storage += valueTypeSize;
+							}
+						} break;
+						default:
+						{
+							/* Need a temporary pointer as we will be allocating the new
+								memory, copying the existing values and then replacing the
+								pointer with the new value */
+							void *temp_storage;
+
+							/* Fallback default implementation */
+							for (int i = 0; (i < number_of_values) && return_code; ++i)
+							{
+								if (!(allocate_time_values_storage_array(value_type,
+										new_node_field->time_sequence,(Value_storage *)&temp_storage,/*initialise_storage*/1) &&
+									copy_time_sequence_values_storage_array(storage, value_type,
+										existing_time_sequence, new_node_field->time_sequence, (Value_storage *)&temp_storage)))
+								{
+									display_message(ERROR_MESSAGE, "define_FE_field_at_node.  Failed to copy time array");
+									return_code = 0;
+								}
+								/* Must free the src array now otherwise we will lose any reference to it */
+								free_value_storage_array(storage, value_type, existing_time_sequence, 1);
+								/* Update the value storage with the new pointer */
+								*(void **)storage = temp_storage;
+								storage += valueTypeSize;
+							}
+						} break;
+					}
+				}
+				/* else existing time sequence includes new times so do nothing */
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
+					"Field already defined incompatibly at node.");
+			}
+		}
+		if (existing_time_sequence)
+		{
+			DEACCESS(FE_time_sequence)(&existing_time_sequence);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"define_FE_field_at_node.  Invalid argument(s)");
-	}
-	LEAVE;
+		const int existing_values_storage_size = node_field_info->values_storage_size;
+		if (node_field_info->fe_nodeset->get_FE_node_field_info_adding_new_field(
+			&node_field_info, node_field, node_field_info->number_of_values + number_of_values))
+		{
+			if (GENERAL_FE_FIELD == field->fe_field_type)
+			{
+				ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
+				Value_storage *new_value;
+				if (REALLOCATE(new_value, node->values_storage, Value_storage,
+					node_field_info->values_storage_size + new_values_storage_size))
+				{
+					node->values_storage = new_value;
+					/* initialize new values */
+					new_value += existing_values_storage_size;
+					for (int i = number_of_values ; i > 0 ; i--)
+					{
+						if (time_sequence)
+						{
+							allocate_time_values_storage_array(value_type,
+								time_sequence, new_value, /*initialise_storage*/1);
+							new_value += valueTypeSize;
+						}
+						else
+						{
+							switch (value_type)
+							{
+								case ELEMENT_XI_VALUE:
+								{
+									*((struct FE_element **)new_value) =
+										(struct FE_element *)NULL;
+									new_value += sizeof(struct FE_element *);
+									for (int j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; j++)
+									{
+										*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
+										new_value += sizeof(FE_value);
+									}
+								} break;
+								case FE_VALUE_VALUE:
+								{
+									*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
+									new_value += valueTypeSize;
+								} break;
+								case UNSIGNED_VALUE:
+								{
+									*((unsigned *)new_value) = 0;
+									new_value += valueTypeSize;
+								} break;
+								case INT_VALUE:
+								{
+									*((int *)new_value) = 0;
+									new_value += valueTypeSize;
+								} break;
+								case DOUBLE_VALUE:
+								{
+									*((double *)new_value) = 0;
+									new_value += valueTypeSize;
+								} break;
+								case FLT_VALUE:
+								{
+									*((float *)new_value) = 0;
+									new_value += valueTypeSize;
+								} break;
+								case SHORT_VALUE:
+								{
+									display_message(ERROR_MESSAGE,
+										"define_FE_field_at_node.  SHORT_VALUE: Code not "
+										"written yet. Beware alignmemt problems!");
+									return_code = 0;
+								} break;
+								case DOUBLE_ARRAY_VALUE:
+								{
+									double *array = (double *)NULL;
+									double **array_address;
+									int zero = 0;
+									/* copy number of array values to values_storage*/
+									*((int *)new_value) = zero;
+									/* copy pointer to array values to values_storage */
+									array_address =
+										(double **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case FE_VALUE_ARRAY_VALUE:
+								{
+									FE_value *array = (FE_value *)NULL;
+									FE_value **array_address;
+									int zero = 0;
+									*((int *)new_value) = zero;
+									array_address =
+										(FE_value **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case FLT_ARRAY_VALUE:
+								{
+									float *array = 0;
+									float **array_address;
+									int zero = 0;
+									*((int *)new_value) = zero;
+									array_address = (float **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case SHORT_ARRAY_VALUE:
+								{
+									short *array = (short *)NULL;
+									short **array_address;
+									int zero = 0;
+									*((int *)new_value) = zero;
+									array_address = (short **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case  INT_ARRAY_VALUE:
+								{
+									int *array = (int *)NULL;
+									int **array_address;
+									int zero = 0;
+									*((int *)new_value) = zero;
+									array_address = (int **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case  UNSIGNED_ARRAY_VALUE:
+								{
+									unsigned *array = (unsigned *)NULL;
+									unsigned **array_address;
+									int zero = 0;
+									*((int *)new_value) = zero;
+									array_address =
+										(unsigned **)(new_value + sizeof(int));
+									*array_address = array;
+									new_value += valueTypeSize;
+								} break;
+								case STRING_VALUE:
+								{
+									char **string_address;
 
+									string_address = (char **)(new_value);
+									*string_address = (char *)NULL;
+									new_value += valueTypeSize;
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"define_FE_field_at_node.  Unsupported value_type");
+									return_code = 0;
+								} break;
+							}
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "define_FE_field_at_node.  "
+						"Could not reallocate nodal values");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* already handled the accessing in FE_nodeset::get_FE_node_field_info_adding_new_field */
+				node->fields = node_field_info;
+			}
+			else
+			{
+				DEACCESS(FE_node_field_info)(&node_field_info);
+			}
+		}
+	}
+	DEACCESS(FE_node_field)(&node_field);
 	return (return_code);
-} /* define_FE_field_at_node */
+}
 
 struct FE_node_field_add_to_list_with_exclusion_data
 {
@@ -11658,7 +8744,6 @@ a new value reduced by the <value_exclusion_length>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node_field *offset_node_field;
 	struct FE_node_field_add_to_list_with_exclusion_data *exclusion_data;
 
 	ENTER(FE_node_field_add_to_list_with_exclusion);
@@ -11670,17 +8755,17 @@ a new value reduced by the <value_exclusion_length>.
 		if (node_field != exclusion_data->excluded_node_field)
 		{
 			if ((GENERAL_FE_FIELD == node_field->field->fe_field_type) &&
-				(node_field->components->value > exclusion_data->value_exclusion_start))
+				(node_field->getComponent(0)->getValuesOffset() > exclusion_data->value_exclusion_start))
 			{
 				/* create copy of node_field with component->value reduced
 					 by value_exclusion_length */
-				if (NULL != (offset_node_field=copy_create_FE_node_field_with_offset(
-					node_field,-exclusion_data->value_exclusion_length)))
+				FE_node_field *offset_node_field = FE_node_field::clone(*node_field, -exclusion_data->value_exclusion_length);
+				if (offset_node_field)
 				{
 					if (!ADD_OBJECT_TO_LIST(FE_node_field)(offset_node_field,
 						exclusion_data->node_field_list))
 					{
-						DESTROY(FE_node_field)(&offset_node_field);
+						delete[] offset_node_field;
 						return_code=0;
 					}
 				}
@@ -11712,87 +8797,6 @@ a new value reduced by the <value_exclusion_length>.
 	return (return_code);
 } /* FE_node_field_add_to_list_with_exclusion */
 
-int FE_element_ensure_FE_field_nodes_are_not_in_list(
-	struct FE_element *element,void *node_list_field_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Iterator function which, if <element> has nodes and the listed <fe_field>
-defined on it, ensures those nodes contributing to <fe_field> are not in the
-<fe_node_list>.
-==============================================================================*/
-{
-	int i, number_of_element_field_nodes, number_of_nodes, return_code;
-	struct Node_list_field_data *node_list_field_data;
-	struct FE_node **element_field_nodes;
-
-	ENTER(FE_element_ensure_FE_field_nodes_are_not_in_list);
-	if (element && (node_list_field_data =
-		(struct Node_list_field_data *)node_list_field_data_void))
-	{
-		return_code = 1;
-		/* only elements with nodes are considered */
-		if (get_FE_element_number_of_nodes(element, &number_of_nodes))
-		{
-			if ((0 < number_of_nodes) &&
-				FE_field_is_defined_in_element(node_list_field_data->fe_field, element))
-			{
-				/* get the nodes used by this element field */
-				if (calculate_FE_element_field_nodes(element, /*face_number*/-1, node_list_field_data->fe_field,
-					&number_of_element_field_nodes, &element_field_nodes,
-					/*top_level_element*/(struct FE_element *)NULL))
-				{
-					for (i = 0; (i < number_of_element_field_nodes) && return_code; i++)
-					{
-						if (element_field_nodes[i] &&
-							IS_OBJECT_IN_LIST(FE_node)(element_field_nodes[i],
-								node_list_field_data->fe_node_list))
-						{
-							return_code = REMOVE_OBJECT_FROM_LIST(FE_node)(
-								element_field_nodes[i], node_list_field_data->fe_node_list);
-						}
-					}
-					if (0 < number_of_element_field_nodes)
-					{
-						for (i = 0; i < number_of_element_field_nodes; i++)
-						{
-							if (element_field_nodes[i])
-							{
-								DEACCESS(FE_node)(&(element_field_nodes[i]));
-							}
-						}
-						DEALLOCATE(element_field_nodes);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_ensure_FE_field_nodes_are_not_in_list.  "
-						"Could not get element field nodes");
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_ensure_FE_field_nodes_are_not_in_list.  "
-				"Could not get number of nodes");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_ensure_FE_field_nodes_are_not_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_ensure_FE_field_nodes_are_not_in_list */
-
 int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 {
 	int bytes_to_copy,field_number_of_values,return_code;
@@ -11807,14 +8811,14 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 		(existing_node_field_info->fe_nodeset) &&
 		(existing_node_field_info->fe_nodeset->get_FE_region() == fe_region))
 	{
-		/* check if the field is already defined at the node */
+		/* check if the field is defined at the node */
 		if (NULL != (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 			existing_node_field_info->node_field_list)))
 		{
-			field_number_of_values = FE_node_field_get_number_of_values(node_field);
+			field_number_of_values = node_field->getTotalValuesCount();
 			if (GENERAL_FE_FIELD == field->fe_field_type)
 			{
-				exclusion_data.value_exclusion_start = node_field->components->value;
+				exclusion_data.value_exclusion_start = node_field->getComponent(0)->getValuesOffset();
 				exclusion_data.value_exclusion_length = field_number_of_values *
 					get_Value_storage_size(node_field->field->value_type,
 						node_field->time_sequence);
@@ -11839,6 +8843,7 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 						exclusion_data.node_field_list);
 				if (0 != new_node_field_info)
 				{
+					return_code = CMZN_OK;
 					if (0 < exclusion_data.value_exclusion_length)
 					{
 						/* free arrays, embedded locations */
@@ -11854,112 +8859,57 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 								node->values_storage+exclusion_data.value_exclusion_start+
 								exclusion_data.value_exclusion_length,bytes_to_copy);
 						}
-						if (REALLOCATE(values_storage,node->values_storage,Value_storage,
+						if (0 == new_node_field_info->values_storage_size)
+						{
+							DEALLOCATE(node->values_storage); // avoids warning about zero size
+						}
+						else if (REALLOCATE(values_storage,node->values_storage,Value_storage,
 							new_node_field_info->values_storage_size))
 						{
 							node->values_storage=values_storage;
 						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "undefine_FE_field_at_node.  Reallocate failed");
+							return_code = CMZN_ERROR_MEMORY;
+						}
 					}
 					DEACCESS(FE_node_field_info)(&(node->fields));
 					node->fields = new_node_field_info;
-					return_code=1;
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"undefine_FE_field_at_node.  Could not create node field info");
-					return_code=0;
+					return_code= CMZN_ERROR_GENERAL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"undefine_FE_field_at_node.  Could not copy node field list");
-				return_code=0;
+				return_code=CMZN_ERROR_GENERAL;
 			}
 			DESTROY(LIST(FE_node_field))(&exclusion_data.node_field_list);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"undefine_FE_field_at_node.  Field %s is not defined at node %d",
-				field->name,node->cm_node_identifier);
-			return_code=0;
+			//display_message(WARNING_MESSAGE,
+			//	"undefine_FE_field_at_node.  Field %s is not defined at node %d",
+			//	field->name,node->getIdentifier());
+			return_code = CMZN_ERROR_NOT_FOUND;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"undefine_FE_field_at_node.  Invalid argument(s)");
-		return_code=0;
+		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
 	return (return_code);
 }
-
-int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
-	int number_of_derivatives, enum FE_nodal_value_type *derivative_value_types)
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Defines <field> at <node> using the same <number_of_derivatives>
-and <nodal_value_types> for each component, and only 1 version.
-==============================================================================*/
-{
-	int j, n, number_of_components, return_code;
-	struct FE_node_field_creator *node_field_creator;
-
-	ENTER(define_FE_field_at_node_simple);
-	if (node && field &&
-		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
-		((0 == number_of_derivatives) || ((0 < number_of_derivatives) && derivative_value_types)))
-	{
-		return_code = 1;
-		if (NULL != (node_field_creator = CREATE(FE_node_field_creator)(number_of_components)))
-		{
-			for (n = 0; n < number_of_components; n++)
-			{
-				for (j = 0 ; j < number_of_derivatives ; j++)
-				{
-					int result = FE_node_field_creator_define_derivative(node_field_creator,
-						/*component_number*/n, derivative_value_types[j]);
-					if (CMZN_OK != result)
-					{
-						display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.   Can't define derivative");
-						return_code = 0;
-					}
-				}
-			}
-			if (return_code)
-			{
-				if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
-					node_field_creator))
-				{
-					display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.   Could not define field at node");
-					return_code = 0;
-				}
-			}
-			DESTROY(FE_node_field_creator)(&(node_field_creator));
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_node_simple.  ");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_FE_field_at_node_simple.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_FE_field_at_node_simple */
 
 int for_FE_field_at_node(struct FE_field *field,
 	FE_node_field_iterator_function *iterator,void *user_data,
@@ -12147,7 +9097,7 @@ the field.
 	return (return_code);
 } /* FE_node_has_FE_field_values */
 
-struct FE_node_field_info *FE_node_get_FE_node_field_info(struct FE_node *node)
+struct FE_node_field_info *FE_node_get_FE_node_field_info(cmzn_node *node)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 
@@ -12173,7 +9123,7 @@ Returns the FE_node_field_info from <node>. Must not be modified!
 	return (fe_node_field_info);
 } /* FE_node_get_FE_node_field_info */
 
-int FE_node_set_FE_node_field_info(struct FE_node *node,
+int FE_node_set_FE_node_field_info(cmzn_node *node,
 	struct FE_node_field_info *fe_node_field_info)
 /*******************************************************************************
 LAST MODIFIED : 24 February 2003
@@ -12203,6 +9153,13 @@ Private function only to be called by FE_region when merging FE_regions!
 
 	return (return_code);
 } /* FE_node_set_FE_node_field_info */
+
+int FE_node_get_element_usage_count(struct FE_node *node)
+{
+	if (node)
+		return node->getElementUsageCount();
+	return 0;
+}
 
 FE_nodeset *FE_node_get_FE_nodeset(struct FE_node *node)
 {
@@ -12270,7 +9227,7 @@ Note this will also return true if <field> is not defined at both nodes.
 			return_code = ((!node_field_1) && (!node_field_2)) || (
 				node_field_1 && node_field_2 &&
 				FE_node_fields_match(node_field_1, node_field_2,
-					/*ignore_field_and_time_sequence*/0, /*ignore_component_value*/1));
+					/*compare_field_and_time_sequence*/true, /*compare_component_value*/false));
 		}
 	}
 	else
@@ -12310,379 +9267,296 @@ Returns true if all fields are defined in the same way at the two nodes.
 	return (return_code);
 } /* equivalent_FE_fields_at_nodes */
 
-int FE_nodal_value_version_exists(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type)
-/*******************************************************************************
-LAST MODIFIED : 23 June 1999
-
-DESCRIPTION :
-Returns 1 if the <field>, <component_number>, <version> and <type> are stored at the
-node and valid at <time>.
-???DB.  May need speeding up
-==============================================================================*/
+/**
+ * Get node field parameters for valueLabel, version at time.
+ * Note if parameters only exist for some of the requested components, absent
+ * parameters are set to zero, and WARNING_PART_DONE is returned.
+ * @param componentNumber  Field component number starting at 0, or negative to
+ * get all component values.
+ * @param valuesOut  Array to receive values of size expected for componentNumber.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some components
+ * have parameters, ERROR_NOT_FOUND if field not defined or none of the requested
+ * components have parameters, otherwise any other error code.
+ */
+template <typename VALUE_TYPE> int cmzn_node_get_field_parameters(
+	cmzn_node *node, FE_field *field, int componentNumber,
+	cmzn_node_value_label valueLabel, int version, FE_value time, VALUE_TYPE *valuesOut)
 {
-	int return_code;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *values_storage = NULL;
-
-	ENTER(FE_nodal_value_version_exists);
-	return_code=0;
-	if (node && field && (0<=component_number)&&
-		(component_number < field->number_of_components) && (0<=version))
+	if (!(node && node->fields && field && (componentNumber < field->number_of_components) && (0 <= version) && valuesOut))
 	{
-		if (find_FE_nodal_values_storage_dest(node,field,component_number,
-			version,type,get_FE_field_value_type(field),
-			&values_storage,&time_sequence))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
+		display_message(ERROR_MESSAGE, "cmzn_node_get_field_parameters<VALUE_TYPE>.  Invalid arguments node %d field %s",
+			(node) ? node->getIdentifier() : -1, field ? field->name : "UNKNOWN");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	else
+	const FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+		field, node->fields->node_field_list);
+	if (!node_field)
+	{
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const int componentStart = (componentNumber < 0) ? 0 : componentNumber;
+	const int componentLimit = (componentNumber < 0) ? field->number_of_components : componentNumber + 1;
+	VALUE_TYPE *valueOut = valuesOut;
+	switch (field->fe_field_type)
+	{
+	case GENERAL_FE_FIELD:
+	{
+		if (!node->values_storage)
+		{
+			display_message(ERROR_MESSAGE, "cmzn_node_get_field_parameters<VALUE_TYPE>.  Node has no values storage");
+			return CMZN_ERROR_GENERAL;
+		}
+		int time_index_one = 0, time_index_two = 0;
+		FE_value time_xi = 0.0;
+		if (node_field->time_sequence)
+		{
+			FE_time_sequence_get_interpolation_for_time(node_field->time_sequence,
+				time, &time_index_one, &time_index_two, &time_xi);
+		}
+		const FE_value one_minus_time_xi = 1.0 - time_xi;
+		const int valueTypeSize = get_Value_storage_size(field->value_type, node_field->time_sequence);
+		int componentsFound = 0;
+		for (int c = componentStart; c < componentLimit; ++c)
+		{
+			const FE_node_field_template *nft = node_field->getComponent(c);
+			const int valueIndex = nft->getValueIndex(valueLabel, version);
+			if (valueIndex < 0)
+			{
+				*valueOut = 0;
+			}
+			else
+			{
+				Value_storage *valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
+				if (node_field->time_sequence)
+				{
+					const VALUE_TYPE *timeValues = *((VALUE_TYPE **)valuesStorage);
+					*valueOut = timeValues[time_index_one]*one_minus_time_xi + timeValues[time_index_two]*time_xi;
+				}
+				else
+				{
+					*valueOut = *((VALUE_TYPE *)valuesStorage);
+				}
+				++componentsFound;
+			}
+			++valueOut;
+		}
+		if (0 == componentsFound)
+		{
+			return CMZN_ERROR_NOT_FOUND;
+		}
+		if (componentsFound < (componentLimit - componentStart))
+		{
+			return CMZN_WARNING_PART_DONE;
+		}
+		return CMZN_OK;
+	} break;
+	case CONSTANT_FE_FIELD:
+	{
+		for (int c = componentStart; c < componentLimit; ++c)
+		{
+			*valueOut = *((VALUE_TYPE *)(field->values_storage) + c);
+			++valueOut;
+		}
+		return CMZN_OK;
+	} break;
+	case INDEXED_FE_FIELD:
+	{
+		int index;
+		if (cmzn_node_get_field_parameters(node, field->indexer_field,
+			/*componentNumber*/0, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, time, &index))
+		{
+			/* index numbers start at 1 */
+			if ((1 <= index) && (index <= field->number_of_indexed_values))
+			{
+				for (int c = componentStart; c < componentLimit; ++c)
+				{
+					*valueOut = *((VALUE_TYPE *)(field->values_storage) + field->number_of_indexed_values*c + index - 1);
+					++valueOut;
+				}
+				return CMZN_OK;
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,"cmzn_node_get_field_parameters<VALUE_TYPE>.  "
+					"Index field %s gave out-of-range index %d for field %s at node %d",
+					field->indexer_field->name, index, field->name, node->getIdentifier());
+			}
+		}
+	} break;
+	default:
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_nodal_value_version_exists.  Invalid argument(s)");
+			"cmzn_node_get_field_parameters<VALUE_TYPE>.  Unknown FE_field_type");
+	} break;
 	}
-	LEAVE;
+	return CMZN_ERROR_GENERAL;
+}
 
-	return (return_code);
-} /* FE_nodal_value_version_exists */
-
-int get_FE_nodal_value_as_string(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type, FE_value time, char **string)
-/*******************************************************************************
-LAST MODIFIED : 22 November 2001
-
-DESCRIPTION :
-Returns as a string the value for the (<version>, <type>) for the <field>
-<component_number> at the <node>.
-It is up to the calling function to DEALLOCATE the returned string.
-==============================================================================*/
+/**
+ * Set node field parameters for valueLabel, version at time.
+ * Note if parameters only exist for some of the requested components, sets
+ * those that do exist and returns WARNING_PART_DONE.
+ * Notifies of node field changes.
+ * @param componentNumber  Field component number starting at 0, or negative to
+ * set all component values.
+ * @param valuesIn  Array of in-values of size expected for componentNumber.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some components
+ * have parameters (and which were set), ERROR_NOT_FOUND if field not defined
+ * or none of the requested components have parameters, otherwise any other error code.
+ */
+template <typename VALUE_TYPE> int cmzn_node_set_field_parameters(
+	cmzn_node *node, FE_field *field, int componentNumber,
+	cmzn_node_value_label valueLabel, int version, FE_value time, const VALUE_TYPE *valuesIn)
 {
-	char temp_string[40];
-	int return_code;
-
-	ENTER(get_FE_nodal_value_as_string);
-	return_code=0;
-	(*string)=(char *)NULL;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version))
+	if (!(node && node->fields && field && (componentNumber < field->number_of_components) && (0 <= version) && valuesIn))
 	{
-		switch (field->value_type)
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_parameters<VALUE_TYPE>.  Invalid arguments node %d field %s",
+			(node) ? node->getIdentifier() : -1, field ? field->name : "UNKNOWN");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+		field, node->fields->node_field_list);
+	if (!node_field)
+	{
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	if (field->fe_field_type != GENERAL_FE_FIELD)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_parameters<VALUE_TYPE>.  Node %d field %s is not GENERAL type",
+			node->getIdentifier(), field->name);
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	}
+	if (!node->values_storage)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_parameters<VALUE_TYPE>.  Node has no values storage");
+		return CMZN_ERROR_GENERAL;
+	}
+	const int componentStart = (componentNumber < 0) ? 0 : componentNumber;
+	const int componentLimit = (componentNumber < 0) ? field->number_of_components : componentNumber + 1;
+	const VALUE_TYPE *valueIn = valuesIn;
+	int time_index = 0;
+	if ((node_field->time_sequence) && !FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_parameters<VALUE_TYPE>.  "
+			"Node %d field %s has no parameters at time %g", node->getIdentifier(), field->name, time);
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const int valueTypeSize = get_Value_storage_size(field->value_type, node_field->time_sequence);
+	int componentsFound = 0;
+	for (int c = componentStart; c < componentLimit; ++c)
+	{
+		const FE_node_field_template *nft = node_field->getComponent(c);
+		const int valueIndex = nft->getValueIndex(valueLabel, version);
+		if (valueIndex >= 0)
 		{
-			case ELEMENT_XI_VALUE:
+			Value_storage *valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
+			if (node_field->time_sequence)
 			{
-				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-				int dimension, error,i;
-				struct FE_element *element;
-
-				if (get_FE_nodal_element_xi_value(node,field,
-					component_number,version,type,&element,xi) && 
-					(0 < (dimension = get_FE_element_dimension(element))))
-				{
-					error=0;
-					if (dimension == 1)
-						append_string(string,"L",&error);
-					else if (dimension == 2)
-						append_string(string,"F",&error);
-					else
-						append_string(string,"E",&error);
-					sprintf(temp_string," %d",element->get_identifier());
-					append_string(string,temp_string,&error);
-					for (i=0;i<dimension;i++)
-					{
-						sprintf(temp_string," %g",xi[i]);
-						append_string(string,temp_string,&error);
-					}
-					return_code = !error;
-				}
-			} break;
-			case FE_VALUE_VALUE:
+				VALUE_TYPE *timeValues = *((VALUE_TYPE **)valuesStorage);
+				timeValues[time_index] = *valueIn;
+			}
+			else
 			{
-				FE_value value;
-
-				if (get_FE_nodal_FE_value_value(node,field,component_number,
-					version,type,time,&value))
-				{
-					sprintf(temp_string,"%g",value);
-					return_code=append_string(string,temp_string,&return_code);
-				}
-			} break;
-			case INT_VALUE:
-			{
-				int value;
-
-				if (get_FE_nodal_int_value(node,field,component_number,
-					version,type,time,&value))
-				{
-					sprintf(temp_string,"%d",value);
-					return_code=append_string(string,temp_string,&return_code);
-				}
-			} break;
-			case STRING_VALUE:
-			{
-				return_code=get_FE_nodal_string_value(node,field,component_number,
-					version,type,string);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_value_as_string.  Unknown value type %s",
-					Value_type_string(field->value_type));
-			} break;
+				*((VALUE_TYPE *)valuesStorage) = *valueIn;
+			}
+			++componentsFound;
 		}
+		++valueIn;
 	}
-	else
+	if (0 == componentsFound)
 	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_value_as_string.  Invalid argument(s)");
+		return CMZN_ERROR_NOT_FOUND;
 	}
-	LEAVE;
+	// notify of changes, but only for valid nodes (i.e. not template nodes)
+	if (node->index >= 0)
+	{
+		node->fields->fe_nodeset->nodeFieldChange(node, field);
+	}
+	if (componentsFound < (componentLimit - componentStart))
+	{
+		return CMZN_WARNING_PART_DONE;
+	}
+	return CMZN_OK;
+}
 
-	return (return_code);
-} /* get_FE_nodal_value_as_string */
-
-#define INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
-int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type *value) \
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
- \
-DESCRIPTION : \
-Gets a particular value (<version>, <type>) for the <field> \
-and <component_number> at the <node> and <time>. \
-???DB.  May need speeding up \
-==============================================================================*/ \
+#define INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION( value_typename, value_enum ) \
+int get_FE_nodal_ ## value_typename ## _value(cmzn_node *node, FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, value_typename *valuesOut) \
 { \
-   value_type *array; \
-	FE_value xi; \
-	int return_code, time_index_one, time_index_two; \
-	struct FE_time_sequence *time_sequence; \
-	Value_storage *values_storage = NULL; \
- \
-	ENTER(get_FE_nodal_ ## value_type ## _value); \
-	return_code=0; \
-	if (node && field && (0 <= component_number) && \
-		(component_number < field->number_of_components) && (0<=version) && value) \
-	{ \
-		switch (field->fe_field_type) \
-		{ \
-			case CONSTANT_FE_FIELD: \
-			{ \
-				*value = *((value_type *)(field->values_storage)+component_number); \
-				return_code=1; \
-			} break; \
-			case GENERAL_FE_FIELD: \
-			{ \
-				if (find_FE_nodal_values_storage_dest(node,field,component_number, \
-					version,type, value_enum ,&values_storage,&time_sequence)) \
-				{ \
-					if (time_sequence) \
-					{ \
-						FE_time_sequence_get_interpolation_for_time(time_sequence, \
-							time, &time_index_one, &time_index_two, &xi); \
-				   array = *((value_type **)values_storage); \
-			   *value = (value_type)(array[time_index_one] * (1.0 - xi) + \
-						  array[time_index_two] * xi); \
-					} \
-					else \
-					{ \
-						*value = *((value_type *)values_storage); \
-					} \
-					return_code=1; \
-				} \
-			} break; \
-			case INDEXED_FE_FIELD: \
-			{ \
-				int index; \
-\
-				if (get_FE_nodal_int_value(node,field->indexer_field, \
-			   /*component_number*/0,/*version*/0,	\
-					FE_NODAL_VALUE,time,&index)) \
-				{ \
-					/* index numbers start at 1 */ \
-					if ((1<=index)&&(index<=field->number_of_indexed_values)) \
-					{ \
-						*value = *((value_type *)(field->values_storage)+ \
-							field->number_of_indexed_values*component_number+index-1); \
-						return_code=1;	 \
-					} \
-					else \
-					{	 \
-						display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
-							"Index field %s gave out-of-range index %d in field %s", \
-							field->indexer_field->name,index,field->name); \
-					} \
-				} \
-			} break; \
-			default: \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"get_FE_nodal_" #value_type "_value.  Unknown FE_field_type"); \
-			} break; \
-		} \
-	} \
-	else \
+	if (!(field && (field->value_type == value_enum))) \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"get_FE_nodal_" #value_type "_value.  Invalid argument(s)"); \
+			"get_FE_nodal_" #value_typename "_value.  Invalid arguments"); \
+		return CMZN_ERROR_ARGUMENT; \
 	} \
-	LEAVE; \
- \
-	return (return_code); \
-} /* get_FE_nodal_ ## value_type ## _value */
+	return cmzn_node_get_field_parameters(node, field, componentNumber, valueLabel, version, time, valuesOut); \
+}
 
-#define INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
-int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type value) \
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
- \
-DESCRIPTION : \
-Sets a particular value (<version>, <type>) for the <field> \
-and <component_number> at the <node>. \
-==============================================================================*/ \
+#define INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION( value_typename, value_enum ) \
+int set_FE_nodal_ ## value_typename ## _value(cmzn_node *node, FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, const value_typename *valuesIn) \
 { \
-   value_type *array; \
-	int return_code, time_index;  \
-	struct FE_time_sequence *time_sequence; \
-	Value_storage *values_storage = NULL; \
- \
-	ENTER(set_FE_nodal_ ## value_type ## _value); \
-	return_code=0; \
-	/* check arguments */ \
-	if (node && field && (0<=component_number) && \
-		(component_number < field->number_of_components) && (0<=version)) \
+	if (!(field && (field->value_type == value_enum))) \
 	{ \
-		/* get the values storage */ \
-		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
-		 version,type, value_enum,&values_storage,&time_sequence)) \
+		display_message(ERROR_MESSAGE, \
+			"set_FE_nodal_" #value_typename "_value.  Invalid arguments"); \
+		return CMZN_ERROR_ARGUMENT; \
+	} \
+	return cmzn_node_set_field_parameters(node, field, componentNumber, valueLabel, version, time, valuesIn); \
+}
+
+#define INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_typename, value_enum ) \
+int get_FE_nodal_ ## value_typename ## _storage(cmzn_node *node, FE_field *field, \
+	int componentNumber, cmzn_node_value_label valueLabel, int version, \
+	FE_value time, value_typename **valueAddress) \
+{ \
+	int return_code = CMZN_OK; \
+	if (node && field && (0 <= componentNumber) && \
+		(componentNumber < field->number_of_components) && (0<=version)) \
+	{ \
+		struct FE_time_sequence *time_sequence; \
+		Value_storage *valuesStorage = NULL; \
+		return_code = find_FE_nodal_values_storage_dest(node, field, componentNumber, \
+			valueLabel, version, valuesStorage, time_sequence); \
+		if (CMZN_OK == return_code) \
 		{ \
 			if (time_sequence) \
 			{ \
+				int time_index; \
 				if (FE_time_sequence_get_index_for_time(time_sequence, time, &time_index)) \
 				{ \
-					array = *((value_type **)values_storage); \
-					array[time_index] = value; \
-					return_code = 1; \
+					value_typename *timeValues = *((value_typename **)valuesStorage); \
+					*valueAddress = &(timeValues[time_index]); \
 				} \
-			   else \
+				else \
 				{ \
-					display_message(ERROR_MESSAGE,"set_FE_nodal_" #value_type "_value.  " \
+					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_typename "_storage.  " \
 						"Time value for time %g not defined at this node.", time); \
-					return_code=0; \
+					return_code = CMZN_ERROR_ARGUMENT; \
 				} \
 			} \
 			else \
 			{ \
 				/* copy in the value */ \
-				*((value_type *)values_storage) = value; \
-				return_code=1; \
+				*valueAddress = (value_typename *)valuesStorage; \
 			} \
-			/* avoid notifying changes to non-managed nodes */ \
-			if (return_code && node->fields->fe_nodeset->containsNode(node)) \
-				node->fields->fe_nodeset->nodeFieldChange(node, field); \
-		} \
-		else \
-		{	 \
-			return_code=0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"set_FE_nodal_" #value_type "_value.  Invalid argument(s)"); \
+			"get_FE_nodal_" #value_typename "_storage.  Invalid argument(s)"); \
+		return_code = CMZN_ERROR_ARGUMENT; \
 	} \
-	LEAVE; \
- \
 	return (return_code); \
-} /* set_FE_nodal_ ## value_type ## _value */
+}
 
-#define INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
-int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
-	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type **value) \
-/******************************************************************************* \
-LAST MODIFIED : 8 May 2007 \
- \
-DESCRIPTION : \
-Returns a pointer to the memory which contains the values storage for this  \
-degree of freedom.  This pointer will be invalid if the node is modified so \
-it should only be used temporarily. \
-==============================================================================*/ \
-{ \
-   value_type *array; \
-	int return_code, time_index;  \
-	struct FE_time_sequence *time_sequence; \
-	Value_storage *values_storage = NULL; \
- \
-	ENTER(get_FE_nodal_ ## value_type ## _storage); \
-	return_code=0; \
-	/* check arguments */ \
-	if (node && field && (0<=component_number) && \
-		(component_number < field->number_of_components) && (0<=version)) \
-	{ \
-		/* get the values storage */ \
-		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
-		 version,type, value_enum,&values_storage,&time_sequence)) \
-		{ \
-			if (time_sequence) \
-			{ \
-				if (FE_time_sequence_get_index_for_time(time_sequence, time, &time_index)) \
-				{ \
-					array = *((value_type **)values_storage); \
-					*value = &(array[time_index]);		\
-					return_code = 1; \
-				} \
-			   else \
-				{ \
-					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_storage.  " \
-						"Time value for time %g not defined at this node.", time); \
-					return_code=0; \
-				} \
-			} \
-			else \
-			{ \
-				/* copy in the value */ \
-				*value = (value_type *)values_storage; \
-				return_code=1; \
-			} \
-			/* avoid notifying changes to non-managed nodes */ \
-			if (return_code && node->fields->fe_nodeset->containsNode(node)) \
-			{ \
-				/* Notify the clients that this node is changed, even though it hasn't \
-					changed yet.  If users of this function have used begin_cache and \
-					end cache around their routines then the correct notifications will happen \
-					once the end cache is done */ \
-				node->fields->fe_nodeset->nodeFieldChange(node, field); \
-			} \
-		} \
-		else \
-		{	 \
-			return_code=0; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"get_FE_nodal_" #value_type "_storage.  Invalid argument(s)"); \
-	} \
-	LEAVE; \
- \
-	return (return_code); \
-} /* set_FE_nodal_ ## value_type ## _value */
-
-#define INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
-INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
-INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
-INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION(value_type,value_enum)
+#define INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( value_typename , value_enum ) \
+INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION(value_typename,value_enum) \
+INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION(value_typename,value_enum) \
+INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION(value_typename,value_enum)
 
 INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
 INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
@@ -12691,62 +9565,47 @@ INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
 INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
 
 int get_FE_nodal_element_xi_value(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type, struct FE_element **element, FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Gets a particular element_xi_value (<version>, <type>) for the field <component>
-at the <node>.
-???DB.  May need speeding up
-==============================================================================*/
+	FE_field *field, int component_number,
+	cmzn_element **element, FE_value *xi)
 {
-	int i,return_code;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *values_storage = NULL;
-
-	ENTER(get_FE_nodal_element_xi_value);
-	return_code=0;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version)&&
-		element&&xi&&(field->value_type==ELEMENT_XI_VALUE))
+	int return_code = 0;
+	if (node && field && (field->value_type == ELEMENT_XI_VALUE)
+		&& (0 <= component_number)&& (component_number < field->number_of_components)
+		&& (element) &&(xi))
 	{
-		values_storage=(Value_storage *)NULL;
+		Value_storage *valuesStorage = 0;
 		switch (field->fe_field_type)
 		{
 			case CONSTANT_FE_FIELD:
 			{
-				values_storage=field->values_storage +
-					get_Value_storage_size(ELEMENT_XI_VALUE,
-						(struct FE_time_sequence *)NULL)*component_number;
+				valuesStorage = field->values_storage + component_number*
+					get_Value_storage_size(ELEMENT_XI_VALUE, (struct FE_time_sequence *)NULL);
 				return_code=1;
 			} break;
 			case GENERAL_FE_FIELD:
 			{
-				if (find_FE_nodal_values_storage_dest(node,field,component_number,
-					version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+				struct FE_time_sequence *time_sequence;
+				if (CMZN_OK == find_FE_nodal_values_storage_dest(node,field,component_number,
+					CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
 				{
-					return_code=1;
+					return_code = 1;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"get_FE_nodal_element_xi_value.  "
-						"find_FE_nodal_values_storage_dest failed");
+					display_message(ERROR_MESSAGE, "get_FE_nodal_element_xi_value.  Field %s is not defined", field->name);
 				}
 			} break;
 			case INDEXED_FE_FIELD:
 			{
 				int index;
-
-				if (get_FE_nodal_int_value(node,field->indexer_field,
-					/*component_number*/0,/*version*/0,
-					FE_NODAL_VALUE,/*time*/0,&index))
+				if (cmzn_node_get_field_parameters(node, field->indexer_field,
+					/*componentNumber*/0, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0,
+					/*time*/0, &index))
 				{
 					/* index numbers start at 1 */
 					if ((1<=index)&&(index<=field->number_of_indexed_values))
 					{
-						values_storage=field->values_storage+
+						valuesStorage =field->values_storage+
 							get_Value_storage_size(ELEMENT_XI_VALUE,
 							(struct FE_time_sequence *)NULL)*
 							(field->number_of_indexed_values*component_number+index-1);
@@ -12763,7 +9622,7 @@ at the <node>.
 				{
 					display_message(ERROR_MESSAGE,"get_FE_nodal_element_xi_value.  "
 						"Field %s, indexed by %s not defined at node %",
-						field->name,field->indexer_field->name,node->cm_node_identifier);
+						field->name,field->indexer_field->name,node->getIdentifier());
 					return_code=0;
 				}
 			} break;
@@ -12773,14 +9632,18 @@ at the <node>.
 					"get_FE_nodal_element_xi_value.  Unknown FE_field_type");
 			} break;
 		}
-		if (return_code&&values_storage)
+		if (return_code && valuesStorage)
 		{
-			*element = *((struct FE_element **)values_storage);
-			values_storage += sizeof(struct FE_element *);
-			for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			*element = *((cmzn_element **)valuesStorage);
+			valuesStorage += sizeof(struct FE_element *);
+			if (*element)
 			{
-				xi[i] = *((FE_value *)values_storage);
-				values_storage += sizeof(FE_value);
+				const int dimension = (*element)->getDimension();
+				for (int i = 0; i < dimension; i++)
+				{
+					xi[i] = *((FE_value *)valuesStorage);
+					valuesStorage += sizeof(FE_value);
+				}
 			}
 		}
 		else
@@ -12798,63 +9661,51 @@ at the <node>.
 		display_message(ERROR_MESSAGE,
 			"get_FE_nodal_element_xi_value.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* get_FE_nodal_element_xi_value */
+}
 
 int set_FE_nodal_element_xi_value(struct FE_node *node,
-	struct FE_field *field, int component_number, int version,
-	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi)
+	FE_field *field, int component_number,
+	cmzn_element *element, const FE_value *xi)
 {
 	int return_code = 0;
 	int dimension = 0;
-	if (node && field && (field->value_type == ELEMENT_XI_VALUE) &&
+	// now require host mesh to be set; legacy inputs must ensure set with first element
+	if (node && field && (field->value_type == ELEMENT_XI_VALUE) && (field->element_xi_host_mesh) &&
 		(0 <= component_number) && (component_number < field->number_of_components) &&
-		(0 <= version) && ((!element) || ((0 < (dimension = get_FE_element_dimension(element))) && xi)))
+		((!element) || ((0 < (dimension = element->getDimension())) && xi)))
 	{
-		// GRC maintain fixed dimension here:
-		if ((!element) || (0 == field->element_xi_mesh_dimension) ||
-			(dimension == field->element_xi_mesh_dimension))
+		if (element && (!field->element_xi_host_mesh->containsElement(element)))
 		{
-			Value_storage *values_storage = 0;
-			FE_time_sequence *time_sequence = 0;
-			/* get the values storage */
-			if (find_FE_nodal_values_storage_dest(node,field,component_number,
-				version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
+			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  %d-D element %d is not from host mest %s for field %s ",
+				dimension, element->getIdentifier(), field->element_xi_host_mesh->getName(), field->name);
+			return 0;
+		}
+		Value_storage *valuesStorage = 0;
+		FE_time_sequence *time_sequence = 0;
+		/* get the values storage */
+		if (CMZN_OK == find_FE_nodal_values_storage_dest(node, field, component_number,
+			CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
+		{
+			/* copy in the element_xi_value */
+			REACCESS(FE_element)((struct FE_element **)valuesStorage, element);
+			valuesStorage += sizeof(struct FE_element *);
+			for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
 			{
-				/* copy in the element_xi_value */
-				REACCESS(FE_element)((struct FE_element **)values_storage, element);
-				values_storage += sizeof(struct FE_element *);
-				for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
-				{
-					if (i < dimension)
-					{
-						*((FE_value *)values_storage) = xi[i];
-					}
-					else
-					{
-						/* set spare xi values to 0 */
-						*((FE_value *)values_storage) = 0.0;
-					}
-					values_storage += sizeof(FE_value);
-				}
-				/* avoid notifying changes to non-managed nodes */
-				if (node->fields->fe_nodeset->containsNode(node))
-					node->fields->fe_nodeset->nodeFieldChange(node, field);
-				return_code=1;
+				/* set spare xi values to 0 */
+				*((FE_value *)valuesStorage) = (i < dimension) ? xi[i] : 0.0;
+				valuesStorage += sizeof(FE_value);
 			}
-			else
+			// notify of changes, but only for valid nodes (i.e. not template nodes)
+			if (node->index >= 0)
 			{
-				return_code=0;
+				node->fields->fe_nodeset->nodeFieldChange(node, field);
 			}
+			return_code=1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
-				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
-				field->name, field->element_xi_mesh_dimension, dimension, element->get_identifier());
-			return_code = 0;
+			return_code=0;
 		}
 	}
 	else
@@ -12862,6 +9713,234 @@ int set_FE_nodal_element_xi_value(struct FE_node *node,
 		display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  Invalid argument(s)");
 	}
 	return (return_code);
+}
+
+int get_FE_nodal_string_value(struct FE_node *node,
+	FE_field *field, int componentNumber, char **stringOut)
+{
+	int return_code = 0;
+	if (node && field && (field->value_type == STRING_VALUE) && (0 <= componentNumber)
+		&& (componentNumber < field->number_of_components) && stringOut)
+	{
+		Value_storage *valuesStorage = NULL;
+		switch (field->fe_field_type)
+		{
+		case CONSTANT_FE_FIELD:
+		{
+			valuesStorage = field->values_storage +
+				get_Value_storage_size(STRING_VALUE, (struct FE_time_sequence *)NULL)
+				*componentNumber;
+			return_code = 1;
+		} break;
+		case GENERAL_FE_FIELD:
+		{
+			struct FE_time_sequence *time_sequence;
+			if (CMZN_OK == find_FE_nodal_values_storage_dest(node, field, componentNumber,
+				CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
+			{
+				return_code = 1;
+			}
+		} break;
+		case INDEXED_FE_FIELD:
+		{
+			int index;
+			if (cmzn_node_get_field_parameters(node, field->indexer_field,
+				/*componentNumber*/0, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0,
+				/*time*/0, &index))
+			{
+				/* index numbers start at 1 */
+				if ((1<=index)&&(index<=field->number_of_indexed_values))
+				{
+					valuesStorage = field->values_storage +
+						get_Value_storage_size(STRING_VALUE, (struct FE_time_sequence *)NULL)*
+						(field->number_of_indexed_values*componentNumber+index-1);
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "get_FE_nodal_string_value.  "
+						"Index field %s gave out-of-range index %d in field %s",
+						field->indexer_field->name, index, field->name);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "get_FE_nodal_string_value.  "
+					"Field %s, indexed by %s not defined at node %",
+					field->name, field->indexer_field->name, node->getIdentifier());
+				return_code = 0;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"get_FE_nodal_string_value.  Unknown FE_field_type");
+		} break;
+		}
+		if (return_code && valuesStorage)
+		{
+			char *theString = *((char **)valuesStorage);
+			if (theString)
+			{
+				if (ALLOCATE(*stringOut, char, strlen(theString) + 1))
+				{
+					strcpy(*stringOut, theString);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"get_FE_nodal_string_value.  Not enough memory");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				/* no string, so successfully return NULL */
+				*stringOut = (char *)NULL;
+			}
+		}
+		else
+		{
+			if (return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_nodal_element_xi_value.  No values storage");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "get_FE_nodal_string_value.  Invalid argument(s)");
+	}
+	return (return_code);
+}
+
+int set_FE_nodal_string_value(struct FE_node *node,
+	FE_field *field, int componentNumber, const char *stringIn)
+{
+	int return_code = 0;
+	if (node && field && (field->value_type == STRING_VALUE) && (0 <= componentNumber) &&
+		(componentNumber < field->number_of_components))
+	{
+		Value_storage *valuesStorage = 0;
+		struct FE_time_sequence *time_sequence;
+		if (CMZN_OK == find_FE_nodal_values_storage_dest(node, field, componentNumber,
+			CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
+		{
+			/* get the pointer to the stored string */
+			char **stringAddress = (char **)(valuesStorage);
+			if (stringIn)
+			{
+				/* reallocate the string currently there */
+				char *theString;
+				if (REALLOCATE(theString, *stringAddress, char, strlen(stringIn) + 1))
+				{
+					strcpy(theString, stringIn);
+					*stringAddress = theString;
+					// notify of changes, but only for valid nodes (i.e. not template nodes)
+					if (node->index >= 0)
+					{
+						node->fields->fe_nodeset->nodeFieldChange(node, field);
+					}
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_FE_nodal_string_value.  Not enough memory");
+				}
+			}
+			else
+			{
+				/* NULL string; free the existing string */
+				if (*stringAddress)
+				{
+					DEALLOCATE(*stringAddress);
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "set_FE_nodal_string_value.  Field %s is not defined", field->name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_nodal_string_value.  Invalid argument(s)");
+	}
+	return (return_code);
+}
+
+char *get_FE_nodal_value_as_string(struct FE_node *node, FE_field *field,
+	int componentNumber, cmzn_node_value_label valueLabel, int version,
+	FE_value time)
+{
+	if (!(node && field && (0 <= componentNumber)&&
+		(componentNumber < field->number_of_components) && (0 <= version)))
+	{
+		display_message(ERROR_MESSAGE, "get_FE_nodal_value_as_string.  Invalid argument(s)");
+		return 0;
+	}
+	char temp_string[40];
+	char *returnString = 0;
+	switch (field->value_type)
+	{
+	case ELEMENT_XI_VALUE:
+	{
+		cmzn_element *element;
+		FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		if (get_FE_nodal_element_xi_value(node, field, componentNumber, &element, xi) && element)
+		{
+			const int dimension = element->getDimension();
+			int error = 0;
+			if (dimension == 1)
+				append_string(&returnString, "L", &error);
+			else if (dimension == 2)
+				append_string(&returnString, "F", &error);
+			else
+				append_string(&returnString, "E", &error);
+			sprintf(temp_string, " %d", element->getIdentifier());
+			append_string(&returnString, temp_string, &error);
+			for (int d = 0; d < dimension; ++d)
+			{
+				sprintf(temp_string, " %g", xi[d]);
+				append_string(&returnString, temp_string, &error);
+			}
+		}
+	} break;
+	case FE_VALUE_VALUE:
+	{
+		FE_value value;
+		if (cmzn_node_get_field_parameters(node, field, componentNumber, valueLabel, version, time, &value))
+		{
+			sprintf(temp_string, "%g", value);
+			returnString = duplicate_string(temp_string);
+		}
+	} break;
+	case INT_VALUE:
+	{
+		int value;
+		if (cmzn_node_get_field_parameters(node, field, componentNumber, valueLabel, version, time, &value))
+		{
+			sprintf(temp_string, "%d", value);
+			returnString = duplicate_string(temp_string);
+		}
+	} break;
+	case STRING_VALUE:
+	{
+		get_FE_nodal_string_value(node, field, componentNumber, &returnString);
+	} break;
+	default:
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_nodal_value_as_string.  Unknown value type %s",
+			Value_type_string(field->value_type));
+	} break;
+	}
+	return returnString;
 }
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void)
@@ -12880,7 +9959,7 @@ Conditional function returning true if <node> identifier is in the
 	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
 	{
 		return_code=
-			Multi_range_is_value_in_range(multi_range,node->cm_node_identifier);
+			Multi_range_is_value_in_range(multi_range,node->getIdentifier());
 	}
 	else
 	{
@@ -12909,7 +9988,7 @@ Conditional function returning true if <node> identifier is NOT in the
 	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
 	{
 		return_code=
-			!Multi_range_is_value_in_range(multi_range,node->cm_node_identifier);
+			!Multi_range_is_value_in_range(multi_range,node->getIdentifier());
 	}
 	else
 	{
@@ -12951,177 +10030,6 @@ Iterator function for adding the number of <node> to <multi_range>.
 	return (return_code);
 } /* add_FE_node_number_to_Multi_range */
 
-int add_FE_node_to_list(struct FE_node *node, void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Iterator function for adding <node> to <node_list>. Does not expect <node> to
-already be in list so more efficient than ensure_FE_node_is_in_list
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(add_FE_node_to_list);
-	return_code =
-		ADD_OBJECT_TO_LIST(FE_node)(node, (struct LIST(FE_node) *)node_list_void);
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_node_to_list */
-
-int ensure_FE_node_is_in_list(struct FE_node *node,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function for adding <node> to <node_list> if not currently in it.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(ensure_FE_node_is_in_list);
-	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		if (!IS_OBJECT_IN_LIST(FE_node)(node,node_list))
-		{
-			return_code=ADD_OBJECT_TO_LIST(FE_node)(node,node_list);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_node_is_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_node_is_in_list */
-
-int ensure_FE_node_is_in_list_conditional(struct FE_node *node,
-	void *list_conditional_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for adding <node> to a list - if not already in it - if a
-conditional function with user_data is true.
-The node_list, conditional function and user_data are passed in a
-struct FE_node_list_conditional_data * in the second argument.
-Warning: Must not be iterating over the list being added to!
-==============================================================================*/
-{
-	int return_code;
-	struct FE_node_list_conditional_data *list_conditional_data;
-
-	ENTER(ensure_FE_node_is_in_list_conditional);
-	if (node&&(list_conditional_data=
-		(struct FE_node_list_conditional_data *)list_conditional_data_void)&&
-		list_conditional_data->node_list&&list_conditional_data->function)
-	{
-		if ((list_conditional_data->function)(node,
-			list_conditional_data->user_data))
-		{
-			if (!IS_OBJECT_IN_LIST(FE_node)(node,list_conditional_data->node_list))
-			{
-				return_code=
-					ADD_OBJECT_TO_LIST(FE_node)(node,list_conditional_data->node_list);
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_node_is_in_list_conditional.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_node_is_in_list_conditional */
-
-int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for removing <node> from <node_list> if currently in it.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(ensure_FE_node_is_not_in_list);
-	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		if (IS_OBJECT_IN_LIST(FE_node)(node,node_list))
-		{
-			return_code=REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_node_is_not_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_node_is_not_in_list */
-
-int toggle_FE_node_in_list(struct FE_node *node,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-If <node> is in <node_list> it is taken out, otherwise it is added.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(toggle_FE_node_in_list);
-	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		if (IS_OBJECT_IN_LIST(FE_node)(node,node_list))
-		{
-			return_code=REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list);
-		}
-		else
-		{
-			return_code=ADD_OBJECT_TO_LIST(FE_node)(node,node_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"toggle_FE_node_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* toggle_FE_node_in_list */
-
 int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
 	struct LIST(FE_field) *field_list)
 {
@@ -13137,13 +10045,13 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
 		{
 			cmzn_nodeiterator *node_iter = fe_nodeset->createNodeiterator();
 			cmzn_node_id node = 0;
-			while (0 != (node = node_iter->next_non_access()))
+			while (0 != (node = node_iter->nextNode()))
 			{
 				// don't clear embedded locations on nodes now owned by a different nodeset
 				// as happens when merging from a separate region
 				if (node->fields->fe_nodeset == fe_nodeset)
-					set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
-						/*version*/0, FE_NODAL_VALUE, (struct FE_element *)0, xi);
+					set_FE_nodal_element_xi_value(node, field, /*componentNumber*/0,
+						(struct FE_element *)0, xi);
 			}
 			cmzn_nodeiterator_destroy(&node_iter);
 		}
@@ -13209,7 +10117,7 @@ Checks first that the FE_fields match.
 			if (FE_fields_match_exact(node_field->field, other_node_field->field))
 			{
 				if (FE_node_fields_match(node_field, other_node_field,
-					/*ignore_field_and_time_sequence*/1, /*ignore_component_value*/1))
+					/*compare_field_and_time_sequence*/false, /*compare_component_value*/false))
 				{
 					return_code = 1;
 				}
@@ -13230,925 +10138,243 @@ Checks first that the FE_fields match.
 	return (return_code);
 } /* FE_node_field_can_be_merged */
 
-int FE_node_can_be_merged(struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 November 2002
-
-DESCRIPTION :
-Fetches a node with the same identifier as <node> from <data>->node_list.
-Returns true if there is either no such node in the list or the two nodes have
-the same node field definitions for all fields of the same name.
-Note that the actual field may be different, but it is assumed that the same
-name fields are already proven to be compatible. <data_void> should point at a
-properly initialised struct FE_node_can_be_merged_data.
-After using the function, deallocate data->compatible_node_field_info!
-==============================================================================*/
+bool FE_node_can_merge(struct FE_node *targetNode, struct FE_node *sourceNode)
 {
-	int i, return_code;
-	struct FE_node *other_node;
-	struct FE_node_field_info **node_field_info;
-	struct FE_node_can_be_merged_data *data;
-
-	ENTER(FE_node_can_be_merged);
-	return_code = 0;
-	if (node && (data = (struct FE_node_can_be_merged_data *)data_void) &&
-		data->node_list)
+	if (targetNode && targetNode->fields && sourceNode && sourceNode->fields)
 	{
-		if (NULL != (other_node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			node->cm_node_identifier, data->node_list)))
+		if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+			FE_node_field_can_be_merged,
+			(void *)targetNode->fields->node_field_list,
+			sourceNode->fields->node_field_list))
 		{
-			/* check if the node_field_info have already been proved compatible */
-			node_field_info = data->compatible_node_field_info;
-			for (i = 0; (i < data->number_of_compatible_node_field_info) &&
-				(!return_code); i++)
-			{
-				if ((*node_field_info == node->fields) &&
-					(*(node_field_info + 1) == other_node->fields))
-				{
-					return_code = 1;
-				}
-				node_field_info += 2;
-			}
-			if (!return_code)
-			{
-				/* slow path: loop through node fields */
-				if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-					FE_node_field_can_be_merged,
-					(void *)other_node->fields->node_field_list,
-					node->fields->node_field_list))
-				{
-					/* store combination of node field info in compatible list */
-					if (REALLOCATE(node_field_info, data->compatible_node_field_info,
-						struct FE_node_field_info *,
-						2*(data->number_of_compatible_node_field_info + 1)))
-					{
-						node_field_info[data->number_of_compatible_node_field_info*2] =
-							node->fields;
-						node_field_info[data->number_of_compatible_node_field_info*2 + 1] =
-							other_node->fields;
-						data->compatible_node_field_info = node_field_info;
-						data->number_of_compatible_node_field_info++;
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "FE_node_can_be_merged.  "
-							"Could not reallocate compatible_node_field_info");
-					}
-				}
-			}
-		}
-		else
-		{
-			return_code = 1;
+			return true;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_can_be_merged.  Invalid argument(s)");
-	}
-	LEAVE;
+	return false;
+}
 
-	return (return_code);
-} /* FE_node_can_be_merged */
-
-int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-Returns true(1) if the <data_void>->fe_field is define at the <node> AND
-the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string.
-Otherwise returns false (0)
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_node_value_label)
 {
-	int return_code;
-	struct FE_field_and_string_data *field_and_string_data;
-	struct FE_field *fe_field;
-	char *required_string,*field_string;
-
-	ENTER(FE_node_has_FE_field_and_string_data);
-	field_and_string_data=(struct FE_field_and_string_data *)NULL;
-	fe_field=(struct FE_field *)NULL;
-	required_string=(char *)NULL;
-	field_string=(char *)NULL;
-	return_code=0;
-	if (node&&(field_and_string_data=(struct FE_field_and_string_data *)data_void))
-	{
-		fe_field=field_and_string_data->fe_field;
-		required_string=field_and_string_data->string;
-		if (FE_field_is_defined_at_node(fe_field,node))
-		{
-			if (get_FE_nodal_string_value(node,fe_field,0,0,FE_NODAL_VALUE,&field_string))
-			{
-				if (!strcmp(required_string,field_string))
-				{
-					return_code=1;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"FE_node_has_FE_field_and_string_data.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /*FE_node_has_FE_field_and_string_data */
-
-int FE_node_is_in_list(struct FE_node *node,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns true if <node> is in <node_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(FE_node_is_in_list);
-	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		return_code = IS_OBJECT_IN_LIST(FE_node)(node,node_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_is_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_is_in_list */
-
-int FE_node_is_not_in_list(struct FE_node *node,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Returns true if <node> is not in <node_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(FE_node_is_not_in_list);
-	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		return_code = !IS_OBJECT_IN_LIST(FE_node)(node,node_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_is_not_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_is_not_in_list */
-
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
-{
-	const char *enumerator_string;
-
-	ENTER(ENUMERATOR_STRING(FE_nodal_value_type));
 	switch (enumerator_value)
 	{
-		case FE_NODAL_VALUE:
+		case CMZN_NODE_VALUE_LABEL_VALUE:
 		{
-			enumerator_string = "value";
+			return "value";
 		} break;
-		case FE_NODAL_D_DS1:
+		case CMZN_NODE_VALUE_LABEL_D_DS1:
 		{
-			enumerator_string = "d/ds1";
+			return "d/ds1";
 		} break;
-		case FE_NODAL_D_DS2:
+		case CMZN_NODE_VALUE_LABEL_D_DS2:
 		{
-			enumerator_string = "d/ds2";
+			return "d/ds2";
 		} break;
-		case FE_NODAL_D2_DS1DS2:
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 		{
-			enumerator_string = "d2/ds1ds2";
+			return "d2/ds1ds2";
 		} break;
-		case FE_NODAL_D_DS3:
+		case CMZN_NODE_VALUE_LABEL_D_DS3:
 		{
-			enumerator_string = "d/ds3";
+			return "d/ds3";
 		} break;
-		case FE_NODAL_D2_DS1DS3:
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 		{
-			enumerator_string = "d2/ds1ds3";
+			return "d2/ds1ds3";
 		} break;
-		case FE_NODAL_D2_DS2DS3:
+		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
 		{
-			enumerator_string = "d2/ds2ds3";
+			return "d2/ds2ds3";
 		} break;
-		case FE_NODAL_D3_DS1DS2DS3:
+		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 		{
-			enumerator_string = "d3/ds1ds2ds3";
+			return "d3/ds1ds2ds3";
 		} break;
-		case FE_NODAL_UNKNOWN:
+		case CMZN_NODE_VALUE_LABEL_INVALID:
 		{
-			enumerator_string = "unknown";
-		} break;
-		default:
-		{
-			enumerator_string = (const char *)NULL;
 		} break;
 	}
-	LEAVE;
+	return 0;
+}
 
-	return (enumerator_string);
-} /* ENUMERATOR_STRING(FE_nodal_value_type) */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_node_value_label)
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_nodal_value_type)
-
-int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
-	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
-	int *the_array_index,int *the_index_high,int *the_index_low)
-/*******************************************************************************
-LAST MODIFIED : 1 August 2000
-
-DESCRIPTION
-Given a <field> and <time>, checks that <field> has times defined and returns:
-<the_array_index>, the array index of <field> times closest to <time>.
-<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
-(ideally <the_index_high>==<the_index_low>==<the_array_index>).
-<the_time_low> the time corresponding to <the_index_low>.
-<the_time_high> the time corresponding to <the_index_high>.
-
-All this information (rather than just <the_array_index> ) is returned so can
-perform interpolation, etc.
-==============================================================================*/
+template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
+	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
+	int valuesCount, VALUE_TYPE *valuesOut)
 {
-	int array_index,done,index_high,index_low,number_of_times,return_code,step;
-	FE_value first_time = 0,last_time = 0,this_time,fe_value_index,time_high,time_low;
-
-	ENTER(get_FE_field_time_array_index_at_FE_value_time);
-	return_code=0;
-	if (field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
-		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
+	if (!(node && node->fields && node->values_storage
+		&& (0 <= componentNumber) && (componentNumber < field->number_of_components) && (valuesOut)))
 	{
-		get_FE_field_time_FE_value(field,0,&first_time);
-		get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-		/*Initial est. of the array index, assuming times evenly spaced, no gaps */
-		/*This assumption and hence estimate is true for most signal files. */
-		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-		fe_value_index+=0.5;/*round float to nearest int */
-		array_index=(int)floor(fe_value_index);
-		time_low=0;
-		time_high=0;
-		done=0;
-		index_low=0;
-		index_high=number_of_times-1;
-		/* do binary search for <time>'s array index. Also look at time of */
-		/* adjacent array element, as index estimate may be slightly off due to*/
-		/* rounding error. This avoids unnecessarily long search from end of array */
-		while(!done)
-		{
-			if (get_FE_field_time_FE_value(field,array_index,&this_time))
-			{
-				if (this_time>=time)
-				{
-					index_high=array_index;
-					if (array_index>0)
-					{
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index-1,&time_low);
-						/* are we between elements?*/
-						if (time_low<time)
-						{
-							index_low=array_index-1;
-							return_code=1;
-							done=1;
-						}
-						else
-						{
-							time_low=0;
-						}
-					}
-					else
-					{
-						/* can't get lower adjacent array element when array_index=0. Finished*/
-						get_FE_field_time_FE_value(field,array_index,&time_low);
-						index_low=array_index;
-						return_code=1;
-						done=1;
-					}
-				}
-				else /* (this_time<time) */
-				{
-					index_low=array_index;
-					if (array_index<(number_of_times-1))
-					{
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index+1,&time_high);
-						/* are we between elements?*/
-						if (time_high>time)
-						{
-							index_high=array_index+1;
-							return_code=1;
-							done=1;
-						}
-						else
-						{
-							time_high=0;
-						}
-					}
-					else
-					{
-						/* can't get higher adjacent array element when */
-						/*array_index=(number_of_times-1). Finished*/
-						get_FE_field_time_FE_value(field,array_index,&time_high);
-						index_high=array_index;
-						return_code=1;
-						done=1;
-					}
-				}
-				if (!done)
-				{
-					step=(index_high-index_low)/2;
-					/* No exact match, can't subdivide further, must do interpolation.*/
-					if (step==0)
-					{
-						done=1;
-						return_code=1;
-					}
-					else
-					{
-						array_index=index_low+step;
-					}
-
-				}/* if (!done)	*/
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_field_time_array_index_at_FE_value_time time out of range");
-			}
-		}	/* while(!done)	*/
-		/* index_low and index_high should now be adjacent */
-		if (!time_low)
-		{
-			get_FE_field_time_FE_value(field,index_low,&time_low);
-		}
-		if (!time_high)
-		{
-			get_FE_field_time_FE_value(field,index_high,&time_high);
-		}
-		*the_time_high=time_high;
-		*the_time_low=time_low;
-		*the_array_index=array_index;
-		*the_index_high=index_high;
-		*the_index_low=index_low;
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_time_array_index_at_FE_value_time. Invalid arguments time out of range");
-	}
-	LEAVE;
-	return (return_code);
-}/*get_FE_field_time_array_index_at_FE_value_time*/
-
-int get_FE_nodal_string_value(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,char **string)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Returns a copy of the string for <version>, <type> of <field><component_number>
-at the <node>. Up to the calling function to DEALLOCATE the returned string.
-Returned <*string> may be a valid NULL if that is what is in the node.
-==============================================================================*/
-{
-	char *the_string;
-	int return_code;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *values_storage = NULL;
-
-	ENTER(get_FE_nodal_string_value);
-	return_code=0;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version)&&string)
-	{
-		values_storage=(Value_storage *)NULL;
-		switch (field->fe_field_type)
-		{
-			case CONSTANT_FE_FIELD:
-			{
-				values_storage=field->values_storage +
-					get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL)
-					*component_number;
-				return_code=1;
-			} break;
-			case GENERAL_FE_FIELD:
-			{
-				if (find_FE_nodal_values_storage_dest(node,field,component_number,
-					version,type,STRING_VALUE,&values_storage,&time_sequence))
-				{
-					return_code=1;
-				}
-			} break;
-			case INDEXED_FE_FIELD:
-			{
-				int index;
-
-				if (get_FE_nodal_int_value(node,field->indexer_field,
-					/*component_number*/0,/*version*/0,
-					FE_NODAL_VALUE,/*time*/0,&index))
-				{
-					/* index numbers start at 1 */
-					if ((1<=index)&&(index<=field->number_of_indexed_values))
-					{
-						values_storage=field->values_storage+
-							get_Value_storage_size(STRING_VALUE,
-							(struct FE_time_sequence *)NULL)*
-							(field->number_of_indexed_values*component_number+index-1);
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"get_FE_nodal_string_value.  "
-							"Index field %s gave out-of-range index %d in field %s",
-							field->indexer_field->name,index,field->name);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"get_FE_nodal_string_value.  "
-						"Field %s, indexed by %s not defined at node %",
-						field->name,field->indexer_field->name,node->cm_node_identifier);
-					return_code=0;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_string_value.  Unknown FE_field_type");
-			} break;
-		}
-		if (return_code&&values_storage)
-		{
-			if (NULL != (the_string = *((char **)values_storage)))
-			{
-				if (ALLOCATE(*string,char,strlen(the_string)+1))
-				{
-					strcpy(*string,the_string);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_nodal_string_value.  Not enough memory");
-					return_code=0;
-				}
-			}
-			else
-			{
-				/* no string, so successfully return NULL */
-				*string = (char *)NULL;
-			}
-		}
-		else
-		{
-			if (return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_element_xi_value.  No values storage");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_string_value.Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_nodal_string_value */
-
-int set_FE_nodal_string_value(struct FE_node *node,
-	struct FE_field *field,int component_number,int version,
-	enum FE_nodal_value_type type,const char *string)
-/*******************************************************************************
-LAST MODIFIED : 22 September 1999
-
-DESCRIPTION :
-Copies and sets the <string> for <version>, <type> of <field><component_number>
-at the <node>. <string> may be NULL.
-==============================================================================*/
-{
-	char *the_string,**string_address;
-	int return_code;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_string_value);
-	return_code=0;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components)&&(0<=version))
-	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,field,component_number,
-			version,type,STRING_VALUE,&values_storage,&time_sequence))
-		{
-			/* get the pointer to the stored string */
-			string_address = (char **)(values_storage);
-			if (string)
-			{
-				/* reallocate the string currently there */
-				if (REALLOCATE(the_string,*string_address,char,strlen(string)+1))
-				{
-					strcpy(the_string,string);
-					*string_address=the_string;
-					/* avoid notifying changes to non-managed nodes */
-					if (node->fields->fe_nodeset->containsNode(node))
-						node->fields->fe_nodeset->nodeFieldChange(node, field);
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_FE_nodal_string_value.  Not enough memory");
-				}
-			}
-			else
-			{
-				/* NULL string; free the existing string */
-				if (*string_address)
-				{
-					DEALLOCATE(*string_address);
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_string_value.  find_FE_nodal_values_storage_dest failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_string_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_string_value */
-
-int set_FE_nodal_field_double_values(struct FE_field *field,
-	struct FE_node *node,double *values, int *number_of_values)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the doubles in values.
-Returns the number of doubles copied in number_of_values.
-Assumes that values is set up with the correct number of doubles.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-{
-	int return_code,number_of_components,number_of_versions,number_of_derivatives,
-		length,i,j,the_number_of_values=0;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	double *dest,*source;
-
-	ENTER(set_FE_nodal_field_double_values);
-	return_code=0;
-	if (field&&node&&values&&(node->values_storage))
-	{
-		if (field->value_type==DOUBLE_VALUE)
-		{
-			if (NULL != (node_field =FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list)))
-			{
-				return_code=1;
-				number_of_components = node_field->field->number_of_components;
-				source = values;
-				for (i=0;i<number_of_components;i++)
-				{
-					j=0;
-					component = &(node_field->components[i]);
-					dest = (double *)(node->values_storage + component->value);
-					number_of_versions = component->number_of_versions;
-					number_of_derivatives = component->number_of_derivatives;
-					length = (1+number_of_derivatives)*number_of_versions;
-					while (j<length)
-					{
-						*dest = *source;
-						j++;
-						dest++;
-						source++;
-					}
-					the_number_of_values += length;
-				}
-				*number_of_values = the_number_of_values;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_nodal_field_double_values.  "
-					"Can't find field in node");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_FE_nodal_field_double_values.  "
-				"field->value_type != DOUBLE_VALUE");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_field_double_values.  "
-			"Invalid arguments");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_field_double_values */
-
-int get_FE_nodal_field_number_of_values(struct FE_field *field,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns the total number of values stored for that field at the node, equals
-sum of <1+num_derivatives>*num_versions for each component.
-==============================================================================*/
-{
-	int number_of_values;
-	struct FE_node_field *node_field;
-
-	ENTER(get_FE_nodal_field_number_of_values);
-	if (field&&node&&node->fields)
-	{
-		if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			node->fields->node_field_list)))
-		{
-			number_of_values=FE_node_field_get_number_of_values(node_field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_field_number_of_values.  Can't find field %s at node %d",
-				field->name,node->cm_node_identifier);
-			number_of_values=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_field_number_of_values.  Invalid argument(s)");
-		number_of_values=0;
-	}
-	LEAVE;
-
-	return (number_of_values);
-} /* get_FE_nodal_field_number_of_values */
-
-int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value time,
-	FE_node *lastNode, int *componentParameterCounts, int **componentDerivatives, 
-	int **componentVersions, bool &isHomogeneous)
-{
-	USE_PARAMETER(time);
-	if (!(field && node))
+		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
-	if (lastNode && (node->fields == lastNode->fields))
-		return CMZN_OK;
-	if (!((field->value_type == FE_VALUE_VALUE) &&
-			componentParameterCounts && componentDerivatives && componentVersions))
-		return CMZN_ERROR_ARGUMENT;
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-		field, node->fields->node_field_list);
+	}
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field,
+		node->fields->node_field_list);
 	if (!node_field)
-		return CMZN_ERROR_NOT_FOUND;
-	const int componentCount = field->number_of_components;
-	isHomogeneous = componentCount > 1;
-	for (int c = 0; c < field->number_of_components; ++c)
 	{
-		FE_node_field_component *node_field_component = node_field->components + c;
-		const int derivativesCount = node_field_component->number_of_derivatives + 1; // value wasn't counted so add it
-		componentParameterCounts[c] = derivativesCount*node_field_component->number_of_versions;
-		int *derivatives = componentDerivatives[c];
-		int *versions = componentVersions[c];
-		for (int v = 0; v < node_field_component->number_of_versions; ++v)
-			for (int d = 0; d < derivativesCount; ++d)
-			{
-				*(derivatives++) = node_field_component->nodal_value_types[d] + 1;
-				*(versions++) = v + 1;
-			}
-		if ((c != 0) && isHomogeneous)
+		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d",
+			field->name, node->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const FE_node_field_template &nft = *(node_field->getComponent(componentNumber));
+	const int totalValuesCount = nft.getTotalValuesCount();
+	if (totalValuesCount > valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "set_FE_nodal_field_FE_value_values.  "
+			"Field %s component %d at node %d has %d values, values array size %d is too small",
+			field->name, componentNumber + 1, node->getIdentifier(), totalValuesCount, valuesCount);
+		return CMZN_ERROR_ARGUMENT;
+	}
+	VALUE_TYPE *dest = valuesOut;
+	if (node_field->time_sequence)
+	{
+		int time_index_one, time_index_two;
+		FE_value time_xi = 0.0;
+		FE_time_sequence_get_interpolation_for_time(node_field->time_sequence, time, &time_index_one,
+			&time_index_two, &time_xi);
+		const FE_value one_minus_time_xi = 1.0 - time_xi;
+		const int valueTypeSize = get_Value_storage_size(field->value_type, node_field->time_sequence);
+		const Value_storage *value_storage = node->values_storage + nft.getValuesOffset();
+		for (int j = 0; j < totalValuesCount; ++j)
 		{
-			if (componentParameterCounts[c] != componentParameterCounts[c - 1])
-				isHomogeneous = false;
+			const VALUE_TYPE *source = *(const VALUE_TYPE **)(value_storage);
+			if ((time_xi != 0.0) && time_index_one != time_index_two)
+			{
+				*dest = source[time_index_one]*one_minus_time_xi + source[time_index_two]*time_xi;
+			}
 			else
 			{
-				derivatives = componentDerivatives[c];
-				versions = componentVersions[c];
-				int *lastDerivatives = componentDerivatives[c - 1];
-				int *lastVersions = componentVersions[c - 1];
-				for (int i = 0; i < componentParameterCounts[c];
-					++i, ++derivatives, ++versions, ++lastDerivatives, ++ lastVersions)
-				{
-					if ((*derivatives != *lastDerivatives) || (*versions != *lastVersions))
-					{
-						isHomogeneous = false;
-						break;
-					}
-				}
+				*dest = source[time_index_one];
 			}
+			value_storage += valueTypeSize;
+			++dest;
+		}
+	}
+	else
+	{
+		const VALUE_TYPE *source = (VALUE_TYPE *)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			*dest = *source;
+			++source;
+			++dest;
 		}
 	}
 	return CMZN_OK;
 }
 
-int get_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values)
+template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
+	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
+	int valuesCount, const VALUE_TYPE *valuesIn)
 {
-	int i,j,length,number_of_derivatives,number_of_versions,return_code,
-		time_index_one, time_index_two, size;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	FE_value *dest,*source, xi;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *the_value_storage;
-
-	return_code=0;
-	time_sequence = (struct FE_time_sequence *)NULL;
-	if (field&&node&&number_of_values&&values&&node->values_storage)
+	if (!(node && node->fields && node->values_storage
+		&& (0 <= componentNumber) && (componentNumber < field->number_of_components) && (valuesIn)))
 	{
-		if (field->value_type==FE_VALUE_VALUE)
-		{
-			if ((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list))&&node_field->components)
-			{
-				*number_of_values = FE_node_field_get_number_of_values(node_field);
-				if (ALLOCATE(*values,FE_value,*number_of_values))
-				{
-					time_sequence = get_FE_node_field_FE_time_sequence(node,field);
-					if (time_sequence)
-					{
-						FE_time_sequence_get_interpolation_for_time(time_sequence,time,&time_index_one,
-							&time_index_two,&xi);
-					}
-					dest= *values;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						component = &(node_field->components[i]);
-						if (time_sequence)
-						{
-							source = 0;
-							the_value_storage = (node->values_storage + component->value);
-							size = get_Value_storage_size(FE_VALUE_VALUE, time_sequence);
-						}
-						else
-						{
-							source = (FE_value *)(node->values_storage + component->value);
-							the_value_storage = 0;
-							size = 0;
-						}
-						number_of_versions = component->number_of_versions;
-						number_of_derivatives = component->number_of_derivatives;
-						length=(1+number_of_derivatives)*number_of_versions;
-						for (j=length;0<j;j--)
-						{
-							if (time_sequence)
-							{
-								source = *(FE_value **)(the_value_storage);
-								if (xi != 0 && time_index_one != time_index_two)
-								{
-									*dest = source[time_index_one]*(1.0 - xi) + source[time_index_two]*xi;
-								}
-								else
-								{
-									*dest = source[time_index_one];
-								}
-								dest++;
-								the_value_storage += size;
-							}
-							else
-							{
-								*dest = *source;
-								dest++;
-								source++;
-							}
-						}
-					}
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_nodal_field_FE_value_values.  Not enough memory");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_field_FE_value_values.  Can't find field %s at node %d",
-					field->name,node->cm_node_identifier);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"get_FE_nodal_field_FE_value_values.  "
-				"value_type not FE_VALUE_VALUE");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_nodal_field_FE_value_values.  "
-			"Invalid arguments");
-	}
-	return (return_code);
-}
-
-int set_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node, FE_value *values, int *number_of_values, FE_value time)
-{
-	if (!(field && node && values && (node->values_storage)))
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_field_FE_value_values.  Invalid arguments.  %p %p %p", field, node, values);
-		return 0;
-	}
-	if (field->value_type != FE_VALUE_VALUE)
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_field_FE_value_values.  Field %s is not FE_value type", field->name);
-		return 0;
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_values<VALUE_TYPE>.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
 	}
 	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 		field, node->fields->node_field_list);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_field_FE_value_values.  Field %s is not define at node %d", field->name, node->cm_node_identifier);
-		return 0;
+			"cmzn_node_set_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d", field->name, node->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
 	}
-	int time_index;
+	const FE_node_field_template &nft = *(node_field->getComponent(componentNumber));
+	const int totalValuesCount = nft.getTotalValuesCount();
+	if (totalValuesCount != valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_values<VALUE_TYPE>.  Field %s component %d at node %d has %d values, %d are supplied",
+			field->name, componentNumber + 1, node->getIdentifier(), totalValuesCount, valuesCount);
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const VALUE_TYPE *source = valuesIn;
 	if (node_field->time_sequence)
 	{
+		int time_index = 0;
 		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
 		{
 			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_field_FE_value_values.  "
-				"Field %s does not store parameters at time %g", field->name, time);
-			return 0;
+				"cmzn_node_set_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->name, time);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		VALUE_TYPE **destArray = (VALUE_TYPE **)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			(*destArray)[time_index] = *source;
+			++destArray;
+			++source;
 		}
 	}
-	const int number_of_components = node_field->field->number_of_components;
-	int the_number_of_values = 0;
-	FE_value *source = values;
-	for (int i = 0; i < number_of_components; ++i)
+	else
 	{
-		FE_node_field_component &component = node_field->components[i];
-		const int number_of_versions = component.number_of_versions;
-		const int number_of_derivatives = component.number_of_derivatives;
-		const int length = (1 + number_of_derivatives)*number_of_versions;
-		if (node_field->time_sequence)
+		VALUE_TYPE *dest = (VALUE_TYPE *)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
 		{
-			FE_value **destArray = (FE_value **)(node->values_storage + component.value);
-			for (int j = 0; j < length; ++j)
-			{
-				(*destArray)[time_index] = *source;
-				++destArray;
-				++source;
-			}
+			*dest = *source;
+			++dest;
+			++source;
 		}
-		else
-		{
-			FE_value *dest = (FE_value *)(node->values_storage + component.value);
-			for (int j = 0; j < length; ++j)
-			{
-				*dest = *source;
-				++dest;
-				++source;
-			}
-		}
-		the_number_of_values += length;
 	}
-	*number_of_values = the_number_of_values;
-	return 1;
+	// notify of changes, but only for valid nodes (i.e. not template nodes)
+	if (node->index >= 0)
+	{
+		node->fields->fe_nodeset->nodeFieldChange(node, field);
+	}
+	return CMZN_OK;
+}
+
+int cmzn_node_get_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	FE_value *valuesOut)
+{
+	if (!(field && (field->value_type == FE_VALUE_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_FE_value_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_get_field_component_values(node, field, componentNumber, time, valuesCount, valuesOut);
+}
+
+int cmzn_node_set_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const FE_value *valuesIn)
+{
+	if (!(field && (field->value_type == FE_VALUE_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_FE_value_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_set_field_component_values(node, field, componentNumber, time, valuesCount, valuesIn);
+}
+
+int cmzn_node_get_field_component_int_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	int *valuesOut)
+{
+	if (!(field && (field->value_type == INT_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_int_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_get_field_component_values(node, field, componentNumber, time, valuesCount, valuesOut);
+}
+
+int cmzn_node_set_field_component_int_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const int *valuesIn)
+{
+	if (!(field && (field->value_type == INT_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_int_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_set_field_component_values(node, field, componentNumber, time, valuesCount, valuesIn);
 }
 
 int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *node,
-	int arraySize, FE_value *values, int *valueExists, int valuesCount,
+	int arraySize, const FE_value *values, const int *valueExists, int valuesCount,
 	int componentsSize, int componentsOffset,
 	int derivativesSize, int derivativesOffset,
 	int versionsSize, int versionsOffset)
@@ -14161,303 +10387,54 @@ int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *no
 		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field, node->fields->node_field_list);
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field, node->fields->node_field_list);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s is not defined at node %d",
-			field->name, node->cm_node_identifier);
+			field->name, node->getIdentifier());
 		return CMZN_ERROR_NOT_FOUND;
 	}
 	if (node_field->time_sequence)
 	{
 		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d is time-varying; case is not implemented",
-			field->name, node->cm_node_identifier);
+			field->name, node->getIdentifier());
 		return CMZN_ERROR_NOT_IMPLEMENTED;
 	}
-	int numberAssigned = 0;
+	if (node_field->getTotalValuesCount() != valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  "
+			"Number of values supplied (%d) does not match number expected by node field (%d)",
+			valuesCount, node_field->getTotalValuesCount());
+		return CMZN_ERROR_ARGUMENT;
+	}
+	int oc = 0;
 	for (int c = 0; c < componentsSize; ++c)
 	{
-		FE_node_field_component *component = node_field->components + c;
-		if (!component->nodal_value_types)
+		const FE_node_field_template &nft = *(node_field->getComponent(c));
+		FE_value *target = reinterpret_cast<FE_value *>(node->values_storage + nft.getValuesOffset());
+		const int valueLabelsCount = nft.getValueLabelsCount();
+		for (int d = 0; d < valueLabelsCount; ++d)
 		{
-			display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d has no nodal value types",
-				field->name, node->cm_node_identifier);
-			return CMZN_ERROR_ARGUMENT;
-		}
-		const int number_of_versions = component->number_of_versions;
-		const int number_of_derivatives = component->number_of_derivatives + 1;
-		FE_value *source = values + c*componentsOffset;
-		int *sourceExists = valueExists + c*componentsOffset;
-		FE_value *target = reinterpret_cast<FE_value *>(node->values_storage + component->value);
-		for (int v = 0; v < number_of_versions; ++v)
-		{
-			for (int d = 0; d < number_of_derivatives; ++d)
+			const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
+			int ov = oc + derivativesOffset*(valueLabel - CMZN_NODE_VALUE_LABEL_VALUE);
+			const int versionsCount = nft.getVersionsCountAtIndex(d);
+			for (int v = 0; v < versionsCount; ++v)
 			{
-				const int od = derivativesOffset*(component->nodal_value_types[d] - FE_NODAL_VALUE);
-				if (sourceExists[od])
+				if (!valueExists[ov])
 				{
-					*target = source[od];
-					++numberAssigned;
+					display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  "
+						"Field %s at node %d has different sparsity", field->name, node->getIdentifier());
+					return CMZN_ERROR_INCOMPATIBLE_DATA;
 				}
-				else
-					*target = 0.0; // workaround for redundant parameters
+				*target = values[ov];
 				++target;
+				ov += versionsOffset;
 			}
-			source += versionsOffset;
-			sourceExists += versionsOffset;
 		}
-	}
-	if (numberAssigned != valuesCount)
-	{
-		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d configuration cannot take all parameters supplied",
-			field->name, node->cm_node_identifier);
-		return CMZN_ERROR_INCOMPATIBLE_DATA;
+		oc += componentsOffset;
 	}
 	return CMZN_OK;
 }
-
-int set_FE_nodal_field_float_values(struct FE_field *field,
-	struct FE_node *node,float *values, int *number_of_values)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the floats in values.
-Returns the number of floats copied in number_of_values.
-Assumes that values is set up with the correct number of floats.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-{
-	int return_code,number_of_components,number_of_versions,number_of_derivatives,
-		length,i,j,the_number_of_values=0;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	float *dest,*source;
-
-	ENTER(set_FE_nodal_field_float_values);
-	return_code=0;
-	if (field&&node&&values&&(node->values_storage))
-	{
-		if (field->value_type==FLT_VALUE)
-		{
-			if (NULL != (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list)))
-			{
-				return_code=1;
-				number_of_components = node_field->field->number_of_components;
-				source = values;
-				for (i=0;i<number_of_components;i++)
-				{
-					j=0;
-					component = &(node_field->components[i]);
-					dest = (float *)(node->values_storage + component->value);
-					number_of_versions = component->number_of_versions;
-					number_of_derivatives = component->number_of_derivatives;
-					length =(1+number_of_derivatives)*number_of_versions;
-					while (j<length)
-					{
-						*dest = *source;
-						j++;
-						dest++;
-						source++;
-					}
-					the_number_of_values += length;
-				}
-				*number_of_values = the_number_of_values;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_nodal_field_float_values.  "
-					"Can't find field in node");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_FE_nodal_field_float_values.  "
-				"field->value_type != FLT_VALUE");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_field_float_values.  "
-			"Invalid arguments");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_field_float_values */
-
-int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node, int *number_of_values, FE_value time, int **values)
-{
-	int i,j,length,number_of_derivatives,number_of_versions,return_code,
-		time_index,time_index2,size;
-	FE_value xi;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	int *dest,*source;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *the_value_storage;
-
-	return_code=0;
-	if (field&&node&&number_of_values&&values&&node->values_storage)
-	{
-		if (field->value_type==INT_VALUE)
-		{
-			if ((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list))&&node_field->components)
-			{
-				*number_of_values=FE_node_field_get_number_of_values(node_field);
-				if (ALLOCATE(*values,int,*number_of_values))
-				{
-					time_sequence = get_FE_node_field_FE_time_sequence(node,field);
-					if (time_sequence)
-					{
-							FE_time_sequence_get_interpolation_for_time(time_sequence,time,&time_index,
-								&time_index2,&xi);
-					}
-					return_code=1;
-					dest= *values;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						component = &(node_field->components[i]);
-						if (time_sequence)
-						{
-							the_value_storage = (node->values_storage + component->value);
-							size = get_Value_storage_size(INT_VALUE, time_sequence);
-						}
-						else
-						{
-							the_value_storage = 0;
-							size = 0;
-						}
-						source=(int *)(node->values_storage + component->value);
-						number_of_versions = component->number_of_versions;
-						number_of_derivatives = component->number_of_derivatives;
-						length=(1+number_of_derivatives)*number_of_versions;
-						for (j=length;0<j;j--)
-						{
-							if (time_sequence)
-							{
-								source = *(int **)(the_value_storage);
-								*dest = source[time_index];
-								dest++;
-								the_value_storage += size;
-							}
-							else
-							{
-								*dest = *source;
-								dest++;
-								source++;
-							}
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_nodal_field_int_values.  Not enough memory");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_field_int_values.  Can't find field %s at node %d",
-					field->name,node->cm_node_identifier);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"get_FE_nodal_field_int_values.  "
-				"value_type not FE_VALUE_VALUE");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_nodal_field_int_values.  "
-			"Invalid arguments");
-	}
-	return (return_code);
-}
-
-int set_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *values, int *number_of_values)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the integers in values.
-Returns the number of integers copied in number_of_values.
-Assumes that values is set up with the correct number of ints.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-{
-	int return_code,number_of_components,number_of_versions,
-		number_of_derivatives,length,i,j,the_number_of_values=0;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	int *dest,*source;
-
-	ENTER(set_FE_nodal_field_int_values);
-	return_code=0;
-	if (field&&node&&values&&(node->values_storage))
-	{
-		if (field->value_type==INT_VALUE)
-		{
-			if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				field,node->fields->node_field_list)))
-			{
-				return_code=1;
-				number_of_components = node_field->field->number_of_components;
-				source = values;
-				for (i=0;i<number_of_components;i++)
-				{
-					j=0;
-					component = &(node_field->components[i]);
-					dest = (int *)(node->values_storage + component->value);
-					number_of_versions = component->number_of_versions;
-					number_of_derivatives = component->number_of_derivatives;
-					length =(1+number_of_derivatives)*number_of_versions;
-					while (j<length)
-					{
-						*dest = *source;
-						j++;
-						dest++;
-						source++;
-					}
-					the_number_of_values += length;
-				}
-				*number_of_values = the_number_of_values;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_nodal_field_int_values.  "
-					"Can't find field in node");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_FE_nodal_field_int_values.  "
-				"field->value_type != INT_VALUE");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_field_int_values.  "
-			"Invalid arguments");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_field_int_values */
 
 int get_FE_node_number_of_values(struct FE_node *node)
 /*******************************************************************************
@@ -14485,337 +10462,38 @@ Returns the number of values stored at the <node>.
 	return (number_of_values);
 } /* get_FE_node_number_of_values */
 
-int get_FE_node_number_of_fields(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 5 November 1998
-
-DESCRIPTION :
-Returns the number of fields stored at the <node>.
-==============================================================================*/
-{
-	int number_of_fields;
-
-	ENTER(get_FE_node_number_of_fields);
-	if (node&&(node->fields))
-	{
-		number_of_fields=
-			NUMBER_IN_LIST(FE_node_field)(node->fields->node_field_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_number_of_fields.  Invalid node");
-		number_of_fields=0;
-	}
-	LEAVE;
-
-	return (number_of_fields);
-} /* get_FE_node_number_of_fields */
-
-struct FE_time_sequence *get_FE_node_field_FE_time_sequence(struct FE_node *node,
-	struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 15 November 2004
-
-DESCRIPTION :
-Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
-<node> and <field> have no time dependence then the function will return NULL.
-==============================================================================*/
-{
-	struct FE_node_field *node_field;
-	struct FE_time_sequence *time_sequence;
-
-	ENTER(get_FE_node_field_FE_time_sequence);
-	if (node&&field)
-	{
-		if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			field,node->fields->node_field_list)))
-		{
-			time_sequence = node_field->time_sequence;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_node_field_component_FE_time_sequence.  "
-				"Field %s not defined at node %d",field->name,node->cm_node_identifier);
-			time_sequence = (struct FE_time_sequence *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_field_FE_time_sequence.  Invalid argument(s)");
-		time_sequence = (struct FE_time_sequence *)NULL;
-	}
-	LEAVE;
-
-	return (time_sequence);
-} /* get_FE_node_field_FE_time_sequence */
-
-enum FE_nodal_value_type *get_FE_node_field_component_nodal_value_types(
-	struct FE_node *node,struct FE_field *field,int component_number)
-/*******************************************************************************
-LAST MODIFIED : 20 April 2000
-
-DESCRIPTION :
-Returns an array of the (1+number_of_derivatives) value types for the
-node field component.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
-{
-	enum FE_nodal_value_type *nodal_value_types;
-	int i,number_of_derivatives;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-
-	ENTER(get_FE_node_field_component_nodal_value_types);
-	nodal_value_types=(enum FE_nodal_value_type *)NULL;
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components))
-	{
-		if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			field,node->fields->node_field_list)))
-		{
-			component=&(node_field->components[component_number]);
-			number_of_derivatives=component->number_of_derivatives;
-			if (ALLOCATE(nodal_value_types,enum FE_nodal_value_type,
-				1+number_of_derivatives))
-			{
-				for (i=0;i<=number_of_derivatives;i++)
-				{
-					/* non-GENERAL_FE_FIELD do not have nodal_value_types since
-						 derivatives do not make sense */
-					if (component->nodal_value_types)
-					{
-						nodal_value_types[i]=component->nodal_value_types[i];
-					}
-					else
-					{
-						nodal_value_types[i]=FE_NODAL_VALUE;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_node_field_component_nodal_value_types.  Not enough memory");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_node_field_component_nodal_value_types.  "
-				"Field %s not defined at node %d",field->name,node->cm_node_identifier);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_field_component_nodal_value_types.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (nodal_value_types);
-} /* get_FE_node_field_component_nodal_value_types */
-
-int get_FE_node_field_component_number_of_derivatives(struct FE_node *node,
-	struct FE_field *field,int component_number)
-/*******************************************************************************
-LAST MODIFIED : 23 September 1999
-
-DESCRIPTION :
-Returns the number of derivatives for the node field component.
-==============================================================================*/
-{
-	int number_of_derivatives;
-	struct FE_node_field *node_field;
-
-	ENTER(get_FE_node_field_number_of_derivatives);
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components))
-	{
-		if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			field,node->fields->node_field_list)))
-		{
-			number_of_derivatives =
-				node_field->components[component_number].number_of_derivatives;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_node_field_component_number_of_derivatives.  "
-				"Field %s not defined at node %d",field->name,node->cm_node_identifier);
-			number_of_derivatives=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_field_number_of_derivatives.  Invalid argument(s)");
-		number_of_derivatives=0;
-	}
-	LEAVE;
-
-	return (number_of_derivatives);
-} /* get_FE_node_field_number_of_derivatives */
-
-int get_FE_node_field_component_number_of_versions(struct FE_node *node,
-	struct FE_field *field,int component_number)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns the number of versions for the node field component.
-==============================================================================*/
-{
-	int number_of_versions;
-	struct FE_node_field *node_field;
-
-	ENTER(get_FE_node_field_component_number_of_versions);
-	if (node&&field&&(0<=component_number)&&
-		(component_number<field->number_of_components))
-	{
-		if (NULL != (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			field,node->fields->node_field_list)))
-		{
-			number_of_versions =
-				node_field->components[component_number].number_of_versions;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_node_field_component_number_of_versions.  "
-				"Field %s not defined at node %d",field->name,node->cm_node_identifier);
-			number_of_versions=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_field_component_number_of_versions.  Invalid argument(s)");
-		number_of_versions=0;
-	}
-	LEAVE;
-
-	return (number_of_versions);
-} /* get_FE_node_field_component_number_of_versions */
-
 int get_FE_node_identifier(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Returns the integer identifier of the <node>.
-==============================================================================*/
 {
-	int identifier;
-
-	ENTER(get_FE_node_identifier);
 	if (node)
-	{
-		identifier = node->cm_node_identifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "get_FE_node_identifier.  Invalid node");
-		identifier = -1;
-	}
-	LEAVE;
-
-	return (identifier);
-} /* get_FE_node_identifier */
-
-int set_FE_node_identifier(struct FE_node *node, int identifier)
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Changes the identifier of <node> to <identifier>.
-Caution! Should only call for nodes that are NOT in indexed lists;
-Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-node is temporarily removed from all the indexed lists it is in and re-added
-afterwards. FE_region should be the only object that needs to call this.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_node_identifier);
-	if (node && (0 < identifier))
-	{
-		node->cm_node_identifier = identifier;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_node_identifier.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_node_identifier */
-
-struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node)
-{
-	struct FE_field *default_coordinate_field;
-
-	ENTER(get_FE_node_default_coordinate_field);
-	default_coordinate_field = (struct FE_field *)NULL;
-	if (node && node->fields)
-	{
-		FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-			FE_node_field_get_first_coordinate_field,
-			(void *)&default_coordinate_field, node->fields->node_field_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_default_coordinate_field.  Invalid node");
-	}
-	LEAVE;
-
-	return (default_coordinate_field);
+		return node->getIdentifier();
+	return DS_LABEL_IDENTIFIER_INVALID;
 }
 
-int FE_node_find_default_coordinate_field_iterator(
-	struct FE_node *node, void *fe_field_ptr_void)
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-An FE_node iterator that returns 1 when an appropriate default_coordinate
-fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
+DsLabelIndex get_FE_node_index(struct FE_node *node)
 {
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(FE_node_find_default_coordinate_field_iterator);
 	if (node)
-	{
-		if (NULL != (field = get_FE_node_default_coordinate_field(node)))
-		{
-			*((struct FE_field **)fe_field_ptr_void) = field;
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_find_default_coordinate_field_iterator.  Missing element");
-		return_code = 0;
-	}
-	LEAVE;
+		return node->index;
+	return DS_LABEL_INDEX_INVALID;
+}
 
-	return (return_code);
-} /* FE_node_find_default_coordinate_field_iterator */
+void set_FE_node_index(struct FE_node *node, DsLabelIndex index)
+{
+	if (node)
+		node->index = index;
+}
 
-int merge_FE_node(struct FE_node *destination, struct FE_node *source)
+const FE_node_field *cmzn_node_get_FE_node_field(cmzn_node *node,
+	FE_field *field)
+{
+	if (node && node->fields)
+	{
+		return FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+			field, node->fields->node_field_list);
+	}
+	return 0;
+}
+
+int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge)
 {
 	int number_of_values, values_storage_size, return_code;
 	struct FE_node_field_info *destination_fields, *source_fields;
@@ -14859,7 +10537,7 @@ int merge_FE_node(struct FE_node *destination, struct FE_node *source)
 						/* Don't need to reallocate memory as we are only overwriting
 							existing values */
 						merge_FE_node_values_storage(destination, (Value_storage *)NULL,
-							node_field_list, source, /*optimised_merge*/1);
+							node_field_list, source, optimised_merge);
 					}
 					else
 					{
@@ -14872,7 +10550,7 @@ int merge_FE_node(struct FE_node *destination, struct FE_node *source)
 						if ((0 == values_storage_size) ||
 							(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
 								merge_FE_node_values_storage(destination, values_storage,
-									node_field_list, source, /*optimised_merge*/1)))
+									node_field_list, source, optimised_merge)))
 						{
 							/* create a node field info for the combined list */
 							struct FE_node_field_info *fe_node_field_info =
@@ -14957,7 +10635,7 @@ int list_FE_node(struct FE_node *node)
 	{
 		return_code=1;
 		/* write the number */
-		display_message(INFORMATION_MESSAGE,"node : %d\n",node->cm_node_identifier);
+		display_message(INFORMATION_MESSAGE,"node : %d\n",node->getIdentifier());
 		/* write the field information */
 		if (node->fields)
 		{
@@ -14981,2448 +10659,40 @@ int list_FE_node(struct FE_node *node)
 }
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_node)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_node,cm_node_identifier,int)
-DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator)
-
 cmzn_nodeiterator_id cmzn_nodeiterator_access(cmzn_nodeiterator_id node_iterator)
 {
 	if (node_iterator)
-		return node_iterator->access();
+		return cmzn::Access(node_iterator);
 	return 0;
 }
 
 int cmzn_nodeiterator_destroy(cmzn_nodeiterator_id *node_iterator_address)
 {
 	if (node_iterator_address)
-		return cmzn_nodeiterator::deaccess(*node_iterator_address);
-	return 0;
+	{
+		cmzn::Deaccess(*node_iterator_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator)
 {
 	if (node_iterator)
-		return node_iterator->next();
+	{
+		cmzn_node *node = node_iterator->nextNode();
+		if (node)
+			node->access();
+		return node;
+	}
 	return 0;
 }
 
 cmzn_node_id cmzn_nodeiterator_next_non_access(cmzn_nodeiterator_id node_iterator)
 {
 	if (node_iterator)
-		return node_iterator->next_non_access();
+		return node_iterator->nextNode();
 	return 0;
-}
-
-void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list)
-{
-	LIST_BTREE_STATISTICS(FE_node,node_list);
-}
-
-DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
-
-Standard_node_to_element_map *Standard_node_to_element_map_create(
-	int node_index, int number_of_nodal_values)
-{
-	if ((node_index < 0) || (number_of_nodal_values <= 0))
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_create.  Invalid argument(s)");
-		return 0;
-	}
-	struct Standard_node_to_element_map *map;
-	ALLOCATE(map, struct Standard_node_to_element_map, 1);
-	if (map)
-	{
-		map->nodal_value_indices = 0; // only used for reading legacy EX files
-		ALLOCATE(map->nodal_value_types, FE_nodal_value_type, number_of_nodal_values);
-		ALLOCATE(map->nodal_versions, int, number_of_nodal_values);
-		ALLOCATE(map->scale_factor_indices, int, number_of_nodal_values);
-		if ((map->scale_factor_indices) && (map->nodal_value_types) && (map->nodal_versions))
-		{
-			map->node_index = node_index;
-			map->number_of_nodal_values = number_of_nodal_values;
-			for (int i = 0; i < number_of_nodal_values; ++i)
-			{
-				map->nodal_value_types[i] = FE_NODAL_UNKNOWN; // gives a zero parameter
-				map->nodal_versions[i] = 0; // first version; not used for zero parameter
-				map->scale_factor_indices[i] = -1; // -1 means unit scale factor
-			}
-		}
-		else
-			Standard_node_to_element_map_destroy(&map);
-	}
-	if (!map)
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_create.  Could not allocate memory for map");
-	}
-	return map;
-}
-
-Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
-	int node_index, int number_of_nodal_values)
-{
-	Standard_node_to_element_map *map =
-		Standard_node_to_element_map_create(node_index, number_of_nodal_values);
-	if (map)
-	{
-		ALLOCATE(map->nodal_value_indices, int, number_of_nodal_values);
-		if (map->nodal_value_indices)
-		{
-			for (int i = 0; i < number_of_nodal_values; ++i)
-				map->nodal_value_indices[i] = -1; // -1 means zero value
-			// if nodal_versions[0] is -1, need to find new labels
-			map->nodal_versions[0] = -1;
-		}
-		else
-			Standard_node_to_element_map_destroy(&map);
-	}
-	return map;
-}
-
-int Standard_node_to_element_map_destroy(
-	struct Standard_node_to_element_map **map_address)
-{
-	int return_code;
-	struct Standard_node_to_element_map *map;
-	if ((map_address)&&(map= *map_address))
-	{
-		if (map->nodal_value_indices)
-			DEALLOCATE(map->nodal_value_indices);
-		DEALLOCATE(map->nodal_value_types);
-		DEALLOCATE(map->nodal_versions);
-		DEALLOCATE(map->scale_factor_indices);
-		DEALLOCATE(*map_address);
-		*map_address = 0;
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	return (return_code);
-}
-
-/**
- * @param info_1, info_2  Optional element node scale field info; both or
- * neither must be supplied. If supplied then actual nodes from these structures
- * are compared, otherwise local node indexes.
- */
-static bool Standard_node_to_element_maps_match(
-	Standard_node_to_element_map *standard_node_map_1, FE_element_node_scale_field_info *info_1,
-	Standard_node_to_element_map *standard_node_map_2, FE_element_node_scale_field_info *info_2,
-	int scale_factor_offset_2_to_1)
-{
-	if (standard_node_map_1 && standard_node_map_2 && ((info_1 && info_2) || (!info_1 && !info_2)))
-	{
-		if (info_1)
-		{
-			FE_node *node1 = (info_1->nodes)[standard_node_map_1->node_index];
-			FE_node *node2 = (info_2->nodes)[standard_node_map_2->node_index];
-			if (node1 != node2)
-				return false;
-		}
-		else if (standard_node_map_1->node_index != standard_node_map_2->node_index)
-			return false;
-			
-		int k = standard_node_map_1->number_of_nodal_values;
-		if (standard_node_map_2->number_of_nodal_values != k)
-			return false;
-		int *value_index_1 = standard_node_map_1->nodal_value_indices;
-		int *value_index_2 = standard_node_map_2->nodal_value_indices;
-		if (((value_index_1) && (!value_index_2)) || ((!value_index_1) && (value_index_2)))
-			return false;
-		const bool checkValueIndices = (0 != value_index_1);
-		int *scale_factor_index_1 = standard_node_map_1->scale_factor_indices;
-		int *scale_factor_index_2 = standard_node_map_2->scale_factor_indices;
-		FE_nodal_value_type *node_value_types_1 = standard_node_map_1->nodal_value_types;
-		FE_nodal_value_type *node_value_types_2 = standard_node_map_2->nodal_value_types;
-		int *node_versions_1 = standard_node_map_1->nodal_versions;
-		int *node_versions_2 = standard_node_map_2->nodal_versions;
-		while ((k > 0) && (*node_value_types_1 == *node_value_types_2) &&
-			(*node_versions_1 == *node_versions_2) &&
-			((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset_2_to_1)))
-		{
-			if (checkValueIndices)
-			{
-				if (*value_index_1 != *value_index_2)
-					break;
-				++value_index_1;
-				++value_index_2;
-			}
-			++node_value_types_1;
-			++node_value_types_2;
-			++node_versions_1;
-			++node_versions_2;
-			++scale_factor_index_1;
-			++scale_factor_index_2;
-			--k;
-		}
-		if (k == 0)
-			return true;
-	}
-	else
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_maps_match.  Invalid arguments");
-	return false;
-}
-
-/**
- * Clears nodal value type and version arrays. Used only on failed conversion from nodal_value_indices.
- */
-static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map)
-{
-	if (map)
-	{
-		for (int i = 0; i < map->number_of_nodal_values; ++i)
-		{
-			map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
-			map->nodal_versions[i] = 0;
-		}
-		// if nodal_versions[0] is -1, need to find new labels
-		map->nodal_versions[0] = -1;
-	}
-}
-
-/**
- * Determines the node value types and versions for each nodal value index in
- * the standard map by finding how the values in the node are labelled.
- * If there are no types/versions in the map these are added, otherwise the
- * new values are checked to ensure they are consistent.
- * @param map  The standard node to element map to update or check against.
- * @param field  The field to check.
- * @param component  The component numbers, starting at 0.
- * @param element  The element to get local nodes from.
- * @param target_fe_nodeset  Optional FE_nodeset to get nodes from if field
- * isn't defined on nodes in local region; used when merging input files.
- * @return  Boolean true on success, false on any failure.
- */
-static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
-	Standard_node_to_element_map *map, FE_field *field, int componentIndex,
-	FE_element *element, FE_nodeset *target_fe_nodeset, FE_field *target_field)
-{
-	FE_node *node = 0;
-	if (!(get_FE_element_node(element, map->node_index, &node) && (node)))
-	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-			"Field %s in %d-D element %d map cannot find global node at local node index %d",
-			field->name, get_FE_element_dimension(element), element->get_identifier(),
-			map->node_index + 1);
-		return false;
-	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-		field, node->fields->node_field_list);
-	if (!node_field)
-	{
-		if (target_fe_nodeset && target_field)
-		{
-			FE_node *target_node = target_fe_nodeset->findNodeByIdentifier(node->cm_node_identifier);
-			if (target_node)
-				node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-					target_field, target_node->fields->node_field_list);
-		}
-		if (!node_field)
-		{
-			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-				"Field %s in %d-D element %d indexes global node %d (local node index %d) "
-				"which has no parameters for that field.",
-				field->name, get_FE_element_dimension(element), element->get_identifier(),
-				node->cm_node_identifier, map->node_index + 1);
-			return false;
-		}
-	}
-	FE_node_field_component *node_field_component = node_field->components + componentIndex;
-	if (!node_field_component->nodal_value_types)
-	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-			"Field %s in %d-D element %d indexes global node %d (local node index %d) "
-			"which does not have value type (derivative) labels.",
-			field->name, get_FE_element_dimension(element), element->get_identifier(),
-			node->cm_node_identifier, map->node_index + 1);
-		return false;
-	}
-	const int nodeValueTypesCount = 1 + node_field_component->number_of_derivatives;
-	const int nodeVersionsCount = node_field_component->number_of_versions;
-	const int totalNodeValuesCount = nodeValueTypesCount*nodeVersionsCount;
-	const int valuesCount = map->number_of_nodal_values;
-	// if nodal_versions[0] is -1, need to find new labels, otherwise compare
-	const bool newLabels = (-1 == map->nodal_versions[0]);
-	for (int v = 0; v < valuesCount; ++v)
-	{
-		const int nodeValueIndex = map->nodal_value_indices[v];
-		if (nodeValueIndex > totalNodeValuesCount)
-		{
-			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-				"Field %s in %d-D element %d node value index is out of range for values "
-				"stored in global node %d (local node index %d).",
-				field->name, get_FE_element_dimension(element), element->get_identifier(),
-				node->cm_node_identifier, map->node_index + 1);
-			return false;
-		}
-		FE_nodal_value_type valueType;
-		int version;
-		if (nodeValueIndex < 0)
-		{
-			// encode special legacy case for zero parameter
-			valueType = FE_NODAL_UNKNOWN;
-			version = 0;
-		}
-		else
-		{
-			valueType = node_field_component->nodal_value_types[nodeValueIndex % nodeValueTypesCount];
-			version = nodeValueIndex / nodeValueTypesCount;
-			if (FE_NODAL_UNKNOWN == valueType)
-			{
-				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-					"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
-					field->name, get_FE_element_dimension(element), element->get_identifier(),
-					node->cm_node_identifier, map->node_index + 1);
-				return false;
-			}
-		}
-		if (newLabels)
-		{
-			map->nodal_value_types[v] = valueType;
-			map->nodal_versions[v] = version;
-		}
-		else
-		{
-			if ((valueType != map->nodal_value_types[v]) || (version != map->nodal_versions[v]))
-			{
-				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-					"Field %s in %d-D element %d uses different node value type or version labels to other elements "
-					"using the same element field template. This unexpected case is not yet handled.",
-					field->name, get_FE_element_dimension(element), element->get_identifier());
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-/**
- * Creates and returns an exact copy of the struct Standard_node_to_element_map
- * <source>.
- */
-static struct Standard_node_to_element_map *copy_create_Standard_node_to_element_map(
-	struct Standard_node_to_element_map *source)
-{
-	struct Standard_node_to_element_map *map = 0;
-	if (source)
-	{
-		const int node_index = source->node_index;
-		const int number_of_nodal_values = source->number_of_nodal_values;
-		if (source->nodal_value_indices)
-			map = Standard_node_to_element_map_create_legacy(node_index, number_of_nodal_values);
-		else
-			map = Standard_node_to_element_map_create(node_index, number_of_nodal_values);
-		if (map)
-		{
-			for (int i = 0; i < number_of_nodal_values; i++)
-			{
-				if (map->nodal_value_indices)
-					map->nodal_value_indices[i] = source->nodal_value_indices[i];
-				map->nodal_value_types[i] = source->nodal_value_types[i];
-				map->nodal_versions[i] = source->nodal_versions[i];
-				map->scale_factor_indices[i] = source->scale_factor_indices[i];
-			}
-		}
-		else
-			display_message(ERROR_MESSAGE, "copy_create_Standard_node_to_element_map.  Failed to create map");
-	}
-	else
-		display_message(ERROR_MESSAGE, "copy_create_Standard_node_to_element_map.  Invalid argument");
-	return(map);
-}
-
-/**
- * Offset scale factor indices to handle new absolute offsets in element.
- * Used in merge code.
- */
-static int Standard_node_to_element_map_offset_scale_factor_indices(
-	struct Standard_node_to_element_map *standard_node_map, int scale_factor_offset)
-{
-	if (!standard_node_map)
-		return CMZN_ERROR_ARGUMENT;
-	const int number_of_nodal_values = standard_node_map->number_of_nodal_values;
-	int *scale_factor_index = standard_node_map->scale_factor_indices;
-	for (int i = 0; i < number_of_nodal_values; i++)
-	{
-		if (0 <= *scale_factor_index) // since -1 == unit scaling
-			*scale_factor_index += scale_factor_offset;
-		++scale_factor_index;
-	}
-	return CMZN_OK;
-}
-
-int Standard_node_to_element_map_get_node_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int *node_index_address)
-{
-	int return_code;
-	if (standard_node_map && node_index_address)
-	{
-		*node_index_address = standard_node_map->node_index;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_get_node_index.  Invalid argument(s)");
-		if (node_index_address)
-		{
-			*node_index_address = 0;
-		}
-		return_code = 0;
-	}
-	return(return_code);
-}
-
-/**
- * Use with care in merge code only.
- */
-int Standard_node_to_element_map_set_node_index(
-	Standard_node_to_element_map *standard_node_map, int node_index)
-{
-	if (!standard_node_map)
-		return CMZN_ERROR_ARGUMENT;
-	standard_node_map->node_index = node_index;
-	return CMZN_OK;
-}
-
-int Standard_node_to_element_map_get_number_of_nodal_values(
-	struct Standard_node_to_element_map *standard_node_map,
-	int *number_of_nodal_values_address)
-{
-	int return_code;
-	if (standard_node_map && number_of_nodal_values_address)
-	{
-		*number_of_nodal_values_address = standard_node_map->number_of_nodal_values;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_get_number_of_nodal_values.  "
-			"Invalid argument(s)");
-		if (number_of_nodal_values_address)
-		{
-			*number_of_nodal_values_address = 0;
-		}
-		return_code = 0;
-	}
-	return(return_code);
-}
-
-int Standard_node_to_element_map_get_nodal_value_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int *nodal_value_index_address)
-{
-	int return_code;
-	if (standard_node_map && standard_node_map->nodal_value_indices &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		nodal_value_index_address)
-	{
-		*nodal_value_index_address =
-			standard_node_map->nodal_value_indices[nodal_value_number];
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_get_nodal_value_index.  "
-			"Invalid argument(s)");
-		if (nodal_value_index_address)
-		{
-			*nodal_value_index_address = 0;
-		}
-		return_code = 0;
-	}
-	return(return_code);
-}
-
-int Standard_node_to_element_map_set_nodal_value_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int nodal_value_index)
-{
-	int return_code;
-	if (standard_node_map && standard_node_map->nodal_value_indices &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		(-1 == standard_node_map->nodal_value_indices[nodal_value_number]))
-	{
-		standard_node_map->nodal_value_indices[nodal_value_number] =
-			nodal_value_index;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_index.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return(return_code);
-}
-
-FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number)
-{
-	if (standard_node_map && standard_node_map->nodal_value_types &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values))
-	{
-		return standard_node_map->nodal_value_types[nodal_value_number];
-	}
-	return FE_NODAL_UNKNOWN;
-}
-
-int Standard_node_to_element_map_set_nodal_value_type(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, FE_nodal_value_type nodal_value_type)
-{
-	if (standard_node_map && standard_node_map->nodal_value_types &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		(FE_NODAL_VALUE <= nodal_value_type) &&
-		(nodal_value_type <= FE_NODAL_D3_DS1DS2DS3))
-	{
-		standard_node_map->nodal_value_types[nodal_value_number] = nodal_value_type;
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_type.  Invalid argument(s)");
-	return 0;
-}
-
-int Standard_node_to_element_map_get_nodal_version(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number)
-{
-	if (standard_node_map && standard_node_map->nodal_versions &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values))
-	{
-		return standard_node_map->nodal_versions[nodal_value_number] + 1;
-	}
-	return 0;
-}
-
-int Standard_node_to_element_map_set_nodal_version(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int nodal_version)
-{
-	if (standard_node_map && standard_node_map->nodal_versions &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		(0 < nodal_version))
-	{
-		standard_node_map->nodal_versions[nodal_value_number] = nodal_version - 1;
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_version.  Invalid argument(s)");
-	return 0;
-}
-
-int Standard_node_to_element_map_get_scale_factor_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number)
-{
-	if (standard_node_map && standard_node_map->scale_factor_indices &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values))
-	{
-		return standard_node_map->scale_factor_indices[nodal_value_number];
-	}
-	display_message(ERROR_MESSAGE,
-		"Standard_node_to_element_map_get_scale_factor_index.  Invalid argument(s)");
-	return -1;
-}
-
-int Standard_node_to_element_map_set_scale_factor_index(
-	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int scale_factor_index)
-{
-	int return_code;
-	if (standard_node_map && standard_node_map->scale_factor_indices &&
-		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		(-1 == standard_node_map->scale_factor_indices[nodal_value_number]))
-	{
-		standard_node_map->scale_factor_indices[nodal_value_number] =
-			scale_factor_index;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_set_scale_factor_index.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	return(return_code);
-}
-
-/**
- * Allocates memory and enters values for a component of a element field.
- * Allocates storage for the global to element maps and sets to NULL.
- */
-struct FE_element_field_component *CREATE(FE_element_field_component)(
-	enum Global_to_element_map_type type,int number_of_maps,
-	struct FE_basis *basis,FE_element_field_component_modify modify)
-{
-	struct FE_element_field_component *component = 0;
-	if ((number_of_maps>0)&&basis)
-	{
-		component = new FE_element_field_component();
-		if (component)
-		{
-			switch (type)
-			{
-				case STANDARD_NODE_TO_ELEMENT_MAP:
-				{
-					if (ALLOCATE(component->map.standard_node_based.node_to_element_maps,
-						struct Standard_node_to_element_map *,number_of_maps))
-					{
-						component->map.standard_node_based.number_of_nodes=number_of_maps;
-						Standard_node_to_element_map **standard_node_to_element_map =
-							component->map.standard_node_based.node_to_element_maps;
-						for (int i=number_of_maps;i>0;i--)
-						{
-							*standard_node_to_element_map=
-								(struct Standard_node_to_element_map *)NULL;
-							standard_node_to_element_map++;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-		"CREATE(FE_element_field_component).  Could not allocate memory for maps");
-						DEALLOCATE(component);
-					}
-				} break;
-				case GENERAL_ELEMENT_MAP:
-				{
-					component->map.general_map_based.number_of_maps = number_of_maps;
-					component->map.general_map_based.maps = new ElementDOFMap*[number_of_maps];
-					for (int i = 0; i < number_of_maps; ++i)
-					{
-						component->map.general_map_based.maps[i] = 0;
-					}
-				} break;
-				case ELEMENT_GRID_MAP:
-				{
-					int basis_dimension = 0;
-					FE_basis_get_dimension(basis, &basis_dimension);
-					if ((ALLOCATE(component->map.element_grid_based.number_in_xi,int,basis_dimension)))
-					{
-						int *number_in_xi = component->map.element_grid_based.number_in_xi;
-						for (int i=basis_dimension;i>0;i--)
-						{
-							*number_in_xi=0;
-							number_in_xi++;
-						}
-						component->map.element_grid_based.value_index=0;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-"CREATE(FE_element_field_component).  Could not allocate memory for number_in_xi");
-						DEALLOCATE(component);
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_element_field_component).  Invalid type");
-					DEALLOCATE(component);
-				} break;
-			}
-			if (component)
-			{
-				component->type=type;
-				component->basis=ACCESS(FE_basis)(basis);
-				component->modify=modify;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-"CREATE(FE_element_field_component).  Could not allocate memory for component");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_field_component).  Invalid argument(s)");
-	}
-	return (component);
-}
-
-/**
- * Frees the memory for the component and sets <*component_address> to NULL.
- */
-int DESTROY(FE_element_field_component)(
-	struct FE_element_field_component **component_address)
-{
-	int return_code = 1;
-	struct FE_element_field_component *component;
-	if ((component_address)&&(component= *component_address))
-	{
-		switch (component->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				Standard_node_to_element_map **standard_node_map =
-					component->map.standard_node_based.node_to_element_maps;
-				for (int i=component->map.standard_node_based.number_of_nodes;i>0;i--)
-				{
-					Standard_node_to_element_map_destroy(standard_node_map);
-					standard_node_map++;
-				}
-				DEALLOCATE(component->map.standard_node_based.node_to_element_maps);
-			} break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				for (int i = 0; i < component->map.general_map_based.number_of_maps; ++i)
-				{
-					delete component->map.general_map_based.maps[i];
-				}
-				delete[] component->map.general_map_based.maps;
-			} break;
-			case ELEMENT_GRID_MAP:
-			{
-				DEALLOCATE(component->map.element_grid_based.number_in_xi);
-			} break;
-		}
-		delete *component_address;
-		*component_address = 0;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-/**
- * Creates and returns a copy of the supplied element field component. Due to
- * references to scale factor sets, the component is valid for use in the
- * current FE_region only.
- * @see FE_element_field_component_switch_FE_mesh
- */
-struct FE_element_field_component *copy_create_FE_element_field_component(
-	struct FE_element_field_component *source_component)
-{
-	struct FE_element_field_component *component = 0;
-	if (source_component)
-	{
-		int i, number_of_maps = 0;
-		switch(source_component->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
-			}	break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				number_of_maps = source_component->map.general_map_based.number_of_maps;
-			}	break;
-			case ELEMENT_GRID_MAP:
-			{
-				number_of_maps=1;
-			}	break;
-		}/* switch(source_component->type) */
-		/*create the component*/
-		component=CREATE(FE_element_field_component)(source_component->type,number_of_maps,
-			source_component->basis,source_component->modify);
-		/* fill in the interior of component */
-		if (component)
-		{
-			cmzn_mesh_scale_factor_set *scaleFactorSet = source_component->get_scale_factor_set();
-			if (scaleFactorSet)
-				component->set_scale_factor_set(scaleFactorSet);
-			switch(source_component->type)
-			{
-				case STANDARD_NODE_TO_ELEMENT_MAP:
-				{
-					for(i=0;i<number_of_maps;i++)
-					{
-						component->map.standard_node_based.node_to_element_maps[i]=
-							copy_create_Standard_node_to_element_map(
-								source_component->map.standard_node_based.node_to_element_maps[i]);
-					}
-				}	break;
-				case GENERAL_ELEMENT_MAP:
-				{
-					component->map.general_map_based.number_of_maps = number_of_maps;
-					for(i=0;i<number_of_maps;i++)
-					{
-						component->map.general_map_based.maps[i] = 
-							source_component->map.general_map_based.maps[i]->clone();
-					}
-				} break;
-				case ELEMENT_GRID_MAP:
-				{
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension(source_component->basis, &number_of_xi_coordinates);
-					for(i = 0; i < number_of_xi_coordinates; i++)
-					{
-						component->map.element_grid_based.number_in_xi[i]=
-							source_component->map.element_grid_based.number_in_xi[i];
-					}
-					component->map.element_grid_based.value_index=
-						source_component->map.element_grid_based.value_index;
-				}	break;
-			} /* switch(source_component->type) */
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_FE_element_field_component.  failed to create component");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"copy_create_FE_element_field_component.  Invalid argument");
-	}
-	return(component);
-}
-
-/**
- * Switches references to FE_region-specific objects, notably
- * scale factor sets, to the supplied fe_region.
- * @return  CMZN_OK on success, any other value on failure.
- */
-static int FE_element_field_component_switch_FE_mesh(
-	FE_element_field_component *component, FE_mesh *fe_mesh)
-{
-	if (!(component && fe_mesh))
-		return CMZN_ERROR_ARGUMENT;
-	cmzn_mesh_scale_factor_set *sourceScaleFactorSet = component->get_scale_factor_set();
-	if (sourceScaleFactorSet)
-	{
-		cmzn_mesh_scale_factor_set *targetScaleFactorSet =
-			fe_mesh->find_scale_factor_set_by_name(sourceScaleFactorSet->getName());
-		if (!targetScaleFactorSet)
-		{
-			targetScaleFactorSet = fe_mesh->create_scale_factor_set();
-			if (!targetScaleFactorSet)
-				return CMZN_ERROR_MEMORY;
-			targetScaleFactorSet->setName(sourceScaleFactorSet->getName());
-		}
-		component->set_scale_factor_set(targetScaleFactorSet);
-		cmzn_mesh_scale_factor_set::deaccess(targetScaleFactorSet);
-	}
-	return CMZN_OK;
-}
-
-int FE_element_field_component_get_basis(
-	struct FE_element_field_component *element_field_component,
-	struct FE_basis **basis_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <basis> used by <element_field_component>.
-If fails, puts NULL in *<basis_address> if supplied.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_get_basis);
-	return_code = 0;
-	if (element_field_component && basis_address)
-	{
-		if (NULL != (*basis_address = element_field_component->basis))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_component_get_basis.  Missing basis");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_basis.  Invalid argument(s)");
-	}
-	if ((!return_code) && basis_address)
-	{
-		*basis_address = (struct FE_basis *)NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_basis */
-
-int FE_element_field_component_get_grid_map_number_in_xi(
-	struct FE_element_field_component *element_field_component,
-	int xi_number, int *number_in_xi_address)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Gets the <number_in_xi> = number of spaces between grid points = one less than
-the number of grid points on <xi_number> for <element_field_component> of type
-ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
-of the basis in <element_field_component>.
-If fails, puts zero in *<number_in_xi_address> if supplied.
-==============================================================================*/
-{
-	int dimension, return_code;
-
-	ENTER(FE_element_field_component_get_grid_map_number_in_xi);
-	if (element_field_component &&
-		(ELEMENT_GRID_MAP == element_field_component->type) &&
-		element_field_component->map.element_grid_based.number_in_xi &&
-		(0 <= xi_number) &&
-		FE_basis_get_dimension(element_field_component->basis, &dimension) &&
-		(xi_number < dimension) && number_in_xi_address)
-	{
-		*number_in_xi_address =
-			element_field_component->map.element_grid_based.number_in_xi[xi_number];
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_grid_map_number_in_xi.  "
-			"Invalid argument(s)");
-		if (number_in_xi_address)
-		{
-			*number_in_xi_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_grid_map_number_in_xi */
-
-int FE_element_field_component_set_grid_map_number_in_xi(
-	struct FE_element_field_component *element_field_component,
-	int xi_number, int number_in_xi)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Sets the <number_in_xi> = number of spaces between grid points = one less than
-the number of grid points on <xi_number> for <element_field_component> of type
-ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
-of the basis in <element_field_component>. <number_in_xi> must be positive.
-The number_in_xi must currently be unset for this <xi_number>.
-==============================================================================*/
-{
-	enum FE_basis_type basis_type;
-	int dimension, return_code;
-
-	ENTER(FE_element_field_component_set_grid_map_number_in_xi);
-	if (element_field_component &&
-		(ELEMENT_GRID_MAP == element_field_component->type) &&
-		element_field_component->map.element_grid_based.number_in_xi &&
-		(0 <= xi_number) &&
-		FE_basis_get_dimension(element_field_component->basis, &dimension) &&
-		(xi_number < dimension) && (0 <= number_in_xi) && (0 ==
-			element_field_component->map.element_grid_based.number_in_xi[xi_number]) &&
-		FE_basis_get_xi_basis_type(element_field_component->basis, xi_number,
-			&basis_type) &&
-		(((0 == number_in_xi) && (FE_BASIS_CONSTANT == basis_type)) ||
-		 ((0 < number_in_xi) && (LINEAR_LAGRANGE == basis_type))))
-	{
-		element_field_component->map.element_grid_based.number_in_xi[xi_number] =
-			number_in_xi;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_set_grid_map_number_in_xi.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_set_grid_map_number_in_xi */
-
-int FE_element_field_component_set_grid_map_value_index(
-	struct FE_element_field_component *element_field_component, int value_index)
-/*******************************************************************************
-LAST MODIFIED : 16 October 2002
-
-DESCRIPTION :
-Sets the <value_index> = starting point in the element's value_storage for the
-grid-based values for <element_field_component> of type ELEMENT_GRID_MAP.
-<value_index> must be non-negative.
-The value_index must currently be 0.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_set_grid_map_value_index);
-	if (element_field_component &&
-		(ELEMENT_GRID_MAP == element_field_component->type) &&
-		(0 == element_field_component->map.element_grid_based.value_index))
-	{
-		element_field_component->map.element_grid_based.value_index = value_index;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_set_grid_map_value_index.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_set_grid_map_value_index */
-
-int FE_element_field_component_get_modify(
-	struct FE_element_field_component *element_field_component,
-	FE_element_field_component_modify *modify_address)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Gets the <modify> function used by <element_field_component> -- can be NULL.
-If fails, puts NULL in *<modify_address> if supplied.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_get_modify);
-	if (element_field_component && modify_address)
-	{
-		*modify_address = element_field_component->modify;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_modify.  Invalid argument(s)");
-		if (modify_address)
-		{
-			*modify_address = (FE_element_field_component_modify)NULL;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_modify */
-
-int FE_element_field_component_set_modify(
-	struct FE_element_field_component *element_field_component,
-	FE_element_field_component_modify modify)
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Sets the <modify> function used by <element_field_component> -- can be NULL.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_set_modify);
-	if (element_field_component)
-	{
-		element_field_component->modify = modify;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_set_modify.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_set_modify */
-
-int FE_element_field_component_get_number_of_nodes(
-	struct FE_element_field_component *element_field_component,
-	int *number_of_nodes_address)
-{
-	int return_code = 0;
-	if (element_field_component && number_of_nodes_address)
-	{
-		switch (element_field_component->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				*number_of_nodes_address =
-					element_field_component->map.standard_node_based.number_of_nodes;
-				return_code = 1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_component_get_number_of_nodes.  "
-					"Invalid element field component type");
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_number_of_nodes.  Invalid argument(s)");
-	}
-	if ((!return_code) && number_of_nodes_address)
-	{
-		*number_of_nodes_address = 0;
-	}
-
-	return (return_code);
-}
-
-int FE_element_field_component_get_local_node_in_use(
-	FE_element_field_component *component, int numberOfLocalNodes, int *localNodeInUse)
-{
-	if (component && ((0 == numberOfLocalNodes) ||
-		((0 < numberOfLocalNodes) && localNodeInUse)))
-	{
-		switch (component->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				int number_of_nodes_in_component = component->map.standard_node_based.number_of_nodes;
-				for (int j = 0; j < number_of_nodes_in_component; j++)
-				{
-					Standard_node_to_element_map *standard_node_map = component->map.standard_node_based.node_to_element_maps[j];
-					int node_index = standard_node_map->node_index;
-					if ((0 <= node_index) && (node_index < numberOfLocalNodes))
-					{
-						localNodeInUse[node_index] = 1;
-					}
-				}
-			} break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				int numberOfMaps = component->map.general_map_based.number_of_maps;
-				ElementDOFMap **maps = component->map.general_map_based.maps;
-				for (int i = 0; i < numberOfMaps; ++i)
-				{
-					maps[i]->setLocalNodeInUse(numberOfLocalNodes, localNodeInUse);
-				}
-			} break;
-			case ELEMENT_GRID_MAP:
-			{
-				// nothing to do: these maps do not use nodes
-			} break;
-		}
-		return 1;
-	}
-	return 0;
-}
-
-cmzn_mesh_scale_factor_set *FE_element_field_component_get_scale_factor_set(
-	FE_element_field_component *component)
-{
-	if (component)
-		return component->get_scale_factor_set();
-	return 0;
-}
-
-int FE_element_field_component_set_scale_factor_set(
-	FE_element_field_component *component, cmzn_mesh_scale_factor_set *scale_factor_set)
-{
-	if (component)
-		return component->set_scale_factor_set(scale_factor_set);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int FE_element_field_component_get_standard_node_map(
-	struct FE_element_field_component *element_field_component, int node_number,
-	struct Standard_node_to_element_map **standard_node_map_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <standard_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-If fails, puts NULL in *<standard_node_map_address> if supplied.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_get_standard_node_map);
-	return_code = 0;
-	if (element_field_component &&
-		(STANDARD_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
-		element_field_component->map.standard_node_based.node_to_element_maps &&
-		(0 <= node_number) && (node_number <
-			element_field_component->map.standard_node_based.number_of_nodes) &&
-		standard_node_map_address)
-	{
-		if (NULL != (*standard_node_map_address = element_field_component->map.
-			standard_node_based.node_to_element_maps[node_number]))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_component_get_standard_node_map.  "
-				"Missing standard_node_to_element_map");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_standard_node_map.  Invalid argument(s)");
-	}
-	if ((!return_code) && standard_node_map_address)
-	{
-		*standard_node_map_address = (struct Standard_node_to_element_map *)NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_standard_node_map */
-
-int FE_element_field_component_set_standard_node_map(
-	struct FE_element_field_component *element_field_component,
-	int node_number, struct Standard_node_to_element_map *standard_node_map)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
-
-DESCRIPTION :
-Sets the <standard_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-The standard_node_map must currently be unset for this <xi_number>.
-On successful return <standard_node_map> will be owned by the component.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_set_standard_node_map);
-	if (element_field_component &&
-		(STANDARD_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
-		element_field_component->map.standard_node_based.node_to_element_maps &&
-		(0 <= node_number) && (node_number <
-			element_field_component->map.standard_node_based.number_of_nodes) &&
-		(!element_field_component->map.standard_node_based.node_to_element_maps[
-			node_number]) && standard_node_map)
-	{
-		element_field_component->map.standard_node_based.
-			node_to_element_maps[node_number] = standard_node_map;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_set_standard_node_map.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_set_standard_node_map */
-
-int FE_element_field_component_get_type(
-	struct FE_element_field_component *element_field_component,
-	enum Global_to_element_map_type *type_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the type of mapping used by <element_field_component>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_get_type);
-	if (element_field_component && type_address)
-	{
-		*type_address = element_field_component->type;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_type */
-
-/**
- * Returns true if <component_1> and <component_2> are equivalent for
- * <info_1> and <info_2>, respectively.
- */
-static bool FE_element_field_components_match(
-	struct FE_element_field_component *component_1,
-	struct FE_element_node_scale_field_info *info_1,
-	struct FE_element_field_component *component_2,
-	struct FE_element_node_scale_field_info *info_2)
-{
-	if (component_1 && info_1 && component_2 && info_2)
-	{
-		if ((component_1->type != component_2->type) ||
-			(component_1->basis != component_2->basis) ||
-			(component_1->modify != component_2->modify))
-		{
-			//display_message(ERROR_MESSAGE,
-			//	"FE_element_field_components_match.  Inconsistent type or basis");
-			return false;
-		}
-
-		cmzn_mesh_scale_factor_set *scale_factor_set1 = component_1->get_scale_factor_set();
-		cmzn_mesh_scale_factor_set *scale_factor_set2 = component_2->get_scale_factor_set();
-		// allow scale factor set to match by name to merge from other region
-		if (((scale_factor_set1) && (!scale_factor_set2)) ||
-			((!scale_factor_set1) && (scale_factor_set2)) ||
-			(scale_factor_set1 && (scale_factor_set1 != scale_factor_set2) &&
-				(0 != strcmp(scale_factor_set1->getName(), scale_factor_set2->getName()))))
-		{
-			//display_message(ERROR_MESSAGE,
-			//	"FE_element_field_components_match.  Different scale factor sets");
-			return false;
-		}
-
-		switch (component_1->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				// since scale factor indices are absolute in the element
-				// need to find position of scale factor set in source
-				// and merged data. Future: make indices relative to set!
-				int scale_factor_offset = 0;
-				int number_of_scale_factors1 = 0;
-				int number_of_scale_factors2 = 0;
-				if (scale_factor_set1)
-				{
-					int scale_factor_set_offset1 = info_1->getScaleFactorSetOffset(
-						component_1->get_scale_factor_set(), number_of_scale_factors1);
-					int scale_factor_set_offset2 = info_2->getScaleFactorSetOffset(
-						component_2->get_scale_factor_set(), number_of_scale_factors2);
-					scale_factor_offset = scale_factor_set_offset1 - scale_factor_set_offset2;
-				}
-				if (number_of_scale_factors1 != number_of_scale_factors2)
-				{
-					//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
-					//	"Different numbers of scale factors in sets");
-					return false;
-				}
-				int j = component_1->map.standard_node_based.number_of_nodes;
-				Standard_node_to_element_map **standard_node_map_1 = component_1->map.standard_node_based.node_to_element_maps;
-				Standard_node_to_element_map **standard_node_map_2 = component_2->map.standard_node_based.node_to_element_maps;
-				if ((component_2->map.standard_node_based.number_of_nodes == j) &&
-					(standard_node_map_1) && (standard_node_map_2))
-				{
-					/* check each standard node to element map */
-					while (j > 0)
-					{
-						if (Standard_node_to_element_maps_match(*standard_node_map_1, info_1,
-							*standard_node_map_2, info_2, scale_factor_offset))
-						{
-							++standard_node_map_1;
-							++standard_node_map_2;
-							--j;
-						}
-						else
-						{
-							//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
-							//	"Inconsistent standard node to element maps");
-							return false;
-						}
-					}
-				}
-				else
-				{
-					//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
-					//	"Different or invalid standard node to element maps");
-					return false;
-				}
-			} break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				int numberOfMaps = component_1->map.general_map_based.number_of_maps;
-				if (numberOfMaps != component_2->map.general_map_based.number_of_maps)
-				{
-					//display_message(ERROR_MESSAGE,
-					//	"FE_element_field_components_match.  Different numbers of element DOF maps");
-					return false;
-				}
-				ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2);
-				if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
-				{
-					//display_message(ERROR_MESSAGE,
-					//	"FE_element_field_components_match.  Different numbers of scale factors for basis");
-					return false;
-				}
-				// could compare scale factors here, otherwise make them overwritable
-				ElementDOFMap **maps1 = component_1->map.general_map_based.maps;
-				ElementDOFMap **maps2 = component_2->map.general_map_based.maps;
-				for (int j = 0; j < numberOfMaps; ++j)
-				{
-					if (!maps1[j]->matchesWithInfo(maps2[j], cache))
-					{
-						//display_message(ERROR_MESSAGE,
-						//	"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
-						return false;
-					}
-				}
-			} break;
-			case ELEMENT_GRID_MAP:
-			{
-				int *number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
-				int *number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
-				int j = 0;
-				FE_basis_get_dimension(component_1->basis, &j);
-				int number_of_values = 1;
-				while (j && (*number_in_xi_1 == *number_in_xi_2))
-				{
-					number_of_values *= (*number_in_xi_1) + 1;
-					j--;
-					number_in_xi_1++;
-					number_in_xi_2++;
-				}
-				if (j)
-				{
-					//display_message(ERROR_MESSAGE,
-					//	"FE_element_field_components_match.  Inconsistent grids");
-					return false;
-				}
-			} break;
-		}
-		return true; // matches!
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_components_match.  Invalid argument(s)");
-	}
-	return false;
-}
-
-struct FE_element_field *CREATE(FE_element_field)(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 2 November 1995
-
-DESCRIPTION :
-Allocates memory and assigns fields for an element field.  The storage is
-allocated for the pointers to the components and set to NULL.
-==============================================================================*/
-{
-	int i;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **component;
-
-	ENTER(CREATE(FE_element_field));
-	if (field)
-	{
-		if ((ALLOCATE(element_field,struct FE_element_field,1))&&
-			(ALLOCATE(component,struct FE_element_field_component *,
-			field->number_of_components)))
-		{
-			element_field->access_count=0;
-			element_field->field=ACCESS(FE_field)(field);
-			element_field->components=component;
-			for (i=field->number_of_components;i>0;i--)
-			{
-				*component=(struct FE_element_field_component *)NULL;
-				component++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_field).  Could not allocate memory for element field");
-			DEALLOCATE(element_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_field).  Invalid argument(s)");
-		element_field=(struct FE_element_field *)NULL;
-	}
-	LEAVE;
-
-	return (element_field);
-} /* CREATE(FE_element_field) */
-
-int DESTROY(FE_element_field)(
-	struct FE_element_field **element_field_address)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Frees the memory for element field and sets <*element_field_address> to NULL.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **component;
-
-	ENTER(DESTROY(FE_element_field));
-	if ((element_field_address)&&(element_field= *element_field_address))
-	{
-		if (0==element_field->access_count)
-		{
-			/* the element field will be destroyed as part as part of destroying
-				element field information.  So it will already have been removed from
-				the appropriate list */
-			/* destroy the global to element maps */
-			component=element_field->components;
-			for (i=element_field->field->number_of_components;i>0;i--)
-			{
-				DESTROY(FE_element_field_component)(component);
-				component++;
-			}
-			DEALLOCATE(element_field->components);
-			DEACCESS(FE_field)(&(element_field->field));
-			DEALLOCATE(*element_field_address);
-		}
-		else
-		{
-			*element_field_address=(struct FE_element_field *)NULL;
-		}
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_element_field) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_element_field)
-
-/**
- * @return 1 if <element_field> is not in the <element_field_list>, otherwise 0.
- */
-static int FE_element_field_not_in_list(struct FE_element_field *element_field,
-	void *element_field_list)
-{
-	int return_code = 0;
-	struct LIST(FE_element_field) *list =
-		reinterpret_cast<struct LIST(FE_element_field) *>(element_field_list);
-	if (element_field && (element_field->field) && list)
-	{
-		FE_element_field *element_field_2;
-		FE_element_field_component **component_1,**component_2;
-		if ((element_field_2=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
-			field)(element_field->field,list))&&
-			(component_1=element_field->components)&&
-			(component_2=element_field_2->components))
-		{
-			int i=element_field->field->number_of_components;
-			while (!return_code&&(i>0))
-			{
-				if ((*component_1)&&(*component_2)&&
-					((*component_1)->type==(*component_2)->type)&&
-					((*component_1)->basis==(*component_2)->basis)&&
-					((*component_1)->modify==(*component_2)->modify))
-				{
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension((*component_1)->basis, &number_of_xi_coordinates);
-					switch ((*component_1)->type)
-					{
-						case STANDARD_NODE_TO_ELEMENT_MAP:
-						{
-							int j = (*component_1)->map.standard_node_based.number_of_nodes;
-							Standard_node_to_element_map **standard_node_map_1 =
-								(*component_1)->map.standard_node_based.node_to_element_maps;
-							Standard_node_to_element_map **standard_node_map_2 =
-								(*component_2)->map.standard_node_based.node_to_element_maps;
-							if (((*component_2)->map.standard_node_based.number_of_nodes == j) &&
-								(standard_node_map_1) && (standard_node_map_2))
-							{
-								while (j > 0)
-								{
-									if (Standard_node_to_element_maps_match(*standard_node_map_1, /*info_1*/0,
-										*standard_node_map_2, /*info_2*/0, /*scale_factor_offset_2_to_1*/0))
-									{
-										++standard_node_map_1;
-										++standard_node_map_2;
-										--j;
-									}
-									else
-									{
-										return_code = 1;
-										break;
-									}
-								}
-							}
-							else
-							{
-								return_code=1;
-							}
-						} break;
-						case GENERAL_ELEMENT_MAP:
-						{
-							int numberOfMaps = (*component_1)->map.general_map_based.number_of_maps;
-							if (numberOfMaps != (*component_2)->map.general_map_based.number_of_maps)
-							{
-								return 1;
-							}
-							ElementDOFMap **maps1 = (*component_1)->map.general_map_based.maps;
-							ElementDOFMap **maps2 = (*component_2)->map.general_map_based.maps;
-							for (int j = 0; j < numberOfMaps; ++j)
-							{
-								if (!maps1[j]->matches(maps2[j]))
-								{
-									return 1;
-								}
-							}
-						} break;
-						case ELEMENT_GRID_MAP:
-						{
-							int *number_in_xi_1,*number_in_xi_2;
-							if (((*component_1)->map.element_grid_based.value_index==
-								(*component_2)->map.element_grid_based.value_index)&&
-								(number_in_xi_1=
-								(*component_1)->map.element_grid_based.number_in_xi)&&
-								(number_in_xi_2=
-								(*component_2)->map.element_grid_based.number_in_xi))
-							{
-								int j=number_of_xi_coordinates;
-								while (!return_code&&(j>0))
-								{
-									if (*number_in_xi_1== *number_in_xi_2)
-									{
-										number_in_xi_1++;
-										number_in_xi_2++;
-										j--;
-									}
-									else
-									{
-										return_code=1;
-									}
-								}
-							}
-							else
-							{
-								return_code=1;
-							}
-						} break;
-					}
-					component_1++;
-					component_2++;
-					i--;
-				}
-				else
-				{
-					return_code=1;
-				}
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_not_in_list.  Invalid argument(s)");
-		return_code=1;
-	}
-	return (return_code);
-}
-
-static int FE_element_field_add_to_list_no_field_duplication(
-	struct FE_element_field *element_field, void *element_field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Adds <element_field> to <element_field_list>, but fails and reports an error if
-the field in <element_field> is already used in the list.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element_field) *element_field_list;
-
-	ENTER(FE_element_field_add_to_list_no_field_duplication);
-	if (element_field && (element_field->field) && (element_field_list =
-		(struct LIST(FE_element_field) *)element_field_list_void))
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
-			element_field->field, element_field_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_add_to_list_no_field_duplication.  "
-				"Field %s is used more than once in element field list",
-				element_field->field->name);
-			return_code = 0;
-		}
-		else
-		{
-			if (ADD_OBJECT_TO_LIST(FE_element_field)(element_field,
-				element_field_list))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_add_to_list_no_field_duplication.  "
-					"Could not add field %s to list",
-					element_field->field->name);
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_add_to_list_no_field_duplication.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_add_to_list_no_field_duplication */
-
-/**
- * Returns true if <element_field_1> and <element_field_2> produce equivalent
- * results with <info_1> and <info_2>, respectively.
- */
-static bool FE_element_fields_match(struct FE_element_field *element_field_1,
-	struct FE_element_node_scale_field_info *info_1,
-	struct FE_element_field *element_field_2,
-	struct FE_element_node_scale_field_info *info_2)
-{
-	if (element_field_1 && info_1 && element_field_2 && info_2)
-	{
-		FE_field *field = element_field_1->field;
-		if (field && (element_field_2->field == field))
-		{
-			int number_of_components = get_FE_field_number_of_components(field);
-			FE_element_field_component **component_1 = element_field_1->components;
-			FE_element_field_component **component_2 = element_field_2->components;
-			if (component_1 && component_2)
-			{
-				// only GENERAL_FE_FIELD has components to check
-				if (GENERAL_FE_FIELD == field->fe_field_type)
-				{
-					for (int i = number_of_components; (0 < i); i--)
-					{
-						if (FE_element_field_components_match(*component_1, info_1,
-							*component_2, info_2))
-						{
-							component_1++;
-							component_2++;
-						}
-						else
-							return false;
-					}
-				}
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-#if !defined (WINDOWS_DEV_FLAG)
-/***************************************************************************//**
- * Outputs details of how field is defined at element.
- */
-static int list_FE_element_field(struct FE_element *element,
-	struct FE_field *field, void *dummy_user_data)
-{
-	char *component_name;
-	const char *type_string;
-	int i,j,k,*nodal_value_index,*number_in_xi,
-		number_of_components,number_of_nodal_values,
-		number_of_xi_coordinates,return_code,*scale_factor_index;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **element_field_component;
-	struct Standard_node_to_element_map **node_to_element_map;
-
-	ENTER(list_FE_element_field);
-	USE_PARAMETER(dummy_user_data);
-	if (element && field)
-	{
-		element_field = (struct FE_element_field *)NULL;
-		if (element->fields)
-		{
-			element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				field, element->fields->element_field_list);
-		}
-		if (element_field && element_field->components)
-		{
-			return_code=1;
-			display_message(INFORMATION_MESSAGE,"  %s",field->name);
-			if (NULL != (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type)))
-			{
-				display_message(INFORMATION_MESSAGE,", %s",type_string);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"list_FE_element_field.  Invalid CM field type");
-				return_code=0;
-			}
-			if (NULL != (type_string=ENUMERATOR_STRING(Coordinate_system_type)(
-				field->coordinate_system.type)))
-			{
-				display_message(INFORMATION_MESSAGE,", %s",type_string);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"list_FE_element_field.  Invalid field coordinate system");
-				return_code=0;
-			}
-			number_of_components=field->number_of_components;
-			display_message(INFORMATION_MESSAGE,", #Components=%d\n",
-				number_of_components);
-			element_field_component=element_field->components;
-			i=0;
-			while (return_code&&(i<number_of_components))
-			{
-				display_message(INFORMATION_MESSAGE,"    ");
-				if (NULL != (component_name=get_FE_field_component_name(field,i)))
-				{
-					display_message(INFORMATION_MESSAGE,component_name);
-					DEALLOCATE(component_name);
-				}
-				if (GENERAL_FE_FIELD==field->fe_field_type)
-				{
-					if (*element_field_component)
-					{
-						display_message(INFORMATION_MESSAGE,".  ");
-						char *basis_string = FE_basis_get_description_string((*element_field_component)->basis);
-						display_message(INFORMATION_MESSAGE, basis_string);
-						DEALLOCATE(basis_string);
-						if ((*element_field_component)->modify)
-						{
-							display_message(INFORMATION_MESSAGE,", modify");
-						}
-						else
-						{
-							display_message(INFORMATION_MESSAGE,", no modify");
-						}
-						switch ((*element_field_component)->type)
-						{
-							case STANDARD_NODE_TO_ELEMENT_MAP:
-							{
-								display_message(INFORMATION_MESSAGE,", standard node based\n");
-								if (NULL != (node_to_element_map=(*element_field_component)->map.
-									standard_node_based.node_to_element_maps))
-								{
-									j=(*element_field_component)->map.standard_node_based.
-										number_of_nodes;
-									while (j>0)
-									{
-										if (*node_to_element_map)
-										{
-											number_of_nodal_values=(*node_to_element_map)->
-												number_of_nodal_values;
-											display_message(INFORMATION_MESSAGE,"      %d.  #Values=%d\n",
-												(*node_to_element_map)->node_index + 1,
-												number_of_nodal_values);
-											if (NULL != (nodal_value_index=(*node_to_element_map)->nodal_value_indices))
-											{
-												display_message(INFORMATION_MESSAGE,"        Value indices:");
-												for (k = number_of_nodal_values; 0 < k; --k)
-												{
-													display_message(INFORMATION_MESSAGE," %d", *nodal_value_index + 1);
-													nodal_value_index++;
-												}
-												display_message(INFORMATION_MESSAGE,"\n");
-											}
-											FE_nodal_value_type *nodal_value_type = (*node_to_element_map)->nodal_value_types;
-											int *nodal_version = (*node_to_element_map)->nodal_versions;
-											if ((nodal_value_type) && (nodal_version))
-											{
-												display_message(INFORMATION_MESSAGE,"        Value types (Versions > 1):");
-												for (k = number_of_nodal_values; 0 < k; --k)
-												{
-													display_message(INFORMATION_MESSAGE, " %s",
-														ENUMERATOR_STRING(FE_nodal_value_type)(*nodal_value_type));
-													if (*nodal_version > 0)
-														display_message(INFORMATION_MESSAGE, "(%d)", *nodal_version + 1);
-													++nodal_value_type;
-													++nodal_version;
-												}
-												display_message(INFORMATION_MESSAGE,"\n");
-											}
-											if (NULL != (scale_factor_index=(*node_to_element_map)->scale_factor_indices))
-											{
-												display_message(INFORMATION_MESSAGE,"        Scale factor indices:");
-												for (k = number_of_nodal_values; 0 < k; --k)
-												{
-													display_message(INFORMATION_MESSAGE, " %d", *scale_factor_index + 1);
-													scale_factor_index++;
-												}
-												display_message(INFORMATION_MESSAGE,"\n");
-											}
-										}
-										j--;
-										node_to_element_map++;
-									}
-								}
-							} break;
-							case GENERAL_ELEMENT_MAP:
-							{
-								display_message(INFORMATION_MESSAGE,", general map based\n");
-								// GRC need to complete.
-							} break;
-							case ELEMENT_GRID_MAP:
-							{
-								display_message(INFORMATION_MESSAGE,", grid based\n");
-								number_in_xi=(*element_field_component)->map.element_grid_based.
-									number_in_xi;
-								number_of_xi_coordinates = 0;
-								FE_basis_get_dimension((*element_field_component)->basis, &number_of_xi_coordinates);
-								display_message(INFORMATION_MESSAGE,"      ");
-								for (j=0;j<number_of_xi_coordinates;j++)
-								{
-									if (j>0)
-									{
-										display_message(INFORMATION_MESSAGE,", ");
-									}
-									display_message(INFORMATION_MESSAGE,"#xi%d=%d",j+1,number_in_xi[j]);
-								}
-								display_message(INFORMATION_MESSAGE,"\n");
-							} break;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"list_FE_element_field.  Missing element field component");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,"\n");
-				}
-				element_field_component++;
-				i++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"list_FE_element_field.  Field %s is not defined at element",
-				field->name);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"list_FE_element_field.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_FE_element_field */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-static int FE_element_field_private_get_component_FE_basis(
-	struct FE_element_field *element_field, int component_number,
-	struct FE_basis **fe_basis)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-If <element_field> is standard node based, returns the <fe_basis> used for
-<component_number>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_component *component;
-
-	ENTER(FE_element_field_private_get_component_FE_basis);
-	return_code = 0;
-	if (element_field && element_field->field && fe_basis &&
-		(0 <= component_number) &&
-		(component_number < element_field->field->number_of_components))
-	{
-		*fe_basis = (struct FE_basis *)NULL;
-		/* only GENERAL_FE_FIELD has components and can be grid-based */
-		if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
-		{
-			/* get first field component */
-			if (element_field->components &&
-				(component = element_field->components[component_number]))
-			{
-				if (component->basis)
-				{
-					*fe_basis = component->basis;
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_field_private_get_component_FE_basis.  "
-						"Field does not have an FE_basis.");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_private_get_component_FE_basis.  "
-					"Missing element field component");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_private_get_component_FE_basis.  "
-				"Field is not general, not grid-based");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_private_get_component_FE_basis.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_private_get_component_FE_basis */
-
-/***************************************************************************//**
- * If element_field is for a coordinate field, set it at supplied address if
- * currently none or name is alphabetically less than current field.
- * @param coordinate_field_address_void  struct FE_field **.
- */
-static int FE_element_field_get_first_coordinate_field(struct FE_element_field
-	*element_field, void *coordinate_field_address_void)
-{
-	int return_code;
-	struct FE_field **coordinate_field_address, *field;
-
-	ENTER(FE_element_field_get_first_coordinate_field);
-	coordinate_field_address = (struct FE_field **)coordinate_field_address_void;
-	if (element_field && coordinate_field_address)
-	{
-		return_code = 1;
-		field = element_field->field;
-		if (FE_field_is_coordinate_field(field, (void *)NULL))
-		{
-			if ((NULL == *coordinate_field_address) ||
-				(strcmp(field->name, (*coordinate_field_address)->name) < 0))
-			{
-				*coordinate_field_address = field;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_get_first_coordinate_field.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int FE_element_field_is_anatomical_fibre_field(
-	struct FE_element_field *element_field,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 2 September 2001
-
-DESCRIPTION :
-Returns a non-zero if the <element_field> is for a anatomical fibre field.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_is_anatomical_fibre_field);
-	return_code=0;
-	if (element_field)
-	{
-		return_code=FE_field_is_anatomical_fibre_field(element_field->field,
-			dummy_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_is_anatomical_fibre_field. Invalid argument");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_is_anatomical_fibre_field */
-
-static int for_FE_field_at_element_iterator(
-	struct FE_element_field *element_field,void *iterator_and_data_void)
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999
-
-DESCRIPTION :
-FE_element_field iterator for for_each_FE_field_at_element.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_iterator_and_data *iterator_and_data;
-
-	ENTER(for_FE_field_at_element_iterator);
-	if (element_field&&(iterator_and_data=
-		(struct FE_element_field_iterator_and_data *)iterator_and_data_void)&&
-		iterator_and_data->iterator)
-	{
-		return_code=(iterator_and_data->iterator)(iterator_and_data->element,
-			element_field->field,iterator_and_data->user_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_FE_field_at_element_iterator.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_FE_field_at_element_iterator */
-
-/**
- * The data needed to merge an element_field into the list.  This structure is
- * local to this module.
- */
-struct FE_element_field_lists_merge_data
-{
-	struct LIST(FE_element_field) *list;
-	/* node_scale_field_info for merged elements in above <list> */
-	struct FE_element_node_scale_field_info *merge_info;
-	/* node_scale_field_info for all element fields passed directly to
-		 merge_FE_element_field_into_list function */
-	struct FE_element_node_scale_field_info *source_info;
-	/* accumulating size of values_storage in the element. Incremented to fit
-		 any grid-based element fields added by merge_FE_element_field_into_list */
-	int values_storage_size;
-}; /* struct FE_element_field_lists_merge_data */
-
-/**
- * Merges the <new_element_field> into the <list>. The <new_element_field>
- * references nodes, scale factors and values relative to the <source_info>.
- * If an element field already exists in <list> for that field, this function
- * checks <new_element_field> refers to the same nodes and equivalent scale factor
- * sets and values_storage in <merge_info>.
- * If no such element field exists currently, a new one is constructed that refers
- * to nodes, scale factors and values in the <merge_info> in a compatible way to
- * <new_element_field>, and this is added to the <list>.
- * For new grid-based fields this function increments the values_storage_size in
- * the <data> to fit the new grid values and references them in the element field
- * constructed for it.
- * No values_storage arrays are allocated or copied by this function.
- */
-static int merge_FE_element_field_into_list(
-	struct FE_element_field *new_element_field, void *data_void)
-{
-	int i, j, *new_number_in_xi, new_values_storage_size,
-		node_index, *number_in_xi, number_of_values,
-		return_code;
-	struct FE_element_field_component **component, **new_component;
-	struct FE_element_field_lists_merge_data *data;
-	struct FE_element_node_scale_field_info *merge_info, *source_info;
-	struct FE_field *field;
-	struct FE_node *new_node, **node;
-	struct Standard_node_to_element_map **new_standard_node_map,
-		**standard_node_map;
-
-	if (new_element_field && (field = new_element_field->field) &&
-		(data = (struct FE_element_field_lists_merge_data *)data_void) &&
-		data->list)
-	{
-		merge_info = data->merge_info;
-		source_info = data->source_info;
-
-		return_code = 1;
-		/* check if the new element field is in the existing list */
-		FE_element_field *element_field =
-			FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(field, data->list);
-		if (element_field)
-		{
-			/* only GENERAL_FE_FIELD has components to check for merge */
-			if (GENERAL_FE_FIELD == field->fe_field_type)
-			{
-				/* must have merge_info and source_info for general */
-				if (merge_info && source_info)
-				{
-					/* check the new element field for consistency */
-					if ((component = element_field->components) &&
-						(new_component = new_element_field->components))
-					{
-						/* check each component */
-						i = field->number_of_components;
-						while (return_code && (i > 0))
-						{
-							if (FE_element_field_components_match(*component, merge_info,
-								*new_component, source_info))
-							{
-								component++;
-								new_component++;
-								i--;
-							}
-							else
-							{
-								// replace if different
-								REMOVE_OBJECT_FROM_LIST(FE_element_field)(element_field, data->list);
-								element_field = 0;
-								break;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_FE_element_field_into_list.  Invalid element field");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"merge_FE_element_field_into_list.  "
-						"Missing merge or source node field info");
-					return_code = 0;
-				}
-			}
-		}
-		if (!element_field)
-		{
-			element_field = CREATE(FE_element_field)(field);
-			if (element_field)
-			{
-				/* only GENERAL_FE_FIELD has components to copy for merge */
-				if (GENERAL_FE_FIELD == field->fe_field_type)
-				{
-					/* must have merge_info and source_info for general */
-					if (merge_info && source_info)
-					{
-						new_component = new_element_field->components;
-						i = field->number_of_components;
-						component = element_field->components;
-						while (return_code && (i > 0))
-						{
-							if ((*new_component) && ((*new_component)->basis))
-							{
-								switch ((*new_component)->type)
-								{
-									case STANDARD_NODE_TO_ELEMENT_MAP:
-									{
-										// since scale factor indices are absolute in the element
-										// need to find position of scale factor set in source
-										// and merged data. Future: make indices relative to set!
-										int scale_factor_offset = 0;
-										int source_number_of_scale_factors = 0;
-										int merge_number_of_scale_factors = 0;
-										if ((*new_component)->get_scale_factor_set())
-										{
-											int source_scale_factor_set_offset = source_info->getScaleFactorSetOffset(
-												(*new_component)->get_scale_factor_set(), source_number_of_scale_factors);
-											int merge_scale_factor_set_offset = merge_info->getScaleFactorSetOffset(
-												(*new_component)->get_scale_factor_set(), merge_number_of_scale_factors);
-											scale_factor_offset = merge_scale_factor_set_offset - source_scale_factor_set_offset;
-										}
-										if (source_number_of_scale_factors != merge_number_of_scale_factors)
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_FE_element_field_into_list.  Different numbers of scale factors in sets");
-											return_code = 0;
-											break;
-										}
-										if ((new_standard_node_map = (*new_component)->map.
-											standard_node_based.node_to_element_maps) &&
-											((j = (*new_component)->map.standard_node_based.
-												number_of_nodes) > 0) &&
-											(*component = CREATE(FE_element_field_component)(
-												STANDARD_NODE_TO_ELEMENT_MAP, j,
-												(*new_component)->basis, (*new_component)->modify)))
-										{
-											standard_node_map = (*component)->map.standard_node_based.node_to_element_maps;
-											while (return_code && (j > 0))
-											{
-												if (*new_standard_node_map)
-												{
-													/* check that the new node_index is actually for a
-														 real node */
-													node_index = (*new_standard_node_map)->node_index;
-													if ((0 <= node_index) &&
-														(node_index < source_info->number_of_nodes) &&
-														source_info->nodes)
-													{
-														/* determine the node index */
-														node = merge_info->nodes;
-														new_node = source_info->nodes[node_index];
-														/*???RC since using this function in
-															define_FE_field_at_element, have to handle case of
-															NULL nodes just by using existing node_index */
-														if (new_node)
-														{
-															node_index = 0;
-															while ((node_index < merge_info->number_of_nodes)
-																&& (*node != new_node))
-															{
-																node_index++;
-																node++;
-															}
-														}
-														if ((*node == new_node) && (*standard_node_map =
-															copy_create_Standard_node_to_element_map(*new_standard_node_map)))
-														{
-															Standard_node_to_element_map_set_node_index(*standard_node_map, node_index);
-															if (0 != scale_factor_offset)
-																Standard_node_to_element_map_offset_scale_factor_indices(*standard_node_map, scale_factor_offset);
-															++standard_node_map;
-															++new_standard_node_map;
-															--j;
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"merge_FE_element_field_into_list.  "
-																"Invalid node or scale factor information");
-															return_code = 0;
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"merge_FE_element_field_into_list.  "
-															"Node index out of range");
-														return_code = 0;
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"merge_FE_element_field_into_list.  "
-														"Invalid standard node to element map");
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_FE_element_field_into_list.  "
-												"Could not create element field component");
-											return_code = 0;
-										}
-									} break;
-									case GENERAL_ELEMENT_MAP:
-									{
-										int numberOfMaps = (*new_component)->map.general_map_based.number_of_maps;
-										*component = CREATE(FE_element_field_component)(
-											GENERAL_ELEMENT_MAP, numberOfMaps, (*new_component)->basis,
-											(*new_component)->modify);
-										ElementDOFMap **sourceMaps = (*new_component)->map.general_map_based.maps;
-										ElementDOFMap **maps = (*component)->map.general_map_based.maps;
-										for (int i = 0; i < numberOfMaps; ++i)
-										{
-											maps[i] = sourceMaps[i]->cloneWithNewNodeIndices(merge_info, source_info);
-										}
-									} break;
-									case ELEMENT_GRID_MAP:
-									{
-										int size;
-
-										if (NULL != (*component = CREATE(FE_element_field_component)(
-											ELEMENT_GRID_MAP, 1, (*new_component)->basis,
-											(*new_component)->modify)))
-										{
-											number_in_xi =
-												((*component)->map).element_grid_based.number_in_xi;
-											new_number_in_xi =
-												((*new_component)->map).element_grid_based.number_in_xi;
-											number_of_values = 1;
-											int number_of_xi_coordinates = 0;
-											FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
-											for (j = number_of_xi_coordinates; j > 0; j--)
-											{
-												*number_in_xi = *new_number_in_xi;
-												number_of_values *= (*number_in_xi) + 1;
-												number_in_xi++;
-												new_number_in_xi++;
-											}
-											size = get_Value_storage_size(
-												field->value_type, (struct FE_time_sequence *)NULL);
-											new_values_storage_size = size*number_of_values;
-											ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
-											/* point the component to new space after the current
-												 data->values_storage_size */
-											((*component)->map).element_grid_based.value_index =
-												data->values_storage_size;
-											/* increase the data->values_storage_size to fit */
-											data->values_storage_size += new_values_storage_size;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_FE_element_field_into_list.  "
-												"Could not create element field component");
-											return_code = 0;
-										}
-									} break;
-								}
-								(*component)->set_scale_factor_set((*new_component)->get_scale_factor_set());
-								component++;
-								new_component++;
-								i--;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"merge_FE_element_field_into_list.  "
-									"Invalid element field component");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_FE_element_field_into_list.  "
-							"Missing merge or source node field info");
-						return_code = 0;
-					}
-				}
-				if ((!return_code) ||
-					(!ADD_OBJECT_TO_LIST(FE_element_field)(element_field, data->list)))
-				{
-					display_message(ERROR_MESSAGE, "merge_FE_element_field_into_list.  "
-						"Could not add element field to list");
-					return_code = 0;
-					DESTROY(FE_element_field)(&element_field);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"merge_FE_element_field_into_list.  Could not create element field");
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"merge_FE_element_field_into_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
 }
 
 int calculate_grid_field_offsets(int element_dimension,
@@ -17598,1363 +10868,6 @@ Returns true if the <element_field_values> are valid for calculating derivatives
 
 	return (return_code);
 } /* FE_element_field_values_have_derivatives_calculated */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element_field, field, \
-	struct FE_field *, compare_FE_field)
-
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_field)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element_field, field, \
-	struct FE_field *, compare_FE_field)
-
-/** Data for passing to FE_element_field_copy_for_FE_mesh. */
-struct FE_element_field_copy_for_FE_mesh_data
-{
-	FE_mesh *fe_mesh;
-	struct LIST(FE_element_field) *element_field_list;
-};
-
-/**
- * Creates a copy of <element_field> using the same named fields, scale factor
- * sets etc. from <fe_region> and adds it to <element_field_list>.
- *Checks fields are equivalent.
- * <data_void> points at a struct FE_element_field_copy_for_FE_mesh_data.
- */
-static int FE_element_field_copy_for_FE_mesh(
-	struct FE_element_field *element_field, void *data_void)
-{
-	int i, return_code;
-	struct FE_field *equivalent_field;
-	struct FE_element_field *copy_element_field;
-	struct FE_element_field_component **component, **copy_component;
-
-	ENTER(FE_element_field_copy_for_FE_mesh);
-	FE_element_field_copy_for_FE_mesh_data *data =
-		static_cast<FE_element_field_copy_for_FE_mesh_data *>(data_void);
-	if (element_field && element_field->field && data)
-	{
-		return_code = 1;
-		if (NULL != (equivalent_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
-			element_field->field->name, FE_region_get_FE_field_list(data->fe_mesh->get_FE_region()))))
-		{
-			if (FE_fields_match_fundamental(element_field->field, equivalent_field))
-			{
-				if (NULL != (copy_element_field = CREATE(FE_element_field)(equivalent_field)))
-				{
-					component = element_field->components;
-					copy_component = copy_element_field->components;
-					for (i = get_FE_field_number_of_components(equivalent_field);
-						(0 < i) && return_code; i--)
-					{
-						if (*component)
-						{
-							*copy_component = copy_create_FE_element_field_component(*component);
-							if (CMZN_OK != FE_element_field_component_switch_FE_mesh(*copy_component, data->fe_mesh))
-							{
-								return_code = 0;
-							}
-						}
-						component++;
-						copy_component++;
-					}
-					if (return_code)
-					{
-						if (!ADD_OBJECT_TO_LIST(FE_element_field)(copy_element_field,
-							data->element_field_list))
-						{
-							return_code = 0;
-						}
-					}
-					if (!return_code)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_copy_for_FE_mesh.  "
-							"Could not copy element field component");
-						DESTROY(FE_element_field)(&copy_element_field);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_field_copy_for_FE_mesh.  "
-						"Could not create element field");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_copy_for_FE_mesh.  "
-					"Fields not equivalent");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_copy_for_FE_mesh.  No equivalent field");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_copy_for_FE_mesh.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
-	struct LIST(FE_element_field) *element_field_list, FE_mesh *fe_mesh)
-{
-	struct LIST(FE_element_field) *return_element_field_list = 0;
-	if (element_field_list && fe_mesh)
-	{
-		struct FE_element_field_copy_for_FE_mesh_data data;
-		data.fe_mesh = fe_mesh;
-		data.element_field_list = CREATE(LIST(FE_element_field))();
-		if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_copy_for_FE_mesh, (void *)&data,
-			element_field_list))
-		{
-			return_element_field_list = data.element_field_list;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_list_clone_for_FE_region.  Failed");
-			DESTROY(LIST(FE_element_field))(&data.element_field_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_list_clone_for_FE_region.  Invalid argument(s)");
-	}
-	return (return_element_field_list);
-}
-
-struct FE_element_field_info *CREATE(FE_element_field_info)(
-	FE_mesh *fe_mesh,
-	struct LIST(FE_element_field) *fe_element_field_list)
-{
-	struct FE_element_field_info *fe_element_field_info;
-
-	ENTER(CREATE(FE_element_field_info));
-	fe_element_field_info = (struct FE_element_field_info *)NULL;
-	if (fe_mesh)
-	{
-		if (ALLOCATE(fe_element_field_info, struct FE_element_field_info, 1))
-		{
-			fe_element_field_info->element_field_list =
-				CREATE(LIST(FE_element_field)());
-			/* maintain pointer to the the FE_region this information belongs to.
-				 It is not ACCESSed since FE_region is the owning object and it
-				 would prevent the FE_region from being destroyed. */
-			fe_element_field_info->fe_mesh = fe_mesh;
-			fe_element_field_info->access_count = 0;
-
-			if (!(fe_element_field_info->element_field_list &&
-				((!fe_element_field_list) ||
-					FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-						FE_element_field_add_to_list_no_field_duplication,
-						(void *)fe_element_field_info->element_field_list,
-						fe_element_field_list))))
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(FE_element_field_info).  Unable to build element field list");
-				DESTROY(FE_element_field_info)(&fe_element_field_info);
-				fe_element_field_info = (struct FE_element_field_info *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_element_field_info).  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_field_info).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (fe_element_field_info);
-} /* CREATE(FE_element_field_info) */
-
-int DESTROY(FE_element_field_info)(
-	struct FE_element_field_info **fe_element_field_info_address)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Destroys the FE_element_field_info at *<element_field_info_address>. Frees the
-memory for the information and sets <*element_field_info_address> to NULL.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_info *fe_element_field_info;
-
-	ENTER(DESTROY(FE_element_field_info));
-	if ((fe_element_field_info_address) &&
-		(fe_element_field_info = *fe_element_field_info_address))
-	{
-		if (0 == fe_element_field_info->access_count)
-		{
-			DESTROY(LIST(FE_element_field))(
-				&(fe_element_field_info->element_field_list));
-			DEALLOCATE(*fe_element_field_info_address);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_element_field_info).  Non-zero access count");
-			return_code = 0;
-		}
-		*fe_element_field_info_address = (struct FE_element_field_info *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_element_field_info).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_element_field_info) */
-
-DECLARE_ACCESS_OBJECT_FUNCTION(FE_element_field_info)
-
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 29 January 2003
-
-DESCRIPTION :
-Special version of DEACCESS which if the FE_element_field_info access_count
-reaches 1 and it has an fe_region member, calls
-FE_mesh::remove_FE_element_field_info.
-Since the FE_region accesses the info once, this indicates no other object is
-using it so it should be flushed from the FE_region. When the owning FE_region
-deaccesses the info, it is destroyed in this function.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_info *object;
-
-	ENTER(DEACCESS(FE_element_field_info));
-	if (object_address && (object = *object_address))
-	{
-		(object->access_count)--;
-		return_code = 1;
-		if (object->access_count <= 1)
-		{
-			if (1 == object->access_count)
-			{
-				if (object->fe_mesh)
-					return_code = object->fe_mesh->remove_FE_element_field_info(object);
-			}
-			else
-			{
-				return_code = DESTROY(FE_element_field_info)(object_address);
-			}
-		}
-		*object_address = (struct FE_element_field_info *)NULL;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DEACCESS(FE_element_field_info) */
-
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Special version of REACCESS which if the FE_element_field_info access_count
-reaches 1 and it has an fe_region member, calls
-FE_mesh::remove_FE_element_field_info.
-Since the FE_region accesses the info once, this indicates no other object is
-using it so it should be flushed from the FE_region. When the owning FE_region
-deaccesses the info, it is destroyed in this function.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_info *current_object;
-
-	ENTER(REACCESS(FE_element_field_info));
-	if (object_address)
-	{
-		return_code = 1;
-		if (new_object)
-		{
-			/* access the new object */
-			(new_object->access_count)++;
-		}
-		if (NULL != (current_object = *object_address))
-		{
-			/* deaccess the current object */
-			(current_object->access_count)--;
-			if (current_object->access_count <= 1)
-			{
-				if (1 == current_object->access_count)
-				{
-					if (current_object->fe_mesh)
-						return_code = current_object->fe_mesh->remove_FE_element_field_info(current_object);
-				}
-				else
-				{
-					return_code = DESTROY(FE_element_field_info)(object_address);
-				}
-			}
-		}
-		/* point to the new object */
-		*object_address = new_object;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(FE_element_field_info).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(FE_element_field_info) */
-
-DECLARE_LIST_FUNCTIONS(FE_element_field_info)
-
-int FE_element_field_info_clear_FE_mesh(
-	struct FE_element_field_info *element_field_info, void *dummy_void)
-{
-	USE_PARAMETER(dummy_void);
-	if (element_field_info)
-	{
-		element_field_info->fe_mesh = 0;
-		return 1;
-	}
-	return 0;
-}
-
-int FE_element_field_info_has_FE_field(
-	struct FE_element_field_info *element_field_info, void *fe_field_void)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has an element field for <fe_field>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_info_has_FE_field);
-	if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-		(struct FE_field *)fe_field_void, element_field_info->element_field_list))
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_info_has_FE_field */
-
-int FE_element_field_info_has_empty_FE_element_field_list(
-	struct FE_element_field_info *element_field_info, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has no element fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_info_has_empty_FE_element_field_list);
-	USE_PARAMETER(dummy_void);
-	if (element_field_info)
-	{
-		if (0 == NUMBER_IN_LIST(FE_element_field)(
-			element_field_info->element_field_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_info_has_empty_FE_element_field_list.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_info_has_empty_FE_element_field_list */
-
-int FE_element_field_info_has_matching_FE_element_field_list(
-	struct FE_element_field_info *element_field_info,
-	void *element_field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns true if <element_field_info> has a FE_element_field_list containing all
-the same FE_element_fields as <element_field_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element_field) *element_field_list;
-
-	ENTER(FE_element_field_info_has_matching_FE_element_field_list);
-	if (element_field_info && (element_field_list =
-		(struct LIST(FE_element_field) *)element_field_list_void))
-	{
-		if ((NUMBER_IN_LIST(FE_element_field)(element_field_list) ==
-			NUMBER_IN_LIST(FE_element_field)(element_field_info->element_field_list)))
-		{
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				FE_element_field_not_in_list,
-				(void *)(element_field_info->element_field_list),
-				element_field_list))
-			{
-				return_code = 0;
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_info_has_matching_FE_element_field_list.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_info_has_matching_FE_element_field_list */
-
-struct LIST(FE_element_field) *FE_element_field_info_get_element_field_list(
-	struct FE_element_field_info *fe_element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns the element field list contained in the <element_field_info>.
-==============================================================================*/
-{
-	struct LIST(FE_element_field) *element_field_list;
-
-	ENTER(FE_element_field_info_get_element_field_list);
-	if (fe_element_field_info)
-	{
-		element_field_list = fe_element_field_info->element_field_list;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_info_get_element_field_list.  Invalid argument(s)");
-		element_field_list = (struct LIST(FE_element_field) *)NULL;
-	}
-	LEAVE;
-
-	return (element_field_list);
-} /* FE_element_field_info_get_element_field_list */
-
-static int FE_element_field_log_FE_field_change(
-	struct FE_element_field *element_field, void *fe_field_change_log_void)
-/*******************************************************************************
-LAST MODIFIED : 17 February 2003
-
-DESCRIPTION :
-Logs the field in <element_field> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
-{
-	int return_code;
-	struct CHANGE_LOG(FE_field) *fe_field_change_log;
-
-	ENTER(FE_element_field_log_FE_field_change);
-	if (element_field && (fe_field_change_log =
-		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void))
-	{
-		return_code = CHANGE_LOG_OBJECT_CHANGE(FE_field)(fe_field_change_log,
-			element_field->field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_log_FE_field_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_log_FE_field_change */
-
-int FE_element_field_info_log_FE_field_changes(
-	struct FE_element_field_info *fe_element_field_info,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Marks each FE_field in <fe_element_field_info> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_info_log_FE_field_changes);
-	if (fe_element_field_info && fe_field_change_log)
-	{
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_log_FE_field_change, (void *)fe_field_change_log,
-			fe_element_field_info->element_field_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_info_log_FE_field_changes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_info_log_FE_field_changes */
-
-struct FE_element_field_copy_values_storage_data
-{
-	int dimension;
-	Value_storage *new_values_storage;
-	struct LIST(FE_element_field) *old_element_field_list;
-	Value_storage *old_values_storage;
-	struct LIST(FE_element_field) *add_element_field_list;
-	Value_storage *add_values_storage;
-}; /* FE_element_field_copy_values_storage_data */
-
-static int FE_element_field_copy_values_storage(
-	struct FE_element_field *new_element_field,	void *copy_data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2003
-
-DESCRIPTION :
-If <new_element_field> uses values storage then:
-
-... when <add_element_field_list> and <add_values_storage> provided:
-Finds the equivalent element field in the <old_element_field_list> or
-<add_element_field_list>, and copies values giving precedence to the latter.
-If the element fields have times, the time arrays are allocated once, then the
-old values are copied followed by the add values to correctly mere the times.
-
-... when <add_element_field_list> and <add_values_storage> not provided:
-Copies the values for <new_element_field> into <new_values_storage> from the
-<old_values_storage> with the equivalent element field in
-<old_element_field_list>.
-
-Notes:
-Assumes <new_values_storage> is already allocated to the appropriate size.
-Assumes the only differences between equivalent element fields are in time
-version; no checks on this are made here.
-<copy_data_void> points at a struct FE_element_field_copy_values_storage_data.
-
-???RC Ignore references to times in the above since not yet implemented; once
-they are, should follow pattern of FE_node_field_copy_values_storage.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int cn, i, *number_in_xi, number_of_values, return_code;
-	struct FE_field *field;
-	struct FE_element_field *add_element_field, *old_element_field;
-	struct FE_element_field_component *add_component, *component, *old_component;
-	struct FE_element_field_copy_values_storage_data *copy_data;
-	Value_storage *destination, *source;
-
-	ENTER(FE_element_field_copy_values_storage);
-	if (new_element_field && (field = new_element_field->field) &&
-		(new_element_field->components) &&
-		(copy_data =
-			(struct FE_element_field_copy_values_storage_data *)copy_data_void))
-	{
-		return_code = 1;
-		/* only GENERAL_FE_FIELD with ELEMENT_GRID_MAP has element values */
-		if (GENERAL_FE_FIELD == field->fe_field_type)
-		{
-			old_element_field = NULL;
-			add_element_field = NULL;
-			for (cn = 0; (cn < field->number_of_components) && return_code; cn++)
-			{
-				component = new_element_field->components[cn];
-				if (component && (ELEMENT_GRID_MAP == component->type))
-				{
-					if ((NULL == old_element_field) && (NULL == add_element_field))
-					{
-						old_element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-							field, copy_data->old_element_field_list);
-						if (copy_data->add_element_field_list)
-						{
-							add_element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-								field, copy_data->add_element_field_list);
-						}
-						else
-						{
-							add_element_field = (struct FE_element_field *)NULL;
-						}
-					}
-					if (old_element_field || add_element_field)
-					{
-						if (copy_data->new_values_storage)
-						{
-							/* destination in new_values_storage according to new_element_field */
-							destination = copy_data->new_values_storage +
-								component->map.element_grid_based.value_index;
-							value_type = field->value_type;
-							number_in_xi = component->map.element_grid_based.number_in_xi;
-							number_of_values = 1;
-							for (i = 0; i < copy_data->dimension; i++)
-							{
-								number_of_values *= (number_in_xi[i] + 1);
-							}
-							if (add_element_field)
-							{
-								if (copy_data->add_values_storage && add_element_field->components &&
-									(add_component = add_element_field->components[cn]))
-								{
-									/* source in add_values_storage according to add_element_field */
-									source = copy_data->add_values_storage +
-										add_component->map.element_grid_based.value_index;
-									return_code = copy_value_storage_array(destination, value_type,
-										(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
-										number_of_values, source, /*optimised_merge*/0);
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-							else
-							{
-								if (copy_data->old_values_storage && old_element_field->components &&
-									(old_component = old_element_field->components[cn]))
-								{
-									/* source in old_values_storage according to old_element_field */
-									source = copy_data->old_values_storage +
-										old_component->map.element_grid_based.value_index;
-									return_code = copy_value_storage_array(destination, value_type,
-										(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
-										number_of_values, source, /*optimised_merge*/0);
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_copy_values_storage.  Unable to copy values");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "FE_element_field_copy_values_storage.  "
-							"Could not find equivalent existing element field");
-						return_code = 0;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_copy_values_storage.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_copy_values_storage */
-
-/**
- * For each field in <new_element_field_list> requiring values storage, finds the
- * equivalent element field in either <element>, <add_element> or both. If only one
- * of <element> or <add_element> contains an equivalent element field, those values
- * are copied. If there is an equivalent element field in both, behaviour depends
- * on whether the element fields have times:
- * if the element fields have no times, values are taken from <add_element>.
- * if the element fields have times, the times arrays are allocated, then the
- * values at times in <element> are copied, followed by those in <add_element>.
- * Hence, the values in <add_element> take preference over those in <element>.
- * Notes:
- * Must be an equivalent element field at either <element> or <add_element>;
- * <add_element> is optional and used only by merge_FE_element. If NULL then an
- * element field must be found in <element>;
- * Values_storage must already be allocated to the appropriate size but is not
- * assumed to contain any information prior to being filled here;
- * Any objects or arrays referenced in the values_storage are accessed or
- * allocated in the new <values_storage> so <element> and <add_element> are
- * unchanged.
- * It is up to the calling function to have checked that the element fields in
- * <element>, <add_element> and <new_element_field_list> are compatible.
- * ???RC Ignore references to times in the above since not yet implemented; once
- * they are, should follow pattern of merge_FE_node_values_storage.
- */
-static int copy_FE_element_values_storage(struct FE_element *element,
-	Value_storage *values_storage,
-	struct LIST(FE_element_field) *new_element_field_list,
-	struct FE_element *add_element)
-{
-	int dimension, return_code;
-	if (element && (dimension = get_FE_element_dimension(element)) &&
-		element->fields && new_element_field_list &&
-		((!add_element) || (add_element->fields &&
-			(get_FE_element_dimension(add_element) == dimension))))
-	{
-		struct FE_element_field_copy_values_storage_data copy_data;
-		copy_data.dimension = dimension;
-		copy_data.new_values_storage = values_storage;
-		copy_data.old_element_field_list = element->fields->element_field_list;
-		if (element->information)
-		{
-			copy_data.old_values_storage = element->information->values_storage;
-		}
-		else
-		{
-			copy_data.old_values_storage = (Value_storage *)NULL;
-		}
-		if (add_element)
-		{
-			copy_data.add_element_field_list =
-				add_element->fields->element_field_list;
-			if (add_element->information)
-			{
-				copy_data.add_values_storage = add_element->information->values_storage;
-			}
-			else
-			{
-				copy_data.add_values_storage = (Value_storage *)NULL;
-			}
-		}
-		else
-		{
-			copy_data.add_element_field_list = (struct LIST(FE_element_field) *)NULL;
-			copy_data.add_values_storage = (Value_storage *)NULL;
-		}
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_copy_values_storage, (void *)(&copy_data),
-			new_element_field_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"copy_FE_element_values_storage.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-static int free_element_grid_map_values_storage(
-	struct FE_element_field *element_field, void *values_storage_void)
-/*******************************************************************************
-LAST MODIFIED : 18 October 1999
-
-DESCRIPTION :
-If the <element_field> is grid based, finds where the values for its components
-are stored in <values_storage> and frees any accesses and dynamic allocations
-in them. Only certain value types, eg. arrays, strings, element_xi require this.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int i,j,*number_in_xi,number_of_values,return_code,value_index;
-	struct FE_element_field_component **component;
-	Value_storage *values_storage;
-
-	ENTER(free_element_grid_map_values_storage);
-	if (element_field&&element_field->field&&
-		(values_storage=(Value_storage *)values_storage_void))
-	{
-		return_code=1;
-		/* only GENERAL_FE_FIELD has components and can be grid-based */
-		if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
-		{
-			value_type = element_field->field->value_type;
-			component=element_field->components;
-			for (i=element_field->field->number_of_components;(0<i)&&return_code;i--)
-			{
-				if (ELEMENT_GRID_MAP==(*component)->type)
-				{
-					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
-					number_of_values=1;
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
-					for (j = number_of_xi_coordinates; j > 0; j--)
-					{
-						number_of_values *= (*number_in_xi)+1;
-						number_in_xi++;
-					}
-					value_index=((*component)->map).element_grid_based.value_index;
-					return_code=free_value_storage_array(
-						values_storage+value_index,value_type,
-						(struct FE_time_sequence *)NULL,number_of_values);
-				}
-				component++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"free_element_grid_map_values_storage.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* free_element_grid_map_values_storage */
-
-FE_element_node_scale_field_info::FE_element_node_scale_field_info() :
-	values_storage_size(0),
-	values_storage(0),
-	number_of_nodes(0),
-	nodes(0),
-	number_of_scale_factor_sets(0),
-	scale_factor_set_identifiers(0),
-	numbers_in_scale_factor_sets(0),
-	number_of_scale_factors(0),
-	scale_factors(0)
-{
-}
-
-FE_element_node_scale_field_info::~FE_element_node_scale_field_info()
-{
-	/* free values_storage for grid-based fields, if any */
-	if (this->values_storage)
-	{
-		DEALLOCATE(this->values_storage);
-	}
-	int i = this->number_of_nodes;
-	cmzn_node **node = this->nodes;
-	while (i > 0)
-	{
-		if (*node)
-		{
-			DEACCESS(FE_node)(node);
-		}
-		node++;
-		i--;
-	}
-	DEALLOCATE(this->nodes);
-	for (i = 0; i < this->number_of_scale_factor_sets; ++i)
-	{
-		cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set_identifiers[i]);
-	}
-	DEALLOCATE(this->scale_factor_set_identifiers);
-	DEALLOCATE(this->numbers_in_scale_factor_sets);
-	DEALLOCATE(this->scale_factors);
-}
-
-void FE_element_node_scale_field_info::destroyDynamic(
-	FE_element_node_scale_field_info* &info, FE_element_field_info *field_info)
-{
-	if (info->values_storage)
-	{
-		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(free_element_grid_map_values_storage,
-			(void *)info->values_storage, field_info->element_field_list);
-	}
-	destroy(info);
-}
-
-FE_element_node_scale_field_info *FE_element_node_scale_field_info::cloneWithoutValuesStorage()
-{
-	FE_element_node_scale_field_info *cloneInfo = this->create();
-	if (0 < this->number_of_nodes)
-	{
-		ALLOCATE(cloneInfo->nodes, cmzn_node *, this->number_of_nodes);
-		if (0 == cloneInfo->nodes)
-		{
-			FE_element_node_scale_field_info::destroy(cloneInfo);
-			return 0;
-		}
-		cloneInfo->number_of_nodes = this->number_of_nodes;
-		for (int i = 0; i < number_of_nodes; i++)
-		{
-			cloneInfo->nodes[i] = this->nodes[i] ? this->nodes[i]->access() : 0;
-		}
-	}
-	if (CMZN_OK != cloneInfo->setScaleFactorSets(this->number_of_scale_factor_sets,
-		this->scale_factor_set_identifiers, this->numbers_in_scale_factor_sets, this->scale_factors))
-	{
-		FE_element_node_scale_field_info::destroy(cloneInfo);
-		return 0;
-	}
-	return cloneInfo;
-}
-
-/**
- * Function used exclusively in merge_FE_element.
- * Creates a new FE_element_node_scale_field_info that contains all the nodes
- * and scale factors from targetInfo and in the same sequence, plus any new
- * ones added from sourceInfo. Checks that the same number of scale factors are
- * used for any scale factor sets in common; returns 0 on any mismatch.
- * values_storage_size and values_storage are zeroed, under the expectation
- * that they will be constructed by merge_FE_element.
- * On successful return the changedScaleFactorSets contains the list of sets
- * whose values have been added or overwritten. It is up to the caller to
- * propagate change messages for all fields using changed scale factors sets.
- * Note: nodes and scale factors can become 'orphaned' by this merge if
- * replacing field definitions i.e. they are stored but unused.
- */
-FE_element_node_scale_field_info *FE_element_node_scale_field_info::createMergeWithoutValuesStorage(
-	FE_element_node_scale_field_info& targetInfo,
-	FE_element_node_scale_field_info& sourceInfo,
-	std::vector<cmzn_mesh_scale_factor_set*> &changedExistingScaleFactorSets)
-{
-	changedExistingScaleFactorSets.clear();
-	// get the total number of nodes, starting with those in targetInfo
-	int targetNumberOfNodes = targetInfo.number_of_nodes;
-	int sourceNumberOfNodes = sourceInfo.number_of_nodes;
-	int mergeNumberOfNodes = targetNumberOfNodes;
-	FE_node *sourceNode;
-	FE_node **targetNodeAddress;
-	for (int i = 0; i < sourceNumberOfNodes; i++)
-	{
-		sourceNode = sourceInfo.nodes[i];
-		targetNodeAddress = targetInfo.nodes;
-		int j = targetNumberOfNodes;
-		while (j && (sourceNode != *targetNodeAddress))
-		{
-			++targetNodeAddress;
-			--j;
-		}
-		if (!j)
-		{
-			mergeNumberOfNodes++;
-		}
-	}
-
-	// get the total number of scale factor sets and scale factors, starting
-	// with those in targetInfo. Check sizes of scale factor sets
-	int targetNumberOfScaleFactorSets = targetInfo.number_of_scale_factor_sets;
-	int sourceNumberOfScaleFactorSets = sourceInfo.number_of_scale_factor_sets;
-	int mergeNumberOfScaleFactorSets = targetNumberOfScaleFactorSets;
-	int targetNumberOfScaleFactors = targetInfo.number_of_scale_factors;
-	int mergeNumberOfScaleFactors = targetNumberOfScaleFactors;
-	cmzn_mesh_scale_factor_set *sourceScaleFactorSet;
-	cmzn_mesh_scale_factor_set **targetScaleFactorSetAddress;
-	for (int i = 0; i < sourceNumberOfScaleFactorSets; i++)
-	{
-		sourceScaleFactorSet = sourceInfo.scale_factor_set_identifiers[i];
-		targetScaleFactorSetAddress = targetInfo.scale_factor_set_identifiers;
-		int j = targetNumberOfScaleFactorSets;
-		while (j && (sourceScaleFactorSet != *targetScaleFactorSetAddress))
-		{
-			++targetScaleFactorSetAddress;
-			--j;
-		}
-		if (j)
-		{
-			if (targetInfo.numbers_in_scale_factor_sets[targetNumberOfScaleFactorSets - j]
-				!= sourceInfo.numbers_in_scale_factor_sets[i])
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_node_scale_field_info::createMergeWithoutValuesStorage.  "
-					"Different numbers of scale factors for scale factor set %s", sourceScaleFactorSet->getName());
-				return 0;
-			}
-		}
-		else
-		{
-			++mergeNumberOfScaleFactorSets;
-			mergeNumberOfScaleFactors += sourceInfo.numbers_in_scale_factor_sets[i];
-		}
-	}
-
-	FE_element_node_scale_field_info *mergeInfo = FE_element_node_scale_field_info::create();
-	if (!mergeInfo)
-		return 0;
-
-	if (!mergeInfo->setNumberOfNodes(mergeNumberOfNodes))
-	{
-		FE_element_node_scale_field_info::destroy(mergeInfo);
-		return 0;
-	}
-	for (int j = 0; j < targetNumberOfNodes; j++)
-	{
-		mergeInfo->nodes[j] = targetInfo.nodes[j]->access();
-	}
-	if (targetNumberOfNodes < mergeNumberOfNodes)
-	{
-		/* extract the new nodes from the source */
-		mergeNumberOfNodes = targetNumberOfNodes;
-		for (int i = 0; i < sourceNumberOfNodes; i++)
-		{
-			sourceNode = sourceInfo.nodes[i];
-			targetNodeAddress = targetInfo.nodes;
-			int j = targetNumberOfNodes;
-			while (j && (sourceNode != *targetNodeAddress))
-			{
-				++targetNodeAddress;
-				--j;
-			}
-			if (!j)
-			{
-				mergeInfo->setNode(mergeNumberOfNodes, sourceNode);
-				++mergeNumberOfNodes;
-			}
-		}
-	}
-
-	if (0 < mergeNumberOfScaleFactorSets)
-	{
-		ALLOCATE(mergeInfo->scale_factor_set_identifiers, cmzn_mesh_scale_factor_set *, mergeNumberOfScaleFactorSets);
-		ALLOCATE(mergeInfo->numbers_in_scale_factor_sets, int, mergeNumberOfScaleFactorSets);
-		ALLOCATE(mergeInfo->scale_factors, FE_value, mergeNumberOfScaleFactors);
-		if (!(mergeInfo->scale_factor_set_identifiers &&
-			mergeInfo->numbers_in_scale_factor_sets &&
-			mergeInfo->scale_factors))
-		{
-			DEALLOCATE(mergeInfo->scale_factor_set_identifiers);
-			FE_element_node_scale_field_info::destroy(mergeInfo);
-			return 0;
-		}
-		// copy the scale factor sets from targetInfo
-		for (int j = 0; j < targetNumberOfScaleFactorSets; ++j)
-		{
-			mergeInfo->scale_factor_set_identifiers[j] = targetInfo.scale_factor_set_identifiers[j]->access();
-			mergeInfo->numbers_in_scale_factor_sets[j] = targetInfo.numbers_in_scale_factor_sets[j];
-		}
-		// copy all scale factors from targetInfo, even though
-		// some may be overwritten by matching sets from sourceInfo
-		if (0 < targetNumberOfScaleFactors)
-		{
-			memcpy(mergeInfo->scale_factors, targetInfo.scale_factors,
-				targetNumberOfScaleFactors*sizeof(FE_value));
-		}
-		// incorporate new scale factor sets from sourceInfo. Compare old and new
-		// scale factors for existing sets and if changing, use values from the
-		// sourceInfo and remember the scale factor set identifier
-		mergeNumberOfScaleFactorSets = targetNumberOfScaleFactorSets;
-		mergeNumberOfScaleFactors = targetNumberOfScaleFactors;
-		FE_value *source_scale_factor_position = sourceInfo.scale_factors;
-		for (int i = 0; i < sourceNumberOfScaleFactorSets; i++)
-		{
-			sourceScaleFactorSet = sourceInfo.scale_factor_set_identifiers[i];
-			targetScaleFactorSetAddress = mergeInfo->scale_factor_set_identifiers;
-			int *tmp_numbers_in_scale_factors_sets = mergeInfo->numbers_in_scale_factor_sets;
-			int source_number_in_scale_factor_set = sourceInfo.numbers_in_scale_factor_sets[i];
-			FE_value *scale_factor_position = mergeInfo->scale_factors;
-			int j = targetNumberOfScaleFactorSets;
-			while (j && (sourceScaleFactorSet != *targetScaleFactorSetAddress))
-			{
-				scale_factor_position += *tmp_numbers_in_scale_factors_sets;
-				++tmp_numbers_in_scale_factors_sets;
-				++targetScaleFactorSetAddress;
-				--j;
-			}
-			bool copy_scale_factors = (0 < source_number_in_scale_factor_set);
-			if (j)
-			{
-				// scale factors only transferred if changing: compare array
-				if (memcmp(scale_factor_position, source_scale_factor_position,
-					source_number_in_scale_factor_set*sizeof(FE_value)))
-				{
-					changedExistingScaleFactorSets.push_back(sourceScaleFactorSet);
-				}
-				else
-				{
-					copy_scale_factors = false;
-				}
-			}
-			else
-			{
-				// put new scale factors after end of currently used scale factors
-				scale_factor_position = mergeInfo->scale_factors + mergeNumberOfScaleFactors;
-				mergeInfo->scale_factor_set_identifiers[mergeNumberOfScaleFactorSets] = sourceScaleFactorSet->access();
-				mergeInfo->numbers_in_scale_factor_sets[mergeNumberOfScaleFactorSets] = source_number_in_scale_factor_set;
-				++mergeNumberOfScaleFactorSets;
-				mergeNumberOfScaleFactors += source_number_in_scale_factor_set;
-			}
-			if (copy_scale_factors)
-			{
-				memcpy(scale_factor_position, source_scale_factor_position,
-					source_number_in_scale_factor_set*sizeof(FE_value));
-			}
-			source_scale_factor_position += source_number_in_scale_factor_set;
-		}
-		mergeInfo->number_of_scale_factor_sets = mergeNumberOfScaleFactorSets;
-		mergeInfo->number_of_scale_factors = mergeNumberOfScaleFactors;
-	}
-	return (mergeInfo);
-}
-
-struct Copy_element_grid_map_data
-{
-	Value_storage *destination_values_storage,*source_values_storage;
-}; /* struct Copy_element_grid_map_data */
-
-static int copy_element_grid_map_values_storage(
-	struct FE_element_field *element_field,void *copy_element_grid_map_data_void)
-/*******************************************************************************
-LAST MODIFIED : 18 October 1999
-
-DESCRIPTION :
-If the <element_field> is grid based, finds where the values for its components
-are stored in <source_values_storage> and copies them to the same location in
-<destination_values_storage>. Assumes <destination_values_storage> has already
-been allocated but is uninitialised.
-==============================================================================*/
-{
-	enum Value_type value_type;
-	int i,j,*number_in_xi,number_of_values,return_code,value_index;
-	struct Copy_element_grid_map_data *copy_data;
-	struct FE_element_field_component **component;
-
-	ENTER(copy_element_grid_map_values_storage);
-	if (element_field&&element_field->field&&(copy_data=
-		(struct Copy_element_grid_map_data *)copy_element_grid_map_data_void))
-	{
-		return_code=1;
-		/* only GENERAL_FE_FIELD has components and can be grid-based */
-		if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
-		{
-			value_type = element_field->field->value_type;
-			component=element_field->components;
-			for (i=element_field->field->number_of_components;(0<i)&&return_code;i--)
-			{
-				if (ELEMENT_GRID_MAP==(*component)->type)
-				{
-					number_in_xi=((*component)->map).element_grid_based.number_in_xi;
-					number_of_values=1;
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension((*component)->basis, &number_of_xi_coordinates);
-					for (j = number_of_xi_coordinates; j > 0; j--)
-					{
-						number_of_values *= (*number_in_xi)+1;
-						number_in_xi++;
-					}
-					value_index=((*component)->map).element_grid_based.value_index;
-					if (copy_data->destination_values_storage&&
-						copy_data->source_values_storage)
-					{
-						return_code=copy_value_storage_array(
-							copy_data->destination_values_storage+value_index,
-							value_type,(struct FE_time_sequence *)NULL,
-							(struct FE_time_sequence *)NULL,number_of_values,
-							copy_data->source_values_storage+value_index, /*optimised_merge*/0);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"copy_element_grid_map_values_storage.  "
-							"Missing source or destination values_storage");
-						return_code=0;
-					}
-				}
-				component++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"copy_element_grid_map_values_storage.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* copy_element_grid_map_values_storage */
-
-FE_element_node_scale_field_info *FE_element_node_scale_field_info::clone(
-	FE_element_field_info *field_info)
-{
-	if (0 < this->values_storage_size)
-	{
-		// not sure why this check is necessary
-		struct Check_element_grid_map_values_storage_data check_grid_data;
-		check_grid_data.check_sum = 0;
-		check_grid_data.values_storage_size = this->values_storage_size;
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			check_element_grid_map_values_storage, (void *)&check_grid_data,
-			field_info->element_field_list) ||
-			(check_grid_data.check_sum != this->values_storage_size))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_node_scale_field_info::clone.  Inconsistent element values");
-			return 0;
-		}
-	}
-	FE_element_node_scale_field_info *cloneInfo = this->cloneWithoutValuesStorage();
-	if (!cloneInfo)
-		return 0;
-	if (0 < this->values_storage_size)
-	{
-		ALLOCATE(cloneInfo->values_storage, Value_storage, this->values_storage_size);
-		if (!cloneInfo->values_storage)
-		{
-			FE_element_node_scale_field_info::destroy(cloneInfo);
-			return 0;
-		}
-		cloneInfo->values_storage_size = this->values_storage_size;
-		// copy values storage including dynamic arrays
-		Copy_element_grid_map_data copy_element_grid_map_data;
-		copy_element_grid_map_data.destination_values_storage = cloneInfo->values_storage;
-		copy_element_grid_map_data.source_values_storage = this->values_storage;
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			copy_element_grid_map_values_storage,
-			&copy_element_grid_map_data,field_info->element_field_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_node_scale_field_info::clone.  Failed to copy element values");
-			FE_element_node_scale_field_info::destroy(cloneInfo);
-			return 0;
-		}
-	}
-	return cloneInfo;
-}
-
-int FE_element_node_scale_field_info::setNumberOfNodes(int numberOfNodesIn)
-{
-	if (0 > number_of_nodes)
-	{
-		return CMZN_ERROR_ARGUMENT;
-	}
-	if (numberOfNodesIn < this->number_of_nodes)
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_node_scale_field::setNumberOfNodes.  "
-			"Cannot reduce the number of nodes");
-		return CMZN_ERROR_ARGUMENT;
-	}
-	if (numberOfNodesIn != this->number_of_nodes)
-	{
-		struct FE_node **temp_nodes;
-		if (REALLOCATE(temp_nodes, this->nodes, struct FE_node *, numberOfNodesIn))
-		{
-			this->nodes = temp_nodes;
-			for (int i = this->number_of_nodes; i < numberOfNodesIn; i++)
-			{
-				this->nodes[i] = 0;
-			}
-			this->number_of_nodes = numberOfNodesIn;
-		}
-		else
-		{
-			return CMZN_ERROR_MEMORY;
-		}
-	}
-	return CMZN_OK;
-}
-
-int FE_element_node_scale_field_info::setNode(int nodeNumber, cmzn_node *node)
-{
-	if ((0 <= nodeNumber) && (nodeNumber < this->number_of_nodes))
-	{
-		REACCESS(FE_node)(&(this->nodes[nodeNumber]), node);
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int FE_element_node_scale_field_info::setScaleFactorSets(int numberOfScaleFactorSetsIn,
-	cmzn_mesh_scale_factor_set **scaleFactorSetIdentifiersIn,
-	int *numbersInScaleFactorSetsIn, FE_value *scaleFactorsIn)
-{
-	if ((0 == numberOfScaleFactorSetsIn) || ((0 < numberOfScaleFactorSetsIn) &&
-		scaleFactorSetIdentifiersIn && numbersInScaleFactorSetsIn))
-	{
-		/* check scale factor set identifiers and numbers and count number of scale factors */
-		int scaleFactorsCount = 0;
-		for (int i = 0; i < numberOfScaleFactorSetsIn; ++i)
-		{
-			if (scaleFactorSetIdentifiersIn[i] && (0 < numbersInScaleFactorSetsIn[i]))
-			{
-				scaleFactorsCount += numbersInScaleFactorSetsIn[i];
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_node_scale_field_info::setScaleFactorSets.  "
-					"Invalid scale factor set identifier or number");
-				return CMZN_ERROR_ARGUMENT;
-			}
-		}
-		if (0 < this->getNumberOfScaleFactorSets())
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_node_scale_field_info::setScaleFactorSets.  "
-				"Number of scale factor sets is already set");
-			return CMZN_ERROR_ARGUMENT;
-		}
-		if (0 < numberOfScaleFactorSetsIn)
-		{
-			cmzn_mesh_scale_factor_set **tempIdentifiers = 0;
-			int *tempNumbers = 0;
-			FE_value *tempValues = 0;
-			ALLOCATE(tempIdentifiers, cmzn_mesh_scale_factor_set *, numberOfScaleFactorSetsIn);
-			ALLOCATE(tempNumbers, int, numberOfScaleFactorSetsIn);
-			ALLOCATE(tempValues, FE_value, scaleFactorsCount);
-			if (!(tempIdentifiers && tempNumbers && tempValues))
-			{
-				return CMZN_ERROR_MEMORY;
-			}
-			this->number_of_scale_factor_sets = numberOfScaleFactorSetsIn;
-			this->scale_factor_set_identifiers = tempIdentifiers;
-			this->numbers_in_scale_factor_sets = tempNumbers;
-			for (int i = 0; i < numberOfScaleFactorSetsIn; i++)
-			{
-				this->scale_factor_set_identifiers[i] = scaleFactorSetIdentifiersIn[i]->access();
-				this->numbers_in_scale_factor_sets[i] = numbersInScaleFactorSetsIn[i];
-			}
-			this->number_of_scale_factors = scaleFactorsCount;
-			this->scale_factors = tempValues;
-			if (scaleFactorsIn)
-			{
-				memcpy(this->scale_factors, scaleFactorsIn, scaleFactorsCount*sizeof(FE_value));
-			}
-			else
-			{
-				for (int i = 0; i < scaleFactorsCount; i++)
-				{
-					this->scale_factors[i] = FE_VALUE_INITIALIZER;
-				}
-			}
-		}
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
 
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 	const int *type, struct FE_region *fe_region)
@@ -20048,7 +11961,7 @@ struct FE_element_shape *FE_element_shape_create_simple_type(
 	return fe_element_shape;
 }
 
-int FE_element_shape_get_number_of_faces(FE_element_shape *element_shape)
+int FE_element_shape_get_number_of_faces(const FE_element_shape *element_shape)
 {
 	if (element_shape)
 		return element_shape->number_of_faces;
@@ -20237,11 +12150,6 @@ struct FE_element_shape *FE_element_shape_create_unspecified(
 	return fe_element_shape;
 }
 
-bool FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
-{
-	return ((0 != element_shape) && (0 == element_shape->type));
-}
-
 int FE_element_shape_is_line(struct FE_element_shape *element_shape)
 /*******************************************************************************
 LAST MODIFIED : 12 March 2003
@@ -20278,7 +12186,7 @@ Returns true if the <element_shape> has only LINE_SHAPE in each dimension.
 } /* FE_element_shape_is_line */
 
 struct FE_element_shape *get_FE_element_shape_of_face(
-	struct FE_element_shape *shape,int face_number, struct FE_region *fe_region)
+	const FE_element_shape *shape,int face_number, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 7 July 2003
 
@@ -20787,132 +12695,26 @@ are modified to put it on the nearest face.
 	return (return_code);
 } /* FE_element_shape_limit_xi_to_element */
 
-/**
- * Creates a blank element with access count of 1.
- */
-struct FE_element *CREATE(FE_element)()
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_element)
 {
-	struct FE_element *element;
-	if (ALLOCATE(element, struct FE_element, 1))
-	{
-		// not a global element until mesh gives a non-negative index:
-		element->index = DS_LABEL_INDEX_INVALID;
-		element->access_count = 1;
-		element->fields = (struct FE_element_field_info *)NULL;
-		element->information = (struct FE_element_node_scale_field_info *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "CREATE(FE_element).  Could not allocate memory for element");
-		return 0;
-	}
-	return (element);
+	if (object)
+		return object->access();
+	return 0;
 }
 
-/**
- * Frees the memory for the element, sets <*element_address> to NULL.
- */
-int DESTROY(FE_element)(struct FE_element **element_address)
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_element)
 {
-	int return_code;
-	struct FE_element *element;
-	if ((element_address)&&(element= *element_address))
-	{
-		if (0 == element->access_count)
-		{
-			// all elements should be either templates with invalid index,
-			// or have been invalidated by mesh prior to being destroyed
-			if (DS_LABEL_IDENTIFIER_INVALID == element->index)
-			{
-				if (element->fields) // for template elements only
-					FE_element_invalidate(element);
-				/* free the memory associated with the element */
-				DEALLOCATE(*element_address);
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"DESTROY(FE_element).  Element has not been invalidated. Index = %d", element->index);
-				*element_address = (struct FE_element *)NULL;
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_element).  Element has non-zero access count %d",
-				element->access_count);
-			*element_address=(struct FE_element *)NULL;
-			return_code=0;
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	return (return_code);
+	if (object_address)
+		return cmzn_element::deaccess(*object_address);
+	return CMZN_ERROR_ARGUMENT;
 }
 
-struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info)
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_element)
 {
-	if (!element_field_info)
-	{
-		display_message(ERROR_MESSAGE, "create_template_FE_element.  Invalid argument");
-		return 0;
-	}
-	struct FE_element *template_element = CREATE(FE_element)();
-	if (!template_element)
-		return 0;
-	template_element->fields = ACCESS(FE_element_field_info)(element_field_info);
-	return template_element;
+	if (object_address)
+		cmzn_element::reaccess(*object_address, new_object);
+	return CMZN_ERROR_ARGUMENT;
 }
-
-struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE_element *template_element)
-{
-	// Assumes DS_LABEL_INDEX_INVALID == -1
-	if ((index < DS_LABEL_INDEX_INVALID) || (0 == template_element))
-	{
-		display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Invalid argument(s)");
-		return 0;
-	}
-	struct FE_element *element = CREATE(FE_element)();
-	if (element)
-	{
-		bool success = true;
-		element->index = index;
-		if (!(element->fields = ACCESS(FE_element_field_info)(template_element->fields)))
-		{
-			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set field info from template element");
-			success = false;
-		}
-		if (template_element->information)
-		{
-			element->information = template_element->information->clone(template_element->fields);
-			if (!element->information)
-			{
-				display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not copy node scale field info from template element");
-				success = false;
-			}
-		}
-		if (!success)
-			DEACCESS(FE_element)(&element);
-	}
-	return element;
-}
-
-void FE_element_invalidate(struct FE_element *element)
-{
-	if (element && element->fields)
-	{
-		if (element->information)
-			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
-		DEACCESS(FE_element_field_info)(&(element->fields));
-		element->index = DS_LABEL_INDEX_INVALID;
-	}
-}
-
-DECLARE_OBJECT_FUNCTIONS(FE_element)
 
 cmzn_elementiterator_id cmzn_elementiterator_access(cmzn_elementiterator_id element_iterator)
 {
@@ -20950,331 +12752,28 @@ cmzn_element_id cmzn_elementiterator_next_non_access(cmzn_elementiterator_id ele
 	return 0;
 }
 
-/**
- * If <field> is NULL, element values are calculated for the coordinate field.
- * The optional <top_level_element> forces inheritance from it as needed.
- * If the dimension of <element> is less than that of the <field_element> from
- * which the field is inherited, then a <coordinate_transformation> is returned.
- * This consist of a matrix of dimension(field_element) rows X dimension(element)+1
- * columns. This represents an affine transformation, b + A xi for calculating the
- * field_element xi coordinates from those of <element>, where b is the first
- * column of the <coordinate_transformation> matrix.
- * @param inherit_face_number  If non-negative, inherit onto this face number
- * of element, as if the face element were supplied to this function.
- */
-int inherit_FE_element_field(struct FE_element *element,
-	int inherit_face_number, struct FE_field *field,
-	struct FE_element_field **element_field_address,
-	struct FE_element **field_element_address,
-	FE_value **coordinate_transformation_address,
-	struct FE_element *top_level_element)
-{
-	FE_value *coordinate_transformation,*coordinate_transformation_value,
-		*face_to_element,*face_to_element_value,*new_coordinate_transformation,
-		*new_coordinate_transformation_value;
-	int dimension,dimension_minus_1,field_element_dimension,i,j,k,
-		return_code,transformation_size;
-	struct FE_element *field_element;
-	struct FE_element_field *element_field;
-	struct FE_element_field_info *field_info;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-
-	ENTER(inherit_FE_element_field);
-	FE_mesh *fe_mesh;
-	const FE_mesh::ElementShapeFaces *elementShapeFaces;
-	if (element && (element->fields) && (fe_mesh = element->fields->fe_mesh) &&
-		(elementShapeFaces = fe_mesh->getElementShapeFacesConst(element->index)) &&
-		element_field_address&&field_element_address&&
-		coordinate_transformation_address &&
-		(inherit_face_number < elementShapeFaces->getFaceCount()) &&
-		((!top_level_element) || (top_level_element->fields)))
-	{
-		/* initialize values to be returned on success */
-		element_field=(struct FE_element_field *)NULL;
-		field_element=(struct FE_element *)NULL;
-		coordinate_transformation=(FE_value *)NULL;
-#if defined (DEBUG_CODE)
-		/*???debug */
-		printf("element %d \n",element->get_identifier());
-#endif /* defined (DEBUG_CODE) */
-		/* check if the field is defined for the element */
-		if ((field_info = element->fields) && element->information)
-		{
-			if (!field)
-			{
-				FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-					FE_element_field_get_first_coordinate_field,
-					(void *)&field, field_info->element_field_list);
-			}
-			if (field)
-			{
-				element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
-					field)(field,field_info->element_field_list);
-			}
-			return_code=1;
-		}
-		else
-		{
-			element_field=(struct FE_element_field *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			FE_element *parent = (inherit_face_number >= 0) ? element : 0;
-			int face_number = inherit_face_number;
-			if (element_field)
-			{
-				coordinate_transformation=(FE_value *)NULL;
-				field_element=element;
-			}
-			else if (parent)
-			{
-				// inherit from parent
-				if (!(((0 == top_level_element) || (parent == top_level_element) ||
-					top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, fe_mesh, parent->index)) &&
-					inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
-						&element_field, &field_element, &coordinate_transformation, top_level_element)))
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-				FE_mesh *parentMesh = fe_mesh->getParentMesh();
-				if (parentMesh)
-				{
-					/* try to inherit field from any of the element's parents */
-					const DsLabelIndex *parents;
-					const int parentsCount = fe_mesh->getElementParents(element->index, parents);
-					for (int p = 0; p < parentsCount; ++p)
-					{
-						if ((0 == top_level_element) ||
-							top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, parentMesh, parents[p]))
-						{
-							parent = parentMesh->getElement(parents[p]);
-							return_code = inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
-								&element_field, &field_element, &coordinate_transformation, top_level_element);
-							if (return_code)
-							{
-								face_number = parentMesh->getElementFaceNumber(parents[p], element->index);
-								break;
-							}
-						}
-					}
-				}
-			}
-			if ((return_code) && (parent))
-			{
-				FE_element_shape *parent_shape = get_FE_element_shape(parent);
-				if (!parent_shape)
-				{
-					display_message(ERROR_MESSAGE, "inherit_FE_element_field.  Missing parent mesh or parent shape");
-					return_code = 0;
-				}
-				else
-				{
-					dimension = parent_shape->dimension;
-					field_element_dimension = field_element->getDimension();
-					if (coordinate_transformation)
-					{
-						if (ALLOCATE(new_coordinate_transformation,FE_value,
-							field_element_dimension*dimension))
-						{
-							/* incorporate the face to element map in the coordinate
-								transformation */
-							face_to_element=(parent_shape->face_to_element)+
-								(face_number*dimension*dimension);
-	#if defined (DEBUG_CODE)
-							/*???debug */
-							printf("face to element:\n");
-							face_to_element_value=face_to_element;
-							for (i=dimension;i>0;i--)
-							{
-								for (j=dimension;j>0;j--)
-								{
-									printf(" %g",*face_to_element_value);
-									face_to_element_value++;
-								}
-								printf("\n");
-							}
-	#endif /* defined (DEBUG_CODE) */
-	#if defined (DEBUG_CODE)
-							/*???debug */
-							printf("new coordinate transformation:\n");
-	#endif /* defined (DEBUG_CODE) */
-							coordinate_transformation_value=coordinate_transformation;
-							new_coordinate_transformation_value=
-								new_coordinate_transformation;
-							dimension_minus_1=dimension-1;
-							for (i=field_element_dimension;i>0;i--)
-							{
-								/* calculate b entry for this row */
-	#if defined (DOUBLE_FOR_DOT_PRODUCT)
-								sum=(double)(*coordinate_transformation_value);
-	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								sum= *coordinate_transformation_value;
-	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								coordinate_transformation_value++;
-								face_to_element_value=face_to_element;
-								for (k=dimension;k>0;k--)
-								{
-	#if defined (DOUBLE_FOR_DOT_PRODUCT)
-									sum += (double)(*coordinate_transformation_value)*
-										(double)(*face_to_element_value);
-	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									sum += (*coordinate_transformation_value)*
-										(*face_to_element_value);
-	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-									coordinate_transformation_value++;
-									face_to_element_value += dimension;
-								}
-								*new_coordinate_transformation_value=(FE_value)sum;
-	#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" %g",sum);
-	#endif /* defined (DEBUG_CODE) */
-								new_coordinate_transformation_value++;
-								/* calculate A entries for this row */
-								for (j=dimension_minus_1;j>0;j--)
-								{
-									face_to_element++;
-									face_to_element_value=face_to_element;
-									coordinate_transformation_value -= dimension;
-									sum=0;
-									for (k=dimension;k>0;k--)
-									{
-	#if defined (DOUBLE_FOR_DOT_PRODUCT)
-										sum += (double)(*coordinate_transformation_value)*
-											(double)(*face_to_element_value);
-	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										sum += (*coordinate_transformation_value)*
-											(*face_to_element_value);
-	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										coordinate_transformation_value++;
-										face_to_element_value += dimension;
-									}
-									*new_coordinate_transformation_value=(FE_value)sum;
-	#if defined (DEBUG_CODE)
-									/*???debug */
-									printf(" %g",sum);
-	#endif /* defined (DEBUG_CODE) */
-									new_coordinate_transformation_value++;
-								}
-	#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("\n");
-	#endif /* defined (DEBUG_CODE) */
-								face_to_element -= dimension_minus_1;
-							}
-							DEALLOCATE(coordinate_transformation);
-							coordinate_transformation=new_coordinate_transformation;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"inherit_FE_element_field.  Insufficient memory");
-							DEALLOCATE(coordinate_transformation);
-							return_code=0;
-						}
-					}
-					else
-					{
-	#if defined (DEBUG_CODE)
-						/*???debug */
-						printf("new coordinate transformation %d %d :\n",dimension,
-							field_element_dimension);
-	#endif /* defined (DEBUG_CODE) */
-						/* use the face to element map as the transformation */
-						transformation_size=field_element_dimension*dimension;
-						if (ALLOCATE(coordinate_transformation,FE_value,
-							transformation_size))
-						{
-							coordinate_transformation_value=coordinate_transformation;
-							face_to_element_value=(parent_shape->face_to_element)+
-								(face_number*transformation_size);
-							while (transformation_size>0)
-							{
-								*coordinate_transformation_value= *face_to_element_value;
-	#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" %g",*face_to_element_value);
-	#endif /* defined (DEBUG_CODE) */
-								coordinate_transformation_value++;
-								face_to_element_value++;
-								transformation_size--;
-	#if defined (DEBUG_CODE)
-								/*???debug */
-								if (0==transformation_size%dimension)
-								{
-									printf("\n");
-								}
-	#endif /* defined (DEBUG_CODE) */
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"inherit_FE_element_field.  Insufficient memory");
-							return_code=0;
-						}
-					}
-				}
-			}
-		}
-		if (return_code)
-		{
-			/* guarantee this function returns element_field and field_element */
-			if (element_field&&field_element)
-			{
-				*element_field_address=element_field;
-				*field_element_address=field_element;
-				*coordinate_transformation_address=coordinate_transformation;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"inherit_FE_element_field.  No element_field or field_element");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"inherit_FE_element_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* inherit_FE_element_field */
-
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
 {
 	int return_code = CMZN_OK;
-	if (element && (element->fields))
+	FE_mesh *mesh;
+	if (element && (mesh = element->getMesh()))
 	{
 		int j = 0;
-		FE_mesh *fe_mesh = element->fields->fe_mesh;
-		FE_mesh *faceMesh = fe_mesh->getFaceMesh();
+		FE_mesh *faceMesh = mesh->getFaceMesh();
+		const DsLabelIndex elementIndex = element->getIndex();
 		DsLabelIndex faceIndex;
-		if ((faceMesh) && (0 <= (faceIndex = fe_mesh->getElementFace(element->index, face_number))))
+		if ((faceMesh) && (0 <= (faceIndex = mesh->getElementFace(elementIndex, face_number))))
 		{
 			const DsLabelIndex *parents;
 			const int parentsCount = faceMesh->getElementParents(faceIndex, parents);
 			if (ALLOCATE(*adjacent_elements, struct FE_element *, parentsCount))
 			{
 				for (int p = 0; p < parentsCount; ++p)
-					if (parents[p] != element->index)
+					if (parents[p] != elementIndex)
 					{
-						(*adjacent_elements)[j] = fe_mesh->getElement(parents[p]);
+						(*adjacent_elements)[j] = mesh->getElement(parents[p]);
 						++j;
 					}
 			}
@@ -21292,55 +12791,6 @@ int adjacent_FE_element(struct FE_element *element,
 		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return return_code;
-}
-
-int FE_element_log_FE_field_changes(struct FE_element *element,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents)
-{
-	int return_code = 1;
-	if (element && fe_field_change_log)
-	{
-		// elements that have been orphaned from parent mesh have no fields member
-		if (element->fields)
-		{
-			/* log fields in this element, if any, and if different set from last */
-			if (element->fields != element->fields->fe_mesh->get_last_fe_element_field_info())
-			{
-				if (0 < NUMBER_IN_LIST(FE_element_field)(
-					element->fields->element_field_list))
-				{
-					if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-						FE_element_field_log_FE_field_change, (void *)fe_field_change_log,
-						element->fields->element_field_list))
-					{
-						return_code = 0;
-					}
-					element->fields->fe_mesh->set_last_fe_element_field_info(element->fields);
-				}
-			}
-			FE_mesh *parentMesh;
-			if (recurseParents && (parentMesh = element->fields->fe_mesh->getParentMesh()))
-			{
-				const DsLabelIndex *parents;
-				const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
-				for (int i = 0; i < parentsCount; i++)
-				{
-					if (!FE_element_log_FE_field_changes(parentMesh->getElement(parents[i]), fe_field_change_log, recurseParents))
-					{
-						return_code = 0;
-						break;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_log_FE_field_changes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
 }
 
 struct FE_element_field_values *CREATE(FE_element_field_values)(void)
@@ -21368,12 +12818,11 @@ structure unused for some time so it is not accessing objects.
 		element_field_values->time = 0.0;
 		element_field_values->component_number_in_xi = (int **)NULL;
 		element_field_values->derivatives_calculated = 0;
-		element_field_values->no_modify = (char)0;
 		element_field_values->destroy_standard_basis_arguments = 0;
 		element_field_values->number_of_components = 0;
 		element_field_values->component_number_of_values = (int *)NULL;
 		element_field_values->component_grid_values_storage =
-			(Value_storage **)NULL;
+			(const Value_storage **)NULL;
 		element_field_values->component_base_grid_offset = (int *)NULL;
 		element_field_values->component_grid_offset_in_xi = (int **)NULL;
 		element_field_values->element_value_offsets = (int *)NULL;
@@ -21395,716 +12844,654 @@ structure unused for some time so it is not accessing objects.
 	return (element_field_values);
 } /* CREATE(FE_element_field_values) */
 
-int calculate_FE_element_field_values(struct FE_element *element,
+int calculate_FE_element_field_values(cmzn_element *element,
 	struct FE_field *field, FE_value time, char calculate_derivatives,
 	struct FE_element_field_values *element_field_values,
-	struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 10 April 2008
-
-DESCRIPTION :
-If <field> is NULL, element values are calculated for the coordinate field.  The
-function fills in the fields of the <element_field_values> structure, but does
-not allocate memory for the structure.
-The optional <top_level_element> forces inheritance from it as needed.
-???DB.  I think that the field=NULL special case should be removed.
-==============================================================================*/
+	cmzn_element *topLevelElement)
 {
-	FE_element_field_component_modify modify;
-	FE_value *blending_matrix,*coordinate_transformation,
+	FE_value *blending_matrix,
 		*derivative_value,*inherited_value,*inherited_values,scalar,
 		*second_derivative_value,*transformation,*value,**values_address;
-	int component_number,cn,**component_number_in_xi,element_dimension,
-		*component_base_grid_offset, *element_value_offsets,
-		field_element_dimension,i,
-		j,k,grid_maximum_number_of_values, maximum_number_of_values,number_of_components,
+	int cn,**component_number_in_xi,
+		*component_base_grid_offset, *element_value_offsets, i,
+		j,k,grid_maximum_number_of_values, maximum_number_of_values,
 		number_of_grid_based_components,
 		number_of_inherited_values,number_of_polygon_verticies,number_of_values,
 		*number_of_values_address,offset,order,*orders,polygon_offset,power,
-		*top_level_component_number_in_xi,
-		return_code,row_size,**standard_basis_arguments_address;
+		row_size,**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
-	struct FE_basis *previous_basis;
-	struct FE_element *field_element;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **component;
-	Value_storage **component_grid_values_storage;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	// this had used DOUBLE_FOR_DOT_PRODUCT, but FE_value will be at least double precision now
 	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
-	ENTER(calculate_FE_element_field_values);
-#if defined (DEBUG_CODE)
-	/*???debug */
-	printf("enter calculate_FE_element_field_values\n");
-#endif /* defined (DEBUG_CODE) */
-	/* check the arguments */
-	if ((element) && (element->fields) && (element_field_values))
+	if (!((element) && (field) && (element_field_values)))
 	{
-		/* retrieve the element field from which this element inherits the field
-			and calculate the affine transformation from the element xi coordinates
-			to the xi coordinates for the element field */
-		element_field=(struct FE_element_field *)NULL;
-		field_element=(struct FE_element *)NULL;
-		coordinate_transformation=(FE_value *)NULL;
-		if (inherit_FE_element_field(element, /*inherit_face_number*/-1, field, &element_field,
-			&field_element, &coordinate_transformation, top_level_element))
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  Invalid argument(s)");
+		return 0;
+	}
+	FE_value coordinate_transformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	cmzn_element *fieldElement = field->getOrInheritOnElement(element,
+		/*inherit_face_number*/-1, topLevelElement, coordinate_transformation);
+	if (!fieldElement)
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_FE_element_field_values.  Field %s not defined on %d-D element %d",
+			field->name, element->getDimension(), element->getIdentifier());
+		return 0;
+	}
+	const FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  Invalid element");
+		return 0;
+	}
+	const FE_nodeset *nodeset = mesh->getNodeset();
+	if (!nodeset)
+	{
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  No nodeset, invalid mesh");
+		return 0;
+	}
+
+	int return_code = 1;
+	const int elementDimension = element->getDimension();
+	const int fieldElementDimension = fieldElement->getDimension();
+	const int number_of_components = field->number_of_components;
+	switch (field->fe_field_type)
+	{
+		case CONSTANT_FE_FIELD:
 		{
-			return_code=1;
-#if defined (DEBUG_CODE)
-			/*???debug */
-			printf("element : %d \n",element->get_identifier());
-			printf("field element : %d \n",field_element->get_identifier());
-#endif /* defined (DEBUG_CODE) */
-			element_dimension = element->getDimension();
-			field_element_dimension = field_element->getDimension();
-			number_of_components=element_field->field->number_of_components;
-#if defined (DEBUG_CODE)
-			/*???debug */
-			printf("coordinate_transformation: %p\n",coordinate_transformation);
-			value=coordinate_transformation;
-			if (value != 0)
+			/* constant fields do not use the values except to remember the
+					element and field they are for */
+			element_field_values->field=ACCESS(FE_field)(field);
+			element_field_values->element = element->access();
+			/* store fieldElement since we are now able to suggest through the
+					topLevelElement clue which one we get. Must compare element
+					and fieldElement to ensure field values are still valid for
+					a given line or face. */
+			element_field_values->field_element = fieldElement->access();
+			element_field_values->component_number_in_xi=(int **)NULL;
+			/* derivatives will be calculated in calculate_FE_element_field */
+			/*???DB.  Assuming linear */
+			element_field_values->derivatives_calculated=1;
+			element_field_values->destroy_standard_basis_arguments=0;
+			element_field_values->number_of_components=number_of_components;
+			element_field_values->component_number_of_values=(int *)NULL;
+			element_field_values->component_grid_values_storage=
+				(const Value_storage **)NULL;
+			element_field_values->component_base_grid_offset=(int *)NULL;
+			element_field_values->component_grid_offset_in_xi=(int **)NULL;
+			element_field_values->element_value_offsets=(int *)NULL;
+			/* clear arrays not used for grid-based fields */
+			element_field_values->component_values=(FE_value **)NULL;
+			element_field_values->component_standard_basis_functions=
+				(Standard_basis_function **)NULL;
+			element_field_values->component_standard_basis_function_arguments=
+				(int **)NULL;
+			element_field_values->basis_function_values=(FE_value *)NULL;
+			element_field_values->time_dependent = 0;
+			element_field_values->time = time;
+		} break;
+		case INDEXED_FE_FIELD:
+		{
+			if (calculate_FE_element_field_values(element,field->indexer_field,
+				time,calculate_derivatives,element_field_values,topLevelElement))
 			{
-				for (i=field_element_dimension;i>0;i--)
-				{
-					for (j=element_dimension+1;j>0;j--)
-					{
-						printf(" %g",*value);
-						value++;
-					}
-					printf("\n");
-				}
+				/* restore pointer to original field - has the indexer_field in
+						it anyway */
+				REACCESS(FE_field)(&(element_field_values->field),field);
 			}
-			printf("%d #components=%d\n",field_element_dimension,
-				number_of_components);
-#endif /* defined (DEBUG_CODE) */
-			switch (field->fe_field_type)
+			else
 			{
-				case CONSTANT_FE_FIELD:
+				display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
+					"Cannot calculate element field values for indexer field");
+				return_code=0;
+			}
+		} break;
+		case GENERAL_FE_FIELD:
+		{
+			ALLOCATE(number_of_values_address,int,number_of_components);
+			ALLOCATE(values_address,FE_value *,number_of_components);
+			ALLOCATE(standard_basis_address,Standard_basis_function *,
+				number_of_components);
+			ALLOCATE(standard_basis_arguments_address,int *,
+				number_of_components);
+			blending_matrix=(FE_value *)NULL;
+			ALLOCATE(component_number_in_xi, int *, number_of_components);
+			if (number_of_values_address&&values_address&&
+				standard_basis_address&&standard_basis_arguments_address&&
+				component_number_in_xi)
+			{
+				for (i=0;i<number_of_components;i++)
 				{
-					/* constant fields do not use the values except to remember the
-						 element and field they are for */
-					element_field_values->field=ACCESS(FE_field)(field);
-					element_field_values->element=ACCESS(FE_element)(element);
-					/* store field_element since we are now able to suggest through the
-						 top_level_element clue which one we get. Must compare element
-						 and field_element to ensure field values are still valid for
-						 a given line or face. */
-					element_field_values->field_element=
-						ACCESS(FE_element)(field_element);
-					element_field_values->component_number_in_xi=(int **)NULL;
-					/* derivatives will be calculated in calculate_FE_element_field */
-					/*???DB.  Assuming linear */
-					element_field_values->derivatives_calculated=1;
+					number_of_values_address[i] = 0;
+					values_address[i] = (FE_value *)NULL;
+					standard_basis_address[i] = (Standard_basis_function *)NULL;
+					standard_basis_arguments_address[i]=(int *)NULL;
+					/* following is non-NULL only for grid-based components */
+					component_number_in_xi[i] = NULL;
+				}
+				element_field_values->component_number_in_xi = component_number_in_xi;
+				element_field_values->field = field->access();
+				element_field_values->element = element->access();
+				element_field_values->field_element = fieldElement->access();
+				element_field_values->time_dependent =
+					FE_field_has_multiple_times(element_field_values->field);
+				element_field_values->time = time;
+				element_field_values->derivatives_calculated=calculate_derivatives;
+				if (fieldElementDimension > elementDimension)
+				{
+					element_field_values->destroy_standard_basis_arguments=1;
+				}
+				else
+				{
 					element_field_values->destroy_standard_basis_arguments=0;
-					element_field_values->number_of_components=number_of_components;
-					element_field_values->component_number_of_values=(int *)NULL;
-					element_field_values->component_grid_values_storage=
-						(Value_storage **)NULL;
-					element_field_values->component_base_grid_offset=(int *)NULL;
-					element_field_values->component_grid_offset_in_xi=(int **)NULL;
-					element_field_values->element_value_offsets=(int *)NULL;
-					/* clear arrays not used for grid-based fields */
-					element_field_values->component_values=(FE_value **)NULL;
-					element_field_values->component_standard_basis_functions=
-						(Standard_basis_function **)NULL;
-					element_field_values->component_standard_basis_function_arguments=
-						(int **)NULL;
-					element_field_values->basis_function_values=(FE_value *)NULL;
-					element_field_values->time_dependent = 0;
-					element_field_values->time = time;
-				} break;
-				case INDEXED_FE_FIELD:
+				}
+				element_field_values->number_of_components=number_of_components;
+				element_field_values->component_number_of_values=
+					number_of_values_address;
+				/* clear arrays only used for grid-based fields */
+				element_field_values->component_grid_values_storage=
+					(const Value_storage **)NULL;
+				element_field_values->component_grid_offset_in_xi=(int **)NULL;
+				element_field_values->element_value_offsets=(int *)NULL;
+
+				element_field_values->component_values=values_address;
+				element_field_values->component_standard_basis_functions=
+					standard_basis_address;
+				element_field_values->component_standard_basis_function_arguments=
+					standard_basis_arguments_address;
+				/* maximum_number_of_values starts off big enough for linear grid with derivatives */
+				grid_maximum_number_of_values=elementDimension+1;
+				for (i=elementDimension;i>0;i--)
 				{
-					if (calculate_FE_element_field_values(element,field->indexer_field,
-						time,calculate_derivatives,element_field_values,top_level_element))
-					{
-						/* restore pointer to original field - has the indexer_field in
-							 it anyway */
-						REACCESS(FE_field)(&(element_field_values->field),field);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
-							"Cannot calculate element field values for indexer field");
-						return_code=0;
-					}
-				} break;
-				case GENERAL_FE_FIELD:
+					grid_maximum_number_of_values *= 2;
+				}
+				maximum_number_of_values = grid_maximum_number_of_values;
+
+				const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
+				FE_basis *previous_basis = 0;
+				return_code=1;
+				number_of_grid_based_components = 0;
+				int **component_grid_offset_in_xi = 0;
+				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
+				for (int component_number = 0; return_code && (component_number < number_of_components); ++component_number)
 				{
-					ALLOCATE(number_of_values_address,int,number_of_components);
-					ALLOCATE(values_address,FE_value *,number_of_components);
-					ALLOCATE(standard_basis_address,Standard_basis_function *,
-						number_of_components);
-					ALLOCATE(standard_basis_arguments_address,int *,
-						number_of_components);
-					blending_matrix=(FE_value *)NULL;
-					ALLOCATE(component_number_in_xi, int *, number_of_components);
-					if (number_of_values_address&&values_address&&
-						standard_basis_address&&standard_basis_arguments_address&&
-						component_number_in_xi)
+					const FE_element_field_template *componentEFT =
+						meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
+					if (!componentEFT)
 					{
-						for (i=0;i<number_of_components;i++)
+						return_code = 0;
+						break;
+					}
+					if ((componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
+						&& (0 != componentEFT->getLegacyGridNumberInXi()))
+					{
+						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
+						if (!top_level_component_number_in_xi)
 						{
-							number_of_values_address[i] = 0;
-							values_address[i] = (FE_value *)NULL;
-							standard_basis_address[i] = (Standard_basis_function *)NULL;
-							standard_basis_arguments_address[i]=(int *)NULL;
-							/* following is non-NULL only for grid-based components */
-							component_number_in_xi[i] = NULL;
+							display_message(ERROR_MESSAGE,
+								"calculate_FE_element_field_values.  Element parameter mapping only implemented for legacy grid");
+							return_code = 0;
+							break;
 						}
-						element_field_values->component_number_in_xi = component_number_in_xi;
-						element_field_values->field = ACCESS(FE_field)(element_field->field);
-						element_field_values->element = ACCESS(FE_element)(element);
-						/* store field_element since we are now able to suggest through
-							 the top_level_element clue which one we get. Must compare
-							 element and field_element to ensure field values are still
-							 valid for a given line or face. */
-						element_field_values->field_element = ACCESS(FE_element)(field_element);
-						element_field_values->time_dependent =
-							FE_field_has_multiple_times(element_field_values->field);
-						element_field_values->time = time;
-						element_field_values->derivatives_calculated=calculate_derivatives;
-						if (coordinate_transformation)
+						++number_of_grid_based_components;
+						if (number_of_grid_based_components == number_of_components)
 						{
-							element_field_values->destroy_standard_basis_arguments=1;
+							element_field_values->derivatives_calculated=1;
+						}
+						/* one-off allocation of arrays only needed for grid-based components */
+						if (NULL == element_field_values->component_grid_values_storage)
+						{
+							const Value_storage **component_grid_values_storage;
+							ALLOCATE(component_grid_values_storage, const Value_storage *, number_of_components);
+							ALLOCATE(component_base_grid_offset, int, number_of_components);
+							ALLOCATE(component_grid_offset_in_xi, int*, number_of_components);
+							ALLOCATE(element_value_offsets, int, grid_maximum_number_of_values);
+							if (component_grid_values_storage && component_base_grid_offset &&
+								component_grid_offset_in_xi && element_value_offsets)
+							{
+								for (cn = 0; (cn < number_of_components); cn++)
+								{
+									component_grid_values_storage[cn]=NULL;
+									component_base_grid_offset[cn]=0;
+									component_grid_offset_in_xi[cn]=NULL;
+								}
+								element_field_values->component_grid_values_storage = component_grid_values_storage;
+								element_field_values->component_base_grid_offset = component_base_grid_offset;
+								element_field_values->component_grid_offset_in_xi = component_grid_offset_in_xi;
+								element_field_values->element_value_offsets = element_value_offsets;
+							}
+							else
+							{
+								return_code = 0;
+								break;
+							}
+						}
+						// GRC risky to cache pointers into per-element data
+						FE_mesh_field_data::ComponentBase *componentBase = meshFieldData->getComponentBase(component_number);
+						const int valuesCount = componentEFT->getNumberOfElementDOFs();
+						// following could be done as a virtual function
+						switch (field->value_type)
+						{
+						case FE_VALUE_VALUE:
+							{
+								auto component = static_cast<FE_mesh_field_data::Component<FE_value>*>(componentBase);
+								element_field_values->component_grid_values_storage[component_number] =
+									reinterpret_cast<const Value_storage*>(component->getElementValues(fieldElementIndex, valuesCount));
+							} break;
+						case INT_VALUE:
+							{
+								auto component = static_cast<FE_mesh_field_data::Component<int>*>(componentBase);
+								element_field_values->component_grid_values_storage[component_number] =
+									reinterpret_cast<const Value_storage*>(component->getElementValues(fieldElementIndex, valuesCount));
+							} break;
+						default:
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_FE_element_field_values.  Invalid value type for grid field");
+								return_code = 0;
+							} break;
+						}
+						ALLOCATE(component_number_in_xi[component_number], int, elementDimension);
+						ALLOCATE(component_grid_offset_in_xi[component_number], int, elementDimension);
+						if ((NULL != component_number_in_xi[component_number]) &&
+							(NULL != component_grid_offset_in_xi[component_number]))
+						{
+							element_field_values->component_base_grid_offset[component_number] = 0;
+							if (!calculate_grid_field_offsets(elementDimension,
+								fieldElementDimension, top_level_component_number_in_xi,
+								coordinate_transformation, component_number_in_xi[component_number],
+								&(element_field_values->component_base_grid_offset[component_number]),
+								component_grid_offset_in_xi[component_number]))
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_FE_element_field_values.  "
+									"Could not calculate grid field offsets");
+								return_code=0;
+								break;
+							}
 						}
 						else
 						{
-							element_field_values->destroy_standard_basis_arguments=0;
+							return_code = 0;
+							break;
 						}
-						element_field_values->number_of_components=number_of_components;
-						element_field_values->component_number_of_values=
-							number_of_values_address;
-						/* clear arrays only used for grid-based fields */
-						element_field_values->component_grid_values_storage=
-							(Value_storage **)NULL;
-						element_field_values->component_grid_offset_in_xi=(int **)NULL;
-						element_field_values->element_value_offsets=(int *)NULL;
-
-						element_field_values->component_values=values_address;
-						element_field_values->component_standard_basis_functions=
-							standard_basis_address;
-						element_field_values->component_standard_basis_function_arguments=
-							standard_basis_arguments_address;
-						/* maximum_number_of_values starts off big enough for linear grid with derivatives */
-						grid_maximum_number_of_values=element_dimension+1;
-						for (i=element_dimension;i>0;i--)
+					}
+					else /* not grid-based; includes non-grid element-based */
+					{
+						// calculate element values for component on the fieldElement
+						const int basisFunctionCount = componentEFT->getNumberOfFunctions();
+						ALLOCATE(*values_address, FE_value, basisFunctionCount);
+						if (!(*values_address))
 						{
-							grid_maximum_number_of_values *= 2;
+							return_code = 0;
+							break;
 						}
-						maximum_number_of_values = grid_maximum_number_of_values;
-						/* for each component */
-						component=element_field->components;
-						previous_basis=(struct FE_basis *)NULL;
-						component_number=0;
-						return_code=1;
-						number_of_grid_based_components = 0;
-						int **component_grid_offset_in_xi = 0;
-						while (return_code&&(component_number<number_of_components))
+						switch (componentEFT->getParameterMappingMode())
 						{
-							if (ELEMENT_GRID_MAP == (*component)->type)
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
+						{
+							if (0 == (*number_of_values_address = global_to_element_map_values(field, component_number,
+								componentEFT, fieldElement, time, nodeset, *values_address)))
 							{
-								number_of_grid_based_components++;
-								if (number_of_grid_based_components == number_of_components)
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Could not calculate node-based values for field %s in %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+							}
+						} break;
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
+						{
+							// element-based mapping stores the parameters ready for use in the element
+							if (field->value_type != FE_VALUE_VALUE)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Element-based non-grid field %s only implemented for real values", field->name);
+								return_code = 0;
+								break;
+							}
+							auto component = static_cast<FE_mesh_field_data::Component<FE_value> *>(meshFieldData->getComponentBase(component_number));
+							const FE_value *values = component->getElementValues(fieldElementIndex, basisFunctionCount);
+							if (!values)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Element-based field %s has no values at %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+								break;
+							}
+							memcpy(*values_address, values, basisFunctionCount*sizeof(FE_value));
+							*number_of_values_address = basisFunctionCount;
+						} break;
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
+						{
+							if (field->value_type != FE_VALUE_VALUE)
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Field-based field %s only implemented for real values", field->name);
+								return_code = 0;
+								break;
+							}
+							if (!get_FE_field_FE_value_value(field, component_number, *values_address))
+							{
+								display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+									"Field-based field %s has no values at %d-D element %d",
+									field->name, fieldElementDimension, fieldElement->getIdentifier());
+								return_code = 0;
+								break;
+							}
+							*number_of_values_address = 1;
+						} break;
+						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_INVALID:
+						{
+							display_message(ERROR_MESSAGE, "calculate_FE_element_field_values.  "
+								"Invalid parameter mapping mode for field %s in %d-D element %d",
+								field->name, fieldElementDimension, fieldElement->getIdentifier());
+							return_code = 0;
+						} break;
+						}
+						if (!return_code)
+							break;
+						if (previous_basis == componentEFT->getBasis())
+						{
+							*standard_basis_address= *(standard_basis_address-1);
+							*standard_basis_arguments_address=
+								*(standard_basis_arguments_address-1);
+						}
+						else
+						{
+							previous_basis = componentEFT->getBasis();
+							if (blending_matrix)
+							{
+								/* SAB We don't want to keep the old one */
+								DEALLOCATE(blending_matrix);
+								blending_matrix=NULL;
+							}
+							*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
+							if (fieldElementDimension > elementDimension)
+							{
+								return_code=calculate_standard_basis_transformation(
+									previous_basis,coordinate_transformation,
+									elementDimension,standard_basis_arguments_address,
+									&number_of_inherited_values,standard_basis_address,
+									&blending_matrix);
+							}
+							else
+							{
+								/* standard basis transformation is just a big identity matrix, so don't compute */
+								/* also use the real basis arguments */
+								*standard_basis_arguments_address =
+									const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
+							}
+						}
+						if (return_code)
+						{
+							if (fieldElement == element)
+							{
+								/* values already correct regardless of basis, but must make space for derivatives if needed */
+								if (calculate_derivatives)
 								{
-									element_field_values->derivatives_calculated=1;
-								}
-								/* one-off allocation of arrays only needed for grid-based components */
-								if (NULL == element_field_values->component_grid_values_storage)
-								{
-									ALLOCATE(component_grid_values_storage, Value_storage *, number_of_components);
-									ALLOCATE(component_base_grid_offset, int, number_of_components);
-									ALLOCATE(component_grid_offset_in_xi, int*, number_of_components);
-									ALLOCATE(element_value_offsets, int, grid_maximum_number_of_values);
-									if (component_grid_values_storage && component_base_grid_offset &&
-										component_grid_offset_in_xi && element_value_offsets)
+									if (REALLOCATE(inherited_values,*values_address,FE_value,
+										(elementDimension+1)*(*number_of_values_address)))
 									{
-										for (cn = 0; (cn < number_of_components); cn++)
-										{
-											component_grid_values_storage[cn]=NULL;
-											component_base_grid_offset[cn]=0;
-											component_grid_offset_in_xi[cn]=NULL;
-										}
-										element_field_values->component_grid_values_storage = component_grid_values_storage;
-										element_field_values->component_base_grid_offset = component_base_grid_offset;
-										element_field_values->component_grid_offset_in_xi = component_grid_offset_in_xi;
-										element_field_values->element_value_offsets = element_value_offsets;
+										*values_address=inherited_values;
 									}
 									else
 									{
-										return_code = 0;
-									}
-								}
-								if (return_code)
-								{
-									element_field_values->component_grid_values_storage[component_number] =
-										(field_element->information->values_storage)+
-										(((*component)->map).element_grid_based.value_index);
-									ALLOCATE(component_number_in_xi[component_number], int, element_dimension);
-									ALLOCATE(component_grid_offset_in_xi[component_number], int, element_dimension);
-									if ((NULL != component_number_in_xi[component_number]) &&
-										(NULL != component_grid_offset_in_xi[component_number]))
-									{
-										element_field_values->component_base_grid_offset[component_number]=0;
-										top_level_component_number_in_xi=
-											((*component)->map).element_grid_based.number_in_xi;
-										if (!calculate_grid_field_offsets(element_dimension,
-											field_element_dimension, top_level_component_number_in_xi,
-											coordinate_transformation, component_number_in_xi[component_number],
-											&(element_field_values->component_base_grid_offset[component_number]),
-											component_grid_offset_in_xi[component_number]))
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_values.  "
-												"Could not calculate grid field offsets");
-											return_code=0;
-										}
-									}
-									else
-									{
-										return_code = 0;
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_values.  Could not reallocate values");
+										return_code=0;
 									}
 								}
 							}
-							else /* not grid-based */
+							else if ((monomial_basis_functions== *standard_basis_address)||
+								(polygon_basis_functions== *standard_basis_address))
 							{
-								modify=(FE_element_field_component_modify)NULL;
-								if ((element_field_values->no_modify)&&element_field&&
-									(element_field->components)[component_number]&&(modify=
-									(element_field->components)[component_number]->modify))
+								/* project the fieldElement values onto the lower-dimension element
+										using the affine transformation */
+								/* allocate memory for the element values */
+								if (calculate_derivatives)
 								{
-									(element_field->components)[component_number]->modify=
-										(FE_element_field_component_modify)NULL;
+									ALLOCATE(inherited_values,FE_value,
+										(elementDimension+1)*number_of_inherited_values);
 								}
-								/* calculate element values for the element field component */
-								if (global_to_element_map_values(field_element,element_field,
-									time,component_number,number_of_values_address,
-									values_address))
+								else
 								{
-									if (modify)
+									ALLOCATE(inherited_values,FE_value,
+										number_of_inherited_values);
+								}
+								if (inherited_values)
+								{
+									row_size= *number_of_values_address;
+									inherited_value=inherited_values;
+									for (j=0;j<number_of_inherited_values;j++)
 									{
-										(element_field->components)[component_number]->modify=
-											modify;
-										modify=(FE_element_field_component_modify)NULL;
-									}
-#if defined (DEBUG_CODE)
-									/*???debug */
-									printf("component_number %d\n",component_number);
-#endif /* defined (DEBUG_CODE) */
-#if defined (DEBUG_CODE)
-									/*???debug */
-									{
-										FE_value *value;
-										int i;
-
-										i= *number_of_values_address;
-										printf("component=%d, #values=%d\n",component_number,i);
+										sum=0;
 										value= *values_address;
-										while (i>0)
+										transformation=blending_matrix+j;
+										for (i=row_size;i>0;i--)
 										{
-											printf("%.10g ",*value);
-											i--;
+											sum += (*transformation)*(*value);
 											value++;
+											transformation += number_of_inherited_values;
 										}
-										printf("\n");
+										*inherited_value=(FE_value)sum;
+										inherited_value++;
 									}
-#endif /* defined (DEBUG_CODE) */
-									if (previous_basis==(*component)->basis)
-									{
-										*standard_basis_address= *(standard_basis_address-1);
-										*standard_basis_arguments_address=
-											*(standard_basis_arguments_address-1);
-									}
-									else
-									{
-										previous_basis=(*component)->basis;
-										if (blending_matrix)
-										{
-											/* SAB We don't want to keep the old one */
-											DEALLOCATE(blending_matrix);
-											blending_matrix=NULL;
-										}
-										*standard_basis_address = FE_basis_get_standard_basis_function(previous_basis);
-										if (coordinate_transformation)
-										{
-											return_code=calculate_standard_basis_transformation(
-												previous_basis,coordinate_transformation,
-												element_dimension,standard_basis_arguments_address,
-												&number_of_inherited_values,standard_basis_address,
-												&blending_matrix);
-										}
-										else
-										{
-											/* standard basis transformation is just a big identity matrix, so don't compute */
-											/* also use the real basis arguments */
-											*standard_basis_arguments_address =
-												const_cast<int *>(FE_basis_get_standard_basis_function_arguments(previous_basis));
-										}
-									}
-									if (return_code)
-									{
-										if (!coordinate_transformation)
-										{
-											/* values already correct regardless of basis, but must make space for derivatives if needed */
-											if (calculate_derivatives)
-											{
-												if (REALLOCATE(inherited_values,*values_address,FE_value,
-													(element_dimension+1)*(*number_of_values_address)))
-												{
-													*values_address=inherited_values;
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"calculate_FE_element_field_values.  Could not reallocate values");
-													return_code=0;
-												}
-											}
-										}
-										else if ((monomial_basis_functions== *standard_basis_address)||
-											(polygon_basis_functions== *standard_basis_address))
-										{
-											/* project the field_element values onto the lower-dimension element
-												 using the affine transformation */
-											/* allocate memory for the element values */
-											if (calculate_derivatives)
-											{
-												ALLOCATE(inherited_values,FE_value,
-													(element_dimension+1)*number_of_inherited_values);
-											}
-											else
-											{
-												ALLOCATE(inherited_values,FE_value,
-													number_of_inherited_values);
-											}
-											if (inherited_values)
-											{
-												row_size= *number_of_values_address;
-												inherited_value=inherited_values;
-												for (j=0;j<number_of_inherited_values;j++)
-												{
-													sum=0;
-													value= *values_address;
-													transformation=blending_matrix+j;
-													for (i=row_size;i>0;i--)
-													{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)(*transformation)*(double)(*value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += (*transformation)*(*value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														value++;
-														transformation += number_of_inherited_values;
-													}
-													*inherited_value=(FE_value)sum;
-													inherited_value++;
-												}
-												DEALLOCATE(*values_address);
-												*values_address=inherited_values;
-												*number_of_values_address=number_of_inherited_values;
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"calculate_FE_element_field_values.  "
-													"Insufficient memory for inherited_values");
-												DEALLOCATE(*values_address);
-												return_code=0;
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_values.  Invalid basis");
-											return_code=0;
-										}
-										if (return_code)
-										{
-#if defined (DEBUG_CODE)
-											/*???debug */
-											printf("number of values=%d\n",
-												*number_of_values_address);
-											printf("inherited values :");
-											value= *values_address;
-											for (i= *number_of_values_address;i>0;i--)
-											{
-												printf(" %g",*value);
-												value++;
-											}
-											printf("\n");
-											printf("inherited arguments :");
-											orders= *standard_basis_arguments_address;
-											for (i=element_dimension;i>=0;i--)
-											{
-												printf(" %d",*orders);
-												orders++;
-											}
-											printf("\n");
-#endif /* defined (DEBUG_CODE) */
-											if (calculate_derivatives)
-											{
-												/* calculate the derivatives with respect to the xi
-													 coordinates */
-												if (monomial_basis_functions==
-													*standard_basis_address)
-												{
-													number_of_values= *number_of_values_address;
-													value= *values_address;
-													derivative_value=value+number_of_values;
-													orders= *standard_basis_arguments_address;
-													offset=1;
-													for (i=element_dimension;i>0;i--)
-													{
-														orders++;
-														order= *orders;
-														for (j=0;j<number_of_values;j++)
-														{
-															/* calculate derivative value */
-															power=(j/offset)%(order+1);
-															if (order==power)
-															{
-																*derivative_value=0;
-															}
-															else
-															{
-																*derivative_value=
-																	(FE_value)(power+1)*value[j+offset];
-															}
-															/* move to the next derivative value */
-															derivative_value++;
-														}
-														offset *= (order+1);
-													}
-												}
-												else if (polygon_basis_functions==
-													*standard_basis_address)
-												{
-													number_of_values= *number_of_values_address;
-													value= *values_address;
-													derivative_value=value+number_of_values;
-													orders= *standard_basis_arguments_address;
-													offset=1;
-													for (i=element_dimension;i>0;i--)
-													{
-														orders++;
-														order= *orders;
-														if (order<0)
-														{
-															/* polygon */
-															order= -order;
-															if (order%2)
-															{
-																/* calculate derivatives with respect to
-																	both polygon coordinates */
-																order /= 2;
-																polygon_offset=order%element_dimension;
-																order /= element_dimension;
-																number_of_polygon_verticies=
-																	(-orders[polygon_offset])/2;
-																/* first polygon coordinate is
-																	circumferential */
-																second_derivative_value=derivative_value+
-																	(polygon_offset*number_of_values);
-																order=4*number_of_polygon_verticies;
-																scalar=
-																	(FE_value)number_of_polygon_verticies;
-																for (j=0;j<number_of_values;j++)
-																{
-																	/* calculate derivative values */
-																	k=(j/offset)%order;
-																	switch (k/number_of_polygon_verticies)
-																	{
-																		case 0:
-																		{
-																			*derivative_value=scalar*value[j+
-																				number_of_polygon_verticies*offset];
-																			*second_derivative_value=value[j+
-																				2*number_of_polygon_verticies*
-																				offset];
-																		} break;
-																		case 1:
-																		{
-																			*derivative_value=0;
-																			*second_derivative_value=value[j+
-																				2*number_of_polygon_verticies*
-																				offset];
-																		} break;
-																		case 2:
-																		{
-																			*derivative_value=scalar*value[j+
-																				number_of_polygon_verticies*offset];
-																			*second_derivative_value=0;
-																		} break;
-																		case 3:
-																		{
-																			*derivative_value=0;
-																			*second_derivative_value=0;
-																		} break;
-																	}
-																	/* move to the next derivative value */
-																	derivative_value++;
-																	second_derivative_value++;
-																}
-																offset *= order;
-															}
-															else
-															{
-																/* second polgon xi.  Derivatives already
-																	calculated */
-																derivative_value += number_of_values;
-															}
-														}
-														else
-														{
-															/* not polygon */
-															for (j=0;j<number_of_values;j++)
-															{
-																/* calculate derivative value */
-																power=(j/offset)%(order+1);
-																if (order==power)
-																{
-																	*derivative_value=0;
-																}
-																else
-																{
-																	*derivative_value=
-																		(FE_value)(power+1)*value[j+offset];
-																}
-																/* move to the next derivative value */
-																derivative_value++;
-															}
-															offset *= (order+1);
-														}
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"calculate_FE_element_field_values.  "
-														"Invalid basis");
-													DEALLOCATE(*values_address);
-													return_code=0;
-												}
-											}
-#if defined (DEBUG_CODE)
-											/*???debug */
-											number_of_values= *number_of_values_address;
-											for (i=0;i<3;i++)
-											{
-												printf("%d :",i);
-												for (j=0;j<number_of_values;j++)
-												{
-													printf(" %g",value[i*number_of_values+j]);
-												}
-												printf("\n");
-											}
-#endif /* defined (DEBUG_CODE) */
-										}
-									}
-									if (*number_of_values_address>maximum_number_of_values)
-									{
-										maximum_number_of_values= *number_of_values_address;
-									}
-									number_of_values_address++;
-									values_address++;
-									standard_basis_address++;
-									standard_basis_arguments_address++;
+									DEALLOCATE(*values_address);
+									*values_address=inherited_values;
+									*number_of_values_address=number_of_inherited_values;
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
 										"calculate_FE_element_field_values.  "
-										"Could not calculate values");
+										"Insufficient memory for inherited_values");
+									DEALLOCATE(*values_address);
 									return_code=0;
-									if (modify)
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_FE_element_field_values.  Invalid basis");
+								return_code=0;
+							}
+							if (return_code)
+							{
+								if (calculate_derivatives)
+								{
+									/* calculate the derivatives with respect to the xi
+											coordinates */
+									if (monomial_basis_functions==
+										*standard_basis_address)
 									{
-										(element_field->components)[component_number]->modify=
-											modify;
-										modify=(FE_element_field_component_modify)NULL;
+										number_of_values= *number_of_values_address;
+										value= *values_address;
+										derivative_value=value+number_of_values;
+										orders= *standard_basis_arguments_address;
+										offset=1;
+										for (i=elementDimension;i>0;i--)
+										{
+											orders++;
+											order= *orders;
+											for (j=0;j<number_of_values;j++)
+											{
+												/* calculate derivative value */
+												power=(j/offset)%(order+1);
+												if (order==power)
+												{
+													*derivative_value=0;
+												}
+												else
+												{
+													*derivative_value=
+														(FE_value)(power+1)*value[j+offset];
+												}
+												/* move to the next derivative value */
+												derivative_value++;
+											}
+											offset *= (order+1);
+										}
+									}
+									else if (polygon_basis_functions==
+										*standard_basis_address)
+									{
+										number_of_values= *number_of_values_address;
+										value= *values_address;
+										derivative_value=value+number_of_values;
+										orders= *standard_basis_arguments_address;
+										offset=1;
+										for (i=elementDimension;i>0;i--)
+										{
+											orders++;
+											order= *orders;
+											if (order<0)
+											{
+												/* polygon */
+												order= -order;
+												if (order%2)
+												{
+													/* calculate derivatives with respect to
+														both polygon coordinates */
+													order /= 2;
+													polygon_offset=order%elementDimension;
+													order /= elementDimension;
+													number_of_polygon_verticies=
+														(-orders[polygon_offset])/2;
+													/* first polygon coordinate is
+														circumferential */
+													second_derivative_value=derivative_value+
+														(polygon_offset*number_of_values);
+													order=4*number_of_polygon_verticies;
+													scalar=
+														(FE_value)number_of_polygon_verticies;
+													for (j=0;j<number_of_values;j++)
+													{
+														/* calculate derivative values */
+														k=(j/offset)%order;
+														switch (k/number_of_polygon_verticies)
+														{
+															case 0:
+															{
+																*derivative_value=scalar*value[j+
+																	number_of_polygon_verticies*offset];
+																*second_derivative_value=value[j+
+																	2*number_of_polygon_verticies*
+																	offset];
+															} break;
+															case 1:
+															{
+																*derivative_value=0;
+																*second_derivative_value=value[j+
+																	2*number_of_polygon_verticies*
+																	offset];
+															} break;
+															case 2:
+															{
+																*derivative_value=scalar*value[j+
+																	number_of_polygon_verticies*offset];
+																*second_derivative_value=0;
+															} break;
+															case 3:
+															{
+																*derivative_value=0;
+																*second_derivative_value=0;
+															} break;
+														}
+														/* move to the next derivative value */
+														derivative_value++;
+														second_derivative_value++;
+													}
+													offset *= order;
+												}
+												else
+												{
+													/* second polgon xi.  Derivatives already
+														calculated */
+													derivative_value += number_of_values;
+												}
+											}
+											else
+											{
+												/* not polygon */
+												for (j=0;j<number_of_values;j++)
+												{
+													/* calculate derivative value */
+													power=(j/offset)%(order+1);
+													if (order==power)
+													{
+														*derivative_value=0;
+													}
+													else
+													{
+														*derivative_value=
+															(FE_value)(power+1)*value[j+offset];
+													}
+													/* move to the next derivative value */
+													derivative_value++;
+												}
+												offset *= (order+1);
+											}
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_values.  "
+											"Invalid basis");
+										DEALLOCATE(*values_address);
+										return_code=0;
 									}
 								}
 							}
-							component_number++;
-							component++;
 						}
-						if (return_code)
+						if (*number_of_values_address>maximum_number_of_values)
 						{
-							if (!((maximum_number_of_values>0)&&
-								(ALLOCATE(element_field_values->basis_function_values,
-								FE_value,maximum_number_of_values))))
-							{
-								display_message(ERROR_MESSAGE,
-									"calculate_FE_element_field_values.  "
-									"Could not allocate basis_function_values");
-								return_code=0;
-							}
+							maximum_number_of_values= *number_of_values_address;
 						}
+						number_of_values_address++;
+						values_address++;
+						standard_basis_address++;
+						standard_basis_arguments_address++;
 					}
-					else
+				}
+				if (return_code)
+				{
+					if (!((maximum_number_of_values>0)&&
+						(ALLOCATE(element_field_values->basis_function_values,
+						FE_value,maximum_number_of_values))))
 					{
 						display_message(ERROR_MESSAGE,
-							"calculate_FE_element_field_values.  Insufficient memory");
-						DEALLOCATE(number_of_values_address);
-						DEALLOCATE(values_address);
-						DEALLOCATE(standard_basis_address);
-						DEALLOCATE(standard_basis_arguments_address);
+							"calculate_FE_element_field_values.  "
+							"Could not allocate basis_function_values");
 						return_code=0;
 					}
-					if (blending_matrix)
-					{
-						DEALLOCATE(blending_matrix);
-					}
-					if (coordinate_transformation)
-					{
-						DEALLOCATE(coordinate_transformation);
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_FE_element_field_values.  Unknown field type");
-					return_code=0;
-				} break;
-			} /* switch (field->fe_field_type) */
-		}
-		else
-		{
-			if (field)
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_values.  %s not defined for %d-D element %d",
-					field->name, get_FE_element_dimension(element), element->get_identifier());
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
-					"No coordinate fields defined for %d-D element %d",
-					get_FE_element_dimension(element), element->get_identifier());
+				display_message(ERROR_MESSAGE,
+					"calculate_FE_element_field_values.  Insufficient memory");
+				DEALLOCATE(number_of_values_address);
+				DEALLOCATE(values_address);
+				DEALLOCATE(standard_basis_address);
+				DEALLOCATE(standard_basis_arguments_address);
+				return_code=0;
 			}
+			if (blending_matrix)
+			{
+				DEALLOCATE(blending_matrix);
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_FE_element_field_values.  Unknown field type");
 			return_code=0;
-#if defined (DEBUG_CODE)
-			/*???debug*/
-			printf("BAD coordinate_transformation=%p\n",coordinate_transformation);
-#endif /* defined (DEBUG_CODE) */
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"calculate_FE_element_field_values.  Invalid argument(s)");
-		return_code=0;
-	}
-#if defined (DEBUG_CODE)
-	/*???debug */
-	printf("leave calculate_FE_element_field_values %d\n",return_code);
-#endif /* defined (DEBUG_CODE) */
-	LEAVE;
-
+		} break;
+	} /* switch (field->fe_field_type) */
 	return (return_code);
-} /* calculate_FE_element_field_values */
+}
 
 int FE_element_field_values_differentiate(
 	struct FE_element_field_values *element_field_values, int xi_index)
@@ -22118,14 +13505,14 @@ must have already been calculated.  Currently only implemented for monomials.
 ==============================================================================*/
 {
 	FE_value *derivative_value, *value;
-	int element_dimension, i, j, k, number_of_values, offset, order,
+	int elementDimension, i, j, k, number_of_values, offset, order,
 		*orders, power, return_code;
 
 	ENTER(FE_element_field_values_differentiate);
 	if (element_field_values && element_field_values->derivatives_calculated)
 	{
 		return_code = 1;
-		element_dimension = element_field_values->element->getDimension();
+		elementDimension = element_field_values->element->getDimension();
 		for (k = 0 ; k < element_field_values->number_of_components ; k++)
 		{
 			if (monomial_basis_functions==
@@ -22151,7 +13538,7 @@ must have already been calculated.  Currently only implemented for monomials.
 				orders= element_field_values->component_standard_basis_function_arguments[k];
 				offset = 1;
 
-				for (i=element_dimension;i>0;i--)
+				for (i=elementDimension;i>0;i--)
 				{
 					orders++;
 					order= *orders;
@@ -22293,7 +13680,6 @@ function must be called before calling calculate_FE_element_field_values again.
 		{
 			DEALLOCATE(element_field_values->basis_function_values);
 		}
-		element_field_values->no_modify=(char)0;
 	}
 	else
 	{
@@ -22348,45 +13734,6 @@ DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_field_values)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element_field_values, element, \
 	struct FE_element *, compare_pointer)
-
-int FE_element_field_values_set_no_modify(
-	struct FE_element_field_values *element_field_values)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-Sets the FE_element_field_values no_modify flag.  When an element field values
-structure is created, the no_modify flag is unset.
-clear_FE_element_field_values also unsets the no_modify flag.
-
-When calculate_FE_element_field_values is called, if the no_modify flag is set
-then the field component modify function, if present, is not called.
-
-???DB.  This was added to fix calculating nodal value derivatives for computed
-	variables.  It was added as a set function because it is specialized and
-	will hopefully be replaced (either by a specialized function for calculating
-	nodal value derivatives instead of calculate_FE_element_field_values or a
-	better way of doing the modify).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_values_set_no_modify);
-	return_code=0;
-	if (element_field_values)
-	{
-		element_field_values->no_modify=(char)1;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"FE_element_field_values_set_no_modify.  "
-			"Missing <element_field_values>");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_values_set_no_modify */
 
 int FE_element_field_values_get_component_values(
 	struct FE_element_field_values *element_field_values,int component_number,
@@ -22529,214 +13876,242 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_node ***element_field_nodes_array_address,
 	struct FE_element *top_level_element)
 {
-	FE_value *blending_matrix, *combined_blending_matrix,
-		*coordinate_transformation, *transformation;
-	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
-		number_of_components,number_of_element_values = 0,number_of_element_field_nodes,
-		number_of_inherited_values, number_of_blended_values,
-		previous_number_of_element_values,return_code;
-	struct FE_basis *basis,*previous_basis;
-	struct FE_element *field_element;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component,**component_address;
-	struct FE_node **element_field_nodes_array,**element_value,**element_values = NULL,
-		**previous_element_values,**temp_element_field_nodes_array;
-	Standard_basis_function *standard_basis_function;
-
-	ENTER(calculate_FE_element_field_nodes);
-	return_code=0;
-	/* check the arguments */
-	if ((element) && (element->fields) && (number_of_element_field_nodes_address) &&
-		(element_field_nodes_array_address))
+	if (!((element) && (number_of_element_field_nodes_address) &&
+		(element_field_nodes_array_address)))
 	{
-		/* retrieve the element field from which this element inherits the field
-			and calculate the affine transformation from the element xi coordinates
-			to the xi coordinates for the element field */
-		coordinate_transformation=(FE_value *)NULL;
-		if (inherit_FE_element_field(element, face_number,field,&element_field,&field_element,
-			&coordinate_transformation,top_level_element)&&element_field)
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (!field)
+	{
+		field = FE_element_get_default_coordinate_field(top_level_element ? top_level_element : element);
+		if (!field)
 		{
-			return_code=1;
-			number_of_element_field_nodes=0;
-			element_field_nodes_array=(struct FE_node **)NULL;
-			element_dimension = element->getDimension();
-			if (face_number >= 0)
-				--element_dimension;
-			number_of_components=element_field->field->number_of_components;
-			/* for each component */
-			component_address=element_field->components;
-			previous_basis=(struct FE_basis *)NULL;
-			previous_number_of_element_values= -1;
-			previous_element_values=(struct FE_node **)NULL;
-			component_number=0;
-			while (return_code&&(component_number<number_of_components))
-			{
-				component= *component_address;
-				if ((STANDARD_NODE_TO_ELEMENT_MAP==component->type)||
-					(GENERAL_ELEMENT_MAP==component->type))
-				{
-					/* calculate the nodes used by the component in the field_element */
-					if (global_to_element_map_nodes(component,field_element,
-						element_field->field,&number_of_element_values,&element_values))
-					{
-						basis = component->basis;
-						if (FE_basis_get_number_of_functions(basis) == number_of_element_values)
-						{
-							if ((i=number_of_element_values)==
-								previous_number_of_element_values)
-							{
-								i--;
-								while ((i>=0)&&(element_values[i]==previous_element_values[i]))
-								{
-									i--;
-								}
-							}
-							if ((i>=0)||(basis!=previous_basis))
-							{
-								DEALLOCATE(previous_element_values);
-								previous_element_values=element_values;
-								previous_number_of_element_values=number_of_element_values;
-								previous_basis=basis;
-								if (calculate_standard_basis_transformation(basis,
-									coordinate_transformation,element_dimension,
-									&inherited_basis_arguments,&number_of_inherited_values,
-									&standard_basis_function,&blending_matrix))
-								{
-									number_of_blended_values = FE_basis_get_number_of_blended_functions(basis);
-									if (number_of_blended_values > 0)
-									{
-										combined_blending_matrix = FE_basis_calculate_combined_blending_matrix(basis,
-											number_of_blended_values, number_of_inherited_values, blending_matrix);
-										DEALLOCATE(blending_matrix);
-										blending_matrix = combined_blending_matrix;
-										if (!blending_matrix)
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix");
-											return_code = 0;
-										}
-									}
-									if (return_code)
-									{
-										transformation=blending_matrix;
-										element_value=element_values;
-										i=number_of_element_values;
-										while (return_code&&(i>0))
-										{
-											add=0;
-											j=number_of_inherited_values;
-											while (!add&&(j>0))
-											{
-												if (1.e-8<fabs(*transformation))
-												{
-													add=1;
-												}
-												transformation++;
-												j--;
-											}
-											transformation += j;
-											if (add)
-											{
-												k=0;
-												while ((k<number_of_element_field_nodes)&&
-													(*element_value!=element_field_nodes_array[k]))
-												{
-													k++;
-												}
-												if (k>=number_of_element_field_nodes)
-												{
-													if (REALLOCATE(temp_element_field_nodes_array,
-														element_field_nodes_array,struct FE_node *,
-														number_of_element_field_nodes+1))
-													{
-														element_field_nodes_array=
-															temp_element_field_nodes_array;
-														element_field_nodes_array[
-															number_of_element_field_nodes]=
-															ACCESS(FE_node)(*element_value);
-														number_of_element_field_nodes++;
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"calculate_FE_element_field_nodes.  "
-															"Could not REALLOCATE element_field_nodes_array");
-														return_code=0;
-													}
-												}
-											}
-											element_value++;
-											i--;
-										}
-									}
-									DEALLOCATE(blending_matrix);
-									DEALLOCATE(inherited_basis_arguments);
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							else
-							{
-								DEALLOCATE(element_values);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"calculate_FE_element_field_nodes.  Invalid basis");
-							DEALLOCATE(element_values);
-							return_code=0;
-						}
-					}
-				}
-				component_number++;
-				component_address++;
-			}
-			DEALLOCATE(previous_element_values);
-			if (return_code)
-			{
-				*number_of_element_field_nodes_address=number_of_element_field_nodes;
-				*element_field_nodes_array_address=element_field_nodes_array;
-			}
-			else
-			{
-				for (i=0;i<number_of_element_field_nodes;i++)
-				{
-					DEACCESS(FE_node)(element_field_nodes_array+i);
-				}
-				DEALLOCATE(element_field_nodes_array);
-			}
+			display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  No default coordinate field");
+			return CMZN_ERROR_ARGUMENT;
+		}
+	}
+	// retrieve the field element from which this element inherits the field
+	// and calculate the affine transformation from the element xi coordinates
+	// to the xi coordinates for the field element */
+	FE_value coordinate_transformation[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	cmzn_element *fieldElement = field->getOrInheritOnElement(element,
+		face_number, top_level_element, coordinate_transformation);
+	if (!fieldElement)
+	{
+		if (field)
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_FE_element_field_nodes.  %s not defined for %d-D element %d",
+				field->name, element->getDimension(), element->getIdentifier());
 		}
 		else
 		{
-			if (field)
+			display_message(ERROR_MESSAGE,
+				"calculate_FE_element_field_nodes.  No coordinate fields defined for %d-D element %d",
+				element->getDimension(), element->getIdentifier());
+		}
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const FE_mesh *mesh = fieldElement->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Invalid element");
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const FE_nodeset *nodeset = mesh->getNodeset();
+	if (!nodeset)
+	{
+		display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  No nodeset, invalid mesh");
+		return CMZN_ERROR_NOT_FOUND;
+	}
+
+	int return_code = CMZN_OK;
+	FE_value *blending_matrix, *combined_blending_matrix, *transformation;
+	int i, *inherited_basis_arguments, j, k,
+		number_of_inherited_values, number_of_blended_values;
+
+	int number_of_element_field_nodes = 0;
+	struct FE_node **element_field_nodes_array = 0;
+	int elementDimension = element->getDimension();
+	if (face_number >= 0)
+		--elementDimension;
+	const int fieldElementDimension = fieldElement->getDimension();
+	const FE_mesh_field_data *meshFieldData = field->meshFieldData[fieldElementDimension - 1];
+	const int number_of_components = field->number_of_components;
+	struct FE_basis *previous_basis = 0;
+	int previous_number_of_element_values = -1;
+	DsLabelIndex *element_value, *element_values = 0;
+	DsLabelIndex *previous_element_values = 0;
+	const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
+	for (int component_number = 0; (component_number < number_of_components) && (return_code == CMZN_OK); ++component_number)
+	{
+		const FE_element_field_template *componentEFT = meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
+		if (componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+		{
+			int number_of_element_values = 0;
+			return_code = global_to_element_map_nodes(field, component_number,
+				componentEFT, fieldElement, number_of_element_values, element_values);
+			if (CMZN_OK != return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_nodes.  %s not defined for %d-D element %d",
-					field->name, get_FE_element_dimension(element), element->get_identifier());
+				if (CMZN_ERROR_NOT_FOUND != return_code)
+				{
+					display_message(ERROR_MESSAGE, "calculate_FE_element_field_nodes.  Failed to map element nodes");
+				}
+				break;
+			}
+			if (0 == number_of_element_values)
+			{
+				continue;
+			}
+			FE_basis *basis = componentEFT->getBasis();
+			if ((i=number_of_element_values)==
+				previous_number_of_element_values)
+			{
+				i--;
+				while ((i>=0)&&(element_values[i]==previous_element_values[i]))
+				{
+					i--;
+				}
+			}
+			if ((i>=0)||(basis!=previous_basis))
+			{
+				DEALLOCATE(previous_element_values);
+				previous_element_values=element_values;
+				previous_number_of_element_values=number_of_element_values;
+				previous_basis=basis;
+				Standard_basis_function *standard_basis_function;
+				if (fieldElementDimension == elementDimension)
+				{
+					blending_matrix = 0;
+					inherited_basis_arguments = 0;
+				}
+				else if (calculate_standard_basis_transformation(basis,
+					coordinate_transformation, elementDimension,
+					&inherited_basis_arguments, &number_of_inherited_values,
+					&standard_basis_function, &blending_matrix))
+				{
+					number_of_blended_values = FE_basis_get_number_of_blended_functions(basis);
+					if (number_of_blended_values > 0)
+					{
+						combined_blending_matrix = FE_basis_calculate_combined_blending_matrix(basis,
+							number_of_blended_values, number_of_inherited_values, blending_matrix);
+						DEALLOCATE(blending_matrix);
+						blending_matrix = combined_blending_matrix;
+						if (!blending_matrix)
+						{
+							display_message(ERROR_MESSAGE,
+								"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix");
+							return_code = CMZN_ERROR_MEMORY;
+						}
+					}
+				}
+				else
+				{
+					return_code = CMZN_ERROR_GENERAL;
+				}
+				if (CMZN_OK == return_code)
+				{
+					transformation=blending_matrix;
+					element_value=element_values;
+					i=number_of_element_values;
+					while ((i > 0) && (CMZN_OK == return_code))
+					{
+						bool add;
+						if (transformation)
+						{
+							add = false;
+							j = number_of_inherited_values;
+							while (!add&&(j>0))
+							{
+								if (1.e-8<fabs(*transformation))
+								{
+									add = true;
+								}
+								transformation++;
+								j--;
+							}
+							transformation += j;
+						}
+						else
+						{
+							add = true;
+						}
+						if (add)
+						{
+							struct FE_node *node = nodeset->getNode(*element_value);
+							if (node)
+							{
+								k = 0;
+								while ((k<number_of_element_field_nodes)&&
+									(node != element_field_nodes_array[k]))
+								{
+									k++;
+								}
+								if (k>=number_of_element_field_nodes)
+								{
+									struct FE_node **temp_element_field_nodes_array;
+									if (REALLOCATE(temp_element_field_nodes_array,
+										element_field_nodes_array, struct FE_node *,
+										number_of_element_field_nodes+1))
+									{
+										element_field_nodes_array = temp_element_field_nodes_array;
+										element_field_nodes_array[number_of_element_field_nodes] =
+											ACCESS(FE_node)(node);
+										number_of_element_field_nodes++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_nodes.  "
+											"Could not REALLOCATE element_field_nodes_array");
+										return_code = CMZN_ERROR_MEMORY;
+									}
+								}
+							}
+						}
+						element_value++;
+						i--;
+					}
+				}
+				if (blending_matrix)
+					DEALLOCATE(blending_matrix);
+				if (inherited_basis_arguments)
+					DEALLOCATE(inherited_basis_arguments);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_nodes.  No coordinate fields defined for %d-D element %d",
-					get_FE_element_dimension(element), element->get_identifier());
+				DEALLOCATE(element_values);
 			}
-			return_code=0;
 		}
-		DEALLOCATE(coordinate_transformation);
+	}
+	DEALLOCATE(previous_element_values);
+	if (CMZN_OK == return_code)
+	{
+		*number_of_element_field_nodes_address=number_of_element_field_nodes;
+		if (number_of_element_field_nodes)
+		{
+			*element_field_nodes_array_address = element_field_nodes_array;
+		}
+		else
+		{
+			DEALLOCATE(element_field_nodes_array);
+			*element_field_nodes_array_address = 0;
+			return_code = CMZN_ERROR_NOT_FOUND;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"calculate_FE_element_field_nodes.  Invalid argument(s)");
-		return_code=0;
+		*number_of_element_field_nodes_address = 0;
+		*element_field_nodes_array_address = 0;
+		for (i=0;i<number_of_element_field_nodes;i++)
+		{
+			DEACCESS(FE_node)(element_field_nodes_array+i);
+		}
+		DEALLOCATE(element_field_nodes_array);
 	}
-	LEAVE;
-
 	return (return_code);
-} /* calculate_FE_element_field_nodes */
+}
 
 int calculate_FE_element_field(int component_number,
 	struct FE_element_field_values *element_field_values,
@@ -22765,7 +14140,7 @@ the derivatives will start at the first position of <jacobian>.
 	struct FE_field *field;
 	int **component_standard_basis_function_arguments,
 		*current_standard_basis_function_arguments;
-	Value_storage **component_grid_values_storage,*element_values_storage;
+	const Value_storage **component_grid_values_storage,*element_values_storage;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
 	double sum;
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
@@ -22866,8 +14241,8 @@ the derivatives will start at the first position of <jacobian>.
 					display_message(ERROR_MESSAGE,"calculate_FE_element_field.  "
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->get_identifier());
+						element_field_values->element->getDimension(),
+						element_field_values->element->getIdentifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -23403,8 +14778,8 @@ single component, the value will be put in the first position of <values>.
 						"calculate_FE_element_field_int_values.  "
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->get_identifier());
+						element_field_values->element->getDimension(),
+						element_field_values->element->getIdentifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -23563,8 +14938,8 @@ It is up to the calling function to deallocate the returned string values.
 						"calculate_FE_element_field_string_values.  "
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->get_identifier());
+						element_field_values->element->getDimension(),
+						element_field_values->element->getIdentifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -23594,56 +14969,39 @@ It is up to the calling function to deallocate the returned string values.
 bool equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2)
 {
-	if (field && element_1 && element_1->fields && element_2 && element_2->fields)
+	if (!(field && element_1 && element_2))
+		return false;
+	FE_mesh *mesh = element_1->getMesh();
+	if ((element_2->getMesh() != mesh) || (!mesh))
+		return false;
+	const FE_mesh_field_data *meshFieldData = field->meshFieldData[mesh->getDimension() - 1];
+	if (!meshFieldData)
+		return true; // field not defined on any elements in mesh, hence equivalent
+	const int componentCount = field->number_of_components;
+	for (int c = 0; c < componentCount; ++c)
 	{
-		if (element_1->fields == element_2->fields)
-			return true;
-		else
-		{
-			FE_element_field *element_field_1 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
-				field, element_1->fields->element_field_list);
-			FE_element_field *element_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
-				field, element_2->fields->element_field_list);
-			if (((!element_field_1) && (!element_field_2)) ||
-				FE_element_fields_match(element_field_1, element_1->information,
-					element_field_2, element_2->information))
-				return true;
-		}
+		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+		if (mft->getElementEFTIndex(element_1->getIndex()) != mft->getElementEFTIndex(element_2->getIndex()))
+			return false;
 	}
-	return false;
+	return true;
 }
 
-int equivalent_FE_fields_in_elements(struct FE_element *element_1,
+bool equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(equivalent_FE_fields_in_elements);
-	if (element_1 && element_2)
-	{
-		return_code = (element_1->fields == element_2->fields);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"equivalent_FE_fields_in_elements.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* equivalent_FE_fields_in_elements */
+	if (!(element_1 && element_2))
+		return false;
+	FE_mesh *mesh = element_1->getMesh();
+	if ((element_2->getMesh() != mesh) || (!mesh))
+		return false;
+	return mesh->equivalentFieldsInElements(element_1->getIndex(), element_2->getIndex());
+}
 
 int get_FE_element_dimension(struct FE_element *element)
 {
-	if (element && element->fields)
-		return element->fields->fe_mesh->getDimension();
+	if (element)
+		return element->getDimension();
 	display_message(ERROR_MESSAGE, "get_FE_element_dimension.  Invalid element");
 	return 0;
 }
@@ -23651,130 +15009,66 @@ int get_FE_element_dimension(struct FE_element *element)
 DsLabelIdentifier get_FE_element_identifier(struct FE_element *element)
 {
 	if (element)
-		return element->get_identifier();
+		return element->getIdentifier();
 	return DS_LABEL_IDENTIFIER_INVALID;
 }
 
 DsLabelIndex get_FE_element_index(struct FE_element *element)
 {
 	if (element)
-		return element->index;
+		return element->getIndex();
 	return DS_LABEL_INDEX_INVALID;
 }
 
-void set_FE_element_index(struct FE_element *element, DsLabelIndex index)
+FE_field *FE_element_get_default_coordinate_field(struct FE_element *element)
 {
-	if (element)
-		element->index = index;
-}
-
-bool FE_element_or_parent_changed(struct FE_element *element,
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-	struct CHANGE_LOG(FE_node) *fe_node_change_log)
-{
-	int dimension = get_FE_element_dimension(element);
-	DsLabelsChangeLog *elementChangeLog;
-	if (element && element->fields && (0 < dimension) && elementChangeLogs &&
-		((elementChangeLog = elementChangeLogs[dimension - 1])) && fe_node_change_log)
+	if (!(element && element->getMesh()))
+		return 0;
+	CMZN_SET(FE_field) *fields = reinterpret_cast<CMZN_SET(FE_field) *>(element->getMesh()->get_FE_region()->fe_field_list);
+	for (CMZN_SET(FE_field)::iterator iter = fields->begin(); iter != fields->end(); ++iter)
 	{
-		if (elementChangeLog->isIndexChange(element->index) &&
-			(elementChangeLog->getChangeSummary() & (
-				DS_LABEL_CHANGE_TYPE_IDENTIFIER | DS_LABEL_CHANGE_TYPE_DEFINITION |
-				DS_LABEL_CHANGE_TYPE_RELATED | DS_LABEL_CHANGE_TYPE_REMOVE )))
-		{
-			return true;
-		}
-		struct FE_node **nodes;
-		/* check nodes, if any; try to make as efficient as possible */
-		if (element->information && (nodes = element->information->nodes))
-		{
-			int node_change;
-			int number_of_nodes = element->information->number_of_nodes;
-			for (int i = 0; i < number_of_nodes; ++i)
-			{
-				if (CHANGE_LOG_QUERY(FE_node)(fe_node_change_log, nodes[i], &node_change) &&
-					(node_change & (
-						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node) |
-						CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node) |
-						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))))
-				{
-					return true;
-				}
-			}
-		}
-		/* try parents */
-		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-		if (parentMesh)
-		{
-			const DsLabelIndex *parents;
-			const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
-			for (int p = 0; p < parentsCount; ++p)
-			{
-				if (FE_element_or_parent_changed(parentMesh->getElement(parents[p]),
-						elementChangeLogs, fe_node_change_log))
-					return true;
-			}
-		}
+		FE_field *field = *iter;
+		if (field->isTypeCoordinate() && FE_field_is_defined_in_element(field, element))
+			return field;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_or_parent_changed.  Invalid argument(s)");
-	}
-	return false;
+	return 0;
 }
 
 int get_FE_element_number_of_fields(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 4 November 2002
-
-DESCRIPTION :
-Returns the number of fields defined at <element>.
-Does not include fields inherited from parent elements.
-==============================================================================*/
 {
-	int number_of_fields;
-
-	ENTER(get_FE_element_number_of_fields);
-	if (element && element->fields)
+	if (!(element && element->getMesh()))
+		return 0;
+	int fieldCount = 0;
+	const int dim = element->getDimension() - 1;
+	const DsLabelIndex elementIndex = element->getIndex();
+	CMZN_SET(FE_field) *fields = reinterpret_cast<CMZN_SET(FE_field) *>(element->getMesh()->get_FE_region()->fe_field_list);
+	for (CMZN_SET(FE_field)::iterator iter = fields->begin(); iter != fields->end(); ++iter)
 	{
-		number_of_fields =
-			NUMBER_IN_LIST(FE_element_field)(element->fields->element_field_list);
+		const FE_mesh_field_data *meshFieldData = (*iter)->meshFieldData[dim];
+		if ((meshFieldData) && (meshFieldData->getComponentMeshfieldtemplate(0)->getElementEFTIndex(elementIndex) >= 0))
+			++fieldCount;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_fields.  Missing element");
-		number_of_fields = 0;
-	}
-	LEAVE;
-
-	return (number_of_fields);
-} /* get_FE_element_number_of_fields */
+	return fieldCount;
+}
 
 FE_element_shape *get_FE_element_shape(struct FE_element *element)
 {
 	if (element)
-	{
-		if (element->fields)
-			return element->fields->fe_mesh->getElementShape(element->index);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_element_shape.  Invalid argument(s)");
-	}
+		return element->getElementShape();
+	display_message(ERROR_MESSAGE,"get_FE_element_shape.  Invalid element");
 	return 0;
 }
 
 struct FE_element *get_FE_element_face(struct FE_element *element, int face_number)
 {
-	if ((element) && (element->fields))
+	const FE_mesh *mesh;
+	if (element && (mesh = element->getMesh()))
 	{
-		const FE_mesh::ElementShapeFaces *shapeFaces = element->fields->fe_mesh->getElementShapeFacesConst(element->index);
-		FE_mesh *faceMesh = element->fields->fe_mesh->getFaceMesh();
+		const FE_mesh::ElementShapeFaces *shapeFaces = mesh->getElementShapeFacesConst(element->getIndex());
+		FE_mesh *faceMesh = mesh->getFaceMesh();
 		if ((shapeFaces) && (0 <= face_number) && (face_number < shapeFaces->getFaceCount()) && (faceMesh))
 		{
-			const DsLabelIndex *faces = shapeFaces->getElementFaces(element->index);
+			const DsLabelIndex *faces = shapeFaces->getElementFaces(element->getIndex());
 			if (faces)
 				return faceMesh->getElement(faces[face_number]);
 			return 0;
@@ -23784,968 +15078,6 @@ struct FE_element *get_FE_element_face(struct FE_element *element, int face_numb
 	return 0;
 }
 
-int set_FE_element_number_of_nodes(struct FE_element *element,
-	int number_of_nodes)
-/*******************************************************************************
-LAST MODIFIED : 11 February 2003
-
-DESCRIPTION :
-Establishes storage for <number_of_nodes> in <element>.
-May only be set once; should only be called for unmanaged elements.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_element_number_of_nodes);
-	if (element && (0 <= number_of_nodes))
-	{
-		if (element->information ||
-			(element->information = FE_element_node_scale_field_info::create()))
-		{
-			return_code = (CMZN_OK == element->information->setNumberOfNodes(number_of_nodes));
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "set_FE_element_number_of_nodes.  "
-				"Could not create node_scale_field_info");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_number_of_nodes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_number_of_nodes */
-
-int get_FE_element_number_of_nodes(struct FE_element *element,
-	int *number_of_nodes_address)
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Returns the number of nodes directly referenced by <element>; does not include
-nodes used by fields inherited from parent elements.
-If fails, puts zero at <number_of_nodes_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_element_number_of_nodes);
-	if (element && number_of_nodes_address)
-	{
-		if (element->information)
-		{
-			*number_of_nodes_address = element->information->number_of_nodes;
-		}
-		else
-		{
-			*number_of_nodes_address = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_nodes.  Invalid argument(s)");
-		if (number_of_nodes_address)
-		{
-			*number_of_nodes_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_number_of_nodes */
-
-int FE_element_has_FE_node(struct FE_element *element, void *node_void)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Returns true if <element> references the <node>.
-==============================================================================*/
-{
-	int i, number_of_nodes, return_code;
-	struct FE_node *node, **nodes;
-
-	ENTER(FE_element_has_FE_node);
-	return_code = 0;
-	if (element && (node = (struct FE_node *)node_void))
-	{
-		if (element->information && (nodes = element->information->nodes) &&
-			(0 < (number_of_nodes = element->information->number_of_nodes)))
-		{
-			for (i = 0; i < number_of_nodes; i++)
-			{
-				if (nodes[i] == node)
-				{
-					return_code = 1;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_FE_node.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_FE_node */
-
-int get_FE_element_node(struct FE_element *element,int node_number,
-	struct FE_node **node)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Gets node <node_number>, from 0 to number_of_nodes-1 of <element> in <node>.
-<element> must already have a shape and node_scale_field_information.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_element_node);
-	if (element && element->information &&
-		element->information->nodes&&(0<=node_number)&&
-		(node_number<element->information->number_of_nodes)&&node)
-	{
-		*node=element->information->nodes[node_number];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_element_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_node */
-
-int set_FE_element_node(struct FE_element *element,int node_number,
-  struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 11 February 2003
-
-DESCRIPTION :
-Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
-<element> must already have a shape and node_scale_field_information.
-Should only be called for unmanaged elements.
-==============================================================================*/
-{
-  int return_code;
-
-  ENTER(set_FE_element_node);
-  if (element && element->information && node)
-  {
-	  return_code = (CMZN_OK == element->information->setNode(node_number, node));
-  }
-  else
-  {
-	  display_message(ERROR_MESSAGE,"set_FE_element_node.  Invalid argument(s)");
-	  return_code=0;
-  }
-  LEAVE;
-
-  return (return_code);
-} /* set_FE_element_node */
-
-int get_FE_element_scale_factors_address(struct FE_element *element,
-	cmzn_mesh_scale_factor_set *scale_factor_set, FE_value **scale_factors_address)
-{
-	int number_of_scale_factors = 0;
-	if (element && element->information && scale_factor_set && scale_factors_address)
-	{
-		*scale_factors_address = element->information->getScaleFactorsForSet(scale_factor_set, number_of_scale_factors);
-	}
-	else if (scale_factors_address)
-	{
-		*scale_factors_address = 0;
-	}
-	return number_of_scale_factors;
-}
-
-int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int number_of_scale_factor_sets, cmzn_mesh_scale_factor_set **scale_factor_set_identifiers,
-	int *numbers_in_scale_factor_sets)
-{
-	if (element)
-	{
-		if ((0 < number_of_scale_factor_sets) && !element->information)
-		{
-			element->information = FE_element_node_scale_field_info::create();
-			if (!element->information)
-			{
-				return CMZN_ERROR_MEMORY;
-			}
-		}
-		if (element->information)
-		{
-			return element->information->setScaleFactorSets(number_of_scale_factor_sets,
-				scale_factor_set_identifiers, numbers_in_scale_factor_sets, static_cast<FE_value*>(0));
-		}
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int *number_of_scale_factor_sets_address)
-{
-	int return_code;
-
-	ENTER(get_FE_element_number_of_scale_factor_sets);
-	if (element && number_of_scale_factor_sets_address)
-	{
-		if (element->information)
-		{
-			*number_of_scale_factor_sets_address =
-				element->information->getNumberOfScaleFactorSets();
-		}
-		else
-		{
-			*number_of_scale_factor_sets_address = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_scale_factor_sets.  Invalid element");
-		if (number_of_scale_factor_sets_address)
-		{
-			*number_of_scale_factor_sets_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int get_FE_element_number_in_scale_factor_set_at_index(struct FE_element *element,
-	int scale_factor_set_number)
-{
-	if (element && element->information)
-	{
-		return element->information->getNumberInScaleFactorSetAtIndex(scale_factor_set_number);
-	}
-	return 0;
-}
-
-cmzn_mesh_scale_factor_set *get_FE_element_scale_factor_set_identifier_at_index(
-	struct FE_element *element, int scale_factor_set_number)
-{
-	if (element && element->information)
-	{
-		return element->information->getScaleFactorSetIdentifierAtIndex(scale_factor_set_number);
-	}
-	return 0;
-}
-
-int set_FE_element_scale_factor_set_identifier_at_index(
-	struct FE_element *element, int scale_factor_set_number,
-	cmzn_mesh_scale_factor_set *scale_factor_set_identifier)
-{
-	if (element && element->information)
-	{
-		return element->information->setScaleFactorSetIdentifierAtIndex(
-			scale_factor_set_number, scale_factor_set_identifier);
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int get_FE_element_number_of_scale_factors(struct FE_element *element,
-	int *number_of_scale_factors_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of scale factors stored with <element>.
-If fails, puts zero at <number_of_scale_factors_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_element_number_of_scale_factors);
-	if (element && number_of_scale_factors_address)
-	{
-		if (element->information)
-		{
-			*number_of_scale_factors_address =
-				element->information->number_of_scale_factors;
-		}
-		else
-		{
-			*number_of_scale_factors_address = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_scale_factors.  Invalid element");
-		if (number_of_scale_factors_address)
-		{
-			*number_of_scale_factors_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_number_of_scale_factors */
-
-int get_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number, FE_value *scale_factor_address)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Gets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
-<element> to <scale_factor>.
-<element> must already have a shape and node_scale_field_information.
-If fails, sets *<scale_factor_address> to 0.0;
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_element_scale_factor);
-	if (element && element->information &&
-		element->information->scale_factors && (0 <= scale_factor_number) &&
-		(scale_factor_number < element->information->number_of_scale_factors) &&
-		scale_factor_address)
-	{
-		*scale_factor_address =
-			element->information->scale_factors[scale_factor_number];
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_scale_factor.  Invalid argument(s)");
-		if (scale_factor_address)
-		{
-			*scale_factor_address = 0.0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_scale_factor */
-
-int set_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number, FE_value scale_factor)
-{
-	int return_code;
-	if (element && element->information&&
-		element->information->scale_factors&&(0<=scale_factor_number)&&
-		(scale_factor_number<element->information->number_of_scale_factors))
-	{
-		return_code=1;
-		element->information->scale_factors[scale_factor_number]=scale_factor;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_scale_factor.  Invalid argument(s)");
-		return_code=0;
-	}
-	return (return_code);
-}
-
-int define_FE_field_at_element(struct FE_element *element,
-	struct FE_field *field, struct FE_element_field_component **components)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Defines <field> at <element> using the given <components>. <element> must
-already have a shape and node_scale_field_information.
-Checks the range of nodes, scale factors etc. referred to by the components are
-within the range of the node_scale_field_information, and that the basis
-functions are compatible with the element shape.
-Value types other than FE_VALUE_VALUE are only supported for grid-based element
-fields and constant and indexed FE_fields.
-The <components> are duplicated by this functions, so the calling function must
-destroy them.
-Should only be called for unmanaged elements.
-???RC Should have more checks for STANDARD_NODE_TO_ELEMENT_MAP etc.
-==============================================================================*/
-{
-	enum FE_basis_type grid_basis_type;
-	int component_number_of_values, dimension, i, j, number_of_components,
-		number_of_grid_based_components, old_values_storage_size,
-		return_code, *this_number_in_xi;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **component;
-	struct FE_element_field_info *existing_element_field_info,
-		*new_element_field_info;
-	struct FE_element_field_lists_merge_data merge_data;
-	FE_mesh *fe_mesh;
-	struct FE_region *fe_region;
-	struct LIST(FE_element_field) *element_field_list;
-	Value_storage *values_storage;
-
-	ENTER(define_FE_field_at_element);
-	return_code = 0;
-	if (element && (dimension = get_FE_element_dimension(element)) &&
-		field && (fe_region = FE_field_get_FE_region(field)) &&
-		(existing_element_field_info = element->fields) &&
-		(fe_mesh = existing_element_field_info->fe_mesh) &&
-		(fe_mesh->get_FE_region() == fe_region) &&
-		element->information &&
-		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
-		components)
-	{
-		return_code = 1;
-		/* check if the field is already defined at the element */
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-			existing_element_field_info->element_field_list))
-		{
-			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_element.  Field %s already defined at %d-D element %d",
-				field->name, get_FE_element_dimension(element),
-				element->get_identifier());
-			return_code = 0;
-		}
-		int number_of_values = 0;
-		switch (field->fe_field_type)
-		{
-			case CONSTANT_FE_FIELD:
-			{
-				/* nothing to check */
-			} break;
-			case INDEXED_FE_FIELD:
-			{
-				/* no longer perform this check since it prevents us from reading in
-					 indexed fields when the indexer is not in the same header */
-			} break;
-			case GENERAL_FE_FIELD:
-			{
-				/* check the components are all there, and if grid-based ensure they
-					 have consistent number_in_xi and all have value_index set to 0 */
-				number_of_grid_based_components = 0;
-				component = components;
-				for (i = 0; (i < number_of_components) && return_code; i++)
-				{
-					if (*component)
-					{
-						if (ELEMENT_GRID_MAP == (*component)->type)
-						{
-							number_of_grid_based_components++;
-							this_number_in_xi =
-								(*component)->map.element_grid_based.number_in_xi;
-							component_number_of_values = 1;
-							for (j = 0; j < dimension; j++)
-							{
-								if (0 <= this_number_in_xi[j])
-								{
-									component_number_of_values *= (this_number_in_xi[j] + 1);
-									grid_basis_type = FE_BASIS_TYPE_INVALID;
-									FE_basis_get_xi_basis_type((*component)->basis,
-										/*xi_number*/j, &grid_basis_type);
-									if ((0 == this_number_in_xi[j]) && (grid_basis_type != FE_BASIS_CONSTANT))
-									{
-										display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
-											"Grid-map component must have constant basis for 0 cells in xi %d", j+1);
-										return_code = 0;
-									}
-									else if ((0 < this_number_in_xi[j]) && (grid_basis_type != LINEAR_LAGRANGE))
-									{
-										display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
-											"Grid-map component must have linear basis for > 0 cells in xi %d", j+1);
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"define_FE_field_at_element.  "
-										"Grid-map components number of cells in xi %d < 0", j+1);
-									return_code = 0;
-								}
-							}
-							number_of_values += component_number_of_values;
-							/* check value_index is 0 for all components, ie. pointing at
-								 start of values_storage allocated below */
-							if ((*component)->map.element_grid_based.value_index != 0)
-							{
-								display_message(ERROR_MESSAGE,"define_FE_field_at_element.  "
-									"Grid-map components must have 0 value_index");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_FE_field_at_element.  Missing component");
-						return_code = 0;
-					}
-					component++;
-				}
-				/* only FE_VALUE_VALUE and SHORT_VALUE supported by general */
-				if ((number_of_grid_based_components < number_of_components) &&
-					(FE_VALUE_VALUE != field->value_type) &&
-					(SHORT_VALUE != field->value_type))
-				{
-					display_message(ERROR_MESSAGE,"define_FE_field_at_element.  "
-						"%s type only supported for grid-based field components",
-						Value_type_string(field->value_type));
-					return_code = 0;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"define_FE_field_at_element.  Unknown field type");
-				return_code = 0;
-			} break;
-		}
-		if (return_code)
-		{
-			if (NULL != (element_field = CREATE(FE_element_field)(field)))
-			{
-				ACCESS(FE_element_field)(element_field);
-				/* make a copy of the element_field_list to put new element_field in */
-				element_field_list = CREATE_LIST(FE_element_field)();
-				if (COPY_LIST(FE_element_field)(element_field_list,
-					existing_element_field_info->element_field_list))
-				{
-					if (GENERAL_FE_FIELD == field->fe_field_type)
-					{
-						/* put components in element_field for merge */
-						for (i = 0; i < number_of_components; i++)
-						{
-							element_field->components[i] = components[i];
-						}
-						/* use merge_FE_element_field_into_list to add field to element */
-						merge_data.list = element_field_list;
-						merge_data.merge_info = element->information;
-						merge_data.source_info = element->information;
-						if (existing_element_field_info)
-						{
-							merge_data.values_storage_size =
-								element->information->values_storage_size;
-						}
-						else
-						{
-							merge_data.values_storage_size = 0;
-						}
-						old_values_storage_size = merge_data.values_storage_size;
-						if (merge_FE_element_field_into_list(element_field,
-							(void *)&merge_data))
-						{
-							/* allocate and initialise any added values_storage */
-							if (merge_data.values_storage_size > old_values_storage_size)
-							{
-								if (REALLOCATE(values_storage,
-									element->information->values_storage,
-									Value_storage, merge_data.values_storage_size))
-								{
-									element->information->values_storage = values_storage;
-									if (initialise_value_storage_array(
-										values_storage + old_values_storage_size,
-										field->value_type, (struct FE_time_sequence *)NULL,
-										number_of_values))
-									{
-										element->information->values_storage_size =
-											merge_data.values_storage_size;
-									}
-									else
-									{
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"define_FE_field_at_element.  "
-										"Could not reallocate values_storage");
-									return_code = 0;
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"define_FE_field_at_element.  Could not merge element field");
-							return_code = 0;
-						}
-						/* clear the components from element_field since they are owned by
-							 the calling function and do not want them destroyed here */
-						for (i = 0; i < number_of_components; i++)
-						{
-							element_field->components[i] =
-								(struct FE_element_field_component *)NULL;
-						}
-					}
-					else
-					{
-						if (!ADD_OBJECT_TO_LIST(FE_element_field)(element_field,
-							element_field_list))
-						{
-							display_message(ERROR_MESSAGE,
-								"define_FE_field_at_element.  Could not add element field");
-							return_code = 0;
-						}
-					}
-					if (return_code)
-					{
-						if (NULL != (new_element_field_info =
-							fe_mesh->get_FE_element_field_info(element_field_list)))
-						{
-							REACCESS(FE_element_field_info)(&(element->fields),
-								new_element_field_info);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
-								"Could not get element field information");
-							return_code = 0;
-						}
-					}
-					DESTROY_LIST(FE_element_field)(&element_field_list);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
-						"Could not duplicate element_field_list");
-					return_code = 0;
-				}
-				DEACCESS(FE_element_field)(&element_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_FE_field_at_element.  Could not create element_field");
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_FE_field_at_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_FE_field_at_element */
-
-static int FE_element_field_has_element_grid_map(
-	struct FE_element_field *element_field,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1999
-
-DESCRIPTION :
-Returns true if <element_field> components are of type ELEMENT_GRID_MAP.
-Only checks the first component since we assume all subsequent components have
-the same basis and numbers of grid cells in xi.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_has_element_grid_map);
-	USE_PARAMETER(dummy_void);
-	return_code=0;
-	if (element_field&&element_field->field)
-	{
-		if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
-		{
-			if (element_field->components)
-			{
-				if (ELEMENT_GRID_MAP == (*(element_field->components))->type)
-				{
-					return_code=1;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_has_element_grid_map.  Missing components");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_has_element_grid_map.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_has_element_grid_map */
-
-int FE_element_has_grid_based_fields(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns true if any of the fields defined for element is grid-based.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_has_grid_based_fields);
-	return_code = 0;
-	if (element && element->fields)
-	{
-		/* would have to have values_storage to have a grid-based field */
-		if (element->information && element->information->values_storage)
-		{
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				FE_element_field_has_element_grid_map, (void *)NULL,
-				element->fields->element_field_list))
-			{
-				return_code = 1;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_grid_based_fields.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_grid_based_fields */
-
-int FE_element_field_is_standard_node_based(struct FE_element *element,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
-
-DESCRIPTION :
-Returns true if <fe_field> is defined on <element> using a standard node to
-element map for any element. Does not consider inherited fields.
-==============================================================================*/
-{
-	int i, number_of_components, return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **components;
-
-	ENTER(FE_element_field_is_standard_node_based);
-	return_code = 0;
-	if (element && element->fields && fe_field)
-	{
-		/* would have to have values_storage to have a grid-based field */
-		if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			fe_field, element->fields->element_field_list)) &&
-			(number_of_components = get_FE_field_number_of_components(fe_field)) &&
-			(components = element_field->components))
-		{
-			for (i = 0; (!return_code) && (i < number_of_components); i++)
-			{
-				if (components[i] &&
-					(STANDARD_NODE_TO_ELEMENT_MAP == (components[i])->type))
-				{
-					return_code = 1;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_is_standard_node_based.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_is_standard_node_based */
-
-static int FE_element_field_has_FE_field_values(
-	struct FE_element_field *element_field,void *dummy)
-/*******************************************************************************
-LAST MODIFIED: 19 October 1999
-
-DESCRIPTION:
-Returns true if <element_field> has a field with values_storage.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_has_FE_field_values);
-	USE_PARAMETER(dummy);
-	if (element_field&&element_field->field)
-	{
-		return_code=(0<element_field->field->number_of_values);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_has_FE_field_values.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_has_FE_field_values */
-
-int FE_element_has_FE_field_values(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns true if any single field defined at <element> has values stored with
-the field. Returns 0 without error if no field information at element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_has_FE_field_values);
-	return_code=0;
-	if (element && element->fields)
-	{
-		return_code = ((struct FE_element_field *)NULL !=
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				FE_element_field_has_FE_field_values, (void *)NULL,
-				element->fields->element_field_list));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_FE_field_values.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_FE_field_values */
-
-int FE_element_has_values_storage(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 24 October 2002
-
-DESCRIPTION :
-Returns true if <element> has values_storage, eg. for grid-based fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_has_values_storage);
-	if (element)
-	{
-		if (element->information && element->information->values_storage)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_values_storage.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_values_storage */
-
-int for_FE_field_at_element(struct FE_field *field,
-	FE_element_field_iterator_function *iterator, void *user_data,
-	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2003
-
-DESCRIPTION :
-If an <iterator> is supplied and the <field> is defined at the <element> then
-the result of the <iterator> is returned.  Otherwise, if an <iterator> is not
-supplied and the <field> is defined at the <element> then a non-zero is
-returned. Otherwise, zero is returned.
-???DB.  Multiple behaviour dangerous ?
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_iterator_and_data iterator_and_data;
-
-	ENTER(for_FE_field_at_element);
-	return_code = 0;
-	if (field && element && element->fields)
-	{
-		if (NULL != (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element->fields->element_field_list)))
-		{
-			if (iterator)
-			{
-				iterator_and_data.iterator = iterator;
-				iterator_and_data.user_data = user_data;
-				iterator_and_data.element = element;
-				return_code = for_FE_field_at_element_iterator(element_field,
-					&iterator_and_data);
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"for_FE_field_at_element.  Field not defined at element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_FE_field_at_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_FE_field_at_element */
-
-int for_each_FE_field_at_element(FE_element_field_iterator_function *iterator,
-	void *user_data,struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Calls the <iterator> for each field defined at the <element> until the
-<iterator> returns 0 or it runs out of fields.  Returns the result of the last
-<iterator> called.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field_iterator_and_data iterator_and_data;
-
-	ENTER(for_each_FE_field_at_element);
-	if (iterator && element && element->fields)
-	{
-		iterator_and_data.iterator = iterator;
-		iterator_and_data.user_data = user_data;
-		iterator_and_data.element = element;
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			for_FE_field_at_element_iterator, &iterator_and_data,
-			element->fields->element_field_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"for_each_FE_field_at_element.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* for_each_FE_field_at_element */
-
 int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	FE_element_field_iterator_function *iterator,void *user_data,
 	struct FE_element *element)
@@ -24753,16 +15085,15 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	int i, number_of_fields, return_code;
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
-	struct FE_element_field *element_field;
 	struct FE_region *fe_region;
 
 	ENTER(for_each_FE_field_at_element_alphabetical_indexer_priority);
 	return_code = 0;
-	if (iterator && element && element->fields)
+	if (iterator && element && element->getMesh())
 	{
 		// get list of all fields in default alphabetical order
 		field_order_info = CREATE(FE_field_order_info)();
-		fe_region = element->fields->fe_mesh->get_FE_region();
+		fe_region = element->getMesh()->get_FE_region();
 		return_code = FE_region_for_each_FE_field(fe_region,
 			FE_field_add_to_FE_field_order_info, (void *)field_order_info);
 		FE_field_order_info_prioritise_indexer_fields(field_order_info);
@@ -24770,12 +15101,8 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 		for (i = 0; i < number_of_fields; i++)
 		{
 			field = get_FE_field_order_info_field(field_order_info, i);
-			element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-				element->fields->element_field_list);
-			if (element_field)
-			{
+			if (FE_field_is_defined_in_element_not_inherited(field, element))
 				return_code = (iterator)(element, field, user_data);
-			}
 		}
 		DESTROY(FE_field_order_info)(&field_order_info);
 	}
@@ -24798,7 +15125,7 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
 	if (element && multi_range)
 	{
 		return_code = Multi_range_is_value_in_range(multi_range,
-			element->get_identifier());
+			element->getIdentifier());
 	}
 	else
 	{
@@ -24816,7 +15143,7 @@ int FE_element_add_number_to_Multi_range(
 	struct Multi_range *multi_range = (struct Multi_range *)multi_range_void;
 	if (element && multi_range)
 	{
-		const DsLabelIdentifier identifier = element->get_identifier();
+		const DsLabelIdentifier identifier = element->getIdentifier();
 		return_code = Multi_range_add_range(multi_range, identifier, identifier);
 	}
 	else
@@ -24828,1288 +15155,19 @@ int FE_element_add_number_to_Multi_range(
 	return (return_code);
 }
 
-static int FE_element_field_add_FE_field_to_list(
-	struct FE_element_field *element_field, void *fe_field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-FE_element_field iterator which adds its FE_field to the LIST pointed to by
-<fe_field_list_void>.
-==============================================================================*/
+bool FE_element_is_top_level_parent_of_element(
+	struct FE_element *element, struct FE_element *other_element)
 {
-	int return_code;
-
-	ENTER(FE_element_field_add_FE_field_to_list);
-	/*???RC try to make this as inexpensive as possible */
-	if (element_field)
+	if (element && element->getMesh() && other_element && other_element->getMesh())
 	{
-		/* the field is not expected to be in the list already */
-		return_code = ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
-			(struct LIST(FE_field) *)fe_field_list_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_add_FE_field_to_list.  Missing element_field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_add_FE_field_to_list */
-
-/**
- * Data for passing to function
- * FE_element_field_FE_field_to_list_if_uses_scale_factor_set
- */
-struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data
-{
-	struct LIST(FE_field) *fe_field_list;
-	cmzn_mesh_scale_factor_set *scale_factor_set;
-};
-
-/**
- * FE_element_field iterator which ensures its FE_field is in <fe_field_list> if
- * it uses the <scale_factor_set_identifier>. In practise, the identifier has to
- * point to an FE_basis. <scale_factor_set_data_void> points at a struct
- * FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data.
- */
-static int FE_element_field_FE_field_to_list_if_uses_scale_factor_set(
-	struct FE_element_field *element_field, void *scale_factor_set_data_void)
-{
-	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *scale_factor_set_data =
-		reinterpret_cast<struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *>(scale_factor_set_data_void);
-	if (element_field && element_field->field && scale_factor_set_data)
-	{
-		if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
-		{
-			if (!IS_OBJECT_IN_LIST(FE_field)(element_field->field,
-				scale_factor_set_data->fe_field_list))
-			{
-				const int number_of_components = element_field->field->number_of_components;
-				for (int i = 0; i < number_of_components; ++i)
-				{
-					if (element_field->components[i]->get_scale_factor_set() ==
-						scale_factor_set_data->scale_factor_set)
-					{
-						ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
-							scale_factor_set_data->fe_field_list);
-						break;
-					}
-				}
-			}
-		}
-		return 1;
-	}
-	return 0;
-}
-
-int merge_FE_element(struct FE_element *destination, struct FE_element *source,
-	struct LIST(FE_field) *changed_fe_field_list)
-{
-	int return_code, values_storage_size;
-	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data scale_factor_set_data;
-	struct FE_element_field_info *destination_fields, *element_field_info,
-		*source_fields;
-	struct FE_element_field_lists_merge_data merge_data;
-	FE_mesh *fe_mesh;
-	struct LIST(FE_element_field) *element_field_list;
-	Value_storage *values_storage;
-
-	ENTER(merge_FE_element);
-	if (destination && (destination_fields = destination->fields) &&
-		(fe_mesh = destination_fields->fe_mesh) &&
-		source && (source_fields = source->fields) &&
-		(source_fields->fe_mesh == fe_mesh) && changed_fe_field_list)
-	{
-		return_code = 1;
-		/* changed_fe_field_list should start with all the fields in <source> */
-		REMOVE_ALL_OBJECTS_FROM_LIST(FE_field)(changed_fe_field_list);
-		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_add_FE_field_to_list, (void *)changed_fe_field_list,
-			source_fields->element_field_list);
-
-		/* make a merged element node scale field info without values_storage */
-		FE_element_node_scale_field_info *node_scale_field_info = 0;
-		FE_element_node_scale_field_info *destination_info = destination->information;
-		FE_element_node_scale_field_info *source_info = source->information;
-		if (return_code)
-		{
-			if (destination_info)
-			{
-				if (source_info)
-				{
-					std::vector<cmzn_mesh_scale_factor_set*> changedExistingScaleFactorSets;
-					node_scale_field_info = FE_element_node_scale_field_info::createMergeWithoutValuesStorage(
-						*destination_info, *source_info, changedExistingScaleFactorSets);
-					if (node_scale_field_info)
-					{
-						size_t number_of_changed_existing_scale_factor_sets = changedExistingScaleFactorSets.size();
-						if (number_of_changed_existing_scale_factor_sets)
-						{
-							// determine which fields are affected by changed scale factor sets
-							scale_factor_set_data.fe_field_list = changed_fe_field_list;
-							for (size_t i = 0; i < number_of_changed_existing_scale_factor_sets; i++)
-							{
-								scale_factor_set_data.scale_factor_set = changedExistingScaleFactorSets[i];
-								if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-									FE_element_field_FE_field_to_list_if_uses_scale_factor_set,
-									(void *)&scale_factor_set_data,
-									destination_fields->element_field_list))
-								{
-									display_message(ERROR_MESSAGE, "merge_FE_element.  Could not "
-										"determine fields affected by changed scale factor set");
-									return_code = 0;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					node_scale_field_info = destination_info->cloneWithoutValuesStorage();
-				}
-			}
-			else if (source_info)
-			{
-				node_scale_field_info = source_info->cloneWithoutValuesStorage();
-			}
-			if ((destination_info || source_info) && (!node_scale_field_info))
-			{
-				display_message(ERROR_MESSAGE,
-					"merge_FE_element.  Could not create node scale field info");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			// create element field list containing fields in destination
-			// these are replaced for new fields from source
-			element_field_list = CREATE_LIST(FE_element_field)();
-			if (COPY_LIST(FE_element_field)(element_field_list,
-				destination_fields->element_field_list))
-			{
-				/* merge in the fields from source, putting any new fields using
-					 values_storage after that for fields in destination */
-				merge_data.list = element_field_list;
-				merge_data.merge_info = node_scale_field_info;
-				merge_data.source_info = source_info;
-				if (destination_info)
-				{
-					merge_data.values_storage_size = destination_info->values_storage_size;
-				}
-				else
-				{
-					merge_data.values_storage_size = 0;
-				}
-				if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-					merge_FE_element_field_into_list, (void *)(&merge_data),
-					source_fields->element_field_list))
-				{
-					values_storage_size = merge_data.values_storage_size;
-					values_storage = (Value_storage *)NULL;
-					if ((0 == values_storage_size) ||
-						(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
-						copy_FE_element_values_storage(destination, values_storage,
-							element_field_list, source)))
-					{
-						/* create an element field info for the combined list */
-						if (NULL != (element_field_info =
-							fe_mesh->get_FE_element_field_info(element_field_list)))
-						{
-							/* put values storage in node_scale_field_info */
-							if (node_scale_field_info)
-							{
-								node_scale_field_info->values_storage_size =
-									values_storage_size;
-								node_scale_field_info->values_storage = values_storage;
-							}
-							/* clean up old destination information */
-							if (destination_info)
-							{
-								FE_element_node_scale_field_info::destroyDynamic(destination_info, destination_fields);
-							}
-							/* insert new fields and information */
-							REACCESS(FE_element_field_info)(&(destination->fields),
-								element_field_info);
-							destination->information = node_scale_field_info;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"merge_FE_element.  Could not get element field info");
-							/* do not bother to clean up dynamic contents of values_storage */
-							DEALLOCATE(values_storage);
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_FE_element.  Could not copy values_storage");
-						/* cannot clean up dynamic contents of values_storage */
-						DEALLOCATE(values_storage);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"merge_FE_element.  Error merging element field list");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"merge_FE_element.  Could not copy element field list");
-				return_code = 0;
-			}
-			DESTROY(LIST(FE_element_field))(&element_field_list);
-		}
-		if (!return_code && node_scale_field_info)
-		{
-			FE_element_node_scale_field_info::destroy(node_scale_field_info);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "merge_FE_element.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* merge_FE_element */
-
-int list_FE_element(struct FE_element *element)
-{
-	char line[93];
-	FE_value *scale_factor;
-	int i,return_code;
-
-	if (element && element->fields)
-	{
-		FE_mesh *fe_mesh = element->fields->fe_mesh;
-		return_code=1;
-		/* write the identifier */
-		display_message(INFORMATION_MESSAGE,"element : %d \n",element->get_identifier());
-		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
-		display_message(INFORMATION_MESSAGE,"  dimension=%d\n", fe_mesh->getDimension());
-		const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(element->index);
-		if (!elementShapeFaces)
-		{
-			display_message(ERROR_MESSAGE, "list_FE_element.  Missing ElementShapeFaces");
-			return_code = 0;
-		}
-		else
-		{
-			char *shape_description = FE_element_shape_get_EX_description(elementShapeFaces->getShape());
-			if (shape_description)
-			{
-				display_message(INFORMATION_MESSAGE, "  shape=%s\n", shape_description);
-				DEALLOCATE(shape_description);
-			}
-			/* write the faces */
-			const int faceCount = elementShapeFaces->getFaceCount();
-			if (0 < faceCount)
-			{
-				display_message(INFORMATION_MESSAGE, "  Faces=%d:\n", faceCount);
-				FE_mesh *faceMesh = fe_mesh->getFaceMesh();
-				const DsLabelIndex *faces = elementShapeFaces->getElementFaces(element->index);
-				if (faces && faceMesh)
-				{
-					for (int i = 0; i < faceCount; ++i)
-					{
-						if (faces[i] >= 0)
-							display_message(INFORMATION_MESSAGE, " %d", faceMesh->getElementIdentifier(faces[i]));
-						else
-							display_message(INFORMATION_MESSAGE, " -");
-					}
-					display_message(INFORMATION_MESSAGE, "\n");
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE, " No faces set\n");
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, "  No faces\n");
-			}
-			/* write the parents */
-			FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-			const DsLabelIndex *parents;
-			int parentsCount;
-			if ((parentMesh) && (parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents)))
-			{
-				display_message(INFORMATION_MESSAGE, "  Parents:\n");
-				for (int p = 0; p < parentsCount; ++p)
-					display_message(INFORMATION_MESSAGE, " %d", parentMesh->getElementIdentifier(parents[p]));
-				display_message(INFORMATION_MESSAGE, "\n");
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,"  No parents\n");
-			}
-			if (element->fields)
-			{
-				if (0 < NUMBER_IN_LIST(FE_element_field)(
-					element->fields->element_field_list))
-				{
-					display_message(INFORMATION_MESSAGE,"  Field information\n");
-					for_each_FE_field_at_element_alphabetical_indexer_priority(
-						list_FE_element_field, (void *)NULL, element);
-					if (element->information)
-					{
-						if ((scale_factor = element->information->scale_factors)&&
-							(i=element->information->number_of_scale_factors))
-						{
-							display_message(INFORMATION_MESSAGE,"  #Scale factors=%d\n",i);
-							strcpy(line,"    ");
-							while (i>0)
-							{
-								sprintf(line+strlen(line),"%13g ",*scale_factor);
-								if ((1==i) || (strlen(line)>=70))
-								{
-									strcat(line,"\n");
-									display_message(INFORMATION_MESSAGE,line);
-									strcpy(line,"    ");
-								}
-								i--;
-								scale_factor++;
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"list_FE_element.  Missing field info");
-				return_code = 0;
-			}
-			/* write the nodes */
-			if ((element->information) && (element->information->nodes) && (0 < element->information->number_of_nodes))
-			{
-				display_message(INFORMATION_MESSAGE,"  nodes\n   ");
-				for (i = 0; i < element->information->number_of_nodes; i++)
-				{
-					if (element->information->nodes[i])
-					{
-						display_message(INFORMATION_MESSAGE," %d",element->information->nodes[i]->cm_node_identifier);
-					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE," -");
-					}
-				}
-				display_message(INFORMATION_MESSAGE, "\n");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"list_FE_element.  Invalid argument");
-		return_code=0;
-	}
-	return (return_code);
-}
-
-enum Modify_theta_in_xi1_mode
-{
-	MODIFY_THETA_CLOSEST_IN_XI1,
-	MODIFY_THETA_DECREASING_IN_XI1,
-	MODIFY_THETA_INCREASING_IN_XI1,
-	MODIFY_THETA_NON_DECREASING_IN_XI1,
-	MODIFY_THETA_NON_INCREASING_IN_XI1
-};
-
-static int modify_theta_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values, enum Modify_theta_in_xi1_mode mode)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-==============================================================================*/
-{
-	char all_on_axis;
-	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
-		value_xi1,value_xi2,value_xi3;
-	const int *basis_type;
-	int i,j,k,return_code,xi2_basis_type;
-	struct FE_element_field *element_field;
-	struct FE_node **node;
-	struct Standard_node_to_element_map **node_to_element_map,
-		**node_to_element_map_2;
-
-	ENTER(modify_theta_in_xi1);
-	int basis_dimension = 0;
-	if (component&&(STANDARD_NODE_TO_ELEMENT_MAP==component->type)&&
-		(node_to_element_map=(component->map).standard_node_based.
-		node_to_element_maps)&&(component->basis)&&
-		(basis_type = FE_basis_get_basis_type(component->basis)) &&
-		(basis_dimension = *basis_type) &&
-		((1 == basis_dimension) ||
-		((2 == basis_dimension) && (NO_RELATION==basis_type[2]))||
-		((3 == basis_dimension) && (NO_RELATION==basis_type[2])&&
-		(NO_RELATION==basis_type[3])&&(NO_RELATION==basis_type[5])))&&
-		element&&field&&(0<number_of_values)&&values)
-	{
-		coordinate_system_type=get_coordinate_system_type(
-			get_FE_field_coordinate_system(field));
-		if ((3==get_FE_field_number_of_components(field))&&
-			((CYLINDRICAL_POLAR==coordinate_system_type)||
-			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)||
-			(SPHERICAL_POLAR==coordinate_system_type)))
-		{
-			struct FE_element_field_component *axis_component = 0;
-			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				field,element->fields->element_field_list);
-			if (element_field)
-			{
-				switch (coordinate_system_type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[0];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case OBLATE_SPHEROIDAL:
-					case PROLATE_SPHEROIDAL:
-					{
-						if (component==(element_field->components)[2])
-						{
-							axis_component=(element_field->components)[1];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					case SPHERICAL_POLAR:
-					{
-						if (component==(element_field->components)[1])
-						{
-							axis_component=(element_field->components)[2];
-						}
-						else
-						{
-							element_field=(struct FE_element_field *)NULL;
-						}
-					} break;
-					default:
-					{
-						// do nothing; no valid element_field
-					} break;
-				}
-			}
-			if (element_field)
-			{
-				int number_of_nodes_in_xi1 = 0;
-				int number_of_nodes_in_xi2 = 0;
-				int number_of_nodes_in_xi3 = 0;
-				/* determine the number of nodes in the xi1 direction */
-				switch (basis_type[1])
-				{
-					case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-						case HERMITE_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=2;
-					} break;
-					case QUADRATIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=3;
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						number_of_nodes_in_xi1=4;
-					} break;
-				}
-				/* determine the number of nodes in the xi2 direction */
-				if (1 == basis_dimension)
-				{
-					number_of_nodes_in_xi2=1;
-				}
-				else
-				{
-					if (2 == basis_dimension)
-					{
-						xi2_basis_type=basis_type[3];
-					}
-					else
-					{
-						xi2_basis_type=basis_type[4];
-					}
-					switch (xi2_basis_type)
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi2=4;
-						} break;
-					}
-				}
-				/* determine the number of nodes in the xi3 direction */
-				if (3 == basis_dimension)
-				{
-					switch (basis_type[6])
-					{
-						case LINEAR_LAGRANGE: case CUBIC_HERMITE: case LAGRANGE_HERMITE:
-							case HERMITE_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=2;
-						} break;
-						case QUADRATIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=3;
-						} break;
-						case CUBIC_LAGRANGE:
-						{
-							number_of_nodes_in_xi3=4;
-						} break;
-					}
-				}
-				else
-				{
-					number_of_nodes_in_xi3=1;
-				}
-				/* check for nodes on the z axis */
-				node=element->information->nodes;
-				/* xi2=0 face */
-				if (1<number_of_nodes_in_xi2)
-				{
-					all_on_axis=1;
-				}
-				else
-				{
-					all_on_axis=0;
-				}
-				node_to_element_map=(axis_component->map).standard_node_based.
-					node_to_element_maps;
-				k=number_of_nodes_in_xi3;
-				while (all_on_axis&&(k>0))
-				{
-					i=number_of_nodes_in_xi1;
-					while (all_on_axis&&(i>0))
-					{
-						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-							field,time,coordinate_system_type);
-						node_to_element_map++;
-						i--;
-					}
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k--;
-				}
-				if (all_on_axis)
-				{
-					element_value=values;
-					node_to_element_map=(component->map).standard_node_based.
-						node_to_element_maps;
-					element_value_2=values;
-					node_to_element_map_2=node_to_element_map;
-					for (i=number_of_nodes_in_xi1;i>0;i--)
-					{
-						element_value_2 += (*node_to_element_map_2)->number_of_nodal_values;
-						node_to_element_map_2++;
-					}
-					for (k=number_of_nodes_in_xi3;k>0;k--)
-					{
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							*element_value= *element_value_2;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							node_to_element_map++;
-							element_value_2 +=
-								(*node_to_element_map_2)->number_of_nodal_values;
-							node_to_element_map_2++;
-						}
-						if (k>1)
-						{
-							for (j=number_of_nodes_in_xi2;j>1;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					/* xi2=1 face */
-					if (1<number_of_nodes_in_xi2)
-					{
-						all_on_axis=1;
-					}
-					else
-					{
-						all_on_axis=0;
-					}
-					node_to_element_map=(axis_component->map).standard_node_based.
-						node_to_element_maps;
-					node_to_element_map +=
-						(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-					k=number_of_nodes_in_xi3;
-					while (all_on_axis&&(k>0))
-					{
-						i=number_of_nodes_in_xi1;
-						while (all_on_axis&&(i>0))
-						{
-							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
-								field,time,coordinate_system_type);
-							node_to_element_map++;
-							i--;
-						}
-						node_to_element_map +=
-							(number_of_nodes_in_xi2-1)*number_of_nodes_in_xi1;
-						k--;
-					}
-					if (all_on_axis)
-					{
-						element_value=values;
-						node_to_element_map=(component->map).standard_node_based.
-							node_to_element_maps;
-						for (j=number_of_nodes_in_xi2;j>1;j--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-							}
-						}
-						element_value_2=element_value;
-						node_to_element_map_2=node_to_element_map;
-						for (i=number_of_nodes_in_xi1;i>0;i--)
-						{
-							node_to_element_map_2--;
-							element_value_2 -=
-								(*node_to_element_map_2)->number_of_nodal_values;
-						}
-						for (k=number_of_nodes_in_xi3;k>0;k--)
-						{
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								*element_value= *element_value_2;
-								element_value += (*node_to_element_map)->number_of_nodal_values;
-								node_to_element_map++;
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							if (k>1)
-							{
-								for (j=number_of_nodes_in_xi2;j>1;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										element_value +=
-											(*node_to_element_map)->number_of_nodal_values;
-										node_to_element_map++;
-										element_value_2 += (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2++;
-									}
-								}
-							}
-						}
-					}
-					else
-					{
-						/* xi3=0 face */
-						if (1<number_of_nodes_in_xi3)
-						{
-							all_on_axis=1;
-						}
-						else
-						{
-							all_on_axis=0;
-						}
-						node_to_element_map=(axis_component->map).standard_node_based.
-							node_to_element_maps;
-						j=number_of_nodes_in_xi2;
-						while (all_on_axis&&(j>0))
-						{
-							i=number_of_nodes_in_xi1;
-							while (all_on_axis&&(i>0))
-							{
-								all_on_axis=node_on_axis(node[(*node_to_element_map)->
-									node_index],field,time,coordinate_system_type);
-								node_to_element_map++;
-								i--;
-							}
-							j--;
-						}
-						if (all_on_axis)
-						{
-							element_value=values;
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							element_value_2=values;
-							node_to_element_map_2=node_to_element_map;
-							for (i=number_of_nodes_in_xi1;i>0;i--)
-							{
-								element_value_2 += (*node_to_element_map_2)->
-									number_of_nodal_values;
-								node_to_element_map_2++;
-							}
-							for (j=number_of_nodes_in_xi2;j>0;j--)
-							{
-								for (i=number_of_nodes_in_xi1;i>0;i--)
-								{
-									*element_value= *element_value_2;
-									element_value +=
-										(*node_to_element_map)->number_of_nodal_values;
-									node_to_element_map++;
-									element_value_2 += (*node_to_element_map_2)->
-										number_of_nodal_values;
-									node_to_element_map_2++;
-								}
-							}
-						}
-						else
-						{
-							/* xi3=1 face */
-							if (1<number_of_nodes_in_xi3)
-							{
-								all_on_axis=1;
-							}
-							else
-							{
-								all_on_axis=0;
-							}
-							node_to_element_map=(component->map).standard_node_based.
-								node_to_element_maps;
-							node_to_element_map += (number_of_nodes_in_xi3-1)*
-								number_of_nodes_in_xi2*number_of_nodes_in_xi1;
-							j=number_of_nodes_in_xi2;
-							while (all_on_axis&&(j>0))
-							{
-								i=number_of_nodes_in_xi1;
-								while (all_on_axis&&(i>0))
-								{
-									all_on_axis=node_on_axis(node[(*node_to_element_map)->
-										node_index],field,time,coordinate_system_type);
-									node_to_element_map++;
-									i--;
-								}
-								j--;
-							}
-							if (all_on_axis)
-							{
-								element_value=values;
-								node_to_element_map=(component->map).standard_node_based.
-									node_to_element_maps;
-								for (k=number_of_nodes_in_xi3;k>1;k--)
-								{
-									for (j=number_of_nodes_in_xi2;j>0;j--)
-									{
-										for (i=number_of_nodes_in_xi1;i>0;i--)
-										{
-											element_value +=
-												(*node_to_element_map)->number_of_nodal_values;
-											node_to_element_map++;
-										}
-									}
-								}
-								element_value_2=element_value;
-								node_to_element_map_2=node_to_element_map;
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										node_to_element_map_2--;
-										element_value_2 -= (*node_to_element_map_2)->
-											number_of_nodal_values;
-									}
-								}
-								for (j=number_of_nodes_in_xi2;j>0;j--)
-								{
-									for (i=number_of_nodes_in_xi1;i>0;i--)
-									{
-										*element_value= *element_value_2;
-										element_value += (*node_to_element_map)->
-											number_of_nodal_values;
-										node_to_element_map++;
-										element_value_2 += (*node_to_element_map_2)->
-											number_of_nodal_values;
-										node_to_element_map_2++;
-									}
-								}
-							}
-						}
-					}
-				}
-				element_value=values;
-				node_to_element_map=(component->map).standard_node_based.
-					node_to_element_maps;
-				offset_xi1_xi2=0;
-				offset_xi2_xi3=0;
-				/* apply condition on xi1 and make sure smooth in xi2 & xi3 */
-				for (k=number_of_nodes_in_xi3;k>0;k--)
-				{
-					value_xi3= *element_value;
-					for (j=number_of_nodes_in_xi2;j>0;j--)
-					{
-						value_xi2= *element_value;
-						for (i=number_of_nodes_in_xi1;i>1;i--)
-						{
-							value_xi1= *element_value;
-							element_value += (*node_to_element_map)->number_of_nodal_values;
-							*element_value += offset_xi1_xi2+offset_xi2_xi3;
-							/*???DB.  <= needed for single prolate, but seems to cause
-								problems for heart */
-							switch (mode)
-							{
-								case MODIFY_THETA_CLOSEST_IN_XI1:
-								{
-									if (value_xi1 < (*element_value - PI))
-									{
-										*element_value -= 2*PI;
-									}
-									else if (value_xi1 > (*element_value + PI))
-									{
-										*element_value += 2*PI;
-									}
-								} break;
-								case MODIFY_THETA_DECREASING_IN_XI1:
-								{
-									if (value_xi1 <= *element_value)
-									{
-										*element_value -= 2*PI;
-									}
-								} break;
-								case MODIFY_THETA_INCREASING_IN_XI1:
-								{
-									if (value_xi1 >= *element_value)
-									{
-										*element_value += 2*PI;
-									}
-								} break;
-								case MODIFY_THETA_NON_DECREASING_IN_XI1:
-								{
-									if (value_xi1 > *element_value)
-									{
-										*element_value += 2*PI;
-									}
-								} break;
-								case MODIFY_THETA_NON_INCREASING_IN_XI1:
-								{
-									if (value_xi1 < *element_value)
-									{
-										*element_value -= 2*PI;
-									}
-								} break;
-							}
-							node_to_element_map++;
-						}
-						element_value += (*node_to_element_map)->number_of_nodal_values;
-						node_to_element_map++;
-						if (j>1)
-						{
-							value_xi1= *element_value;
-							if (value_xi1>value_xi2+PI)
-							{
-								offset_xi1_xi2= -2*PI;
-								*element_value += offset_xi1_xi2;
-							}
-							else
-							{
-								if (value_xi1<value_xi2-PI)
-								{
-									offset_xi1_xi2=2*PI;
-									*element_value += offset_xi1_xi2;
-								}
-								else
-								{
-									offset_xi1_xi2=0;
-								}
-							}
-						}
-					}
-					if (k>1)
-					{
-						offset_xi1_xi2=0;
-						value_xi2= *element_value;
-						if (value_xi2>value_xi3+PI)
-						{
-							offset_xi2_xi3= -2*PI;
-							*element_value += offset_xi2_xi3;
-						}
-						else
-						{
-							if (value_xi2<value_xi3-PI)
-							{
-								offset_xi2_xi3=2*PI;
-								*element_value += offset_xi2_xi3;
-							}
-							else
-							{
-								offset_xi2_xi3=0;
-							}
-						}
-					}
-				}
-			}
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"modify_theta_in_xi1.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* modify_theta_in_xi1 */
-
-int theta_closest_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_CLOSEST_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(theta_closest_in_xi1);
-	return_code = modify_theta_in_xi1(component, element, field, time,
-		number_of_values, values, MODIFY_THETA_CLOSEST_IN_XI1);
-	LEAVE;
-
-	return (return_code);
-} /* theta_closest_in_xi1 */
-
-int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_DECREASING_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(theta_decreasing_in_xi1);
-	return_code = modify_theta_in_xi1(component, element, field, time,
-		number_of_values, values, MODIFY_THETA_DECREASING_IN_XI1);
-	LEAVE;
-
-	return (return_code);
-} /* theta_decreasing_in_xi1 */
-
-int theta_increasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_INCREASING_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(theta_increasing_in_xi1);
-	return_code = modify_theta_in_xi1(component, element, field, time,
-		number_of_values, values, MODIFY_THETA_INCREASING_IN_XI1);
-	LEAVE;
-
-	return (return_code);
-} /* theta_increasing_in_xi1 */
-
-int theta_non_decreasing_in_xi1(
-	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,FE_value time,int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_NON_DECREASING_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(theta_non_decreasing_in_xi1);
-	return_code = modify_theta_in_xi1(component, element, field, time,
-		number_of_values, values, MODIFY_THETA_NON_DECREASING_IN_XI1);
-	LEAVE;
-
-	return (return_code);
-} /* theta_non_decreasing_in_xi1 */
-
-int theta_non_increasing_in_xi1(
-	struct FE_element_field_component *component,struct FE_element *element,
-	struct FE_field *field,FE_value time,int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 February 2002
-
-DESCRIPTION :
-Calls modify_theta_in_xi1 with mode MODIFY_THETA_NON_INCREASING_IN_XI1.
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(theta_non_increasing_in_xi1);
-	return_code = modify_theta_in_xi1(component, element, field, time,
-		number_of_values, values, MODIFY_THETA_NON_INCREASING_IN_XI1);
-	LEAVE;
-
-	return (return_code);
-} /* theta_non_increasing_in_xi1 */
-
-int calculate_FE_field(struct FE_field *field,int component_number,
-	struct FE_node *node,struct FE_element *element,FE_value *xi_coordinates,
-	FE_value time, FE_value *value)
-/*******************************************************************************
-LAST MODIFIED : 11 May 2003
-
-DESCRIPTION :
-Calculates the <value> of the <field> for the specified <node> or <element> and
-<xi_coordinates>.  If 0<=component_number<=number_of_components, then only the
-specified component is calculated, otherwise all components are calculated.  The
-storage for the <value> should have been allocated outside the function.
-???DB.  Picks up the first version for the node.
-==============================================================================*/
-{
-	int return_code = 1;
-
-	ENTER(calculate_FE_field);
-	if (field&&((node&&!element&&!xi_coordinates)||
-		(!node&&element&&xi_coordinates))&&value)
-	{
-		if (node)
-		{
-			/* calculate field for node */
-			if (field->value_type == FE_VALUE_VALUE)
-			{
-				int components_to_calculate, first_comp, i;
-
-				first_comp = 0;
-				components_to_calculate = field->number_of_components;
-				if ((0 <= component_number) && (component_number < components_to_calculate))
-				{
-					first_comp = component_number;
-					components_to_calculate = 1;
-				}
-				for (i = 0; i < components_to_calculate; i++)
-				{
-					if (!get_FE_nodal_FE_value_value(node, field, first_comp + i,
-						/*version*/0, FE_NODAL_VALUE, time, value + i))
-					{
-						display_message(ERROR_MESSAGE,
-							"calculate_FE_field.  Field or component not defined for node");
-						break;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-						"calculate_FE_field. field->value_type must be FE_VALUE_VALUE ");
-					return_code=0;
-			}
-		}
-		else
-		{
-			struct FE_element_field_values *element_field_values;
-
-			/* calculate field for element */
-			/* determine if the field is defined over the element */
-			element_field_values=CREATE(FE_element_field_values)();
-			if (calculate_FE_element_field_values(element,field,
-				time,/*calculate_derivatives*/0,element_field_values,
-				/*top_level_element*/(struct FE_element *)NULL))
-			{
-				/* calculate the value for the element field */
-				return_code=calculate_FE_element_field(component_number,
-					element_field_values,xi_coordinates,value,(FE_value *)NULL);
-				clear_FE_element_field_values(element_field_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_FE_field.  Field not defined for element");
-				return_code=0;
-			}
-			DESTROY(FE_element_field_values)(&element_field_values);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"calculate_FE_field.  Invalid argument(s)\n"
-			"field %p, node %p, element %p, xi_coordinates %p, value %p",field,node,
-			element,xi_coordinates,value);
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* calculate_FE_field */
-
-struct FE_field *find_first_time_field_at_FE_node(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1999
-
-Find the first time based field at a node
-==============================================================================*/
-{
-	struct FE_field *time_field;
-	struct FE_node_field *time_node_field;
-	ENTER(find_first_time_field_at_FE_node);
-	time_field = (struct FE_field *)NULL;
-	time_node_field = (struct FE_node_field *)NULL;
-	if (node)
-	{
-		if (NULL != (time_node_field=FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-			FE_node_field_has_time,(void *)(NULL),
-			node->fields->node_field_list)))
-		{
-			time_field = time_node_field->field;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"find_first_time_field_at_FE_node."
-				" Failed to find time_field in node");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"find_first_time_field_at_FE_node."
-				" Invalid arguments");
-	}
-	LEAVE;
-	return (time_field);
-} /* find_first_time_field_at_FE_node */
-
-struct FE_element_field_info *FE_element_get_FE_element_field_info(
-	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns the FE_element_field_info from <element>. Must not be modified!
-==============================================================================*/
-{
-	struct FE_element_field_info *fe_element_field_info;
-
-	ENTER(FE_element_get_FE_element_field_info);
-	if (element)
-	{
-		fe_element_field_info = element->fields;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_FE_element_field_info.  Invalid argument(s)");
-		fe_element_field_info = (struct FE_element_field_info *)NULL;
-	}
-	LEAVE;
-
-	return (fe_element_field_info);
-} /* FE_element_get_FE_element_field_info */
-
-int FE_element_set_FE_element_field_info(struct FE_element *element,
-	struct FE_element_field_info *fe_element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Changes the FE_element_field_info at <element> to <fe_element_field_info>.
-Note it is very important that the old and the new FE_element_field_info
-structures describe the same data layout in the element information!
-Private function only to be called by FE_region when merging FE_regions!
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_set_FE_element_field_info);
-	if (element && fe_element_field_info)
-	{
-		return_code = REACCESS(FE_element_field_info)(&(element->fields),
-			fe_element_field_info);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_set_FE_element_field_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_set_FE_element_field_info */
-
-FE_mesh *FE_element_get_FE_mesh(struct FE_element *element)
-{
-	if (element && element->fields)
-	{
-		return element->fields->fe_mesh;
-	}
-	return 0;
-}
-
-struct FE_region *FE_element_get_FE_region(struct FE_element *element)
-{
-	if (element && element->fields)
-	{
-		return element->fields->fe_mesh->get_FE_region();
-	}
-	return 0;
-}
-
-int FE_element_is_top_level_parent_of_element(
-	struct FE_element *element, void *other_element_void)
-{
-	FE_element *other_element = static_cast<FE_element*>(other_element_void);
-	if (element && (element->fields) && other_element && (other_element->fields))
-	{
-		if ((element->fields->fe_mesh->getElementParentsCount(element->index) == 0) &&
-				(element->fields->fe_mesh->isElementAncestor(element->index,
-					other_element->fields->fe_mesh, other_element->index)))
-			return 1;
+		if ((element->getMesh()->getElementParentsCount(element->getIndex()) == 0)
+			&& (element->getMesh()->isElementAncestor(element->getIndex(),
+				other_element->getMesh(), other_element->getIndex())))
+			return true;
 	}
 	else
 		display_message(ERROR_MESSAGE, "FE_element_is_top_level_parent_of_element.  Invalid argument(s)");
-	return 0;
+	return false;
 }
 
 struct FE_element *FE_element_get_top_level_element_conversion(
@@ -26117,12 +15175,12 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 	cmzn_element_face_type specified_face, FE_value *element_to_top_level)
 {
 	struct FE_element *top_level_element;
-	if (element && element->fields && element_to_top_level)
+	if (element && element->getMesh() && element_to_top_level)
 	{
-		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		FE_mesh *parentMesh = element->getMesh()->getParentMesh();
 		const DsLabelIndex *parents;
 		int parentsCount;
-		if ((!parentMesh) || (0 == (parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents))))
+		if ((!parentMesh) || (0 == (parentsCount = element->getMesh()->getElementParents(element->getIndex(), parents))))
 		{
 			/* no parents */
 			top_level_element = element;
@@ -26130,10 +15188,10 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 		else
 		{
 			DsLabelIndex parentIndex = DS_LABEL_INDEX_INVALID;
-			if (check_top_level_element && check_top_level_element->fields)
+			if (check_top_level_element)
 			{
-				FE_mesh *topLevelMesh = check_top_level_element->fields->fe_mesh;
-				const DsLabelIndex checkTopLevelElementIndex = check_top_level_element->index;
+				FE_mesh *topLevelMesh = check_top_level_element->getMesh();
+				const DsLabelIndex checkTopLevelElementIndex = check_top_level_element->getIndex();
 				for (int p = 0; p < parentsCount; ++p)
 				{
 					if (((parentMesh == topLevelMesh) && (parents[p] == checkTopLevelElementIndex)) ||
@@ -26145,7 +15203,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 				}
 			}
 			if ((parentIndex < 0) && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= specified_face))
-				parentIndex = element->fields->fe_mesh->getElementParentOnFace(element->index, specified_face);
+				parentIndex = element->getMesh()->getElementParentOnFace(element->getIndex(), specified_face);
 			if (parentIndex < 0)
 				parentIndex = parents[0];
 			FE_element *parent = parentMesh->getElement(parentIndex);
@@ -26153,7 +15211,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			int face_number;
 			FE_element_shape *parent_shape = parentMesh->getElementShape(parentIndex);
 			if ((parent_shape) && (parent_shape->face_to_element) &&
-				(0 <= (face_number = parentMesh->getElementFaceNumber(parentIndex, element->index))) &&
+				(0 <= (face_number = parentMesh->getElementFaceNumber(parentIndex, element->getIndex()))) &&
 				(top_level_element = FE_element_get_top_level_element_conversion(
 					parent, check_top_level_element, specified_face, element_to_top_level)))
 			{
@@ -26252,11 +15310,11 @@ is checked and the <top_level_xi> calculated.
 	int i,j,k,return_code;
 
 	ENTER(FE_element_get_top_level_element_and_xi);
-	if (element && element->fields && xi && top_level_element && top_level_xi &&
+	if (element && element->getMesh() && xi && top_level_element && top_level_xi &&
 		top_level_element_dimension)
 	{
 		return_code = 1;
-		if (element->fields->fe_mesh->getElementParentsCount(element->index) == 0)
+		if (element->getMesh()->getElementParentsCount(element->getIndex()) == 0)
 		{
 			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
@@ -26315,7 +15373,7 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 	if (element&&number_in_xi&&top_level_element&&top_level_number_in_xi)
 	{
 		return_code=1;
-		dimension=get_FE_element_dimension(element);
+		dimension = element->getDimension();
 		if (top_level_element==element)
 		{
 			for (i=0;i<dimension;i++)
@@ -26325,7 +15383,7 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 		}
 		else if (element_to_top_level)
 		{
-			top_level_dimension=get_FE_element_dimension(top_level_element);
+			top_level_dimension = top_level_element->getDimension();
 			/* use largest number_in_xi of any linked xi directions */
 			for (i=0;(i<dimension)&&return_code;i++)
 			{
@@ -26390,22 +15448,25 @@ int get_FE_element_discretization(struct FE_element *element,
 		{
 			/* get the discretization requested for top-level element, from native
 				 discretization field if not NULL and is element based in element */
-			if (native_discretization_field&&
-				FE_element_field_is_grid_based(*top_level_element,
-					native_discretization_field))
+			if (native_discretization_field)
 			{
-				int native_top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-				int dim;
-				for (dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				const int topDimension = (*top_level_element)->getMesh()->getDimension();
+				const FE_mesh_field_data *meshFieldData = native_discretization_field->meshFieldData[topDimension - 1];
+				if (meshFieldData)
 				{
-					native_top_level_number_in_xi[dim] = 1;
-				}
-				/* use first component only */
-				get_FE_element_field_component_grid_map_number_in_xi(*top_level_element,
-					native_discretization_field, /*component_number*/0, native_top_level_number_in_xi);
-				for (dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-				{
-					top_level_number_in_xi[dim] *= native_top_level_number_in_xi[dim];
+					// use first grid-based field component
+					for (int c = 0; c < native_discretization_field->number_of_components; ++c)
+					{
+						const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+						const FE_element_field_template *eft = mft->getElementfieldtemplate((*top_level_element)->getIndex());
+						const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
+						if (gridNumberInXi) // only if legacy grid; other element-based do not multiply
+						{
+							for (int d = 0; d < topDimension; ++d)
+								top_level_number_in_xi[d] *= gridNumberInXi[d];
+							break;
+						}
+					}
 				}
 			}
 			if (get_FE_element_discretization_from_top_level(element,number_in_xi,
@@ -26480,15 +15541,15 @@ static bool FE_element_shape_face_has_inward_normal(struct FE_element_shape *sha
 
 bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 {
-	if (element && element->fields)
+	if (element && element->getMesh())
 	{
-		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		FE_mesh *parentMesh = element->getMesh()->getParentMesh();
 		const DsLabelIndex *parents;
 		if ((parentMesh) && (parentMesh->getDimension() == 3) &&
-			(1 == element->fields->fe_mesh->getElementParents(element->index, parents)))
+			(1 == element->getMesh()->getElementParents(element->getIndex(), parents)))
 		{
 			if (FE_element_shape_face_has_inward_normal(parentMesh->getElementShape(parents[0]),
-					parentMesh->getElementFaceNumber(parents[0], element->index)))
+					parentMesh->getElementFaceNumber(parents[0], element->getIndex())))
 				return true;
 		}
 	}
@@ -26500,107 +15561,76 @@ bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 	return false;
 }
 
-int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
-	LIST(cmzn_node) *nodeList, LIST(cmzn_node) *onlyFromNodeList)
+int cmzn_element_add_nodes_to_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup)
 {
-	if (!(element && nodeList && onlyFromNodeList))
+	if (!(element && element->getMesh()))
 		return CMZN_ERROR_ARGUMENT;
+	if (!element->getMesh()->addElementNodesToGroup(element->getIndex(), nodeLabelsGroup))
+		return CMZN_ERROR_GENERAL;
 	int return_code = CMZN_OK;
-	if ((element->information) && (element->information->nodes))
+	if (element->getMesh()->getElementParentsCount(element->getIndex()) > 0)
 	{
-		cmzn_node *node;
-		const int localNodesCount = element->information->number_of_nodes;
-		for (int i = 0; i < localNodesCount; i++)
+		int number_of_element_field_nodes;
+		cmzn_node_id *element_field_nodes_array;
+		return_code = calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
+			&number_of_element_field_nodes, &element_field_nodes_array,
+			/*top_level_element*/(struct FE_element *)NULL);
+		if (return_code == CMZN_OK)
 		{
-			node = element->information->nodes[i];
-			if (node && IS_OBJECT_IN_LIST(cmzn_node)(node, onlyFromNodeList))
+			for (int i = 0; i < number_of_element_field_nodes; i++)
 			{
-				if (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
-					IS_OBJECT_IN_LIST(FE_node)(node, nodeList)))
+				FE_node *node = element_field_nodes_array[i];
+				if (node && (node->index >= 0))
 				{
-					return_code = CMZN_ERROR_GENERAL;
-					break;
+					const int result = nodeLabelsGroup.setIndex(node->index, true);
+					if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+						return_code = result; // don't break as need to deaccess nodes
 				}
+				cmzn_node_destroy(&node);
 			}
+			DEALLOCATE(element_field_nodes_array);
+		}
+		else if (return_code == CMZN_ERROR_NOT_FOUND)
+		{
+			return_code = CMZN_OK;
 		}
 	}
 	return return_code;
 }
 
-int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
+int cmzn_element_remove_nodes_from_labels_group(cmzn_element *element, DsLabelsGroup &nodeLabelsGroup)
 {
-	if (!(element && element->fields && nodeList))
+	if (!(element && element->getMesh()))
 		return CMZN_ERROR_ARGUMENT;
+	if (!element->getMesh()->removeElementNodesFromGroup(element->getIndex(), nodeLabelsGroup))
+		return CMZN_ERROR_GENERAL;
 	int return_code = CMZN_OK;
-	cmzn_node *node;
-	if ((element->information) && (element->information->nodes))
-	{
-		const int localNodesCount = element->information->number_of_nodes;
-		for (int i = 0; i < localNodesCount; i++)
-		{
-			node = element->information->nodes[i];
-			if ((node) && (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
-				IS_OBJECT_IN_LIST(FE_node)(node, nodeList))))
-			{
-				return_code = CMZN_ERROR_GENERAL;
-				break;
-			}
-		}
-	}
-	if (element->fields->fe_mesh->getElementParentsCount(element->index) > 0)
+	if (element->getMesh()->getElementParentsCount(element->getIndex()) > 0)
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
+		return_code = calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
 			&number_of_element_field_nodes, &element_field_nodes_array,
-			/*top_level_element*/(struct FE_element *)NULL))
+			/*top_level_element*/(struct FE_element *)NULL);
+		if (return_code == CMZN_OK)
 		{
 			for (int i = 0; i < number_of_element_field_nodes; i++)
 			{
-				node = element_field_nodes_array[i];
-				if ((node) && (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
-						IS_OBJECT_IN_LIST(FE_node)(node, nodeList))))
-					return_code = CMZN_ERROR_GENERAL;
+				FE_node *node = element_field_nodes_array[i];
+				if (node && (node->index >= 0))
+				{
+					const int result = nodeLabelsGroup.setIndex(node->index, false);
+					if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+						return_code = result; // don't break as need to deaccess nodes
+				}
 				cmzn_node_destroy(&node);
 			}
 			DEALLOCATE(element_field_nodes_array);
 		}
-		else
-			return_code = CMZN_ERROR_GENERAL;
-	}
-	return return_code;
-}
-
-int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
-{
-	if (!(element && element->fields && nodeList))
-		return CMZN_ERROR_ARGUMENT;
-	int return_code = CMZN_OK;
-	cmzn_node *node;
-	if ((element->information) && (element->information->nodes))
-	{
-		const int localNodesCount = element->information->number_of_nodes;
-		for (int i = 0; i < localNodesCount; i++)
-			REMOVE_OBJECT_FROM_LIST(cmzn_node)(element->information->nodes[i], nodeList);
-	}
-	if (element->fields->fe_mesh->getElementParentsCount(element->index) > 0)
-	{
-		int number_of_element_field_nodes;
-		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
-			&number_of_element_field_nodes, &element_field_nodes_array,
-			/*top_level_element*/(struct FE_element *)NULL))
+		else if (return_code == CMZN_ERROR_NOT_FOUND)
 		{
-			for (int i = 0; i < number_of_element_field_nodes; i++)
-			{
-				node = element_field_nodes_array[i];
-				REMOVE_OBJECT_FROM_LIST(cmzn_node)(element_field_nodes_array[i], nodeList);
-				cmzn_node_destroy(&node);
-			}
-			DEALLOCATE(element_field_nodes_array);
+			return_code = CMZN_OK;
 		}
-		else
-			return_code = CMZN_ERROR_GENERAL;
 	}
 	return return_code;
 }
@@ -26608,244 +15638,9 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
-	if (element && (element->fields))
-		return (0 == element->fields->fe_mesh->getElementParentsCount(element->index));
+	if (element && (element->getMesh()))
+		return (0 == element->getMesh()->getElementParentsCount(element->getIndex()));
 	return 0;
-}
-
-int FE_node_get_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field, FE_value *node_x, FE_value *node_y,
-	FE_value *node_z, FE_value *coordinate_jacobian)
-{
-	struct Coordinate_system *coordinate_system;
-	FE_value node_1,node_2,node_3;
-	int number_of_coordinate_components, return_code;
-
-	ENTER(FE_node_get_position_cartesian);
-	return_code = 0;
-	if (node && coordinate_field && node_x && node_y && node_z)
-	{
-		if (coordinate_field->value_type==FE_VALUE_VALUE)
-		{
-			return_code = 1;
-			number_of_coordinate_components=
-				coordinate_field->number_of_components;
-			if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/0,
-				/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_1))
-			{
-				return_code = 0;
-			}
-			if (1<number_of_coordinate_components)
-			{
-				if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/1,
-					/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_2))
-				{
-					return_code = 0;
-				}
-				if (2<number_of_coordinate_components)
-				{
-					if (!get_FE_nodal_FE_value_value(node,coordinate_field,/*component_number*/2,
-						/*version*/0,FE_NODAL_VALUE,/*time*/0,&node_3))
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					node_3=0.;
-				}
-			}
-			else
-			{
-				node_2=0.;
-				node_3=0.;
-			}
-			if (return_code)
-			{
-				coordinate_system=get_FE_field_coordinate_system(coordinate_field);
-				/* transform points to cartesian coordinates */
-				switch (coordinate_system->type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						cylindrical_polar_to_cartesian(node_1,node_2,
-							node_3,node_x,node_y,node_z,coordinate_jacobian);
-					} break;
-					case SPHERICAL_POLAR:
-					{
-						spherical_polar_to_cartesian(node_1,node_2,
-							node_3,node_x,node_y,node_z,coordinate_jacobian);
-					} break;
-					case PROLATE_SPHEROIDAL:
-					{
-
-						prolate_spheroidal_to_cartesian(node_1,node_2,
-							node_3,coordinate_system->parameters.focus,
-							node_x,node_y,node_z,coordinate_jacobian);
-					} break;
-					case OBLATE_SPHEROIDAL:
-					{
-
-						oblate_spheroidal_to_cartesian(node_1,node_2,
-							node_3,coordinate_system->parameters.focus,
-							node_x,node_y,node_z,coordinate_jacobian);
-					} break;
-					default:
-					{
-						*node_x=node_1;
-						*node_y=node_2;
-						*node_z=node_3;
-						if (coordinate_jacobian)
-						{
-							coordinate_jacobian[0]=1;
-							coordinate_jacobian[1]=0;
-							coordinate_jacobian[2]=0;
-							coordinate_jacobian[3]=0;
-							coordinate_jacobian[4]=1;
-							coordinate_jacobian[5]=0;
-							coordinate_jacobian[6]=0;
-							coordinate_jacobian[7]=0;
-							coordinate_jacobian[8]=1;
-						}
-					} break;
-				} /* switch */
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_get_position_cartesian.  Field not defined at node");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_get_position_cartesian.  Only supports FE_VALUE type");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_get_position_cartesian.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int FE_node_set_position_cartesian(struct FE_node *node,
-	struct FE_field *coordinate_field,
-	FE_value node_x,FE_value node_y,FE_value node_z)
-{
-	struct Coordinate_system *coordinate_system;
-	FE_value node_1,node_2,node_3;
-	int number_of_coordinate_components,return_code,version;
-	struct FE_node_field *coordinate_node_field;
-	struct FE_node_field_component *coordinate_node_field_component;
-
-	ENTER(FE_node_set_position_cartesian);
-	return_code = 0;
-	if (node && coordinate_field && node->fields)
-	{
-		if (coordinate_field->value_type==FE_VALUE_VALUE)
-		{
-			coordinate_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				coordinate_field, node->fields->node_field_list);
-			if (coordinate_node_field)
-			{
-				return_code=1;
-				number_of_coordinate_components = coordinate_field->number_of_components;
-
-				coordinate_system = get_FE_field_coordinate_system(
-					coordinate_node_field->field);
-
-				switch (coordinate_system->type)
-				{
-					case CYLINDRICAL_POLAR:
-					{
-						cartesian_to_cylindrical_polar(node_x,node_y,node_z,
-							&node_1,&node_2,&node_3,(FE_value *)NULL);
-					} break;
-					case PROLATE_SPHEROIDAL:
-					{
-						cartesian_to_prolate_spheroidal(node_x,node_y,node_z,
-							coordinate_system->parameters.focus,
-							&node_1,&node_2,&node_3,(FE_value *)NULL);
-					} break;
-					case OBLATE_SPHEROIDAL:
-					{
-
-						/*???DB.  Haven't written geometry function yet */
-						node_1=node_x;
-						node_2=node_y;
-						node_3=node_z;
-					} break;
-					case SPHERICAL_POLAR:
-					{
-
-						/*???DB.  Haven't written geometry function yet */
-						node_1=node_x;
-						node_2=node_y;
-						node_3=node_z;
-					} break;
-					default:
-					{
-
-						node_1=node_x;
-						node_2=node_y;
-						node_3=node_z;
-					} break;
-				}
-				coordinate_node_field_component=coordinate_node_field->components;
-				for (version=0;
-						 version<coordinate_node_field_component->number_of_versions;version++)
-				{
-					set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
-						/*component_number*/0,version,FE_NODAL_VALUE,
-						/*time*/0, node_1);
-				}
-				if (1<number_of_coordinate_components)
-				{
-					coordinate_node_field_component++;
-					for (version=0;
-							 version<coordinate_node_field_component->number_of_versions;version++)
-					{
-						set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
-						/*component_number*/1,version,
-							FE_NODAL_VALUE, /*time*/0, node_2);
-					}
-					if (2<number_of_coordinate_components)
-					{
-						coordinate_node_field_component++;
-						for (version=0;version<
-									 coordinate_node_field_component->number_of_versions;version++)
-						{
-							set_FE_nodal_FE_value_value(node,coordinate_node_field->field,
-								/*component_number*/2,version,
-								FE_NODAL_VALUE, /*time*/0, node_3);
-						}
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_set_position_cartesian.  Field is not defined at node");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_set_position_cartesian.  Only supports FE_VALUE type");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_set_position_cartesian.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
 }
 
 int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void)
@@ -26879,37 +15674,12 @@ This type of field is used for storing eg. grid_point_number.
 } /* FE_field_is_1_component_integer */
 
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2001
-
-DESCRIPTION :
-Conditional function returning true if the <field> is a coordinate field
-(defined by having a CM_field_type of coordinate) has a Value_type of
-FE_VALUE_VALUE and has from 1 to 3 components.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_field_is_coordinate_field);
 	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=
-			(CM_COORDINATE_FIELD==field->cm_field_type)&&
-			(FE_VALUE_VALUE==field->value_type)&&
-			(1<=field->number_of_components)&&
-			(3>=field->number_of_components);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_is_coordinate_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_is_coordinate_field */
+	if (field && field->isTypeCoordinate())
+		return 1;
+	return 0;
+}
 
 int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
@@ -26971,85 +15741,46 @@ either an element_xi value, or eventually a node.
 	return (return_code);
 } /* FE_field_is_embedded */
 
-int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Returns true if the <field> is defined for the <node>.
-==============================================================================*/
+bool FE_field_has_parameters_at_node(FE_field *field, cmzn_node *node)
 {
-	int return_code;
-
-	ENTER(FE_field_is_defined_at_node);
-	return_code=0;
-	if (field&&node&&(node->fields))
+	if ((field) && (node) && (node->fields))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-			node->fields->node_field_list))
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field, node->fields->node_field_list))
 		{
-			return_code=1;
+			return true;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_is_defined_at_node.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_field_has_parameters_at_node.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_is_defined_at_node */
-
-int FE_node_field_is_not_defined(struct FE_node *node,void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 15 September 2000
-
-DESCRIPTION :
-FE_node iterator version of FE_field_is_defined_at_node.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(FE_node_field_is_not_defined);
-	if (node&&(field=(struct FE_field *)field_void))
-	{
-		return_code = !FE_field_is_defined_at_node(field,node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_is_not_defined.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_is_not_defined */
+	return false;
+}
 
 bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element)
 {
-	if (element && element->fields && field)
+	if (!(field && element && element->getMesh()))
 	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-				element->fields->element_field_list))
-			return true;
-		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-		if (parentMesh)
-		{
-			const DsLabelIndex *parents;
-			const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
-			for (int p = 0; p < parentsCount; ++p)
-				if (FE_field_is_defined_in_element(field, parentMesh->getElement(parents[p])))
-					return true;
-		}
+		display_message(ERROR_MESSAGE, "FE_field_is_defined_in_element.  Invalid argument(s)");
+		return false;
 	}
-	else
+	FE_mesh_field_data *meshFieldData = field->meshFieldData[element->getMesh()->getDimension() - 1];
+	if (meshFieldData)
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_is_defined_in_element.  Invalid argument(s)");
+		// check only first component
+		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(0);
+		if (mft->getElementEFTIndex(element->getIndex()) >= 0)
+			return true;
+	}
+	FE_mesh *parentMesh = element->getMesh()->getParentMesh();
+	if (parentMesh)
+	{
+		const DsLabelIndex *parents;
+		const int parentsCount = element->getMesh()->getElementParents(element->getIndex(), parents);
+		for (int p = 0; p < parentsCount; ++p)
+			if (FE_field_is_defined_in_element(field, parentMesh->getElement(parents[p])))
+				return true;
 	}
 	return false;
 }
@@ -27057,553 +15788,107 @@ bool FE_field_is_defined_in_element(struct FE_field *field,
 bool FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 	struct FE_element *element)
 {
-	return ((element) && (element->fields) &&
-		(0 != FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-			element->fields->element_field_list)));
+	if (!(field && element && element->getMesh()))
+		return false;
+	FE_mesh_field_data *meshFieldData = field->meshFieldData[element->getMesh()->getDimension() - 1];
+	if (!meshFieldData)
+		return false; // not defined on any elements of mesh
+	// check only first component
+	const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(0);
+	return mft->getElementEFTIndex(element->getIndex()) >= 0;
 }
 
-int FE_element_field_is_grid_based(struct FE_element *element,
+bool FE_element_field_is_grid_based(struct FE_element *element,
 	struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns true if <field> is grid-based in <element>. Only checks the first
-component since we assume all subsequent components have the same basis and
-numbers of grid cells in xi.
-Returns 0 with no error if <field> is not defined over element or not element-
-based in it.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_element_field *element_field;
-
-	ENTER(FE_element_field_is_grid_based);
-	return_code=0;
-	if (element && field && element->fields)
+	if (!(element && element->getMesh() && field))
 	{
-		/* must have element->information for grid-based values_storage */
-		if (element->information)
-		{
-			if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				field, element->fields->element_field_list)))
-			{
-				return_code =
-					FE_element_field_has_element_grid_map(element_field, (void *)NULL);
-			}
-		}
+		display_message(ERROR_MESSAGE, "FE_element_field_is_grid_based.  Invalid argument(s)");
+		return false;
 	}
-	else
+	FE_mesh_field_data *meshFieldData = field->meshFieldData[element->getMesh()->getDimension() - 1];
+	if (!meshFieldData)
+		return false; // not defined on any elements of mesh
+	for (int c = 0; c < field->number_of_components; ++c)
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_is_grid_based.  Invalid argument(s)");
+		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+		const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+		if (!eft)
+			return false;
+		if ((eft->getNumberOfElementDOFs() > 0) && (0 != eft->getLegacyGridNumberInXi()))
+			return true;
 	}
-	LEAVE;
+	return false;
+}
 
-	return (return_code);
-} /* FE_element_field_is_grid_based */
-
-int get_FE_element_field_component_grid_map_number_in_xi(struct FE_element *element,
-	struct FE_field *field, int component_number, int *number_in_xi)
+bool FE_element_has_grid_based_fields(struct FE_element *element)
 {
-	int *component_number_in_xi, dimension, i, return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-
-	ENTER(get_FE_element_field_component_grid_map_number_in_xi);
-	return_code = 0;
-	if (element && element->fields && number_in_xi &&
-		(dimension = element->fields->fe_mesh->getDimension()) &&
-		(component_number >= 0) && (component_number < field->number_of_components))
+	if (!(element && element->getMesh()))
 	{
-		if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element->fields->element_field_list)))
-		{
-			/* only GENERAL_FE_FIELD has components and can be grid-based */
-			if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
-			{
-				/* get first field component */
-				if (element_field->components &&
-					(component = element_field->components[component_number]))
-				{
-					if (ELEMENT_GRID_MAP==component->type)
-					{
-						if (NULL != (component_number_in_xi=
-							component->map.element_grid_based.number_in_xi))
-						{
-							return_code=1;
-							for (i=0;i<dimension;i++)
-							{
-								number_in_xi[i]=component_number_in_xi[i];
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"get_FE_element_field_component_grid_map_number_in_xi.  "
-								"Missing component number_in_xi");
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_element_field_component_grid_map_number_in_xi.  "
-						"Missing element field component");
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_element_field_component_grid_map_number_in_xi.  "
-				"Field not defined for element");
-		}
+		display_message(ERROR_MESSAGE, "FE_element_has_grid_based_fields.  Invalid argument(s)");
+		return false;
 	}
-	else
+	CMZN_SET(FE_field) *fields = reinterpret_cast<CMZN_SET(FE_field) *>(element->getMesh()->get_FE_region()->fe_field_list);
+	for (CMZN_SET(FE_field)::iterator iter = fields->begin(); iter != fields->end(); ++iter)
 	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_field_component_grid_map_number_in_xi.  Invalid argument(s)");
+		if (FE_element_field_is_grid_based(element, *iter))
+			return true;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_field_component_grid_map_number_in_xi */
-
-int get_FE_element_field_component_number_of_grid_values(struct FE_element *element,
-	struct FE_field *field, int component_number)
-{
-	int *component_number_in_xi,dimension,i,number_of_grid_values;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
-
-	ENTER(get_FE_element_field_component_number_of_grid_values);
-	number_of_grid_values=0;
-	if (element && element->fields && (dimension = element->fields->fe_mesh->getDimension()) &&
-		(component_number >= 0) && (component_number < field->number_of_components))
-	{
-		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element->fields->element_field_list)) && (element_field->components))
-		{
-			/* only GENERAL_FE_FIELD has components and can be grid-based */
-			if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
-			{
-				if ((component = element_field->components[component_number]))
-				{
-					if (ELEMENT_GRID_MAP==component->type)
-					{
-						if (NULL != (component_number_in_xi=
-							component->map.element_grid_based.number_in_xi))
-						{
-							number_of_grid_values=1;
-							for (i=0;i<dimension;i++)
-							{
-								number_of_grid_values *= (component_number_in_xi[i] + 1);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"get_FE_element_field_component_number_of_grid_values.  "
-								"Missing component number_in_xi");
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_FE_element_field_component_number_of_grid_values.  "
-						"Missing element field component");
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_element_field_component_number_of_grid_values.  "
-				"Field not defined for element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_field_component_number_of_grid_values.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (number_of_grid_values);
-} /* get_FE_element_field_component_number_of_grid_values */
-
-int get_FE_element_field_component(struct FE_element *element,
-	struct FE_field *field, int component_number,
-	struct FE_element_field_component **component_address)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns the element field component structure for <component_number> of <field>
-at <element> if defined there; otherwise reports an error.
-If fails, puts NULL in *<component_address> if supplied.
-Note: returned component must not be modified or destroyed!
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field *element_field;
-
-	ENTER(get_FE_element_field_component);
-	return_code = 0;
-	if (element && element->fields && field && (0 <= component_number) &&
-		(component_number < get_FE_field_number_of_components(field)) &&
-		component_address)
-	{
-		if (NULL != (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element->fields->element_field_list)))
-		{
-			if (element_field->components)
-			{
-				if (NULL != (*component_address = element_field->components[component_number]))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
-						"Missing element field component");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
-					"Missing element field components array");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
-				"Field %s not defined for element", get_FE_field_name(field));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_field_component.  Invalid argument(s)");
-	}
-	if ((!return_code) && component_address)
-	{
-		*component_address = (struct FE_element_field_component *)NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_field_component */
-
-#define INSTANTIATE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
-int get_FE_element_field_component_grid_ ## macro_value_type ## _values( \
-	struct FE_element *element,struct FE_field *field,int component_number, \
-	macro_value_type **values) \
-/******************************************************************************* \
-LAST MODIFIED : 22 April 2005 \
- \
-DESCRIPTION : \
-If <field> is grid-based in <element>, returns an allocated array of the grid \
-values stored for <component_number>. To get number of values returned, call \
-get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
-It is up to the calling function to DEALLOCATE the returned values. \
-==============================================================================*/ \
-{ \
-	macro_value_type *value; \
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code, \
-		size; \
-	struct FE_element_field *element_field; \
-	struct FE_element_field_component *component; \
-	Value_storage *values_storage; \
- \
-	ENTER(get_FE_element_field_component_grid_ ## macro_value_type ## _values); \
-	return_code=0; \
-	if (element && element->fields && element->information &&  \
-		(dimension = element->fields->fe_mesh->getDimension()) && field && \
-		(0<=component_number)&&(component_number<field->number_of_components)&& \
-		(value_enum==field->value_type)&&values) \
-	{ \
-		if (NULL != (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)( \
-			field,element->fields->element_field_list))) \
-		{ \
-			/* get the component */ \
-			if (element_field->components&& \
-				(component=element_field->components[component_number])) \
-			{ \
-				if ((ELEMENT_GRID_MAP==component->type)&& \
-					(NULL != (values_storage=element->information->values_storage))) \
-				{ \
-					if (NULL != (component_number_in_xi = \
-						component->map.element_grid_based.number_in_xi)) \
-					{ \
-						values_storage += component->map.element_grid_based.value_index; \
-						size = get_Value_storage_size(value_enum, \
-							(struct FE_time_sequence *)NULL); \
-						number_of_grid_values=1; \
-						for (i=0;i<dimension;i++) \
-						{ \
-							number_of_grid_values *= (component_number_in_xi[i] + 1); \
-						} \
-						if (ALLOCATE(*values,macro_value_type,number_of_grid_values)) \
-						{ \
-							return_code=1; \
-							value= *values; \
-							for (i=number_of_grid_values;0<i;i--) \
-							{ \
-								*value = *((macro_value_type *)values_storage); \
-								value++; \
-								values_storage += size; \
-							} \
-						} \
-						else \
-						{ \
-							display_message(ERROR_MESSAGE, \
-								"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-								"Not enough memory"); \
-						} \
-					} \
-					else \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-							"Missing component number_in_xi"); \
-					} \
-				} \
-				else \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-						"Field is not grid-based in element"); \
-				} \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-					"Missing element field component"); \
-			} \
-		} \
-		else \
-		{ \
-			display_message(ERROR_MESSAGE, \
-				"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-				"Field not defined for element"); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"get_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-			"Invalid argument(s)"); \
-	} \
-	LEAVE; \
- \
-	return (return_code); \
-} /* get_FE_element_field_component_grid_ ## macro_value_type ## _values */
-
-#define INSTANTIATE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION( macro_value_type, value_enum ) \
-int set_FE_element_field_component_grid_ ## macro_value_type ## _values( \
-	struct FE_element *element,struct FE_field *field,int component_number, \
-	macro_value_type *values) \
-/******************************************************************************* \
-LAST MODIFIED : 21 April 2005 \
-\
-DESCRIPTION : \
-If <field> is grid-based in <element>, copies <values> into the values storage \
-for <component_number>. To get number of values to pass, call \
-get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
-==============================================================================*/ \
-{ \
-	macro_value_type *value; \
-	int *component_number_in_xi,dimension,i,number_of_grid_values,return_code, \
-		size; \
-	struct FE_element_field *element_field; \
-	struct FE_element_field_component *component; \
-	Value_storage *values_storage; \
- \
-	ENTER(set_FE_element_field_component_grid_ ## macro_value_type ## _values); \
-	return_code=0; \
-	if (element&&element->fields && element->information && \
-		(dimension = element->fields->fe_mesh->getDimension()) && field && \
-		(0<=component_number)&&(component_number<field->number_of_components)&& \
-		(value_enum==field->value_type)&&values) \
-	{ \
-		if (NULL != (element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)( \
-			field,element->fields->element_field_list))) \
-		{ \
-			/* get the component */ \
-			if (element_field->components&& \
-				(NULL != (component = element_field->components[component_number]))) \
-			{ \
-				if ((ELEMENT_GRID_MAP==component->type)&& \
-					(NULL != (values_storage=element->information->values_storage))) \
-				{ \
-					if (NULL != (component_number_in_xi = \
-						component->map.element_grid_based.number_in_xi)) \
-					{ \
-						return_code=1; \
-						values_storage += component->map.element_grid_based.value_index; \
-						size = get_Value_storage_size(value_enum, \
-							(struct FE_time_sequence *)NULL); \
-						number_of_grid_values=1; \
-						for (i=0;i<dimension;i++) \
-						{ \
-							number_of_grid_values *= (component_number_in_xi[i] + 1); \
-						} \
-						value=values; \
-						for (i=number_of_grid_values;0<i;i--) \
-						{ \
-							/*???RC following should be a macro */ \
-							*((macro_value_type *)values_storage) = *value; \
-							value++; \
-							values_storage += size; \
-						} \
-						if (return_code) \
-						{ \
-							element->fields->fe_mesh->elementFieldChange(element, field); \
-						} \
-					} \
-					else \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-							"Missing component number_in_xi"); \
-					} \
-				} \
-				else \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-						"Field is not grid-based in element"); \
-				} \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-					"Missing element field component"); \
-			} \
-		} \
-		else \
-		{ \
-			display_message(ERROR_MESSAGE, \
-				"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-				"Field not defined for element"); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"set_FE_element_field_component_grid_ ## macro_value_type ## _values.  " \
-			"Invalid argument(s)"); \
-	} \
-	LEAVE; \
- \
-	return (return_code); \
-} /* set_FE_element_field_component_grid_ ## macro_value_type ## _values */
-
-#define INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( macro_value_type , value_enum ) \
-INSTANTIATE_GET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum) \
-INSTANTIATE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
-
-INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
-INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
-
-int FE_element_field_get_component_FE_basis(struct FE_element *element,
-	struct FE_field *field, int component_number, struct FE_basis **fe_basis)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-If <field> is standard node based in <element>, returns the <fe_basis> used for
-<component_number>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field *element_field;
-
-	ENTER(FE_element_field_get_component_FE_basis);
-	return_code = 0;
-	if (element && field && fe_basis && element->fields)
-	{
-		*fe_basis = (struct FE_basis *)NULL;
-		if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			field, element->fields->element_field_list)))
-		{
-			return_code = FE_element_field_private_get_component_FE_basis(
-				element_field, component_number, fe_basis);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_get_component_FE_basis.  "
-				"Field not defined for element");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_get_component_FE_basis.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_get_component_FE_basis */
+	return false;
+}
 
 int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
-	FE_value time, struct FE_field *element_count_fe_field)
+	FE_value time, struct FE_field *node_accumulate_fe_field,
+	struct FE_field *element_count_fe_field)
 {
-	int return_code;
-
-	if (node && fe_field && element_count_fe_field)
+	const cmzn_node_value_label firstDerivativeValueLabels[3] =
 	{
-		const FE_nodal_value_type types[3] =
-			{FE_NODAL_D_DS1, FE_NODAL_D_DS2, FE_NODAL_D_DS3};
-		const int number_of_components = get_FE_field_number_of_components(fe_field);
+		CMZN_NODE_VALUE_LABEL_D_DS1, CMZN_NODE_VALUE_LABEL_D_DS2, CMZN_NODE_VALUE_LABEL_D_DS3
+	};
+	int return_code;
+	if (node && node->fields
+		&& fe_field && (fe_field->value_type == FE_VALUE_VALUE)
+		&& node_accumulate_fe_field && (node_accumulate_fe_field->value_type == FE_VALUE_VALUE)
+		&& element_count_fe_field && (element_count_fe_field->value_type == INT_VALUE))
+	{
+		const FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+			fe_field, node->fields->node_field_list);
 		FE_value value;
 		int count;
 		return_code = 1;
-		for (int component = 0; (component < number_of_components) && return_code; ++component)
+		const int componentCount = fe_field->number_of_components;
+		for (int c = 0; (c < componentCount) && return_code; ++c)
 		{
-			// Note: number of versions will eventually depend on value type
-			const int number_of_versions =
-				get_FE_node_field_component_number_of_versions(node, fe_field, component);
-			for (int j = 0; (j < 3) && return_code; j++)
+			const FE_node_field_template &nft = *(node_field->getComponent(c));
+			for (int d = 0; (d < 3) && return_code; ++d)
 			{
-				const FE_nodal_value_type type = types[j];
-				for (int version = 0; (version < number_of_versions) && return_code; ++version)
+				const cmzn_node_value_label valueLabel = firstDerivativeValueLabels[d];
+				const int versionsCount = nft.getValueNumberOfVersions(valueLabel);
+				for (int v = 0; v < versionsCount; ++v)
 				{
-					if (FE_nodal_value_version_exists(node, fe_field, component, version, type))
+					if (cmzn_node_get_field_parameters(node, node_accumulate_fe_field, c, valueLabel, v, time, &value) &&
+						cmzn_node_get_field_parameters(node, element_count_fe_field, c, valueLabel, v, time, &count))
 					{
-						if (get_FE_nodal_FE_value_value(node, fe_field, component, version, type, time, &value) &&
-							get_FE_nodal_int_value(node, element_count_fe_field, component, version, type, time, &count))
+						if (0 < count)
 						{
-							if (0 < count)
+							const FE_value newValue = value/count;
+							if (!cmzn_node_set_field_parameters(node, fe_field, c, valueLabel, v, time, &newValue))
 							{
-								if (!set_FE_nodal_FE_value_value(node, fe_field, component,
-									version, type, time, value / (FE_value)count))
-								{
-									return_code = 0;
-								}
+								return_code = 0;
+								break;
 							}
 						}
-						else
-						{
-							return_code = 0;
-						}
+					}
+					else
+					{
+						return_code = 0;
+						break;
 					}
 				}
 			}
 		}
-		if (return_code)
-		{
-			/* undefine the element_count_fe_field at <node> */
-			return_code = undefine_FE_field_at_node(node, element_count_fe_field);
-		}
+		undefine_FE_field_at_node(node, node_accumulate_fe_field);
+		undefine_FE_field_at_node(node, element_count_fe_field);
 	}
 	else
 	{
@@ -27621,62 +15906,66 @@ int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
  */
 static int FE_node_field_component_accumulate_value(struct FE_node *node,
 	struct FE_field *fe_field, struct FE_field *count_fe_field,
-	int component_number, int version, enum FE_nodal_value_type type,
+	int componentNumber, cmzn_node_value_label valueLabel, int version,
 	FE_value time, FE_value delta)
 {
-	FE_value value;
-	int int_value, return_code;
-
-	if (node && fe_field && count_fe_field && (0 <= component_number) &&
-		(component_number <= get_FE_field_number_of_components(fe_field)) &&
-		(0 <= version))
+	if (!(node && fe_field && count_fe_field && (0 <= componentNumber) &&
+		(componentNumber <= get_FE_field_number_of_components(fe_field)) &&
+		(0 <= version)))
 	{
-		return_code = 1;
-		if (FE_nodal_value_version_exists(node, fe_field, component_number, version, type))
+		display_message(ERROR_MESSAGE, "FE_node_field_component_accumulate_value.  Invalid argument(s)");
+		return 0;
+	}
+	FE_value value;
+	if (cmzn_node_get_field_parameters(node, fe_field, componentNumber, valueLabel, version, time, &value))
+	{
+		const FE_value newValue = value + delta;
+		if (!(cmzn_node_set_field_parameters(node, fe_field, componentNumber, valueLabel, version, time, &newValue)))
 		{
-			if (!(get_FE_nodal_FE_value_value(node, fe_field, component_number, version,
-				type, time, &value) &&
-				set_FE_nodal_FE_value_value(node, fe_field, component_number, version, type,
-					time, value + delta) &&
-				get_FE_nodal_int_value(node, count_fe_field, component_number, version, type,
-					time, &int_value) &&
-				set_FE_nodal_int_value(node, count_fe_field, component_number, version, type,
-					time, int_value + 1)))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_field_component_accumulate_value.  Failed");
-				return_code = 0;
-			}
+			display_message(ERROR_MESSAGE, "FE_node_field_component_accumulate_value.  Failed to set field value");
+			return 0;
+		}
+		int int_value;
+		if (!cmzn_node_get_field_parameters(node, count_fe_field, componentNumber, valueLabel, version, time, &int_value))
+		{
+			display_message(ERROR_MESSAGE, "FE_node_field_component_accumulate_value.  Failed to get count");
+			return 0;
+		}
+		const int newIntValue = int_value + 1;
+		if (!(cmzn_node_set_field_parameters(node, count_fe_field, componentNumber, valueLabel, version, time, &newIntValue)))
+		{
+			display_message(ERROR_MESSAGE, "FE_node_field_component_accumulate_value.  Failed to set count");
+			return 0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_component_accumulate_value.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	return 1;
 }
 
 class FE_element_accumulate_node_values
 {
 	FE_element *element;
-	Standard_node_to_element_map **standard_node_maps;
-	FE_node **copy_nodes;
-	FE_field *fe_field, *element_count_fe_field;
+	const FE_element_field_template *eft;
+	FE_nodeset *nodeset;
+	const DsLabelIndex *nodeIndexes;
+	FE_field *fe_field, *node_accumulate_fe_field, *element_count_fe_field;
 	int component_number;
 	FE_value time;
 	FE_value *component_values;
 
 public:
 	FE_element_accumulate_node_values(FE_element *elementIn,
-			Standard_node_to_element_map **standard_node_mapsIn,
-			FE_node **copy_nodesIn, FE_field *fe_fieldIn, FE_field *element_count_fe_fieldIn,
+			const FE_element_field_template *eftIn,
+			FE_nodeset *nodesetIn,
+			const DsLabelIndex *nodeIndexesIn, FE_field *fe_fieldIn,
+			FE_field *node_accumulate_fe_fieldIn,
+			FE_field *element_count_fe_fieldIn,
 			int component_numberIn, FE_value timeIn, FE_value *component_valuesIn) :
 		element(elementIn),
-		standard_node_maps(standard_node_mapsIn),
-		copy_nodes(copy_nodesIn),
+		eft(eftIn),
+		nodeset(nodesetIn),
+		nodeIndexes(nodeIndexesIn),
 		fe_field(fe_fieldIn),
+		node_accumulate_fe_field(node_accumulate_fe_fieldIn),
 		element_count_fe_field(element_count_fe_fieldIn),
 		component_number(component_numberIn),
 		time(timeIn),
@@ -27686,274 +15975,219 @@ public:
 
 	/**
 	 * @param xiIndex  Element chart xi index starting at 0.
-	 * @param localNode1  Local node index into copy_nodes array for edge node 1.
-	 * @param localNode2  Local node index into copy_nodes array for edge node 2.
+	 * @param basisNode1  Basis corner/end local node index for edge node 1.
+	 * @param basisNode2  Basis corner/end local node index for edge node 2.
 	 */
-	void accumulate_edge(int xiIndex, int localNode1, int localNode2)
+	void accumulate_edge(int xiIndex, int basisNode1, int basisNode2)
 	{
-		const int valueIndex =
-			(xiIndex == 0) ? 1 :
-			(xiIndex == 1) ? 2 :
-			(xiIndex == 2) ? 4 :
-			0;
-		if (valueIndex == 0)
-			return;
-		FE_value delta = this->component_values[localNode2] - this->component_values[localNode1];
+		// basis functions for a local node are assumed to be in order of nodal value types:
+		const int basisNodeFunctionIndex =
+			((xiIndex == 0) ? CMZN_NODE_VALUE_LABEL_D_DS1 : (xiIndex == 1) ? CMZN_NODE_VALUE_LABEL_D_DS2 : CMZN_NODE_VALUE_LABEL_D_DS3)
+			- CMZN_NODE_VALUE_LABEL_VALUE;
+		const FE_value delta = this->component_values[basisNode2] - this->component_values[basisNode1];
 		for (int n = 0; n < 2; ++n)
 		{
-			const int localNode = (n == 0) ? localNode1 : localNode2;
-			Standard_node_to_element_map *standard_node_map = this->standard_node_maps[localNode];
-			FE_nodal_value_type derivativeType = Standard_node_to_element_map_get_nodal_value_type(standard_node_map, valueIndex);
-			if ((derivativeType == FE_NODAL_D_DS1) || (derivativeType == FE_NODAL_D_DS2) || (derivativeType == FE_NODAL_D_DS3))
+			const int basisNode = (n == 0) ? basisNode1 : basisNode2;
+			const int functionNumber = FE_basis_get_function_number_from_node_function(eft->getBasis(), basisNode, basisNodeFunctionIndex);
+			if (functionNumber < 0)
+				continue; // derivative not used for basis at node
+			const int termCount = this->eft->getFunctionNumberOfTerms(functionNumber);
+			if (0 == termCount)
+				continue; // permanent zero derivative
+			// only use first term, using more is not implemented
+			const int term = 0;
+			const int termLocalNodeIndex = this->eft->getTermLocalNodeIndex(functionNumber, term);
+			FE_node *node = this->nodeset->getNode(this->nodeIndexes[termLocalNodeIndex]);
+			if (node)
 			{
-				int version = Standard_node_to_element_map_get_nodal_version(standard_node_map, valueIndex);
-				FE_node_field_component_accumulate_value(this->copy_nodes[localNode],
-					this->fe_field, this->element_count_fe_field, this->component_number,
-					version - 1, derivativeType, this->time, delta);
+				FE_node_field_component_accumulate_value(node,
+					this->node_accumulate_fe_field, this->element_count_fe_field, this->component_number,
+					this->eft->getTermNodeValueLabel(functionNumber, term),
+					this->eft->getTermNodeVersion(functionNumber, term),
+					this->time, delta);
 			}
 		}
 	}
 };
 
-int FE_element_smooth_FE_field(struct FE_element *element,
-	struct FE_field *fe_field, FE_value time,
-	struct FE_field *element_count_fe_field,
-	struct LIST(FE_node) *copy_node_list)
+template <typename ObjectType> class SelfDestruct
 {
-	FE_value component_value[8], value,
-		xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, i, index, j, k, n, number_of_components,
-		number_of_nodes, number_of_values, return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *element_field_component;
-	struct FE_element_field_values *fe_element_field_values;
-	struct FE_node *copy_node[8], *node;
-	struct FE_node_field_creator *fe_node_field_creator;
-	struct LIST(FE_field) *fe_field_list;
+	typedef int (DestroyFunction)(ObjectType* objectAddress);
+	ObjectType& object;
+	DestroyFunction *destroyFunction;
 
-	ENTER(FE_element_smooth_FE_field);
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if (element_shape && fe_field && element_count_fe_field && copy_node_list &&
+public:
+	SelfDestruct(ObjectType& objectIn, DestroyFunction *destroyFunctionIn) :
+		object(objectIn),
+		destroyFunction(destroyFunctionIn)
+	{
+	}
+
+	~SelfDestruct()
+	{
+		(this->destroyFunction)(&object);
+	}
+};
+
+bool FE_element_smooth_FE_field(struct FE_element *element,
+	struct FE_field *fe_field, FE_value time,
+	struct FE_field *node_accumulate_fe_field,
+	struct FE_field *element_count_fe_field)
+{
+	FE_element_shape *element_shape = element->getElementShape();
+	const int componentCount = get_FE_field_number_of_components(fe_field);
+	if (!(element_shape && fe_field && node_accumulate_fe_field && element_count_fe_field &&
 		(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)) &&
 		(INT_VALUE == get_FE_field_value_type(element_count_fe_field)) &&
-		(number_of_components = get_FE_field_number_of_components(fe_field)) &&
 		(get_FE_field_number_of_components(element_count_fe_field) ==
-			number_of_components))
+			componentCount)))
 	{
-		return_code = 1;
-		/* work out if element has this fe_field defined and if it is a "square"
-			 shape */
-		if (element->information && element->fields &&
-			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				fe_field, element->fields->element_field_list)) &&
-			element_field->components &&
-			FE_element_shape_is_line(element_shape))
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Invalid argument(s)");
+		return false;
+	}
+	if (!FE_element_shape_is_line(element_shape))
+		return true; // not implemented for these shapes, or nothing to do
+	FE_mesh *mesh = element->getMesh();
+	if (!mesh)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Invalid element");
+		return false;
+	}
+	FE_nodeset *nodeset = mesh->getNodeset();
+	if (!nodeset)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  No nodeset");
+		return false;
+	}
+	const FE_mesh_field_data *meshFieldData = fe_field->meshFieldData[mesh->getDimension() - 1];
+	if (!meshFieldData)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Field not defined on mesh");
+		return false; // field not defined on any elements of mesh
+	}
+	const int dimension = element->getDimension();
+	const int basisNodeCount =
+		(1 == dimension) ? 2 :
+		(2 == dimension) ? 4 :
+		(3 == dimension) ? 8 :
+		0;
+	FE_value component_value[8], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_element_field_values *fe_element_field_values = CREATE(FE_element_field_values)();
+	SelfDestruct<FE_element_field_values *> sd1(fe_element_field_values, DESTROY(FE_element_field_values));
+	// need to calculate field values to evaluate field in element corners,
+	// ensuring optional modify function, version mapping etc. applied
+	int return_code = 1;
+	if (!calculate_FE_element_field_values(element, fe_field, time,
+		/*calculate_derivatives*/0, fe_element_field_values,
+		/*top_level_element*/(struct FE_element *)NULL))
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_smooth_FE_field.  Could not calculate element field values");
+		return 0;
+	}
+	for (int componentNumber = 0; componentNumber < componentCount; ++componentNumber)
+	{
+		const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
+		const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+		if (!eft)
+			return true; // field not defined on element
+		if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+			continue;
+		if (FE_basis_get_number_of_nodes(eft->getBasis()) != basisNodeCount)
+			continue; // some cases not implemented e.g. Hermite * quadratic Lagrange
+		FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft->getIndexInMesh());
+		const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(element->getIndex());
+		if (!nodeIndexes)
 		{
-			fe_field_list = (struct LIST(FE_field) *)NULL;
-			element_dimension = get_FE_element_dimension(element);
-			for (i = 0; (i < number_of_components) && return_code; i++)
+			display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  "
+				"Missing local-to-global node map for field %s component %d at element %d.",
+				fe_field->name, componentNumber + 1, element->getIdentifier());
+			return false;
+		}
+		const int localNodeCount = eft->getNumberOfLocalNodes();
+		for (int n = 0; n < localNodeCount; ++n)
+		{
+			FE_node *node = nodeset->getNode(nodeIndexes[n]);
+			if (!node)
 			{
-				element_field_component = (element_field->components)[i];
-				/* work out if the node map is appropriate for smoothing */
-				if ((STANDARD_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
-					element_field_component->map.standard_node_based.node_to_element_maps
-					&& (0 < (number_of_nodes = element_field_component->
-						map.standard_node_based.number_of_nodes)) && (
-							((1 == element_dimension) && (2 == number_of_nodes)) ||
-							((2 == element_dimension) && (4 == number_of_nodes)) ||
-							((3 == element_dimension) && (8 == number_of_nodes))))
+				display_message(WARNING_MESSAGE, "FE_element_smooth_FE_field.  Element %d is missing a node",
+					element->getIdentifier());
+				continue;
+			}
+			FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(
+				fe_field, node->fields->node_field_list);
+			if (!node_field)
+			{
+				display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Field not defined at node %d used by element %d",
+					node->getIdentifier(), element->getIdentifier());
+				return false;
+			}
+			if (!FE_field_has_parameters_at_node(node_accumulate_fe_field, node))
+			{
+				// define node_accumulate_fe_field and element_count_fe_field identically to fe_field at node
+				// note: node field DOFs are zeroed by define_FE_field_at_node
+				if (!(define_FE_field_at_node(node, node_accumulate_fe_field, node_field->components, (struct FE_time_sequence *)NULL)
+					&& define_FE_field_at_node(node, element_count_fe_field, node_field->components, (struct FE_time_sequence *)NULL)))
 				{
-					for (n = 0; (n < number_of_nodes) && return_code; n++)
-					{
-						/* get the node_to_element_map and hence the node */
-						Standard_node_to_element_map *standard_node_map =
-							element_field_component->map.standard_node_based.node_to_element_maps[n];
-						if ((standard_node_map) &&
-							get_FE_element_node(element, standard_node_map->node_index,
-								&node) && node)
-						{
-							copy_node[n] =
-								FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-									get_FE_node_identifier(node), copy_node_list);
-							if (!(copy_node[n]))
-							{
-								fe_node_field_creator = (struct FE_node_field_creator *)NULL;
-								if ((fe_field_list ||
-									((fe_field_list = CREATE(LIST(FE_field))()) &&
-										ADD_OBJECT_TO_LIST(FE_field)(fe_field, fe_field_list))) &&
-									(copy_node[n] =
-										FE_node_copy_with_FE_field_list(node, fe_field_list)) &&
-									(fe_node_field_creator =
-										create_FE_node_field_creator_from_node_field(node,
-											fe_field)) &&
-									define_FE_field_at_node(copy_node[n], element_count_fe_field,
-										(struct FE_time_sequence *)NULL, fe_node_field_creator) &&
-									ADD_OBJECT_TO_LIST(FE_node)(copy_node[n], copy_node_list))
-								{
-									FE_value *values;
-									/* assume that element_count_fe_field values are cleared to
-										 zero by define_FE_field_at_node */
-									/* first clear all values for fe_field in copy_node */
-									if (get_FE_nodal_field_FE_value_values(fe_field, node,
-										&number_of_values, time, &values))
-									{
-										for (k = 0; k < number_of_values; k++)
-										{
-											values[k] = 0.0;
-										}
-										if (!set_FE_nodal_field_FE_value_values(fe_field,
-											copy_node[n], values, &number_of_values, time))
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_smooth_FE_field.  Could clear node values");
-											return_code = 0;
-										}
-										DEALLOCATE(values);
-										/* restore the nodal values, all versions */
-										for (j = 0; j < number_of_components; j++)
-										{
-											const int number_of_versions =
-												get_FE_node_field_component_number_of_versions(node, fe_field, /*component*/j);
-											for (int v = 0; v < number_of_versions; ++v)
-											{
-												if (!(get_FE_nodal_FE_value_value(node,
-													fe_field, /*component_number*/j, v,
-													FE_NODAL_VALUE, time, &value) &&
-													set_FE_nodal_FE_value_value(copy_node[n],
-														fe_field, /*component_number*/j, v,
-														FE_NODAL_VALUE, time, value)))
-												{
-													display_message(ERROR_MESSAGE,
-														"FE_element_smooth_FE_field.  "
-														"Could not copy node value");
-													return_code = 0;
-												}
-											}
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_smooth_FE_field.  Could get all node values");
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_smooth_FE_field.  Could not copy node");
-									DESTROY(FE_node)(&(copy_node[n]));
-									return_code = 0;
-								}
-								if (fe_node_field_creator)
-								{
-									DESTROY(FE_node_field_creator)(&fe_node_field_creator);
-								}
-							}
-							/* set unit scale factors */
-							if (return_code && standard_node_map->scale_factor_indices)
-							{
-								for (k = 0; (k < standard_node_map->number_of_nodal_values) &&
-									return_code; k++)
-								{
-									if (0 <=
-										(index = standard_node_map->scale_factor_indices[k]))
-									{
-										if (!set_FE_element_scale_factor(element, index, 1.0))
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_smooth_FE_field.  "
-												"Could set unit scale factor");
-											return_code = 0;
-										}
-									}
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_smooth_FE_field.  Element is missing a node");
-							return_code = 0;
-						}
-					}
-					if (return_code)
-					{
-						/* get nodal values */
-						/* need to calculate field values so that optional modify function can
-								make its changes, and also to handle version mapping */
-						fe_element_field_values = CREATE(FE_element_field_values)();
-						if (calculate_FE_element_field_values(element, fe_field, time,
-							/*calculate_derivatives*/0, fe_element_field_values,
-							/*top_level_element*/(struct FE_element *)NULL))
-						{
-							for (n = 0; (n < number_of_nodes) && return_code; n++)
-							{
-								xi[0] = (FE_value)(n & 1);
-								xi[1] = (FE_value)((n & 2)/2);
-								xi[2] = (FE_value)((n & 4)/4);
-								if (!calculate_FE_element_field(/*component_number*/i,
-									fe_element_field_values, xi, &(component_value[n]),
-									/*jacobian*/(FE_value *)NULL))
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_smooth_FE_field.  Could not calculate element field");
-									return_code = 0;
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_smooth_FE_field.  Could not get element field values");
-							return_code = 0;
-						}
-						DESTROY(FE_element_field_values)(&fe_element_field_values);
-					}
-					if (return_code)
-					{
-						FE_element_accumulate_node_values element_accumulate_node_values(element,
-							element_field_component->map.standard_node_based.node_to_element_maps,
-							copy_node, fe_field, element_count_fe_field, /*component_number*/i, time,
-							component_value);
-						element_accumulate_node_values.accumulate_edge(/*xi*/0, 0, 1);
-						if (1 < element_dimension)
-						{
-							element_accumulate_node_values.accumulate_edge(/*xi*/0, 2, 3);
-							element_accumulate_node_values.accumulate_edge(/*xi*/1, 0, 2);
-							element_accumulate_node_values.accumulate_edge(/*xi*/1, 1, 3);
-							if (2 < element_dimension)
-							{
-								element_accumulate_node_values.accumulate_edge(/*xi*/0, 4, 5);
-								element_accumulate_node_values.accumulate_edge(/*xi*/0, 6, 7);
-								element_accumulate_node_values.accumulate_edge(/*xi*/1, 4, 6);
-								element_accumulate_node_values.accumulate_edge(/*xi*/1, 5, 7);
-								element_accumulate_node_values.accumulate_edge(/*xi*/2, 0, 4);
-								element_accumulate_node_values.accumulate_edge(/*xi*/2, 1, 5);
-								element_accumulate_node_values.accumulate_edge(/*xi*/2, 2, 6);
-								element_accumulate_node_values.accumulate_edge(/*xi*/2, 3, 7);
-							}
-						}
-					}
+					display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Could not define temporary fields at node");
+					return false;
 				}
 			}
-			/* clean up */
-			if (fe_field_list)
+		}
+		/* set unit scale factors */
+		// GRC A bit brutal, this does not take into account how they are used
+		const int localScaleFactorCount = eft->getNumberOfLocalScaleFactors();
+		if (localScaleFactorCount)
+		{
+			std::vector<FE_value> scaleFactors(localScaleFactorCount, 1.0);
+			if (CMZN_OK != meshEFTData->setElementScaleFactors(element->getIndex(), scaleFactors.data()))
 			{
-				DESTROY(LIST(FE_field))(&fe_field_list);
+				display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  Failed to set unit scale factors");
+				return false;
+			}
+		}
+		// get element corner/end values
+		for (int n = 0; n < basisNodeCount; n++)
+		{
+			xi[0] = (FE_value)(n & 1);
+			xi[1] = (FE_value)((n & 2)/2);
+			xi[2] = (FE_value)((n & 4)/4);
+			if (!calculate_FE_element_field(componentNumber,
+				fe_element_field_values, xi, &(component_value[n]),
+				/*jacobian*/(FE_value *)NULL))
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_smooth_FE_field.  Could not calculate element field");
+				return 0;
+			}
+		}
+		if (!return_code)
+			return 0;
+
+		FE_element_accumulate_node_values element_accumulate_node_values(element,
+			eft, nodeset, nodeIndexes, fe_field, node_accumulate_fe_field,
+			element_count_fe_field, componentNumber, time, component_value);
+		element_accumulate_node_values.accumulate_edge(/*xi*/0, 0, 1);
+		if (1 < dimension)
+		{
+			element_accumulate_node_values.accumulate_edge(/*xi*/0, 2, 3);
+			element_accumulate_node_values.accumulate_edge(/*xi*/1, 0, 2);
+			element_accumulate_node_values.accumulate_edge(/*xi*/1, 1, 3);
+			if (2 < dimension)
+			{
+				element_accumulate_node_values.accumulate_edge(/*xi*/0, 4, 5);
+				element_accumulate_node_values.accumulate_edge(/*xi*/0, 6, 7);
+				element_accumulate_node_values.accumulate_edge(/*xi*/1, 4, 6);
+				element_accumulate_node_values.accumulate_edge(/*xi*/1, 5, 7);
+				element_accumulate_node_values.accumulate_edge(/*xi*/2, 0, 4);
+				element_accumulate_node_values.accumulate_edge(/*xi*/2, 1, 5);
+				element_accumulate_node_values.accumulate_edge(/*xi*/2, 2, 6);
+				element_accumulate_node_values.accumulate_edge(/*xi*/2, 3, 7);
 			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_smooth_FE_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_smooth_FE_field */
+	return true;
+}
 
 struct FE_field_order_info *CREATE(FE_field_order_info)(void)
 /*******************************************************************************
@@ -28201,1054 +16435,18 @@ Gets the <field_order_info> field at the specified field_number.
 	return (field);
 } /* get_FE_field_order_field */
 
-int define_node_field_and_field_order_info(struct FE_node *node,
-	struct FE_field *field, struct FE_node_field_creator *node_field_creator,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2001
-
-DESCRIPTION :
-Helper function for create_config_template_node() and
-create_mapping_template_node() that, given the node, field and
-field_order_info, defines the field at the node, and places it at the end of
-the field_order_info list.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(define_node_field_and_field_order_info);
-	return_code = 0;
-	if (node && field && field_order_info && node_field_creator)
-	{
-		return_code = 1;
-		if (define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
-			node_field_creator))
-		{
-			if (!add_FE_field_order_info_field(field_order_info, field))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_node_field_and_field_order_info.  "
-					"Could not add field to list");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"define_node_field_and_field_order_info.  "
-				"Could not define field at node");
-			/*???RC This should not have been here: */
-			/* DESTROY(FE_field)(&field); */
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_node_field_and_field_order_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_node_field_and_field_order_info */
-
-struct FE_node_order_info *CREATE(FE_node_order_info)(
-	int number_of_nodes)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Allocate space for an array of pointers to nodes of length number_of_nodes,
-set these to NULL, copy the number_of_nodes.
-==============================================================================*/
-{
-	int i;
-	struct FE_node_order_info *node_order_info;
-
-	ENTER(CREATE(FE_node_order_info));
-	if (ALLOCATE(node_order_info,struct FE_node_order_info,1))
-	{
-		if (number_of_nodes>0)
-		{
-			if (ALLOCATE(node_order_info->nodes,struct FE_node *,
-				number_of_nodes))
-			{
-				node_order_info->number_of_nodes = number_of_nodes;
-				for (i=0;i<number_of_nodes;i++)
-				{
-					node_order_info->nodes[i]=(struct FE_node *)NULL;
-				}
-				node_order_info->access_count=0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"CREATE(FE_node_order_info).  Could not allocate memory for node_field_info->nodes");
-				DEALLOCATE(node_order_info->nodes);
-				DEALLOCATE(node_order_info);
-			}
-		}
-		else
-		{
-			node_order_info->number_of_nodes=0;
-			node_order_info->nodes=(struct FE_node **)NULL;
-			node_order_info->access_count=0;
-		}
-		node_order_info->current_node_number=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"CREATE(FE_node_order_info).  Could not allocate memory for node field info");
-		DEALLOCATE(node_order_info);
-	}
-	LEAVE;
-
-	return (node_order_info);
-} /* CREATE(FE_node_order_info) */
-
-int DESTROY(FE_node_order_info)(
-	struct FE_node_order_info **node_order_info_address)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Frees them memory used by node_order_info.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_node_order_info *node_order_info;
-	struct FE_node *node;
-
-	ENTER(DESTROY(FE_node_order_info));
-	return_code=0;
-	if ((node_order_info_address)&&
-		(node_order_info= *node_order_info_address))
-	{
-		/* free the components */
-		for (i=0;i<node_order_info->number_of_nodes;i++)
-		{
-			node=node_order_info->nodes[i];
-			DEACCESS(FE_node)(&node);
-		}
-		DEALLOCATE(node_order_info->nodes);
-		DEALLOCATE(*node_order_info_address);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_node_order_info) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_node_order_info)
-
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 11 August 1999
-
-DESCRIPTION :
-Makes an exacy copy of the FE_node_order_info
-==============================================================================*/
-{
-	int return_code,i;
-
-	ENTER(COPY(FE_node_order_info));
-	return_code=0;
-	/* check the arguments */
-	if (source&&destination)
-	{
-		/* free any existing the destination things */
-		if (destination->number_of_nodes)
-		{
-			for (i=0;i<destination->number_of_nodes;i++)
-			{
-				DEACCESS(FE_node)(&(destination->nodes[i]));
-			}
-			DEALLOCATE(destination->nodes);
-			destination->number_of_nodes=0;
-		}
-		if (ALLOCATE(destination->nodes,struct FE_node*,source->number_of_nodes))
-		{
-			/* copy the new */
-			destination->number_of_nodes=source->number_of_nodes;
-			for (i=0;i<destination->number_of_nodes;i++)
-			{
-				destination->nodes[i]=ACCESS(FE_node)(source->nodes[i]);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"COPY(FE_node_order_info).  Out of memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"COPY(FE_node_order_info).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* COPY(FE_node_order_info) */
-
-int get_FE_node_order_info_number_of_nodes(
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> number_of_nodes
-==============================================================================*/
-{
-	int number_of_nodes;
-
-	ENTER(get_FE_node_order_info_number_of_nodes);
-	if (node_order_info)
-	{
-		number_of_nodes=node_order_info->number_of_nodes;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_number_of_nodes.  Invalid argument");
-		number_of_nodes=0;
-	}
-	LEAVE;
-
-	return (number_of_nodes);
-} /* get_FE_node_order_info_number_of_nodes */
-
-struct FE_node *get_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Gets the <node_order_info> node at the specified node_number
-==============================================================================*/
-{
-	struct FE_node *node;
-
-	ENTER(get_FE_node_order_info_node);
-	if ((node_order_info)&&
-		(node_number<=node_order_info->number_of_nodes))
-	{
-		node=node_order_info->nodes[node_number];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_node.  Invalid argument");
-		node=(struct FE_node *)NULL;
-	}
-	LEAVE;
-
-	return (node);
-} /* get_FE_node_order_info_node */
-
-int set_FE_node_order_info_node(
-	struct FE_node_order_info *node_order_info,int node_number,
-	struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 16 August 1999
-
-DESCRIPTION :
-Sets the <node_order_info> node at the specified node_number.
-Also sets the current_node_number to <the node_number>
-==============================================================================*/
-{
-	int return_code
-
-	ENTER(set_FE_node_order_info_node);
-	return_code=0;
-	if ((node_order_info)&&
-		(node_number<=node_order_info->number_of_nodes)&&(node))
-	{
-		REACCESS(FE_node)(&(node_order_info->nodes[node_number]),node);
-		node_order_info->current_node_number=node_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_node_order_info_node.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_node_group_order_node */
-
-int get_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-gets the <node_order_info> <current_node_number>
-==============================================================================*/
-{
-	int current_node_number;
-
-	ENTER(get_FE_node_order_info_current_node_number);
-	if (node_order_info&&(node_order_info->number_of_nodes>0))
-	{
-		current_node_number=node_order_info->current_node_number;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_current_node_number.  Invalid argument");
-		current_node_number=-1;
-	}
-	LEAVE;
-
-	return (current_node_number);
-} /* get_FE_node_order_info_current_node_number */
-
-int set_FE_node_order_info_current_node_number(
-	struct FE_node_order_info *node_order_info,int current_node_number)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Sets the <node_order_info> <current_node_number>
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_node_order_info_current_node_number);
-	return_code=0;
-	if ((node_order_info)&&(current_node_number>-1)&&
-		(current_node_number<=node_order_info->number_of_nodes))
-	{
-		node_order_info->current_node_number=current_node_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_node_order_info_current_node_number.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_node_order_info_current_node_number */
-
-struct FE_node *get_FE_node_order_info_current_node(
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> node at the current_node_number
-==============================================================================*/
-{
-	struct FE_node *node;
-
-	ENTER(get_FE_node_order_info_current_node);
-	if (node_order_info)
-	{
-		if (node_order_info->number_of_nodes)
-		{
-			node=node_order_info->nodes[node_order_info->current_node_number];
-		}
-		else
-		{
-			node=(struct FE_node *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_current_node.  Invalid argument");
-		node=(struct FE_node *)NULL;
-	}
-	LEAVE;
-
-	return (node);
-} /*get_FE_node_order_info_current_node  */
-
-struct FE_node *get_FE_node_order_info_next_node(
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the end of the array, return null.
-==============================================================================*/
-{
-	struct FE_node *node;
-
-	ENTER(get_FE_node_order_info_next_node);
-	if (node_order_info)
-	{
-		if ((node_order_info->number_of_nodes)&&
-			(node_order_info->current_node_number<(node_order_info->number_of_nodes-1)))
-		{
-			node_order_info->current_node_number++;
-			node=node_order_info->nodes[node_order_info->current_node_number];
-		}
-		else
-		{
-			node=(struct FE_node *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_next_node.  Invalid argument");
-		node=(struct FE_node *)NULL;
-	}
-	LEAVE;
-
-	return (node);
-} /*get_FE_node_order_info_next_node  */
-
-struct FE_node *get_FE_node_order_info_prev_node(
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 17 August 2000
-
-DESCRIPTION :
-Gets the <node_order_info> next node by incrementing the current_node_number,
-and returning the new current node. If at the start of the array, return null.
-==============================================================================*/
-{
-	struct FE_node *node;
-
-	ENTER(get_FE_node_order_info_prev_node);
-	if (node_order_info)
-	{
-		if ((node_order_info->number_of_nodes)&&
-			(node_order_info->current_node_number>0))
-		{
-			node_order_info->current_node_number--;
-			node=node_order_info->nodes[node_order_info->current_node_number];
-		}
-		else
-		{
-			node=(struct FE_node *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_node_order_info_prev_node.  Invalid argument");
-		node=(struct FE_node *)NULL;
-	}
-	LEAVE;
-
-	return (node);
-} /*get_FE_node_order_info_prev_node  */
-
-int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
-	struct FE_node_order_info *node_order_info)
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Reallocates space for more  nodes in a previously created
-FE_node_order_info.  Use set_FE_node_order_info to set up the nodes.
-==============================================================================*/
-{
-	int i,return_code,old_number_of_nodes;
-	struct FE_node **nodes;
-
-	ENTER(add_nodes_FE_node_order_info)
-	return_code=0;
-	if (node_order_info)
-	{
-		old_number_of_nodes=node_order_info->number_of_nodes;
-		node_order_info->number_of_nodes += number_of_nodes_to_add;
-		if (REALLOCATE(nodes,node_order_info->nodes,struct FE_node *,
-			node_order_info->number_of_nodes))
-		{
-			node_order_info->nodes=nodes;
-			/*set the new nodes to null*/
-			for (i=old_number_of_nodes;i<node_order_info->number_of_nodes;i++)
-			{
-				node_order_info->nodes[i]=(struct FE_node *)NULL;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_order_info_add_node.  Out of memory ");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_order_info_add_node.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_order_info_add_node */
-
-int fill_FE_node_order_info(struct FE_node *node,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Allocate space for and add an FE_node to previously created
-FE_node_order_info (passed in dummy).
-Called iteratively.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_node **nodes;
-	struct FE_node_order_info *node_order_info;
-
-	ENTER(fill_FE_node_order_info)
-	return_code=0;
-	if (node&&dummy)
-	{
-		node_order_info=(struct FE_node_order_info *)dummy;
-		node_order_info->number_of_nodes++;
-		/* reallocate space for pointer to the node */
-		if (REALLOCATE(nodes,node_order_info->nodes,struct FE_node *,
-			node_order_info->number_of_nodes))
-		{
-			node_order_info->nodes=nodes;
-			/* set the pointer to the node */
-			node_order_info->nodes[node_order_info->number_of_nodes-1]=
-				ACCESS(FE_node)(node);
-			node_order_info->current_node_number=node_order_info->number_of_nodes-1;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"fill_FE_node_order_info. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* fill_FE_node_order_info */
-
-struct FE_element_order_info *CREATE(FE_element_order_info)(
-	int number_of_elements)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Allocate space for an array of pointers to elements of length number_of_elements,
-set these to NULL, copy the number_of_elements.
-==============================================================================*/
-{
-	int i;
-	struct FE_element_order_info *element_order_info;
-
-	ENTER(CREATE(FE_element_order_info));
-	if (ALLOCATE(element_order_info,struct FE_element_order_info,1))
-	{
-		if (number_of_elements>0)
-		{
-			if (ALLOCATE(element_order_info->elements,struct FE_element *,
-				number_of_elements))
-			{
-				element_order_info->number_of_elements = number_of_elements;
-				for (i=0;i<number_of_elements;i++)
-				{
-					element_order_info->elements[i]=(struct FE_element *)NULL;
-				}
-				element_order_info->access_count=0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"CREATE(FE_element_order_info).  Could not allocate memory for element_field_info->elements");
-				DEALLOCATE(element_order_info->elements);
-				DEALLOCATE(element_order_info);
-			}
-		}
-		else
-		{
-			element_order_info->number_of_elements=0;
-			element_order_info->elements=(struct FE_element **)NULL;
-			element_order_info->access_count=0;
-		}
-		element_order_info->current_element_number=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"CREATE(FE_element_order_info).  Could not allocate memory for element field info");
-		DEALLOCATE(element_order_info);
-	}
-	LEAVE;
-
-	return (element_order_info);
-} /* CREATE(FE_element_order_info) */
-
-int DESTROY(FE_element_order_info)(
-	struct FE_element_order_info **element_order_info_address)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Frees them memory used by element_order_info.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_element_order_info *element_order_info;
-	struct FE_element *element;
-
-	ENTER(DESTROY(FE_element_order_info));
-	return_code=0;
-	if ((element_order_info_address)&&
-		(element_order_info= *element_order_info_address))
-	{
-		/* free the components */
-		for (i=0;i<element_order_info->number_of_elements;i++)
-		{
-			element=element_order_info->elements[i];
-			DEACCESS(FE_element)(&element);
-		}
-		DEALLOCATE(element_order_info->elements);
-		DEALLOCATE(*element_order_info_address);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_element_order_info) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_element_order_info)
-
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Makes an exacy copy of the FE_element_order_info
-==============================================================================*/
-{
-	int return_code,i;
-
-	ENTER(COPY(FE_element_order_info));
-	return_code=0;
-	/* check the arguments */
-	if (source&&destination)
-	{
-		/* free any existing the destination things */
-		if (destination->number_of_elements)
-		{
-			for (i=0;i<destination->number_of_elements;i++)
-			{
-				DEACCESS(FE_element)(&(destination->elements[i]));
-			}
-			DEALLOCATE(destination->elements);
-			destination->number_of_elements=0;
-		}
-		if (ALLOCATE(destination->elements,struct FE_element*,source->number_of_elements))
-		{
-			/* copy the new */
-			destination->number_of_elements=source->number_of_elements;
-			for (i=0;i<destination->number_of_elements;i++)
-			{
-				destination->elements[i]=ACCESS(FE_element)(source->elements[i]);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"COPY(FE_element_order_info).  Out of memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"COPY(FE_element_order_info).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* COPY(FE_element_order_info) */
-
-int get_FE_element_order_info_number_of_elements(
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> number_of_elements
-==============================================================================*/
-{
-	int number_of_elements;
-
-	ENTER(get_FE_element_order_info_number_of_elements);
-	if (element_order_info)
-	{
-		number_of_elements=element_order_info->number_of_elements;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_number_of_elements.  Invalid argument");
-		number_of_elements=0;
-	}
-	LEAVE;
-
-	return (number_of_elements);
-} /* get_FE_element_order_info_number_of_elements */
-
-struct FE_element *get_FE_element_order_info_element(
-	struct FE_element_order_info *element_order_info,int element_number)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> element at the specified element_number
-==============================================================================*/
-{
-	struct FE_element *element;
-
-	ENTER(get_FE_element_order_info_element);
-	if ((element_order_info)&&
-		(element_number<=element_order_info->number_of_elements))
-	{
-		element=element_order_info->elements[element_number];
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_element.  Invalid argument");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /* get_FE_element_order_info_element */
-
-int set_FE_element_order_info_element(
-	struct FE_element_order_info *element_order_info,int element_number,
-	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Sets the <element_order_info> element at the specified element_number.
-Also sets the current_element_number to <the element_number>
-==============================================================================*/
-{
-	int return_code
-
-	ENTER(set_FE_element_order_info_element);
-	return_code=0;
-	if ((element_order_info)&&
-		(element_number<=element_order_info->number_of_elements)&&(element))
-	{
-		REACCESS(FE_element)(&(element_order_info->elements[element_number]),element);
-		element_order_info->current_element_number=element_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_element.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_group_order_element */
-
-int get_FE_element_order_info_current_element_number(
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-gets the <element_order_info> <current_element_number>
-==============================================================================*/
-{
-	int current_element_number;
-
-	ENTER(get_FE_element_order_info_current_element_number);
-	if (element_order_info&&(element_order_info->number_of_elements>0))
-	{
-		current_element_number=element_order_info->current_element_number;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_current_element_number.  Invalid argument");
-		current_element_number=-1;
-	}
-	LEAVE;
-
-	return (current_element_number);
-} /* set_FE_element_order_info_current_element_number */
-
-int set_FE_element_order_info_current_element_number(
-	struct FE_element_order_info *element_order_info,int current_element_number)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Sets the <element_order_info> <current_element_number>
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_FE_element_order_info_current_element_number);
-	return_code=0;
-	if ((element_order_info)&&(current_element_number>-1)&&
-		(current_element_number<=element_order_info->number_of_elements))
-	{
-		element_order_info->current_element_number=current_element_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_order_info_current_element_number.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_order_info_current_element_number */
-
-struct FE_element *get_FE_element_order_info_current_element(
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> element at the current_element_number
-==============================================================================*/
-{
-	struct FE_element *element;
-
-	ENTER(get_FE_element_order_info_current_element);
-	if (element_order_info)
-	{
-		if (element_order_info->number_of_elements)
-		{
-			element=element_order_info->elements[element_order_info->current_element_number];
-		}
-		else
-		{
-			element=(struct FE_element *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_current_element.  Invalid argument");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /*get_FE_element_order_info_current_element  */
-
-struct FE_element *get_FE_element_order_info_next_element(
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> next element by incrementing the current_element_number,
-and returning the new current element. If at the end of the array, return null.
-==============================================================================*/
-{
-	struct FE_element *element;
-
-	ENTER(get_FE_element_order_info_next_element);
-	if (element_order_info)
-	{
-		if ((element_order_info->number_of_elements)&&
-			(element_order_info->current_element_number<(element_order_info->number_of_elements-1)))
-		{
-			element_order_info->current_element_number++;
-			element=element_order_info->elements[element_order_info->current_element_number];
-		}
-		else
-		{
-			element=(struct FE_element *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_next_element.  Invalid argument");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /*get_FE_element_order_info_next_element  */
-
-struct FE_element *get_FE_element_order_info_prev_element(
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Gets the <element_order_info> next element by incrementing the current_element_number,
-and returning the new current element. If at the start of the array, return null.
-==============================================================================*/
-{
-	struct FE_element *element;
-
-	ENTER(get_FE_element_order_info_prev_element);
-	if (element_order_info)
-	{
-		if ((element_order_info->number_of_elements)&&
-			(element_order_info->current_element_number>0))
-		{
-			element_order_info->current_element_number--;
-			element=element_order_info->elements[element_order_info->current_element_number];
-		}
-		else
-		{
-			element=(struct FE_element *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_order_info_prev_element.  Invalid argument");
-		element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (element);
-} /*get_FE_element_order_info_prev_element  */
-
-int add_elements_FE_element_order_info(int number_of_elements_to_add,
-	struct FE_element_order_info *element_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Reallocates space for more  elements in a previously created
-FE_element_order_info.  Use set_FE_element_order_info to set up the elements.
-==============================================================================*/
-{
-	int i,return_code,old_number_of_elements;
-	struct FE_element **elements;
-
-	ENTER(add_elements_FE_element_order_info)
-	return_code=0;
-	if (element_order_info)
-	{
-		old_number_of_elements=element_order_info->number_of_elements;
-		element_order_info->number_of_elements += number_of_elements_to_add;
-		if (REALLOCATE(elements,element_order_info->elements,struct FE_element *,
-			element_order_info->number_of_elements))
-		{
-			element_order_info->elements=elements;
-			/*set the new elements to null*/
-			for (i=old_number_of_elements;i<element_order_info->number_of_elements;
-				i++)
-			{
-				element_order_info->elements[i]=(struct FE_element *)NULL;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_order_info_add_element.  Out of memory ");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_order_info_add_element.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_order_info_add_element */
-
-int fill_FE_element_order_info(struct FE_element *element,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-Allocate space for and add an FE_element to previously created
-FE_element_order_info (passed in dummy).
-Called iteratively.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element **elements;
-	struct FE_element_order_info *element_order_info;
-
-	ENTER(fill_FE_element_order_info)
-	return_code=0;
-	if (element&&dummy)
-	{
-		element_order_info=(struct FE_element_order_info *)dummy;
-		element_order_info->number_of_elements++;
-		/* reallocate space for pointer to the element */
-		if (REALLOCATE(elements,element_order_info->elements,struct FE_element *,
-			element_order_info->number_of_elements))
-		{
-			element_order_info->elements=elements;
-			/* set the pointer to the element */
-			element_order_info->elements[element_order_info->number_of_elements-1]=
-				ACCESS(FE_element)(element);
-			element_order_info->current_element_number=element_order_info->number_of_elements-1;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"fill_FE_element_order_info. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* fill_FE_element_order_info */
-
 int FE_element_get_number_of_change_to_adjacent_element_permutations(
 	struct FE_element *element, FE_value *xi, int face_number)
-/*******************************************************************************
-LAST MODIFIED : 8 June 2006
-
-DESCRIPTION :
-Returns the number of permutations known for the changing to the adjacent
-element at face <face_number>.
-==============================================================================*/
 {
 	int number_of_permutations;
 
 	USE_PARAMETER(xi);
 	FE_mesh *faceMesh, *fe_mesh;
-	if ((element) && (element->fields) && (fe_mesh = element->fields->fe_mesh) &&
+	if ((element) && (fe_mesh = element->getMesh()) &&
 		(faceMesh = fe_mesh->getFaceMesh()))
 	{
 		number_of_permutations = 1;
-		DsLabelIndex faceIndex = fe_mesh->getElementFace(element->index, face_number);
+		DsLabelIndex faceIndex = fe_mesh->getElementFace(element->getIndex(), face_number);
 		if (faceIndex >= 0)
 		{
 			number_of_permutations = 1;
@@ -29284,38 +16482,21 @@ element at face <face_number>.
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
 	int permutation)
-/*******************************************************************************
-LAST MODIFIED : 8 June 2006
-
-DESCRIPTION :
-Steps into the adjacent element through face <face_number>, updating the
-<element_address> location.
-If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
-location in the new element.
-If <increment> is not NULL then it is converted into an equvalent increment
-in the new element.
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
-<permutation> is used to resolve the possible rotation and flipping of the
-local face xi coordinates between the two parents.
-The shape mapping from parents are reused for all elements of the same shape
-and do not take into account the relative orientation of the parents.
-==============================================================================*/
 {
 	int return_code = 0;
 	int dimension = 0;
 	struct FE_element *element;
 	FE_element_shape *element_shape;
 	FE_mesh *faceMesh, *fe_mesh;
-	if ((element_address) && (element = *element_address) && (element->fields) &&
-		(fe_mesh = element->fields->fe_mesh) &&
-		(faceMesh = element->fields->fe_mesh->getFaceMesh()) &&
+	if ((element_address) && (element = *element_address) &&
+		(fe_mesh = element->getMesh()) &&
+		(faceMesh = fe_mesh->getFaceMesh()) &&
 		(0 != (element_shape = get_FE_element_shape(element))) &&
 		(0 < (dimension = element_shape->dimension)) &&
 		(0<=*face_number)&&(*face_number<element_shape->number_of_faces))
 	{
 		int new_face_number;
-		DsLabelIndex newElementIndex = fe_mesh->getElementFirstNeighbour(element->index, *face_number, new_face_number);
+		DsLabelIndex newElementIndex = fe_mesh->getElementFirstNeighbour(element->getIndex(), *face_number, new_face_number);
 		if (newElementIndex < 0)
 		{
 			/* no adjacent element found */
@@ -29324,7 +16505,7 @@ and do not take into account the relative orientation of the parents.
 		}
 		else
 		{
-			DsLabelIndex faceIndex = fe_mesh->getElementFace(element->index, *face_number);
+			DsLabelIndex faceIndex = fe_mesh->getElementFace(element->getIndex(), *face_number);
 			FE_element_shape *face_shape = faceMesh->getElementShape(faceIndex);
 			FE_element *new_element = fe_mesh->getElement(newElementIndex);
 			if (face_shape && new_element)
@@ -29505,16 +16686,6 @@ and do not take into account the relative orientation of the parents.
 
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 	FE_value *increment)
-/*******************************************************************************
-LAST MODIFIED : 23 June 2004
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-if an adjacent element is found then the element and xi location are changed
-to this element and the stepping continues using the remaining increment.  If
-no adjacent element is found then the <xi> will be on the element boundary and
-the <increment> will contain the fraction of the increment not used.
-==============================================================================*/
 {
 	FE_value fraction;
 	int face_number,i,return_code;
@@ -29583,262 +16754,9 @@ the <increment> will contain the fraction of the increment not used.
 	return (return_code);
 } /* FE_element_xi_increment */
 
-int FE_element_define_tensor_product_basis(struct FE_element *element,
-	int dimension, enum FE_basis_type basis_type, struct FE_field *field)
-{
-	int *basis_type_array,i,j,k,number_of_components,number_of_nodes,
-		number_of_nodes_per_xi,number_of_scale_factors,
-		old_number_of_nodes,old_number_of_scale_factor_sets,return_code,
-		*xi_basis_type;
-	struct FE_basis *element_basis;
-	struct FE_element_field_component *component,**components;
-	struct Standard_node_to_element_map *standard_node_map;
-
-	ENTER(FE_element_define_tensor_product_basis);
-	return_code=1;
-	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-	if (element && (dimension > 0) && fe_mesh &&
-		((LINEAR_LAGRANGE == basis_type) ||
-		 (QUADRATIC_LAGRANGE == basis_type) ||
-		 (CUBIC_LAGRANGE == basis_type) ||
-		 (CUBIC_HERMITE == basis_type)) &&
-		(dimension == fe_mesh->getDimension()) && field)
-	{
-		/* make basis */
-		element_basis=(struct FE_basis *)NULL;
-		if (return_code)
-		{
-			/* make default N-linear basis */
-			if (ALLOCATE(basis_type_array,int,
-					 1+(dimension*(1+dimension))/2))
-			{
-				xi_basis_type=basis_type_array;
-				*xi_basis_type=dimension;
-				xi_basis_type++;
-				for (i=dimension;0<i;i--)
-				{
-					for (j=i;0<j;j--)
-					{
-						if (i==j)
-						{
-							*xi_basis_type=basis_type;
-						}
-						else
-						{
-							*xi_basis_type=NO_RELATION;
-						}
-						xi_basis_type++;
-					}
-				}
-				if (NULL != (element_basis = make_FE_basis(basis_type_array,
-					FE_region_get_basis_manager(fe_mesh->get_FE_region()))))
-				{
-					ACCESS(FE_basis)(element_basis);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_define_tensor_product_basis.  Error creating shape");
-					return_code=0;
-				}
-				DEALLOCATE(basis_type_array);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_define_tensor_product_basis.  Not enough memory");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			switch (basis_type)
-			{
-				case QUADRATIC_LAGRANGE:
-				{
-					number_of_nodes_per_xi = 3;
-				} break;
-				case CUBIC_LAGRANGE:
-				{
-					number_of_nodes_per_xi = 4;
-				} break;
-				default:
-				{
-					number_of_nodes_per_xi = 2;
-				} break;
-			}
-			number_of_nodes=1;
-			for (i=0;i<dimension;i++)
-			{
-				number_of_nodes *= number_of_nodes_per_xi;
-			}
-			int number_of_values_per_node = 1;
-			if (CUBIC_HERMITE == basis_type)
-			{
-				for (i = 0; i < dimension; ++i)
-					number_of_values_per_node *= 2;
-			}
-			number_of_scale_factors = number_of_nodes*number_of_values_per_node;
-			if (get_FE_element_number_of_nodes(element,&old_number_of_nodes) &&
-				get_FE_element_number_of_scale_factor_sets(element,
-					&old_number_of_scale_factor_sets))
-			{
-				char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
-				cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
-				if (!scale_factor_set)
-				{
-					scale_factor_set = fe_mesh->create_scale_factor_set();
-					scale_factor_set->setName(scale_factor_set_name);
-				}
-				DEALLOCATE(scale_factor_set_name);
-
-				number_of_nodes += old_number_of_nodes;
-				if (old_number_of_scale_factor_sets)
-				{
-					/* Currently this cannot be increased so we must find it */
-					i = 0;
-					while ((i < old_number_of_scale_factor_sets) &&
-						(get_FE_element_scale_factor_set_identifier_at_index(element, i) != scale_factor_set))
-					{
-						i++;
-					}
-					if (i == old_number_of_scale_factor_sets)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_define_tensor_product_basis.  "
-							"Currently unable to add to an existing list of scale factors sets");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					set_FE_element_number_of_scale_factor_sets(
-						element, /*number_of_scale_factor_sets*/1,
-						/*scale_factor_set_identifiers*/&scale_factor_set,
-						/*numbers_in_scale_factor_sets*/&number_of_scale_factors);
-				}
-				cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-				if (return_code)
-				{
-					if (set_FE_element_number_of_nodes(element,
-							number_of_nodes))
-					{
-						number_of_components = get_FE_field_number_of_components(
-							field);
-						if (ALLOCATE(components,struct FE_element_field_component *,
-								number_of_components))
-						{
-							for (i=0;i<number_of_components;i++)
-							{
-								components[i]=(struct FE_element_field_component *)NULL;
-							}
-							for (i=0;(i<number_of_components)&&return_code;i++)
-							{
-								if (NULL != (component=CREATE(FE_element_field_component)(
-										 STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,
-										 element_basis,(FE_element_field_component_modify)NULL)))
-								{
-									for (j=0;j<number_of_nodes;j++)
-									{
-										standard_node_map = Standard_node_to_element_map_create(/*node_index*/j, number_of_values_per_node);
-										if (!standard_node_map)
-										{
-											return_code = 0;
-											break;
-										}
-										for (k = 0; k < number_of_values_per_node; ++k)
-										{
-											if (!(Standard_node_to_element_map_set_nodal_value_type(
-													standard_node_map, k, static_cast<FE_nodal_value_type>(FE_NODAL_VALUE + k)) &&
-												Standard_node_to_element_map_set_scale_factor_index(
-													standard_node_map, k, j * number_of_values_per_node + k) &&
-												/* set scale_factors to 1 */
-												set_FE_element_scale_factor(element,
-													/*scale_factor_number*/j * number_of_values_per_node + k, 1.0)))
-											{
-												return_code = 0;
-												break;
-											}
-										}
-										if (return_code)
-										{
-											return_code = FE_element_field_component_set_standard_node_map(
-												component, /*node_number*/j, standard_node_map);
-										}
-										else
-										{
-											Standard_node_to_element_map_destroy(&standard_node_map);
-											break;
-										}
-									}
-								}
-								else
-								{
-									return_code=0;
-								}
-								components[i]=component;
-							}
-							if (return_code)
-							{
-								if (!define_FE_field_at_element(element, field, components))
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_define_tensor_product_basis.  "
-										"Could not define coordinate field at template_element");
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_define_tensor_product_basis.  "
-									"Could not create components");
-								return_code = 0;
-							}
-							for (i=0;i<number_of_components;i++)
-							{
-								DESTROY(FE_element_field_component)(&(components[i]));
-							}
-							DEALLOCATE(components);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_define_tensor_product_basis.  "
-							"Could not allocate components");
-						return_code=0;
-					}
-				}
-			}
-		}
-		/* deaccess basis and shape so at most used by template element */
-		if (element_basis)
-		{
-			DEACCESS(FE_basis)(&element_basis);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_define_tensor_product_basis.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_define_tensor_product_basis */
-
 int cmzn_node_set_identifier(cmzn_node_id node, int identifier)
 {
 	if (node && node->fields)
 		return node->fields->fe_nodeset->change_FE_node_identifier(node, identifier);
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
-{
-	if (element && element->fields)
-		return element->fields->fe_mesh->change_FE_element_identifier(element, identifier);
 	return CMZN_ERROR_ARGUMENT;
 }

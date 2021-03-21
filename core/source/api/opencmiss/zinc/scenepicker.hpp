@@ -71,12 +71,12 @@ public:
 		return id;
 	}
 
-	int setSceneviewerRectangle(const Sceneviewer& sceneviewer, Scenecoordinatesystem coordinateSystem, double x1,
+	int setSceneviewerRectangle(const Sceneviewer& sceneviewer, Scenecoordinatesystem scenecoordinatesystem, double x1,
 		double y1, double x2, double y2)
 	{
 		return cmzn_scenepicker_set_sceneviewer_rectangle(
 			id , sceneviewer.getId(),
-			static_cast<cmzn_scenecoordinatesystem>(coordinateSystem),
+			static_cast<cmzn_scenecoordinatesystem>(scenecoordinatesystem),
 			x1, y1, x2, y2);
 	}
 

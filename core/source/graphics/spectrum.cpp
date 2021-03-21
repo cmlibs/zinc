@@ -1996,7 +1996,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	{
 		colour_components = Spectrum_get_colour_components(spectrum);
 		/* The component layout here must match the understanding of
-			the texture components in the material programs */
+			the texture components in the shader programs */
 		/* Could save memory by having a special treatment for MONOCHROME
 			spectrums */
 		if (colour_components & SPECTRUM_COMPONENT_ALPHA)
@@ -2005,7 +2005,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			{
 				/* Alpha only */
 				number_of_texture_components = 1;
-				/* We don't have an ALPHA only format and the material program
+				/* We don't have an ALPHA only format and the shader program
 					now does the interpretation anyway */
 				storage = TEXTURE_LUMINANCE;
 			}

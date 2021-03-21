@@ -1,6 +1,6 @@
 {
    "AntialiasSampling" : 8,
-   "BackgroundColourRGB" : [ 0.6, 0.55, 0.4 ],
+   "BackgroundColourRGBA" : [ 0.6, 0.55, 0.4, 0.85 ],
    "EyePosition" : [ 0, 1, 0 ],
    "FarClippingPlane" : 700,
    "LightingLocalViewer" : true,

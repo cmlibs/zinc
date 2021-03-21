@@ -12,6 +12,11 @@
  */
 
 %module(package="opencmiss.zinc") fieldmodule
+%include "pyzincstringhandling.i"
+%typemap(in) (const char *fieldName) = (const char *name);
+%typemap(in) (const char *nodeset_name) = (const char *name);
+%typemap(in) (const char *meshName) = (const char *name);
+%typemap(in) (const char *stringConstant) = (const char *name);
 
 %extend OpenCMISS::Zinc::Fieldmodulenotifier {
 

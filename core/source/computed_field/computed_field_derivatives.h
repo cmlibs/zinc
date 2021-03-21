@@ -17,4 +17,6 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 
 #include "opencmiss/zinc/fieldderivatives.h"
 
+int cmzn_field_derivative_get_xi_index(cmzn_field_id field);
+
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

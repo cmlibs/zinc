@@ -14,6 +14,7 @@ The function prototypes for creating graphical objects from finite elements.
 #if !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H)
 #define FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H
 
+#include "opencmiss/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"

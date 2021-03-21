@@ -11,11 +11,15 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/context.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/differentialoperator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/element.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementbasis.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementfieldtemplate.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementtemplate.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldcache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/field.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldmodule.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldalias.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldarithmeticoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldassignment.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldcomposite.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldconditional.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldconstant.hpp
@@ -42,14 +46,19 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/light.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/logger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodeset.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodetemplate.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scene.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenefilter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenepicker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/sceneviewer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/sceneviewerinput.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/shader.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/selection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/spectrum.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/status.hpp

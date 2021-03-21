@@ -11,6 +11,9 @@
  */
 
 %module(package="opencmiss.zinc") glyph
+%include "pyzincstringhandling.i"
+%typemap(in) (const char *label) = (const char *name);
+%typemap(in) (const char *numberFormat) = (const char *name);
 
 %extend OpenCMISS::Zinc::Glyphmodulenotifier {
 	int setCallback(PyObject *callbackObject)

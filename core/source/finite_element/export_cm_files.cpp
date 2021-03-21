@@ -10,12 +10,22 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 
+#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/export_cm_files.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -113,41 +123,45 @@ struct FE_element_field_add_basis_data
 static int FE_element_field_add_basis_to_list(
 	struct FE_element *element, FE_element_field_add_basis_data *data)
 {
-	int basis_type_array[4], dimension, i, return_code, xi1, xi2;
-	struct FE_basis *face_basis, *fe_basis;
+	int return_code;
 	if (element && data)
 	{
+		int basis_type_array[4], dimension, xi1, xi2;
+		struct FE_basis *face_basis, *fe_basis;
 		return_code = 1;
-		if (FE_element_field_is_standard_node_based(element, data->field))
+		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, element->getMesh());
+		if (!meshFieldData)
 		{
-			for (i = 0 ; return_code && (i < data->number_of_components) ; i++)
+			return 1; // not defined on mesh
+		}
+		for (int i = 0 ; return_code && (i < data->number_of_components) ; i++)
+		{
+			FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(i);
+			FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+			if (!eft)
+				return 1; // not defined on element
+			fe_basis = eft->getBasis();
+			if (!IS_OBJECT_IN_LIST(FE_basis)(fe_basis, data->basis_types))
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field,
-					/*component_number*/i, &fe_basis);
-				if (!IS_OBJECT_IN_LIST(FE_basis)(fe_basis, data->basis_types))
+				return_code = ADD_OBJECT_TO_LIST(FE_basis)(fe_basis, data->basis_types);
+				FE_basis_get_dimension(fe_basis, &dimension);
+				if (dimension == 3)
 				{
-					return_code = ADD_OBJECT_TO_LIST(FE_basis)(fe_basis,
-						data->basis_types);
-
-					FE_basis_get_dimension(fe_basis, &dimension);
-					if (dimension == 3)
+					/* Add the face bases into the list */
+					basis_type_array[0] = /*dimension*/2;
+					basis_type_array[2] = /*off diagonal*/NO_RELATION;
+					for (xi1 = 0 ; xi1 < dimension ; xi1++)
 					{
-						/* Add the face bases into the list */
-						basis_type_array[0] = /*dimension*/2;
-						basis_type_array[2] = /*off diagonal*/NO_RELATION;
-						for (xi1 = 0 ; xi1 < dimension ; xi1++)
+						FE_basis_get_xi_basis_type(fe_basis, xi1, reinterpret_cast<FE_basis_type *>(&basis_type_array[1]));
+						for (xi2 = xi1 + 1 ; xi2 < dimension ; xi2++)
 						{
-							FE_basis_get_xi_basis_type(fe_basis, xi1, reinterpret_cast<FE_basis_type *>(&basis_type_array[1]));
-							for (xi2 = xi1 + 1 ; xi2 < dimension ; xi2++)
+							FE_basis_get_xi_basis_type(fe_basis, xi2,  reinterpret_cast<FE_basis_type *>(&basis_type_array[3]));
+							face_basis = make_FE_basis(basis_type_array,
+								FE_region_get_basis_manager(data->fe_region));
+							if (!IS_OBJECT_IN_LIST(FE_basis)(face_basis, data->basis_types))
 							{
-								FE_basis_get_xi_basis_type(fe_basis, xi2,  reinterpret_cast<FE_basis_type *>(&basis_type_array[3]));
-								face_basis = make_FE_basis(basis_type_array,
-									FE_region_get_basis_manager(data->fe_region));
-								if (!IS_OBJECT_IN_LIST(FE_basis)(face_basis, data->basis_types))
-								{
-									return_code = ADD_OBJECT_TO_LIST(FE_basis)(face_basis,
-										data->basis_types);
-								}
+								return_code = ADD_OBJECT_TO_LIST(FE_basis)(face_basis,
+									data->basis_types);
 							}
 						}
 					}
@@ -427,52 +441,48 @@ static int FE_node_write_cm_check_node_values(
 	int return_code = 1;
 	if (node && data)
 	{
-		int i;
-		int has_versions = 0;
-		if (FE_field_is_defined_at_node(data->field,node))
+		bool has_versions = false;
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
 			if (data->number_of_nodes)
 			{
 				/* Check for consistent number of derivatives */
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0 ; c < data->number_of_components ; ++c)
 				{
-					if (data->number_of_derivatives[i] !=
-						get_FE_node_field_component_number_of_derivatives(
-							node, data->field, i))
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					if (data->number_of_derivatives[c] != nft->getMaximumDerivativeNumber())
 					{
 						display_message(ERROR_MESSAGE, "FE_node_write_cm_check_node_values.  "
-							"Node %d has inconsistent numbers of derivatives.",
+							"Node %d has inconsistent numbers of derivatives / value labels.",
 							get_FE_node_identifier(node));
 						return_code = 0;
 					}
-					if (1 != get_FE_node_field_component_number_of_versions(
-							 node, data->field, i))
+					if (1 != nft->getMaximumVersionsCount())
 					{
-						data->has_versions[i]++;
-						has_versions = 1;
+						++(data->has_versions[c]);
+						has_versions = true;
 					}
 				}
 			}
 			else
 			{
 				/* This is the first node */
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0; c < data->number_of_components; ++c)
 				{
-					data->number_of_derivatives[i] =
-						get_FE_node_field_component_number_of_derivatives(
-							node, data->field, i);
-					if (1 != get_FE_node_field_component_number_of_versions(
-							 node, data->field, i))
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					data->number_of_derivatives[c] = nft->getMaximumDerivativeNumber();
+					if (1 != nft->getMaximumVersionsCount())
 					{
-						data->has_versions[i]++;
-						has_versions = 1;
+						++(data->has_versions[c]);
+						has_versions = true;
 					}
 				}
 			}
-			data->number_of_nodes++;
+			++(data->number_of_nodes);
 			if (has_versions)
 			{
-				data->number_of_nodes_with_versions++;
+				++(data->number_of_nodes_with_versions);
 			}
 		}
 	}
@@ -493,26 +503,35 @@ static int write_cm_FE_node(
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
-	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
-		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
-		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
+	const cmzn_node_value_label derivativeValueLabels[] =
+	{
+		CMZN_NODE_VALUE_LABEL_D_DS1,
+		CMZN_NODE_VALUE_LABEL_D_DS2,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
+		CMZN_NODE_VALUE_LABEL_D_DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
+		CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
+	};
 	FE_value value;
-	int i, j, k, number_of_versions, return_code;
+	int j, k, number_of_versions, return_code;
 
 	if (node && data)
 	{
 		return_code = 1;
-		if (FE_field_is_defined_at_node(data->field, node))
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
 			fprintf(data->ipnode_file, " Node number [    1]:     %d\n",
 				get_FE_node_identifier(node));
-			for (i = 0 ; i < data->number_of_components ; i++)
+			for (int c = 0; c < data->number_of_components; ++c)
 			{
-				if (data->has_versions[i])
+				const FE_node_field_template *nft = node_field->getComponent(c);
+				if (data->has_versions[c])
 				{
-					number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+					number_of_versions = nft->getMaximumVersionsCount();
 					fprintf(data->ipnode_file, " The number of versions for nj=%d is [1]:  %d\n",
-						i + 1, number_of_versions);
+						c + 1, number_of_versions);
 				}
 				else
 				{
@@ -524,15 +543,14 @@ static int write_cm_FE_node(
 					{
 						fprintf(data->ipnode_file, " For version number%2d:\n", j + 1);
 					}
-					get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, /*version*/j,
-						FE_NODAL_VALUE, /*time*/0.0, &value);
+					get_FE_nodal_FE_value_value(node, data->field, c,
+						CMZN_NODE_VALUE_LABEL_VALUE, /*version*/j, /*time*/0.0, &value);
 					fprintf(data->ipnode_file, " The Xj(%d) coordinate is [ 0.00000E+00]:  %le\n",
-						i + 1, value);
-
-					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+						c + 1, value);
+					for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 					{
-						get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i, /*version*/j,
-							value_type[k], /*time*/0.0, &value);
+						get_FE_nodal_FE_value_value(node, data->field, c, 
+							derivativeValueLabels[k], /*version*/j, /*time*/0.0, &value);
 						fprintf(data->ipnode_file, " The derivative wrt direction%s is [ 0.00000E+00]:  %le\n",
 							value_strings[k], value);
 					}
@@ -557,28 +575,41 @@ static int write_cm_FE_nodal_mapping(
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
-	enum FE_nodal_value_type value_type[] = {FE_NODAL_D_DS1,
-		FE_NODAL_D_DS2, FE_NODAL_D2_DS1DS2, FE_NODAL_D_DS3, FE_NODAL_D2_DS1DS3,
-		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
+	const cmzn_node_value_label derivativeValueLabels[] =
+	{
+		CMZN_NODE_VALUE_LABEL_D_DS1,
+		CMZN_NODE_VALUE_LABEL_D_DS2,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS2,
+		CMZN_NODE_VALUE_LABEL_D_DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS1DS3,
+		CMZN_NODE_VALUE_LABEL_D2_DS2DS3,
+		CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3
+	};
 	FE_value diff, sum, *values = NULL;
-	int component_number_of_versions, i, inverse_match, inverse_match_version,
+	int inverse_match, inverse_match_version,
 		j, k, m, n, map_derivatives, match_version, match, node_number,
-		number_of_versions, return_code;
+		return_code;
 
 	if (node && data)
 	{
 		return_code = 1;
 		map_derivatives = 1;
-		if (FE_field_is_defined_at_node(data->field, node))
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+		if (node_field)
 		{
-			/* Does this node have any versions?
-			   We can only apply our rules for derivatives if all the components
-				have the same number of versions */
-			number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, /*version 1*/0);
-			for (i = 1 ; i < data->number_of_components ; i++)
+			// Does this node have any versions?
+			// We can only apply our rules for derivatives if all the components
+			// have the same number of versions
+			int number_of_versions = -1;
+			for (int c = 0; c < data->number_of_components; ++c)
 			{
-				component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
-				if (number_of_versions != component_number_of_versions)
+				const FE_node_field_template *nft = node_field->getComponent(c);
+				const int component_number_of_versions = nft->getMaximumVersionsCount();
+				if (c == 0)
+				{
+					number_of_versions = component_number_of_versions;
+				}
+				else if (number_of_versions != component_number_of_versions)
 				{
 					map_derivatives = 0;
 					/* Just see if we have any versions and if so map positions */
@@ -601,38 +632,38 @@ static int write_cm_FE_nodal_mapping(
 					ALLOCATE(values, FE_value, number_of_versions *
 						data->number_of_components * data->maximum_number_of_derivatives);
 
-					for (i = 0 ; i < data->number_of_components ; i++)
+					for (int c = 0 ; c < data->number_of_components ; ++c)
 					{
 						for (j = 0 ; j < number_of_versions ; j++)
 						{
-							for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+							for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 							{
-								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/i,
-									/*version*/j,
-									value_type[k], /*time*/0.0, values +
+								get_FE_nodal_FE_value_value(node, data->field, /*component_number*/c,
+									derivativeValueLabels[k], /*version*/j, /*time*/0.0, values +
 									j * data->number_of_components * data->maximum_number_of_derivatives
-									+ i * data->maximum_number_of_derivatives + k);
+									+ c * data->maximum_number_of_derivatives + k);
 							}
 							for ( ; k < data->maximum_number_of_derivatives ; k++)
 							{
 								values[j * data->number_of_components * data->maximum_number_of_derivatives
-									+ i * data->maximum_number_of_derivatives + k] = 0.0;
+									+ c * data->maximum_number_of_derivatives + k] = 0.0;
 							}
 						}
 					}
 				}
 
-				for (i = 0 ; i < data->number_of_components ; i++)
+				for (int c = 0; c < data->number_of_components; ++c)
 				{
-					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", i + 1);
-					component_number_of_versions = get_FE_node_field_component_number_of_versions(node, data->field, i);
+					const FE_node_field_template *nft = node_field->getComponent(c);
+					fprintf(data->ipmap_file, " For the Xj(%d) coordinate:\n", c + 1);
+					const int component_number_of_versions = nft->getMaximumVersionsCount();
 
 					/* We don't map out the first version */
 					fprintf(data->ipmap_file, " For version number%2d:\n", 1);
 
 					fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: N\n");
 
-					for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+					for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 					{
 						fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
 							value_strings[k]);
@@ -645,10 +676,10 @@ static int write_cm_FE_nodal_mapping(
 						fprintf(data->ipmap_file, " For version number%2d:\n", j + 1);
 
 						fprintf(data->ipmap_file, " Is the nodal position mapped out [N]: Y\n");
-						fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d 1 %d 1\n", node_number, i + 1);
+						fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d 1 %d 1\n", node_number, c + 1);
 						fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
 
-						for (k = 0 ; k < data->number_of_derivatives[i] ; k++)
+						for (k = 0 ; k < data->number_of_derivatives[c] ; k++)
 						{
 							if (map_derivatives &&
 								/* Only try for first deriavites */
@@ -708,10 +739,10 @@ static int write_cm_FE_nodal_mapping(
 								if (match_version)
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: Y\n",
-											  value_strings[k]);
+										value_strings[k]);
 									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, match_version,
-										i + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
+										c + 1, k + 2);  /* k + 1 for nodal value + 1 for array start at 1 */
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: 0.10000E+01\n");
 								}
 								else if (inverse_match_version)
@@ -720,19 +751,19 @@ static int write_cm_FE_nodal_mapping(
 											  value_strings[k]);
 									fprintf(data->ipmap_file, " Enter node, version, direction, derivative numbers to map to [1,1,1,1]: %d %d %d %d\n",
 										node_number, inverse_match_version,
-										i + 1, k + 2);
+										c + 1, k + 2);
 									fprintf(data->ipmap_file, " Enter the mapping coefficient [1]: -0.10000E+01\n");
 								}
 								else
 								{
 									fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
-											  value_strings[k]);
+										value_strings[k]);
 								}
 							}
 							else
 							{
 								fprintf(data->ipmap_file, " Is the derivative wrt direction%s is mapped out [N]: N\n",
-											  value_strings[k]);
+									value_strings[k]);
 							}
 						}
 					}
@@ -922,23 +953,9 @@ struct FE_element_write_cm_check_element_values_data
 static int FE_element_write_cm_check_element_values(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
-	int return_code;
-	if (element && data)
-	{
-		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field,element) &&
-			FE_element_field_is_standard_node_based(element, data->field))
-		{
-			data->number_of_elements++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_write_cm_check_element_values.  Missing element_field");
-		return_code = 0;
-	}
-	return (return_code);
+	if (data && (FE_field_is_defined_in_element_not_inherited(data->field, element)))
+		++(data->number_of_elements);
+	return 1;
 }
 
 /**
@@ -947,133 +964,164 @@ static int FE_element_write_cm_check_element_values(
 static int write_cm_FE_element(
 	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
-	int basis_dimension, basis_number, dimension,
-		first_basis, i, j, k,
-		node_index, *node_number_array, number_of_element_field_nodes,
-		number_of_nodal_values, occurrences, return_code, version, *versions_array;
-	struct FE_basis *fe_basis;
-	struct FE_element_field_component *component;
-	struct FE_node *node;
-	struct Standard_node_to_element_map *standard_node_map;
-
-	if (element && data)
+	int return_code;
+	if (element && element->getMesh() && data)
 	{
 		return_code = 1;
-		if (FE_field_is_defined_in_element(data->field, element) &&
-			FE_element_field_is_standard_node_based(element, data->field))
+		FE_mesh *mesh = element->getMesh();
+		FE_nodeset *nodeset = mesh->getNodeset();
+		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(data->field, mesh);
+		const int componentCount = get_FE_field_number_of_components(data->field);
+		if (!meshFieldData)
 		{
-			int element_identifier = get_FE_element_identifier(element);
+			return 1; // not defined on mesh
+		}
+		if (FE_field_is_defined_in_element_not_inherited(data->field, element))
+		{
+			FE_basis *fe_basis;
+			int element_identifier = element->getIdentifier();
 			fprintf(data->ipelem_file, " Element number [    1]:     %d\n",
 				element_identifier);
-			dimension = get_FE_element_dimension(element);
+			const int dimension = element->getDimension();
 
 			fprintf(data->ipelem_file, " The number of geometric Xj-coordinates is [3]: %d\n",
 				data->number_of_components);
-			for (i = 0 ; i < data->number_of_components ; i++)
+			for (int c = 0 ; c < data->number_of_components ; c++)
 			{
-				return_code = FE_element_field_get_component_FE_basis(element, data->field,
-					/*component_number*/i, &fe_basis);
-
-				basis_number = 0;
+				FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+				fe_basis = eft->getBasis();
+				int basis_number = 0;
 				while ((data->basis_array[basis_number] != fe_basis) && (basis_number < data->number_of_bases))
 				{
 					basis_number++;
 				}
 				fprintf(data->ipelem_file, " The basis function type for geometric variable %d is [1]:  %d\n",
-					i + 1, basis_number + 1);
+					c + 1, basis_number + 1);
 			}
-			first_basis = 1;
-			for (i = 0 ; i < data->number_of_bases ; i++)
+			int basis_dimension;
+			bool first_basis = true;
+			for (int b = 0 ; b < data->number_of_bases ; b++)
 			{
-				FE_basis_get_dimension(data->basis_array[i], &basis_dimension);
+				FE_basis_get_dimension(data->basis_array[b], &basis_dimension);
 				if (dimension == basis_dimension)
 				{
-					/* Use the first component as it has a basis, could try and match to the
+					/* Use the first component as it has a basis, could try and match
 						which component actually used this basis above */
-					if (get_FE_element_field_component(element, data->field, /*component*/0, &component))
-					{
-						FE_element_field_component_get_number_of_nodes(component,
-							&number_of_element_field_nodes);
 
+					const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(0);
+					const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+					const FE_mesh_element_field_template_data *meshEFTData = mesh->getElementfieldtemplateData(eft);
+					const DsLabelIndex *nodeIndexes = meshEFTData->getElementNodeIndexes(element->getIndex());
+					fe_basis = eft->getBasis();
+					const int number_of_basis_nodes = FE_basis_get_number_of_nodes(fe_basis);
+					if (0 < number_of_basis_nodes)
+					{
 						if (first_basis)
 						{
 							fprintf(data->ipelem_file, " Enter the %d global numbers for basis %d:",
-								number_of_element_field_nodes, i + 1);
+								number_of_basis_nodes, b + 1);
 						}
 						else
 						{
 							fprintf(data->ipelem_file, " Enter the %d numbers for basis %d [prev]:",
-								number_of_element_field_nodes, i + 1);
+								number_of_basis_nodes, b + 1);
 						}
-						ALLOCATE(versions_array, int, number_of_element_field_nodes);
-						ALLOCATE(node_number_array, int, number_of_element_field_nodes);
-						for (j = 0 ; j < number_of_element_field_nodes ; j++)
+						int *node_number_array, *number_of_versions_array, *versions_array;
+						ALLOCATE(number_of_versions_array, int, number_of_basis_nodes);
+						ALLOCATE(node_number_array, int, number_of_basis_nodes);
+						ALLOCATE(versions_array, int, number_of_basis_nodes);
+						bool warnGeneralLinearMap = false;
+						bool warnMixedVersions = false;
+						for (int j = 0 ; j < number_of_basis_nodes; j++)
 						{
-							FE_element_field_component_get_standard_node_map(
-								component, j, &standard_node_map);
-							Standard_node_to_element_map_get_node_index(
-								standard_node_map, &node_index);
-							Standard_node_to_element_map_get_number_of_nodal_values(
-								standard_node_map, &number_of_nodal_values);
-
-							get_FE_element_node(element, node_index, &node);
-							node_number_array[j] = get_FE_node_identifier(node);
-							versions_array[j] = get_FE_node_field_component_number_of_versions(node,
-								data->field, /*component*/0);
+							const int number_of_nodal_values = FE_basis_get_number_of_functions_per_node(fe_basis, j);
+							int localNodeIndex = -1;
+							int version = -1;
+							for (int v = 0; v < number_of_nodal_values; ++v)
+							{
+								const int functionNumber = FE_basis_get_function_number_from_node_function(fe_basis, j, v);
+								const int termCount = eft->getFunctionNumberOfTerms(functionNumber);
+								if (termCount > 1)
+									warnGeneralLinearMap = true;
+								for (int t = 0; t < termCount; ++t)
+								{
+									if (localNodeIndex == -1)
+										localNodeIndex = eft->getTermLocalNodeIndex(functionNumber, t);
+									else if (eft->getTermLocalNodeIndex(functionNumber, t) != localNodeIndex)
+										warnGeneralLinearMap = true;
+									if (version == -1)
+										version = eft->getTermNodeVersion(functionNumber, t);
+									else if (eft->getTermNodeVersion(functionNumber, t) != version)
+										warnMixedVersions = true;
+								}
+							}
+							FE_node *node;
+							if (nodeIndexes && (localNodeIndex >= 0))
+							{
+								node_number_array[j] = nodeset->getNodeIdentifier(nodeIndexes[localNodeIndex]);
+								node = nodeset->getNode(nodeIndexes[localNodeIndex]);
+							}
+							else
+							{
+								node_number_array[j] = -1;
+								node = 0;
+							}
+							const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, data->field);
+							if (node_field)
+							{
+								const FE_node_field_template *nft = node_field->getComponent(/*component*/0);
+								number_of_versions_array[j] = nft->getMaximumVersionsCount();
+							}
+							else
+							{
+								number_of_versions_array[j] = 0;
+							}
+							versions_array[j] = version;
 
 							fprintf(data->ipelem_file, " %d", node_number_array[j]);
+						}
+						if (warnGeneralLinearMap)
+						{
+							display_message(WARNING_MESSAGE,
+								"Element %d field %s uses a general linear map which is not supported in ipelem format; using first term only.",
+								cmzn_element_get_identifier(element), get_FE_field_name(data->field));
+						}
+						if (warnMixedVersions)
+						{
+							display_message(WARNING_MESSAGE,
+								"Element %d field %s gets mixed versions from nodes which is not supported in ipelem format; using first value found.",
+								cmzn_element_get_identifier(element), get_FE_field_name(data->field));
 						}
 						fprintf(data->ipelem_file, "\n");
 						if (first_basis)
 						{
-							for (j = 0 ; j < number_of_element_field_nodes ; j++)
+							for (int j = 0 ; j < number_of_basis_nodes ; j++)
 							{
-								if (1 < versions_array[j])
+								if (1 < number_of_versions_array[j])
 								{
-									FE_element_field_component_get_standard_node_map(
-										component, j, &standard_node_map);
-									Standard_node_to_element_map_get_node_index(
-										standard_node_map, &node_index);
-									Standard_node_to_element_map_get_number_of_nodal_values(
-										standard_node_map, &number_of_nodal_values);
-									get_FE_element_node(element, node_index, &node);
-
-									// Get the nodal_value_index of the first value and use that to specify version
-									// cannot support mixes or mismatches anyway, so warn if different versions found
-									version = Standard_node_to_element_map_get_nodal_version(standard_node_map, 0);
-									for (int v = 1; v < number_of_nodal_values; ++v)
-									{
-										int tempVersion = Standard_node_to_element_map_get_nodal_version(standard_node_map, v);
-										if (tempVersion != version)
-										{
-											display_message(WARNING_MESSAGE,
-												"Element %d field %s gets mixed versions from node %d which is not supported in ipelem format; using first value found.",
-												cmzn_element_get_identifier(element), get_FE_field_name(data->field), cmzn_node_get_identifier(node));
-											break;
-										}
-									}
-
-									occurrences = 1;
-									for (k = j - 1 ; k >= 0 ; k--)
+									int occurrences = 1; // need occurrence number if repeated nodes
+									for (int k = j - 1; 0 <= k; --k)
 									{
 										if (node_number_array[k] == node_number_array[j])
 											++occurrences;
 									}
 									/* Required to specify version to use for each different coordinate,
 										just specify the same versions for now. */
-									for (k = 0 ; k < 3 ; k++)
+									for (int c = 0; c < componentCount; ++c)
 									{
 										fprintf(data->ipelem_file,
 											" The version number for occurrence  %d of node %5d"
 											", njj=%d is [ 1]: %d\n", occurrences, node_number_array[j],
-											k + 1, version + 1);
+											c + 1, versions_array[j] + 1);
 									}
 								}
 							}
-							first_basis = 0;
+							first_basis = false;
 						}
-						DEALLOCATE(versions_array);
+						DEALLOCATE(number_of_versions_array);
 						DEALLOCATE(node_number_array);
+						DEALLOCATE(versions_array);
 					}
 				}
 			}

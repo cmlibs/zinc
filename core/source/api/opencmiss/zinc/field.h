@@ -363,10 +363,16 @@ ZINC_API enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id fiel
 
 /**
  * Determines if the field is defined at the location specified in the field
- * cache.
+ * cache, and hence can be evaluated there.
+ * Note that a finite element field will return false for this function at a
+ * node location where it has parameters, but cannot be evaluated due to not
+ * having a complete set of VALUE parameters for all components. The finite
+ * element field has a special function for querying whether it has parameters
+ * at a location.
+ * @see cmzn_field_finite_element_has_parameters_at_location
  *
  * @param field  The field to query.
- * @param cache  Store of location to check and intermediate field values.
+ * @param cache  Store of location to check, and intermediate field values.
  * @return  True if defined, false if not defined or error.
  */
 ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,

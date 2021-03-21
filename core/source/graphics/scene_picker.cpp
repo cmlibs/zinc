@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"
@@ -18,6 +20,8 @@
 #include "graphics/scene_viewer.h"
 #include "graphics/scene.h"
 #include "interaction/interaction_volume.h"
+#include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region.h"
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
@@ -207,7 +211,7 @@ int cmzn_scenepicker::getSceneAndGraphics(GLuint *select_buffer_ptr,
 {
 	if (top_scene && select_buffer_ptr)
 	{
-		*picked_scene = cmzn_scene_get_child_of_position(top_scene, (int)(select_buffer_ptr[3]));
+		*picked_scene = cmzn_scene_get_child_of_picking_name(top_scene, (int)(select_buffer_ptr[3]));
 		*graphics = cmzn_scene_get_graphics_at_position(*picked_scene,
 			(int)(select_buffer_ptr[4]));
 		return 1;
@@ -259,17 +263,17 @@ int cmzn_scenepicker::setScene(cmzn_scene_id scene_in)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_scenepicker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
-	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
+int cmzn_scenepicker::setSceneviewerRectangle(cmzn_sceneviewer_id sceneviewerIn,
+	enum cmzn_scenecoordinatesystem scenecoordinatesystemIn, double x1,
 	double y1, double x2, double y2)
 {
 	reset();
-	if (scene_viewer_in)
+	if (sceneviewerIn)
 	{
-		if (scene_viewer)
-			cmzn_sceneviewer_destroy(&scene_viewer);
-		coordinate_system = coordinate_system_in;
-		scene_viewer = cmzn_sceneviewer_access(scene_viewer_in);
+		if (this->scene_viewer)
+			cmzn_sceneviewer_destroy(&this->scene_viewer);
+		this->coordinate_system = scenecoordinatesystemIn;
+		this->scene_viewer = cmzn_sceneviewer_access(sceneviewerIn);
 		size_x = x2 - x1;
 		size_y = y2 - y1;
 		centre_x = x1 + size_x/2;
@@ -722,12 +726,12 @@ int cmzn_scenepicker_set_scenefilter(cmzn_scenepicker_id scenepicker,
 }
 
 int cmzn_scenepicker_set_sceneviewer_rectangle(
-	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer_in,
-	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
-		double y1, double x2, double y2)
+	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer,
+	enum cmzn_scenecoordinatesystem scenecoordinatesystem, double x1,
+	double y1, double x2, double y2)
 {
-	return scenepicker->setSceneviewerRectangle(sceneviewer_in,
-		coordinate_system_in, x1, y1, x2, y2);
+	return scenepicker->setSceneviewerRectangle(sceneviewer,
+		scenecoordinatesystem, x1, y1, x2, y2);
 }
 
 cmzn_element_id cmzn_scenepicker_get_nearest_element(cmzn_scenepicker_id scenepicker)

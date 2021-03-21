@@ -24,7 +24,7 @@ int Field_element_xi_location::set_element_xi(struct FE_element *element_in,
 		return 0;
 	if (element_in != element)
 	{
-		int new_dimension = get_FE_element_dimension(element_in);
+		int new_dimension = element_in->getDimension();
 		if (number_of_xi_in < new_dimension)
 			return 0;
 		REACCESS(FE_element)(&element, element_in);

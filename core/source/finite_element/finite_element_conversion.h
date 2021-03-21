@@ -16,6 +16,9 @@ to file.
 #define FINITE_ELEMENT_CONVERSION_H
 
 #include "general/enumerator.h"
+#include "general/value.h"
+#include "opencmiss/zinc/types/regionid.h"
+#include "opencmiss/zinc/types/fieldid.h"
 
 /*
 Global types
@@ -29,8 +32,10 @@ enum Convert_finite_elements_mode
 {
 	/* Convert the surface elements to topologically square cubic hermite 2D elements. */
 	CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT,
+	CONVERT_TO_FINITE_ELEMENTS_BICUBIC,
 	CONVERT_TO_FINITE_ELEMENTS_TRILINEAR,
 	CONVERT_TO_FINITE_ELEMENTS_TRIQUADRATIC,
+	CONVERT_TO_FINITE_ELEMENTS_TRICUBIC,
 	CONVERT_TO_FINITE_ELEMENTS_MODE_UNSPECIFIED
 };
 
@@ -46,15 +51,15 @@ Global functions
 ----------------
 */
 
-/**************************************************************************//**
- * Convert the finite_elements in <source_fe_region> to new finite_elements
- * in <destination_fe_region> according to the <mode> defining the fields
- * in <field_array>.
+/**
+ * Convert the finite_elements in source_region to new finite_elements
+ * in destination_region according to the mode defining the fields
+ * in source fields.
  */
-int finite_element_conversion(struct cmzn_region *source_region,
-	struct cmzn_region *destination_region,
-	enum Convert_finite_elements_mode mode, int number_of_fields,
-	struct Computed_field **field_array,
+int finite_element_conversion(cmzn_region_id source_region,
+	cmzn_region_id destination_region,
+	enum Convert_finite_elements_mode mode,
+	int number_of_source_fields, cmzn_field_id *source_fields,
 	struct Element_refinement refinement, FE_value tolerance);
 
 #endif /* !defined (FINITE_ELEMENT_CONVERSION_H) */

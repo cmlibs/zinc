@@ -19,9 +19,11 @@ namespace Zinc
 
 class Differentialoperator;
 class Element;
+class Fieldassignment;
 class Fieldcache;
 class FieldComponent;
 class FieldEdgeDiscontinuity;
+class FieldEigenvalues;
 class FieldElementGroup;
 class FieldFindMeshLocation;
 class FieldFiniteElement;
@@ -144,6 +146,9 @@ public:
 		VALUE_TYPE_MESH_LOCATION = CMZN_FIELD_VALUE_TYPE_MESH_LOCATION
 	};
 
+
+	inline Fieldassignment createFieldassignment(const Field& sourceField);
+
 	bool isManaged()
 	{
 		return cmzn_field_is_managed(id);
@@ -171,7 +176,7 @@ public:
 
 	int setCoordinateSystemFocus(double focus)
 	{
-		 return cmzn_field_set_coordinate_system_focus(id, focus);
+		return cmzn_field_set_coordinate_system_focus(id, focus);
 	}
 
 	CoordinateSystemType getCoordinateSystemType()
@@ -182,8 +187,8 @@ public:
 
 	int setCoordinateSystemType(CoordinateSystemType coordinateSystemType)
 	{
-		 return cmzn_field_set_coordinate_system_type(id,
-			 static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
+		return cmzn_field_set_coordinate_system_type(id,
+			static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
 	}
 
 	int getNumberOfComponents()
@@ -252,6 +257,7 @@ public:
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();
+	inline FieldEigenvalues castEigenvalues();
 	inline FieldElementGroup castElementGroup();
 	inline FieldFindMeshLocation castFindMeshLocation();
 	inline FieldFiniteElement castFiniteElement();

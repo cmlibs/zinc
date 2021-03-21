@@ -16,21 +16,6 @@ Implements computed fields for lookups.
 
 #include "region/cmiss_region.h"
 
-/*****************************************************************************//**
- * Creates a field whose value equals source field calculated at the lookup node
- * instead of the domain location requested.
- * Do not put in external API; should instead make 'embedded' field take a
- * any location-supplying field: mesh, node etc.
- *
- * @param field_module  Region field module which will own new field.
- * @param source_field  Field to evaluate.
- * @param lookup_node  Node from same region as source field to evaluate value at.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_nodal_lookup(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct FE_node *lookup_node);
-
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the
  * source field and the  lookup node where it is evaluated.

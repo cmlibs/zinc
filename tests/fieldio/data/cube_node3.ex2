@@ -1,0 +1,41 @@
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=3
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+ z. #Values=1 (value)
+Node: 1
+  0.0
+  0.0
+  0.0
+Node: 2
+  3.0
+  0.0
+  0.0
+Node: 3
+  0.0
+  3.0
+  0.0
+Node: 4
+  3.0
+  3.0
+  0.0
+Node: 5
+  0.0
+  0.0
+  3.0
+Node: 6
+  3.0
+  0.0
+  3.0
+Node: 7
+  0.0
+  3.0
+  3.0
+Node: 8
+  3.0
+  3.0
+  3.0

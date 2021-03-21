@@ -17,14 +17,16 @@
 #include <math.h>
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/fieldassignmentprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
-#include "finite_element/finite_element_region_private.h"
 #include "general/any_object_private.h"
 #include "general/any_object_definition.h"
 #include "general/callback_private.h"
@@ -148,6 +150,7 @@ int Minimisation::runOptimisation()
 	}
 	touch_independent_fields();
 	cmzn_fieldmodule_end_change(field_module);
+	this->do_fieldassignments();
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
@@ -175,13 +178,13 @@ int Minimisation::construct_dof_arrays()
 		DEALLOCATE(dof_initial_values);
 		dof_initial_values = 0;
 	}
-	total_dof = 0;
+	this->total_dof = 0;
 	IndependentAndConditionalFieldsList::iterator iter;
 	for (iter = optimisation.independentFields.begin();
 		iter != optimisation.independentFields.end(); ++iter)
 	{
 		cmzn_field *independentField = iter->independentField;
-		int number_of_components = cmzn_field_get_number_of_components(independentField);
+		const int componentCount = cmzn_field_get_number_of_components(independentField);
 		cmzn_fieldcache_id cache = 0;
 		cmzn_field *conditionalField = iter->conditionalField;
 		FE_value *conditionalValues = 0;
@@ -211,67 +214,63 @@ int Minimisation::construct_dof_arrays()
 					if ((1 == conditionalComponents) && (conditionalValues[0] == 0.0))
 						continue; // scalar conditional field is zero => skip
 				}
-				if (FE_field_is_defined_at_node(fe_field, node))
+				const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, fe_field);
+				if (node_field)
 				{
-					for (int component_number = 0; component_number < number_of_components; component_number++)
+					for (int c = 0; c < componentCount; ++c)
 					{
-						if ((conditionalComponents > 1) && (conditionalValues[component_number] == 0.0))
+						if ((conditionalComponents > 1) && (conditionalValues[c] == 0.0))
 							continue;
-						int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
-							fe_field, component_number);
-						int number_of_versions = get_FE_node_field_component_number_of_versions(node,
-							fe_field, component_number);
-						int total_number_of_values = number_of_versions*number_of_values;
-
-						// FIXME: tmp remove derivatives
-						//number_of_values = 1;
-
-						enum FE_nodal_value_type *nodal_value_types =
-							get_FE_node_field_component_nodal_value_types(node, fe_field, component_number);
-						if (nodal_value_types)
+						const FE_node_field_template *nft = node_field->getComponent(c);
+						const int totalValuesCount = nft->getTotalValuesCount();
+						if (totalValuesCount == 0)
 						{
-							FE_value **temp_dof_storage_array;
-							if (REALLOCATE(temp_dof_storage_array, dof_storage_array, FE_value *, total_dof + total_number_of_values))
+							continue;
+						}
+						FE_value **temp_dof_storage_array;
+						if (REALLOCATE(temp_dof_storage_array, this->dof_storage_array, FE_value *, this->total_dof + totalValuesCount))
+						{
+							this->dof_storage_array = temp_dof_storage_array;
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
+						FE_value *temp_dof_initial_values;
+						if (REALLOCATE(temp_dof_initial_values, this->dof_initial_values, FE_value, this->total_dof + totalValuesCount))
+						{
+							this->dof_initial_values = temp_dof_initial_values;
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
+						const int valueLabelsCount = nft->getValueLabelsCount();
+						for (int d = 0; (d < valueLabelsCount) && return_code; ++d)
+						{
+							cmzn_node_value_label valueLabel = nft->getValueLabelAtIndex(d);
+							const int versionsCount = nft->getVersionsCountAtIndex(d);
+							for (int v = 0; v < versionsCount; ++v)
 							{
-								dof_storage_array = temp_dof_storage_array;
-							}
-							else
-							{
-								return_code = 0;
-							}
-							FE_value *temp_dof_initial_values;
-							if (REALLOCATE(temp_dof_initial_values, dof_initial_values, FE_value, total_dof + total_number_of_values))
-							{
-								dof_initial_values = temp_dof_initial_values;
-							}
-							else
-							{
-								return_code = 0;
-							}
-							for (int version_number = 0; (version_number < number_of_versions) && return_code; ++version_number)
-							{
-								for (int i = 0; i < number_of_values; i++)
+								if (CMZN_OK == get_FE_nodal_FE_value_storage(node, fe_field, c,
+									valueLabel, v, current_time, &(this->dof_storage_array[total_dof])))
 								{
-									if (get_FE_nodal_FE_value_storage(node, fe_field, component_number,
-										version_number, /*nodal_value_type*/nodal_value_types[i],
-										current_time, &(dof_storage_array[total_dof])))
-									{
-										// get initial value from value storage pointer
-										dof_initial_values[total_dof] = *dof_storage_array[total_dof];
-										/*cout << dof_storage_array[total_dof - 1] << "   "
-												<< dof_initial_values[total_dof - 1] << endl;*/
-										total_dof++;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE, "cmzn_optimisation::construct_dof_arrays. "
-											"get_FE_nodal_FE_value_storage failed.");
-										return_code = 0;
-										break;
-									}
+									// get initial value from value storage pointer
+									this->dof_initial_values[total_dof] = *(this->dof_storage_array[total_dof]);
+									/*cout << dof_storage_array[total_dof - 1] << "   "
+									<< dof_initial_values[total_dof - 1] << endl;*/
+									++(this->total_dof);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "cmzn_optimisation::construct_dof_arrays. "
+										"get_FE_nodal_FE_value_storage failed.");
+									return_code = 0;
+									break;
 								}
 							}
-							DEALLOCATE(nodal_value_types);
 						}
 					}
 				}
@@ -284,17 +283,34 @@ int Minimisation::construct_dof_arrays()
 			FE_value *constant_values_storage = Computed_field_constant_get_values_storage(independentField);
 			if (constant_values_storage)
 			{
-				REALLOCATE(dof_storage_array, dof_storage_array,
-					FE_value *, total_dof + number_of_components);
-				REALLOCATE(dof_initial_values, dof_initial_values,
-					FE_value, total_dof + number_of_components);
-				for (int component_number = 0; component_number < number_of_components; component_number++)
+				FE_value **temp_dof_storage_array;
+				if (REALLOCATE(temp_dof_storage_array, this->dof_storage_array, FE_value *, this->total_dof + componentCount))
 				{
-					dof_storage_array[total_dof] = constant_values_storage + component_number;
-					dof_initial_values[total_dof] = *dof_storage_array[total_dof];
-					/*cout << dof_storage_array[total_dof] << "   "
-							<< dof_initial_values[total_dof] << endl;*/
-					total_dof++;
+					this->dof_storage_array = temp_dof_storage_array;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				FE_value *temp_dof_initial_values;
+				if (REALLOCATE(temp_dof_initial_values, this->dof_initial_values, FE_value, this->total_dof + componentCount))
+				{
+					this->dof_initial_values = temp_dof_initial_values;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					for (int c = 0; c < componentCount; ++c)
+					{
+						this->dof_storage_array[total_dof] = constant_values_storage + c;
+						this->dof_initial_values[total_dof] = *(this->dof_storage_array[total_dof]);
+						/*cout << dof_storage_array[total_dof] << "   "
+								<< dof_initial_values[total_dof] << endl;*/
+						++(this->total_dof);
+					}
 				}
 			}
 			else
@@ -339,6 +355,16 @@ void Minimisation::invalidate_independent_field_caches()
 		iter != optimisation.independentFields.end(); ++iter)
 	{
 		iter->independentField->clearCaches();
+	}
+}
+
+// Perform any field assignments; called before evaluating objective function(s)
+// but after dependent DOFs have been set. Also call at completion of optimisation.
+void Minimisation::do_fieldassignments()
+{
+	for (auto iter = this->optimisation.fieldassignments.begin(); iter != this->optimisation.fieldassignments.end(); ++iter)
+	{
+		(*iter)->assign();
 	}
 }
 
@@ -402,6 +428,7 @@ void objective_function_QN(int ndim, const ColumnVector& x, double& fx,
 		minimisation->set_dof_value(i, x(i + 1));
 	}
 	//minimisation->list_dof_values();
+	minimisation->do_fieldassignments();
 
 	FE_value objectiveFunctionValue = 0.0;
 	minimisation->evaluate_objective_function(&objectiveFunctionValue);
@@ -469,6 +496,8 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	}
 	//minimisation->list_dof_values();
 	minimisation->invalidate_independent_field_caches();
+	minimisation->do_fieldassignments();
+
 	int return_code = 1;
 	Field_time_location location;
 	// NEWMAT::ColumnVector::element(int m) is 0-based, not 1 as are other interfaces

@@ -1243,13 +1243,14 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 							}
 							else
 							{
+								// GRC: can't see any good reason to do this, and it messes up reading an empty string
 								/* consume white space */
-								if (0 <= sscanf(stream->buffer + stream->buffer_index,
-										" %n", &count))
-								{
-									stream->buffer_index += count;
-									local_counter += count;
-								}
+								//if (0 <= sscanf(stream->buffer + stream->buffer_index,
+								//		" %n", &count))
+								//{
+								//	stream->buffer_index += count;
+								//	local_counter += count;
+								//}
 								keep_scanning = 0;
 							}
 #if defined IO_STREAM_SPEED_UP_SSCANF
@@ -1348,6 +1349,47 @@ Equivalent to a standard C fgetc on the stream.
 
 	return (return_code);
 } /* IO_stream_getc */
+
+int IO_stream_peekc(struct IO_stream *stream)
+{
+	int return_code;
+	if (stream)
+	{
+		switch (stream->type)
+		{
+		case IO_STREAM_FILE_TYPE:
+		{
+			return_code = fgetc(stream->file_handle);
+			// put it back
+			ungetc(return_code, stream->file_handle);
+		} break;
+		case IO_STREAM_MEMORY_TYPE:
+		case IO_STREAM_GZIP_FILE_TYPE:
+		case IO_STREAM_GZIP_MEMORY_TYPE:
+		case IO_STREAM_BZ2_FILE_TYPE:
+		case IO_STREAM_BZ2_MEMORY_TYPE:
+		{
+			IO_stream_read_to_internal_buffer(stream);
+			return_code = static_cast<int>(stream->buffer[stream->buffer_index]);
+			// do not advance buffer index
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"IO_stream_peekc. IO stream invalid or type not implemented.");
+			return_code = EOF;
+		} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"IO_stream_peekc. Invalid arguments.");
+		return_code = EOF;
+	}
+	return (return_code);
+}
+
 
 int IO_stream_fread(struct IO_stream *stream, void *ptr, size_t size, size_t nmemb)
 /*******************************************************************************

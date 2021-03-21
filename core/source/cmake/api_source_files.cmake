@@ -12,9 +12,13 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/core.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/differentialoperator.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/element.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementbasis.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementfieldtemplate.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/elementtemplate.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/field.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldalias.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldarithmeticoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldassignment.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldcache.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldcomposite.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldconditional.h
@@ -43,13 +47,18 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/light.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/logger.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/material.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/mesh.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/node.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodeset.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/nodetemplate.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/optimisation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/region.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/result.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scene.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenefilter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/scenepicker.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/selection.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/shader.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/spectrum.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/status.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/stream.h
@@ -66,14 +75,19 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/contextid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/differentialoperatorid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementbasisid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementfieldtemplateid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/elementtemplateid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldaliasid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldcacheid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldcompositeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldfiniteelementid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldassignmentid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldimageid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldimageprocessingid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmatrixoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmeshoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldsmoothingid.h
@@ -84,7 +98,10 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/lightid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/loggerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/materialid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/meshid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodeid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodesetid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/nodetemplateid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/regionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/scenecoordinatesystem.h
@@ -92,6 +109,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/scenepickerid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/selectionid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/shaderid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/spectrumid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/streamid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/tessellationid.h

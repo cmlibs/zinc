@@ -36,6 +36,7 @@ if a value is already known.
 #if !defined (COMPUTED_FIELD_H)
 #define COMPUTED_FIELD_H
 
+#include "opencmiss/zinc/types/meshid.h"
 #include "opencmiss/zinc/field.h"
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
@@ -61,6 +62,89 @@ functions are given their public names.
 #define Computed_field_get_number_of_components \
 	cmzn_field_get_number_of_components
 #define Computed_field_set_type cmzn_field_set_type
+
+enum cmzn_field_type
+{
+	CMZN_FIELD_TYPE_INVALID = 0,
+	/*field alias */
+	CMZN_FIELD_TYPE_ALIAS = 1,
+	/* field arithmetic operators */
+	CMZN_FIELD_TYPE_ADD = 2,
+	CMZN_FIELD_TYPE_POWER = 3,
+	CMZN_FIELD_TYPE_MULTIPLY = 4,
+	CMZN_FIELD_TYPE_DIVIDE = 5,
+	CMZN_FIELD_TYPE_SUBTRACT = 6,
+	CMZN_FIELD_TYPE_LOG = 7,
+	CMZN_FIELD_TYPE_SQRT = 8,
+	CMZN_FIELD_TYPE_EXP = 9,
+	CMZN_FIELD_TYPE_ABS = 10,
+	/* field composite */
+	CMZN_FIELD_TYPE_IDENTITY = 11,
+	CMZN_FIELD_TYPE_COMPONENT = 12,
+	CMZN_FIELD_TYPE_CONCATENATE = 13,
+	/*field conditional */
+	CMZN_FIELD_TYPE_IF = 14,
+	/*field constant */
+	CMZN_FIELD_TYPE_CONSTANT = 15,
+	CMZN_FIELD_TYPE_STRING_CONSTANT = 16,
+	/*field coordinate transformation */
+	CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION = 17,
+	CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION = 18,
+	/*field derivatives */
+	CMZN_FIELD_TYPE_DERIVATIVE = 19,
+	CMZN_FIELD_TYPE_CURL = 20,
+	CMZN_FIELD_TYPE_DIVERGENCE = 21,
+	CMZN_FIELD_TYPE_GRADIENT = 22,
+	/*field fibre */
+	CMZN_FIELD_TYPE_FIBRE_AXES = 23,
+	/*field finite element*/
+	CMZN_FIELD_TYPE_EDGE_DISCONTINUITY = 24,
+	CMZN_FIELD_TYPE_EMBEDDED = 25,
+	CMZN_FIELD_TYPE_NODE_VALUE = 26,
+	CMZN_FIELD_TYPE_STORED_STRING = 27,
+	CMZN_FIELD_TYPE_IS_EXTERIOR = 28,
+	CMZN_FIELD_TYPE_IS_ON_FACE = 29,
+	/*field logical operators*/
+	CMZN_FIELD_TYPE_AND = 30,
+	CMZN_FIELD_TYPE_EQUAL_TO = 31,
+	CMZN_FIELD_TYPE_GREATER_THAN = 32,
+	CMZN_FIELD_TYPE_IS_DEFINED = 33,
+	CMZN_FIELD_TYPE_LESS_THAN = 34,
+	CMZN_FIELD_TYPE_OR = 35,
+	CMZN_FIELD_TYPE_NOT = 36,
+	CMZN_FIELD_TYPE_XOR = 37,
+	/*field matrix operators*/
+	CMZN_FIELD_TYPE_DETERMINANT = 38,
+	CMZN_FIELD_TYPE_EIGENVALUES = 39,
+	CMZN_FIELD_TYPE_EIGENVECTORS = 40,
+	CMZN_FIELD_TYPE_MATRIX_INVERT = 41,
+	CMZN_FIELD_TYPE_MATRIX_MULTIPLY = 42,
+	CMZN_FIELD_TYPE_PROJECTION = 43,
+	CMZN_FIELD_TYPE_TRANSPOSE = 44,
+	/*field time */
+	CMZN_FIELD_TYPE_TIME_LOOKUP = 45,
+	/* field trigonometry */
+	CMZN_FIELD_TYPE_SIN = 46,
+	CMZN_FIELD_TYPE_COS = 47,
+	CMZN_FIELD_TYPE_TAN = 48,
+	CMZN_FIELD_TYPE_ASIN = 49,
+	CMZN_FIELD_TYPE_ACOS = 50,
+	CMZN_FIELD_TYPE_ATAN = 51,
+	CMZN_FIELD_TYPE_ATAN2 = 52,
+	/*field vector operators */
+	CMZN_FIELD_TYPE_CROSS_PRODUCT = 53,
+	CMZN_FIELD_TYPE_DOT_PRODUCT = 54,
+	CMZN_FIELD_TYPE_MAGNITUDE = 55,
+	CMZN_FIELD_TYPE_NORMALISE = 56,
+	CMZN_FIELD_TYPE_SUM_COMPONENTS = 57,
+	/*field finite element */
+	CMZN_FIELD_TYPE_FINITE_ELEMENT = 58,
+	/*field time */
+	CMZN_FIELD_TYPE_TIME_VALUE = 59,
+	CMZN_FIELD_TYPE_STORED_MESH_LOCATION = 60,
+	CMZN_FIELD_TYPE_FIND_MESH_LOCATION = 61
+};
+
 
 /*
 Global types
@@ -104,11 +188,30 @@ Global functions
 ----------------
 */
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
-/*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
+
+/**
+ * Get non-allocated field name. Internal use only, for error messages etc.
+ *
+ * @param field  Field to get name of.
+ * @return  Internal name of field. Use immediately and do not deallocate.
+ */
+const char *cmzn_field_get_name_internal(cmzn_field_id field);
+
+/**
+ * Set a unique name for field, concatenating first and second parts with a unique
+ * number if needed. Internal use only.
+ *
+ * @param field  Field to set name of.
+ * @param first  First part of name.
+ * @param second  Second part of name.
+ * @return  Standard result code.
+ */
+int cmzn_field_set_name_unique_concatentate(cmzn_field_id field,
+	const char *first, const char *second);
 
 /***************************************************************************//**
  * Internal variant of public cmzn_fielditerator_next() which does not access
@@ -496,14 +599,9 @@ This function returns true if the <field> can find element and xi given
 a set of values.
 ==============================================================================*/
 
-int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+/* Returns true if all fields are defined in the same way at the two elements. */
+bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2);
@@ -629,5 +727,15 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
  */
 int cmzn_field_get_access_count(cmzn_field_id field);
 #endif /* defined (DEBUG_CODE) */
+
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string);
+
+char *cmzn_field_type_enum_to_string(enum cmzn_field_type type);
+
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string);
+
+char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
+
+enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_H) */

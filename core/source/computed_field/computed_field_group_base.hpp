@@ -56,6 +56,11 @@ public:
 	virtual bool isEmpty() const = 0;
 
 	virtual int clear() = 0;
+
+	virtual bool is_purely_function_of_field(cmzn_field *other_field)
+	{
+		return (this->field == other_field);
+	}
 };
 
 #endif /* COMPUTED_FIELD_GROUP_BASE_HPP */

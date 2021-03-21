@@ -20,6 +20,9 @@
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
+#include "graphics/shader.hpp"
+#include "graphics/shader_program.hpp"
+#include "graphics/shader_uniforms.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scenefilter.hpp"
@@ -44,7 +47,10 @@ struct cmzn_graphics_module
 	cmzn_spectrummodule_id spectrummodule;
 	void *spectrum_manager_callback_id;
 	cmzn_tessellationmodule_id tessellationmodule;
+	cmzn_shadermodule_id shadermodule;
 	void *tessellation_manager_callback_id;
+	void *shaderprogram_manager_callback_id;
+	void *shaderuniforms_manager_callback_id;
 	cmzn_timekeepermodule *timekeepermodule;
 	int access_count;
 	std::list<cmzn_region*> *member_regions_list;
@@ -145,6 +151,38 @@ void cmzn_graphics_module_spectrum_manager_callback(
 	}
 }
 
+void cmzn_graphics_module_shaderprogram_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_shaderprogram) *message, void *graphics_module_void)
+{
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
+	if (message && graphics_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_shaderprogram)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_shaderprogram))
+		{
+			FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
+				cmzn_material_shaderprogram_changed, (void *)message,
+				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+		}
+	}
+}
+
+void cmzn_graphics_module_shaderuniforms_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_shaderuniforms) *message, void *graphics_module_void)
+{
+	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
+	if (message && graphics_module)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_shaderuniforms)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_shaderuniforms))
+		{
+			FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
+				cmzn_material_shaderuniforms_changed, (void *)message,
+				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+		}
+	}
+}
+
 /**
  * Callback for changes in the tessellation manager.
  * Informs all scenes about the changes.
@@ -218,6 +256,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->sceneviewermodule = NULL;
 			module->spectrummodule=cmzn_spectrummodule_create();
 			module->scenefiltermodule=cmzn_scenefiltermodule_create();
+			module->shadermodule = cmzn_shadermodule_create();
 			module->fontmodule = cmzn_fontmodule_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
@@ -240,6 +279,12 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->tessellation_manager_callback_id =
 				MANAGER_REGISTER(cmzn_tessellation)(cmzn_graphics_module_tessellation_manager_callback,
 					(void *)module, cmzn_tessellationmodule_get_manager(module->tessellationmodule));
+			module->shaderprogram_manager_callback_id =
+				MANAGER_REGISTER(cmzn_shaderprogram)(cmzn_graphics_module_shaderprogram_manager_callback,
+					(void *)module, cmzn_shadermodule_get_program_manager(module->shadermodule));
+			module->shaderuniforms_manager_callback_id =
+				MANAGER_REGISTER(cmzn_shaderuniforms)(cmzn_graphics_module_shaderuniforms_manager_callback,
+					(void *)module, cmzn_shadermodule_get_uniforms_manager(module->shadermodule));
 			module->access_count = 1;
 		}
 		else
@@ -327,6 +372,12 @@ int cmzn_graphics_module_destroy(
 			MANAGER_DEREGISTER(cmzn_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+			MANAGER_DEREGISTER(cmzn_shaderprogram)(
+				graphics_module->shaderprogram_manager_callback_id,
+				cmzn_shadermodule_get_program_manager(graphics_module->shadermodule));
+			MANAGER_DEREGISTER(cmzn_shaderuniforms)(
+				graphics_module->shaderuniforms_manager_callback_id,
+				cmzn_shadermodule_get_uniforms_manager(graphics_module->shadermodule));
 			MANAGER_DEREGISTER(cmzn_spectrum)(
 				graphics_module->spectrum_manager_callback_id, cmzn_spectrummodule_get_manager(graphics_module->spectrummodule));
 			MANAGER_DEREGISTER(cmzn_tessellation)(
@@ -339,6 +390,8 @@ int cmzn_graphics_module_destroy(
 			cmzn_glyphmodule_destroy(&graphics_module->glyphmodule);
 			if (graphics_module->lightmodule)
 				cmzn_lightmodule_destroy(&graphics_module->lightmodule);
+			if (graphics_module->shadermodule)
+				cmzn_shadermodule_destroy(&graphics_module->shadermodule);
 			if (graphics_module->spectrummodule)
 				cmzn_spectrummodule_destroy(&graphics_module->spectrummodule);
 			if (graphics_module->fontmodule)
@@ -387,10 +440,7 @@ int cmzn_graphics_module_create_scene(
 		if (!(scene))
 		{
 			if (NULL != (scene = cmzn_scene_create_internal(cmiss_region, graphics_module)))
-			{
-				cmzn_scene_set_position(scene, 1);
 				return_code = 1;
-			}
 			else
 			{
 				return_code = 0;
@@ -494,8 +544,9 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
+			default_background_colour.alpha = 1.0;
 			cmzn_scenefiltermodule_id filterModule = cmzn_graphics_module_get_scenefiltermodule(graphics_module);
-			graphics_module->sceneviewermodule = CREATE(cmzn_sceneviewermodule)(
+			graphics_module->sceneviewermodule = cmzn_sceneviewermodule::create(
 				&default_background_colour,
 				graphics_module->lightmodule, default_light,
 				default_ambient_light,
@@ -513,6 +564,16 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 			"Missing context");
 	}
 	return sceneviewermodule;
+}
+
+cmzn_shadermodule_id cmzn_graphics_module_get_shadermodule(
+	struct cmzn_graphics_module *graphics_module)
+{
+	if (graphics_module && graphics_module->shadermodule)
+	{
+		return cmzn_shadermodule_access(graphics_module->shadermodule);
+	}
+	return 0;
 }
 
 cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(
@@ -669,7 +730,7 @@ void cmzn_graphics_module_remove_external_callback_dependency(
 		{
 			cmzn_region *region = *region_iter;
 			cmzn_scene *scene = cmzn_region_get_scene_private(region);
-			cmzn_scene_detach_from_owner(scene);
+			scene->detachFromOwner();
 		}
 	}
 }

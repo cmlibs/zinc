@@ -50,6 +50,11 @@ private:
 		return(computed_field_time_lookup_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_TIME_LOOKUP;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_time_lookup*>(other_field))
@@ -315,6 +320,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_time_value_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_TIME_VALUE;
 	}
 
 	int compare(Computed_field_core* other_field);

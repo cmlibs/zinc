@@ -9,7 +9,9 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
@@ -18,6 +20,7 @@
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
 #include <opencmiss/zinc/region.hpp>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/streamregion.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
@@ -29,6 +32,12 @@
 
 namespace {
 ManageOutputFolder manageOutputFolderFieldML(FIELDML_OUTPUT_FOLDER);
+}
+
+namespace {
+
+	const double PI = 3.14159265358979323846;
+
 }
 
 namespace {
@@ -78,6 +87,28 @@ void check_cube_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of unit cube model using EX2 format
+// cube model defines a 3-D RC coordinates field and 1-D pressure field
+// using the same trilinear Lagrange scalar template.
+// field dofs and mesh nodes connectivity are inline text in the fieldml document
+TEST(ZincRegion, ex2_cube)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	check_cube_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_cube_model(testFm);
+}
+
+// Test I/O of unit cube model using FieldML format
 // cube model defines a 3-D RC coordinates field and 1-D pressure field
 // using the same trilinear Lagrange scalar template.
 // field dofs and mesh nodes connectivity are inline text in the fieldml document
@@ -86,6 +117,7 @@ TEST(ZincRegion, fieldml_cube)
 	ZincTestSetupCpp zinc;
 	int result;
 
+	// initial input file is in legacy FieldML format not using element field templates
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_FIELDML_CUBE_RESOURCE)));
 	check_cube_model(zinc.fm);
@@ -194,6 +226,28 @@ void check_tetmesh_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of tetmesh model using EX2 format
+// tetmesh model defines a 3-D RC coordinates field over a tetrahedral
+// mesh in approximate unit sphere shape with trilinearSimplex basis/
+// node coordinates and connectivity are read from separate files
+TEST(ZincRegion, ex2_tetmesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_TETMESH_RESOURCE)));
+	check_tetmesh_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/tetmesh.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_tetmesh_model(testFm);
+}
+
+// Test I/O of tetmesh model using FieldML format
 // tetmesh model defines a 3-D RC coordinates field over a tetrahedral
 // mesh in approximate unit sphere shape with trilinearSimplex basis/
 // node coordinates and connectivity are read from separate files
@@ -281,6 +335,26 @@ void check_wheel_model(Fieldmodule& fm)
 
 }
 
+// Test I/O of wheel model in EX2 format
+// wheel_indirect model is the same as the wheel_direct model except that it
+// uses a more efficient indirect element-to-function map
+TEST(ZincRegion, ex2_wheel)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_WHEEL_RESOURCE)));
+	check_wheel_model(zinc.fm);
+
+	// test writing and re-reading into different region
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Region testRegion = zinc.root_region.createChild("test");
+	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/wheel.ex2"));
+	Fieldmodule testFm = testRegion.getFieldmodule();
+	check_wheel_model(testFm);
+}
+
+// test reading FieldML wheel model with direct element function map
 // wheel_direct model defines a 3-D RC coordinates field over a wheel mesh
 // consisting of 6 wedge elements in the centre, and 6 cube elements around
 // them, all coordinates interpolated with triquadratic bases.
@@ -299,6 +373,7 @@ TEST(ZincRegion, fieldml_wheel_direct)
 	check_wheel_model(zinc.fm);
 }
 
+// Test I/O of wheel model in FieldML format
 // wheel_indirect model is the same as the wheel_direct model except that it
 // uses a more efficient indirect element-to-function map
 TEST(ZincRegion, fieldml_wheel_indirect)
@@ -551,10 +626,11 @@ void check_mixed_template_squares(Fieldmodule& fm)
 
 }
 
+// Test reading EX model, writing and re-reading in EX2 format
 // 2D example with different templates for components of the coordinates field
 // and for two different scalar fields including mix of bilinear and
 // biquadratic elements, with latter two fields not defined on whole mesh.
-TEST(ZincRegion, mixed_template_squares)
+TEST(ZincRegion, ex2_mixed_template_squares)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -562,12 +638,25 @@ TEST(ZincRegion, mixed_template_squares)
 	create_mixed_template_squares(zinc.fm);
 	check_mixed_template_squares(zinc.fm);
 
-	// test writing and re-reading in EX format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.exregion"));
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.ex2"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_mixed_template_squares(testFm1);
+}
+
+// Test reading EX model, writing and re-reading in FieldML format
+// 2D example with different templates for components of the coordinates field
+// and for two different scalar fields including mix of bilinear and
+// biquadratic elements, with latter two fields not defined on whole mesh.
+TEST(ZincRegion, fieldml_mixed_template_squares)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	create_mixed_template_squares(zinc.fm);
+	check_mixed_template_squares(zinc.fm);
 
 	// test writing and re-reading in FieldML format
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/mixed_template_squares.fieldml"));
@@ -645,27 +734,991 @@ TEST(ZincRegion, lines_alternate_node_order)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_ALTERNATE_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
-	check_lines_unit_scale_factors_model(zinc.fm);
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
 
-// Test cannot yet write models with inconsistent local-to-global-node map
+// Test writing models with inconsistent local-to-global-node map
 // for the same basis in an element.
 TEST(ZincRegion, lines_inconsistent_node_order)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
-	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
 		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_INCONSISTENT_NODE_ORDER_RESOURCE)));
 	check_lines_unit_scale_factors_model(zinc.fm);
 
 	// test writing and re-reading in FieldML format
-	EXPECT_EQ(ERROR_NOT_IMPLEMENTED, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_lines_unit_scale_factors_model(testFm1);
 }
+
+namespace {
+
+void check_cube_element_xi_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	const double offsetValues[3] = { 0.1, 0.2, -0.35 };
+	FieldConstant offset = fm.createFieldConstant(3, offsetValues);
+	EXPECT_TRUE(offset.isValid());
+	FieldAdd bob = coordinates + offset;
+	EXPECT_TRUE(bob.isValid());
+	EXPECT_EQ(RESULT_OK, result = bob.setName("bob"));
+
+	Field element_xi = fm.findFieldByName("element_xi");
+	EXPECT_TRUE(element_xi.isValid());
+	EXPECT_EQ(Field::VALUE_TYPE_MESH_LOCATION, element_xi.getValueType());
+	Field hostbob = fm.createFieldEmbedded(bob, element_xi);
+	EXPECT_TRUE(hostbob.isValid());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(1, mesh3d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+	Nodeset datapoints = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_EQ(5, datapoints.getSize());
+
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+
+	const double xiExpected[5][3] = {
+		{ 0.25, 0.25, 0.75 },
+		{ 0.25, 0.50, 0.75 },
+		{ 1.00, 0.25, 0.75 },
+		{ 1.00, 1.00, 1.00 },
+		{ 0.00, 0.00, 0.00 }
+	};
+	double xiOut[3];
+	double hostbobOut[3];
+	const double tolerance = 1.0E-8;
+	Fieldcache cache = fm.createFieldcache();
+	for (int i = 0; i < 5; ++i)
+	{
+		Node datapoint = datapoints.findNodeByIdentifier(i + 1);
+		EXPECT_TRUE(datapoint.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setNode(datapoint));
+		Element elementOut = element_xi.evaluateMeshLocation(cache, 3, xiOut);
+		EXPECT_EQ(element1, elementOut);
+		EXPECT_NEAR(xiExpected[i][0], xiOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1], xiOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2], xiOut[2], tolerance);
+		EXPECT_EQ(RESULT_OK, result = hostbob.evaluateReal(cache, 3, hostbobOut));
+		EXPECT_NEAR(xiExpected[i][0] + offsetValues[0], hostbobOut[0], tolerance);
+		EXPECT_NEAR(xiExpected[i][1] + offsetValues[1], hostbobOut[1], tolerance);
+		EXPECT_NEAR(xiExpected[i][2] + offsetValues[2], hostbobOut[2], tolerance);
+	}
+}
+
+}
+
+TEST(FieldIO, cube_element_xi)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	// Test can't merge element:xi locations unless host elements have been defined first
+	EXPECT_EQ(RESULT_ERROR_INCOMPATIBLE_DATA, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+
+	// read the cube host mesh
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+
+	// Test can't read old EX format that had different dimension elements for element:xi field
+	EXPECT_EQ(RESULT_ERROR_GENERAL, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_FAIL_RESOURCE)));
+
+	// now read the datapoints with element:xi field
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_CUBE_ELEMENT_XI_OLD_RESOURCE)));
+	check_cube_element_xi_model(zinc.fm);
+
+	// test writing datapoints and re-reading in EX2 format
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	StreamresourceFile srf = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2");
+	EXPECT_TRUE(srf.isValid());
+	EXPECT_EQ(RESULT_OK, result = sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_DATAPOINTS));
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/cube_element_xi.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_cube_element_xi_model(testFm1);
+}
+
+namespace {
+
+void check_ex_element_grid_constant_indexed_fields(Fieldmodule& fm)
+{
+	int result;
+
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, coordinates.getValueType());
+	Field materialType = fm.findFieldByName("material_type");
+	EXPECT_TRUE(materialType.isValid());
+	EXPECT_EQ(1, materialType.getNumberOfComponents());
+	// integer type is not yet presented in the public API, currently reports as REAL
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, materialType.getValueType());
+	Field materialName = fm.findFieldByName("material_name");
+	EXPECT_TRUE(materialName.isValid());
+	EXPECT_EQ(1, materialName.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, materialName.getValueType());
+	Field conductivity = fm.findFieldByName("conductivity");
+	EXPECT_TRUE(conductivity.isValid());
+	EXPECT_EQ(1, conductivity.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, conductivity.getValueType());
+
+	Field magneticFieldVector = fm.findFieldByName("magnetic field vector");
+	EXPECT_TRUE(magneticFieldVector.isValid());
+	EXPECT_EQ(3, magneticFieldVector.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, magneticFieldVector.getValueType());
+
+	Field potential = fm.findFieldByName("potential");
+	EXPECT_TRUE(potential.isValid());
+	EXPECT_EQ(1, potential.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, potential.getValueType());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const double xi[3] = { 0.1, 0.2, 0.4 };
+	const double expectedConductivityOut[2] = { 27.4, 20.2 };
+	const double expectedCoordinatesOut[2][3] = { { 1, 2, 4 }, { 11, 2, 4 } };
+	const double expectedMagneticFieldVectorOut[3] = { 0.1, 0.2, 0.9 };
+	const char *expectedMaterialNameOut[2] = { "copper", "\"mixed\" alloy" };
+	const double expectedMaterialTypeOut[2] = { 1, 3 };
+	const double expectedPotentialOut[2] = { 4.4947897920000015, 4.3176384679999993 };
+	for (int e = 0; e < 2; ++e)
+	{
+		double conductivityOut, coordinatesOut[3], magneticFieldVectorOut[3], materialTypeOut, potentialOut;
+
+		Element element = mesh3d.findElementByIdentifier(e + 1);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(RESULT_OK, result = cache.setMeshLocation(element, 3, xi));
+
+		EXPECT_EQ(RESULT_OK, result = conductivity.evaluateReal(cache, 1, &conductivityOut));
+		EXPECT_DOUBLE_EQ(expectedConductivityOut[e], conductivityOut);
+
+		EXPECT_EQ(RESULT_OK, result = coordinates.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(expectedCoordinatesOut[e][c], coordinatesOut[c], 1.0E-6);
+
+		EXPECT_EQ(RESULT_OK, result = magneticFieldVector.evaluateReal(cache, 3, magneticFieldVectorOut));
+		// constant field should be same in both elements:
+		for (int c = 0; c < 3; ++c)
+			EXPECT_DOUBLE_EQ(expectedMagneticFieldVectorOut[c], magneticFieldVectorOut[c]);
+
+		char *materialNameOut = materialName.evaluateString(cache);
+		EXPECT_STREQ(expectedMaterialNameOut[e], materialNameOut);
+		cmzn_deallocate(materialNameOut);
+		materialNameOut = 0;
+
+		EXPECT_EQ(RESULT_OK, result = materialType.evaluateReal(cache, 1, &materialTypeOut));
+		EXPECT_DOUBLE_EQ(expectedMaterialTypeOut[e], materialTypeOut);
+
+		EXPECT_EQ(RESULT_OK, result = potential.evaluateReal(cache, 1, &potentialOut));
+		EXPECT_NEAR(expectedPotentialOut[e], potentialOut, 1.0E-6);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exelem_formats
+TEST(FieldIO, ex_element_grid_constant_indexed_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_BLOCK_GRID_RESOURCE)));
+	check_ex_element_grid_constant_indexed_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_element_grid_constant_indexed_fields(testFm1);
+}
+
+namespace {
+
+void check_ex_special_node_fields(Fieldmodule& fm)
+{
+	Field cell_type = fm.findFieldByName("cell_type");
+	EXPECT_TRUE(cell_type.isValid());
+	EXPECT_EQ(1, cell_type.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, cell_type.getValueType());
+
+	Field constant_real3 = fm.findFieldByName("constant_real3");
+	EXPECT_TRUE(constant_real3.isValid());
+	EXPECT_EQ(3, constant_real3.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, constant_real3.getValueType());
+
+	Field indexed_real = fm.findFieldByName("indexed_real");
+	EXPECT_TRUE(indexed_real.isValid());
+	EXPECT_EQ(1, indexed_real.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_real.getValueType());
+
+	Field indexed_int2 = fm.findFieldByName("indexed_int2");
+	EXPECT_TRUE(indexed_int2.isValid());
+	EXPECT_EQ(2, indexed_int2.getNumberOfComponents());
+	// integer type is not yet public, so returns REAL:
+	EXPECT_EQ(Field::VALUE_TYPE_REAL, indexed_int2.getValueType());
+
+	Field constant_string = fm.findFieldByName("constant_string");
+	EXPECT_TRUE(constant_string.isValid());
+	EXPECT_EQ(1, constant_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, constant_string.getValueType());
+
+	Field indexed_string = fm.findFieldByName("indexed_string");
+	EXPECT_TRUE(indexed_string.isValid());
+	EXPECT_EQ(1, indexed_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, indexed_string.getValueType());
+
+	Field general_string = fm.findFieldByName("general_string");
+	EXPECT_TRUE(general_string.isValid());
+	EXPECT_EQ(1, general_string.getNumberOfComponents());
+	EXPECT_EQ(Field::VALUE_TYPE_STRING, general_string.getValueType());
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	const int expected_cell_type[8] = { 1, 1, 1, 1, 2, 3, 2, 3 };
+	const double expected_constant_real3[3] = { 0.1, 0.2, 0.5 };
+	const double expected_indexed_real[3] = { 10.5, 15.5, 25.5 };
+	const double expected_indexed_int2[3][2] = { { 1, 7 }, { 2, 8 }, { 3, 9 } };
+	const char expected_constant_string[] = "\"Constant\" string";
+	const char *expected_indexed_string[3] = { "Cell type 1", "Cell type 2", "\"Type-3 Cell\"" };
+	const char *expected_general_string[8] = { "one", "two", "three", "four", "five", "six", "\'seven\'", "eight" };
+
+	for (int n = 0; n < 8; ++n)
+	{
+		Node node = nodeset.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+
+		double cell_type_out_double;
+		// don't have evaluateInteger yet:
+		EXPECT_EQ(RESULT_OK, cell_type.evaluateReal(cache, 1, &cell_type_out_double));
+		EXPECT_DOUBLE_EQ(static_cast<double>(expected_cell_type[n]), cell_type_out_double);
+		const int cell_type_out = static_cast<int>(cell_type_out_double + 0.5);
+		EXPECT_EQ(expected_cell_type[n], cell_type_out);
+
+		double constant_real3_out[3];
+		EXPECT_EQ(RESULT_OK, constant_real3.evaluateReal(cache, 3, constant_real3_out));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_DOUBLE_EQ(expected_constant_real3[c], constant_real3_out[c]);
+		}
+
+		const int cell_type_index = expected_cell_type[n] - 1;
+
+		double indexed_real_out;
+		EXPECT_EQ(RESULT_OK, indexed_real.evaluateReal(cache, 1, &indexed_real_out));
+		EXPECT_DOUBLE_EQ(expected_indexed_real[cell_type_index], indexed_real_out);
+
+		double indexed_int2_out_double[3];
+		EXPECT_EQ(RESULT_OK, indexed_int2.evaluateReal(cache, 3, indexed_int2_out_double));
+		for (int c = 0; c < 2; ++c)
+		{
+			EXPECT_DOUBLE_EQ(static_cast<double>(expected_indexed_int2[cell_type_index][c]), indexed_int2_out_double[c]);
+		}
+
+		char *constant_string_out = constant_string.evaluateString(cache);
+		EXPECT_STREQ(expected_constant_string, constant_string_out);
+		cmzn_deallocate(constant_string_out);
+
+		char *indexed_string_out = indexed_string.evaluateString(cache);
+		EXPECT_STREQ(expected_indexed_string[cell_type_index], indexed_string_out);
+		cmzn_deallocate(indexed_string_out);
+
+		char *general_string_out = general_string.evaluateString(cache);
+		EXPECT_STREQ(expected_general_string[n], general_string_out);
+		cmzn_deallocate(general_string_out);
+	}
+}
+
+}
+
+// Tests grid-based, constant and indexed fields. Taken from Cmgui example a/exnode_formats
+TEST(FieldIO, ex_special_node_fields)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_SPECIAL_NODE_FIELDS_RESOURCE)));
+	check_ex_special_node_fields(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/special_node_fields.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_ex_special_node_fields(testFm1);
+}
+
+namespace {
+
+void createVariableNodeVersionsWithTime2d(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	const double times[3] = { 0.0, 1.0, 2.0 };
+	Timesequence timesequence = fm.getMatchingTimesequence(3, times);
+	EXPECT_TRUE(timesequence.isValid());
+
+	// corner nodes have all 3 components defined
+	Nodetemplate nodetemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplate.setTimesequence(coordinates, timesequence));
+	Timesequence tmpTimesequence = nodetemplate.getTimesequence(coordinates);
+	EXPECT_EQ(timesequence, tmpTimesequence);
+
+	// midside and centre nodes only have z defined:
+	Nodetemplate nodetemplatez = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodetemplatez.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplatez.defineField(coordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setValueNumberOfVersions(coordinates, /*componentNumber*/1, Node::VALUE_LABEL_VALUE, 0));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setValueNumberOfVersions(coordinates, /*componentNumber*/2, Node::VALUE_LABEL_VALUE, 0));
+	EXPECT_EQ(RESULT_OK, nodetemplatez.setTimesequence(coordinates, timesequence));
+	EXPECT_EQ(0, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(0, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/2, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(1, nodetemplatez.getValueNumberOfVersions(coordinates, /*componentNumber*/3, Node::VALUE_LABEL_VALUE));
+	tmpTimesequence = nodetemplatez.getTimesequence(coordinates);
+	EXPECT_EQ(timesequence, tmpTimesequence);
+
+	Elementbasis bilinearBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementbasis biquadraticBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_QUADRATIC_LAGRANGE);
+	EXPECT_TRUE(biquadraticBasis.isValid());
+
+	Mesh mesh = fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+
+	// x and y will use bilinear basis:
+	Elementfieldtemplate bilinearEft = mesh.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(bilinearEft.isValid());
+	// z will use biquadratic basis:
+	Elementfieldtemplate biquadraticEft = mesh.createElementfieldtemplate(biquadraticBasis);
+	EXPECT_TRUE(biquadraticEft.isValid());
+
+	Elementtemplate elementtemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/1, bilinearEft));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/2, bilinearEft));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, /*componentNumber*/3, biquadraticEft));
+
+	// create model
+	const int elementCount1 = 2;
+	const int elementCount2 = 1;
+	const int nodeCount1 = elementCount1*2 + 1;
+	const int nodeCount2 = elementCount2*2 + 1;
+	const double nodeCount1Radians = PI / static_cast<double>(nodeCount1 - 2);
+
+	fm.beginChange();
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	// create nodes
+	int nodeIdentifier = 1;
+	for (int n2 = 0; n2 < nodeCount2; ++n2)
+	{
+		for (int n1 = 0; n1 < nodeCount1; ++n1)
+		{
+			bool zOnly = ((n1 % 2) != 0) || ((n2 % 2) != 0);
+			Node node = nodeset.createNode(nodeIdentifier++, zOnly ? nodetemplatez : nodetemplate);
+			EXPECT_TRUE(node.isValid());
+			EXPECT_EQ(RESULT_OK, cache.setNode(node));
+			for (int ti = 0; ti < 2; ++ti)
+			{
+				const double time = static_cast<double>(ti);
+				cache.setTime(time);
+				const double c[3] =
+				{
+					n1*(5.0 + time),
+					n2*(5.0) + 0.5*n1*n1*(n2 - 1)*time,
+					sin(nodeCount1Radians*n1)*time*4.0*cos(n2 - 1)
+				};
+				const int result = coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, c);
+				if (zOnly)
+				{
+					EXPECT_EQ(RESULT_WARNING_PART_DONE, result);
+					// test setting individual parameters
+					EXPECT_EQ(RESULT_ERROR_NOT_FOUND, coordinates.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c));
+					EXPECT_EQ(RESULT_ERROR_NOT_FOUND, coordinates.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c + 1));
+					EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, 3, Node::VALUE_LABEL_VALUE, /*version*/1, 1, c + 2));
+				}
+				else
+				{
+					EXPECT_EQ(RESULT_OK, result);
+				}
+			}
+		}
+	}
+
+	// create elements
+	int elementIdentifier = 1;
+	for (int e2 = 0; e2 < elementCount2; ++e2)
+	{
+		for (int e1 = 0; e1 < elementCount1; ++e1)
+		{
+			Element element = mesh.createElement(elementIdentifier++, elementtemplate);
+			EXPECT_TRUE(element.isValid());
+			const int ni = e2*nodeCount1 + e1*2 + 1;
+			const int biquadraticNodeIdentifiers[9] =
+			{
+				ni, ni + 1, ni + 2,
+				ni + nodeCount1, ni + nodeCount1 + 1, ni + nodeCount1 + 2,
+				ni + 2*nodeCount1, ni + 2*nodeCount1 + 1, ni + 2*nodeCount1 + 2,
+			};
+			const int bilinearNodeIdentifiers[4] =
+			{
+				ni, ni + 2, ni + 2*nodeCount1, ni + 2*nodeCount1 + 2
+			};
+			EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(biquadraticEft, 9, biquadraticNodeIdentifiers));
+			EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(bilinearEft, 4, bilinearNodeIdentifiers));
+		}
+	}
+
+	fm.endChange();
+}
+
+void checkVariableNodeVersionsWithTime2d(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	const int elementCount1 = 2;
+	const int elementCount2 = 1;
+	const int nodeCount1 = elementCount1*2 + 1;
+	const int nodeCount2 = elementCount2*2 + 1;
+	const double tolerance = 1.0E-6;
+
+	EXPECT_EQ(RESULT_OK, fm.defineAllFaces());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(elementCount1*elementCount2, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ((elementCount1 + 1)*elementCount2 + elementCount1*(elementCount2 + 1), mesh1d.getSize());
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(nodeCount1*nodeCount2, nodeset.getSize());
+
+	FieldNodeValue nodeValue = fm.createFieldNodeValue(coordinates, Node::VALUE_LABEL_VALUE, /*version*/1);
+	EXPECT_TRUE(nodeValue.isValid());
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral area = fm.createFieldMeshIntegral(one, coordinates, mesh2d);
+	EXPECT_TRUE(area.isValid());
+	const int numGaussPoints = 4;
+	EXPECT_EQ(RESULT_OK, area.setNumbersOfPoints(1, &numGaussPoints));
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	Node node15 = nodeset.findNodeByIdentifier(15);
+	EXPECT_TRUE(node15.isValid());
+	EXPECT_EQ(RESULT_OK, cache.setNode(node15));
+	EXPECT_TRUE(coordinates.isDefinedAtLocation(cache));
+	EXPECT_TRUE(coordinates.hasParametersAtLocation(cache));
+	EXPECT_TRUE(nodeValue.isDefinedAtLocation(cache));
+	const double expected_coordinates_node15[3][3] =
+	{
+		{ 20.0, 10.0, 0.0 },
+		{ 22.0, 14.0, -0.93583104521023752 },
+		{ 24.0, 18.0, -1.8716620904204750 }
+	};
+	const double expected_area[3] =
+	{
+		200.0,
+		296.07757780219970,
+		427.23042426514678
+	};
+	double areaOut, coordinatesOut[3];
+	for (int ti = 0; ti < 3; ++ti)
+	{
+		const double time = 0.5*ti;
+		EXPECT_EQ(RESULT_OK, cache.setTime(time));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, nodeValue.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(cache, /*components=all*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node15[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_OK, area.evaluateReal(cache, 1, &areaOut));
+		EXPECT_NEAR(expected_area[ti], areaOut, tolerance);
+	}
+
+	Node node12 = nodeset.findNodeByIdentifier(12);
+	EXPECT_TRUE(node12.isValid());
+	EXPECT_EQ(RESULT_OK, cache.setNode(node12));
+	// coordinates has parameters at node 12, but is not defined and
+	// can't be evaluated since not all components exist
+	EXPECT_FALSE(coordinates.isDefinedAtLocation(cache));
+	EXPECT_TRUE(coordinates.hasParametersAtLocation(cache));
+	// nodeValue silently ignores missing components
+	EXPECT_TRUE(nodeValue.isDefinedAtLocation(cache));
+	const double expected_coordinates_node12[5][3] =
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 0.0, 0.0, 0.93583104521023774 },
+		{ 0.0, 0.0, 1.871662090420475 }
+	};
+	for (int ti = 0; ti < 3; ++ti)
+	{
+		const double time = 0.5*ti;
+		EXPECT_EQ(RESULT_OK, cache.setTime(time));
+		EXPECT_EQ(RESULT_ERROR_GENERAL, coordinates.evaluateReal(cache, 3, coordinatesOut));
+		EXPECT_EQ(RESULT_OK, nodeValue.evaluateReal(cache, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node12[ti][c], coordinatesOut[c], tolerance);
+		}
+		EXPECT_EQ(RESULT_WARNING_PART_DONE, coordinates.getNodeParameters(cache, /*components=all*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinatesOut));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expected_coordinates_node12[ti][c], coordinatesOut[c], tolerance);
+		}
+	}
+}
+
+}
+
+/** @return  Result of region write operation */
+int writeNodesAtTime(Region& region, double time, const char *filename)
+{
+	StreaminformationRegion sir = region.createStreaminformationRegion();
+	StreamresourceFile srf = sir.createStreamresourceFile(filename);
+	sir.setResourceAttributeReal(srf, StreaminformationRegion::ATTRIBUTE_TIME, time);
+	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_NODES);
+	return region.write(sir);
+}
+
+// Test a model mixing 2-D bilinear and biquadratic bases for different
+// components of coordinate field, testing evaluation of midside nodes which
+// don't have all components.
+TEST(FieldIO, variableNodeVersionsWithTime2d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	createVariableNodeVersionsWithTime2d(zinc.fm);
+	checkVariableNodeVersionsWithTime2d(zinc.fm);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 0.0, FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time0.ex2"));
+	EXPECT_EQ(RESULT_OK, result = writeNodesAtTime(zinc.root_region, 1.0, FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time1.ex2"));
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	StreamresourceFile srf = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_elements.ex2");
+	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_MESH1D | Field::DOMAIN_TYPE_MESH2D);
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	sir = testRegion1.createStreaminformationRegion();
+	StreamresourceFile srf_nodes_time0 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time0.ex2");
+	sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
+	StreamresourceFile srf_nodes_time1 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time1.ex2");
+	sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+	StreamresourceFile srf_elements = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_elements.ex2");
+	EXPECT_EQ(RESULT_OK, result = testRegion1.read(sir));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkVariableNodeVersionsWithTime2d(testFm1);
+}
+
+namespace {
+
+void createPartElementsModel(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(3, "z"));
+
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	Elementbasis trilinearBasis = fm.createElementbasis(3, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(trilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh3d.createElementfieldtemplate(trilinearBasis);
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(8));
+	EXPECT_TRUE(eft.isValid());
+	for (int f = 1; f <= 8; ++f)
+	{
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorType(f, Elementfieldtemplate::SCALE_FACTOR_TYPE_NODE_PATCH));
+		EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(f, 1));
+		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &f));
+	}
+
+	Elementtemplate elementtemplate = mesh3d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	int nodeIdentifier = 1;
+	for (int i = 0; i < 8; ++i)
+	{
+		const double x[3] = { static_cast<double>(i%2), static_cast<double>(i%4/2), static_cast<double>(i/4) };
+		Node node = nodes.createNode(nodeIdentifier++, nodetemplate);
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, x));
+	}
+
+	const int nodeIdentifiers[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+	const int nodeIdentifiersError[8] = { 1, 2, 3, 4, 5, 6, 17, 8 };
+	const double scaleFactors[8] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+	Element element1 = mesh3d.createElement(1, elementtemplate);
+	// following fails because node 17 doesn't exist, leaving element without nodes
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, element1.setNodesByIdentifier(eft, 8, nodeIdentifiersError));
+	// setScaleFactors fails because nodes have not been set with node-based scale factors
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, element1.setScaleFactors(eft, 8, scaleFactors));
+
+	Element element2 = mesh3d.createElement(2, elementtemplate);
+	EXPECT_EQ(RESULT_OK, element2.setNodesByIdentifier(eft, 8, nodeIdentifiers));
+	EXPECT_EQ(RESULT_OK, element2.setScaleFactors(eft, 8, scaleFactors));
+
+	EXPECT_EQ(RESULT_WARNING_PART_DONE, fm.defineAllFaces());
+}
+
+void checkPartElementsModel(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(2, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(6, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(12, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+}
+
+}
+
+// test can write and read elements with local nodes and scale factors not yet set
+TEST(FieldIO, partElements)
+{
+	ZincTestSetupCpp zinc;
+
+	createPartElementsModel(zinc.fm);
+	checkPartElementsModel(zinc.fm);
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/part_elements.ex2"));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/part_elements.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkPartElementsModel(testFm1);
+}
+
+namespace {
+
+void createUnusedLocalNodesModel(Fieldmodule& fm)
+{
+	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/2);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, coordinates.setName("coordinates"));
+	EXPECT_EQ(RESULT_OK, coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, coordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, coordinates.setComponentName(2, "y"));
+
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(coordinates));
+
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	Elementbasis bilinearBasis = fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementfieldtemplate eft = mesh2d.createElementfieldtemplate(bilinearBasis);
+	EXPECT_TRUE(eft.isValid());
+	// note: 1 more local node and scale factor than necessary
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(5));
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(5));
+	// use local nodes 1,2,4,5 i.e. leave a gap
+	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(1, 1, 1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(2, 1, 2, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(3, 1, 4, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(4, 1, 5, Node::VALUE_LABEL_VALUE, 1));
+
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_TRUE(eft.validate());
+	for (int f = 1; f <= 4; ++f)
+	{
+		const int sfi = f + 1;
+		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &sfi));
+	}
+
+	Elementtemplate elementtemplate = mesh2d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(coordinates, -1, eft));
+
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	int nodeIdentifier = 1;
+	for (int i = 0; i < 4; ++i)
+	{
+		const double x[2] = { static_cast<double>(i%2), static_cast<double>(i/2) };
+		Node node = nodes.createNode(nodeIdentifier++, nodetemplate);
+		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, coordinates.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 2, x));
+	}
+
+	// note 3rd node is invalid and not used
+	const int nodeIdentifiers[5] = { 1, 2, -1, 3, 4 };
+	const double scaleFactors[5] = { 1.0, 1.0, 1.0, 1.0, 1.0 };
+
+	Element element = mesh2d.createElement(1, elementtemplate);
+	EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(eft, 5, nodeIdentifiers));
+	EXPECT_EQ(RESULT_OK, element.setScaleFactors(eft, 5, scaleFactors));
+
+	EXPECT_EQ(RESULT_OK, fm.defineAllFaces());
+}
+
+void checkUnusedLocalNodesModel(Fieldmodule& fm, bool first)
+{
+	FieldFiniteElement coordinates = fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(2, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(1, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(4, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(4, nodes.getSize());
+
+	Element element = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	Elementfieldtemplate eft = element.getElementfieldtemplate(coordinates, -1);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(first ? 5 : 4, eft.getNumberOfLocalNodes());
+
+	EXPECT_EQ(1, eft.getTermLocalNodeIndex(1, 1));
+	EXPECT_EQ(2, eft.getTermLocalNodeIndex(2, 1));
+	EXPECT_EQ(first ? 4 : 3, eft.getTermLocalNodeIndex(3, 1));
+	EXPECT_EQ(first ? 5 : 4, eft.getTermLocalNodeIndex(4, 1));
+
+	int sfi;
+	EXPECT_EQ(RESULT_OK, eft.getTermScaling(1, 1, 1, &sfi));
+	EXPECT_EQ(2, sfi);
+	EXPECT_EQ(RESULT_OK, eft.getTermScaling(2, 1, 1, &sfi));
+	EXPECT_EQ(3, sfi);
+	EXPECT_EQ(RESULT_OK, eft.getTermScaling(3, 1, 1, &sfi));
+	EXPECT_EQ(4, sfi);
+	EXPECT_EQ(RESULT_OK, eft.getTermScaling(4, 1, 1, &sfi));
+	EXPECT_EQ(5, sfi);
+}
+
+}
+
+// test can write and read a model not using all local nodes in EFT.
+// Note when re-reading from EX format unused local nodes are lost
+TEST(FieldIO, unusedLocalNodes)
+{
+	ZincTestSetupCpp zinc;
+
+	createUnusedLocalNodesModel(zinc.fm);
+	checkUnusedLocalNodesModel(zinc.fm, true);
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/unused_local_nodes.ex2"));
+
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(RESULT_OK, testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/unused_local_nodes.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkUnusedLocalNodesModel(testFm1, false);
+}
+
+/* test fix of bug where elements were read into same stream information
+   before time-varying nodes; node merge crashed due to invalid optimisation
+   tranferring time array from template node to actual node */
+TEST(FieldIO, read_elements_before_time_varying_nodes)
+{
+	ZincTestSetupCpp zinc;
+
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_ELEMENT_RESOURCE));
+	StreamresourceFile fr1 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE1_RESOURCE));
+	sir.setResourceAttributeReal(fr1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+	StreamresourceFile fr3 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE3_RESOURCE));
+	sir.setResourceAttributeReal(fr3, StreaminformationRegion::ATTRIBUTE_TIME, 3.0);
+	// deliberately merge out-of-order
+	StreamresourceFile fr2 = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_NODE2_RESOURCE));
+	sir.setResourceAttributeReal(fr2, StreaminformationRegion::ATTRIBUTE_TIME, 2.0);
+	const double times[5] = { 1.0, 1.5, 2.0, 2.5, 3.0 };
+	const double xi[3] = { 0.5, 0.5, 0.5 };
+	const double xExpected[5][3] = {
+		{ 0.50, 0.50, 0.50 },
+		{ 0.75, 0.75, 0.75 },
+		{ 1.00, 1.00, 1.00 },
+		{ 1.25, 1.25, 1.25 },
+		{ 1.50, 1.50, 1.50 }
+	};
+	double xOut[3];
+	// test reading twice
+	const double tol = 1.0E-7;
+	for (int i = 0; i < 2; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, zinc.root_region.read(sir));
+		Field coordinates = zinc.fm.findFieldByName("coordinates");
+		EXPECT_TRUE(coordinates.isValid());
+		Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+		EXPECT_TRUE(mesh3d.isValid());
+		Element element1 = mesh3d.findElementByIdentifier(1);
+		EXPECT_TRUE(element1.isValid());
+		Fieldcache cache = zinc.fm.createFieldcache();
+		EXPECT_TRUE(mesh3d.isValid());
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element1, 3, xi));
+		EXPECT_EQ(RESULT_OK, cache.setTime(times[i]));
+		EXPECT_EQ(RESULT_OK, coordinates.evaluateReal(cache, 3, xOut));
+		EXPECT_NEAR(xExpected[i][0], xOut[0], tol);
+		EXPECT_NEAR(xExpected[i][1], xOut[1], tol);
+		EXPECT_NEAR(xExpected[i][2], xOut[2], tol);
+	}
+}
+
+namespace {
+
+void checkAllShapesElementConstantModel(Fieldmodule& fm, double factor)
+{
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	Field temperature = fm.findFieldByName("temperature");
+	EXPECT_TRUE(temperature.isValid());
+	EXPECT_EQ(1, temperature.getNumberOfComponents());
+	EXPECT_FALSE(temperature.isTypeCoordinate());
+
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(6, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(24, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(33, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(16, nodes.getSize());
+
+	const Element::ShapeType expectedShapeTypes[6] = {
+		Element::SHAPE_TYPE_WEDGE12,
+		Element::SHAPE_TYPE_WEDGE12,
+		Element::SHAPE_TYPE_WEDGE13,
+		Element::SHAPE_TYPE_WEDGE23,
+		Element::SHAPE_TYPE_CUBE,
+		Element::SHAPE_TYPE_TETRAHEDRON
+	};
+	const double expectedTemperature[6] = { 48.0, 42.0, 19.0, 37.4, 11.5, 30.3 };
+	double temperatureOut;
+	Fieldcache cache = fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+	for (int i = 0; i < 6; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i + 1);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(expectedShapeTypes[i], element.getShapeType());
+		EXPECT_EQ(RESULT_OK, cache.setElement(element));
+		EXPECT_EQ(RESULT_OK, temperature.evaluateReal(cache, 3, &temperatureOut));
+		EXPECT_NEAR(factor*expectedTemperature[i], temperatureOut, 1.0E-6);
+		const double temperatureIn = expectedTemperature[i]*2.0;
+		EXPECT_EQ(RESULT_OK, temperature.assignReal(cache, 3, &temperatureIn));
+		EXPECT_EQ(RESULT_OK, temperature.evaluateReal(cache, 3, &temperatureOut));
+		EXPECT_NEAR(temperatureIn, temperatureOut, 1.0E-6);
+	}
+}
+
+}
+
+TEST(FieldIO, allShapesElementConstant)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX2_ALLSHAPES_ELEMENT_CONSTANT_RESOURCE)));
+	checkAllShapesElementConstantModel(zinc.fm, 1.0);
+
+	// test writing and re-reading in EX2 format
+	EXPECT_EQ(OK, zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/allshapes_element_constant.ex2"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(OK, testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/allshapes_element_constant.ex2"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	checkAllShapesElementConstantModel(testFm1, 2.0);
+}
+

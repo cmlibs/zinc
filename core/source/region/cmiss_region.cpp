@@ -9,11 +9,12 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldgroup.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
@@ -356,6 +357,13 @@ cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
 			"cmzn_region_create_internal.  Could not allocate memory");
 	}
 	return (region);
+}
+
+cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region)
+{
+	if (!region)
+		return 0;
+	return Computed_field_manager_create_iterator(region->field_manager);
 }
 
 namespace {
@@ -1812,7 +1820,7 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 		MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
 
 		// check field wrappers?
-		if ((0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field)))))
+		if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
 		{
 			CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
 				FE_field_to_Computed_field_change, (void *)fieldmodule);

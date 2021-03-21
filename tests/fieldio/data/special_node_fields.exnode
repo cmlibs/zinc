@@ -1,0 +1,49 @@
+Region : /
+ #Fields=7
+ 1) cell_type, field, integer, #Components=1
+   number.  Value index= 4, #Derivatives= 0
+ 2) constant_real3, field, constant, rectangular cartesian, #Components=3
+   x.
+   y.
+   z.
+ 3) indexed_real, field, indexed, Index_field=cell_type, #Values=3, real, #Components=1
+   number.
+ 4) indexed_int2, field, indexed, Index_field=cell_type, #Values=3, integer, #Components=2
+   1.
+   2.
+ 5) constant_string, field, constant, string, #Components=1
+   name.
+ 6) indexed_string, field, indexed, Index_field=cell_type, #Values=3, string, #Components=1
+   name.
+ 7) general_string, field, string, #Components=1
+   name.  Value index= 5, #Derivatives= 0
+ Values:
+    0.1 0.2 0.5
+    10.5 15.5 25.5
+    1 2 3  7 8 9
+		"\"Constant\" string"
+		"Cell type 1" 'Cell type 2' '"Type-3 Cell"'
+ Node: 1
+  1
+  one
+ Node: 2
+  1
+  two
+ Node: 3
+  1
+  three
+ Node: 4
+  1
+  four
+ Node: 5
+  2
+  "five"
+ Node: 6
+  3
+  "six"
+ Node: 7
+  2
+  '\'seven\''
+ Node: 8
+  3
+  "eight"

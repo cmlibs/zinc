@@ -174,7 +174,7 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 
 }
 
-void GraphicsJsonIO::ioGeneralDobuleEntries(Json::Value &graphicsSettings)
+void GraphicsJsonIO::ioGeneralDoubleEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
@@ -290,7 +290,7 @@ void GraphicsJsonIO::ioGeneralEntries(Json::Value &graphicsSettings)
 {
 	ioGeneralBoolEntries(graphicsSettings);
 	ioGeneralFieldEntries(graphicsSettings);
-	ioGeneralDobuleEntries(graphicsSettings);
+	ioGeneralDoubleEntries(graphicsSettings);
 	ioGeneralEnumEntries(graphicsSettings);
 	ioGeneralObjectEntries(graphicsSettings);
 }
@@ -651,8 +651,8 @@ void GraphicsJsonIO::ioContoursEntries(Json::Value &graphicsSettings)
 				attributesSettings["RangeLastIsovalue"] = temp;
 				num = contours.getRangeNumberOfIsovalues();
 				attributesSettings["RangeNumberOfIsovalues"] = num;
-				graphicsSettings["Contours"] = attributesSettings;
 			}
+			graphicsSettings["Contours"] = attributesSettings;
 		}
 		else if (graphicsSettings["Contours"].isObject())
 		{

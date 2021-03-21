@@ -39,17 +39,23 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 	int node_offset, cmzn_field_id sort_by_field, FE_value time);
 
 /**
- * Create a node list from a subset of the nodeset at a specific time.
- *
- * @param nodeset  The nodeset to create a subset from.
- * @param node_ranges  Optional ranges of node identifiers to satisfy.
- * @param conditional_field  Optional conditional field node must return true for.
- * @param time  Time to evaluate the conditional field at.
- * @return  Returns node list if successfully create a node list with the given
- *    arguments, otherwise NULL.
- */
-struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
-	cmzn_nodeset *nodeset, struct Multi_range *node_ranges,
-	cmzn_field *conditional_field, FE_value time);
+* @return  A conditional field returning 1 (true) for all node identifiers
+* of mesh in the given ranges. Returned field is accessed. Returns 0 on error.
+*/
+cmzn_field_id cmzn_nodeset_create_conditional_field_from_identifier_ranges(
+	cmzn_nodeset_id nodeset, struct Multi_range *identifierRanges);
+
+/**
+* @param time  If other conditional fields are time-varying the result is
+* wrapped in a time_lookup field for this time to ensure correct evaluation.
+* @return  A conditional field that is the logical AND of a node group
+* field formed from the optional identifier ranges with any of the 3 supplied
+* conditional fields. Field returns true if no ranges or conditionals supplied.
+* Returned field is accessed. Returns 0 on error.
+*/
+cmzn_field_id cmzn_nodeset_create_conditional_field_from_ranges_and_selection(
+	cmzn_nodeset_id nodeset, struct Multi_range *identifierRanges,
+	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
+	cmzn_field_id conditionalField3, FE_value time);
 
 #endif /* !defined (NODE_OPERATIONS_H) */

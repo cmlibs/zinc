@@ -6,13 +6,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 if(ZINC_BUILD_PYTHON_BINDINGS)
-    find_package(PythonInterp)
-    find_package(PythonLibs)
+    find_package(Python COMPONENTS Interpreter Development)
 
-    if(PYTHONLIBS_FOUND AND PYTHONINTERP_FOUND)
+    if(Python_Interpreter_FOUND AND Python_Development_FOUND)
         add_subdirectory(python)
     else()
-        message(WARNING "Python bindings requested but a Python interperter and library was not found.")
+        message(WARNING "Python bindings requested but a Python interpreter and library were not found.")
     endif()
 endif()
 

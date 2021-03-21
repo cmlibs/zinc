@@ -12,8 +12,7 @@
 #if !defined (CMZN_REGION_H)
 #define CMZN_REGION_H
 
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/region.h"
+#include "opencmiss/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"
@@ -86,6 +85,13 @@ PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
  * @return  Accessed reference to the newly created region, or NULL if failed.
  */
 cmzn_region *cmzn_region_create_internal(cmzn_region *base_region);
+
+/**
+ * Create an iterator for the region's fields.
+ * Internal; externally use cmzn_fieldmodule_create_fielditerator
+ * @return  Accessed iterator.
+ */
+cmzn_fielditerator *cmzn_region_create_fielditerator(cmzn_region *region);
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.

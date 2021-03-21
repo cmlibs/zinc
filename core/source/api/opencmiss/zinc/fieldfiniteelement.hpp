@@ -14,6 +14,7 @@
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/element.hpp"
+#include "opencmiss/zinc/node.hpp"
 
 namespace OpenCMISS
 {
@@ -51,6 +52,11 @@ public:
 		return cmzn_field_finite_element_set_node_parameters(this->getDerivedId(),
 			cache.getId(), componentNumber, static_cast<cmzn_node_value_label>(nodeValueLabel),
 			versionNumber, valuesCount, valuesIn);
+	}
+
+	bool hasParametersAtLocation(const Fieldcache& cache)
+	{
+		return cmzn_field_finite_element_has_parameters_at_location(this->getDerivedId(), cache.getId());
 	}
 };
 
@@ -235,6 +241,24 @@ public:
 	{ }
 };
 
+class FieldNodeLookup : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeLookup(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldNodeLookup Fieldmodule::createFieldNodeLookup(const Field& sourceField,
+		const Node& lookupNode);
+
+public:
+
+	FieldNodeLookup() : Field(0)
+	{ }
+
+};
+
+
 inline FieldFiniteElement Fieldmodule::createFieldFiniteElement(int numberOfComponents)
 {
 	return FieldFiniteElement(reinterpret_cast<cmzn_field_finite_element_id>(
@@ -284,10 +308,10 @@ inline FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField
 		versionNumber));
 }
 
-inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& mesh)
+inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& hostMesh)
 {
 	return FieldStoredMeshLocation(reinterpret_cast<cmzn_field_stored_mesh_location_id>(
-		cmzn_fieldmodule_create_field_stored_mesh_location(id, mesh.getId())));
+		cmzn_fieldmodule_create_field_stored_mesh_location(id, hostMesh.getId())));
 }
 
 inline FieldStoredMeshLocation Field::castStoredMeshLocation()
@@ -315,6 +339,13 @@ inline FieldIsOnFace Fieldmodule::createFieldIsOnFace(Element::FaceType face)
 {
 	return FieldIsOnFace(cmzn_fieldmodule_create_field_is_on_face(
 		id, static_cast<cmzn_element_face_type>(face)));
+}
+
+inline FieldNodeLookup Fieldmodule::createFieldNodeLookup(const Field& sourceField,
+	const Node& lookupNode)
+{
+	return FieldNodeLookup(cmzn_fieldmodule_create_field_node_lookup(
+		id, sourceField.getId(), lookupNode.getId()));
 }
 
 }  // namespace Zinc

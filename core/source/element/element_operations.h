@@ -15,7 +15,9 @@ therefore cannot reside in finite element modules.
 #if !defined (ELEMENT_OPERATIONS_H)
 #define ELEMENT_OPERATIONS_H
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/types/fieldfiniteelementid.h"
+#include "opencmiss/zinc/types/fieldsubobjectgroupid.h"
+#include "opencmiss/zinc/types/nodesetid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -140,10 +142,10 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 
 /**
  * @return  A conditional field returning 1 (true) for all element identifiers
- * of fe_mesh in the given ranges. Returned field is accessed. Returns 0 on error.
+ * of mesh in the given ranges. Returned field is accessed. Returns 0 on error.
  */
-cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
-	FE_mesh *fe_mesh, struct Multi_range *identifier_ranges);
+cmzn_field_id cmzn_mesh_create_conditional_field_from_identifier_ranges(
+	cmzn_mesh_id mesh, struct Multi_range *identifierRanges);
 
 /**
  * @param time  If other conditional fields are time-varying the result is
@@ -153,8 +155,8 @@ cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
  * conditional fields. Field returns true if no ranges or conditionals supplied.
  * Returned field is accessed. Returns 0 on error.
  */
-cmzn_field_id FE_mesh_create_conditional_field_from_ranges_and_selection(
-	FE_mesh *fe_mesh, struct Multi_range *identifierRanges,
+cmzn_field_id cmzn_mesh_create_conditional_field_from_ranges_and_selection(
+	cmzn_mesh_id mesh, struct Multi_range *identifierRanges,
 	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
 	cmzn_field_id conditionalField3, FE_value time);
 

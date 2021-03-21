@@ -10,6 +10,7 @@
 #define CMZN_OPTIMISATION_HPP__
 
 #include "opencmiss/zinc/optimisation.h"
+#include "opencmiss/zinc/fieldassignment.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
@@ -98,6 +99,11 @@ public:
 	int setConditionalField(const Field& independentField, const Field& conditionalField)
 	{
 		return cmzn_optimisation_set_conditional_field(id, independentField.getId(), conditionalField.getId());
+	}
+
+	int addFieldassignment(const Fieldassignment& fieldassignment)
+	{
+		return cmzn_optimisation_add_fieldassignment(this->id, fieldassignment.getId());
 	}
 
 	Method getMethod()

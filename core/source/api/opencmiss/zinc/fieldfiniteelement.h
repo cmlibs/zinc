@@ -18,6 +18,7 @@
 #include "types/fieldcacheid.h"
 #include "types/fieldfiniteelementid.h"
 #include "types/fieldmoduleid.h"
+#include "types/meshid.h"
 #include "types/nodeid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -30,12 +31,12 @@ extern "C" {
  * Creates a real-valued finite_element field which can be interpolated over a
  * finite element mesh with parameters indexed by nodes.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param number_of_components  The number of components for the new field.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
-	cmzn_fieldmodule_id field_module, int number_of_components);
+	cmzn_fieldmodule_id fieldmodule, int number_of_components);
 
 /**
  * If the field is real-valued interpolated finite element then this function
@@ -78,9 +79,11 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * Get parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, absent
+ * parameters are set to zero, and WARNING_PART_DONE is returned.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to get parameters for.
+ * @param finite_element_field  The finite element field to get parameters for.
  * @param cache  Store of location to get values and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to get parameters for, from 1 to the
@@ -93,7 +96,10 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_out  Array of real values to be set from the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were obtained), ERROR_NOT_FOUND if
+ * field not defined or none of the requested components have parameters,
+ * otherwise any other error code.
  */
 ZINC_API int cmzn_field_finite_element_get_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
@@ -104,9 +110,11 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * Set parameters for finite element field at node.
  * Note that the node and other part locations such as time must be set in the
  * field cache passed to this function.
+ * Note if parameters only exist for some of the requested components, sets
+ * those that do exist and returns WARNING_PART_DONE.
  * @see cmzn_fieldcache_set_node
  *
- * @param field  The finite element field to set parameters for.
+ * @param finite_element_field  The finite element field to set parameters for.
  * @param cache  Store of location to assign at and working cache. Must have
  * set the node in the cache, and time if field is time-varying.
  * @param component_number  The component to set parameters for, from 1 to the
@@ -119,12 +127,26 @@ ZINC_API int cmzn_field_finite_element_get_node_parameters(
  * @param values_count  Size of values array. Checked that it equals or
  * exceeds the number of components of field, or 1 if setting one component.
  * @param values_in  Array of real values to be assigned to the parameters.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on full success, WARNING_PART_DONE if only some
+ * components have parameters (and which were set), ERROR_NOT_FOUND if field
+ * not defined or none of the requested components have parameters, otherwise
+ * any other error code.
  */
 ZINC_API int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
 	int component_number, enum cmzn_node_value_label node_value_label,
 	int version_number, int values_count, const double *values_in);
+
+/**
+ * Query whether any parameters are stored for field at the location specified
+ * in the field cache.
+ *
+ * @param field  The field to query.
+ * @param cache  Store of location to check, and intermediate field values.
+ * @return  True if field has parameters at location, otherwise false.
+ */
+ZINC_API bool cmzn_field_finite_element_has_parameters_at_location(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache);
 
 /**
  * Creates a field producing a value on 1-D line elements with as many
@@ -141,12 +163,12 @@ ZINC_API int cmzn_field_finite_element_set_node_parameters(
  * @see cmzn_field_edge_discontinuity_set_measure
  * @see cmzn_field_edge_discontinuity_set_conditional_field
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field  The source field to measure discontinuity of.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field);
 
 /**
  * If the field is edge discontinuity type then returns the derived edge
@@ -246,7 +268,7 @@ ZINC_API int cmzn_field_edge_discontinuity_set_measure(
  * Creates a field returning a value of a source field at an embedded location.
  * The new field has the same value type as the source field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Field to evaluate at the embedded location. Currently
  * restricted to having numerical values.
  * @param embedded_location_field  Field returning an embedded location, i.e.
@@ -254,7 +276,7 @@ ZINC_API int cmzn_field_edge_discontinuity_set_measure(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_field_id embedded_location_field);
 
 /**
@@ -264,7 +286,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * Type-specific functions allow the search to find the nearest value and set a
  * conditional field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Source field whose value is to be searched for. Must have
  * the same number of numerical components as the mesh_field, and at least as
  * many as mesh dimension.
@@ -275,7 +297,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_field_id mesh_field, cmzn_mesh_id mesh);
 
 /**
@@ -370,18 +392,22 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
 	enum cmzn_field_find_mesh_location_search_mode search_mode);
 
 /**
- * Creates a field which represents and returns node values/derivatives.
+ * Creates a field which represents and returns labelled node parameters,
+ * i.e. specific value/derivative versions.
+ * This field has as many components as the source field, and is defined if any
+ * component has the specified value/derivative version. Non-existent component
+ * parameters evaluate to zero, and are ignored on assignment.
  *
- * @param field_module  Region field module which will own new field.
- * @param field  The field for which the nodal values are stored, this
- * 	must be a finite element field.
+ * @param fieldmodule  Region field module which will own new field.
+ * @param source_field  The field for which the nodal values are stored, this
+ * must be a finite element field.
  * @param node_value_label  The label of the node value/derivative to return.
  * @param version_number  The version number of the value or derivative to
  * return, starting from 1.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
-	cmzn_fieldmodule_id field_module, cmzn_field_id field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	enum cmzn_node_value_label node_value_label, int version_number);
 
 /**
@@ -389,12 +415,14 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
  * values consists of an element and coordinates in the element's local 'xi'
  * coordinate chart.
  *
- * @param field_module  Region field module which will own new field.
- * @param mesh  The mesh for which locations are stored.
+ * @param fieldmodule  Region field module which will own new field.
+ * @param host_mesh  The host mesh for which locations are stored. Currently
+ * limited to a mesh from the same region. Note that if a mesh group is passed,
+ * the master mesh is used.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
-	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
+	cmzn_fieldmodule_id fieldmodule, cmzn_mesh_id host_mesh);
 
 /**
  * If the field is stored_mesh_location type, return type-specific handle to it.
@@ -435,11 +463,11 @@ ZINC_API int cmzn_field_stored_mesh_location_destroy(
 /**
  * Creates a field which stores and returns string values at nodes.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
-	cmzn_fieldmodule_id field_module);
+	cmzn_fieldmodule_id fieldmodule);
 
 /**
  * If the field is stored_string type, return type-specific handle to it.
@@ -481,23 +509,36 @@ ZINC_API int cmzn_field_stored_string_destroy(
  * Creates a field which returns 1 on 2-D faces and 1-D lines considered as
  * exterior to their top-level element, and 0 elsewhere.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
-	struct cmzn_fieldmodule *field_module);
+	cmzn_fieldmodule_id fieldmodule);
 
 /**
  * Creates a field which returns 1 on 2-D faces and 1-D lines considered
  * to lie on a specified face of their top-level element, and 0 elsewhere.
  *
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @param face  The enumerated face type, defined with respect to the
  * top-level element.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
-	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face);
+	cmzn_fieldmodule_id fieldmodule, cmzn_element_face_type face);
+
+/**
+ * Creates a field whose value equals source field calculated at the lookup node
+ * instead of the domain location requested.
+ *
+ * @param fieldmodule  Region field module which will own new field.
+ * @param source_field  Field to evaluate.
+ * @param lookup_node  The node to evaluate the source field at.
+ * @return Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
+	cmzn_node_id lookup_node);
 
 #ifdef __cplusplus
 }

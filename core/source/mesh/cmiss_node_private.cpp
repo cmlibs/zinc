@@ -11,23 +11,29 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdarg.h>
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "opencmiss/zinc/timesequence.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/field_module.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
-#include "computed_field/computed_field_finite_element.h"
-#include "node/node_operations.h"
+#include "finite_element/node_field_template.hpp"
 #include "general/message.h"
-#include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_node_private.hpp"
+#include "node/node_operations.h"
 #include <vector>
-#include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_subobject_group.hpp"
 
 /*
 Global types
@@ -41,15 +47,14 @@ namespace {
 class cmzn_node_field
 {
 	FE_field *fe_field;
-	FE_node_field_creator *node_field_creator;
+	std::vector<FE_node_field_template> componentNodefieldtemplates;
 	FE_time_sequence *timesequence;
 
 public:
 
 	cmzn_node_field(FE_field *fe_field) :
 		fe_field(ACCESS(FE_field)(fe_field)),
-		node_field_creator(
-			CREATE(FE_node_field_creator)(get_FE_field_number_of_components(fe_field))),
+		componentNodefieldtemplates(get_FE_field_number_of_components(fe_field)),
 		timesequence(NULL)
 	{
 	}
@@ -58,8 +63,28 @@ public:
 	{
 		if (timesequence)
 			DEACCESS(FE_time_sequence)(&timesequence);
-		DESTROY(FE_node_field_creator)(&node_field_creator);
 		DEACCESS(FE_field)(&fe_field);
+	}
+
+	/** Set up node field with a copy of node field in use in node.
+	  * @return  Result OK on success, any other value on failure. Client should clean up on failure. */
+	int cloneNodeField(cmzn_node *node)
+	{
+		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
+		if (!node_field)
+		{
+			return CMZN_ERROR_NOT_FOUND;
+		}
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		for (int c = 0; c < componentCount; ++c)
+		{
+			this->componentNodefieldtemplates[c] = *(node_field->getComponent(c));
+		}
+		if (node_field->time_sequence)
+		{
+			this->setTimesequence(node_field->time_sequence);
+		}
+		return CMZN_OK;
 	}
 
 	/** note: does not ACCESS */
@@ -75,59 +100,69 @@ public:
 
 	int defineAtNode(FE_node *node)
 	{
-		return define_FE_field_at_node(node, fe_field,
-			timesequence, node_field_creator);
+		return define_FE_field_at_node(node, this->fe_field, this->componentNodefieldtemplates.data(),
+			this->timesequence);
 	}
 
-	int getValueNumberOfVersions(int componentNumber, enum FE_nodal_value_type fe_nodal_value_type)
+	int getValueNumberOfVersions(int componentNumber, cmzn_node_value_label valueLabel)
 	{
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
-			return 0;
-		USE_PARAMETER(fe_nodal_value_type);
-		if ((componentNumber < -1) || (componentNumber == 0) ||
-				(componentNumber > get_FE_field_number_of_components(fe_field)))
-			return 0;
-		if ((FE_NODAL_VALUE != fe_nodal_value_type) &&
-				!FE_node_field_creator_has_derivative(node_field_creator, componentNumber - 1, fe_nodal_value_type))
-			return 0;
-		return FE_node_field_creator_get_number_of_versions(node_field_creator, componentNumber - 1);
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
+			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
+			|| (componentNumber < -1)
+			|| (componentNumber == 0)
+			|| (componentNumber > componentCount))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate getValueNumberOfVersions.  Invalid arguments");
+			return -1;
+		}
+		if (componentNumber == -1)
+		{
+			const int versionsCount = this->componentNodefieldtemplates[0].getValueNumberOfVersions(valueLabel);
+			for (int c = 1; c < componentCount; ++c)
+			{
+				if (this->componentNodefieldtemplates[c].getValueNumberOfVersions(valueLabel) != versionsCount)
+				{
+					return -1; // not consistent over components
+				}
+			}
+			return versionsCount;
+		}
+		return this->componentNodefieldtemplates[componentNumber - 1].getValueNumberOfVersions(valueLabel);
 	}
 
-	/** versions should be per-fe_nodal_value_type, but are not currently */
-	int setValueNumberOfVersions(int componentNumber,
-		enum FE_nodal_value_type fe_nodal_value_type, int numberOfVersions)
+	/** @param componentNumber  From 1 to number of components or -1 to set for all
+	  * @param numberOfVersions  Number of versions > 1, or 0 to undefine. */
+	int setValueNumberOfVersions(int componentNumber, cmzn_node_value_label valueLabel, int numberOfVersions)
 	{
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
+		const int componentCount = get_FE_field_number_of_components(this->fe_field);
+		if ((valueLabel < CMZN_NODE_VALUE_LABEL_VALUE)
+			|| (valueLabel > CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3)
+			|| (componentNumber < -1)
+			|| (componentNumber == 0)
+			|| (componentNumber > componentCount)
+			|| (numberOfVersions < 0))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate setValueNumberOfVersions.  Invalid arguments");
 			return CMZN_ERROR_ARGUMENT;
-		if (numberOfVersions < 0)
-			return CMZN_ERROR_ARGUMENT;
+		}
 		int first = 0;
 		int limit = get_FE_field_number_of_components(fe_field);
-		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > limit))
-			return CMZN_ERROR_ARGUMENT;
 		if (componentNumber > 0)
 		{
 			first = componentNumber - 1;
 			limit = componentNumber;
 		}
-		if (numberOfVersions == 0)
+		for (int c = first; c < limit; ++c)
 		{
-			for (int i = first; i < limit; i++)
-				FE_node_field_creator_undefine_derivative(node_field_creator, i, fe_nodal_value_type);
-		}
-		else
-		{
-			for (int i = first; i < limit; i++)
+			const int result = this->componentNodefieldtemplates[c].setValueNumberOfVersions(valueLabel, numberOfVersions);
+			if (result != CMZN_OK)
 			{
-				int result = FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
-				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
-					return CMZN_ERROR_GENERAL;
-				const int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, i);
-				if (numberOfVersions > currentNumberOfVersions)
+				if (((numberOfVersions == 0) && (result != CMZN_ERROR_NOT_FOUND))
+					|| ((numberOfVersions > 0) && (result != CMZN_ERROR_ALREADY_EXISTS)))
 				{
-					result = FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
-					if (result != CMZN_OK)
-						return CMZN_ERROR_GENERAL;
+					display_message(ERROR_MESSAGE, "Nodetemplate setValueNumberOfVersions.  Failed");
+					return result;
 				}
 			}
 		}
@@ -145,7 +180,7 @@ struct cmzn_nodetemplate
 {
 private:
 	FE_nodeset *fe_nodeset;
-	FE_node *template_node;
+	FE_node_template *fe_node_template;
 	std::vector<cmzn_node_field*> fields;
 	std::vector<FE_field*> undefine_fields; // ACCESSed
 	int access_count;
@@ -153,7 +188,7 @@ private:
 public:
 	cmzn_nodetemplate(FE_nodeset *fe_nodeset_in) :
 		fe_nodeset(fe_nodeset_in->access()),
-		template_node(NULL),
+		fe_node_template(0),
 		access_count(1)
 	{
 	}
@@ -179,61 +214,62 @@ public:
 	{
 		int result = this->checkValidFieldForDefine(field);
 		if (result != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineField.  Invalid field");
 			return result;
+		}
+		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
-		cmzn_node_field *node_field = createNodeField(fe_field);
+		cmzn_node_field *node_field = this->createNodeField(fe_field);
 		if (!node_field)
-			result = CMZN_ERROR_GENERAL;
-		return result;
+		{
+			this->removeDefineField(fe_field);
+			return CMZN_ERROR_GENERAL;
+		}
+		// External behaviour defaults to having VALUE defined, which must removed if not wanted
+		result = node_field->setValueNumberOfVersions(-1, CMZN_NODE_VALUE_LABEL_VALUE, 1);
+		if (result != CMZN_OK)
+		{
+			return result;
+		}
+		return CMZN_OK;
 	}
 
 	int defineFieldFromNode(cmzn_field_id field, cmzn_node_id node)
 	{
-		if (!((node) && fe_nodeset->containsNode(node)))
+		if (!((node) && this->fe_nodeset->containsNode(node)))
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineFieldFromNode.  Invalid node");
 			return CMZN_ERROR_ARGUMENT;
+		}
 		int result = this->checkValidFieldForDefine(field);
 		if (result != CMZN_OK)
+		{
+			display_message(ERROR_MESSAGE, "Nodetemplate defineFieldFromNode.  Invalid field");
 			return result;
+		}
+		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (!FE_field_is_defined_at_node(fe_field, node))
+		if (!FE_field_has_parameters_at_node(fe_field, node))
 		{
 			this->removeDefineField(fe_field);
 			this->removeUndefineField(fe_field);
 			return CMZN_ERROR_NOT_FOUND;
 		}
-		const enum FE_nodal_value_type all_fe_nodal_value_types[] = {
-			FE_NODAL_VALUE,
-			FE_NODAL_D_DS1,
-			FE_NODAL_D_DS2,
-			FE_NODAL_D2_DS1DS2,
-			FE_NODAL_D_DS3,
-			FE_NODAL_D2_DS1DS3,
-			FE_NODAL_D2_DS2DS3,
-			FE_NODAL_D3_DS1DS2DS3
-		};
-		const int number_of_fe_value_types = sizeof(all_fe_nodal_value_types) / sizeof(enum FE_nodal_value_type);
-		clearTemplateNode();
-		cmzn_node_field *node_field = createNodeField(fe_field);
-		int number_of_components = cmzn_field_get_number_of_components(field);
-		for (int component_number = 1; component_number <= number_of_components; ++component_number)
+		cmzn_node_field *node_field = this->createNodeField(fe_field);
+		if (!node_field)
 		{
-			// versions should be per-nodal-value-type, but are not currently
-			const int numberOfVersions = get_FE_node_field_component_number_of_versions(node, fe_field, component_number - 1);
-			for (int i = 0; i < number_of_fe_value_types; ++i)
-			{
-				enum FE_nodal_value_type fe_nodal_value_type = all_fe_nodal_value_types[i];
-				if (FE_nodal_value_version_exists(node, fe_field, component_number - 1,
-						/*version*/0, fe_nodal_value_type))
-					node_field->setValueNumberOfVersions(component_number, fe_nodal_value_type, numberOfVersions);
-			}
+			return CMZN_ERROR_GENERAL;
 		}
-		struct FE_time_sequence *timesequence = get_FE_node_field_FE_time_sequence(node, fe_field);
-		if (timesequence)
-			node_field->setTimesequence(timesequence);
-		return (node_field) ? CMZN_OK : CMZN_ERROR_GENERAL;
+		result = node_field->cloneNodeField(node);
+		if (result != CMZN_OK)
+		{
+			this->removeDefineField(fe_field);
+			return result;
+		}
+		return CMZN_OK;
 	}
 
 	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
@@ -270,7 +306,7 @@ public:
 		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return CMZN_ERROR_NOT_FOUND;
-		clearTemplateNode();
+		this->invalidate();
 		return node_field->setTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
 	}
 
@@ -279,26 +315,28 @@ public:
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
-			return 0;
+		{
+			return -1;
+		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
-			return 0;
-		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
-		return node_field->getValueNumberOfVersions(componentNumber, fe_nodal_value_type);
+		{
+			return -1;
+		}
+		return node_field->getValueNumberOfVersions(componentNumber, nodeValueLabel);
 	}
 
 	int setValueNumberOfVersions(cmzn_field_id field, int componentNumber,
-		enum cmzn_node_value_label nodeValueLabel, int numberOfVersions)
+		cmzn_node_value_label nodeValueLabel, int numberOfVersions)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_set_value_number_of_versions.  Field must be real finite_element type");
+				"cmzn_nodetemplate_set_value_number_of_versions.  Field must be real finite element type");
 			return CMZN_ERROR_ARGUMENT;
 		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
@@ -307,9 +345,7 @@ public:
 		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
 			return CMZN_ERROR_NOT_FOUND;
-		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
-		return node_field->setValueNumberOfVersions(componentNumber, fe_nodal_value_type, numberOfVersions);
+		return node_field->setValueNumberOfVersions(componentNumber, nodeValueLabel, numberOfVersions);
 	}
 
 	int removeField(cmzn_field_id field)
@@ -319,7 +355,7 @@ public:
 			return result;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
+		this->invalidate();
 		if (this->removeDefineField(fe_field) || this->removeUndefineField(fe_field))
 			return CMZN_OK;
 		return CMZN_ERROR_NOT_FOUND;
@@ -332,29 +368,28 @@ public:
 			return result;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		clearTemplateNode();
+		this->invalidate();
 		setUndefineNodeField(fe_field);
 		return CMZN_OK;
 	}
 
 	int validate()
 	{
-		if (template_node)
+		if (this->fe_node_template)
 			return 1;
-		template_node = ACCESS(FE_node)(
-			CREATE(FE_node)(0, this->fe_nodeset, (struct FE_node *)NULL));
+		this->fe_node_template = this->fe_nodeset->create_FE_node_template();
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
-			if (!fields[i]->defineAtNode(template_node))
+			if (!fields[i]->defineAtNode(this->fe_node_template->get_template_node()))
 			{
-				DEACCESS(FE_node)(&template_node);
+				cmzn::Deaccess(this->fe_node_template);
 				break;
 			}
 		}
-		if (!template_node)
+		if (!this->fe_node_template)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_validate.  Failed to create template node");
+				"cmzn_nodetemplate_validate.  Failed to create fe_node_template");
 			return 0;
 		}
 		return 1;
@@ -363,37 +398,40 @@ public:
 	// can be made more efficient
 	int mergeIntoNode(cmzn_node_id node)
 	{
-		int return_code = 1;
-		if (validate())
+		FE_nodeset *target_fe_nodeset = FE_node_get_FE_nodeset(node);
+		if (target_fe_nodeset == this->fe_nodeset)
 		{
-			if (0 < undefine_fields.size())
+			if (this->validate())
 			{
-				for (unsigned int i = 0; i < undefine_fields.size(); i++)
+				int return_code = CMZN_OK;
+				if (0 < undefine_fields.size())
 				{
-					if (FE_field_is_defined_at_node(undefine_fields[i], node) &&
-						!undefine_FE_field_at_node(node, undefine_fields[i]))
+					FE_region_begin_change(this->fe_nodeset->get_FE_region());
+					for (unsigned int i = 0; i < undefine_fields.size(); i++)
 					{
-						return_code = 0;
-						break;
+						int result = this->fe_nodeset->undefineFieldAtNode(node, undefine_fields[i]);
+						if ((result != CMZN_OK) && (result != CMZN_ERROR_NOT_FOUND))
+						{
+							return_code = result;
+							break;
+						}
 					}
 				}
+				if ((return_code == CMZN_OK) && (0 < fields.size()))
+					return_code = this->fe_nodeset->merge_FE_node_template(node, this->fe_node_template);
+				if (0 < undefine_fields.size())
+					FE_region_end_change(this->fe_nodeset->get_FE_region());
+				return return_code;
 			}
-			if ((0 < fields.size() &&
-				(CMZN_OK != this->fe_nodeset->merge_FE_node_existing(node, template_node))))
-			{
-				return_code = 0;
-			}
+			else
+				display_message(ERROR_MESSAGE, "cmzn_node_merge.  Node template is not valid");
 		}
 		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_node_merge.  Node template is not valid");
-			return_code = 0;
-		}
-		return return_code;
+			display_message(ERROR_MESSAGE, "cmzn_node_merge.  Incompatible template");
+		return CMZN_ERROR_ARGUMENT;
 	}
 
-	FE_node *getTemplateNode() { return template_node; }
+	FE_node_template *get_FE_node_template() { return this->fe_node_template; }
 
 private:
 	~cmzn_nodetemplate()
@@ -406,7 +444,7 @@ private:
 		{
 			DEACCESS(FE_field)(&(undefine_fields[i]));
 		}
-		REACCESS(FE_node)(&template_node, NULL);
+		cmzn::Deaccess(this->fe_node_template);
 		FE_nodeset::deaccess(fe_nodeset);
 	}
 
@@ -479,9 +517,9 @@ private:
 		this->undefine_fields.push_back(fe_field);
 	}
 
-	void clearTemplateNode()
+	void invalidate()
 	{
-		REACCESS(FE_node)(&template_node, NULL);
+		cmzn::Deaccess(this->fe_node_template);
 	}
 
 	int checkValidFieldForDefine(cmzn_field_id field)
@@ -506,7 +544,7 @@ protected:
 	int access_count;
 
 	cmzn_nodeset(cmzn_field_node_group_id group) :
-		fe_nodeset(Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_nodeset->access()),
+		fe_nodeset(Computed_field_node_group_core_cast(group)->get_fe_nodeset()->access()),
 		group(group),
 		access_count(1)
 	{
@@ -552,10 +590,14 @@ public:
 		cmzn_node_id node = 0;
 		if (node_template->validate())
 		{
-			cmzn_node_id template_node = node_template->getTemplateNode();
-			node = ACCESS(FE_node)(this->fe_nodeset->create_FE_node_copy(identifier, template_node));
 			if (group)
+				FE_region_begin_change(this->fe_nodeset->get_FE_region());
+			node = this->fe_nodeset->create_FE_node(identifier, node_template->get_FE_node_template());
+			if (group)
+			{
 				Computed_field_node_group_core_cast(group)->addObject(node);
+				FE_region_end_change(this->fe_nodeset->get_FE_region());
+			}
 		}
 		else
 		{
@@ -570,35 +612,58 @@ public:
 		return new cmzn_nodetemplate(this->fe_nodeset);
 	}
 
-	cmzn_nodeiterator_id createIterator()
+	cmzn_nodeiterator_id createNodeiterator()
 	{
 		if (group)
-			return Computed_field_node_group_core_cast(group)->createIterator();
+			return Computed_field_node_group_core_cast(group)->createNodeiterator();
 		return this->fe_nodeset->createNodeiterator();
-	}
-
-	struct LIST(FE_node) *createRelatedNodeList()
-	{
-		return this->fe_nodeset->createRelatedNodeList();
 	}
 
 	int destroyAllNodes()
 	{
-		return destroyNodesConditional(/*conditional_field*/0);
+		if (this->group)
+		{
+			Computed_field_node_group *node_group = Computed_field_node_group_core_cast(this->group);
+			return this->fe_nodeset->destroyNodesInGroup(node_group->getLabelsGroup());
+		}
+		return this->fe_nodeset->destroyAllNodes();
 	}
 
 	int destroyNode(cmzn_node_id node)
 	{
-		return this->fe_nodeset->remove_FE_node(node);
+		if (this->containsNode(node))
+			return this->fe_nodeset->destroyNode(node);
+		return 0;
 	}
 
 	int destroyNodesConditional(cmzn_field_id conditional_field)
 	{
-		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
-		int return_code = this->fe_nodeset->remove_FE_node_list(node_list);
-		DESTROY(LIST(FE_node))(&node_list);
-		return return_code ? CMZN_OK : CMZN_ERROR_GENERAL;
+		if (!conditional_field)
+			return CMZN_ERROR_ARGUMENT;
+		DsLabelsGroup *labelsGroup = this->fe_nodeset->createLabelsGroup();
+		if (labelsGroup)
+		{
+			cmzn_region_id region = FE_region_get_cmzn_region(this->fe_nodeset->get_FE_region());
+			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+			cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+			cmzn_nodeiterator_id iterator = this->createNodeiterator();
+			cmzn_node_id node = 0;
+			while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+			{
+				cmzn_fieldcache_set_node(cache, node);
+				if (cmzn_field_evaluate_boolean(conditional_field, cache))
+					labelsGroup->setIndex(get_FE_node_index(node), true);
+			}
+			cmzn::Deaccess(iterator);
+			cmzn_fieldcache_destroy(&cache);
+			cmzn_fieldmodule_destroy(&fieldmodule);
+			int return_code = this->fe_nodeset->destroyNodesInGroup(*labelsGroup);
+			cmzn::Deaccess(labelsGroup);
+			return return_code;
+		}
+		return CMZN_ERROR_GENERAL;
 	}
+
 
 	cmzn_node_id findNodeByIdentifier(int identifier) const
 	{
@@ -619,16 +684,14 @@ public:
 
 	FE_region *getFeRegion() const { return fe_nodeset->get_FE_region(); }
 
+	/** @return  Allocated name */
 	char *getName()
 	{
-		char *name = 0;
 		if (group)
-			name = cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
-		else if (this->fe_nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
-			name = duplicate_string("datapoints");
+			return cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
 		else
-			name = duplicate_string("nodes");
-		return name;
+			return duplicate_string(this->fe_nodeset->getName());
+		return 0;
 	}
 
 	cmzn_nodeset_id getMaster()
@@ -642,7 +705,7 @@ public:
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->getSize();
-		return this->fe_nodeset->get_number_of_FE_nodes();
+		return this->fe_nodeset->getSize();
 	}
 
 	int isGroup()
@@ -668,26 +731,6 @@ protected:
 		if (group)
 			cmzn_field_node_group_destroy(&group);
 		FE_nodeset::deaccess(fe_nodeset);
-	}
-
-	struct LIST(FE_node) *createNodeListWithCondition(cmzn_field_id conditional_field)
-	{
-		cmzn_region_id region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
-		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
-		cmzn_nodeiterator_id iterator = this->createIterator();
-		cmzn_node_id node = 0;
-		struct LIST(FE_node) *node_list = this->createRelatedNodeList();
-		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
-		{
-			if ((!conditional_field) || ((CMZN_OK == cmzn_fieldcache_set_node(cache, node)) &&
-					cmzn_field_evaluate_boolean(conditional_field, cache)))
-				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
-		}
-		cmzn_nodeiterator_destroy(&iterator);
-		cmzn_fieldcache_destroy(&cache);
-		cmzn_fieldmodule_destroy(&fieldmodule);
-		return node_list;
 	}
 
 };
@@ -827,7 +870,7 @@ cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
 	cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return nodeset->createIterator();
+		return nodeset->createNodeiterator();
 	return 0;
 }
 
@@ -972,13 +1015,6 @@ cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	return 0;
 }
 
-struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset)
-{
-	if (nodeset)
-		return nodeset->createRelatedNodeList();
-	return 0;
-}
-
 FE_nodeset *cmzn_nodeset_get_FE_nodeset_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
@@ -1056,7 +1092,6 @@ cmzn_nodetemplate_id cmzn_nodetemplate_access(cmzn_nodetemplate_id node_template
 	return 0;
 }
 
-
 int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address)
 {
 	if (node_template_address)
@@ -1104,7 +1139,7 @@ int cmzn_nodetemplate_get_value_number_of_versions(
 {
 	if (node_template)
 		return node_template->getValueNumberOfVersions(field, component_number, node_value_label);
-	return 0;
+	return -1;
 }
 
 int cmzn_nodetemplate_set_value_number_of_versions(
@@ -1222,11 +1257,10 @@ char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label label)
 
 cmzn_nodesetchanges::cmzn_nodesetchanges(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn) :
 	event(eventIn->access()),
-	changeLog(event->getFeRegionChanges()->getNodeChanges(
+	changeLog(event->getFeRegionChanges()->getNodeChangeLog(
 		cmzn_nodeset_get_FE_nodeset_internal(nodesetIn)->getFieldDomainType())),
 	access_count(1)
 {
-		
 }
 
 cmzn_nodesetchanges::~cmzn_nodesetchanges()
@@ -1253,6 +1287,17 @@ int cmzn_nodesetchanges::deaccess(cmzn_nodesetchanges* &nodesetchanges)
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_node_change_flags cmzn_nodesetchanges::getNodeChangeFlags(cmzn_node *node)
+{
+	cmzn_node_change_flags change = CMZN_NODE_CHANGE_FLAG_NONE;
+	if (node)
+	{
+		if (this->changeLog->isIndexChange(get_FE_node_index(node)))
+			change = this->changeLog->getChangeSummary();
+	}
+	return change;
 }
 
 cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
@@ -1292,41 +1337,4 @@ cmzn_node_change_flags cmzn_nodesetchanges_get_summary_node_change_flags(
 	if (nodesetchanges)
 		return nodesetchanges->getSummaryNodeChangeFlags();
 	return CMZN_NODE_CHANGE_FLAG_NONE;
-}
-
-FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
-	enum cmzn_node_value_label nodal_value_label)
-{
-	FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-	switch (nodal_value_label)
-	{
-		case CMZN_NODE_VALUE_LABEL_INVALID:
-			fe_nodal_value_type = FE_NODAL_UNKNOWN;
-			break;
-		case CMZN_NODE_VALUE_LABEL_VALUE:
-			fe_nodal_value_type = FE_NODAL_VALUE;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS1:
-			fe_nodal_value_type = FE_NODAL_D_DS1;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS2:
-			fe_nodal_value_type = FE_NODAL_D_DS2;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
-			fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS3:
-			fe_nodal_value_type = FE_NODAL_D_DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
-			fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
-			fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
-			break;
-		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
-			fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
-			break;
-	}
-	return fe_nodal_value_type;
 }

@@ -205,23 +205,41 @@ DESCRIPTION:
 	return(string);
 } /* remove_after_last */
 
-char *trim_string(char *string)
-/*******************************************************************************
-LAST MODIFIED : 11 September 1993
+void trim_string_in_place(char *stringIn)
+{
+	if (!stringIn)
+		return;
+	char *source = stringIn;
+	while (isspace(*source))
+		++source;
+	char *end = source + strlen(source) - 1;
+	while ((end > source) && (isspace(*end)))
+		--end;
+	if (source == stringIn)
+	{
+		end[1] = '\0';
+		return;
+	}
+	char *target = stringIn;
+	while (source <= end)
+	{
+		*target = *source;
+		++source;
+		++target;
+	}
+	*target = '\0';
+}
 
-DESCRIPTION :
-Returns a copy of the <string> with the leading and trailing white space
-removed.  NB Memory is allocated by this function for the copy.
-==============================================================================*/
+char *trim_string(char *stringIn)
 {
 	char *copy,*end,*start;
 	int length;
 
 	ENTER(trim_string);
-	if (string)
+	if (stringIn)
 	{
-		start=string;
-		end=start+strlen(string)-1;
+		start= stringIn;
+		end=start+strlen(stringIn)-1;
 		/* remove leading white space */
 		while ((start<=end)&&isspace(*start))
 		{
@@ -931,21 +949,6 @@ same length.
 } /* fuzzy_string_compare_same_length */
 
 int make_valid_token(char **token_address)
-/*******************************************************************************
-LAST MODIFIED : 10 January 2001
-
-DESCRIPTION :
-If the string pointed to by <token_address> contains any special characters such
-that, if parsed, it would not be read in its entirety as a single token, this
-function reallocates and redefines the string so that it is surrounded by
-quotes. Any quotes in the original string are put back in pairs so they are read
-as one quote when parsed, as explained in function extract_token().
-Special characters include token separators (whitespace/,/;/=), comment
-characters (#) and characters that must be "escaped", ie. preceded by a
-backslash in perl, namely \, ", ', $. String "/" must also be quoted.
-NOTE: the string pointed to by <token_address> must be non-static and allowed
-to be reallocated.
-==============================================================================*/
 {
 	char *new_token, *letter;
 	int number_of_escapes, old_length, return_code, special_chars;
@@ -956,7 +959,7 @@ to be reallocated.
 		return_code = 1;
 		/* work out if string contains special characters */
 		special_chars = 0;
-		if (0 == strcmp(*token_address, "/"))
+		if ((0 == strlen(*token_address)) || (0 == strcmp(*token_address, "/")))
 		{
 			special_chars++;
 		}

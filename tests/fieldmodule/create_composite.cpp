@@ -210,3 +210,33 @@ TEST(zincFieldComponent, multiple_invalid_args)
 	EXPECT_EQ(ERROR_ARGUMENT, f2.setSourceComponentIndex(1, 0));
 	EXPECT_EQ(ERROR_ARGUMENT, f2.setSourceComponentIndex(2, 4));
 }
+
+// Test repeated source fields are merged in Concatenate field
+TEST(ZincFieldConcatenate, repeatedSourceFields)
+{
+	ZincTestSetupCpp zinc;
+
+	const double zeroValue = 0.0;
+	Field zero = zinc.fm.createFieldConstant(1, &zeroValue);
+	EXPECT_TRUE(zero.isValid());
+	const double oneValue = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &oneValue);
+	EXPECT_TRUE(one.isValid());
+	Field componentFields[] = { zero, one, zero };
+	Field concatenate = zinc.fm.createFieldConcatenate(3, componentFields);
+	EXPECT_TRUE(concatenate.isValid());
+
+	// check two instances of zero have been merged
+	EXPECT_EQ(2, concatenate.getNumberOfSourceFields());
+	EXPECT_EQ(zero, concatenate.getSourceField(1));
+	EXPECT_EQ(one, concatenate.getSourceField(2));
+
+	// check evaluation
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+	double values[3];
+	EXPECT_EQ(RESULT_OK, concatenate.evaluateReal(cache, 3, values));
+	EXPECT_DOUBLE_EQ(0.0, values[0]);
+	EXPECT_DOUBLE_EQ(1.0, values[1]);
+	EXPECT_DOUBLE_EQ(0.0, values[2]);
+}

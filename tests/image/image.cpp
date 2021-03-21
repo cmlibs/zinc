@@ -19,7 +19,17 @@
 #include <opencmiss/zinc/streamimage.h>
 
 #include "zinctestsetupcpp.hpp"
+#include <opencmiss/zinc/element.hpp>
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
+#include <opencmiss/zinc/fieldconditional.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldimage.hpp>
+#include <opencmiss/zinc/fieldlogicaloperators.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/stream.hpp>
 #include <opencmiss/zinc/streamimage.hpp>
 
@@ -212,21 +222,19 @@ void SwapRange2(void *void_p, BufferSizeType n)
 
 void SwapRange4(void *void_p, BufferSizeType n)
 {
-	uint32_t *p = (uint32_t *)void_p;
-	uint32_t h1, h2, h3, h4;
-	BufferSizeType i;
-
-	for (i = 0; i < n; i++)
-	{
-		h1 = (*p) & 0xff;
-		h2 = ((*p) >> 8) & 0xff;
-		h3 = ((*p) >> 16) & 0xff;
-		h4 = ((*p) >> 24) & 0xff;
-		*p = (h1 << 24) | (h2 << 16) | (h3 << 8) | h4;
-
-		p = p + 1;
-	}
-
+        unsigned char tmp[4], *buffer = (unsigned char *)void_p;
+        unsigned int i, j;
+        for(i = 0; i < n; i++)
+        {
+                for(j = 0; j < 4; ++j)
+                {
+                        tmp[j] = *(buffer + 4*i + j);
+                }
+                for(j = 0; j < 4; ++j)
+                {
+                        *(buffer + 4*i + j) = tmp[3 - j];
+                }
+        }
 }
 
 void SwapRange8(void *void_p, BufferSizeType n)
@@ -359,7 +367,7 @@ TEST(ByteSwap, size4)
 
 	float fvalue = 0.12f;
 	test::ByteSwap<float>(&fvalue);
-	EXPECT_EQ(-1.92243393014834230422427828262E-29, fvalue);
+	EXPECT_FLOAT_EQ(-1.92243393014834230422427828262E-29, fvalue);
 }
 
 union floatbitconvert
@@ -469,4 +477,173 @@ TEST(FloatConversion, halfFloat)
 	result = halffloat2float(value);
 	nan.f = result;
 	EXPECT_TRUE((nan.u & ~0xFFC00000u) == 0);
+}
+
+TEST(ZincFieldImageFromSource, evaluateImageFromNonImageSource)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	// load a single 2-D element mesh merely to define xi
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_PLATE_600X300_RESOURCE)));
+	Field plate_coordinates = zinc.fm.findFieldByName("plate_coordinates");
+	EXPECT_TRUE(plate_coordinates.isValid());
+	const double offsetConst[3] = { 300.0, 150.0, -350.0 };
+	FieldConstant offset = zinc.fm.createFieldConstant(3, offsetConst);
+	EXPECT_TRUE(offset.isValid());
+	FieldAdd offset_plate_coordinates = plate_coordinates + offset;
+	EXPECT_TRUE(offset_plate_coordinates.isValid());
+	const int components[2] = { 1, 2 };
+	FieldComponent tex_coordinates = zinc.fm.createFieldComponent(offset_plate_coordinates, 2, components);
+	EXPECT_TRUE(tex_coordinates.isValid());
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Element element = mesh2d.findElementByIdentifier(10001);
+	EXPECT_TRUE(element.isValid());
+
+	Field xi = zinc.fm.findFieldByName("xi");
+	const double redConst[3] = { 1.0, 0.0, 0.0 };
+	const double pinkConst[3] = { 0.9, 0.6, 0.6 };
+	const double purpleConst[3] = { 0.5, 0.1, 0.7 };
+	Field red = zinc.fm.createFieldConstant(3, redConst);
+	Field pink = zinc.fm.createFieldConstant(3, pinkConst);
+	Field purple = zinc.fm.createFieldConstant(3, purpleConst);
+	Field ximag = zinc.fm.createFieldMagnitude(xi);
+	Field xi1 = zinc.fm.createFieldComponent(xi, 1);
+	Field xi2 = zinc.fm.createFieldComponent(xi, 2);
+	const double maglimitConst = 0.9;
+	Field maglimit = zinc.fm.createFieldConstant(1, &maglimitConst);
+	Field ximag_gt_limit = zinc.fm.createFieldGreaterThan(ximag, maglimit);
+	Field magcolour = zinc.fm.createFieldIf(ximag_gt_limit, red, pink);
+	const double xilimitConst = 0.5;
+	Field xilimit = zinc.fm.createFieldConstant(1, &xilimitConst);
+	Field xi1_lt_limit = zinc.fm.createFieldLessThan(xi1, xilimit);
+	Field xi2_lt_limit = zinc.fm.createFieldLessThan(xi2, xilimit);
+	Field xi_inside = zinc.fm.createFieldAnd(xi1_lt_limit, xi2_lt_limit);
+	Field colour = zinc.fm.createFieldIf(xi_inside, purple, magcolour);
+	EXPECT_TRUE(colour.isValid());
+
+	FieldImage im1 = zinc.fm.createFieldImageFromSource(colour);
+	EXPECT_TRUE(im1.isValid());
+	EXPECT_EQ(RESULT_OK, im1.setDomainField(xi));
+	EXPECT_EQ(3, im1.getNumberOfComponents());
+	int sizeOut[3];
+	EXPECT_EQ(1, im1.getSizeInPixels(3, sizeOut));
+	EXPECT_EQ(1, sizeOut[0]);
+	EXPECT_EQ(1, sizeOut[1]);
+	EXPECT_EQ(1, sizeOut[2]);
+	const int sizeIn[2] = { 200, 100 };
+	EXPECT_EQ(RESULT_OK, im1.setSizeInPixels(2, sizeIn));
+	EXPECT_EQ(2, im1.getSizeInPixels(3, sizeOut));
+	EXPECT_EQ(sizeIn[0], sizeOut[0]);
+	EXPECT_EQ(sizeIn[1], sizeOut[1]);
+	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, im1.getFilterMode());
+
+	const double xiConst[4][3] = {
+		{ 0.25, 0.25, 0.0 },
+		{ 0.75, 0.25, 0.0 },
+		{ 0.25, 0.75, 0.0 },
+		{ 0.75, 0.75, 0.0 },
+	};
+	const double expectedColourOut[4][3] = {
+		{ 0.5, 0.1, 0.7 },
+		{ 0.9, 0.6, 0.6 },
+		{ 0.9, 0.6, 0.6 },
+		{ 1.0, 0.0, 0.0 },
+	};
+	double colourOut[4][3];
+	Fieldcache cache = zinc.fm.createFieldcache();
+	const double colourTol = 0.0025;
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setFieldReal(xi, 3, xiConst[i]));
+		EXPECT_EQ(RESULT_OK, im1.evaluateReal(cache, 3, colourOut[i]));
+		EXPECT_NEAR(expectedColourOut[i][0], colourOut[i][0], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][1], colourOut[i][1], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][2], colourOut[i][2], colourTol);
+	}
+
+	FieldImage im2 = zinc.fm.createFieldImageFromSource(im1);
+	EXPECT_TRUE(im2.isValid());
+	EXPECT_EQ(xi, im2.getDomainField());
+	EXPECT_EQ(3, im2.getNumberOfComponents());
+	EXPECT_EQ(2, im2.getSizeInPixels(3, sizeOut));
+	EXPECT_EQ(sizeIn[0], sizeOut[0]);
+	EXPECT_EQ(sizeIn[1], sizeOut[1]);
+	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, im2.getFilterMode()); // should match source
+	EXPECT_EQ(RESULT_OK, im2.setFilterMode(FieldImage::FILTER_MODE_LINEAR));
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, im2.getFilterMode());
+
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setFieldReal(xi, 3, xiConst[i]));
+		EXPECT_EQ(RESULT_OK, im2.evaluateReal(cache, 3, colourOut[i]));
+		EXPECT_NEAR(expectedColourOut[i][0], colourOut[i][0], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][1], colourOut[i][1], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][2], colourOut[i][2], colourTol);
+	}
+
+	// test changing resolution of first source image changes that of second
+	const int sizeIn2[2] = { 300, 400 };
+	EXPECT_EQ(RESULT_OK, im1.setSizeInPixels(2, sizeIn2));
+	EXPECT_EQ(2, im2.getSizeInPixels(3, sizeOut));
+	EXPECT_EQ(sizeIn2[0], sizeOut[0]);
+	EXPECT_EQ(sizeIn2[1], sizeOut[1]);
+	EXPECT_EQ(1, sizeOut[2]);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setFieldReal(xi, 3, xiConst[i]));
+		EXPECT_EQ(RESULT_OK, im2.evaluateReal(cache, 3, colourOut[i]));
+		EXPECT_NEAR(expectedColourOut[i][0], colourOut[i][0], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][1], colourOut[i][1], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][2], colourOut[i][2], colourTol);
+	}
+
+	// test that image copied with change of texture coordinates
+	FieldImage im3 = zinc.fm.createFieldImageFromSource(im2);
+	EXPECT_TRUE(im3.isValid());
+	EXPECT_EQ(xi, im3.getDomainField());
+	EXPECT_EQ(RESULT_OK, im3.setDomainField(tex_coordinates));
+	EXPECT_EQ(tex_coordinates, im3.getDomainField());
+	const double texCoordSizes[3] = { 600.0, 300.0, 1.0 };
+	EXPECT_EQ(RESULT_OK, im3.setTextureCoordinateSizes(3, texCoordSizes));
+	double texCoordSizesOut[3];
+	EXPECT_EQ(RESULT_OK, im3.getTextureCoordinateSizes(3, texCoordSizesOut));
+	EXPECT_EQ(texCoordSizes[0], texCoordSizes[0]);
+	EXPECT_EQ(texCoordSizes[1], texCoordSizes[1]);
+	EXPECT_EQ(texCoordSizes[2], texCoordSizes[2]);
+	EXPECT_EQ(3, im3.getNumberOfComponents());
+	EXPECT_EQ(2, im3.getSizeInPixels(3, sizeOut));
+	EXPECT_EQ(sizeIn2[0], sizeOut[0]);
+	EXPECT_EQ(sizeIn2[1], sizeOut[1]);
+	EXPECT_EQ(1, sizeOut[2]);
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, im3.getFilterMode()); // should match source
+
+	// both the following locations setting methods work:
+	for (int i = 0; i < 4; ++i)
+	{
+		double xiScaled[2] = { xiConst[i][0]*texCoordSizes[0], xiConst[i][1]*texCoordSizes[1] };
+		EXPECT_EQ(RESULT_OK, cache.setFieldReal(tex_coordinates, 2, xiScaled));
+		EXPECT_EQ(RESULT_OK, im3.evaluateReal(cache, 3, colourOut[i]));
+		EXPECT_NEAR(expectedColourOut[i][0], colourOut[i][0], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][1], colourOut[i][1], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][2], colourOut[i][2], colourTol);
+	}
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element, 2, xiConst[i]));
+		EXPECT_EQ(RESULT_OK, im3.evaluateReal(cache, 3, colourOut[i]));
+		EXPECT_NEAR(expectedColourOut[i][0], colourOut[i][0], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][1], colourOut[i][1], colourTol);
+		EXPECT_NEAR(expectedColourOut[i][2], colourOut[i][2], colourTol);
+	}
+
+	//StreaminformationImage sii = im3.createStreaminformationImage();
+	//sii.createStreamresourceFile("image_from_non_image_source.png");
+	//result = im3.write(sii);
+	//EXPECT_EQ(RESULT_OK, result);
 }

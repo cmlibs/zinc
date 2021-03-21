@@ -62,6 +62,16 @@ public:
 		return DsLabelsGroup::getLabels();
 	}
 
+	const DsLabelsGroup *getLabelsGroup() const
+	{
+		return this;
+	}
+
+	DsLabelsGroup *getLabelsGroup()
+	{
+		return this;
+	}
+
 	int getChangeSummary() const
 	{
 		return this->changeSummary;

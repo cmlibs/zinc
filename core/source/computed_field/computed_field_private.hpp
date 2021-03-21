@@ -19,6 +19,8 @@ Computed field types
 Types used only internally to computed fields.
 */
 
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/fieldcache.h"
 #include "general/cmiss_set.hpp"
 #include "computed_field/field_location.hpp"
 #include "computed_field/field_cache.hpp"
@@ -227,6 +229,11 @@ public:
 
 	virtual const char *get_type_string() = 0;
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_INVALID;
+	};
+
 	// override for fields requiring specialised value caches
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/);
 
@@ -419,6 +426,14 @@ public:
 	{
 		return CMZN_FIELD_VALUE_TYPE_REAL;
 	}
+
+	/* overrides should return true if matching field, false if depends on something else e.g. finite element:
+		virtual bool is_purely_function_of_field(cmzn_field *other_field)
+		{
+			return (this->field == other_field);
+		}
+	*/
+	virtual bool is_purely_function_of_field(cmzn_field *other_field);
 
 protected:
 

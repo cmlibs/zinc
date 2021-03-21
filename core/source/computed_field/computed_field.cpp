@@ -115,6 +115,7 @@ like the number of components.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "opencmiss/zinc/result.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -1365,6 +1366,7 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 			}
 			return CMZN_OK;
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1398,6 +1400,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 				return CMZN_OK;
 			}
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1447,6 +1450,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 						return CMZN_OK;
 					}
 				}
+				return CMZN_ERROR_GENERAL;
 			}
 		}
 	}
@@ -2248,31 +2252,11 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capable */
 
-int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+bool equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if all fields are defined in the same way at the two elements.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(equivalent_computed_fields_at_elements);
-	return_code=0;
-	if (element_1&&element_2)
-	{
-		return_code=equivalent_FE_fields_in_elements(element_1,element_2);
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* equivalent_computed_fields_at_elements */
+	return equivalent_FE_fields_in_elements(element_1,element_2);
+}
 
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2)
@@ -2662,6 +2646,16 @@ bool Computed_field_core::is_non_linear() const
 	return false;
 }
 
+bool Computed_field_core::is_purely_function_of_field(cmzn_field *other_field)
+{
+	if (this->field == other_field)
+		return true;
+	for (int i = 0; i < this->field->number_of_source_fields; ++i)
+		if (!this->field->source_fields[i]->core->is_purely_function_of_field(other_field))
+			return false;
+	return true;
+}
+
 int Computed_field_broadcast_field_components(
 	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field **field_one, struct Computed_field **field_two)
@@ -2908,9 +2902,12 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 
 char *cmzn_field_get_name(cmzn_field_id field)
 {
-	char *name = NULL;
-	GET_NAME(Computed_field)(field, &name);
-	return (name);
+	return duplicate_string(field->name);
+}
+
+const char *cmzn_field_get_name_internal(cmzn_field_id field)
+{
+	return field->name;
 }
 
 int cmzn_field_set_name(struct Computed_field *field, const char *name)
@@ -2995,6 +2992,25 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 	}
 
 	return (return_code);
+}
+
+int cmzn_field_set_name_unique_concatentate(cmzn_field_id field, const char *first, const char *second)
+{
+	char *name;
+	const size_t len = strlen(first) + strlen(second);
+	ALLOCATE(name, char, len + 10);
+	if (!name)
+		return CMZN_RESULT_ERROR_MEMORY;
+	int number = 0;
+	sprintf(name, "%s%s", first, second);
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(name, field->manager))
+	{
+		++number;
+		sprintf(name + len, "%d", number);
+	}
+	int result = cmzn_field_set_name(field, name);
+	DEALLOCATE(name);
+	return result;
 }
 
 int cmzn_field_get_number_of_source_fields(cmzn_field_id field)
@@ -3190,4 +3206,434 @@ char *cmzn_field_coordinate_system_type_enum_to_string(enum cmzn_field_coordinat
 {
 	const char *coordinate_system_type_string = cmzn_field_coordinate_system_type_conversion::to_string(coordinate_system_type);
 	return (coordinate_system_type_string ? duplicate_string(coordinate_system_type_string) : 0);
+}
+
+
+class cmzn_field_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_FIELD_TYPE_INVALID:
+				enum_string = "INVALID";
+				break;
+			case CMZN_FIELD_TYPE_ALIAS:
+				enum_string = "ALIAS";
+				break;
+			case CMZN_FIELD_TYPE_ADD:
+				enum_string = "ADD";
+				break;
+			case CMZN_FIELD_TYPE_POWER:
+				enum_string = "POWER";
+				break;
+			case CMZN_FIELD_TYPE_MULTIPLY:
+				enum_string = "MULTIPLY";
+				break;
+			case CMZN_FIELD_TYPE_DIVIDE:
+				enum_string = "DIVIDE";
+				break;
+			case CMZN_FIELD_TYPE_SUBTRACT:
+				enum_string = "SUBTRACT";
+				break;
+			case CMZN_FIELD_TYPE_LOG:
+				enum_string = "LOG";
+				break;
+			case CMZN_FIELD_TYPE_SQRT:
+				enum_string = "SQRT";
+				break;
+			case CMZN_FIELD_TYPE_EXP:
+				enum_string = "EXP";
+				break;
+			case CMZN_FIELD_TYPE_ABS:
+				enum_string = "ABS";
+				break;
+			case CMZN_FIELD_TYPE_IDENTITY:
+				enum_string = "IDENTITY";
+				break;
+			case CMZN_FIELD_TYPE_COMPONENT:
+				enum_string = "COMPONENT";
+				break;
+			case CMZN_FIELD_TYPE_CONCATENATE:
+				enum_string = "CONCATENATE";
+				break;
+			case CMZN_FIELD_TYPE_IF:
+				enum_string = "IF";
+				break;
+			case CMZN_FIELD_TYPE_CONSTANT:
+				enum_string = "CONSTANT";
+				break;
+			case CMZN_FIELD_TYPE_STRING_CONSTANT:
+				enum_string = "STRING_CONSTANT";
+				break;
+			case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
+				enum_string = "COORDINATE_TRANSFORMATION";
+				break;
+			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION:
+				enum_string = "VECTOR_COORDINATE_TRANSFORMATION";
+				break;
+			case CMZN_FIELD_TYPE_DERIVATIVE:
+				enum_string = "DERIVATIVE";
+				break;
+			case CMZN_FIELD_TYPE_CURL:
+				enum_string = "CURL";
+				break;
+			case CMZN_FIELD_TYPE_DIVERGENCE:
+				enum_string = "DIVERGENCE";
+				break;
+			case CMZN_FIELD_TYPE_GRADIENT:
+				enum_string = "GRADIENT";
+				break;
+			case CMZN_FIELD_TYPE_FIBRE_AXES:
+				enum_string = "FIBRE_AXES";
+				break;
+			case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
+				enum_string = "EDGE_DISCONTINUITY";
+				break;
+			case CMZN_FIELD_TYPE_EMBEDDED:
+				enum_string = "EMBEDDED";
+				break;
+			case CMZN_FIELD_TYPE_NODE_VALUE:
+				enum_string = "NODE_VALUE";
+				break;
+			case CMZN_FIELD_TYPE_STORED_STRING:
+				enum_string = "STORED_STRING";
+				break;
+			case CMZN_FIELD_TYPE_IS_EXTERIOR:
+				enum_string = "IS_EXTERIOR";
+				break;
+			case CMZN_FIELD_TYPE_IS_ON_FACE:
+				enum_string = "IS_ON_FACE";
+				break;
+			case CMZN_FIELD_TYPE_AND:
+				enum_string = "AND";
+				break;
+			case CMZN_FIELD_TYPE_EQUAL_TO:
+				enum_string = "EQUAL_TO";
+				break;
+			case CMZN_FIELD_TYPE_GREATER_THAN:
+				enum_string = "GREATER_THAN";
+				break;
+			case CMZN_FIELD_TYPE_IS_DEFINED:
+				enum_string = "IS_DEFINED";
+				break;
+			case CMZN_FIELD_TYPE_LESS_THAN:
+				enum_string = "LESS_THAN";
+				break;
+			case CMZN_FIELD_TYPE_OR:
+				enum_string = "OR";
+				break;
+			case CMZN_FIELD_TYPE_NOT:
+				enum_string = "NOT";
+				break;
+			case CMZN_FIELD_TYPE_XOR:
+				enum_string = "XOR";
+				break;
+			case CMZN_FIELD_TYPE_DETERMINANT:
+				enum_string = "DETERMINANT";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVALUES:
+				enum_string = "EIGENVALUES";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVECTORS:
+				enum_string = "EIGENVECTORS";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_INVERT:
+				enum_string = "MATRIX_INVERT";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
+				enum_string = "MATRIX_MULTIPLY";
+				break;
+			case CMZN_FIELD_TYPE_PROJECTION:
+				enum_string = "PROJECTION";
+				break;
+			case CMZN_FIELD_TYPE_TRANSPOSE:
+				enum_string = "TRANSPOSE";
+				break;
+			case CMZN_FIELD_TYPE_TIME_LOOKUP:
+				enum_string = "TIME_LOOKUP";
+				break;
+			case CMZN_FIELD_TYPE_SIN:
+				enum_string = "SIN";
+				break;
+			case CMZN_FIELD_TYPE_COS:
+				enum_string = "COS";
+				break;
+			case CMZN_FIELD_TYPE_TAN:
+				enum_string = "TAN";
+				break;
+			case CMZN_FIELD_TYPE_ASIN:
+				enum_string = "ASIN";
+				break;
+			case CMZN_FIELD_TYPE_ACOS:
+				enum_string = "ACOS";
+				break;
+			case CMZN_FIELD_TYPE_ATAN:
+				enum_string = "ATAN";
+				break;
+			case CMZN_FIELD_TYPE_ATAN2:
+				enum_string = "ATAN2";
+				break;
+			case CMZN_FIELD_TYPE_CROSS_PRODUCT:
+				enum_string = "CROSS_PRODUCT";
+				break;
+			case CMZN_FIELD_TYPE_DOT_PRODUCT:
+				enum_string = "DOT_PRODUCT";
+				break;
+			case CMZN_FIELD_TYPE_MAGNITUDE:
+				enum_string = "MAGNITUDE";
+				break;
+			case CMZN_FIELD_TYPE_NORMALISE:
+				enum_string = "NORMALISE";
+				break;
+			case CMZN_FIELD_TYPE_SUM_COMPONENTS:
+				enum_string = "SUM_COMPONENTS";
+				break;
+			case CMZN_FIELD_TYPE_FINITE_ELEMENT:
+				enum_string = "FINITE_ELEMENT";
+				break;
+			case CMZN_FIELD_TYPE_TIME_VALUE:
+				enum_string = "TIME_VALUE";
+				break;
+			case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+				enum_string = "STORED_MESH_LOCATION";
+				break;
+			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+				enum_string = "FIND_MESH_LOCATION";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_conversion>(string);
+}
+
+char *cmzn_field_type_enum_to_string(enum cmzn_field_type type)
+{
+	const char *type_string = cmzn_field_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_field_type_class_name_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_type type)
+	{
+		const char *class_name = 0;
+		switch (type)
+		{
+			case CMZN_FIELD_TYPE_INVALID:
+				class_name = "Invalid";
+				break;
+			case CMZN_FIELD_TYPE_ALIAS:
+				class_name = "FieldAlias";
+				break;
+			case CMZN_FIELD_TYPE_ADD:
+				class_name = "FieldAdd";
+				break;
+			case CMZN_FIELD_TYPE_POWER:
+				class_name = "FieldPower";
+				break;
+			case CMZN_FIELD_TYPE_MULTIPLY:
+				class_name = "FieldMultiply";
+				break;
+			case CMZN_FIELD_TYPE_DIVIDE:
+				class_name = "FieldDivide";
+				break;
+			case CMZN_FIELD_TYPE_SUBTRACT:
+				class_name = "FieldSubtract";
+				break;
+			case CMZN_FIELD_TYPE_LOG:
+				class_name = "FieldLog";
+				break;
+			case CMZN_FIELD_TYPE_SQRT:
+				class_name = "FieldSqrt";
+				break;
+			case CMZN_FIELD_TYPE_EXP:
+				class_name = "FieldExp";
+				break;
+			case CMZN_FIELD_TYPE_ABS:
+				class_name = "FieldAbs";
+				break;
+			case CMZN_FIELD_TYPE_IDENTITY:
+				class_name = "FieldIdentity";
+				break;
+			case CMZN_FIELD_TYPE_COMPONENT:
+				class_name = "FieldComponent";
+				break;
+			case CMZN_FIELD_TYPE_CONCATENATE:
+				class_name = "FieldConcatenate";
+				break;
+			case CMZN_FIELD_TYPE_IF:
+				class_name = "FieldIf";
+				break;
+			case CMZN_FIELD_TYPE_CONSTANT:
+				class_name = "FieldConstant";
+				break;
+			case CMZN_FIELD_TYPE_STRING_CONSTANT:
+				class_name = "FieldStringConstant";
+				break;
+			case CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION:
+				class_name = "FieldCoordinateTransformation";
+				break;
+			case CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION:
+				class_name = "FieldVectorCoordinateTransformation";
+				break;
+			case CMZN_FIELD_TYPE_DERIVATIVE:
+				class_name = "FieldDerivative";
+				break;
+			case CMZN_FIELD_TYPE_CURL:
+				class_name = "FieldCurl";
+				break;
+			case CMZN_FIELD_TYPE_DIVERGENCE:
+				class_name = "FieldDivergence";
+				break;
+			case CMZN_FIELD_TYPE_GRADIENT:
+				class_name = "FieldGradient";
+				break;
+			case CMZN_FIELD_TYPE_FIBRE_AXES:
+				class_name = "FieldFibreAxes";
+				break;
+			case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
+				class_name = "FieldEdgeDiscontinuity";
+				break;
+			case CMZN_FIELD_TYPE_EMBEDDED:
+				class_name = "FieldEmbedded";
+				break;
+			case CMZN_FIELD_TYPE_NODE_VALUE:
+				class_name = "FieldNodeValue";
+				break;
+			case CMZN_FIELD_TYPE_STORED_STRING:
+				class_name = "FieldStoredString";
+				break;
+			case CMZN_FIELD_TYPE_IS_EXTERIOR:
+				class_name = "FieldIsExterior";
+				break;
+			case CMZN_FIELD_TYPE_IS_ON_FACE:
+				class_name = "FieldIsOnFace";
+				break;
+			case CMZN_FIELD_TYPE_AND:
+				class_name = "FieldAnd";
+				break;
+			case CMZN_FIELD_TYPE_EQUAL_TO:
+				class_name = "FieldEqualTo";
+				break;
+			case CMZN_FIELD_TYPE_GREATER_THAN:
+				class_name = "FieldGreaterThan";
+				break;
+			case CMZN_FIELD_TYPE_IS_DEFINED:
+				class_name = "FieldIsDefined";
+				break;
+			case CMZN_FIELD_TYPE_LESS_THAN:
+				class_name = "FieldLessThan";
+				break;
+			case CMZN_FIELD_TYPE_OR:
+				class_name = "FieldOr";
+				break;
+			case CMZN_FIELD_TYPE_NOT:
+				class_name = "FieldNot";
+				break;
+			case CMZN_FIELD_TYPE_XOR:
+				class_name = "FieldXor";
+				break;
+			case CMZN_FIELD_TYPE_DETERMINANT:
+				class_name = "FieldDeterminant";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVALUES:
+				class_name = "FieldEigenvalues";
+				break;
+			case CMZN_FIELD_TYPE_EIGENVECTORS:
+				class_name = "FieldEigenvectors";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_INVERT:
+				class_name = "FieldMatrixInvert";
+				break;
+			case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:
+				class_name = "FieldMatrixMultiply";
+				break;
+			case CMZN_FIELD_TYPE_PROJECTION:
+				class_name = "FieldProjection";
+				break;
+			case CMZN_FIELD_TYPE_TRANSPOSE:
+				class_name = "FieldTranspose";
+				break;
+			case CMZN_FIELD_TYPE_TIME_LOOKUP:
+				class_name = "FieldTimeLookup";
+				break;
+			case CMZN_FIELD_TYPE_SIN:
+				class_name = "FieldSin";
+				break;
+			case CMZN_FIELD_TYPE_COS:
+				class_name = "FieldCos";
+				break;
+			case CMZN_FIELD_TYPE_TAN:
+				class_name = "FieldTan";
+				break;
+			case CMZN_FIELD_TYPE_ASIN:
+				class_name = "FieldAsin";
+				break;
+			case CMZN_FIELD_TYPE_ACOS:
+				class_name = "FieldAcos";
+				break;
+			case CMZN_FIELD_TYPE_ATAN:
+				class_name = "FieldAtan";
+				break;
+			case CMZN_FIELD_TYPE_ATAN2:
+				class_name = "FieldAtan2";
+				break;
+			case CMZN_FIELD_TYPE_CROSS_PRODUCT:
+				class_name = "FieldCrossProduct";
+				break;
+			case CMZN_FIELD_TYPE_DOT_PRODUCT:
+				class_name = "FieldDotProduct";
+				break;
+			case CMZN_FIELD_TYPE_MAGNITUDE:
+				class_name = "FieldMagnitude";
+				break;
+			case CMZN_FIELD_TYPE_NORMALISE:
+				class_name = "FieldNormalise";
+				break;
+			case CMZN_FIELD_TYPE_SUM_COMPONENTS:
+				class_name = "FieldSumComponents";
+				break;
+			case CMZN_FIELD_TYPE_FINITE_ELEMENT:
+				class_name = "FieldFiniteElement";
+				break;
+			case CMZN_FIELD_TYPE_TIME_VALUE:
+				class_name = "FieldTimeValue";
+				break;
+			case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
+				class_name = "FieldStoredMeshLocation";
+				break;
+			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
+				class_name = "FieldFindMeshLocation";
+				break;
+			default:
+				break;
+		}
+		return class_name;
+	}
+};
+
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string)
+{
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_class_name_conversion>(string);
+}
+
+char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
+{
+	const char *type_string = cmzn_field_type_class_name_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
+{
+	return field->core->get_type();
 }

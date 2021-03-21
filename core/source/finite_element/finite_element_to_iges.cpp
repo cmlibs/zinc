@@ -13,21 +13,26 @@ to file.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* for IGES */
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 
+#include "opencmiss/zinc/core.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/node.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_conversion.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
+#include "mesh/cmiss_element_private.hpp"
 #include "general/debug.h"
 #include "general/message.h"
 
@@ -104,25 +109,88 @@ DESCRIPTION :
 #define NUMBER_OF_NODES (16)
 
 struct Get_iges_entity_info_data
-/******************************************************************************
-LAST MODIFIED : 6 June 2002
-
-DESCRIPTION :
-==============================================================================*/
 {
-	cmzn_region *destination_region;
-	FE_region *destination_fe_region;
-	FE_mesh *destination_fe_mesh;
-	FE_nodeset *destination_fe_nodeset;
-	cmzn_fieldcache_id field_cache;
+	cmzn_region_id source_region;
+	cmzn_fieldmodule_id source_fieldmodule;
+	cmzn_mesh_id source_mesh;
+	cmzn_field_id source_field;
+	cmzn_fieldcache_id source_fieldcache;
+	cmzn_region_id destination_region;
+	cmzn_fieldmodule_id destination_fieldmodule;
+	cmzn_mesh_id destination_mesh;
+	FE_field *destination_fe_field;
 	struct IGES_entity_info *head,*tail;
-	struct Computed_field *field;
-	struct FE_element *element;
-	struct FE_field *fe_field;
-	struct FE_node *nodes[NUMBER_OF_NODES];
-	struct FE_region *fe_region;
+	cmzn_node_id nodes[NUMBER_OF_NODES];
 	int extra_line_number;
-}; /* struct Get_iges_entity_info_data */
+
+public:
+	Get_iges_entity_info_data(cmzn_region_id source_regionIn, cmzn_field_id fieldIn) :
+		source_region(cmzn_region_access(source_regionIn)),
+		source_fieldmodule(cmzn_region_get_fieldmodule(this->source_region)),
+		source_mesh(cmzn_fieldmodule_find_mesh_by_dimension(this->source_fieldmodule, 2)),
+		source_field(cmzn_field_get_coordinate_field_wrapper(fieldIn)),
+		source_fieldcache(cmzn_fieldmodule_create_fieldcache(this->source_fieldmodule)),
+		destination_region(cmzn_region_create_region(this->source_region)),
+		destination_fieldmodule(cmzn_region_get_fieldmodule(this->destination_region)),
+		destination_mesh(cmzn_fieldmodule_find_mesh_by_dimension(this->destination_fieldmodule, 2)),
+		destination_fe_field(0),
+		head(0),
+		tail(0),
+		extra_line_number(999000) // Start somewhere random although we will still check that it doesn't conflict
+	{
+		for (int i = 0; i < NUMBER_OF_NODES; i++)
+			this->nodes[i] = 0;
+
+		struct Element_refinement refinement = { 1, 1, 1 };
+		const double tolerance = 1.0E-6;
+		// All 2-D elements are resampled into bicubic Lagrange for iges export.
+		// Future: convert only top-level or exterior elements
+		// Formerly, this code ensured the destination elements had the same element and face identifiers as the source
+		// It doesn't do this at the moment; may need to reimplement that.
+		cmzn_fieldmodule_begin_change(this->destination_fieldmodule);
+		if (!finite_element_conversion(this->source_region,
+			this->destination_region, CONVERT_TO_FINITE_ELEMENTS_BICUBIC,
+			/*number_of_source_fields*/1, &this->source_field,
+			refinement, tolerance))
+		{
+			display_message(ERROR_MESSAGE, "export iges:  Failed to convert surface elements to bicubic");
+		}
+		else
+		{
+			cmzn_fieldmodule_define_all_faces(this->destination_fieldmodule);
+			char *name = cmzn_field_get_name(this->source_field);
+			this->destination_fe_field = FE_region_get_FE_field_from_name(cmzn_region_get_FE_region(this->destination_region), name);
+			cmzn_deallocate(name);
+			name = 0;
+			cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(this->destination_mesh);
+			cmzn_element *element;
+			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->destination_mesh);
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+			{
+				if (1 >= feMesh->getElementParentsCount(element->getIndex()))
+					this->get_iges_entity_info(element);
+			}
+			cmzn_elementiterator_destroy(&iter);
+		}
+		cmzn_fieldmodule_end_change(this->destination_fieldmodule);
+	}
+
+	~Get_iges_entity_info_data()
+	{
+		for (int i = 0; i < NUMBER_OF_NODES; i++)
+			cmzn_node_destroy(&this->nodes[i]);
+		cmzn_mesh_destroy(&this->destination_mesh);
+		cmzn_fieldmodule_destroy(&this->destination_fieldmodule);
+		cmzn_region_destroy(&this->destination_region);
+		cmzn_fieldcache_destroy(&this->source_fieldcache);
+		cmzn_field_destroy(&this->source_field);
+		cmzn_mesh_destroy(&this->source_mesh);
+		cmzn_fieldmodule_destroy(&this->source_fieldmodule);
+		cmzn_region_destroy(&this->source_region);
+	}
+
+	int get_iges_entity_info(struct FE_element *element);
+};
 
 static struct IGES_entity_info *create_iges_entity_info(
 	struct FE_element *element,struct IGES_entity_info **head,
@@ -188,13 +256,7 @@ DESCRIPTION :
 	return (entity);
 } /* create_iges_entity_info */
 
-static int get_iges_entity_info(struct FE_element *element,
-	void *get_data_void)
-/******************************************************************************
-LAST MODIFIED : 7 August 2003
-
-DESCRIPTION :
-==============================================================================*/
+int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 {
 	FE_value *destination, *source, *source_ptr;
 	int *faces_material,*faces_world,i,j,k,material_curve_directory_pointer,
@@ -207,20 +269,19 @@ DESCRIPTION :
 	struct FE_element *face;
 	struct FE_field *coordinate_field;
 	struct FE_element_field_values *coordinate_element_field_values;
-	struct Get_iges_entity_info_data *get_data;
 	struct IGES_entity_info *entity,*surface_entity;
 
 	ENTER(get_iges_entity_info);
 	return_code=0;
-	if (element&&(get_data=(struct Get_iges_entity_info_data *)get_data_void))
+	if (element)
 	{
 		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		FE_mesh *fe_mesh = element->getMesh();
 		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
 			(1 >= fe_mesh->getElementParentsCount(elementIndex)) &&
-			(coordinate_field=get_data->fe_field)&&
+			(coordinate_field = this->destination_fe_field) &&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
 			(calculate_FE_element_field_values(element,coordinate_field,
@@ -236,8 +297,8 @@ DESCRIPTION :
 				coordinate_element_field_values, /*component_number*/2, monomial_z) &&
 			(2 == monomial_z[0]) && (monomial_z[1] <= 3) && (monomial_z[2] <= 3))
 		{
-			surface_entity=create_iges_entity_info(element,&(get_data->head),
-				&(get_data->tail));
+			surface_entity=create_iges_entity_info(element,&(this->head),
+				&(this->tail));
 			if (surface_entity != NULL)
 			{
 				surface_directory_pointer=surface_entity->directory_pointer;
@@ -383,8 +444,8 @@ DESCRIPTION :
 								int face_dimension = get_FE_element_dimension(face);
 								int face_identifier = get_FE_element_identifier(face);
 								/* create an entity for the edge in material coordinates */
-								entity = create_iges_entity_info(face,&(get_data->head),
-									&(get_data->tail));
+								entity = create_iges_entity_info(face,&(this->head),
+									&(this->tail));
 								if (entity != NULL)
 								{
 									faces_material[reorder_faces[i]]=entity->directory_pointer;
@@ -437,7 +498,7 @@ DESCRIPTION :
 									}
 									((entity->parameter).type_110.start)[2]=0.;
 									((entity->parameter).type_110.end)[2]=0.;
-									entity=get_data->head;
+									entity=this->head;
 									while (entity && !((face_dimension == entity->element_dimension) &&
 										(face_identifier == entity->element_identifier) &&
 										(112 == entity->type)))
@@ -451,8 +512,8 @@ DESCRIPTION :
 									else
 									{
 										/* create an entity for the edge in material coordinates */
-										entity=create_iges_entity_info(face,&(get_data->head),
-											&(get_data->tail));
+										entity=create_iges_entity_info(face,&(this->head),
+											&(this->tail));
 										if (entity != NULL)
 										{
 											faces_world[reorder_faces[i]]=entity->directory_pointer;
@@ -564,8 +625,8 @@ DESCRIPTION :
 						{
 							/* create a composite curve entity to describe the boundary of
 								the element in material coordinates */
-							if ((entity=create_iges_entity_info(element,&(get_data->head),
-								&(get_data->tail)))&&ALLOCATE((entity->parameter).type_102.
+							if ((entity=create_iges_entity_info(element,&(this->head),
+								&(this->tail)))&&ALLOCATE((entity->parameter).type_102.
 								directory_pointers,int,number_of_faces))
 							{
 								material_curve_directory_pointer=entity->directory_pointer;
@@ -586,8 +647,8 @@ DESCRIPTION :
 								}
 								/* create a composite curve entity to describe the boundary of
 									the element in world coordinates */
-								if ((entity=create_iges_entity_info(element,&(get_data->head),
-									&(get_data->tail)))&&ALLOCATE((entity->parameter).type_102.
+								if ((entity=create_iges_entity_info(element,&(this->head),
+									&(this->tail)))&&ALLOCATE((entity->parameter).type_102.
 									directory_pointers,int,number_of_faces))
 								{
 									world_curve_directory_pointer=entity->directory_pointer;
@@ -606,8 +667,8 @@ DESCRIPTION :
 											faces_world[j];
 									}
 									/* combine the world and material boundary descriptions */
-									entity=create_iges_entity_info(element,&(get_data->head),
-										&(get_data->tail));
+									entity=create_iges_entity_info(element,&(this->head),
+										&(this->tail));
 									if (entity != NULL)
 									{
 										outer_boundary_directory_pointer=entity->directory_pointer;
@@ -634,7 +695,7 @@ DESCRIPTION :
 										/* create the trimmed surface that can be stitched
 											together */
 										entity=create_iges_entity_info(element,
-											&(get_data->head),&(get_data->tail));
+											&(this->head),&(this->tail));
 										if (entity != NULL)
 										{
 											/* trimmed parametric surface entity */
@@ -698,177 +759,6 @@ DESCRIPTION :
 	return (return_code);
 } /* get_iges_entity_info */
 
-static int get_iges_entity_as_cubic_from_any_2D_element(struct FE_element *element,
-	struct Get_iges_entity_info_data *get_data)
-/******************************************************************************
-LAST MODIFIED : 5 August 2003
-
-DESCRIPTION :
-SAB This function uses a template bicubic element patch to generate an IGES
-representation of any 2D element.  The actual element is evaluated for nodal
-positions and  derivatives at each corner and these are just put into the template
-nodes. This means that the iges code does not need to be implemented for each
-basis type, however every element type will be converted to a cubic.
-==============================================================================*/
-{
-	FE_value values[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, j, number_of_components, number_of_values, return_code;
-	struct FE_element *face, *true_face;
-	struct FE_node_field_creator *node_field_creator;
-
-	ENTER(get_iges_entity_info);
-	return_code = 0;
-	/* check arguments */
-	if (element && get_data)
-	{
-		return_code = 1;
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-		const DsLabelIndex elementIndex = get_FE_element_index(element);
-		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
-			(1 >= fe_mesh->getElementParentsCount(elementIndex)))
-		{
-			/* Create the node and element templates */
-			if (!get_data->element)
-			{
-				/* Then we presume we have made nothing */
-				/* Make a suitable FE_field */
-				if ((get_data->fe_field = CREATE(FE_field)("coordinates", get_data->destination_fe_region)) &&
-					set_FE_field_value_type(get_data->fe_field, FE_VALUE_VALUE) &&
-					set_FE_field_number_of_components(get_data->fe_field, /*number_of_components*/3))
-				{
-					get_data->fe_field = ACCESS(FE_field)(
-						FE_region_merge_FE_field(get_data->destination_fe_region, get_data->fe_field));
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"get_iges_entity_as_cubic_from_any_2D_element.  "
-						"Could not create fe field");
-					DEACCESS(FE_field)(&(get_data->fe_field));
-					return_code=0;
-				}
-
-				node_field_creator = CREATE(FE_node_field_creator)(
-						 /*number_of_components*/3);
-				FE_node *template_node = CREATE(FE_node)(/*node_number*/0,
-					get_data->destination_fe_nodeset, (struct FE_node *)NULL);
-				ACCESS(FE_node)(template_node);
-				if (!define_FE_field_at_node(template_node, get_data->fe_field,
-					(struct FE_time_sequence *)NULL, node_field_creator))
-				{
-					display_message(ERROR_MESSAGE,
-						"get_iges_entity_as_cubic_from_any_2D_element.  "
-						"Could not define node field");
-					return_code = 0;
-				}
-				DESTROY(FE_node_field_creator)(&(node_field_creator));
-				for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
-				{
-					get_data->nodes[i] = get_data->destination_fe_nodeset->create_FE_node_copy(-1, template_node);
-					if (get_data->nodes[i] == NULL)
-					{
-						display_message(ERROR_MESSAGE,
-							"get_iges_entity_as_cubic_from_any_2D_element.  "
-							"Failed to create node");
-						return_code = 0;
-					}
-				}
-				DEACCESS(FE_node)(&template_node);
-				if (return_code)
-				{
-					int shape_type[3] = { LINE_SHAPE, 0, LINE_SHAPE };
-					FE_element_shape *element_shape = CREATE(FE_element_shape)(/*dimension*/2, shape_type, get_data->destination_fe_region);
-					FE_element_template *element_template = (get_data->destination_fe_mesh) ?
-						get_data->destination_fe_mesh->create_FE_element_template(element_shape) : 0;
-					if ((element_template) && FE_element_define_tensor_product_basis(element_template->get_template_element(),
-						/*dimension*/2,/*basis_type*/CUBIC_LAGRANGE, get_data->fe_field) &&
-						(0 != (get_data->element = get_data->destination_fe_mesh->create_FE_element(1, element_template))))
-					{
-						for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
-						{
-							if (!set_FE_element_node(get_data->element, i, get_data->nodes[i]))
-							{
-								display_message(ERROR_MESSAGE,
-									"get_iges_entity_as_cubic_from_any_2D_element.  "
-									"Could not set node %d into element", i+1);
-								return_code=0;
-							}
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-					cmzn::Deaccess(element_template);
-				}
-				if (return_code)
-				{
-					cmzn_fieldmodule *destination_fieldmodule = cmzn_region_get_fieldmodule(get_data->destination_region);
-					cmzn_fieldmodule_define_all_faces(destination_fieldmodule);
-					cmzn_fieldmodule_destroy(&destination_fieldmodule);
-				}
-			}
-			xi[2] = 0.0;
-			/* Fill in the nodal values */
-			number_of_components = cmzn_field_get_number_of_components(get_data->field);
-			for (i = 0 ; return_code && (i < 4) ; i++)
-			{
-				for (j = 0 ; return_code && (j < 4) ; j++)
-				{
-					xi[0] = (ZnReal)j / 3.0;
-					xi[1] = (ZnReal)i / 3.0;
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(get_data->field_cache,
-							element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
-						(CMZN_OK == cmzn_field_evaluate_real(get_data->field,
-							get_data->field_cache, number_of_components, values)))
-					{
-						if (!set_FE_nodal_field_FE_value_values(get_data->fe_field,
-							get_data->nodes[i * 4 + j], values, &number_of_values, /*time*/0.0))
-						{
-							display_message(ERROR_MESSAGE,
-								"get_iges_entity_as_cubic_from_any_2D_element.  "
-								"Unable to set values in node %d", i * 4 + j);
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"get_iges_entity_as_cubic_from_any_2D_element.  "
-							"Unable to evaluate values in node %d", i * 4 + j);
-						return_code=0;
-					}
-				}
-			}
-			/* Set the correct element number into the template element */
-			cmzn_element_set_identifier(get_data->element, cmzn_element_get_identifier(element));
-			/* Set the correct element numbers into the faces */
-			for (i = 0 ; i < 4 ; i++)
-			{
-				true_face	= get_FE_element_face(element, i);
-				face = get_FE_element_face(get_data->element, i);
-				int face_identifier;
-				if (true_face)
-					face_identifier = get_FE_element_identifier(true_face);
-				else
-				{
-					face_identifier = get_data->destination_fe_mesh->get_next_FE_element_identifier(get_data->extra_line_number + 1);
-					get_data->extra_line_number = face_identifier;
-				}
-				cmzn_element_set_identifier(face, face_identifier);
-			}
-			/* Add the element entity info for the element we just made */
-			if (return_code)
-			{
-				get_iges_entity_info(get_data->element, (void *)get_data);
-			}
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_iges_entity_as_cubic_from_any_2D_element */
-
 /*
 Global functions
 ----------------
@@ -886,8 +776,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 	char *out_string, numeric_string[20], *temp_string, time_string[14];
 	FILE *iges;
 	int count, i, global_count, length, out_length, parameter_pointer,
-		return_code, sub_count;
-	struct Get_iges_entity_info_data iges_entity_info_data;
+		return_code;
 	struct IGES_entity_info *entity;
 	time_t coded_time;
 	struct tm *time_struct;
@@ -912,17 +801,17 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 			out_length=0;
 #define WRITE_STRING_PARAMETER( parameter ) \
 { \
-	length=strlen(parameter); \
+	length = static_cast<int>(strlen(parameter)); \
 	if (length>0) \
 	{ \
 		length += (int)ceil(log10((double)length))+2; \
 		if (REALLOCATE(temp_string,out_string,char,out_length+length+2)) \
 		{ \
 			out_string=temp_string; \
-			sprintf(out_string+out_length,"%dH",(int)strlen(parameter)); \
+			sprintf(out_string+out_length,"%dH",static_cast<int>(strlen(parameter))); \
 			strcat(out_string,parameter); \
 			strcat(out_string,","); \
-			out_length=strlen(out_string); \
+			out_length = static_cast<int>(strlen(out_string)); \
 			while (out_length>72) \
 			{ \
 				global_count++; \
@@ -943,14 +832,14 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 		{ \
 			out_string=temp_string; \
 			strcat(out_string,","); \
-			out_length=strlen(out_string); \
+			out_length=static_cast<int>(strlen(out_string)); \
 		} \
 	} \
 }
 #define WRITE_INTEGER_PARAMETER( parameter ) \
 { \
 	sprintf(numeric_string,"%d",parameter); \
-	length=strlen(numeric_string)+1; \
+	length = static_cast<int>(strlen(numeric_string) + 1); \
 	if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
 	{ \
 		out_string=temp_string; \
@@ -963,13 +852,13 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 		} \
 		strcat(out_string,numeric_string); \
 		strcat(out_string,","); \
-		out_length=strlen(out_string); \
+		out_length = static_cast<int>(strlen(out_string)); \
 	} \
 }
 #define WRITE_REAL_PARAMETER( parameter ) \
 { \
 	sprintf(numeric_string,"%.6e",parameter); \
-	length=strlen(numeric_string)+1; \
+	length=static_cast<int>(strlen(numeric_string) + 1); \
 	if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
 	{ \
 		out_string=temp_string; \
@@ -982,7 +871,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 		} \
 		strcat(out_string,numeric_string); \
 		strcat(out_string,","); \
-		out_length=strlen(out_string); \
+		out_length = static_cast<int>(strlen(out_string)); \
 	} \
 }
 			/* parameter delimiter */
@@ -1057,51 +946,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 			field_module = cmzn_field_get_fieldmodule(field);
 			field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 			// convert surface elements to bicubic in temporary region
-			iges_entity_info_data.destination_region = cmzn_region_create_region(region);
-			iges_entity_info_data.destination_fe_region = cmzn_region_get_FE_region(iges_entity_info_data.destination_region);
-			iges_entity_info_data.destination_fe_mesh = FE_region_find_FE_mesh_by_dimension(iges_entity_info_data.destination_fe_region, 2);
-			iges_entity_info_data.destination_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(iges_entity_info_data.destination_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-			iges_entity_info_data.field_cache = field_cache;
-			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
-			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
-			iges_entity_info_data.field=Computed_field_begin_wrap_coordinate_field(field);
-			iges_entity_info_data.fe_field=(struct FE_field *)NULL;
-			iges_entity_info_data.fe_region=cmzn_region_get_FE_region(region);
-			iges_entity_info_data.element=(struct FE_element *)NULL;
-			iges_entity_info_data.extra_line_number = 999000; /* Start somewhere random although
-														  we will still check that it doesn't conflict */
-			for (i = 0 ; i < NUMBER_OF_NODES ; i++)
-			{
-				iges_entity_info_data.nodes[i]=(struct FE_node *)NULL;
-			}
-#if defined (NEW_CODE)
-			iges_entity_info_data.fe_field = FE_region_get_default_coordinate_FE_field(fe_region);
-			FE_region_for_each_FE_element(fe_region, get_iges_entity_info,
-				&iges_entity_info_data);
-			USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
-#endif /* defined (NEW_CODE) */
-			FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(iges_entity_info_data.fe_region, 2);
-			cmzn_elementiterator *iter = fe_mesh->createElementiterator();
-			cmzn_element *element;
-			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-			{
-				if (!get_iges_entity_as_cubic_from_any_2D_element(element, &iges_entity_info_data))
-					break;
-			}
-			cmzn_elementiterator_destroy(&iter);
-			Computed_field_end_wrap(&(iges_entity_info_data.field));
-			if (iges_entity_info_data.fe_field)
-			{
-				DEACCESS(FE_field)(&iges_entity_info_data.fe_field);
-			}
-			if (iges_entity_info_data.element)
-			{
-				DEACCESS(FE_element)(&iges_entity_info_data.element);
-			}
-		 for (i = 0 ; i < NUMBER_OF_NODES ; i++)
-		 {
-				DEACCESS(FE_node)(&iges_entity_info_data.nodes[i]);
-			}
+			Get_iges_entity_info_data iges_entity_info_data(region, field);
 			/* We no longer require the template element and nodes */
 			/* directory entry section */
 			entity=iges_entity_info_data.head;
@@ -1126,6 +971,9 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 				entity=entity->next;
 			}
 			/* parameter data section */
+			// write to string then output and pad with spaces.
+			// earlier code used fprintf %n specifier which is disabled by default on windows
+			char tmps[200];
 			entity=iges_entity_info_data.head;
 			while (entity)
 			{
@@ -1135,19 +983,18 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* composite curve entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d%n",entity->type,
-							(entity->parameter).type_102.number_of_entities,&count);
-						count=64-count;
+						sprintf(tmps,"%d,%d",entity->type,
+							(entity->parameter).type_102.number_of_entities);
 						for (i=0;i<(entity->parameter).type_102.number_of_entities;i++)
 						{
-							fprintf(iges,",%d%n",
-								((entity->parameter).type_102.directory_pointers)[i],
-								&sub_count);
-							count -= sub_count;
+							char tmps2[50];
+							sprintf(tmps2, ",%d",
+								((entity->parameter).type_102.directory_pointers)[i]);
+							strcat(tmps, tmps2);
 						}
-						fprintf(iges,";");
-						count--;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						strcat(tmps, ";");
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -1155,71 +1002,71 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* line entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%n",entity->type,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						sprintf(tmps,"%d,",entity->type);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,",
 							((entity->parameter).type_110.start)[0],
 							((entity->parameter).type_110.start)[1],
-							((entity->parameter).type_110.start)[2],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_110.start)[2]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
-						fprintf(iges,"%.6e,%.6e,%.6e;%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e;",
 							((entity->parameter).type_110.end)[0],
 							((entity->parameter).type_110.end)[1],
-							((entity->parameter).type_110.end)[2],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_110.end)[2]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 					} break;
 					case 112:
 					{
 						/* parametric spline curve entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%n",
+						sprintf(tmps,"%d,%d,%d,%d,%d,",
 							entity->type,(entity->parameter).type_112.spline_type,
 							(entity->parameter).type_112.degree_of_continuity,
 							(entity->parameter).type_112.number_of_dimensions,
-							(entity->parameter).type_112.n,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_112.n);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,",
 							((entity->parameter).type_112.tu)[0],
-							((entity->parameter).type_112.tu)[1],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.tu)[1]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_112.x)[0],
 							((entity->parameter).type_112.x)[1],
 							((entity->parameter).type_112.x)[2],
-							((entity->parameter).type_112.x)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.x)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_112.y)[0],
 							((entity->parameter).type_112.y)[1],
 							((entity->parameter).type_112.y)[2],
-							((entity->parameter).type_112.y)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.y)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e;%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e;",
 							((entity->parameter).type_112.z)[0],
 							((entity->parameter).type_112.z)[1],
 							((entity->parameter).type_112.z)[2],
-							((entity->parameter).type_112.z)[3],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_112.z)[3]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -1227,66 +1074,57 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* parametric spline surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%n",
-							entity->type,(entity->parameter).type_114.spline_boundary_type,
+						sprintf(tmps, "%d,%d,%d,%d,%d,",
+							entity->type, (entity->parameter).type_114.spline_boundary_type,
 							(entity->parameter).type_114.patch_type,
-							(entity->parameter).type_114.m,(entity->parameter).type_114.n,
-							&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_114.m, (entity->parameter).type_114.n);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
-						fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+						sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 							((entity->parameter).type_114.tu)[0],
 							((entity->parameter).type_114.tu)[1],
 							((entity->parameter).type_114.tv)[0],
-							((entity->parameter).type_114.tv)[1],&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							((entity->parameter).type_114.tv)[1]);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 								((entity->parameter).type_114.x)[i],
 								((entity->parameter).type_114.x)[i+1],
 								((entity->parameter).type_114.x)[i+2],
-								((entity->parameter).type_114.x)[i+3],&count);
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.x)[i+3]);
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e,%n",
+							sprintf(tmps,"%.6e,%.6e,%.6e,%.6e,",
 								((entity->parameter).type_114.y)[i],
 								((entity->parameter).type_114.y)[i+1],
 								((entity->parameter).type_114.y)[i+2],
-								((entity->parameter).type_114.y)[i+3],&count);
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.y)[i+3]);
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
 						for (i=0;i<16;i += 4)
 						{
-							fprintf(iges,"%.6e,%.6e,%.6e,%.6e%n",
+							sprintf(tmps, "%.6e,%.6e,%.6e,%.6e%c",
 								((entity->parameter).type_114.z)[i],
 								((entity->parameter).type_114.z)[i+1],
 								((entity->parameter).type_114.z)[i+2],
-								((entity->parameter).type_114.z)[i+3],&count);
-							if (12==i)
-							{
-								fprintf(iges,";");
-							}
-							else
-							{
-								fprintf(iges,",");
-							}
-							count++;
-							count=64-count;
-							fprintf(iges,"%*s%8dP%7d\n",count," ",
+								((entity->parameter).type_114.z)[i+3],
+								(12==i) ? ';' : ',');
+							count = 64 - static_cast<int>(strlen(tmps));
+							fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 								entity->directory_pointer,parameter_pointer);
 							parameter_pointer++;
 						}
@@ -1295,14 +1133,14 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* curve on parametric surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d,%d;%n",entity->type,
+						sprintf(tmps,"%d,%d,%d,%d,%d,%d;",entity->type,
 							(entity->parameter).type_142.how_curve_created,
 							(entity->parameter).type_142.surface_directory_pointer,
 							(entity->parameter).type_142.material_curve_directory_pointer,
 							(entity->parameter).type_142.world_curve_directory_pointer,
-							(entity->parameter).type_142.preferred_representation,&count);
-						count=64-count;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+							(entity->parameter).type_142.preferred_representation);
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;
@@ -1310,24 +1148,23 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 					{
 						/* trimmed parametric surface entity */
 						parameter_pointer=entity->parameter_pointer;
-						fprintf(iges,"%d,%d,%d,%d,%d%n",entity->type,
+						sprintf(tmps,"%d,%d,%d,%d,%d",entity->type,
 							(entity->parameter).type_144.surface_directory_pointer,
 							(entity->parameter).type_144.outer_boundary_type,
 							(entity->parameter).type_144.number_of_inner_boundary_curves,
-							(entity->parameter).type_144.outer_boundary_directory_pointer,
-							&count);
-						count=64-count;
+							(entity->parameter).type_144.outer_boundary_directory_pointer);
 						for (i=0;
 							i<(entity->parameter).type_144.number_of_inner_boundary_curves;
 							i++)
 						{
-							fprintf(iges,",%d%n",((entity->parameter).type_144.
-								inner_boundary_directory_pointers)[i],&sub_count);
-							count -= sub_count;
+							char tmps2[50];
+							sprintf(tmps2,",%d",((entity->parameter).type_144.
+								inner_boundary_directory_pointers)[i]);
+							strcat(tmps, tmps2);
 						}
-						fprintf(iges,";");
-						count--;
-						fprintf(iges,"%*s%8dP%7d\n",count," ",
+						strcat(tmps, ";");
+						count = 64 - static_cast<int>(strlen(tmps));
+						fprintf(iges,"%s%*s%8dP%7d\n",tmps,count," ",
 							entity->directory_pointer,parameter_pointer);
 						parameter_pointer++;
 					} break;

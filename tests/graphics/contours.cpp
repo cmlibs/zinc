@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include <opencmiss/zinc/status.h>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/context.h>
 #include <opencmiss/zinc/region.h>
@@ -16,6 +17,7 @@
 #include <opencmiss/zinc/field.h>
 #include <opencmiss/zinc/fieldconstant.h>
 #include <opencmiss/zinc/graphics.h>
+#include <opencmiss/zinc/fieldconstant.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -170,5 +172,54 @@ TEST(cmzn_graphics_contours, range_isovalues_null)
 	EXPECT_EQ(0.0, cmzn_graphics_contours_get_range_last_isovalue(0));
 
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_contours_destroy(&is));
+}
+
+TEST(cmzn_graphics_contours, description_io)
+{
+	ZincTestSetupCpp zinc;
+
+	double value = 1.0;
+	Field orientationScaleField = zinc.fm.createFieldConstant(1, &value);
+	orientationScaleField.setName("my_orientation_field");
+	EXPECT_TRUE(orientationScaleField.isValid());
+
+	GraphicsContours gr = zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(gr.isValid());
+
+	EXPECT_EQ(CMZN_OK, gr.setRangeIsovalues(1, 0.3, 0.3));
+	EXPECT_EQ(CMZN_OK, gr.setIsoscalarField(orientationScaleField));
+
+	GraphicsContours gr2 = zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(gr2.isValid());
+
+	double dvalues[3] = {0.1, 0.2, 0.3};
+
+	EXPECT_EQ(CMZN_OK, gr2.setListIsovalues(3, dvalues));
+	EXPECT_EQ(CMZN_OK, gr2.setIsoscalarField(orientationScaleField));
+
+	char *return_string = zinc.scene.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+
+	zinc.scene.removeGraphics(gr2);
+	zinc.scene.removeGraphics(gr);
+	EXPECT_EQ(0, zinc.scene.getNumberOfGraphics());
+
+	EXPECT_EQ(RESULT_OK, zinc.scene.readDescription(return_string, false));
+
+	gr = zinc.scene.getFirstGraphics().castContours();
+	gr2 = zinc.scene.getNextGraphics(gr).castContours();
+
+	EXPECT_EQ(orientationScaleField.getId(), gr.getIsoscalarField().getId());
+	EXPECT_EQ(1,  gr.getRangeNumberOfIsovalues());
+	EXPECT_EQ(0.3, gr.getRangeFirstIsovalue());
+	EXPECT_EQ(0.3, gr.getRangeLastIsovalue());
+
+	EXPECT_EQ(orientationScaleField.getId(), gr2.getIsoscalarField().getId());
+	EXPECT_EQ(3, gr2.getListIsovalues(3, dvalues));
+	EXPECT_EQ(0.1, dvalues[0]);
+	EXPECT_EQ(0.2, dvalues[1]);
+	EXPECT_EQ(0.3, dvalues[2]);
+
+	cmzn_deallocate(return_string);
 }
 

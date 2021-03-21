@@ -107,7 +107,7 @@ DESCRIPTION :
 Creates a basic FE_time_sequence.
 ==============================================================================*/
 
-int DESTROY(FE_time_sequence)(struct FE_time_sequence **fe_time_seqence_address);
+int DESTROY(FE_time_sequence)(struct FE_time_sequence **fe_time_sequence_address);
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
@@ -127,13 +127,13 @@ PROTOTYPE_MANAGER_FUNCTIONS(FE_time_sequence);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,name,const char *);
 
 struct FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
-	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_seqence);
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_sequence);
 /*******************************************************************************
 LAST MODIFIED : 27 November 2002
 
 DESCRIPTION :
-Searches <fe_time> for a FE_time_sequence matching <source_fe_time_seqence>.
-If no equivalent fe_time_seqence is found one is created in <fe_time> and
+Searches <fe_time> for a FE_time_sequence matching <source_fe_time_sequence>.
+If no equivalent fe_time_sequence is found one is created in <fe_time> and
 returned.
 ==============================================================================*/
 
@@ -143,23 +143,23 @@ struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Searches <fe_time> for a fe_time_seqence which has the time series specified. 
-If no equivalent fe_time_seqence is found one is created and returned.
+Searches <fe_time> for a fe_time_sequence which has the time series specified. 
+If no equivalent fe_time_sequence is found one is created and returned.
 ==============================================================================*/
 
 struct FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
-	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_seqence_one,
-	struct FE_time_sequence *time_seqence_two);
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two);
 /*******************************************************************************
 LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
-Searches <fe_time> for a fe_time_seqence which has the list of times formed
-by merging the two time_seqences supplied.
+Searches <fe_time> for a fe_time_sequence which has the list of times formed
+by merging the two time_sequences supplied.
 ==============================================================================*/
 
 int FE_time_sequence_get_number_of_times(
-	struct FE_time_sequence *fe_time_seqence);
+	struct FE_time_sequence *fe_time_sequence);
 /*******************************************************************************
 LAST MODIFIED : 15 November 2001
 
@@ -168,7 +168,7 @@ Returns the number of times that a particular FE_time_sequence references to.
 ==============================================================================*/
 
 int FE_time_sequence_get_index_for_time(
-	struct FE_time_sequence *fe_time_seqence, FE_value time, int *time_index);
+	struct FE_time_sequence *fe_time_sequence, FE_value time, int *time_index);
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
 
@@ -179,7 +179,7 @@ and 1 if it is.
 ==============================================================================*/
 
 int FE_time_sequence_get_time_for_index(
-	struct FE_time_sequence *fe_time_seqence, int time_index, FE_value *time);
+	struct FE_time_sequence *fe_time_sequence, int time_index, FE_value *time);
 /*******************************************************************************
 LAST MODIFIED : 15 November 2001
 
@@ -201,7 +201,7 @@ be expanded and the unspecified times also set to <time>.
 ==============================================================================*/
 
 int FE_time_sequence_get_interpolation_for_time(
-	struct FE_time_sequence *fe_time_seqence, FE_value time, int *time_index_one,
+	struct FE_time_sequence *fe_time_sequence, FE_value time, int *time_index_one,
 	int *time_index_two, FE_value *xi);
 /*******************************************************************************
 LAST MODIFIED : 20 November 2001
@@ -213,6 +213,10 @@ and 1 to indicate what fraction of the way between <time_index_one> and
 <time_index_two> the value is found.  Returns 0 if time is outside the range
 of the time index array.
 ==============================================================================*/
+
+/** @return  Nearest time index to time for time sequence */
+int FE_time_sequence_get_nearest_time_index_for_time(
+	struct FE_time_sequence *fe_time_sequence, FE_value time);
 
 enum FE_time_sequence_mapping FE_time_sequences_mapping(
 	struct FE_time_sequence *source_sequence,
@@ -229,12 +233,12 @@ FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
 
 int FE_time_sequence_package_has_FE_time_sequence(
 	struct FE_time_sequence_package *fe_time_sequence_package,
-	struct FE_time_sequence *fe_time_seqence);
+	struct FE_time_sequence *fe_time_sequence);
 /*******************************************************************************
 LAST MODIFIED : 12 November 2004
 
 DESCRIPTION :
-Returns true if <fe_time_sequence_package> contains the <fe_time_seqence>.
+Returns true if <fe_time_sequence_package> contains the <fe_time_sequence>.
 ==============================================================================*/
 
 /***************************************************************************//**

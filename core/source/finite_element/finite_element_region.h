@@ -39,9 +39,12 @@ class DsLabelsChangeLog;
  */
 class FE_region_changes
 {
-	struct CHANGE_LOG(FE_node) *fe_node_changes[2];
+	struct FE_region *fe_region; // accessed
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
 	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	// following are set once field changes propagated to given dimension so not redone
+	bool propagatedToDimension[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	DsLabelsChangeLog *nodeChangeLogs[2]; // nodes and datapoints
 	int access_count;
 
 	FE_region_changes(struct FE_region *fe_region);
@@ -85,16 +88,21 @@ public:
 		return this->fe_field_changes;
 	}
 
-	struct CHANGE_LOG(FE_node) *getNodeChanges(cmzn_field_domain_type domainType)
+	DsLabelsChangeLog *getNodeChangeLog(cmzn_field_domain_type domainType)
 	{
 		if (CMZN_FIELD_DOMAIN_TYPE_NODES == domainType)
-			return this->fe_node_changes[0];
+			return this->nodeChangeLogs[0];
 		if (CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == domainType)
-			return this->fe_node_changes[1];
+			return this->nodeChangeLogs[1];
 		return 0;
 	}
 
-	bool elementOrParentChanged(FE_element *element);
+	FE_region *get_FE_region() const
+	{
+		return this->fe_region;
+	}
+
+	bool propagateToDimension(int dimension);
 
 };
 
@@ -274,29 +282,13 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 	struct FE_region *fe_region, const char *name, enum Value_type value_type,
 	int number_of_components);
 
-/***************************************************************************//**
- * Returns an FE_field with the given <name> merged into <fe_region> and with
- * the given properties. If a field of the given <name> already exists, checks
- * that it has the same properties -- if not an error is reported. If no field
- * of that name exists, one is created and FE_region_merge_FE_field called for
- * it. Hence, this function may result in change messages being sent, so use
- * begin/end change if several calls are to be made.
- */
-struct FE_field *FE_region_get_FE_field_with_properties(
-	struct FE_region *fe_region, const char *name, enum FE_field_type fe_field_type,
-	struct FE_field *indexer_field, int number_of_indexed_values,
-	enum CM_field_type cm_field_type, struct Coordinate_system *coordinate_system,
-	enum Value_type value_type, int number_of_components, char **component_names,
-	int number_of_times, enum Value_type time_value_type,
-	struct FE_field_external_information *external);
-
 /**
  * Checks <fe_field> is compatible with <fe_region> and any existing FE_field
  * using the same identifier, then merges it into <fe_region>.
  * If no FE_field of the same identifier exists in FE_region, <fe_field> is added
  * to <fe_region> and returned by this function, otherwise changes are merged into
  * the existing FE_field and it is returned.
- * A NULL value is returned on any error.
+ * @return  Non-accessed field or 0 if error.
  */
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field);
@@ -413,6 +405,8 @@ int FE_region_end_define_faces(struct FE_region *fe_region);
  * Ensures for elements of every dimension > 1 that there are face and line
  * elements of lower dimension in the region.
  * Requires a coordinate field to be defined to work.
+ * @return  Result OK on success, WARNING_PART_DONE if failed for some
+ * elements due to absent nodes, otherwise any other error.
  */
 int FE_region_define_faces(struct FE_region *fe_region);
 
@@ -458,9 +452,18 @@ struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
 
 /**
  * Finds or creates a struct FE_basis in <fe_region> with the given basis_type.
+ * @return  Non-accessed basis.
  */
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	struct FE_region *fe_region, int *basis_type);
+
+/**
+ * Finds or creates a struct FE_basis in <fe_region> for constant interpolation
+ * of the given dimension.
+ * @return  Non-accessed basis.
+ */
+struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
+	struct FE_region *fe_region, int dimension);
 
 /**
  * Sets the owning cmiss_region for this fe_region. Can also clear it.

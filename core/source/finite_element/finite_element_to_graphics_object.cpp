@@ -13,8 +13,9 @@ The functions for creating graphical objects from finite elements.
 #include <cmath>
 #include <cstdlib>
 #include "opencmiss/zinc/differentialoperator.h"
-#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -1691,14 +1692,14 @@ int get_surface_element_segmentation(struct FE_element *element,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
 	enum FE_element_shape_type *shape_type_address)
 {
-	const FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	const FE_mesh *fe_mesh = element->getMesh();
 	if (!fe_mesh)
 		return 0;
 	DsLabelIndex elementIndex = get_FE_element_index(element);
 	const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(elementIndex);
 	if (!elementShapeFaces)
 		return 0;
-	FE_element_shape *element_shape = elementShapeFaces->getShape();
+	FE_element_shape *element_shape = elementShapeFaces->getElementShape();
 	int return_code = 0;
 	if (element_shape && (2 == get_FE_element_shape_dimension(element_shape)) && shape_type_address)
 	{

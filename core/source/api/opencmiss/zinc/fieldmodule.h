@@ -11,11 +11,11 @@
 #ifndef CMZN_FIELDMODULE_H__
 #define CMZN_FIELDMODULE_H__
 
-#include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
-#include "types/nodeid.h"
+#include "types/meshid.h"
+#include "types/nodesetid.h"
 #include "types/regionid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"
@@ -125,7 +125,8 @@ ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier
  *
  * @param fieldmodule  Handle to the field module owning the meshes to define
  * faces for.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, WARNING_PART_DONE if failed on some elements
+ * due to not having nodes set, otherwise any other error.
  */
 ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
 
@@ -269,6 +270,26 @@ ZINC_API cmzn_meshchanges_id cmzn_fieldmoduleevent_get_meshchanges(
  */
 ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 	cmzn_fieldmoduleevent_id event, cmzn_nodeset_id nodeset);
+
+/**
+ * Write the json file describing the fields in this fieldmodule, which can
+ * be used to store the current cmzn_field settings.
+ *
+ * @param fieldmodule  Handle to the fieldmodule.
+ * @return  c string containing the json description of fieldmodule, otherwise 0;
+ */
+ZINC_API char *cmzn_fieldmodule_write_description(cmzn_fieldmodule_id fieldmodule);
+
+/**
+ * Write the json file describing the fields in this fieldmodule. This may change
+ * the current fields' definition.
+ *
+ * @param fieldmodule  Handle to the fieldmodule.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_fieldmodule_read_description(
+	cmzn_fieldmodule_id fieldmodule, const char *description);
 
 #ifdef __cplusplus
 }

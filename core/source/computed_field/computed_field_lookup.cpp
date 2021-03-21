@@ -11,6 +11,7 @@ Defines fields for looking up values at given locations.
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <math.h>
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
@@ -261,10 +262,8 @@ int Computed_field_nodal_lookup::check_dependency()
 			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
-				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
-				int change = 0;
-				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->lookup_node, &change);
-				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
+				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->lookup_node)))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}
@@ -275,9 +274,8 @@ int Computed_field_nodal_lookup::check_dependency()
 
 } //namespace
 
-struct Computed_field *Computed_field_create_nodal_lookup(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct FE_node *lookup_node)
+cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field, cmzn_node_id lookup_node)
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
@@ -605,10 +603,8 @@ int Computed_field_quaternion_SLERP::check_dependency()
 			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
 				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
-				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
-				int change = 0;
-				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->nodal_lookup_node, &change);
-				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+				DsLabelsChangeLog *nodeChangeLog = fe_nodeset->getChangeLog();
+				if (nodeChangeLog->isIndexChange(get_FE_node_index(this->nodal_lookup_node)))
 					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}

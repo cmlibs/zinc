@@ -109,11 +109,11 @@ Controls how a texture is downsampled to fit texture hardware.
 }; /* enum Texture_resize_filter_mode */
 
 enum Texture_storage_type
-/*******************************************************************************
-LAST MODIFIED : 28 February 2002
+	/*******************************************************************************
+	LAST MODIFIED : 28 February 2002
 
-DESCRIPTION :
-==============================================================================*/
+	DESCRIPTION :
+	==============================================================================*/
 {
 	TEXTURE_LUMINANCE,
 	TEXTURE_LUMINANCE_ALPHA,
@@ -123,7 +123,8 @@ DESCRIPTION :
 	TEXTURE_BGR,
 	/* The last two types are special and are not user-selectable */
 	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER
+	TEXTURE_PBUFFER,
+	TEXTURE_STORAGE_TYPE_INVALID
 }; /* enum Texture_storage_type */
 
 enum Texture_wrap_mode
@@ -242,7 +243,24 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(Texture);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Texture);
 
-int Texture_copy_without_identifier(struct Texture *source, struct Texture *destination);
+/**
+ * Copy all the texture attributes that affect display: filter modes etc.
+ * Not image & resolution, nor file attributes.
+ * @return  Result code.
+ */
+int Texture_copy_display_attributes(const struct Texture *source, struct Texture *destination);
+
+/**
+ * Copy the texture image and pixel size information.
+ * All other attributes are untouched.
+ * @return  Result code.
+ */
+int Texture_copy_image(const struct Texture *source, struct Texture *destination);
+
+/**
+ * Copy all essential content of texture: image, display attributes, file attributes.
+ */
+int Texture_copy_without_identifier(const struct Texture *source, struct Texture *destination);
 
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage);
@@ -374,21 +392,25 @@ DESCRIPTION :
 Sets the texture filter: linear or nearest.
 ==============================================================================*/
 
+/**
+ * Establishes the texture image as <width>*<height>*<depth> with the storage and
+ * number_of_components specified in the <storage_type>, and
+ * <number_of_bytes_per_component> may currently be 1 or 2.
+ * If the image is already the correct size it is left intact but storage and
+ * source_name are updated.
+ * The optional <source_name> is recorded as the texture's imagefile_name.
+ * Crop and other parameters are cleared.
+ * If it is allocated to a new size, the image is cleared to values of 0 (black).
+ * Call Texture_set_image_block to add texel data.
+ */
 int Texture_allocate_image(struct Texture *texture,
 	int width, int height, int depth, enum Texture_storage_type storage,
 	int number_of_bytes_per_component, const char *source_name);
-/*******************************************************************************
-LAST MODIFIED : 15 March 2002
 
-DESCRIPTION :
-Establishes the texture image as <width>*<height>*<depth> with the storage and
-number_of_components specified in the <storage_type>, and
-<number_of_bytes_per_component> may currently be 1 or 2.
-The allocated space is cleared to values of 0 = black.
-Call Texture_set_image_block to add texel data.
-The optional <source_name> is recorded as the texture's imagefile_name.
-Crop and other parameters are cleared.
-==============================================================================*/
+/**
+ * @return  The storage type of the texture: RGBA etc.
+ */
+enum Texture_storage_type Texture_get_storage_type(struct Texture *texture);
 
 struct Cmgui_image *Texture_get_image(struct Texture *texture);
 /*******************************************************************************

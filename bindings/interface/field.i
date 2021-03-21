@@ -17,9 +17,14 @@
 %include "doublevaluesarraytypemap.i"
 %include "fieldoperators.i"
 %include "pyzincstringhandling.i"
+%typemap(in) (const char *stringValue) = (const char *name);
+%typemap(in) (const char *stringConstant) = (const char *name);
+%typemap(in) (const char *fileName) = (const char *name);
+%typemap(in) (const char *property) = (const char *name);
 
 %import "differentialoperator.i"
 %import "element.i"
+%import "fieldassignment.i"
 %import "fieldcache.i"
 %import "fieldmodule.i"
 %import "fieldsmoothing.i"
@@ -49,6 +54,7 @@
 #include "opencmiss/zinc/fieldtime.hpp"
 #include "opencmiss/zinc/fieldtrigonometry.hpp"
 #include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/fieldassignment.hpp"
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/fieldsmoothing.hpp"
 #include "opencmiss/zinc/streamimage.hpp"

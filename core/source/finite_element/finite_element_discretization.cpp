@@ -15,7 +15,9 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include <math.h>
 #include <stdlib.h>
 
+#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/status.h"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
@@ -853,7 +855,7 @@ comments for simplex and polygons shapes for more details.
 	((value1 < value2 + TOLERANCE) && (value1 > value2 - TOLERANCE))
 
 int FE_element_shape_get_indices_for_xi_location_in_cell_corners(
-	struct FE_element_shape *element_shape, int *number_in_xi,
+	struct FE_element_shape *element_shape, const int *number_in_xi,
 	const FE_value *xi, int *indices)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2005
@@ -867,22 +869,20 @@ Otherwise the routine returns 0.
 {
 	enum FE_element_shape_category element_shape_category;
 	int i, line_direction, linked_xi_directions[2],
-		number_of_polygon_sides, return_code;
+		number_of_polygon_sides, return_code = 1;
 
-	ENTER(FE_element_shape_get_indices_for_xi_location_in_cell_corners);
 	const int element_dimension = get_FE_element_shape_dimension(element_shape);
 	if ((0 < element_dimension) && number_in_xi && xi && indices)
 	{
-		return_code = 1;
 		/* check the number_in_xi */
 		for (i = 0; (i < element_dimension) && return_code ; i++)
 		{
-			if (0 > number_in_xi[i])
+			if (number_in_xi[i] < 0)
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
 					"Negative number_in_xi");
-				return_code = 0;
+				return 0;
 			}
 		}
 		/* extract useful information about the element_shape */
@@ -892,7 +892,7 @@ Otherwise the routine returns 0.
 			display_message(ERROR_MESSAGE,
 				"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
 				"Could not categorize element_shape");
-			return_code = 0;
+			return 0;
 		}
 		if (return_code)
 		{
@@ -904,10 +904,17 @@ Otherwise the routine returns 0.
 				{
 					for (i = 0 ; i < element_dimension ; i++)
 					{
-						indices[i] = (int)(number_in_xi[i] * xi[i] + 0.5);
-						if (number_in_xi[i] > 0 && (!WITHIN_TOLERANCE((FE_value)indices[i] / (FE_value)number_in_xi[i], xi[i])))
+						if (number_in_xi[i] == 0)
 						{
-							return_code = 0;
+							indices[i] = 0; // constant in xi direction, so any xi coordinate is fine
+						}
+						else
+						{
+							indices[i] = (int)(number_in_xi[i] * xi[i] + 0.5);
+							if (!WITHIN_TOLERANCE((FE_value)indices[i] / (FE_value)number_in_xi[i], xi[i]))
+							{
+								return 0;
+							}
 						}
 					}
 				} break;
@@ -921,7 +928,7 @@ Otherwise the routine returns 0.
 					display_message(ERROR_MESSAGE,
 						"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
 						"Unknown element shape");
-					return_code = 0;
+					return 0;
 				} break;
 			}
 		}
@@ -930,12 +937,10 @@ Otherwise the routine returns 0.
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  Invalid argument(s)");
-		return_code = 0;
+		return 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_shape_get_indices_for_xi_location_in_cell_corners */
+	return 1;
+}
 
 #define XI_POINTS_REALLOCATE_SIZE 50
 

@@ -13,13 +13,14 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <cstdio>
-	#include "opencmiss/zinc/field.h"
-	#include "opencmiss/zinc/region.h"
-	#include "computed_field/computed_field.h"
-	#include "computed_field/computed_field_composite.h"
-	#include "computed_field/computed_field_finite_element.h"
-	#include "general/mystring.h"
-	#include "general/debug.h"
+#include "opencmiss/zinc/field.h"
+#include "opencmiss/zinc/region.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/fieldassignmentprivate.hpp"
+#include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "general/mystring.h"
+#include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
 #include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"
@@ -43,16 +44,18 @@ cmzn_optimisation::cmzn_optimisation(cmzn_fieldmodule_id field_module) :
 
 cmzn_optimisation::~cmzn_optimisation()
 {
-	IndependentAndConditionalFieldsList::iterator iter1;
-	for (iter1 = independentFields.begin(); iter1 != independentFields.end(); ++iter1)
+	for (auto iter = this->independentFields.begin(); iter != this->independentFields.end(); ++iter)
 	{
-		cmzn_field_destroy(&(iter1->independentField));
-		cmzn_field_destroy(&(iter1->conditionalField));
+		cmzn_field_destroy(&(iter->independentField));
+		cmzn_field_destroy(&(iter->conditionalField));
 	}
-	FieldList::iterator iter;
-	for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
+	for (auto iter = this->objectiveFields.begin(); iter != this->objectiveFields.end(); ++iter)
 	{
 		cmzn_field_destroy(&(*iter));
+	}
+	for (auto iter = this->fieldassignments.begin(); iter != this->fieldassignments.end(); ++iter)
+	{
+		cmzn_fieldassignment_destroy(&(*iter));
 	}
 	cmzn_fieldmodule_destroy(&fieldModule);
 }
@@ -91,6 +94,18 @@ int cmzn_optimisation::setConditionalField(cmzn_field_id independentField,
 			}
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_optimisation::addFieldassignment(cmzn_fieldassignment *fieldassignment)
+{
+	if ((!fieldassignment) || (Computed_field_get_region(fieldassignment->getTargetField())
+		!= (cmzn_fieldmodule_get_region_internal(this->fieldModule))))
+	{
+		display_message(ERROR_MESSAGE, "Optimisation addFieldassignment.  Missing or invalid field assignment for this optimisation");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	this->fieldassignments.push_back(fieldassignment->access());
+	return CMZN_OK;
 }
 
 cmzn_field_id cmzn_optimisation::getFirstIndependentField() const
@@ -227,17 +242,17 @@ int cmzn_optimisation::runOptimisation()
 	// check required attributes are set
 	if (method == CMZN_OPTIMISATION_METHOD_INVALID)
 	{
-		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Optimisation method invalid or not set.");
+		display_message(ERROR_MESSAGE, "Optimisation optimise.  Optimisation method invalid or not set.");
 		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	if (independentFields.size() < 1)
 	{
-		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one independent field.");
+		display_message(ERROR_MESSAGE, "Optimisation optimise.  Must set at least one independent field.");
 		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	if (objectiveFields.size() < 1)
 	{
-		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one objective field.");
+		display_message(ERROR_MESSAGE, "Optimisation optimise.  Must set at least one objective field.");
 		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	if (return_code == CMZN_OK)
@@ -285,6 +300,16 @@ int cmzn_optimisation_set_conditional_field(
 {
 	if (optimisation)
 		return optimisation->setConditionalField(independent_field, conditional_field);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_optimisation_add_fieldassignment(
+	cmzn_optimisation_id optimisation, cmzn_fieldassignment_id fieldassignment)
+{
+	if (optimisation)
+	{
+		return optimisation->addFieldassignment(fieldassignment);
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 

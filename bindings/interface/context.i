@@ -13,6 +13,10 @@
 
 %module(package="opencmiss.zinc") context
 
+%include "pyzincstringhandling.i"
+
+%typemap(in) (const char *contextName) = (const char *name);
+
 %import "font.i"
 %import "glyph.i"
 %import "light.i"
@@ -21,6 +25,7 @@
 %import "region.i"
 %import "scenefilter.i"
 %import "sceneviewer.i"
+%import "shader.i"
 %import "spectrum.i"
 %import "tessellation.i"
 %import "timekeeper.i"
@@ -43,6 +48,7 @@
 #include "opencmiss/zinc/region.hpp"
 #include "opencmiss/zinc/scenefilter.hpp"
 #include "opencmiss/zinc/sceneviewer.hpp"
+#include "opencmiss/zinc/shader.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 #include "opencmiss/zinc/tessellation.hpp"
 #include "opencmiss/zinc/timekeeper.hpp"

@@ -16,8 +16,13 @@ cannot reside in finite element modules.
 #include <math.h>
 
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldconstant.h"
+#include "opencmiss/zinc/fieldlogicaloperators.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/fieldtime.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -326,77 +331,110 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 	return (return_code);
 }
 
-struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
-	cmzn_nodeset *nodeset, struct Multi_range *node_ranges,
-	cmzn_field *conditional_field, FE_value time)
+cmzn_field_id cmzn_nodeset_create_conditional_field_from_identifier_ranges(
+	cmzn_nodeset_id nodeset, struct Multi_range *identifierRanges)
 {
-	struct LIST(FE_node) *node_list = 0;
-	if (nodeset)
+	if (!(nodeset && identifierRanges))
 	{
-		FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
-		node_list = fe_nodeset->createRelatedNodeList();
-		if (0 != node_list)
+		display_message(ERROR_MESSAGE, "cmzn_nodeset_create_conditional_field_from_identifier_ranges.  Invalid argument(s)");
+		return 0;
+	}
+	cmzn_fieldmodule *fieldmodule = cmzn_nodeset_get_fieldmodule(nodeset);
+	cmzn_fieldmodule_begin_change(fieldmodule);
+	cmzn_field *conditionalField = cmzn_fieldmodule_create_field_node_group(fieldmodule, nodeset);
+	cmzn_field_node_group *nodeGroupField = cmzn_field_cast_node_group(conditionalField);
+	Computed_field_node_group *nodeGroup = Computed_field_node_group_core_cast(nodeGroupField);
+	if (nodeGroup)
+	{
+		const int number_of_ranges = Multi_range_get_number_of_ranges(identifierRanges);
+		for (int i = 0; i < number_of_ranges; ++i)
 		{
-			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(
-				FE_region_get_cmzn_region(fe_nodeset->get_FE_region()));
-			cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
-			cmzn_fieldcache_set_time(fieldcache, time);
-			int nodesetSize = cmzn_nodeset_get_size(nodeset);
-			int nodes_in_ranges = node_ranges ? Multi_range_get_total_number_in_ranges(node_ranges) : 0;
-			if (node_ranges && ((nodes_in_ranges*2) < nodesetSize))
+			int start, stop;
+			Multi_range_get_range(identifierRanges, i, &start, &stop);
+			if (CMZN_OK != nodeGroup->addObjectsInIdentifierRange(start, stop))
 			{
-				int number_of_ranges = Multi_range_get_number_of_ranges(node_ranges);
-				for (int i = 0 ; i < number_of_ranges ; i++)
+				cmzn_field_destroy(&conditionalField);
+				break;
+			}
+		}
+	}
+	else
+		cmzn_field_destroy(&conditionalField);
+	cmzn_field_node_group_destroy(&nodeGroupField);
+	cmzn_fieldmodule_end_change(fieldmodule);
+	cmzn_fieldmodule_destroy(&fieldmodule);
+	if (!conditionalField)
+		display_message(ERROR_MESSAGE, "cmzn_nodeset_create_conditional_field_from_identifier_ranges.  Failed");
+	return conditionalField;
+}
+
+cmzn_field_id cmzn_nodeset_create_conditional_field_from_ranges_and_selection(
+	cmzn_nodeset_id nodeset, struct Multi_range *identifierRanges,
+	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
+	cmzn_field_id conditionalField3, FE_value time)
+{
+	if (!nodeset)
+		return 0;
+	bool time_varying = false;
+	cmzn_field *returnField = 0;
+	bool error = false;
+	cmzn_fieldmodule *fieldmodule = cmzn_nodeset_get_fieldmodule(nodeset);
+	cmzn_fieldmodule_begin_change(fieldmodule);
+	if (identifierRanges && (Multi_range_get_number_of_ranges(identifierRanges) > 0)) // empty ranges mean not specified
+	{
+		returnField = cmzn_nodeset_create_conditional_field_from_identifier_ranges(nodeset, identifierRanges);
+		if (!returnField)
+			error = true;
+	}
+	cmzn_field *conditionalFields[3] = { conditionalField1, conditionalField2, conditionalField3 };
+	for (int i = 0; i < 3; ++i)
+	{
+		if (conditionalFields[i])
+		{
+			if (Computed_field_has_multiple_times(conditionalFields[i]))
+				time_varying = true;
+			if (returnField)
+			{
+				cmzn_field *tmpField = returnField;
+				returnField = cmzn_fieldmodule_create_field_and(fieldmodule, tmpField, conditionalFields[i]);
+				cmzn_field_destroy(&tmpField);
+				if (!returnField)
 				{
-					int start, stop;
-					Multi_range_get_range(node_ranges, i, &start, &stop);
-					for (int node_number = start ; node_number <= stop ; node_number++)
-					{
-						cmzn_node *node = cmzn_nodeset_find_node_by_identifier(nodeset, node_number);
-						if (node)
-						{
-							bool selected = true;
-							if (conditional_field)
-							{
-								cmzn_fieldcache_set_node(fieldcache, node);
-								if (!cmzn_field_evaluate_boolean(conditional_field, fieldcache))
-									selected = false;
-							}
-							if (selected)
-								ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
-							cmzn_node_destroy(&node);
-						}
-					}
+					error = true;
+					break;
 				}
 			}
 			else
-			{
-				cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
-				cmzn_node *node;
-				while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
-				{
-					bool selected = true;
-					if (node_ranges && !FE_node_is_in_Multi_range(node, node_ranges))
-						selected = false;
-					else if (conditional_field)
-					{
-						cmzn_fieldcache_set_node(fieldcache, node);
-						if (!cmzn_field_evaluate_boolean(conditional_field, fieldcache))
-							selected = false;
-					}
-					if (selected)
-						ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
-				}
-				cmzn_nodeiterator_destroy(&iter);
-			}
-			cmzn_fieldcache_destroy(&fieldcache);
-			cmzn_fieldmodule_destroy(&fieldmodule);
+				returnField = cmzn_field_access(conditionalFields[i]);
+		}
+	}
+	if (returnField)
+	{
+		if (time_varying)
+		{
+			cmzn_field *tmpField = returnField;
+			cmzn_field *timeField = cmzn_fieldmodule_create_field_constant(fieldmodule, 1, &time);
+			returnField = cmzn_fieldmodule_create_field_time_lookup(fieldmodule, tmpField, timeField);
+			cmzn_field_destroy(&tmpField);
+			if (!returnField)
+				error = true;
+			cmzn_field_destroy(&timeField);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_nodeset_create_node_list_ranges_conditional.  Invalid argument(s)");
+		// create an always true conditional field
+		const double one = 1;
+		returnField = cmzn_fieldmodule_create_field_constant(fieldmodule, 1, &one);
+		if (!returnField)
+			error = true;
 	}
-	return (node_list);
+	cmzn_fieldmodule_end_change(fieldmodule);
+	cmzn_fieldmodule_destroy(&fieldmodule);
+	if (error)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_nodeset_create_conditional_field_from_ranges_and_selection.  Failed");
+		cmzn_field_destroy(&returnField);
+	}
+	return returnField;
 }

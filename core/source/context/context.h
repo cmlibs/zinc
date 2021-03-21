@@ -18,6 +18,8 @@
 #include "general/message_log.hpp"
 #include "general/manager.h"
 
+struct cmzn_graphics_module;
+
 struct cmzn_context
 {
 	const char *id;
@@ -27,7 +29,6 @@ struct cmzn_context
 	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
 	cmzn_timekeepermodule *timekeepermodule;
-	struct MANAGER(Curve) *curve_manager;
 
 private:
 	std::list<cmzn_region *> allRegions; // list of regions created for context, not accessed
@@ -93,14 +94,5 @@ struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_sel
  */
 struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 	cmzn_context *context);
-
-/***************************************************************************//**
- * Return the default curve manager in context.
- *
- * @param context  Pointer to a cmiss_context object.
- * @return  the default curve_manager if successfully, otherwise NULL.
- */
-struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(
-	cmzn_context_id context);
 
 #endif /* !defined (CONTEXT_H) */

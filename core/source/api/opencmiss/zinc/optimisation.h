@@ -18,6 +18,7 @@
  ------------
  */
 
+#include "types/fieldassignmentid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
 #include "types/optimisationid.h"
@@ -92,6 +93,31 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_conditional_field(
 ZINC_API int cmzn_optimisation_set_conditional_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id independent_field,
 	cmzn_field_id conditional_field);
+
+/**
+ * Add a field assignment object to the optimisation, to be applied before
+ * objective evaluation with each set of trial dependent field DOFs, and at the
+ * end of optimisation. Multiple field assignments are applied in the order
+ * they are added.
+ * The main use is to partially apply the effect of the dependent field on
+ * the DOFs of another field; an example is optimising a constant offset over a
+ * subset of nodes, where DOFs at those nodes contribute to the objective.
+ * Note if the source field of the assignment is a function of the target field
+ * then target DOFs will drift away. In some cases this is solved by making the
+ * source field a function of a copy of the target field with its DOFs prior to
+ * the optimise call. However to assign multiple versions and derivatives in the
+ * target field requires the source field to be a function of it; the solution
+ * is to add two field assignments, the first resets target DOFs to their
+ * initial values, the second assigns them to the source values.
+ *
+ * @param optimisation  The optimisation object to modify.
+ * @param fieldassignment  Field assignment to apply. Must be for a field in
+ * the same fieldmodule as this optimisation object.
+ * @return  Result OK if field successfully added, any other value if
+ * failed or already added.
+ */
+ZINC_API int cmzn_optimisation_add_fieldassignment(
+	cmzn_optimisation_id optimisation, cmzn_fieldassignment_id fieldassignment);
 
 /**
  * Get the current optimisation method for the given optimisation object.

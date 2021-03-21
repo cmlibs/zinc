@@ -32,7 +32,7 @@ std::string Message_type_to_string(Message_type type)
 	return 0;
 }
 
-enum cmzn_logger_message_type convetMessageTypeToExternalType(enum Message_type type)
+enum cmzn_logger_message_type convertMessageTypeToExternalType(enum Message_type type)
 {
 	switch (type)
 	{
@@ -57,16 +57,15 @@ enum cmzn_logger_message_type convetMessageTypeToExternalType(enum Message_type 
 
 void MessageLog::addEntry(cmzn_logger_message_type type, const char *message)
 {
-	std::ostringstream ss;
-	ss << std::string(message);
+	std::string messageString(message);
 	if (logs_deque.size() >= (unsigned int)maximum_entries)
 		logs_deque.pop_front();
-	logs_deque.push_back(std::make_pair(type, ss.str()));
+	logs_deque.push_back(std::make_pair(type, messageString));
 }
 
 int MessageLog::getNumberOfMessages()
 {
-	return logs_deque.size();
+	return static_cast<int>(logs_deque.size());
 }
 
 enum cmzn_logger_message_type MessageLog::getMessageTypeAtIndex(int index)
@@ -107,7 +106,7 @@ int MessageLog::setMaximumNumberOfMessages(int number)
 		maximum_entries = number;
 		if (logs_deque.size() > (unsigned int)maximum_entries)
 		{
-			int differences = logs_deque.size() - maximum_entries;
+			const size_t differences = logs_deque.size() - maximum_entries;
 			logs_deque.erase(logs_deque.begin(), logs_deque.begin() + differences);
 		}
 		return CMZN_OK;
@@ -137,12 +136,12 @@ static int log_message(const char *message, Message_type type, void *logger_void
 		cmzn_logger *logger = (cmzn_logger *)logger_void;
 		if (logger)
 		{
-			logger->addEntry(convetMessageTypeToExternalType(type), message);
+			logger->addEntry(convertMessageTypeToExternalType(type), message);
 			if (0 < logger->notifier_list->size())
 			{
 				cmzn_loggerevent_id event = cmzn_loggerevent::create(logger);
 				event->setMessage(message);
-				event->setMessageType(convetMessageTypeToExternalType(type));
+				event->setMessageType(convertMessageTypeToExternalType(type));
 				event->setChangeFlags(CMZN_LOGGER_CHANGE_FLAG_NEW_MESSAGE);
 				for (cmzn_loggernotifier_list::iterator iter = logger->notifier_list->begin();
 					iter != logger->notifier_list->end(); ++iter)

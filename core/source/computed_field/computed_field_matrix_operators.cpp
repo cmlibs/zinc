@@ -115,6 +115,11 @@ private:
 		return (computed_field_determinant_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_DETERMINANT;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		return (0 != dynamic_cast<Computed_field_determinant*>(other_field));
@@ -256,6 +261,11 @@ private:
 		return(computed_field_eigenvalues_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EIGENVALUES;
+	}
+
 	int compare(Computed_field_core* other_field)
 	{
 		if (dynamic_cast<Computed_field_eigenvalues*>(other_field))
@@ -376,6 +386,25 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_eigenvalues::get_command_string */
 
+} //namespace
+
+
+cmzn_field_eigenvalues_id cmzn_field_cast_eigenvalues(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_eigenvalues*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_eigenvalues_id>(field));
+	}
+	return 0;
+}
+
+int cmzn_field_eigenvalues_destroy(
+	cmzn_field_eigenvalues_id *eigenvalues_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(eigenvalues_field_address));
+}
+
 int Computed_field_is_type_eigenvalues(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -408,8 +437,6 @@ Returns true if <field> has the appropriate static type string.
 
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues */
-
-} //namespace
 
 int Computed_field_is_type_eigenvalues_conditional(struct Computed_field *field,
 	void *dummy_void)
@@ -498,6 +525,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_eigenvectors_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_EIGENVECTORS;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -713,6 +745,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_matrix_invert_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MATRIX_INVERT;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -933,6 +970,11 @@ private:
 		return(computed_field_matrix_multiply_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MATRIX_MULTIPLY;
+	}
+
 	int compare(Computed_field_core* other_field);
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -1109,6 +1151,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
+int cmzn_field_matrix_multiply_get_number_of_rows(cmzn_field_id field)
+{
+	int number_of_rows = 0;
+	if (field && field->core)
+	{
+		Computed_field_matrix_multiply *fieldMatrixMultiply = static_cast<Computed_field_matrix_multiply*>(
+			field->core);
+		number_of_rows = fieldMatrixMultiply->number_of_rows;
+	}
+	return number_of_rows;
+}
+
 Computed_field *cmzn_fieldmodule_create_field_matrix_multiply(
 	struct cmzn_fieldmodule *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
@@ -1206,6 +1260,11 @@ private:
 	const char *get_type_string()
 	{
 		return(computed_field_projection_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_PROJECTION;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -1519,6 +1578,11 @@ private:
 		return(computed_field_transpose_type_string);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_TRANSPOSE;
+	}
+
 	int compare(Computed_field_core* other_field);
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -1676,6 +1740,19 @@ Returns allocated command string for reproducing field. Includes type.
 } /* Computed_field_transpose::get_command_string */
 
 } //namespace
+
+int cmzn_field_transpose_get_source_number_of_rows(cmzn_field_id field)
+{
+	int source_number_of_rows = 0;
+	if (field && field->core)
+	{
+		Computed_field_transpose *fieldTranspose = static_cast<Computed_field_transpose*>(
+			field->core);
+		source_number_of_rows = fieldTranspose->source_number_of_rows;
+	}
+	return source_number_of_rows;
+}
+
 
 Computed_field *cmzn_fieldmodule_create_field_transpose(
 	struct cmzn_fieldmodule *field_module,

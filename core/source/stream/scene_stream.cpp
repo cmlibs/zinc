@@ -19,6 +19,8 @@
 #include "description_io/scene_json_import.hpp"
 #include "stream/scene_stream.hpp"
 
+
+
 int cmzn_scene_write(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene)
 {
@@ -38,6 +40,27 @@ int cmzn_scene_write(cmzn_scene_id scene,
 			cmzn_scene_id scene = streaminformation_scene->getScene();
 			if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 			{
+				const int size = static_cast<int>(streams_list.size());
+				char **resource_names = new char *[size];
+				int current_index = 0;
+				for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
+				{
+					stream_properties = *iter;
+					cmzn_streamresource_id stream = stream_properties->getResource();
+
+					cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
+					if (file_resource)
+					{
+						resource_names[current_index] = duplicate_string(file_resource->getFileName());
+					}
+					else
+					{
+						char temp_string[50];
+						sprintf(temp_string, "memory_resource_%d", current_index + 1);
+						resource_names[current_index] = duplicate_string(temp_string);
+					}
+					current_index++;
+				}
 				cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
 				return_code = Scene_render_threejs(scene,
 					scenefilter, /*file_prefix*/"zinc_scene_export",
@@ -48,9 +71,15 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					&number_of_entries, &output_string,
 					streaminformation_scene->getOutputTimeDependentVertices(),
 					streaminformation_scene->getOutputTimeDependentColours(),
-					streaminformation_scene->getOutputTimeDependentNormals()
-				);
+					streaminformation_scene->getOutputTimeDependentNormals(),
+					size,	resource_names);
 				cmzn_scenefilter_destroy(&scenefilter);
+				for (int i = 0; i < size; i++)
+				{
+					char *temp_name = resource_names[i];
+					DEALLOCATE(temp_name);
+				}
+				delete[] resource_names;
 			}
 			else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
 			{
@@ -91,7 +120,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 					{
 						char *buffer_out = duplicate_string(output_string[i].c_str());
-						unsigned int buffer_size = strlen(buffer_out);
+						unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
 						memory_resource->setBuffer(buffer_out, buffer_size);
 						cmzn_streamresource_memory_destroy(&memory_resource);
 						i++;

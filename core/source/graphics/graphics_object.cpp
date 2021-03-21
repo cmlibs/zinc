@@ -324,55 +324,49 @@ conditional_function. \
 } /* GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) */
 
 static int GT_object_mark_vertex_array_primitives_changes(struct GT_object *object,
-	GT_object_primitive_object_name_conditional_function *conditional_function,
-	void *user_data)
+	DsLabelsChangeLog *changeLog)
 {
-	if (object)
+	switch (object->object_type)
 	{
-		switch (object->object_type)
+		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
 		{
-			case g_POLYLINE_VERTEX_BUFFERS:
-			case g_SURFACE_VERTEX_BUFFERS:
-			case g_GLYPH_SET_VERTEX_BUFFERS:
+			if (object->vertex_array)
 			{
-				if (object->vertex_array)
+				int *value_buffer = 0;
+				unsigned int values_per_vertex = 0, vertex_count = 0;
+				if (object->vertex_array->get_integer_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, &value_buffer, &values_per_vertex,
+					&vertex_count) &&  value_buffer && vertex_count)
 				{
-					int *value_buffer = 0;
-					unsigned int values_per_vertex = 0, vertex_count = 0;
-					if (object->vertex_array->get_integer_vertex_buffer(
-						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, &value_buffer, &values_per_vertex,
-						&vertex_count) &&  value_buffer && vertex_count)
+					int object_name = 0;
+					int modified_required = 1;
+					for (unsigned int i = 0; i < vertex_count; i++)
 					{
-						int object_name = 0;
-						int modified_required = 1;
-						for (unsigned int i = 0; i < vertex_count; i++)
+						object_name = value_buffer[i];
+						if (changeLog->isIndexChange(object_name))
 						{
-							object_name = value_buffer[i];
-							if ((!conditional_function) || (conditional_function)(object_name,
-								user_data))
-							{
-								object->vertex_array->replace_integer_vertex_buffer_at_position(
-									GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED, i, 1, 1,
-									&modified_required);
-								int invalid_id = -1;
-								/* setting object id here to -1, marking it as invalid, removed object
-								 * will not be drawn and modified object will be modified and given
-								 * correctly during object compilation.*/
-								object->vertex_array->replace_integer_vertex_buffer_at_position(
-									GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, i, 1, 1,
-									&invalid_id);
-							}
+							object->vertex_array->replace_integer_vertex_buffer_at_position(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED, i, 1, 1,
+								&modified_required);
+							int invalid_id = -1;
+							/* setting object id here to -1, marking it as invalid, removed object
+								* will not be drawn and modified object will be modified and given
+								* correctly during object compilation.*/
+							object->vertex_array->replace_integer_vertex_buffer_at_position(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, i, 1, 1,
+								&invalid_id);
 						}
 					}
 				}
-			} break;
-			default:
-			{
-			} break;
-		}
-		return 1;
+			}
+		} break;
+		default:
+		{
+		} break;
 	}
-	return 0;
+	return 1;
 }
 
 /**
@@ -2147,11 +2141,10 @@ struct GT_glyphset_vertex_buffers *GT_object_get_GT_glyphset_vertex_buffers(
 	return 0;
 }
 
-int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_object,
-	GT_object_primitive_object_name_conditional_function *conditional_function,
-	void *user_data)
+int GT_object_invalidate_selected_primitives(struct GT_object *graphics_object,
+	DsLabelsChangeLog *changeLog)
 {
-	if (!(graphics_object && conditional_function))
+	if (!(graphics_object && changeLog))
 		return 0;
 	switch (graphics_object->object_type)
 	{
@@ -2162,13 +2155,12 @@ int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_objec
 		case g_SURFACE_VERTEX_BUFFERS:
 		case g_GLYPH_SET_VERTEX_BUFFERS:
 			GT_object_destroy_primitives(graphics_object);
-			GT_object_mark_vertex_array_primitives_changes(graphics_object,
-				conditional_function, user_data);
+			GT_object_mark_vertex_array_primitives_changes(graphics_object, changeLog);
 			GT_object_changed(graphics_object);
 			return 1;
 			break;
 		default:
-			display_message(ERROR_MESSAGE, "GT_object_conditional_invalidate_primitives.  Unknown object type");
+			display_message(ERROR_MESSAGE, "GT_object_invalidate_selected_primitives.  Unknown object type");
 			break;
 	}
 	return 0;

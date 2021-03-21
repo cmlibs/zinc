@@ -25,8 +25,6 @@
 #include "general/debug.h"
 #include "region/cmiss_region.h"
 #include "general/message.h"
-#include "mesh/cmiss_element_private.hpp"
-#include "mesh/cmiss_node_private.hpp"
 #include <map>
 #include <iterator>
 
@@ -328,12 +326,13 @@ public:
 
 		int addObject(cmzn_element *object);
 
-		int addElementIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
-
-		int removeObject(cmzn_element *object);
+		// add object with identifier ranges from first to last, inclusive
+		int addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
 
 		/** add any elements from master mesh for which conditional_field is true */
 		int addElementsConditional(cmzn_field_id conditional_field);
+
+		int removeObject(cmzn_element *object);
 
 		/** remove all elements for which conditional_field is true */
 		int removeElementsConditional(cmzn_field_id conditional_field);
@@ -373,7 +372,7 @@ public:
 		virtual int isIdentifierInList(int identifier)
 		{
 			const DsLabelIndex index = this->fe_mesh->findIndexByIdentifier(identifier);
-			return this->containsIndex(index);
+			return this->labelsGroup->hasIndex(index);
 		}
 
 		virtual int containsIndex(DsLabelIndex index)
@@ -435,20 +434,9 @@ public:
 
 		int compare(Computed_field_core* other_field)
 		{
-			int return_code;
-
-			ENTER(Computed_field_stl_object_group::compare);
 			if (field && dynamic_cast<Computed_field_element_group*>(other_field))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-			LEAVE;
-
-			return (return_code);
+				return 1;
+			return 0;
 		}
 
 		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -493,93 +481,93 @@ public:
 	class Computed_field_node_group : public Computed_field_subobject_group
 	{
 	private:
-
-		cmzn_nodeset_id master_nodeset;
-		struct LIST(cmzn_node) *object_list;
+		FE_nodeset *fe_nodeset;
+		DsLabelsGroup *labelsGroup;
 		cmzn_field_subobject_group_change_detail change_detail;
 
-	public:
-
-		Computed_field_node_group(cmzn_nodeset_id nodeset) :
+		Computed_field_node_group(FE_nodeset *fe_nodeset_in, DsLabelsGroup *labelsGroupIn) :
 			Computed_field_subobject_group(),
-			// don't want node_groups based on group so get master:
-			master_nodeset(cmzn_nodeset_get_master_nodeset(nodeset)),
-			object_list(cmzn_nodeset_create_node_list_internal(master_nodeset))
+			fe_nodeset(fe_nodeset_in->access()),
+			labelsGroup(cmzn::Access(labelsGroupIn))
 		{
 		}
 
 		~Computed_field_node_group()
 		{
-			DESTROY(LIST(cmzn_node))(&object_list);
-			cmzn_nodeset_destroy(&master_nodeset);
+			cmzn::Deaccess(this->labelsGroup);
+			FE_nodeset::deaccess(this->fe_nodeset);
 		}
 
-		cmzn_nodeset_id getMasterNodeset()
+	public:
+
+		static Computed_field_node_group *create(FE_nodeset *fe_nodeset_in);
+
+		/** @return  Non-accessed FE_nodeset */
+		FE_nodeset *get_fe_nodeset() const
 		{
-			return master_nodeset;
+			return this->fe_nodeset;
+		}
+
+		DsLabelsGroup& getLabelsGroup() const
+		{
+			return *(this->labelsGroup);
 		}
 
 		int addObject(cmzn_node *object);
 
-		int removeObject(cmzn_node *object);
+		int addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
 
 		/** add any nodes from master nodeset for which conditional_field is true */
 		int addNodesConditional(cmzn_field_id conditional_field);
 
+		int removeObject(cmzn_node *object);
+
 		/** remove all nodes for which conditional_field is true */
 		int removeNodesConditional(cmzn_field_id conditional_field);
 
-		int removeNodesInList(LIST(cmzn_node) *removeNodeList);
+		int removeNodesInLabelsGroup(DsLabelsGroup &removeNodeLabelsGroup);
 
-		virtual int clear()
-		{
-			if (NUMBER_IN_LIST(cmzn_node)(object_list))
-			{
-				REMOVE_ALL_OBJECTS_FROM_LIST(cmzn_node)(object_list);
-				change_detail.changeRemove();
-				update();
-			}
-			return CMZN_OK;
-		};
+		virtual int clear();
 
 		bool containsObject(cmzn_node *object)
 		{
-			return (0 != IS_OBJECT_IN_LIST(cmzn_node)(object, object_list));
+			return this->isNodeCompatible(object) &&
+				this->labelsGroup->hasIndex(get_FE_node_index(object));
 		};
 
-		cmzn_nodeiterator_id createIterator()
+		cmzn_nodeiterator_id createNodeiterator()
 		{
-			return CREATE_LIST_ITERATOR(cmzn_node)(object_list);
+			return this->fe_nodeset->createNodeiterator(this->labelsGroup);
 		}
 
 		/** @return  non-accessed node with that identifier, or 0 if none */
 		inline cmzn_node_id findNodeByIdentifier(int identifier)
 		{
-			return FIND_BY_IDENTIFIER_IN_LIST(cmzn_node,cm_node_identifier)(identifier, object_list);
+			const DsLabelIndex index = this->fe_nodeset->findIndexByIdentifier(identifier);
+			if (this->containsIndex(index))
+				return this->fe_nodeset->getNode(index);
+			return 0;
 		}
 
 		int getSize()
 		{
-			return NUMBER_IN_LIST(cmzn_node)(object_list);
+			return this->labelsGroup->getSize();
 		}
 
 		virtual bool isEmpty() const
 		{
-			if (NUMBER_IN_LIST(cmzn_node)(object_list))
-				return false;
-			return true;
+			return this->labelsGroup->getSize() == 0;
 		}
 
 		virtual int isIdentifierInList(int identifier)
 		{
-			return (0 != findNodeByIdentifier(identifier));
+			const DsLabelIndex index = this->fe_nodeset->findIndexByIdentifier(identifier);
+			return this->labelsGroup->hasIndex(index);
 		}
-
 
 		virtual int containsIndex(DsLabelIndex index)
 		{
-			USE_PARAMETER(index);
-			return 0; // GRC unimplemented until nodes converted to use labels
+			return this->labelsGroup->hasIndex(index);
 		}
 
 		virtual cmzn_field_change_detail *extract_change_detail()
@@ -597,10 +585,7 @@ public:
 			return &change_detail;
 		}
 
-		void write_btree_statistics() const
-		{
-			FE_node_list_write_btree_statistics(object_list);
-		}
+		void write_btree_statistics() const;
 
 		/** ensure element's nodes are in node group */
 		int addElementNodes(cmzn_element_id element);
@@ -608,48 +593,26 @@ public:
 		/** ensure element's nodes are not in node group */
 		int removeElementNodes(cmzn_element_id element);
 
-		LIST(cmzn_node) *createRelatedNodeList() const
+		DsLabelsGroup *createRelatedNodeLabelsGroup()
 		{
-			return CREATE_RELATED_LIST(cmzn_node)(this->object_list);
+			return this->fe_nodeset->createLabelsGroup();
 		}
 
 	private:
 
 		Computed_field_core* copy()
 		{
-			return new Computed_field_node_group(master_nodeset);
+			return Computed_field_node_group::create(this->fe_nodeset);
 		};
 
 		int compare(Computed_field_core* other_field)
 		{
-			int return_code;
-
-			ENTER(Computed_field_stl_object_group::compare);
 			if (field && dynamic_cast<Computed_field_node_group*>(other_field))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-			LEAVE;
-
-			return (return_code);
+				return 1;
+			return 0;
 		}
 
-		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
-		{
-			Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
-			if (node_location)
-			{
-				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-				cmzn_node_id node = node_location->get_node();
-				valueCache.values[0] = this->containsObject(node) ? 1 : 0;
-				return 1;
-			}
-			return 0;
-		};
+		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 		int list()
 		{
@@ -670,14 +633,14 @@ public:
 
 		bool isNodeCompatible(cmzn_node_id node)
 		{
-			return (FE_node_get_FE_nodeset(node) == cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset));
+			return this->fe_nodeset->containsNode(node);
 		}
 
 		bool isParentElementCompatible(cmzn_element_id element)
 		{
-			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
-			FE_region *element_fe_region = FE_element_get_FE_region(element);
-			return (element_fe_region == fe_region);
+			if ((element) && element->getMesh())
+				return (this->fe_nodeset->get_FE_region() == element->getMesh()->get_FE_region());
+			return false;
 		}
 
 		/**
@@ -685,6 +648,11 @@ public:
 		 * @return  Non-empty node group, or 0 if not a group or empty.
 		 */
 		Computed_field_node_group *getConditionalNodeGroup(cmzn_field *conditionalField, bool &isEmptyGroup) const;
+
+		void invalidateIterators()
+		{
+			this->labelsGroup->invalidateLabelIterators();
+		}
 
 	};
 

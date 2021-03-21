@@ -14,7 +14,7 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
-#include "opencmiss/zinc/fieldfiniteelement.h"
+#include "opencmiss/zinc/types/fieldfiniteelementid.h"
 #include "computed_field/computed_field.h"
 #include "general/enumerator.h"
 #include "general/list.h"
@@ -63,17 +63,6 @@ int Computed_field_get_type_finite_element(struct Computed_field *field,
  */
 int Computed_field_wraps_fe_field(struct Computed_field *field,
 	void *fe_field_void);
-
-int Computed_field_contains_changed_FE_field(
-	struct Computed_field *field, void *fe_field_change_log_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns true if <field> directly contains an FE_field and it is listed as
-changed, added or removed in <fe_field_change_log>.
-<fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
-==============================================================================*/
 
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field);
@@ -141,16 +130,13 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 ==============================================================================*/
 
+/**
+ * Returns true if field is a 1 component integer finite element field which is
+ * defined grid-based in element.
+ * Used for choosing field suitable for identifying grid points.
+ */
 int Computed_field_is_scalar_integer_grid_in_element(
-	struct Computed_field *field,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
-is defined in <element> AND is grid-based.
-Used for choosing field suitable for identifying grid points.
-==============================================================================*/
+	cmzn_field_id field, void *element_void);
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
 	void *dummy_void);
@@ -175,5 +161,26 @@ struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *computed_field, struct FE_node *node);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
+
+enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field);
+
+/** If field is node_value type, return the value label, otherwise INVALID */
+cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
+
+/** If field is node_value type, return the version_number >= 1, otherwise 0 */
+int cmzn_field_node_value_get_version_number(cmzn_field_id field);
+
+enum cmzn_field_edge_discontinuity_measure
+cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string);
+
+char *cmzn_field_edge_discontinuity_measure_enum_to_string(
+	enum cmzn_field_edge_discontinuity_measure measure);
+
+/** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
+const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
+
+/** Discover and set destination host mesh from source field, or check it matches if already set.
+  * @return  Result OK on success, any other value on failure. */
+int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field);
 
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

@@ -25,7 +25,7 @@
 #    define MAGICK_STATIC_LINK
 #  endif /* defined _MSC_VER */
 /* image magick interfaces */
-#include "magick/api.h"
+#include "MagickCore/MagickCore.h"
 #endif /* defined (ZINC_USE_IMAGEMAGICK) */
 
 #define PRINT_ANALYZE_INFO 0
@@ -114,7 +114,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 	int number_of_files = 0, width = 0, height = 0;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
-	ExceptionInfo magick_exception;
+	ExceptionInfo *magick_exception;
 
 	if (cmgui_image_information && cmgui_image_information->valid &&
 		(cmgui_image_information->file_names ||
@@ -123,7 +123,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 		cmgui_image = CREATE(Cmgui_image)();
 
 		int return_code = 1;
-		GetExceptionInfo(&magick_exception);
+		magick_exception = AcquireExceptionInfo();
 		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
 		old_magick_size = magick_image_info->size;
 		magick_image_info->size = (char *)NULL;
@@ -269,7 +269,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 							magick_image = BlobToImage(magick_image_info,
 								memory_block.buffer,
 								memory_block.length,
-								&magick_exception);
+								magick_exception);
 
 							if (magick_image)
 							{
@@ -339,7 +339,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 			}
 		}
 		DestroyImageInfo(magick_image_info);
-		DestroyExceptionInfo(&magick_exception);
+		DestroyExceptionInfo(magick_exception);
 		if (!return_code)
 		{
 			DESTROY(Cmgui_image)(&cmgui_image);
@@ -742,7 +742,7 @@ void AnalyzeImageHandler::readImageData(void *imgBuffer, int buffer_length)
 	data = imgBuffer;
 	int bytes = getComponentDepth()/4;
 	size_t sz = buffer_length / bytes;
-	readImageInternal(sz);
+	readImageInternal(static_cast<unsigned int>(sz));
 }
 
 void AnalyzeImageHandler::readImageData()
@@ -770,7 +770,7 @@ void AnalyzeImageHandler::readImageData()
 	int bytes = getComponentDepth()/4;
 	ALLOCATE(data, char, bytes*sz);
 	fread(data, sizeof(char), bytes*sz, file);
-	readImageInternal(sz);
+	readImageInternal(static_cast<unsigned int>(sz));
 }
 
 int AnalyzeImageHandler::getOrientation() const

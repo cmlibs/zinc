@@ -12,6 +12,8 @@
 #include <map>
 #include "opencmiss/zinc/differentialoperator.h"
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -1871,7 +1873,7 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 	{
 		Iso_mesh& mesh = *(mesh_iter->second);
 		const Iso_triangle_list& triangle_list = mesh.triangle_list;
-		const int number_of_triangles = triangle_list.size();
+		const size_t number_of_triangles = triangle_list.size();
 		if (0 < number_of_triangles)
 		{
 			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin();

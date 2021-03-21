@@ -92,17 +92,20 @@ ZINC_API int cmzn_scenepicker_set_scenefilter(cmzn_scenepicker_id scenepicker,
  * (x1,y1) and (x2,y2) are diagonally opposite corners of the rectangle.
  *
  * @param scenepicker  The scene picker to be modified.
- * @param sceneviewer_in  Scene viewer to get the modelview and projection
+ * @param sceneviewer  Scene viewer to get the modelview and projection
  * matrix from.
- * @param coordinate_system_in
- * @param x1 and y1 specify the location of a corner of the rectangle
- * @param x1 and y2 specify tthe location of he diagonally opposite corners
- * to (x1, y1) of the rectangle.
+ * @param scenecoordinatesystem  The window coordinate system the corner points
+ * are specified in. Currently only SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT
+ * is applied.
+ * @param x1  X coordinate of first corner point.
+ * @param y1  Y coordinate of first corner point.
+ * @param x2  X coordinate of second corner point, diagonally opposite first.
+ * @param y2  Y coordinate of second corner point, diagonally opposite first.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scenepicker_set_sceneviewer_rectangle(
-	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer_in,
-	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
+	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer,
+	enum cmzn_scenecoordinatesystem scenecoordinatesystem, double x1,
 		double y1, double x2, double y2);
 
 /**

@@ -13,6 +13,7 @@ FILE : graphics_module.h
 
 #include "opencmiss/zinc/font.h"
 #include "opencmiss/zinc/scenefilter.h"
+#include "opencmiss/zinc/shader.h"
 #include "general/object.h"
 #include "context/context.h"
 #include "graphics/font.h"
@@ -177,6 +178,15 @@ cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
  */
 cmzn_scene_id cmzn_graphics_module_get_scene(
 	cmzn_graphics_module * graphics_module, cmzn_region_id region);
+
+/**
+* Get the shader module which stores shaderuniforms and shaderprogram objects.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the shader module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_shadermodule_id cmzn_graphics_module_get_shadermodule(
+	cmzn_graphics_module * graphics_module);
 
 /**
 * Get the spectrum module which stores spectrum objects.

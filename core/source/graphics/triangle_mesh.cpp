@@ -99,7 +99,7 @@ const Triangle_vertex *Triangle_mesh::add_vertex(const Triple coordinates)
 	if (0 == NUMBER_IN_LIST(Octree_object)(nearby_vertex))
 	{
 		vertex_in_set = new Triangle_vertex(coordinates_FEValue);
-		vertex_in_set->set_identifier(vertex_set.size()+1);
+		vertex_in_set->set_identifier(static_cast<int>(vertex_set.size()) + 1);
 		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordinates_FEValue);
 		Octree_object_set_user_data(octree_vertex, (void *)vertex_in_set);
 		Octree_add_object(octree, octree_vertex);

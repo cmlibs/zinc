@@ -986,6 +986,16 @@ Calculate the <jacobian> if not NULL.
 							}
 						}
 					} break;
+					case CYLINDRICAL_POLAR:
+					{
+						/* just do a copy */
+						memcpy(destination_values, source_values, 3*sizeof(destination_values));
+						if (jacobian)
+						{
+							identity_matrix_FE_value(3, jacobian);
+						}
+						return_code = 1;
+					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,"convert_Coordinate_system.  "
@@ -1046,6 +1056,16 @@ Calculate the <jacobian> if not NULL.
 									jacobian_1,jacobian);
 							}
 						}
+					} break;
+					case SPHERICAL_POLAR:
+					{
+						/* just do a copy */
+						memcpy(destination_values, source_values, 3*sizeof(destination_values));
+						if (jacobian)
+						{
+							identity_matrix_FE_value(3, jacobian);
+						}
+						return_code = 1;
 					} break;
 					default:
 					{

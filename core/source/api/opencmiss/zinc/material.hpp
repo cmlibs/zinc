@@ -12,6 +12,7 @@
 #include "opencmiss/zinc/material.h"
 #include "opencmiss/zinc/context.hpp"
 #include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/shader.hpp"
 
 namespace OpenCMISS
 {
@@ -131,6 +132,27 @@ public:
 	{
 		return cmzn_material_set_texture_field(id, textureNumber, textureField.getId());
 	}
+
+	Shaderuniforms getShaderuniforms()
+	{
+		return Shaderuniforms(cmzn_material_get_shaderuniforms(id));
+	}
+
+	int setShaderuniforms(const Shaderuniforms& shaderuniforms)
+	{
+		return cmzn_material_set_shaderuniforms(id, shaderuniforms.getId());
+	}
+
+	Shaderprogram getShaderprogram()
+	{
+		return Shaderprogram(cmzn_material_get_shaderprogram(id));
+	}
+
+	int setShaderprogram(const Shaderprogram& shaderprogram)
+	{
+		return cmzn_material_set_shaderprogram(id, shaderprogram.getId());
+	}
+
 
 };
 

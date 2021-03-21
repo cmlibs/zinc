@@ -33,6 +33,25 @@ std::string SceneJsonExport::getExportString()
 		graphics = scene.getNextGraphics(graphics);
 	}
 	root["Graphics"] = graphics_settings;
+	if (this->scene.hasTransformation())
+	{
+		OpenCMISS::Zinc::Field field = this->scene.getTransformationField();
+		if (field.isValid())
+		{
+			char *fieldName = field.getName();
+			root["TransformationField"] = fieldName;
+			DEALLOCATE(fieldName);
+		}
+		else
+		{
+			double values[16];
+			this->scene.getTransformationMatrix(values);
+			Json::Value& v = root["TransformationMatrix"];
+			v.resize(16);
+			for (int i = 0; i < 16; ++i)
+				v[i] = values[i];
+		}
+	}
 	returned_string = Json::StyledWriter().write(root);
 
 	return returned_string;

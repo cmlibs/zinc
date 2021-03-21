@@ -12,7 +12,6 @@ and real values in any order into a single vector field.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stdlib.h>
 #include "opencmiss/zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
@@ -22,6 +21,8 @@ and real values in any order into a single vector field.
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
+#include <cstdlib>
+#include <vector>
 
 /*
 Module types
@@ -62,6 +63,7 @@ public:
 		 source values for the field. */
 	int *source_field_numbers;
 	int *source_value_numbers;
+	enum cmzn_field_type type;
 
 	Computed_field_composite(int number_of_components,
 		const int *source_field_numbers_in, const int *source_value_numbers_in) : Computed_field_core()
@@ -74,6 +76,7 @@ public:
 			source_field_numbers[i] = source_field_numbers_in[i];
 			source_value_numbers[i] = source_value_numbers_in[i];
 		}
+		type = CMZN_FIELD_TYPE_COMPONENT;
 	}
 
 	~Computed_field_composite();
@@ -116,6 +119,11 @@ private:
 	const char* get_type_string()
 	{
 		return(computed_field_composite_type_string);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return type;
 	}
 
 	int compare(Computed_field_core* other_field);
@@ -221,7 +229,7 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	if (return_code)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		valueCache.derivatives_valid = number_of_derivatives;
+		valueCache.derivatives_valid = (0 < number_of_derivatives);
 		FE_value *destination = number_of_derivatives ? valueCache.derivatives : 0;
 		for (int i=0;i<field->number_of_components;i++)
 		{
@@ -804,6 +812,12 @@ convenience function for building a composite field which has <number_of_values>
 				/*number_of_source_values*/number_of_values,
 				/*source_values*/values,
 				source_field_numbers, source_value_numbers);
+			if (field && field->core)
+			{
+				Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+					field->core);
+				fieldComposite->type = CMZN_FIELD_TYPE_CONSTANT;
+			}
 		}
 		else
 		{
@@ -1025,6 +1039,12 @@ Changes <field> into type composite with one input field, the <source_field>.
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
 				source_field_numbers, source_value_numbers);
+			if (field && field->core)
+			{
+				Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+					field->core);
+				fieldComposite->type = CMZN_FIELD_TYPE_IDENTITY;
+			}
 		}
 		else
 		{
@@ -1102,55 +1122,71 @@ cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
 	return field;
 }
 
-struct Computed_field *Computed_field_create_concatenate(
-	struct cmzn_fieldmodule *field_module,
-	int number_of_source_fields, struct Computed_field **source_fields)
+cmzn_field_id cmzn_fieldmodule_create_field_concatenate(
+	cmzn_fieldmodule_id fieldmodule, int number_of_source_fields,
+	cmzn_field_id *source_fields)
 {
-	Computed_field *field = NULL;
-
-	if (source_fields && number_of_source_fields > 0)
+	cmzn_field *field = 0;
+	if ((fieldmodule) && (source_fields) && (number_of_source_fields > 0))
 	{
-		int *source_field_numbers, *source_value_numbers, i, j, k,
-			number_of_components_per_field, number_of_components;
-		number_of_components = 0;
-		for (i = 0; i < number_of_source_fields; i++)
+		int number_of_components = 0;
+		for (int i = 0; i < number_of_source_fields; ++i)
 		{
-			if (!(source_fields[i] && source_fields[i]->isNumerical()))
-				return 0;
-			number_of_components +=
-				Computed_field_get_number_of_components(source_fields[i]);
-		}
-		ALLOCATE(source_field_numbers, int, number_of_components);
-		ALLOCATE(source_value_numbers, int, number_of_components);
-		if (source_field_numbers && source_value_numbers)
-		{
-			k = 0;
-			for (i = 0; i < number_of_source_fields; i++)
+			if (!((source_fields[i]) && source_fields[i]->isNumerical()))
 			{
-				number_of_components_per_field =
-					Computed_field_get_number_of_components(source_fields[i]);
-				for (j = 0; j < number_of_components_per_field; j++)
-				{
-					source_field_numbers[k + j] = i;
-					source_value_numbers[k + j] = j;
-				}
-				k += number_of_components_per_field;
+				display_message(ERROR_MESSAGE, "Fieldmodule createFieldConcatenate.  Invalid source field");
+				return 0;
 			}
-			field = Computed_field_create_composite(field_module,
-				number_of_components,
-				number_of_source_fields, source_fields,
-				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
-				source_field_numbers, source_value_numbers);
+			number_of_components += Computed_field_get_number_of_components(source_fields[i]);
 		}
-		DEALLOCATE(source_field_numbers);
-		DEALLOCATE(source_value_numbers);
+		std::vector<cmzn_field *> merged_source_fields(number_of_source_fields);
+		std::vector<int> source_field_numbers(number_of_components);
+		std::vector<int> source_value_numbers(number_of_components);
+		int k = 0;
+		int merged_source_fields_count = 0;
+		for (int i = 0; i < number_of_source_fields; i++)
+		{
+			bool newSourceField = true;
+			int merged_source_field_index = 0;
+			while (merged_source_field_index < merged_source_fields_count)
+			{
+				if (source_fields[i] == merged_source_fields[merged_source_field_index])
+				{
+					newSourceField = false;
+					break;
+				}
+				++merged_source_field_index;
+			}
+			if (newSourceField)
+			{
+				merged_source_fields[merged_source_field_index] = source_fields[i];
+				++merged_source_fields_count;
+			}
+			const int number_of_components_per_field =
+				Computed_field_get_number_of_components(source_fields[i]);
+			for (int j = 0; j < number_of_components_per_field; j++)
+			{
+				source_field_numbers[k + j] = merged_source_field_index;
+				source_value_numbers[k + j] = j;
+			}
+			k += number_of_components_per_field;
+		}
+		field = Computed_field_create_composite(fieldmodule,
+			number_of_components,
+			merged_source_fields_count, merged_source_fields.data(),
+			/*number_of_source_values*/0, /*source_values*/(double *)NULL,
+			source_field_numbers.data(), source_value_numbers.data());
+		if (field && field->core)
+		{
+			Computed_field_composite *fieldComposite= static_cast<Computed_field_composite*>(
+				field->core);
+			fieldComposite->type = CMZN_FIELD_TYPE_CONCATENATE;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_concatenate.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "Fieldmodule createFieldConcatenate.  Invalid argument(s)");
 	}
-
 	return(field);
 }
 

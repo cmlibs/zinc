@@ -270,7 +270,7 @@ int DsLabels::setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier)
 	return return_code;
 }
 
-DsLabelIndex DsLabels::getFirstIndex()
+DsLabelIndex DsLabels::getFirstIndex() const
 {
 	if (0 == this->labelsCount)
 		return DS_LABEL_INDEX_INVALID;
@@ -279,13 +279,13 @@ DsLabelIndex DsLabels::getFirstIndex()
 	return this->identifierToIndexMap.get_first_object();
 }
 
-DsLabelIterator *DsLabels::createLabelIterator(bool_array<DsLabelIndex> *condition)
+DsLabelIterator *DsLabels::createLabelIterator(bool_array<DsLabelIndex> *condition) const
 {
 	DsLabelIterator *iterator = new DsLabelIterator();
 	if (iterator)
 	{
 		iterator->labels = this;
-		iterator->iter = (this->contiguous) ? 0 : new DsLabelIdentifierToIndexMapIterator(&this->identifierToIndexMap);
+		iterator->iter = (this->contiguous) ? 0 : new DsLabelIdentifierToIndexMap::ext_iterator(&this->identifierToIndexMap);
 		iterator->condition = condition;
 		iterator->index = DS_LABEL_INDEX_INVALID;
 		iterator->next = this->activeIterators;
@@ -297,7 +297,7 @@ DsLabelIterator *DsLabels::createLabelIterator(bool_array<DsLabelIndex> *conditi
 	return iterator;
 }
 
-void DsLabels::removeLabelIterator(DsLabelIterator *iterator)
+void DsLabels::removeLabelIterator(DsLabelIterator *iterator) const
 {
 	if (iterator)
 	{
@@ -347,7 +347,7 @@ void DsLabels::invalidateLabelIteratorsWithCondition(bool_array<DsLabelIndex> *c
 	}
 }
 
-int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
+int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges) const
 {
 	ranges.clear();
 	DsLabelIterator *iterator = this->createLabelIterator();

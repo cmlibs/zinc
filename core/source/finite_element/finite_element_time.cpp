@@ -14,6 +14,7 @@ Representing time in finite elements.
 #include <math.h>
 
 #include "opencmiss/zinc/timesequence.h"
+#include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -669,6 +670,19 @@ be either the minimum or maximum value as appropriate.
 
 	return (return_code);
 } /* FE_time_sequence_get_interpolation_for_time */
+
+int FE_time_sequence_get_nearest_time_index_for_time(
+	struct FE_time_sequence *fe_time_sequence, FE_value time)
+{
+	int time_index_one, time_index_two;
+	FE_value xi;
+	if (FE_time_sequence_get_interpolation_for_time(fe_time_sequence, time, &time_index_one,
+		&time_index_two, &xi))
+	{
+		return (xi < 0.5) ? time_index_one : time_index_two;
+	}
+	return 0;
+}
 
 int FE_time_sequence_get_time_for_index(
 	struct FE_time_sequence *fe_time_sequence, int time_index, FE_value *time)

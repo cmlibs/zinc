@@ -16,12 +16,14 @@ and the nodes for 1D elements.
 #include <math.h>
 #include <stdio.h>
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "general/compare.h"
@@ -308,7 +310,7 @@ public:
 		int magnitude_coordinates) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		seed_element(cmzn_element_access(seed_element)),
+		seed_element(seed_element->access()),
 		magnitude_coordinates(magnitude_coordinates)
 	{
 		cached_time = 0;
@@ -348,7 +350,7 @@ private:
 		Computed_field_element_integration_mapping_fifo **last_to_be_checked,
 		Computed_field *integrand,
 		int magnitude_coordinates, Computed_field *coordinate_field,
-		LIST(Index_multi_range) **node_element_list,
+		AdjacentElements1d **adjacentElements1d,
 		LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
 		ZnReal time_step,
 		LIST(Computed_field_node_integration_mapping) *node_mapping);
@@ -490,7 +492,7 @@ int Computed_field_integration::add_neighbours(cmzn_fieldcache& workingCache,
 	Computed_field_element_integration_mapping_fifo **last_to_be_checked,
 	Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field,
-	LIST(Index_multi_range) **node_element_list,
+	AdjacentElements1d **adjacentElements1d,
 	LIST(Computed_field_element_integration_mapping) *previous_texture_mapping,
 	ZnReal time_step,
 	LIST(Computed_field_node_integration_mapping) *node_mapping)
@@ -540,15 +542,14 @@ time is supplied in the workingCache.
 		{
 			if (element_dimension == 1)
 			{
-				if(!(*node_element_list))
+				// if we have 1D elements then we use the nodes to get to the
+				// adjacent elements; normally use the faces
+				if (!(*adjacentElements1d))
 				{
-					/* If we have 1D elements then we use the nodes to get to the
-						adjacent elements, normally use the faces */
-					*node_element_list = create_node_element_list(mesh);
+					*adjacentElements1d = AdjacentElements1d::create(mesh, coordinate_field);
 				}
-				if (!(adjacent_FE_element_from_nodes(mapping_item->element, i,
-					&number_of_neighbour_elements, &neighbour_elements, *node_element_list,
-					mesh)))
+				if (!(*adjacentElements1d && (*adjacentElements1d)->getAdjacentElements(mapping_item->element, i,
+					&number_of_neighbour_elements, &neighbour_elements)))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -694,10 +695,10 @@ time is supplied in the workingCache.
 		shape = get_FE_element_shape(mapping_item->element);
 		if (node_mapping
 			&& FE_element_shape_is_line(shape)
-			&& calculate_FE_element_field_nodes(mapping_item->element,
+			&& (CMZN_OK == calculate_FE_element_field_nodes(mapping_item->element,
 				/*inherit_face_number*/-1,
 				fe_field, &number_of_element_field_nodes,
-				&element_field_nodes_array, mapping_item->element))
+				&element_field_nodes_array, mapping_item->element)))
 		{
 			/* Make assumptions about the distribution of the nodes */
 			if (number_of_element_field_nodes == pow(2.0, element_dimension))
@@ -766,7 +767,6 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 	Computed_field_element_integration_mapping *mapping_item;
 	Computed_field_element_integration_mapping_fifo *fifo_node,
 		*first_to_be_checked, *last_to_be_checked;
-	LIST(Index_multi_range) *node_element_list;
 
 	if (field && (integrand = field->source_fields[0])
 		&& (coordinate_field = field->source_fields[1]))
@@ -778,7 +778,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		return_code = CMZN_OK;
 		first_to_be_checked=last_to_be_checked=
 			(Computed_field_element_integration_mapping_fifo *)NULL;
-		node_element_list=(LIST(Index_multi_range) *)NULL;
+		AdjacentElements1d *adjacentElements1d = 0;
 		if ((texture_mapping = CREATE_LIST(Computed_field_element_integration_mapping)())
 			&& (node_mapping = CREATE_LIST(Computed_field_node_integration_mapping)()))
 		{
@@ -811,7 +811,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 						first_to_be_checked->mapping_item, texture_mapping,
 						&last_to_be_checked, integrand,
 						magnitude_coordinates, coordinate_field,
-						&node_element_list,
+						&adjacentElements1d,
 						(LIST(Computed_field_element_integration_mapping) *)NULL,
 						0.0, node_mapping);
 
@@ -857,10 +857,6 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
 			}
-			if (node_element_list)
-			{
-				DESTROY_LIST(Index_multi_range)(&node_element_list);
-			}
 		}
 		else
 		{
@@ -869,6 +865,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 				"Unable to create mapping list.");
 			return_code=CMZN_ERROR_GENERAL;
 		}
+		delete adjacentElements1d;
 		cmzn_fieldcache_destroy(&field_cache);
 		cmzn_fieldmodule_destroy(&field_module);
 	}

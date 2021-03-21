@@ -17,14 +17,14 @@
 #include <stdio.h>
 #include <math.h>
 
-
-#include "opencmiss/zinc/element.h"
 #include "opencmiss/zinc/fieldsubobjectgroup.h"
 #include "opencmiss/zinc/font.h"
 #include "opencmiss/zinc/glyph.h"
 #include "opencmiss/zinc/graphics.h"
 #include "opencmiss/zinc/material.h"
+#include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
+#include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/status.h"
 #include "general/debug.h"
@@ -116,10 +116,8 @@ static int cmzn_graphics_changed(struct cmzn_graphics *graphics,
 			break;
 		}
 		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
-		if (return_code)
-		{
-			cmzn_scene_changed(graphics->scene);
-		}
+		if (return_code && (graphics->scene))
+			graphics->scene->setChanged();
 	}
 	else
 	{
@@ -289,7 +287,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->graphics_changed = 1;
 			graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
 			graphics->selected_graphics_changed = 0;
-			graphics->time_dependent = 0;
+			graphics->timeDependent = false;
 
 			graphics->access_count=1;
 		}
@@ -319,6 +317,8 @@ int DESTROY(cmzn_graphics)(
 	ENTER(DESTROY(cmzn_graphics));
 	if (graphics_address && (graphics= *graphics_address))
 	{
+		if (graphics->scene)
+			cmzn_graphics_set_scene_private(graphics, NULL);
 		if (graphics->name)
 		{
 			DEALLOCATE(graphics->name);
@@ -515,7 +515,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
-	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	FE_mesh *fe_mesh = element->getMesh();
 	if (fe_mesh && graphics_to_object_data &&
 		(NULL != (graphics = graphics_to_object_data->graphics)) &&
 		graphics->graphics_object)
@@ -1252,7 +1252,27 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 	{
 		if (coordinate_field != graphics->coordinate_field)
 		{
+			if (graphics->scene && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				if (graphics->point_orientation_scale_field)
+					graphics->scene->deregisterVectorField(
+						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				if (graphics->stream_vector_field)
+					graphics->scene->deregisterVectorField(
+						graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->coordinate_field), coordinate_field);
+			if (graphics->scene && graphics->coordinate_field)
+			{
+				graphics->scene->registerCoordinateField(graphics->coordinate_field);
+				if (graphics->point_orientation_scale_field)
+					graphics->scene->registerVectorField(
+						graphics->point_orientation_scale_field, graphics->coordinate_field);
+				if (graphics->stream_vector_field)
+					graphics->scene->registerVectorField(
+						graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -1822,7 +1842,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (graphics->label_field || (last_glyph_number_with_label_text >= 0))
 			{
-				sprintf(temp_string," label_offset \"%g,%g,%g\"",graphics->label_offset[0],
+				sprintf(temp_string," label_offset %g,%g,%g",graphics->label_offset[0],
 					graphics->label_offset[1],graphics->label_offset[2]);
 				append_string(&graphics_string,temp_string,&error);
 			}
@@ -2682,8 +2702,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				graphics_to_object_data->wrapper_stream_vector_field = (cmzn_field_id)0;
 				if (coordinate_field)
 				{
-					graphics_to_object_data->rc_coordinate_field =
-						Computed_field_begin_wrap_coordinate_field(coordinate_field);
+					graphics_to_object_data->rc_coordinate_field = graphics->scene->getCoordinateFieldWrapper(coordinate_field);
 					if (!graphics_to_object_data->rc_coordinate_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -2694,8 +2713,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				if (return_code && graphics->point_orientation_scale_field)
 				{
 					graphics_to_object_data->wrapper_orientation_scale_field =
-						Computed_field_begin_wrap_orientation_scale_field(
-							graphics->point_orientation_scale_field, graphics_to_object_data->rc_coordinate_field);
+						graphics->scene->getVectorFieldWrapper(graphics->point_orientation_scale_field, coordinate_field);
 					if (!graphics_to_object_data->wrapper_orientation_scale_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -2706,8 +2724,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				if (return_code && graphics->stream_vector_field)
 				{
 					graphics_to_object_data->wrapper_stream_vector_field =
-						Computed_field_begin_wrap_orientation_scale_field(
-							graphics->stream_vector_field, graphics_to_object_data->rc_coordinate_field);
+						graphics->scene->getVectorFieldWrapper(graphics->stream_vector_field, coordinate_field);
 					if (!graphics_to_object_data->wrapper_stream_vector_field)
 					{
 						display_message(ERROR_MESSAGE,
@@ -3161,18 +3178,6 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 				{
 					DEACCESS(GT_object)(&(graphics_to_object_data->glyph_gt_object));
 				}
-				if (graphics->stream_vector_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_stream_vector_field));
-				}
-				if (graphics->point_orientation_scale_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->wrapper_orientation_scale_field));
-				}
-				if (graphics_to_object_data->rc_coordinate_field)
-				{
-					Computed_field_end_wrap(&(graphics_to_object_data->rc_coordinate_field));
-				}
 			}
 		}
 		if (graphics->selected_graphics_changed)
@@ -3403,38 +3408,13 @@ cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
 	return change;
 }
 
-/** data for passing to FE_element_as_graphics_name_has_changed */
-struct FE_element_as_graphics_name_has_changed_data
-{
-	FE_mesh *fe_mesh;
-	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct CHANGE_LOG(FE_node) *nodeChanges;
-};
-
-/**
- * @param data_void  Pointer to struct FE_element_as_graphics_name_has_changed_data.
- * @return  1 if element has changed according to event.
- */
-int FE_element_as_graphics_name_has_changed(int index, void *data_void)
-{
-	FE_element_as_graphics_name_has_changed_data *data =
-		static_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
-	DsLabelIdentifier elementIdentifier = data->fe_mesh->getElementIdentifier(index);
-	if (elementIdentifier < 0)
-		return 1; // element removed
-	FE_element *element = data->fe_mesh->getElement(index);
-	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChanges))
-		return 1;
-	return 0;
-}
-
 } // namespace anonymous
 
 int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	void *change_data_void)
 {
 	cmzn_graphics_field_change_data *change_data =
-		reinterpret_cast<cmzn_graphics_field_change_data *>(change_data_void);
+		static_cast<cmzn_graphics_field_change_data *>(change_data_void);
 	if (change_data->selection_changed && (CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
 		cmzn_graphics_update_selected(graphics, (void *)NULL);
 	if (0 == graphics->graphics_object)
@@ -3457,23 +3437,25 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				return 1;
 			}
 			// rebuild all if identifiers changed, for correct picking and editing graphics object
-			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
+			DsLabelsChangeLog *nodeChangeLog = feRegionChanges->getNodeChangeLog(graphics->domain_type);
 			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
-			if (nodeChanges)
+			if ((nodeChangeLog) && (nodeChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
 			{
-				int nodeChangeSummary = 0;
-				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(nodeChanges, &nodeChangeSummary);
-				if (nodeChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))
-				{
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-					return 1;
-				}
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
 			}
 		}
 		else
 		{
 			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_FULL_RESULT)
 			{
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
+			DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(domainDimension);
+			if (elementChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_ADD)
+			{
+				// partial rebuild is buggy when new elements are added; workaround is to force full rebuild
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
@@ -3485,9 +3467,8 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				// be updated. However, since renumbering is not common, it's not worth the
 				// complexity of checking such a field is being used, so always partial update.
 				// Also for the future this allows us to send an identifiers all-change
-				// message if reclaimed memory frpm DsLabels and DsMap (all indexes changed).
-				DsLabelsChangeLog *elementChanges = feRegionChanges->getElementChangeLog(domainDimension);
-				if ((elementChanges) && (elementChanges->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
+				// message if reclaimed memory from DsLabels and maps (all indexes changed).
+				if (elementChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER)
 					partialUpdate = true;
 			}
 			if (partialUpdate)
@@ -3498,42 +3479,17 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
-				int numberNodeChanges = 0;
-				struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
-				CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(nodeChanges, &numberNodeChanges);
-				// must check equal and higher dimension element changes due to field inheritance
-				bool tooManyElementChanges = false;
-				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				feRegionChanges->propagateToDimension(domainDimension);
+				if (elementChangeLog->isAllChange() || (elementChangeLog->getChangeCount()*2 >
+					FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(graphics->scene->region), domainDimension)->getSize()))
 				{
-					DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(dim);
-					int number = 0;
-					if (elementChangeLog && (elementChangeLog->isAllChange() ||
-						((number = elementChangeLog->getChangeCount())*2 >
-							FE_region_get_number_of_FE_elements_of_dimension(
-								cmzn_region_get_FE_region(graphics->scene->region), dim))))
-					{
-						tooManyElementChanges = true;
-						break;
-					}
-				}
-				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-					cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
-				// if too many node or element changes, just rebuild all
-				if (tooManyElementChanges ||
-					(numberNodeChanges*2 > fe_nodeset->get_number_of_FE_nodes()))
-				{
+					// too many changes for partial rebuild
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
-				FE_element_as_graphics_name_has_changed_data data;
-				data.fe_mesh = FE_region_find_FE_mesh_by_dimension(
-					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
-				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-					data.elementChangeLogs[dim] = feRegionChanges->getElementChangeLog(dim + 1);
-				data.nodeChanges = nodeChanges;
 				/* partial rebuild for few node/element field changes */
-				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
-					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
+				GT_object_invalidate_selected_primitives(graphics->graphics_object,
+					feRegionChanges->getElementChangeLog(domainDimension));
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
 			}
 		}
@@ -4643,7 +4599,7 @@ int cmzn_graphics_time_change(
 		{
 			graphics->glyph->timeChange();
 		}
-		if (graphics->time_dependent)
+		if (graphics->timeDependent)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
@@ -4659,110 +4615,47 @@ int cmzn_graphics_time_change(
 	return (return_code);
 } /* cmzn_graphics_time_change */
 
-int cmzn_graphics_update_time_behaviour(
-	struct cmzn_graphics *graphics, void *update_time_behaviour_void)
+void cmzn_graphics::updateTimeDependence()
 {
-	int return_code, time_dependent;
-	struct cmzn_graphics_update_time_behaviour_data *data;
-
-	ENTER(cmzn_graphics_update_time_behaviour);
-	if (graphics && (data =
-		(struct cmzn_graphics_update_time_behaviour_data *)
-		update_time_behaviour_void))
-	{
-		return_code = 1;
-		time_dependent = 0;
-		if (graphics->glyph && graphics->glyph->isTimeVarying())
-		{
-			time_dependent = 1;
-		}
-		if (graphics->coordinate_field)
-		{
-			if (Computed_field_has_multiple_times(graphics->coordinate_field))
-			{
-				time_dependent = 1;
-			}
-		}
-		else
-		{
-			if (data->default_coordinate_depends_on_time)
-			{
-				time_dependent = 1;
-			}
-		}
-		if (graphics->texture_coordinate_field && Computed_field_has_multiple_times(
-			graphics->texture_coordinate_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->line_orientation_scale_field && Computed_field_has_multiple_times(
-			graphics->line_orientation_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->isoscalar_field && Computed_field_has_multiple_times(
-			graphics->isoscalar_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->point_orientation_scale_field &&
-			Computed_field_has_multiple_times(graphics->point_orientation_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->signed_scale_field &&
-			Computed_field_has_multiple_times(graphics->signed_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->label_field &&
-			Computed_field_has_multiple_times(graphics->label_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->label_density_field &&
-			Computed_field_has_multiple_times(graphics->label_density_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->subgroup_field &&
-			Computed_field_has_multiple_times(graphics->subgroup_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->signed_scale_field &&
-			Computed_field_has_multiple_times(graphics->signed_scale_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->stream_vector_field &&
-			Computed_field_has_multiple_times(graphics->stream_vector_field))
-		{
-			time_dependent = 1;
-		}
-		if (graphics->data_field &&
-			Computed_field_has_multiple_times(graphics->data_field))
-		{
-			time_dependent = 1;
-		}
-		/* Or any field that is pointed to has multiple times...... */
-
-		graphics->time_dependent = time_dependent;
-		if (time_dependent)
-		{
-			data->time_dependent = time_dependent;
-		}
-	}
+	if ((this->glyph) && this->glyph->isTimeVarying())
+		this->timeDependent = true;
+	else if ((this->coordinate_field) && Computed_field_has_multiple_times(this->coordinate_field))
+		this->timeDependent = true;
+	else if ((this->texture_coordinate_field) && Computed_field_has_multiple_times(this->texture_coordinate_field))
+		this->timeDependent = true;
+	else if ((this->line_orientation_scale_field) && Computed_field_has_multiple_times(this->line_orientation_scale_field))
+		this->timeDependent = true;
+	else if (this->isoscalarFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if (this->pointGlyphScalingIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->label_field) && Computed_field_has_multiple_times(this->label_field))
+		this->timeDependent = true;
+	else if ((this->label_density_field) && Computed_field_has_multiple_times(this->label_density_field))
+		this->timeDependent = true;
+	else if (this->subgroupFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->stream_vector_field) && Computed_field_has_multiple_times(this->stream_vector_field))
+		this->timeDependent = true;
+	else if (this->dataFieldIsTimeDependent())
+		this->timeDependent = true;
 	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_update_time_behaviour.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+		this->timeDependent = false;
+}
 
-	return (return_code);
-} /* cmzn_graphics_update_time_behaviour */
+int cmzn_graphics_update_time_dependence(struct cmzn_graphics *graphics, void *time_dependent_bool_void)
+{
+	bool *timeDependentAddress = static_cast<bool *>(time_dependent_bool_void);
+	if (!((graphics) && (timeDependentAddress)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_graphics_is_time_varying.  Invalid argument(s)");
+		return 0;
+	}
+	graphics->updateTimeDependence();
+	if (graphics->timeDependent)
+		*timeDependentAddress = true;
+	return 1;
+}
 
 int cmzn_graphics_glyph_change(
 	struct cmzn_graphics *graphics, void *manager_message_void)
@@ -5086,19 +4979,46 @@ Must call cmzn_graphics_to_graphics_object afterwards to complete.
 	return (return_code);
 } /* cmzn_graphics_selected_element_points_change */
 
-struct cmzn_scene *cmzn_graphics_get_scene_private(struct cmzn_graphics *graphics)
-{
-	if (graphics)
-		return graphics->scene;
-	return NULL;
-}
-
 int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 	struct cmzn_scene *scene)
 {
 	if (graphics && ((NULL == scene) || (NULL == graphics->scene)))
 	{
-		graphics->scene = scene;
+		if (scene != graphics->scene)
+		{
+			if (graphics->scene)
+			{
+				// deregister coordinate/vector field wrappers
+				if (graphics->coordinate_field)
+				{
+					if (graphics->point_orientation_scale_field)
+						graphics->scene->deregisterVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+					if (graphics->stream_vector_field)
+						graphics->scene->deregisterVectorField(graphics->stream_vector_field, graphics->coordinate_field);
+					graphics->scene->deregisterCoordinateField(graphics->coordinate_field);
+				}
+			}
+			if (scene && (!scene->isEditorCopy()))
+			{
+				graphics->scene = scene;
+				if (graphics->scene)
+				{
+					// register coordinate/vector field wrappers
+					if (graphics->coordinate_field)
+					{
+						if (graphics->point_orientation_scale_field)
+							graphics->scene->registerVectorField(graphics->point_orientation_scale_field, graphics->coordinate_field);
+						if (graphics->stream_vector_field)
+							graphics->scene->registerVectorField(graphics->stream_vector_field, graphics->coordinate_field);
+						graphics->scene->registerCoordinateField(graphics->coordinate_field);
+					}
+				}
+			}
+			else
+			{
+				graphics->scene = 0;
+			}
+		}
 		return 1;
 	}
 	else
@@ -5111,27 +5031,11 @@ int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 
 int cmzn_graphics_set_scene_for_list_private(struct cmzn_graphics *graphics, void *scene_void)
 {
-	cmzn_scene *scene = (cmzn_scene *)scene_void;
-	int return_code = 0;
-	if (graphics && scene)
-	{
-		if (graphics->scene == scene)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = cmzn_graphics_set_scene_private(graphics, NULL);
-			return_code = cmzn_graphics_set_scene_private(graphics, scene);
-		}
-	}
-	else
-	{
-		display_message(INFORMATION_MESSAGE,
-			"cmzn_graphics_set_scene_for_list_private.  Invalid argument(s)");
-	}
-
-	return return_code;
+	if (graphics)
+		return cmzn_graphics_set_scene_private(graphics, static_cast<cmzn_scene *>(scene_void));
+	display_message(INFORMATION_MESSAGE,
+		"cmzn_graphics_set_scene_for_list_private.  Invalid argument(s)");
+	return 0;
 }
 
 cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics)
@@ -5725,7 +5629,17 @@ int cmzn_graphics_streamlines_set_stream_vector_field(
 	{
 		if (stream_vector_field != graphics->stream_vector_field)
 		{
+			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterVectorField(
+					graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->stream_vector_field), stream_vector_field);
+			if (graphics->scene && graphics->stream_vector_field && graphics->coordinate_field)
+			{
+				graphics->scene->registerVectorField(
+					graphics->stream_vector_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -6366,7 +6280,17 @@ int cmzn_graphicspointattributes_set_orientation_scale_field(
 	{
 		if (orientation_scale_field != graphics->point_orientation_scale_field)
 		{
+			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			{
+				graphics->scene->deregisterVectorField(
+					graphics->point_orientation_scale_field, graphics->coordinate_field);
+			}
 			REACCESS(Computed_field)(&(graphics->point_orientation_scale_field), orientation_scale_field);
+			if (graphics->scene && graphics->point_orientation_scale_field && graphics->coordinate_field)
+			{
+				graphics->scene->registerVectorField(
+					graphics->point_orientation_scale_field, graphics->coordinate_field);
+			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -6593,7 +6517,7 @@ int cmzn_graphics_flag_for_full_rebuild(
 	if (graphics)
 	{
 		return_code = 1;
-		if (graphics->time_dependent)
+		if (graphics->timeDependent)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
@@ -6689,6 +6613,10 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 			{
 				struct cmzn_graphics_to_graphics_object_data graphics_to_object_data;
 				graphics_to_object_data.name_prefix = "temp";
+				graphics_to_object_data.graphics = 0;
+				graphics_to_object_data.glyph_gt_object = 0;
+				graphics_to_object_data.build_graphics = 0;
+				graphics_to_object_data.number_of_data_values = 0;
 				graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
 				graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 				graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
@@ -6705,9 +6633,15 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				graphics_to_object_data.iteration_mesh = 0;
 				graphics_to_object_data.scenefilter = 0;
 				graphics_to_object_data.time = 0;
+				graphics_to_object_data.incrementalBuild = 0;
 				graphics_to_object_data.selection_group_field = cmzn_scene_get_selection_field(
 					graphics->scene);
-				graphics_to_object_data.iso_surface_specification = NULL;
+				graphics_to_object_data.iso_surface_specification = 0;
+				for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+				{
+					graphics_to_object_data.top_level_number_in_xi[i] = 0;
+				}
+
 				cmzn_graphics_to_graphics_object_no_check_on_filter(copy_graphics,
 					&graphics_to_object_data);
 				return_object = ACCESS(GT_object)(copy_graphics->graphics_object);
@@ -6726,3 +6660,20 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 	return return_object;
 }
 
+bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_id point_attributes)
+{
+	bool return_code = false;
+	if (point_attributes)
+	{
+		cmzn_graphics_id graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
+		cmzn_glyph_id glyph = cmzn_graphicspointattributes_get_glyph(
+			point_attributes);
+		if (cmzn_glyph_contains_surface_primitives(glyph,
+			graphics->tessellation, graphics->material, graphics->font))
+		{
+			return_code = true;
+		}
+		cmzn_glyph_destroy(&glyph);
+	}
+	return return_code;
+}

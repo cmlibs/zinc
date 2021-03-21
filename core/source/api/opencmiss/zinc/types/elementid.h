@@ -12,34 +12,6 @@
 #define CMZN_ELEMENTID_H__
 
 /**
- * @brief A finite element mesh consisting of a set of elements of fixed dimension.
- *
- * A finite element mesh consisting of a set of elements of fixed dimension.
- * Note that Zinc elements are not iso-parametric, meaning each field must
- * be individually defined on them, specifying the basis and parameter mapping.
- */
-struct cmzn_mesh;
-typedef struct cmzn_mesh *cmzn_mesh_id;
-
-/**
- * @brief A subset of a master mesh.
- *
- * A specialised mesh consisting of a subset of elements from a master mesh.
- */
-struct cmzn_mesh_group;
-typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
-
-/**
- * @brief A description of element shape and field definitions.
- *
- * A description of element shape and field definitions (incl. basis, parameter
- * mappings), used as a template for creating new elements in a mesh, or merging
- * into an element to define additional fields on it.
- */
-struct cmzn_elementtemplate;
-typedef struct cmzn_elementtemplate *cmzn_elementtemplate_id;
-
-/**
  * @brief A single finite element from a mesh.
  *
  * A single finite element from a mesh. Represents a local coordinate chart
@@ -90,57 +62,6 @@ struct cmzn_elementiterator;
 typedef struct cmzn_elementiterator * cmzn_elementiterator_id;
 
 /**
- * @brief A set of basis functions that can apply over an element of a given dimension.
- *
- * A set of basis functions that can apply over an element of a given dimension.
- * The element basis can be a tensor product of different basis function types,
- * with the parameters of the resulting basis cycling over lower element 'xi'
- * coordinates fastest.
- */
-struct cmzn_elementbasis;
-typedef struct cmzn_elementbasis *cmzn_elementbasis_id;
-
-/**
- * Common 1-D or linked-dimension basis function types.
- *
- * @see cmzn_elementbasis_id
- */
-enum cmzn_elementbasis_function_type
-{
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID = 0,
-	/*!< Invalid or unspecified basis function type */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT = 1,
-	/*!< Constant value, 1 parameter */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE = 2,
-	/*!< Linear Lagrange interpolation over xi in [0,1] with 2 parameters
-	     ordered in increasing xi: xi=0, xi=1 */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE = 3,
-	/*!< Quadratic Lagrange interpolation over xi in [0,1] with 3 parameters
-	     ordered in increasing xi: xi=0, xi=0.5, xi=1 */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE = 4,
-	/*!< Cubic Lagrange interpolation over xi in [0,1] with 4 parameters
-	     ordered in increasing xi: xi=0, xi=1/3, xi=2/3, xi=1 */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX = 5,
-	/*!< Linear Lagrange simplex basis linked on 2 or more dimensions over
-	     chart xi >= 0, and sum of linked xi coordinates <= 1.
-	     2 linked dimensions gives a linear triangle with 3 parameters with
-	     lowest xi cycling fastest: xi (0,0) (1,0) (0,1)
-	     3 linked dimensions gives a linear tetrahedron with 4 parameters with
-	     lowest xi cycling fastest: xi (0,0,0) (1,0,0) (0,1,0) (0,0,1) */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX = 6,
-	/*!< Quadratic Lagrange simplex basis linked on 2 or more dimensions over
-	     chart xi >= 0, and sum of linked xi coordinates <= 1.
-	     2 linked dimensions gives a quadratic triangle with 6 parameters with
-	     lowest xi cycling fastest: xi (0,0) (0.5,0) (1,0) (0,0.5) (0.5,0.5) (0,1)
-	     3 linked dimensions gives a quadratic tetrahedron with 10 parameters with
-	     lowest xi cycling fastest: xi (0,0,0) (0.5,0,0) (1,0,0) (0,0.5,0)
-	     (0.5,0.5,0) (0,1,0) (0,0,0.5) (0.5,0,0.5) (0,0.5,0.5) (0,0,1) */
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE = 7
-	/*!< Cubic Hermite basis over xi in [0,1] with 4 parameters: x at xi=0,
-	     dx/dxi at xi=0, x at xi=1. dx/dxi at xi=1. */
-};
-
-/**
  * Mode controlling how points are sampled from elements.
  */
 enum cmzn_element_point_sampling_mode
@@ -182,14 +103,6 @@ enum cmzn_element_quadrature_rule
 		/*!< Sample at mid-points of equal-sized cells in element local xi chart,
 		     with equal weights. Also called the rectangle rule. */
 };
-
-/**
- * @brief Object describing changes to a mesh in a fieldmoduleevent
- *
- * Object describing changes to a mesh in a fieldmoduleevent
- */
-struct cmzn_meshchanges;
-typedef struct cmzn_meshchanges *cmzn_meshchanges_id;
 
 /**
  * Bit flags summarising changes to an element or elements in a mesh.

@@ -15,9 +15,14 @@ data points.
 #include <math.h>
 #include <stdio.h>
 
-#include "opencmiss/zinc/element.h"
+#include "opencmiss/zinc/elementbasis.h"
+#include "opencmiss/zinc/elementtemplate.h"
 #include "opencmiss/zinc/fieldcache.h"
+#include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/fieldmodule.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/nodetemplate.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -88,9 +93,10 @@ Evaluates the <field> into the <fitting_field_values>.
 		number_of_components = get_FE_field_number_of_components(field);
 		for (i = 0; (i < number_of_components) && return_code; i++)
 		{
-			if (get_FE_nodal_FE_value_value(accumulate_data->current_node,
-				field, /*component_number*/i, /*version*/0,
-				FE_NODAL_VALUE, /*time*/0, accumulate_data->fitting_field_values))
+			const int result = get_FE_nodal_FE_value_value(accumulate_data->current_node,
+				field, /*component_number*/i, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0,
+				/*time*/0, accumulate_data->fitting_field_values);
+			if (CMZN_OK == result)
 			{
 				accumulate_data->fitting_field_values++;
 			}
@@ -116,7 +122,7 @@ Evaluates the <field> into the <fitting_field_values>.
 } /* FE_field_evaluate_snake_position */
 
 static int FE_node_accumulate_length(struct FE_node *node,
-	void *accumulate_data_void)
+	struct FE_node_accumulate_length_data *accumulate_data)
 /*******************************************************************************
 LAST MODIFIED : 3 May 2006
 
@@ -127,12 +133,10 @@ Calculates the coordinates and length from the first node.
 	double sum;
 	FE_value *coordinates, distance, *lengths;
 	int i, node_number, number_of_components, return_code;
-	struct FE_node_accumulate_length_data *accumulate_data;
 	struct Computed_field *coordinate_field;
 
 	ENTER(FE_node_accumulate_length);
-	if (node && (accumulate_data =
-		(struct FE_node_accumulate_length_data *)accumulate_data_void) &&
+	if ((node) && (accumulate_data) &&
 		(coordinates = accumulate_data->coordinates) &&
 		(lengths = accumulate_data->lengths) &&
 		(0 <= (node_number = accumulate_data->node_number)) &&
@@ -142,7 +146,7 @@ Calculates the coordinates and length from the first node.
 	{
 		accumulate_data->current_node = node;
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_field)(
-			FE_field_evaluate_snake_position, accumulate_data_void,
+			FE_field_evaluate_snake_position, (void *)accumulate_data,
 			accumulate_data->fe_field_list);
 
 		cmzn_fieldcache_set_node(accumulate_data->field_cache, node);
@@ -312,193 +316,6 @@ Returns second derivatives of 1-D Hermite basis functions at <xi> in [0.0, 1.0].
 	return (return_code);
 } /* calculate_Hermite_basis_1d_second_derivatives */
 
-/**
- * Creates and returns a 1-D line element template with <field_array> defined
- * using a 1-D cubic Hermite basis over it.
- */
-FE_element_template *create_1d_hermite_element_template(FE_mesh *fe_mesh,
-	int number_of_fields, struct FE_field **field_array)
-{
-	int basis_type[2] = {1, CUBIC_HERMITE};
-	int shape_type[1] = {LINE_SHAPE};
-	int i, j, maximum_number_of_components, n, number_of_components, 
-		number_of_nodes, number_of_scale_factors, return_code;
-	struct FE_basis *element_basis;
-	struct FE_element_field_component *component, **components;
-	struct FE_element_shape *element_shape;
-	struct FE_region *fe_region;
-	struct MANAGER(FE_basis) *basis_manager;
-	struct Standard_node_to_element_map *standard_node_map;
-
-	ENTER(create_1d_hermite_element);
-	FE_element_template *element_template = 0;
-	if (fe_mesh && (1 == fe_mesh->getDimension()) &&
-		(fe_region = fe_mesh->get_FE_region()) &&
-		(basis_manager = FE_region_get_basis_manager(fe_region)) &&
-		(0 < number_of_fields) && field_array)
-	{
-		return_code = 1;
-
-		/* make 1-d line shape */
-		element_shape = CREATE(FE_element_shape)(/*dimension*/1, shape_type, fe_region);
-		/* make 1-d cubic Hermite basis */
-		element_basis = make_FE_basis(basis_type, basis_manager);
-		char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
-		cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
-		if (!scale_factor_set)
-		{
-			scale_factor_set = fe_mesh->create_scale_factor_set();
-			scale_factor_set->setName(scale_factor_set_name);
-		}
-		DEALLOCATE(scale_factor_set_name);
-
-		element_template = fe_mesh->create_FE_element_template(element_shape);
-		if (element_template)
-		{
-			FE_element *element = element_template->get_template_element();
-			number_of_scale_factors = 4;
-			number_of_nodes = 2;
-			if (set_FE_element_number_of_nodes(element, number_of_nodes) &&
-				(CMZN_OK == set_FE_element_number_of_scale_factor_sets(element,
-					/*number_of_scale_factor_sets*/1,
-					/*scale_factor_set_identifiers*/&scale_factor_set,
-					/*numbers_in_scale_factor_sets*/&number_of_scale_factors)))
-			{
-				/* set scale factors to 1.0 */
-				for (i = 0; i < number_of_scale_factors; i++)
-				{
-					if (!set_FE_element_scale_factor(element, i, 1.0))
-					{
-						return_code = 0;
-					}
-				}
-
-				maximum_number_of_components = get_FE_field_number_of_components(
-					field_array[0]);
-				for (i = 0 ; i < number_of_fields ; i++)
-				{
-					number_of_components = get_FE_field_number_of_components(
-						field_array[i]);
-					if (number_of_components > maximum_number_of_components)
-					{
-						maximum_number_of_components = number_of_components;
-					}
-				}
-				
-				if (ALLOCATE(components, struct FE_element_field_component *,
-						maximum_number_of_components))
-				{
-					for (n = 0; n < maximum_number_of_components; n++)
-					{
-						components[n] = (struct FE_element_field_component *)NULL;
-					}
-					for (n = 0; (n < maximum_number_of_components) && element; n++)
-					{
-						if (NULL != (component = CREATE(FE_element_field_component)(
-							STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
-							element_basis, (FE_element_field_component_modify)NULL)))
-						{
-							for (j = 0; j < number_of_nodes; j++)
-							{
-								if (NULL != (standard_node_map = Standard_node_to_element_map_create(
-									/*node_index*/j, /*number_of_values*/2)))
-								{
-									if (!(Standard_node_to_element_map_set_nodal_value_type(
-											standard_node_map,
-											/*nodal_value_number*/0, FE_NODAL_VALUE) &&
-										Standard_node_to_element_map_set_scale_factor_index(
-											standard_node_map,
-											/*nodal_value_number*/0, /*scale_factor_index*/j*2) &&
-										Standard_node_to_element_map_set_nodal_value_type(
-											standard_node_map,
-											/*nodal_value_number*/1, FE_NODAL_D_DS1) &&
-										Standard_node_to_element_map_set_scale_factor_index(
-											standard_node_map,
-											/*nodal_value_number*/1, /*scale_factor_index*/j*2 + 1) &&
-										FE_element_field_component_set_standard_node_map(
-											component, /*node_number*/j, standard_node_map)))
-									{
-										return_code = 0;
-									}
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
-						components[n] = component;
-					}
-					if (return_code)
-					{
-						for (i = 0 ; (i < number_of_fields) && return_code ; i++)
-						{
-							if (!define_FE_field_at_element(element, field_array[i], components))
-							{
-								display_message(ERROR_MESSAGE,"create_1d_hermite_element_template.  "
-									"Could not define field on element");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"create_1d_hermite_element_template.  Could not create components");
-					}
-					for (n = 0; n < maximum_number_of_components; n++)
-					{
-						DESTROY(FE_element_field_component)(&(components[n]));
-					}
-					DEALLOCATE(components);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"create_1d_hermite_element_template.  Could not allocate components");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_1d_hermite_element_template.  "
-					"Could not set element shape and field info");
-				return_code = 0;
-			}
-			if (!return_code)
-				cmzn::Deaccess(element_template);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_1d_hermite_element_template.  Could not create element template");
-		}
-		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-		/* deaccess basis and shape so at most used by template element */
-		if (element_basis)
-		{
-			DESTROY(FE_basis)(&element_basis);
-		}
-		if (element_shape)
-		{
-			DESTROY(FE_element_shape)(&element_shape);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_1d_hermite_element_template.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (element_template);
-}
-
 struct FE_field_initialise_array_data
 {
 	int number_of_components;
@@ -546,32 +363,29 @@ int create_FE_element_snake_from_data_points(
 	struct FE_region *fe_region, struct Computed_field *coordinate_field,
 	struct Computed_field *weight_field,
 	int number_of_fitting_fields, struct Computed_field **fitting_fields,
-	struct LIST(FE_node) *data_list,
+	cmzn_nodeset_id data_nodeset,
 	int number_of_elements, FE_value density_factor, FE_value stiffness,
 	cmzn_nodeset_group_id nodeset_group, cmzn_mesh_group_id mesh_group)
 {
 	double d, d2phi_dxi2[4] = {0.0, 0.0, 0.0, 0.0}, d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors = NULL, phi[4], phi_m, *pos, *stiffness_matrix  = NULL,
 		*stiffness_offset, weight;
-	enum FE_nodal_value_type hermite_1d_nodal_value_types[] =
-		{FE_NODAL_D_DS1};
 	FE_value *coordinates = NULL, *fitting_field_values = NULL, density_multiplier,
 		length_multiplier, *lengths = NULL, *value, *weights = NULL, xi;
-	int component, element_number, i, *indx = NULL, j, local_components, m, n, node_number, 
+	int component, element_number, i, *indx = NULL, j, m, n, 
 		number_of_components, number_of_coordinate_components, number_of_data,
-		number_of_fe_fields, number_of_rows, return_code, row, start_row;
+		number_of_rows, return_code, row, start_row;
 	struct FE_element *element;
-	struct FE_node **nodes, *template_node;
- 	struct FE_node_accumulate_length_data accumulate_data;
- 	struct FE_field_initialise_array_data initialise_array_data;
-	struct FE_field **fe_field_array;
+	struct FE_node **nodes;
+	struct FE_node_accumulate_length_data accumulate_data;
+	struct FE_field_initialise_array_data initialise_array_data;
 	struct LIST(FE_field) *fe_field_list;
 	cmzn_fieldmodule_id field_module;
 	cmzn_fieldcache_id field_cache;
 
 	ENTER(create_FE_element_snake_from_data_points);
 	if (fe_region && coordinate_field && 
-		(number_of_fitting_fields > 0) && fitting_fields && data_list &&
+		(number_of_fitting_fields > 0) && fitting_fields && data_nodeset &&
 		(0 < number_of_elements) &&
 		(0.0 <= density_factor) && (1.0 >= density_factor) &&
 		(0.0 <= (double_stiffness = (double)stiffness)))
@@ -579,19 +393,35 @@ int create_FE_element_snake_from_data_points(
 		return_code = 1;
 		field_module = cmzn_field_get_fieldmodule(coordinate_field);
 		field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-
+		cmzn_nodeset_id nodeset = (nodeset_group) ? cmzn_nodeset_access(cmzn_nodeset_group_base_cast(nodeset_group)) :
+			cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
+		cmzn_mesh_id mesh = (mesh_group) ? cmzn_mesh_access(cmzn_mesh_group_base_cast(mesh_group)) :
+			cmzn_fieldmodule_find_mesh_by_dimension(field_module, 1);
 		fe_field_list = Computed_field_array_get_defining_FE_field_list(
 			number_of_fitting_fields, fitting_fields);
-		fe_field_array = (struct FE_field **)NULL;
-
-		number_of_fe_fields = NUMBER_IN_LIST(FE_field)(fe_field_list);
-		if (ALLOCATE(fe_field_array, struct FE_field *, number_of_fe_fields))
+		const int number_of_fe_fields = NUMBER_IN_LIST(FE_field)(fe_field_list);
+		cmzn_field_finite_element_id *define_field_array;
+		ALLOCATE(define_field_array, cmzn_field_finite_element_id, number_of_fe_fields);
+		if (define_field_array)
+		{
+			for (int i = 0; i < number_of_fe_fields; ++i)
+				define_field_array[i] = 0;
+		}
+		FE_field **fe_field_array;
+		ALLOCATE(fe_field_array, struct FE_field *, number_of_fe_fields);
+		if (fe_field_array && define_field_array && nodeset)
 		{
 			initialise_array_data.number_of_components = 0;
 			initialise_array_data.fe_field_index = 0;
 			initialise_array_data.fe_field_array = fe_field_array;
 			FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_initialise_array,
 				(void *)&initialise_array_data, fe_field_list);
+			for (int i = 0; i < number_of_fe_fields; ++i)
+			{
+				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(field_module, get_FE_field_name(fe_field_array[i]));
+				define_field_array[i] = cmzn_field_cast_finite_element(field);
+				cmzn_field_destroy(&field);
+			}
 			number_of_components = initialise_array_data.number_of_components;
 
 			number_of_coordinate_components = Computed_field_get_number_of_components(coordinate_field);
@@ -603,7 +433,7 @@ int create_FE_element_snake_from_data_points(
 			/* 1. Make table of lengths from first data point up to last */
 			if (0 < number_of_components)
 			{
-				if (1 < (number_of_data = NUMBER_IN_LIST(FE_node)(data_list)))
+				if (1 < (number_of_data = cmzn_nodeset_get_size(data_nodeset)))
 				{
 					if (ALLOCATE(lengths, FE_value, number_of_data) &&
 						ALLOCATE(fitting_field_values, FE_value, number_of_components*number_of_data) &&
@@ -619,8 +449,19 @@ int create_FE_element_snake_from_data_points(
 						accumulate_data.coordinate_field = coordinate_field;
 						accumulate_data.weight_field = weight_field;
 						accumulate_data.fe_field_list = fe_field_list;
-						if (FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_accumulate_length,
-								(void *)&accumulate_data, data_list))
+						cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(data_nodeset);
+						cmzn_node *node;
+						while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
+						{
+							if (!FE_node_accumulate_length(node, &accumulate_data))
+							{
+								display_message(ERROR_MESSAGE,
+									"create_FE_element_snake_from_data_points.  Could not calculate lengths");
+								return_code = 0;
+								break;
+							}
+						}
+						if (return_code)
 						{
 							if (0.0 < lengths[number_of_data - 1])
 							{
@@ -639,13 +480,6 @@ int create_FE_element_snake_from_data_points(
 									"create_FE_element_snake_from_data_points.  Zero length");
 								return_code = 0;
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"create_FE_element_snake_from_data_points.  "
-								"Could not calculate lengths");
-							return_code = 0;
 						}
 					}
 					else
@@ -850,8 +684,6 @@ int create_FE_element_snake_from_data_points(
 		if (return_code)
 		{
 			FE_region_begin_change(fe_region);
-			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-				fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 #if defined (DEBUG_CODE)
 			/*???debug*/
 			for (n = 0; n < number_of_components; n++)
@@ -861,136 +693,137 @@ int create_FE_element_snake_from_data_points(
 					force_vectors + n*number_of_rows,"%8.4f");
 			}
 #endif /* defined (DEBUG_CODE) */
-			template_node = (struct FE_node *)NULL;
-			FE_element_template *element_template = 0;
 			nodes = (struct FE_node **)NULL;
 			if (ALLOCATE(nodes, struct FE_node *, number_of_elements + 1))
 			{
+				// clear nodes so safe to DEACCESS later
 				for (j = 0; j <= number_of_elements; j++)
 				{
 					nodes[j] = (struct FE_node *)NULL;
 				}
-				/* create a template node suitable for 1-D Hermite interpolation of the
-					 coordinate_field */
-				if (NULL != (template_node = CREATE(FE_node)(/*node_number*/0, fe_nodeset,
-					/*template_node*/(struct FE_node *)NULL)))
+				// create a template node interpolating the target fields with 1-D Hermite basis
+				cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
+				if (nodetemplate)
 				{
 					for (n = 0 ; return_code && (n < number_of_fe_fields) ; n++)
 					{
-						return_code = define_FE_field_at_node_simple(template_node,
-							fe_field_array[n], 
-							/*number_of_derivatives*/1, hermite_1d_nodal_value_types);
+						cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[n]);
+						if ((CMZN_OK != cmzn_nodetemplate_define_field(nodetemplate, define_field))
+							|| (CMZN_OK != cmzn_nodetemplate_set_value_number_of_versions(nodetemplate,
+								define_field, -1, CMZN_NODE_VALUE_LABEL_D_DS1, 1)))
+						{
+							display_message(ERROR_MESSAGE,
+								"create_FE_element_snake_from_data_points.  Could not define field on node template");
+							return_code = 0;
+							break;
+						}
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_FE_element_snake_from_data_points.  "
-						"Could not create template_node");
+						"create_FE_element_snake_from_data_points.  Could not create node template");
 					return_code = 0;
 				}
 				/* create the nodes in the snake as copies of the template, access them
-					 in the nodes array, set their coordinates and derivatives and add
-					 them to the manager and node_group */
-				node_number = 1;
+				   in the nodes array, set their coordinates and derivatives and add
+				   them to the manager and node_group */
+				cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{
-					/* get next unused node number from fe_region */
-					node_number = fe_nodeset->get_next_FE_node_identifier(node_number);
-					if (NULL != (nodes[j] = CREATE(FE_node)(node_number, (FE_nodeset *)0,
-						template_node)))
+					nodes[j] = cmzn_nodeset_create_node(nodeset, -1, nodetemplate);
+					if (nodes[j])
 					{
+						cmzn_fieldcache_set_node(cache, nodes[j]);
 						/* set the coordinate and derivatives */
 						component = 0;
 						for (n = 0; (n < number_of_fe_fields) && return_code; n++)
 						{
-							local_components = get_FE_field_number_of_components(fe_field_array[n]);
-							for (i = 0 ; (i < local_components) && return_code ; i++)
+							cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[n]);
+							int componentCount = cmzn_field_get_number_of_components(define_field);
+							for (i = 0; i < componentCount; ++i)
 							{
-								if (!(set_FE_nodal_FE_value_value(nodes[j], fe_field_array[n],
-									/*component_number*/i, /*version*/0, FE_NODAL_VALUE,
-									/*time*/0, force_vectors[component*number_of_rows + j*2]) &&
-									set_FE_nodal_FE_value_value(nodes[j], fe_field_array[n],
-									/*component_number*/i,/*version*/0, FE_NODAL_D_DS1, /*time*/0, 
-									force_vectors[component*number_of_rows + j*2 + 1])))
+								if ((CMZN_OK != cmzn_field_finite_element_set_node_parameters(define_field_array[n],
+									cache, i + 1, CMZN_NODE_VALUE_LABEL_VALUE, 1, 1, &force_vectors[component*number_of_rows + j*2]))
+									|| (CMZN_OK != cmzn_field_finite_element_set_node_parameters(define_field_array[n],
+										cache, i + 1, CMZN_NODE_VALUE_LABEL_D_DS1, 1, 1, &force_vectors[component*number_of_rows + j*2 + 1])))
 								{
 									display_message(ERROR_MESSAGE,
-										"create_FE_element_snake_from_data_points.  "
-										"Could not set coordinates or derivatives");
+										"create_FE_element_snake_from_data_points.  Failed to set node parameters");
 									return_code = 0;
+									break;
 								}
-								component++;
-							}
-						}
-						if (return_code)
-						{
-							if (fe_nodeset->merge_FE_node(nodes[j]))
-							{
-								if (nodeset_group)
-								{
-									cmzn_nodeset_group_add_node(nodeset_group, nodes[j]);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"create_FE_element_snake_from_data_points.  "
-									"Could not merge node into region");
-								return_code = 0;
+								++component;
 							}
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_FE_element_snake_from_data_points.  "
-							"Could not add create node from template");
+							"create_FE_element_snake_from_data_points.  Failed to create node from template");
 						return_code = 0;
 					}
 				}
 				if (return_code)
 				{
-					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, /*dimension*/1);
-					element_template = create_1d_hermite_element_template(fe_mesh,
-						number_of_fe_fields, fe_field_array);
-					if (element_template)
+					cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
+					const int nodeIndexes[] = { 1, 2 };
+					cmzn_elementbasis_id basis = cmzn_fieldmodule_create_elementbasis(field_module, 1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE);
+					if ((elementtemplate)
+						&& cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_LINE)
+						&& cmzn_elementtemplate_set_number_of_nodes(elementtemplate, 2))
 					{
-						for (j = 0; (j < number_of_elements) && return_code; j++)
+						for (int i = 0; i < number_of_fe_fields; ++i)
 						{
-							element = fe_mesh->create_FE_element(-1, element_template);
-							if (element)
-							{
-								if (!(set_FE_element_node(element, 0, nodes[j]) &&
-									set_FE_element_node(element, 1, nodes[j + 1])))
-								{
-									return_code = 0;
-								}
-								if (return_code)
-								{
-									if (mesh_group)
-									{
-										cmzn_mesh_group_add_element(mesh_group, element);
-									}
-								}
-								DEACCESS(FE_element)(&element);
-							}
-							else
+							cmzn_field_id define_field = cmzn_field_finite_element_base_cast(define_field_array[i]);
+							if (CMZN_OK != cmzn_elementtemplate_define_field_simple_nodal(elementtemplate,
+								define_field, -1, basis, 2, nodeIndexes))
 							{
 								display_message(ERROR_MESSAGE,
-									"create_FE_element_snake_from_data_points.  "
-									"Could not create element");
+									"create_FE_element_snake_from_data_points.  Could not define field on element template");
 								return_code = 0;
+								break;
 							}
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_FE_element_snake_from_data_points.  "
-							"Could not create template element");
+							"create_FE_element_snake_from_data_points.  Could not create element template");
 						return_code = 0;
 					}
+					if (return_code)
+					{
+						for (j = 0; (j < number_of_elements) && return_code; j++)
+						{
+							if ((CMZN_OK != cmzn_elementtemplate_set_node(elementtemplate, 1, nodes[j]))
+								|| (CMZN_OK != cmzn_elementtemplate_set_node(elementtemplate, 2, nodes[j + 1])))
+							{
+								display_message(ERROR_MESSAGE,
+									"create_FE_element_snake_from_data_points.   Failed to set element nodes");
+								return_code = 0;
+							}
+							else
+							{
+								element = cmzn_mesh_create_element(mesh, -1, elementtemplate);
+								if (!element)
+								{
+									display_message(ERROR_MESSAGE,
+										"create_FE_element_snake_from_data_points.   Failed to create element");
+									return_code = 0;
+								}
+								cmzn_element_destroy(&element);
+							}
+						}
+					}
+					cmzn_elementbasis_destroy(&basis);
+					cmzn_elementtemplate_destroy(&elementtemplate);
 				}
+				for (int j = 0; j <= number_of_elements; ++j)
+					cmzn_node_destroy(&nodes[j]);
+				DEALLOCATE(nodes);
+				cmzn_fieldcache_destroy(&cache);
+				cmzn_nodetemplate_destroy(&nodetemplate);
 			}
 			else
 			{
@@ -998,18 +831,6 @@ int create_FE_element_snake_from_data_points(
 					"create_FE_element_snake_from_data_points.  "
 					"Could not allocate nodes array");
 				return_code = 0;
-			}
-			if (nodes)
-			{
-				DEALLOCATE(nodes);
-			}
-			if (template_node)
-			{
-				DESTROY(FE_node)(&template_node);
-			}
-			if (element_template)
-			{
-				cmzn::Deaccess(element_template);
 			}
 			FE_region_end_change(fe_region);
 		}
@@ -1043,9 +864,15 @@ int create_FE_element_snake_from_data_points(
 		}
 		DESTROY(LIST(FE_field))(&fe_field_list);
 		if (fe_field_array)
-		{
 			DEALLOCATE(fe_field_array);
+		if (define_field_array)
+		{
+			for (int i = 0; i < number_of_fe_fields; ++i)
+				cmzn_field_finite_element_destroy(&define_field_array[i]);
+			DEALLOCATE(define_field_array);
 		}
+		cmzn_nodeset_destroy(&nodeset);
+		cmzn_mesh_destroy(&mesh);
 		cmzn_fieldcache_destroy(&field_cache);
 		cmzn_fieldmodule_destroy(&field_module);
 	}

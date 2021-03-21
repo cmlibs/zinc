@@ -11,20 +11,22 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stdlib.h>
+#include "opencmiss/zinc/fieldgroup.h"
+#include "opencmiss/zinc/fieldsubobjectgroup.h"
+#include "opencmiss/zinc/mesh.h"
+#include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-#include "opencmiss/zinc/fieldgroup.h"
-#include "opencmiss/zinc/fieldsubobjectgroup.h"
-#include "opencmiss/zinc/scene.h"
 #if defined (USE_OPENCASCADE)
 #include "graphics/scene.h"
 #include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -35,6 +37,7 @@
 #if defined (USE_OPENCASCADE)
 #include "cad/field_location.hpp"
 #endif /* defined (USE_OPENCASCADE) */
+#include <cstdlib>
 #include <list>
 
 char computed_field_group_type_string[] = "group";
@@ -444,7 +447,11 @@ int Computed_field_group::setSubelementHandlingMode(
 {
 	if (modeIn == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_INVALID)
 		return CMZN_ERROR_ARGUMENT;
-	this->subelementHandlingMode = modeIn;
+	if (modeIn != this->subelementHandlingMode)
+	{
+		this->subelementHandlingMode = modeIn;
+		this->setChanged();
+	}
 	// propagate down subregion group tree
 	for (Region_field_map_iterator iter = this->subregion_group_map.begin();
 		iter != this->subregion_group_map.end(); iter++)
@@ -582,13 +589,13 @@ cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id su
 				if (!subregion_group)
 				{
 					cmzn_fieldmodule_begin_change(fieldmodule);
-					cmzn_fieldmodule_set_field_name(fieldmodule, this->getField()->name);
 					subregion_group = reinterpret_cast<cmzn_field_group_id>(cmzn_fieldmodule_create_field_group(fieldmodule));
+					cmzn_field_set_name(cmzn_field_group_base_cast(subregion_group), this->getField()->name);
 					cmzn_field_group_set_subelement_handling_mode(subregion_group, this->subelementHandlingMode);
 					cmzn_fieldmodule_end_change(fieldmodule);
 				}
 				cmzn_fieldmodule_destroy(&fieldmodule);
-				ACCESS(Computed_field)(cmzn_field_group_base_cast(subregion_group));
+				cmzn_field_access(cmzn_field_group_base_cast(subregion_group));
 				subregion_group_map.insert(std::make_pair(subregion, subregion_group));
 			}
 			// else already exists: fail
@@ -676,9 +683,11 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 	if (contains_all || (!nodeset))
 		return 0;
 	cmzn_field_node_group_id node_group = 0;
-	if (cmzn_nodeset_get_region_internal(nodeset) != this->region)
+	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+	cmzn_region *nodeset_region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
+	if (nodeset_region != this->region)
 	{
-		cmzn_field_group *subregionGroup = this->getSubRegionGroup(cmzn_nodeset_get_region_internal(nodeset));
+		cmzn_field_group *subregionGroup = this->getSubRegionGroup(nodeset_region);
 		if (subregionGroup)
 		{
 			node_group = Computed_field_group_core_cast(subregionGroup)->get_node_group(nodeset);
@@ -697,7 +706,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 			node_group = cmzn_field_cast_node_group(this->local_node_group);
 		if (!node_group)
 		{
-			// find by name & check it is for same master nodeset (must avoid group regions)
+			// find by name & check it is for same FE_nodeset
 			cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
 			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 			char *name = get_standard_node_group_name(master_nodeset);
@@ -706,7 +715,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 			node_group = cmzn_field_cast_node_group(node_group_field);
 			if (node_group)
 			{
-				if (cmzn_nodeset_match(master_nodeset, Computed_field_node_group_core_cast(node_group)->getMasterNodeset()))
+				if (Computed_field_node_group_core_cast(node_group)->get_fe_nodeset() == fe_nodeset)
 					setLocalNodeGroup(use_data, node_group);
 				else // wrong nodeset
 					cmzn_field_node_group_destroy(&node_group);
