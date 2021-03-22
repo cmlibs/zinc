@@ -69,12 +69,12 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new StringFieldValueCache();
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -167,24 +167,33 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_fieldcach
 		DEALLOCATE(string_value);
 	}
 	string_value = duplicate_string(valueCache.stringValue);
-	Computed_field_changed(field);
+	this->field->setChanged();
 	return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 }
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_string_constant(
+cmzn_field_id cmzn_fieldmodule_create_field_string_constant(
 	struct cmzn_fieldmodule *field_module, const char *string_value_in)
 {
-	Computed_field *field = NULL;
+	cmzn_field_id field = nullptr;
 	if (string_value_in)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, /*number_of_components*/1,
-			/*number_of_source_fields*/0, NULL,
-			/*number_of_source_values*/0, NULL,
+			/*number_of_source_fields*/0, nullptr,
+			/*number_of_source_values*/0, nullptr,
 			new Computed_field_string_constant(string_value_in));
 	}
-	return (field);
+	return field;
 }
 
+cmzn_field_string_constant_id cmzn_field_cast_string_constant(cmzn_field_id field)
+{
+	if ((field) && (dynamic_cast<Computed_field_string_constant*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_string_constant_id>(field));
+	}
+	return nullptr;
+}

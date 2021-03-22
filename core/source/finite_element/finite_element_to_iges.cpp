@@ -28,6 +28,7 @@ to file.
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_conversion.h"
+#include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
@@ -159,7 +160,7 @@ public:
 		{
 			cmzn_fieldmodule_define_all_faces(this->destination_fieldmodule);
 			char *name = cmzn_field_get_name(this->source_field);
-			this->destination_fe_field = FE_region_get_FE_field_from_name(cmzn_region_get_FE_region(this->destination_region), name);
+			this->destination_fe_field = FE_region_get_FE_field_from_name(this->destination_region->get_FE_region(), name);
 			cmzn_deallocate(name);
 			name = 0;
 			cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(this->destination_mesh);
@@ -268,7 +269,6 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 		surface_directory_pointer,world_curve_directory_pointer;
 	struct FE_element *face;
 	struct FE_field *coordinate_field;
-	struct FE_element_field_values *coordinate_element_field_values;
 	struct IGES_entity_info *entity,*surface_entity;
 
 	ENTER(get_iges_entity_info);
@@ -276,25 +276,23 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 	if (element)
 	{
 		return_code=1;
-		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
+		FE_element_field_evaluation *coordinate_element_field_values = 0;
 		FE_mesh *fe_mesh = element->getMesh();
 		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
 			(1 >= fe_mesh->getElementParentsCount(elementIndex)) &&
 			(coordinate_field = this->destination_fe_field) &&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
-			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
-			(calculate_FE_element_field_values(element,coordinate_field,
-			/*time*/(FE_value)0,/*calculate_derivatives*/(char)0,coordinate_element_field_values,
-			(struct FE_element *)NULL))&&
-			FE_element_field_values_get_monomial_component_info(
-				coordinate_element_field_values, /*component_number*/0, monomial_x) &&
+			(coordinate_element_field_values = FE_element_field_evaluation::create()) &&
+			coordinate_element_field_values->calculate_values(coordinate_field, element, /*time*/0.0) &&
+			coordinate_element_field_values->get_monomial_component_info(
+				/*component_number*/0, monomial_x) &&
 			(2 == monomial_x[0]) && (monomial_x[1] <= 3) && (monomial_x[2] <= 3) &&
-			FE_element_field_values_get_monomial_component_info(
-				coordinate_element_field_values, /*component_number*/1, monomial_y) &&
+			coordinate_element_field_values->get_monomial_component_info(
+				/*component_number*/1, monomial_y) &&
 			(2 == monomial_y[0]) && (monomial_y[1] <= 3) && (monomial_y[2] <= 3) &&
-			FE_element_field_values_get_monomial_component_info(
-				coordinate_element_field_values, /*component_number*/2, monomial_z) &&
+			coordinate_element_field_values->get_monomial_component_info(
+				/*component_number*/2, monomial_z) &&
 			(2 == monomial_z[0]) && (monomial_z[1] <= 3) && (monomial_z[2] <= 3))
 		{
 			surface_entity=create_iges_entity_info(element,&(this->head),
@@ -321,9 +319,8 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 				((surface_entity->parameter).type_114.tu)[1]=1.;
 				((surface_entity->parameter).type_114.tv)[0]=0.;
 				((surface_entity->parameter).type_114.tv)[1]=1.;
-				if (FE_element_field_values_get_component_values(
-					coordinate_element_field_values, /*component_number*/0,
-					&number_of_component_values, &source) &&
+				if (coordinate_element_field_values->get_component_values(
+					/*component_number*/0, &number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
 					source_ptr = source;
@@ -354,9 +351,8 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 					}
 					DEALLOCATE(source);
 				}
-				if (FE_element_field_values_get_component_values(
-					coordinate_element_field_values, /*component_number*/1,
-					&number_of_component_values, &source) &&
+				if (coordinate_element_field_values->get_component_values(
+					/*component_number*/1, &number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
 					source_ptr = source;
@@ -387,9 +383,8 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 					}
 					DEALLOCATE(source);
 				}
-				if (FE_element_field_values_get_component_values(
-					coordinate_element_field_values, /*component_number*/2,
-					&number_of_component_values, &source) &&
+				if (coordinate_element_field_values->get_component_values(
+					/*component_number*/2, &number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
 					source_ptr = source;
@@ -750,9 +745,7 @@ int Get_iges_entity_info_data::get_iges_entity_info(struct FE_element *element)
 			}
 		}
 		if (coordinate_element_field_values)
-		{
-			DESTROY(FE_element_field_values)(&coordinate_element_field_values);
-		}
+			FE_element_field_evaluation::deaccess(coordinate_element_field_values);
 	}
 	LEAVE;
 

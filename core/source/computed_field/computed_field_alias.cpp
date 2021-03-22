@@ -17,7 +17,7 @@
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 
 /*
@@ -92,19 +92,21 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		cmzn_region_id otherRegion = Computed_field_get_region(getSourceField(0));
 		if (otherRegion != Computed_field_get_region(field))
 		{
 			// @TODO: share extraCache with other alias fields in cache referencing otherRegion
-			valueCache->createExtraCache(parentCache, otherRegion);
+			valueCache->getOrCreatePrivateExtraCache(otherRegion);
 		}
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -201,11 +203,11 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
-	RealFieldValueCache *sourceCache = 0;
+	const RealFieldValueCache *sourceCache = nullptr;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
-		extraCache->setRequestedDerivatives(cache.getRequestedDerivatives());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*extraCache));
 	}
 	else
@@ -220,6 +222,26 @@ int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	return 0;
 }
 
+/** Alias field is currently guaranteed to be numerical */
+int Computed_field_alias::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	DerivativeValueCache& derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
+	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
+	if (extraCache)
+	{
+		// not implemented for other region - don't allow FieldDerivative for another region at this point
+		return 0;
+	}
+	const DerivativeValueCache *sourceDerivativeValueCache = this->getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeValueCache)
+	{
+		derivativeValueCache.copyValues(*sourceDerivativeValueCache);
+		return 1;
+	}
+	return 0;
+}
+
 /***************************************************************************//**
  * Sets values of the original field at the supplied location.
  */
@@ -229,7 +251,8 @@ enum FieldAssignmentResult Computed_field_alias::assign(cmzn_fieldcache& cache, 
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
-		extraCache->setLocation(cache.cloneLocation());
+		// exists only if aliasing field from separate region
+		extraCache->copyLocation(cache);
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(*extraCache));
 	}
 	else

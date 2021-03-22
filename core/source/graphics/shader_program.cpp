@@ -271,11 +271,11 @@ struct cmzn_shaderprogram_compare_name
 
 typedef cmzn_set<cmzn_shaderprogram_id ,cmzn_shaderprogram_compare_name> cmzn_set_cmzn_shaderprogram;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderprogram, cmzn_shadermodule, struct cmzn_shaderprogram_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_shaderprogram, cmzn_shadermodule, class cmzn_shaderprogram_change_detail *);
 
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_shaderprogram);
 
-inline struct cmzn_shaderprogram_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderprogram)(
+inline cmzn_shaderprogram_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_shaderprogram)(
 		cmzn_shaderprogram_id program)
 {
 	return program->extractChangeDetail();

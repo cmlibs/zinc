@@ -28,9 +28,8 @@ Renders gtObjects to VRML file
 #include "graphics/render_vrml.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
-#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 

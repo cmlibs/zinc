@@ -76,7 +76,6 @@ struct FE_region
 	/* field information */
 	struct FE_time_sequence_package *fe_time;
 	struct LIST(FE_field) *fe_field_list;
-	struct FE_field_info *fe_field_info;
 
 	/* FE bases and shapes shared by all regions */
 	FE_region_bases_and_shapes *bases_and_shapes;
@@ -104,9 +103,14 @@ struct FE_region
 	/* number of objects using this region */
 	int access_count;
 
-	FE_region(FE_region *base_fe_region);
+	FE_region(cmzn_region *region, FE_region *base_fe_region);
 
 	~FE_region();
+
+	/**
+	 * Only to be called by owning cmzn_region during clean up.
+	 */
+	void clearRegionPrivate();
 
 	void createFieldChangeLog();
 
@@ -118,12 +122,30 @@ struct FE_region
 	inline void FE_field_change(FE_field *fe_field, enum CHANGE_LOG_CHANGE(FE_field) change)
 	{
 		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_field_changes, fe_field, change);
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
+	}
+
+	/** records related change to FE_field but does not call setFieldModify as expect to be
+	 * called for multiple fields. Also does no update check; call FE_region::update if needed */
+	inline void FE_field_change_related(FE_field *fe_field, enum CHANGE_LOG_CHANGE(FE_field) change)
+	{
+		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_field_changes, fe_field, change);
 	}
 
 	/** record change to all fields in region */
 	inline void FE_field_all_change(enum CHANGE_LOG_CHANGE(FE_field) change)
 	{
 		CHANGE_LOG_ALL_CHANGE(FE_field)(this->fe_field_changes, change);
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
+	}
+
+	/** records change not specific to an FE_field, e.g. node identifier change */
+	inline void FE_region_change()
+	{
+		if (this->cmiss_region)
+			this->cmiss_region->setFieldModify();
 	}
 
 	cmzn_fielditerator *create_fielditerator();
@@ -133,19 +155,6 @@ struct FE_region
 Private functions
 -----------------
 */
-
-struct FE_field_info *FE_region_get_FE_field_info(
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Returns a struct FE_field_info for <fe_region>.
-This is an object private to FE_region that is common between all fields
-owned by FE_region. FE_fields access this object, but this object maintains
-a non-ACCESSed pointer to <fe_region> so fields can determine which FE_region
-they belong to.
-==============================================================================*/
 
 /**
  * Private function for use by computed_field_finite_element field wrapping

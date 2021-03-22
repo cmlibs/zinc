@@ -10,6 +10,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/element.h"
+#include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region_private.h"
@@ -182,7 +183,7 @@ int FE_element_template::defineField(FE_field *field, int componentNumber, FE_el
 		return CMZN_ERROR_ARGUMENT;
 	}
 	// GRC check FE_field is general real/integer?
-	if (FE_field_get_FE_region(field) != this->mesh->get_FE_region())
+	if (field->get_FE_region() != this->mesh->get_FE_region())
 	{
 		display_message(ERROR_MESSAGE, "Elementtemplate::defineField.  "
 			"Field %s is not from this region", get_FE_field_name(field));
@@ -253,7 +254,7 @@ int FE_element_template::undefineField(FE_field *field)
 {
 	if (!field)
 		return CMZN_ERROR_ARGUMENT;
-	if (this->mesh->get_FE_region() != FE_field_get_FE_region(field))
+	if (this->mesh->get_FE_region() != field->get_FE_region())
 	{
 		display_message(ERROR_MESSAGE, "Elementtemplate::undefineField.  "
 			"Field %s is not from this region", get_FE_field_name(field));
@@ -515,9 +516,8 @@ int FE_mesh_element_field_template_data::setElementLocalNode(DsLabelIndex elemen
 		elementNodeIndexes[localNodeIndex] = nodeIndex;
 		// simplest to mark all fields as changed as they may share local nodes
 		// can optimise in future
-		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		// following will update clients:
-		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+		mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 	return CMZN_OK;
 }
@@ -584,9 +584,8 @@ int FE_mesh_element_field_template_data::setElementLocalNodes(
 	{
 		// simplest to mark all fields as changed since too expensive to determine which are affected
 		// can optimise in future
-		mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		// following will update clients:
-		mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+		mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	}
 	return CMZN_OK;
 }
@@ -654,9 +653,8 @@ int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elem
 	mesh->setScaleFactor(scaleFactorIndexes[localScaleFactorIndex], value);
 	// conservatively mark all fields as changed as they may share scale factors
 	// can optimise in future
-	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	// following will update clients:
-	mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	return CMZN_OK;
 }
 
@@ -703,9 +701,8 @@ int FE_mesh_element_field_template_data::setElementScaleFactors(DsLabelIndex ele
 	}
 	// conservatively mark all fields as changed as they may share scale factors
 	// can optimise in future
-	mesh->get_FE_region()->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	// following will update clients:
-	mesh->elementChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	mesh->elementAllFieldChange(elementIndex, DS_LABEL_CHANGE_TYPE_DEFINITION);
 	return CMZN_OK;
 }
 
@@ -1250,10 +1247,18 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	this->createChangeLog();
 	std::string name(this->getName());
 	this->labels.setName(name + ".elements");
+	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+		this->fieldDerivatives[i] = new FieldDerivativeMesh(this, /*order*/(i + 1), (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
 }
 
 FE_mesh::~FE_mesh()
 {
+	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+	{
+		this->fieldDerivatives[i]->clearMesh();
+		FieldDerivative *tmp = this->fieldDerivatives[i];
+		FieldDerivative::deaccess(tmp);
+	}
 	// safely detach from parent/face meshes
 	if (this->parentMesh)
 		this->parentMesh->setFaceMesh(0);
@@ -1483,6 +1488,37 @@ void FE_mesh::elementChange(DsLabelIndex elementIndex, int change)
 	if (this->fe_region && this->changeLog)
 	{
 		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_region_change();
+		this->fe_region->update();
+	}
+}
+
+/**
+ * Call this to mark element with the supplied change and related change to field.
+ * Notifies change to clients of FE_region.
+ * @param change  Logical OR of values from enum DsLabelChangeType
+ */
+void FE_mesh::elementFieldChange(DsLabelIndex elementIndex, int change, FE_field *fe_field)
+{
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_field_change(fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+		this->fe_region->update();
+	}
+}
+/**
+ * Call this to mark element with the supplied change.
+ * Conservatively marks all fields as changed too.
+ * Notifies change to clients of FE_region.
+ * @param change  Logical OR of values from enum DsLabelChangeType
+ */
+void FE_mesh::elementAllFieldChange(DsLabelIndex elementIndex, int change)
+{
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(elementIndex, change);
+		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->fe_region->update();
 	}
 }
@@ -1491,7 +1527,7 @@ namespace {
 
 int FE_field_clear_on_mesh_iterator(FE_field *field, void *mesh_void)
 {
-	FE_field_clearMeshFieldData(field, static_cast<FE_mesh *>(mesh_void));
+	field->clearMeshFieldData(static_cast<FE_mesh *>(mesh_void));
 	return 1;
 }
 
@@ -1684,7 +1720,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 	{
 		// record changes to fields, but don't check for FE_region update as caching is assumed
 		for (int f = 0; f < fieldCount; ++f)
-			CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_region->fe_field_changes,
+			this->fe_region->FE_field_change(
 				elementTemplate->fields[f]->getField(), CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->lastMergedElementTemplate = elementTemplate;
 	}
@@ -1694,7 +1730,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 	{
 		FE_element_template::FE_field_data *elementFieldData = elementTemplate->fields[f];
 		FE_field *field = elementFieldData->getField();
-		FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this);
+		FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this);
 		if (elementFieldData->isUndefine())
 		{
 			if (!meshFieldData)
@@ -1707,7 +1743,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 		}
 		else if (!meshFieldData)
 		{
-			meshFieldData = FE_field_createMeshFieldData(field, this);
+			meshFieldData = field->createMeshFieldData(this);
 			if (!meshFieldData)
 			{
 				display_message(ERROR_MESSAGE, "Mesh mergeFieldsFromElementTemplate.  Failed to create mesh field data");
@@ -1768,7 +1804,7 @@ bool FE_mesh::mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_eleme
 			{
 				FE_element_template::FE_field_data *elementFieldData2 = elementTemplate->fields[f2];
 				FE_field *field2 = elementFieldData2->getField();
-				FE_mesh_field_data *meshFieldData2 = FE_field_getMeshFieldData(field2, this);
+				FE_mesh_field_data *meshFieldData2 = field2->getMeshFieldData(this);
 				for (; c2 < elementFieldData2->componentCount; ++c2)
 				{
 					if ((elementFieldData2->getComponentElementfieldtemplate(c2) == eft)
@@ -1850,14 +1886,14 @@ cmzn_elementiterator *FE_mesh::createElementiterator(DsLabelsGroup *labelsGroup)
 	return iterator;
 }
 
-struct FE_element *FE_mesh::get_first_FE_element_that(
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function, void *user_data_void)
+cmzn_element *FE_mesh::get_first_FE_element_that(
+	LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void)
 {
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
 		return 0;
 	DsLabelIndex elementIndex;
-	FE_element *element = 0;
+	cmzn_element *element = 0;
 	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
 		element = this->getElement(elementIndex);
@@ -1866,7 +1902,7 @@ struct FE_element *FE_mesh::get_first_FE_element_that(
 			display_message(ERROR_MESSAGE, "FE_mesh::for_each_FE_element.  No element at index");
 			break;
 		}
-		if (conditional_function(element, user_data_void))
+		if ((!conditional_function) || conditional_function(element, user_data_void))
 			break;
 	}
 	cmzn::Deaccess(iter);
@@ -1876,14 +1912,14 @@ struct FE_element *FE_mesh::get_first_FE_element_that(
 }
 
 int FE_mesh::for_each_FE_element(
-	LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data_void)
+	LIST_ITERATOR_FUNCTION(cmzn_element) iterator_function, void *user_data_void)
 {
 	DsLabelIterator *iter = this->labels.createLabelIterator();
 	if (!iter)
 		return 0;
 	int return_code = 1;
 	DsLabelIndex elementIndex;
-	FE_element *element;
+	cmzn_element *element;
 	while ((elementIndex = iter->nextIndex()) != DS_LABEL_INDEX_INVALID)
 	{
 		element = this->getElement(elementIndex);
@@ -2443,6 +2479,7 @@ DsLabelIndex FE_mesh::getElementFirstNeighbour(DsLabelIndex elementIndex, int fa
 	DsLabelIndex faceIndex;
 	if ((this->faceMesh) && (elementShapeFaces = this->getElementShapeFaces(elementIndex)) &&
 		(faces = elementShapeFaces->getElementFaces(elementIndex)) &&
+		(0 < faceNumber) && (faceNumber < elementShapeFaces->getFaceCount()) &&
 		(0 <= (faceIndex = faces[faceNumber])))
 	{
 		const DsLabelIndex *parents;
@@ -2735,7 +2772,7 @@ struct FE_mesh_and_element_index
 int FE_field_clear_element_varying_data(struct FE_field *field, void *mesh_and_element_index_void)
 {
 	auto args = static_cast<FE_mesh_and_element_index*>(mesh_and_element_index_void);
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, args->mesh);
+	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(args->mesh);
 	if (meshFieldData)
 		meshFieldData->clearElementData(args->elementIndex);
 	return 1;
@@ -3164,7 +3201,7 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 			FE_field *field = fields[f];
 			const char *fieldName = get_FE_field_name(field);
 			FE_field *targetField = (targetNodeset) ? FE_region_get_FE_field_from_name(targetNodeset->get_FE_region(), fieldName) : 0; // this may not exist
-			FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, this);
+			FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this);
 			if (!meshFieldData)
 				continue;
 			const int componentCount = get_FE_field_number_of_components(field);
@@ -3196,14 +3233,14 @@ bool FE_mesh::checkConvertLegacyNodeParameters(FE_nodeset *targetNodeset)
 								fieldName, c + 1, this->getElementIdentifier(elementIndex), n + 1);
 							return false;
 						}
-						const FE_node_field *nodeField = cmzn_node_get_FE_node_field(node, field);
+						const FE_node_field *nodeField = node->getNodeField(field);
 						if (!nodeField)
 						{
 							DsLabelIdentifier nodeIdentifier = nodeset->getNodeIdentifier(nodeIndexes[n]);
 							cmzn_node *targetNode = (targetNodeset) ? targetNodeset->findNodeByIdentifier(nodeIdentifier) : 0;
 							if ((targetNode) && (targetField))
 							{
-								nodeField = cmzn_node_get_FE_node_field(targetNode, targetField);
+								nodeField = targetNode->getNodeField(targetField);
 							}
 							if (!nodeField)
 							{
@@ -3374,7 +3411,7 @@ struct IteratorMeshFieldComponentMergeData
 int FE_field_addMeshFieldComponentMergeData(struct FE_field *sourceField, void *mergeDataVoid)
 {
 	IteratorMeshFieldComponentMergeData *mergeData = static_cast<IteratorMeshFieldComponentMergeData *>(mergeDataVoid);
-	FE_mesh_field_data *sourceMeshFieldData = FE_field_getMeshFieldData(sourceField, mergeData->sourceMesh);
+	FE_mesh_field_data *sourceMeshFieldData = sourceField->getMeshFieldData(mergeData->sourceMesh);
 	if (!sourceMeshFieldData)
 		return 1; // field not defined on source mesh, so nothing to merge
 	FE_region *target_FE_region = mergeData->targetMesh->get_FE_region();
@@ -3385,7 +3422,7 @@ int FE_field_addMeshFieldComponentMergeData(struct FE_field *sourceField, void *
 			"FE_field_addMeshFieldComponentMergeData.  No target field for source field");
 		return 0;
 	}
-	FE_mesh_field_data *targetMeshFieldData = FE_field_getMeshFieldData(targetField, mergeData->targetMesh); // can be 0
+	FE_mesh_field_data *targetMeshFieldData = targetField->getMeshFieldData(mergeData->targetMesh); // can be 0
 	const int componentCount = get_FE_field_number_of_components(sourceField);
 	for (int c = 0; c < componentCount; ++c)
 	{
@@ -3666,11 +3703,11 @@ bool FE_mesh::mergePart2Fields(const FE_mesh &source)
 				}
 			}
 		}
-		FE_mesh_field_data *sourceMeshFieldData = FE_field_getMeshFieldData(fieldComponentData.sourceField, &source); // must exist
-		FE_mesh_field_data *targetMeshFieldData = FE_field_getMeshFieldData(fieldComponentData.targetField, this);
+		FE_mesh_field_data *sourceMeshFieldData = fieldComponentData.sourceField->getMeshFieldData(&source); // must exist
+		FE_mesh_field_data *targetMeshFieldData = fieldComponentData.targetField->getMeshFieldData(this);
 		if (!targetMeshFieldData)
 		{
-			targetMeshFieldData = FE_field_createMeshFieldData(fieldComponentData.targetField, this);
+			targetMeshFieldData = fieldComponentData.targetField->createMeshFieldData(this);
 			if (!targetMeshFieldData)
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::merge.  Failed to create mesh field data");
@@ -3727,6 +3764,14 @@ bool FE_mesh::mergePart2Fields(const FE_mesh &source)
 	}
 
 	return result;
+}
+
+FE_mesh_field_data::FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn) :
+	field(fieldIn),
+	componentCount(fieldIn->getNumberOfComponents()),
+	valueType(fieldIn->getValueType()),
+	components(componentsIn) // takes ownership of passed-in array
+{
 }
 
 FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
@@ -3793,7 +3838,7 @@ FE_mesh_field_data *FE_mesh_field_data::create(FE_field *field, FE_mesh *mesh)
 		{
 			for (int c = 0; c < componentCount; ++c)
 				delete components[c];
-			delete components;
+			delete[] components;
 		}
 	}
 	return meshFieldData;

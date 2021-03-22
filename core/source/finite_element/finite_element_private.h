@@ -68,78 +68,6 @@ Private functions
 -----------------
 */
 
-PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name);
-
-struct FE_field_info *CREATE(FE_field_info)(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_field_info with a pointer to <fe_region>.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
-
-int DESTROY(FE_field_info)(
-	struct FE_field_info **fe_field_info_address);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Destroys the FE_field_info at *<field_info_address>. Frees the
-memory for the information and sets <*field_info_address> to NULL.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_field_info);
-
-int FE_field_info_clear_FE_region(struct FE_field_info *field_info);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
-
-int FE_field_set_FE_field_info(struct FE_field *fe_field,
-	struct FE_field_info *fe_field_info);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Changes the FE_field_info at <fe_field> to <fe_field_info>.
-Private function only to be called by FE_region when merging FE_regions!
-==============================================================================*/
-
-int FE_field_set_indexer_field(struct FE_field *fe_field,
-	struct FE_field *indexer_fe_field);
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-If <fe_field> is already indexed, substitutes <indexer_fe_field>.
-Does not change any of the values currently stored in <fe_field>
-Used to merge indexed fields into different FE_regions; should not be used for
-any other purpose.
-==============================================================================*/
-
-int FE_field_log_FE_field_change(struct FE_field *fe_field,
-	void *fe_field_change_log_void);
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Logs the field in <fe_field> as RELATED_OBJECT_CHANGED in the
-struct CHANGE_LOG(FE_field) pointed to by <fe_field_change_log_void>.
-???RC Later may wish to allow more than just RELATED_OBJECT_CHANGED, or have
-separate functions for each type.
-==============================================================================*/
-
 /**
  * Describes storage of global values and derivatives for a field at a node.
  * Public only to allow efficient conversion of legacy node DOF indexes.
@@ -203,7 +131,7 @@ struct FE_node_field
 	/** @return  True if field is multi component with all components defined identically */
 	bool isHomogeneousMultiComponent() const
 	{
-		const int componentCount = get_FE_field_number_of_components(this->field);
+		const int componentCount = this->field->getNumberOfComponents();
 		if (componentCount <= 1)
 		{
 			return false;
@@ -222,7 +150,7 @@ struct FE_node_field
 	int getMaximumComponentTotalValuesCount() const
 	{
 		int maximumComponentTotalValuesCount = 0;
-		const int componentCount = get_FE_field_number_of_components(this->field);
+		const int componentCount = this->field->getNumberOfComponents();
 		for (int c = 0; c < componentCount; ++c)
 		{
 			if (this->components[c].getTotalValuesCount() > maximumComponentTotalValuesCount)
@@ -237,7 +165,7 @@ struct FE_node_field
 	int getTotalValuesCount() const
 	{
 		int totalValuesCount = 0;
-		const int componentCount = get_FE_field_number_of_components(this->field);
+		const int componentCount = this->field->getNumberOfComponents();
 		for (int c = 0; c < componentCount; ++c)
 		{
 			totalValuesCount += this->components[c].getTotalValuesCount();
@@ -253,14 +181,11 @@ struct FE_node_field
 
 	/** @return  Highest numerical value of value label above VALUE for any component */
 	int getMaximumDerivativeNumber() const;
+
+	/** Increase highestDerivative and highestVersion if higher in this node field */
+	void expandHighestDerivativeAndVersion(int& highestDerivative, int& highestVersion) const;
+
 };
-
-DECLARE_LIST_TYPES(FE_node_field);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_node_field);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node_field,field, \
-	struct FE_field *);
 
 struct LIST(FE_node_field) *FE_node_field_list_clone_with_FE_field_list(
 	struct LIST(FE_node_field) *node_field_list,
@@ -277,77 +202,43 @@ It is an error if an equivalent FE_field is not found.
 ==============================================================================*/
 
 /**
- * Creates a struct FE_node_field_info with a pointer to <fe_nodeset>
- * and a copy of the <fe_node_field_list>.
- * If <fe_node_field_list> is omitted, an empty list is assumed.
- * Returned object has an access count of 1.
- * Note:
- * This should only be called by FE_nodeset functions. The returned object is
- * added to the list of FE_node_field_info in the FE_nodeset and 'owned by it'.
- * It maintains a non-ACCESSed pointer to its owning FE_nodeset which the
- * FE_nodeset will clear before it is destroyed.
+ * @return  true if a node field exactly matching <node_field> is found in
+ * <node_field_list>.
  */
-struct FE_node_field_info *CREATE(FE_node_field_info)(
-	FE_nodeset *fe_nodeset, struct LIST(FE_node_field) *fe_node_field_list,
-	int number_of_values);
-
-PROTOTYPE_OBJECT_FUNCTIONS(FE_node_field_info);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_node_field_info);
+int FE_node_field_is_in_list(struct FE_node_field *node_field,
+	void *node_field_list_void);
 
 /**
- * Clears the pointer to FE_nodeset in <node_field_info>.
- * Private function only to be called by ~FE_nodeset.
+ * Frees accesses and dynamically allocated memory in <start_of_values_storage>
+ * for the FE_node_field.
+ * The <start_of_the_values_storage> address is passed so that the this function
+ * can be called from an interator, the <node> is not passed so this function can
+ * be used to deallocate parts of any values_storage.  The <values_storage> can
+ * be NULL if there are no GENERAL_FE_FIELDs defined on the node.
+ * Only certain value types, eg. arrays, strings, element_xi require this.
  */
-int FE_node_field_info_clear_FE_nodeset(
-	struct FE_node_field_info *node_field_info, void *dummy_void);
+int FE_node_field_free_values_storage_arrays(
+	struct FE_node_field *node_field, void *start_of_values_storage_void);
 
-int FE_node_field_info_has_FE_field(
-	struct FE_node_field_info *node_field_info, void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
+/**
+ * @return  The size, in bytes, of the data in the nodal values storage owned
+ * by the all the node_fields in node_field_list.
+ */
+int get_FE_node_field_list_values_storage_size(
+	struct LIST(FE_node_field) *node_field_list);
 
-DESCRIPTION :
-Returns true if <node_field_info> has an node field for <fe_field>.
-==============================================================================*/
-
-int FE_node_field_info_has_empty_FE_node_field_list(
-	struct FE_node_field_info *node_field_info, void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 14 October 2002
-
-DESCRIPTION :
-Returns true if <node_field_info> has no node fields.
-==============================================================================*/
-
-int FE_node_field_info_has_FE_field_with_multiple_times(
-	struct FE_node_field_info *node_field_info, void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED: 26 February 2003
-
-DESCRIPTION:
-Returns true if <node_field_info> has a node_field that references
-<fe_field_void> and that node_field has multiple times.
-==============================================================================*/
-
-int FE_node_field_info_has_matching_FE_node_field_list(
-	struct FE_node_field_info *node_field_info, void *node_field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 November 2002
-
-DESCRIPTION :
-Returns true if <node_field_info> has a FE_node_field_list containing all the
-same FE_node_fields as <node_field_list>.
-==============================================================================*/
-
-struct LIST(FE_node_field) *FE_node_field_info_get_node_field_list(
-	struct FE_node_field_info *fe_node_field_info);
-/*******************************************************************************
-LAST MODIFIED : 24 February 2003
-
-DESCRIPTION :
-Returns the node field list contained in the <node_field_info>.
-==============================================================================*/
+/**
+ * Allocates values_storage to the same size as node->values_storage.
+ * Copies the node->values_storage to values_storage. Also allocates and copies
+ * any arrays in node->values_storage.
+ * Note that values_storage contains no information about the value_type(s) or the
+ * number of values of the data in it. You must refer to the FE_node/FE_field to
+ * get this.
+ * The calling function is responsible for deallocating values_storage,
+ * and any arrays in values_storage.
+ */
+int allocate_and_copy_FE_node_values_storage(struct FE_node *node,
+	Value_storage **values_storage);
 
 int FE_node_field_info_add_node_field(
 	struct FE_node_field_info *fe_node_field_info, 
@@ -361,99 +252,7 @@ Adds the <new_node_field> to the list in the <fe_node_field_info> and updates th
 is known to be the only object using this field info.
 ==============================================================================*/
 
-int FE_node_field_info_used_only_once(
-	struct FE_node_field_info *fe_node_field_info);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2005
-
-DESCRIPTION :
-Returns 1 if the <node_field_info> access count indicates that it is being used
-by only one external object.
-==============================================================================*/
-
-int FE_node_field_info_get_number_of_values(
-	struct FE_node_field_info *fe_node_field_info);
-/*******************************************************************************
-LAST MODIFIED : 24 February 2003
-
-DESCRIPTION :
-Returns the number of values expected for the <node_field_info>.
-==============================================================================*/
-
-int FE_node_field_info_log_FE_field_changes(
-	struct FE_node_field_info *fe_node_field_info,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2003
-
-DESCRIPTION :
-Marks each FE_field in <fe_node_field_info> as RELATED_OBJECT_CHANGED
-in <fe_field_change_log>.
-==============================================================================*/
-
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_node,cm_node_identifier);
-
-/**
- * Creates and returns a non-global node to be used as a template for
- * creating other nodes in the supplied mesh.
- * @param node_field_info  A struct FE_node_field_info linking to the
- * mesh. Should have no fields.
- * @return  Accessed node, or 0 on error. Do not merge into FE_nodeset!
- */
-cmzn_node *create_template_FE_node(FE_node_field_info *node_field_info);
-
-/**
- * Creates and returns a non-global node with the specified index,
- * that is a copy of the supplied template node i.e. with all fields
- * and values from it.
- * The returned node is ready to be added into the FE_mesh the
- * template node was created by.
- * Shape is not set for new node as mapped in mesh.
- * Faces are not copied from the template node.
- * @param index  Index of node in mesh, or DS_LABEL_INDEX_INVALID if used
- * as a non-global template node i.e. when called from
- * FE_node_template::FE_node_template().
- * @param template_node  node to copy.
- * @return  Accessed node, or 0 on error.
- */
-cmzn_node *create_FE_node_from_template(DsLabelIndex index, cmzn_node *template_node);
-
-/**
- * Clear content of node and disconnect it from owning nodeset.
- * Use when removing node from nodeset or deleting nodeset to safely orphan any
- * externally accessed nodes.
- */
-void FE_node_invalidate(cmzn_node *node);
-
-struct FE_node_field_info *FE_node_get_FE_node_field_info(cmzn_node *node);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns the FE_node_field_info from <node>. Must not be modified!
-==============================================================================*/
-
-int FE_node_set_FE_node_field_info(cmzn_node *node,
-	struct FE_node_field_info *fe_node_field_info);
-/*******************************************************************************
-LAST MODIFIED : 24 February 2003
-
-DESCRIPTION :
-Changes the FE_node_field_info at <node> to <fe_node_field_info>.
-Note it is very important that the old and the new FE_node_field_info structures
-describe the same data layout in the nodal values_storage!
-Private function only to be called by FE_region when merging FE_regions!
-==============================================================================*/
-
-/**
- * Get the node_field describing parameter storage for field at node.
- * @param node  The node to query.
- * @param field  The field to query.
- * @return  Non-accessed node_field, or 0 if not defined. Use immediately,
- * access or copy as may be destroyed at any time.
- */
-const FE_node_field *cmzn_node_get_FE_node_field(cmzn_node *node,
-	struct FE_field *field);
 
 /**
  * Merges the fields from <source> into <destination>. Existing fields in the

@@ -15,7 +15,7 @@
 #include "opencmiss/zinc/fieldgroup.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/types/regionid.h"
 
 /*

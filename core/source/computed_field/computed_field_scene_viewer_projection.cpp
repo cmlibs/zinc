@@ -16,7 +16,7 @@
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
 #include "general/message.h"
 #include "computed_field/computed_field_scene_viewer_projection.h"
@@ -113,7 +113,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -271,37 +271,19 @@ int Computed_field_scene_viewer_projection::evaluate(cmzn_fieldcache& cache, Fie
 			{
 				valueCache.values[i] = projection_matrix[i];
 			}
-			int number_of_xi = cache.getRequestedDerivatives();
-			if (number_of_xi)
-			{
-				for (int i = 0 ; i < field->number_of_components ; i++)
-				{
-					for (int k = 0; k < number_of_xi; k++)
-					{
-						valueCache.derivatives[i*number_of_xi + k] = 0.0;
-					}
-				}
-				valueCache.derivatives_valid = 1;
-			}
-			else
-			{
-				valueCache.derivatives_valid = 0;
-			}
-		}
-		else
-		{
-			return 0;
+			return 1;
 		}
 	}
-	else
-	{
-		/* Just set everything to zero */
-		for (int i = 0 ; i < field->number_of_components ; i++)
-		{
-			valueCache.values[i] = 0.0;
-		}
-	}
-	return 1;
+	//else
+	//{
+	//	/* Just set everything to zero */
+	//	for (int i = 0 ; i < field->number_of_components ; i++)
+	//	{
+	//		valueCache.values[i] = 0.0;
+	//	}
+	//}
+	//return 1;
+	return 0;
 }
 
 /* return 1 if projection matrix requires an update */
@@ -318,7 +300,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 			return 0;
 		}
 		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-		cmzn_scene_id scene = cmzn_region_get_scene_private(region);
+		cmzn_scene_id scene = region->getScene();
 		cmzn_scene_id top_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 		gtMatrix *local_transformation_matrix = cmzn_scene_get_total_transformation(
 			scene, top_scene);
@@ -470,7 +452,7 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 		if (field_module)
 		{
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			struct cmzn_scene *scene = region->getScene();
 			transformation_callback_flag = cmzn_scene_add_total_transformation_callback(
 				scene, current_scene,
 				Computed_field_scene_projection_transformation_callback,
@@ -489,7 +471,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 		if (field_module)
 		{
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			struct cmzn_scene *scene = region->getScene();
 			cmzn_scene_remove_total_transformation_callback(scene,
 				current_scene, Computed_field_scene_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
@@ -561,7 +543,7 @@ that the computed field has changed.
 			core->scene_viewer = (struct Scene_viewer *)NULL;
 			if (field->manager)
 			{
-				Computed_field_changed(field);
+				field->setChanged();
 			}
 		}
 	}
@@ -639,7 +621,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	enum cmzn_scenecoordinatesystem from_coordinate_system,
 	enum cmzn_scenecoordinatesystem to_coordinate_system)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (sceneviewer)
 	{
 		field = Computed_field_create_generic(field_module,
@@ -653,7 +635,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_scene_viewer_projection.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_sceneviewer_projection.  Invalid argument(s)");
 	}
 
 	return (field);

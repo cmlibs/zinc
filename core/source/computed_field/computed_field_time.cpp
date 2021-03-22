@@ -67,14 +67,14 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreatePrivateExtraCache(Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -85,16 +85,14 @@ private:
 
 int Computed_field_time_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluateNoDerivatives(cache));
+	const RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (timeValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
-		Field_location *location = cache.cloneLocation();
-		location->set_time(timeValueCache->values[0]);
-		extraCache.setLocation(location);
-		extraCache.setRequestedDerivatives(cache.getRequestedDerivatives());
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
+		extraCache.copyLocation(cache);
+		extraCache.setTime(timeValueCache->values[0]);
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 		if (sourceValueCache)
 		{
 			valueCache.copyValues(*sourceValueCache);
@@ -329,7 +327,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -374,12 +374,13 @@ int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	valueCache.values[0] = (Time_object_get_timekeeper(time_object))->getTime();
-	// spatial derivatives are zero
-	for (int j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
-	{
-		valueCache.derivatives[j] = 0.0;
-	}
-	valueCache.derivatives_valid = 1;
+	return 1;
+}
+
+int Computed_field_time_value::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// spatial derivatives are zero (review when time derivatives are added)
+	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 	return 1;
 }
 

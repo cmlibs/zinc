@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/graphics.hpp"
 #include "description_io/graphics_json_export.hpp"
 #include "description_io/scene_json_export.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 
 std::string SceneJsonExport::getExportString()
 {

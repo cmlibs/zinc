@@ -559,7 +559,7 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 				number_in_xi, &number_of_xi_points, &xi_points))
 			{
 				if (!(array_data.element_values->values &&
-					(CMZN_OK == cmzn_fieldcache_set_mesh_location(array_data.field_cache, element, dimension, *xi_points)) &&
+					(CMZN_OK == array_data.field_cache->setMeshLocation(element, *xi_points)) &&
 					(CMZN_OK == cmzn_field_evaluate_real(array_data.sort_by_field, array_data.field_cache,
 						cmzn_field_get_number_of_components(array_data.sort_by_field), array_data.element_values->values))))
 				{
@@ -605,7 +605,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 		const int number_of_elements = (element_group) ? element_group->getSize() : fe_mesh->getSize();
 		if (0 < number_of_elements)
 		{
-			const int number_of_values = (sort_by_field) ? Computed_field_get_number_of_components(sort_by_field) : 0;
+			const int number_of_values = (sort_by_field) ? cmzn_field_get_number_of_components(sort_by_field) : 0;
 			struct FE_element_values_number *element_values;
 			if (ALLOCATE(element_values, struct FE_element_values_number, number_of_elements))
 			{

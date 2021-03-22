@@ -17,7 +17,7 @@ Image processing fields use the native resolution to determine their image size.
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element_region.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
@@ -237,7 +237,7 @@ namespace {
 			return new Computed_field_image_resample(dimension, sizes);
 		}
 
-		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{
@@ -309,16 +309,17 @@ Compare the type specific data.
 
 int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache *sourceCache = 0;
-	Field_coordinate_location* coordinate_location = NULL;
-	if ((coordinate_location =	dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
+	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+	const RealFieldValueCache *sourceCache = 0;
+	const Field_location_field_values* coordinate_location = 0;
+	if ((coordinate_location = cache.get_location_field_values()))
 	{
-		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
-		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		field_cache->setTime(cache.getTime());
-		int numberOfValues= coordinate_location->get_number_of_values();
-		FE_value *cacheValues = coordinate_location->get_values();
-		FE_value *pixelValues = new double[numberOfValues];
+		cmzn_fieldcache *field_cache = valueCache.getOrCreateSharedExtraCache(cache);
+		if (!field_cache)
+			return 0;
+		const int numberOfValues= coordinate_location->get_number_of_values();
+		const FE_value *cacheValues = coordinate_location->get_values();
+		FE_value *pixelValues = new double[numberOfValues];  // GRC should avoid allocations here
 		for (int i = 0 ; i < dimension; i++)
 		{
 			if (numberOfValues > i)
@@ -348,17 +349,15 @@ int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCa
 			}
 		}
 		int return_code = 0;
-		field_cache->setFieldReal(coordinate_location->get_reference_field(), numberOfValues, pixelValues);
+		field_cache->setFieldReal(coordinate_location->get_field(), numberOfValues, pixelValues);
+		field_cache->setTime(cache.getTime());
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*field_cache));
 		if (sourceCache)
 		{
-			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 			valueCache.copyValues(*sourceCache);
 			return_code = 1;
 		}
 		delete[] pixelValues;
-		cmzn_fieldcache_destroy(&field_cache);
-		cmzn_fieldmodule_destroy(&field_module);
 		return return_code;
 	}
 	else
@@ -366,7 +365,6 @@ int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 		if (sourceCache)
 		{
-			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 			valueCache.copyValues(*sourceCache);
 			return 1;
 		}
@@ -566,7 +564,7 @@ Computed_field *cmzn_fieldmodule_create_field_image_resample(
 	struct Computed_field *source_field, int dimension, int *sizes)
 {
 	Computed_field *field = NULL;
-	if (source_field && dimension && sizes)
+	if (source_field && source_field->isNumerical() && dimension && sizes)
 	{
 		Computed_field *source_texture_coordinate_field = NULL;
 		int source_field_dimension = 0;

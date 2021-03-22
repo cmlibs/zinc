@@ -30,7 +30,6 @@ GL rendering calls - API specific.
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render_gl.h"
-#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/scene_coordinate_system.hpp"
 #include "graphics/spectrum.hpp"
@@ -580,18 +579,19 @@ public:
 	std::string **output_string;
 	int morphVertices, morphColours, morphNormals, numberOfResources;
 	char **filenames;
-
+	int isInline;
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
 		enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
 		std::string **output_string_in, int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
-		int numberOfFilesIn, char **filenamesIn) :
+		int numberOfFilesIn, char **filenamesIn, int isInlineIn) :
 		Render_graphics_opengl_vertex_buffer_object(),
 		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
 		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
 		mode(mode_in), number_of_entries(number_of_entries_in), numberOfResources(numberOfFilesIn),
-		filenames(filenamesIn)
+		filenames(filenamesIn),
+		isInline(isInlineIn)
 	{
 		exports_map.clear();
 		current_graphics_number = 0;
@@ -613,13 +613,21 @@ public:
 		int size = 0;
 		Threejs_export *threejs_export = 0;
 
-		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
-			export_iter != exports_map.end(); export_iter++)
+		if (isInline)
 		{
-			size++;
-			threejs_export =  export_iter->second;
-			if (dynamic_cast<Threejs_export_glyph*>(threejs_export))
+			// Inline, everything is stored n the meta file.
+			return 1;
+		}
+		else
+		{
+			for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+				export_iter != exports_map.end(); export_iter++)
+			{
 				size++;
+				threejs_export =  export_iter->second;
+				if (dynamic_cast<Threejs_export_glyph*>(threejs_export))
+					size++;
+			}
 		}
 		//Also a file providing metafile, only when there is graphics to be exported
 		if (size > 0)
@@ -640,39 +648,61 @@ public:
 			graphics_json["MorphVertices"] = export_iter->second->getMorphVerticesExported();
 			graphics_json["MorphColours"] = export_iter->second->getMorphColoursExported();
 			graphics_json["MorphNormals"] = export_iter->second->getMorphNormalsExported();
-
-			if (numberOfResources > i)
+			if (isInline)
 			{
-				graphics_json["URL"] = filenames[i];
+				graphics_json["Inline"]["URL"]= export_iter->second->getExportJson();
 			}
 			else
 			{
-				char temp[20];
-				sprintf(temp, "temp_%d.json", i+1);
-				graphics_json["URL"] = temp;
-			}
-			char *group_name = export_iter->second->getGroupNameNonAccessed();
-			if (group_name)
-				graphics_json["GroupName"] = group_name;
-
-
-			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
-			if (glyph_export)
-			{
-				graphics_json["Type"]="Glyph";
-				i++;
 				if (numberOfResources > i)
 				{
-					graphics_json["GlyphGeometriesURL"] = filenames[i];
-					glyph_export->setGlyphGeometriesURLName(filenames[i]);
+					graphics_json["URL"] = filenames[i];
 				}
 				else
 				{
 					char temp[20];
 					sprintf(temp, "temp_%d.json", i+1);
-					graphics_json["GlyphGeometriesURL"] = temp;
-					glyph_export->setGlyphGeometriesURLName(temp);
+					graphics_json["URL"] = temp;
 				}
+			}
+			char *group_name = export_iter->second->getGroupNameNonAccessed();
+			if (group_name)
+				graphics_json["GroupName"] = group_name;
+
+			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+			Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
+			Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(export_iter->second);
+			if (glyph_export)
+			{
+				graphics_json["Type"]="Glyph";
+				i++;
+				if (isInline)
+				{
+					graphics_json["Inline"]["GlyphGeometriesURL"] = glyph_export->getGlyphTransformationExportJson();
+				}
+				else
+				{
+					if (numberOfResources > i)
+					{
+						graphics_json["GlyphGeometriesURL"] = filenames[i];
+						glyph_export->setGlyphGeometriesURLName(filenames[i]);
+					}
+					else
+					{
+						char temp[20];
+						sprintf(temp, "temp_%d.json", i+1);
+						graphics_json["GlyphGeometriesURL"] = temp;
+						glyph_export->setGlyphGeometriesURLName(temp);
+					}
+				}
+			}
+			else if (line_export)
+			{
+				graphics_json["Type"]="Lines";
+			}
+			else if (point_export)
+			{
+				graphics_json["Type"]="Points";
 			}
 			else
 			{
@@ -692,18 +722,21 @@ public:
 		{
 			*output_string = new std::string[*number_of_entries];
 			(*output_string)[0] = std::string(get_metadata_string());
-			int i = 1;
-			for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
-				export_iter != exports_map.end(); export_iter++)
+			if (isInline == 0)
 			{
-				Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
-				if (glyph_export)
+				int i = 1;
+				for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+					export_iter != exports_map.end(); export_iter++)
 				{
-					(*output_string)[i] = std::string(*glyph_export->getGlyphTransformationExportString());
+					Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+					if (glyph_export)
+					{
+						(*output_string)[i] = std::string(*glyph_export->getGlyphTransformationExportString());
+						i++;
+					}
+					(*output_string)[i] = std::string(*(export_iter->second->getExportString()));
 					i++;
 				}
-				(*output_string)[i] = std::string(*(export_iter->second->getExportString()));
-				i++;
 			}
 		}
 		return 1;
@@ -790,7 +823,7 @@ public:
 		if (number_of_time_steps == 0 || current_time_frame == 0)
 		{
 			cmzn_material_id material = cmzn_graphics_get_material(graphics);
-			/* non-accessed */
+			/* non-accessed www*/
 			struct Texture *texture = Graphical_material_get_texture(
 				material);
 			double textureSizes[3] = {0.0, 0.0, 0.0};
@@ -868,7 +901,16 @@ public:
 			{
 				return_code = Graphics_export<Threejs_export_glyph>(graphics);
 			}
+			else if ((cmzn_graphicspointattributes_get_glyph_shape_type(pointAttr) ==
+					CMZN_GLYPH_SHAPE_TYPE_POINT))
+			{
+				return_code = Graphics_export<Threejs_export_point>(graphics);
+			}
 			cmzn_graphicspointattributes_destroy(&pointAttr);
+		}
+		else if (graphics_object && (GT_object_get_type(graphics_object) == g_POLYLINE_VERTEX_BUFFERS))
+		{
+			return_code = Graphics_export<Threejs_export_line>(graphics);
 		}
 
 		return return_code;
@@ -902,11 +944,11 @@ Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
 	int *number_of_entries, std::string **output_string,
 	int morphVertices, int morphColours, int morphNormals,
-	int numberOfFiles, char **file_names)
+	int numberOfFiles, char **file_names, int isInline)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
 		begin_time, end_time, mode, number_of_entries, output_string,
-		morphVertices, morphColours, morphNormals, numberOfFiles, file_names);
+		morphVertices, morphColours, morphNormals, numberOfFiles, file_names, isInline);
 }
 
 /**

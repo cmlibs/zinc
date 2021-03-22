@@ -62,22 +62,21 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
 int Computed_field_or::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			valueCache.values[i] = (0.0 != source1Cache->values[i]) || (0.0 != source2Cache->values[i]);
 		}
-		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;
@@ -194,22 +193,21 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
 int Computed_field_and::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			valueCache.values[i] = (0.0 != source1Cache->values[i]) && (0.0 != source2Cache->values[i]);
 		}
-		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;
@@ -326,14 +324,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_xor::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
@@ -347,7 +345,6 @@ int Computed_field_xor::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 				valueCache.values[i] = (0.0 != source2Cache->values[i]);
 			}
 		}
-		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;
@@ -464,7 +461,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_equal_to::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -474,22 +471,21 @@ int Computed_field_equal_to::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	{
 		case CMZN_FIELD_VALUE_TYPE_REAL:
 		{
-			RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-			RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+			const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+			const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 			if (source1Cache && source2Cache)
 			{
 				for (int i = 0 ; i < field->number_of_components ; i++)
 				{
 					valueCache.values[i] = (source1Cache->values[i] == source2Cache->values[i]) ? 1.0 : 0.0;
 				}
-				valueCache.derivatives_valid = 0;
 				return 1;
 			}
 		} break;
 		case CMZN_FIELD_VALUE_TYPE_STRING:
 		{
-			StringFieldValueCache *source1Cache = StringFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-			StringFieldValueCache *source2Cache = StringFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+			const StringFieldValueCache *source1Cache = StringFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+			const StringFieldValueCache *source2Cache = StringFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 			if (source1Cache && source2Cache)
 			{
 				FE_value result = (FE_value)(0 == strcmp(source1Cache->stringValue, source2Cache->stringValue));
@@ -620,21 +616,20 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_less_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			valueCache.values[i] = (source1Cache->values[i] < source2Cache->values[i]) ? 1.0 : 0.0;
 		}
-		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;
@@ -749,21 +744,20 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_greater_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			valueCache.values[i] = (source1Cache->values[i] > source2Cache->values[i]) ? 1.0 : 0.0;
 		}
-		valueCache.derivatives_valid = 0;
 		return 1;
 	}
 	return 0;
@@ -878,7 +872,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual bool is_defined_at_location(cmzn_fieldcache&)
 	{
@@ -967,13 +961,13 @@ private:
 		return (0 != dynamic_cast<Computed_field_not*>(other_field));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_not::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)

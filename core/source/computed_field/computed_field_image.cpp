@@ -107,7 +107,7 @@ public:
 			int new_number_of_components;
 			if (texture_is_evaluated_from_source_field())
 			{
-				new_number_of_components = Computed_field_get_number_of_components(
+				new_number_of_components = cmzn_field_get_number_of_components(
 					field->source_fields[1]);
 			}
 			else if (texture_in)
@@ -124,7 +124,7 @@ public:
 			{
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
-				Computed_field_changed(this->field);
+				this->field->setChanged();
 				return_code = 1;
 			}
 			else
@@ -139,7 +139,7 @@ public:
 		{
 			// just called from copy() - copy texture reference
 			REACCESS(Texture)(&texture, texture_in);
-			Computed_field_changed(this->field);
+			this->field->setChanged();
 			return_code = 1;
 		}
 		return (return_code);
@@ -200,7 +200,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -377,7 +377,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 				// and evaluate source field there; as defined here it gives no scope to
 				// optimise, e.g. by searching through a subgroup of the mesh
 				const int number_of_texture_coordinate_components =
-					Computed_field_get_number_of_components(texture_coordinate_field);
+					cmzn_field_get_number_of_components(texture_coordinate_field);
 				cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 				cmzn_mesh_id search_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
 					number_of_texture_coordinate_components);
@@ -428,7 +428,7 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	check_evaluate_texture();
 	if (texture)
 	{
-		RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+		const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 		if (sourceCache)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
@@ -470,7 +470,6 @@ int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 						texture_values[i] * (maximum - minimum);
 				}
 			}
-			valueCache.derivatives_valid = 0;
 			return 1;
 		}
 	}
@@ -785,18 +784,6 @@ int cmzn_field_image_set_output_range(cmzn_field_image_id image_field, double mi
 	return return_code;
 }
 
-int cmzn_field_image_set_number_of_bytes_per_component(cmzn_field_image_id image_field, int number_of_bytes_per_component)
-{
-	int return_code = 0;
-	if (image_field)
-	{
-		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
-		return_code = image_core->set_number_of_bytes_per_component(number_of_bytes_per_component);
-	}
-
-	return return_code;
-}
-
 cmzn_texture *cmzn_field_image_get_texture(cmzn_field_image_id image_field)
 {
 	cmzn_texture *cmiss_texture = 0;
@@ -975,11 +962,11 @@ int cmzn_field_image_set_size_in_pixels(cmzn_field_image_id image,
 		const int image_depth = (valuesCount > 2) ? valuesIn[2] : 1;
 		const enum Texture_storage_type storage = Texture_get_storage_type(image_core->texture);
 		if (Texture_allocate_image(image_core->texture, image_width, image_height, image_depth,
-			storage, image_core->number_of_bytes_per_component, field->name))
+			storage, image_core->number_of_bytes_per_component, 0))
 		{
 			image_core->use_source_resolution = false;
 			image_core->texture_buffer_changed();
-			Computed_field_changed(field);
+			field->setChanged();
 			return CMZN_RESULT_OK;
 		}
 		return CMZN_RESULT_ERROR_GENERAL;
@@ -1233,9 +1220,9 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 		}
 	}
 	number_of_data_components =
-		Computed_field_get_number_of_components(field);
+		cmzn_field_get_number_of_components(field);
 	const int number_of_texture_coordinate_components =
-		Computed_field_get_number_of_components(texture_coordinate_field);
+		cmzn_field_get_number_of_components(texture_coordinate_field);
 	if ((number_of_texture_coordinate_components > 3) ||
 		(number_of_texture_coordinate_components < dimension))
 	{
@@ -1351,11 +1338,11 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 						if (search_mesh && (
 							(graphics_buffer_package && Computed_field_find_element_xi_special(
 								 texture_coordinate_field, field_cache, &cache, values,
-								 Computed_field_get_number_of_components(texture_coordinate_field), &element, xi,
+								 cmzn_field_get_number_of_components(texture_coordinate_field), &element, xi,
 								 search_mesh, graphics_buffer_package,
 								 hint_minimums, hint_maximums, hint_resolution)) ||
 							Computed_field_find_element_xi(texture_coordinate_field, field_cache,
-								values, Computed_field_get_number_of_components(texture_coordinate_field),
+								values, cmzn_field_get_number_of_components(texture_coordinate_field),
 								&element, xi, search_mesh, propagate_field,
 								/*find_nearest_location*/0)))
 						{
@@ -1368,7 +1355,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 									printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
 								}
 #endif /* defined (DEBUG_CODE) */
-								if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, mesh_dimension, xi)) &&
+								if ((CMZN_OK == field_cache->setMeshLocation(element, xi)) &&
 									(CMZN_OK == cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values)))
 								{
 									if (!spectrum)
@@ -1641,7 +1628,7 @@ int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
 		if (Texture_get_combine_mode(image_core->texture) != texture_combine_mode)
 		{
 			Texture_set_combine_mode(image_core->texture, texture_combine_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1768,7 +1755,7 @@ int cmzn_field_image_set_hardware_compression_mode(cmzn_field_image_id image_fie
 		if (Texture_get_compression_mode(image_core->texture) != texture_compression_mode)
 		{
 			Texture_set_compression_mode(image_core->texture, texture_compression_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1833,7 +1820,7 @@ int cmzn_field_image_set_filter_mode(cmzn_field_image_id image_field,
 		if (Texture_get_filter_mode(image_core->texture) != texture_filter_mode)
 		{
 			Texture_set_filter_mode(image_core->texture, texture_filter_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1917,7 +1904,7 @@ int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
 		if (Texture_get_wrap_mode(image_core->texture) != texture_wrap_mode)
 		{
 			Texture_set_wrap_mode(image_core->texture, texture_wrap_mode);
-			Computed_field_changed(cmzn_field_image_base_cast(image_field));
+			cmzn_field_image_base_cast(image_field)->setChanged();
 		}
 		return CMZN_RESULT_OK;
 	}
@@ -1966,3 +1953,168 @@ char *cmzn_field_image_wrap_mode_enum_to_string(enum cmzn_field_image_wrap_mode 
 	const char *mode_string = cmzn_field_image_wrap_mode_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
+
+int cmzn_field_image_get_number_of_bits_per_component(
+	cmzn_field_image_id image_field)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			int numberOfBytes = Texture_get_number_of_bytes_per_component (texture);
+			switch (numberOfBytes)
+			{
+				case 1:
+					return 8;
+				case 2:
+					return 16;
+				default:
+					return 0;
+			}
+		}
+	}
+	return 0;
+}
+
+int cmzn_field_image_set_number_of_bits_per_component(
+	cmzn_field_image_id image_field, int number_of_bits)
+{
+	if (image_field && (number_of_bits ==8 || number_of_bits==16))
+	{
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			switch (number_of_bits)
+			{
+				case 8:
+					image_core->set_number_of_bytes_per_component(1);
+					return Texture_set_number_of_bytes_per_component(texture, 1);
+				case 16:
+					image_core->set_number_of_bytes_per_component(2);
+					return Texture_set_number_of_bytes_per_component(texture, 2);
+				default:
+					return CMZN_RESULT_ERROR_ARGUMENT;
+			}
+
+		}
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+cmzn_field_image_pixel_format cmzn_field_image_get_pixel_format(
+	cmzn_field_image_id image_field)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			enum Texture_storage_type storage_type = Texture_get_storage_type(texture);
+			enum cmzn_field_image_pixel_format pixel_format =
+				CMZN_FIELD_IMAGE_PIXEL_FORMAT_INVALID;
+			switch (storage_type)
+			{
+				case TEXTURE_LUMINANCE:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE;
+					break;
+				case TEXTURE_LUMINANCE_ALPHA:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA;
+					break;
+				case TEXTURE_RGB:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGB;
+					break;
+				case TEXTURE_RGBA:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGBA;
+					break;
+				case TEXTURE_ABGR:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_ABGR;
+					break;
+				case TEXTURE_BGR:
+					pixel_format = CMZN_FIELD_IMAGE_PIXEL_FORMAT_BGR;
+					break;
+				default:
+					break;
+			}
+			return pixel_format;
+		}
+	}
+	return CMZN_FIELD_IMAGE_PIXEL_FORMAT_INVALID;
+}
+
+int cmzn_field_image_set_pixel_format(cmzn_field_image_id image_field,
+	enum cmzn_field_image_pixel_format pixel_format)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			enum Texture_storage_type storage_type = TEXTURE_STORAGE_TYPE_INVALID;
+			switch (pixel_format)
+			{
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE:
+					storage_type = TEXTURE_LUMINANCE;
+					break;
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+					storage_type = TEXTURE_LUMINANCE_ALPHA;
+					break;
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGB:
+					storage_type = TEXTURE_RGB;
+					break;
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_RGBA:
+					storage_type = TEXTURE_RGBA;
+					break;
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_ABGR:
+					storage_type = TEXTURE_ABGR;
+					break;
+				case CMZN_FIELD_IMAGE_PIXEL_FORMAT_BGR:
+					storage_type = TEXTURE_BGR;
+					break;
+				default:
+					return CMZN_RESULT_ERROR_ARGUMENT;
+					break;
+			}
+			return Texture_set_storage_type(texture, storage_type);
+		}
+	}
+
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_get_buffer(cmzn_field_image_id image_field,
+	const void **buffer_out, unsigned int *buffer_length_out)
+{
+	if (image_field)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			return Texture_get_image_block(texture, buffer_out, buffer_length_out);
+		}
+		else
+		{
+			*buffer_out = 0;
+			*buffer_length_out = 0;
+		}
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_set_buffer(cmzn_field_image_id image_field, const void *buffer,
+	unsigned int buffer_length)
+{
+	if (image_field && buffer && (buffer_length > 0))
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image_field);
+		if (texture)
+		{
+			cmzn_field_image_base_cast(image_field)->setChanged();
+			return Texture_fill_image_block(texture, (unsigned char *)buffer,
+				buffer_length);
+		}
+	}
+	return CMZN_RESULT_ERROR_ARGUMENT;
+}
+

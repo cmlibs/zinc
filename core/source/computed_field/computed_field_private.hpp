@@ -27,7 +27,7 @@ Types used only internally to computed fields.
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /**
  * Argument to field modifier functions supplying region, default name,
@@ -235,7 +235,7 @@ public:
 	};
 
 	// override for fields requiring specialised value caches
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/);
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/);
 
 	virtual int clear_cache() // GRC remove
 	{
@@ -259,6 +259,16 @@ public:
 	};
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
+
+	/** Override for real-valued fields */
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	/** Evaluate derivatives using finite differences. Only for real-valued fields
+	 * Only implemented for element_xi derivatives & locations.
+	 * @param cache  Parent cache containing location to evaluate.
+	 * @param valueCache  The real field value cache to put values in.
+	 * @param fieldDerivative  The field derivative operator. */
+	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
 
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
@@ -451,11 +461,11 @@ enum Computed_field_attribute_flags
 };
 
 struct Computed_field
-/*******************************************************************************
-LAST MODIFIED : 23 August 2006
+	/*******************************************************************************
+	LAST MODIFIED : 23 August 2006
 
-DESCRIPTION :
-==============================================================================*/
+	DESCRIPTION :
+	==============================================================================*/
 {
 	/* the name/identifier of the Computed_field */
 	const char *name;
@@ -507,13 +517,13 @@ DESCRIPTION :
 	 */
 	void clearCaches();
 
-	inline FieldValueCache *getValueCache(cmzn_fieldcache& cache)
+	inline FieldValueCache *getValueCache(cmzn_fieldcache& fieldCache)
 	{
-		FieldValueCache *valueCache = cache.getValueCache(cache_index);
+		FieldValueCache *valueCache = fieldCache.getValueCache(this->cache_index);
 		if (!valueCache)
 		{
-			valueCache = core->createValueCache(cache);
-			cache.setValueCache(cache_index, valueCache);
+			valueCache = this->core->createValueCache(fieldCache);
+			fieldCache.setValueCache(this->cache_index, valueCache);
 		}
 		return valueCache;
 	}
@@ -536,28 +546,14 @@ DESCRIPTION :
 		return result;
 	}
 
-	inline FieldValueCache *evaluate(cmzn_fieldcache& cache);
+	inline const FieldValueCache *evaluate(cmzn_fieldcache& cache);
 
-	/** @param numberOfDerivatives  positive number of xi dimension of element location */
-	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_fieldcache& cache, int numberOfDerivatives)
-	{
-		int requestedDerivatives = cache.getRequestedDerivatives();
-		cache.setRequestedDerivatives(numberOfDerivatives);
-		RealFieldValueCache *valueCache = RealFieldValueCache::cast(evaluate(cache));
-		cache.setRequestedDerivatives(requestedDerivatives);
-		if (valueCache && valueCache->derivatives_valid)
-			return valueCache;
-		return 0;
-	}
+	/** Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline const DerivativeValueCache *evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
-	inline FieldValueCache *evaluateNoDerivatives(cmzn_fieldcache& cache)
-	{
-		int requestedDerivatives = cache.getRequestedDerivatives();
-		cache.setRequestedDerivatives(0);
-		FieldValueCache *valueCache = evaluate(cache);
-		cache.setRequestedDerivatives(requestedDerivatives);
-		return valueCache;
-	}
+	/** Evaluate all derivatives from fieldDerivative down to value.
+	 * Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
+	inline const RealFieldValueCache *evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
@@ -572,6 +568,11 @@ DESCRIPTION :
 				return true;
 		}
 		return false;
+	}
+
+	const char *getName() const
+	{
+		return this->name;
 	}
 
 	int isNumerical()
@@ -595,6 +596,12 @@ DESCRIPTION :
 	}
 
 	/**
+	 * Record that field data has changed.
+	 * Notify clients if not caching changes.
+	 */
+	inline void setChanged();
+
+	/**
 	 * Private function for setting the change status flag and adding
 	 * to the manager's changed object list without sending manager updates.
 	 * Should only be called by Computed_field_core-defined check_dependency methods.
@@ -614,6 +621,13 @@ DESCRIPTION :
 	 * @return  CMZN_OK or other status code on failure.
 	 */
 	int setOptionalSourceField(int index, Computed_field *sourceField);
+
+	/** Return owning field manager. Must check not nullptr before use as
+	 * can be cleared during clean-up. */
+	struct MANAGER(Computed_field) *getManager() const
+	{
+		return this->manager;
+	}
 
 }; /* struct Computed_field */
 
@@ -670,23 +684,50 @@ typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_fie
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
-inline FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
+inline const FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
 {
-	FieldValueCache *valueCache = getValueCache(cache);
-	// GRC: move derivatives to a separate value cache in future
-	if ((valueCache->evaluationCounter < cache.getLocationCounter()) ||
-		(cache.getRequestedDerivatives() && (!valueCache->hasDerivatives())))
+	FieldValueCache *valueCache = this->getValueCache(cache);
+	if ((valueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
 	{
-		if (core->evaluate(cache, *valueCache))
-		{
-			// this disables field value caching between manager begin/end change
-			if (0 == this->manager->cache)
-				valueCache->evaluationCounter = cache.getLocationCounter();
-		}
+		if (this->core->evaluate(cache, *valueCache))
+			valueCache->evaluationCounter = cache.getLocationCounter();
 		else
-			valueCache = 0;
+			return nullptr;
 	}
 	return valueCache;
+}
+
+/** Caller is responsible for ensuring field is real-valued */
+inline const DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+{
+	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
+	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
+	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
+		|| cache.hasRegionModifications())
+	{
+		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative) ||
+			this->core->evaluateDerivativeFiniteDifference(cache, *realValueCache, fieldDerivative))
+		{
+			derivativeValueCache->evaluationCounter = cache.getLocationCounter();
+		}
+		else
+			return nullptr;
+	}
+	return derivativeValueCache;
+}
+
+/** Caller is responsible for ensuring field is real-valued */
+inline const RealFieldValueCache *Computed_field::evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+{
+	const FieldDerivative *thisFieldDerivative = &fieldDerivative;
+	do
+	{
+		if (!this->evaluateDerivative(cache, *thisFieldDerivative))
+			return nullptr;
+		thisFieldDerivative = thisFieldDerivative->getLowerDerivative();
+	} while (thisFieldDerivative);
+	return RealFieldValueCache::cast(this->evaluate(cache));
 }
 
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
@@ -781,10 +822,10 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
  * ownership of field_core object passes to the new field.
  * @return  Newly created field, or NULL on failure.
  */
-Computed_field *Computed_field_create_generic(
+cmzn_field *Computed_field_create_generic(
 	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
-	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core);
 
@@ -817,6 +858,20 @@ struct cmzn_region *Computed_field_manager_get_region(
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
+inline void Computed_field_core::setChanged()
+{
+	this->field->setChanged();
+}
+
+inline void Computed_field::setChanged()
+{
+	if ((this->manager) && (this->manager->owner))
+	{
+		this->manager->owner->setFieldModify();
+		MANAGED_OBJECT_CHANGE(Computed_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	}
+}
+
 /**
  * Record that field data has changed.
  * Notify clients if not caching changes.
@@ -826,15 +881,12 @@ const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 inline int Computed_field_changed(struct Computed_field *field)
 {
 	if (field)
-		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	{
+		field->setChanged();
+		return 1;
+	}
 	display_message(ERROR_MESSAGE, "Computed_field_changed.  Invalid argument(s)");
 	return 0;
-}
-
-inline void Computed_field_core::setChanged()
-{
-	Computed_field_changed(this->field);
 }
 
 /**
@@ -890,24 +942,20 @@ its name matches the contents of the <other_computed_field_void>.
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 
-int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field **field_one, struct Computed_field **field_two);
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Takes two ACCESSED fields <field_one> and <field_two> and compares their number
-of components.  If they are equal then the function just returns.  If one
-is a scalar field and the is not then the scalar is wrapped in a composite field
-which repeats the scalar to match the non scalar number of components.  The
-wrapped field will be DEACCESSED by the function but now will be accessed by
-the wrapping field and an ACCESSED pointer to the wrapper field is returned
-replacing the wrapped field.
-If the two fields are non scalar and have different numbers of components then
-nothing is done, although other shape broadcast operations could be proposed
-for matrix operations.
-==============================================================================*/
+/**
+ * Takes two ACCESSED fields <field_one> and <field_two> and compares their number
+ * of components.  If they are equal then the function just returns.  If one
+ * is a scalar field and the other is not then the scalar is wrapped in a component
+ * field repeating the scalar to match the non scalar number of components.  The
+ * wrapped field will be DEACCESSED by the function but now will be accessed by
+ * the wrapping field and an ACCESSED pointer to the wrapper field is returned
+ * replacing the wrapped field.
+ * If the two fields are non scalar and have different numbers of components then
+ * nothing is done, although other shape broadcast operations could be proposed
+ * for matrix operations.
+ */
+int Computed_field_broadcast_field_components(cmzn_fieldmodule *fieldmodule,
+	cmzn_field **field_one, cmzn_field **field_two);
 
 /**
  * For each hierarchical field in manager, propagates changes from sub-region

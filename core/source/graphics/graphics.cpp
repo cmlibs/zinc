@@ -51,9 +51,9 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object.hpp"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/graphics.h"
-#include "graphics/graphics_module.h"
+#include "graphics/graphics_module.hpp"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
@@ -455,7 +455,7 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 			dimension = 3;
 			if (graphics->scene)
 			{
-				dimension = FE_region_get_highest_dimension(cmzn_region_get_FE_region(graphics->scene->region));
+				dimension = FE_region_get_highest_dimension(graphics->scene->region->get_FE_region());
 				if (0 >= dimension)
 					dimension = 3;
 			}
@@ -1120,7 +1120,7 @@ bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics)
 cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics)
 {
 	if (graphics)
-		return ACCESS(cmzn_scene)(graphics->scene);
+		return graphics->scene->access();
 	return 0;
 }
 
@@ -1248,7 +1248,7 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 	cmzn_field_id coordinate_field)
 {
 	if (graphics && ((0 == coordinate_field) ||
-		(3 >= Computed_field_get_number_of_components(coordinate_field))))
+		(3 >= cmzn_field_get_number_of_components(coordinate_field))))
 	{
 		if (coordinate_field != graphics->coordinate_field)
 		{
@@ -2801,7 +2801,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 					if (graphics->data_field)
 					{
 						graphics_to_object_data->number_of_data_values =
-							Computed_field_get_number_of_components(graphics->data_field);
+							cmzn_field_get_number_of_components(graphics->data_field);
 						ALLOCATE(graphics_to_object_data->data_copy_buffer,
 							FE_value, graphics_to_object_data->number_of_data_values);
 					}
@@ -3481,7 +3481,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				}
 				feRegionChanges->propagateToDimension(domainDimension);
 				if (elementChangeLog->isAllChange() || (elementChangeLog->getChangeCount()*2 >
-					FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(graphics->scene->region), domainDimension)->getSize()))
+					FE_region_find_FE_mesh_by_dimension(graphics->scene->region->get_FE_region(), domainDimension)->getSize()))
 				{
 					// too many changes for partial rebuild
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
@@ -4573,7 +4573,7 @@ int cmzn_graphics_set_texture_coordinate_field(
 	cmzn_graphics_id graphics, cmzn_field_id texture_coordinate_field)
 {
 	if (graphics && ((0 == texture_coordinate_field) ||
-		(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
+		(3 >= cmzn_field_get_number_of_components(texture_coordinate_field))))
 	{
 		if (texture_coordinate_field != graphics->texture_coordinate_field)
 		{
@@ -6136,7 +6136,7 @@ int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
 	if (graphics && (CMZN_GLYPH_SHAPE_TYPE_INVALID != glyph_shape_type))
 	{
-		cmzn_graphics_module* graphics_module = cmzn_scene_get_graphics_module(graphics->scene);
+		cmzn_graphics_module* graphics_module = graphics->scene->getGraphicsmodule();
 		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
 		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_shape_type);
 		if (glyph || (glyph_shape_type == CMZN_GLYPH_SHAPE_TYPE_NONE))
@@ -6144,7 +6144,6 @@ int cmzn_graphicspointattributes_set_glyph_shape_type(
 			return_code = cmzn_graphicspointattributes_set_glyph(point_attributes, glyph);
 		}
 		cmzn_glyphmodule_destroy(&glyphmodule);
-		cmzn_graphics_module_destroy(&graphics_module);
 	}
 	return return_code;
 }
@@ -6627,8 +6626,7 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				cmzn_fieldmodule_begin_change(graphics_to_object_data.field_module);
 				graphics_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(
 					graphics_to_object_data.field_module);
-				graphics_to_object_data.fe_region = cmzn_region_get_FE_region(
-					cmzn_scene_get_region_internal(graphics->scene));
+				graphics_to_object_data.fe_region = cmzn_scene_get_region_internal(graphics->scene)->get_FE_region();
 				graphics_to_object_data.master_mesh = 0;
 				graphics_to_object_data.iteration_mesh = 0;
 				graphics_to_object_data.scenefilter = 0;

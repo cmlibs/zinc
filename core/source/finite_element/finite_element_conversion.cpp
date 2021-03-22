@@ -32,6 +32,7 @@ Functions for converting one finite_element representation to another.
 #include "opencmiss/zinc/region.h"
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"
@@ -398,7 +399,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[n][d]*delta_xi[d];
 					}
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(source_fieldcache, element, mode_dimension, source_xi)) &&
+					if ((CMZN_OK == source_fieldcache->setMeshLocation(element, source_xi)) &&
 						(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(source_field, source_fieldcache, number_of_components, values,
 							mode_dimension, derivatives)))
 					{
@@ -455,7 +456,7 @@ int Convert_finite_elements_data::convertSubelement(cmzn_element_id element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[n][d]*delta_xi[d];
 					}
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(source_fieldcache, element, mode_dimension, source_xi)) &&
+					if ((CMZN_OK == source_fieldcache->setMeshLocation(element, source_xi)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(source_field, source_fieldcache, number_of_components, values)))
 					{
 						bool setFieldValues = true;

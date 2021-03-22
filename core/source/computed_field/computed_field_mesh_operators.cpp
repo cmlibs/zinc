@@ -19,10 +19,11 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_set.h"
 #include "element/element_operations.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 
 namespace {
@@ -70,10 +71,10 @@ public:
 		return 0;
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
@@ -121,8 +122,8 @@ public:
 					change = true;
 				}
 			}
-			if (change && this->field)
-				Computed_field_changed(this->field);
+			if (change)
+				this->field->setChanged();
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -141,7 +142,7 @@ public:
 			if (this->quadratureRule != quadratureRuleIn)
 			{
 				this->quadratureRule = quadratureRuleIn;
-				Computed_field_changed(this->field);
+				this->field->setChanged();
 			}
 			return CMZN_OK;
 		}
@@ -177,7 +178,7 @@ template <class ProcessTerm> int Computed_field_mesh_integral::evaluateTerms(Pro
 	cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
 	cmzn_element_id element = 0;
 	IntegrationPointsCache integrationCache(this->quadratureRule, static_cast<int>(this->numbersOfPoints.size()), this->numbersOfPoints.data());
-	while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+	while (0 != (element = iterator->nextElement()))
 	{
 		IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
 		if (0 == shapePoints)
@@ -202,7 +203,9 @@ protected:
 	cmzn_field *integrandField;
 	cmzn_field *coordinateField;
 	const int coordinatesCount;
+	const FieldDerivativeMesh& fieldDerivativeMesh;
 	cmzn_element *element;
+	unsigned int point_index;  // point index within element
 
 public:
 	IntegralTermBase(Computed_field_mesh_integral& meshIntegralIn, cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache) :
@@ -213,26 +216,30 @@ public:
 		integrandField(meshIntegral.getSourceField(0)),
 		coordinateField(meshIntegral.getSourceField(1)),
 		coordinatesCount(coordinateField->number_of_components),
-		element(0)
+		fieldDerivativeMesh(*cmzn_mesh_get_FE_mesh_internal(meshIntegral.getMesh())->getFieldDerivative(/*order*/1)),
+		element(0),
+		point_index(0)
 	{
 		cache.setTime(parentCache.getTime());
 	}
 
 	void setElement(cmzn_element *elementIn)
 	{
-		element = elementIn;
+		this->element = elementIn;
+		this->point_index = 0;
 	}
 
 	/** @return pointer to integrand values */
 	inline FE_value *baseProcess(FE_value *xi, FE_value &dLAV)
 	{
-		this->cache.setMeshLocation(this->element, xi);
-		RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
-		RealFieldValueCache *coordinateValueCache = coordinateField->evaluateWithDerivatives(cache, dimension);
-		if (integrandValueCache && coordinateValueCache)
+		this->cache.setIndexedMeshLocation(this->point_index, this->element, xi);
+		(this->point_index)++;
+		const RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrandField->evaluate(cache));
+		const DerivativeValueCache *coordinateDerivativeCache = coordinateField->evaluateDerivative(cache, this->fieldDerivativeMesh);
+		if (integrandValueCache && coordinateDerivativeCache)
 		{
 			// note dx_dxi cycles over xi fastest
-			FE_value *dx_dxi = coordinateValueCache->derivatives;
+			const FE_value *dx_dxi = coordinateDerivativeCache->values;
 			dLAV = 0.0; // dL (1-D), dA (2-D), dV (3-D)
 			switch (this->dimension)
 			{
@@ -247,11 +254,10 @@ public:
 				else
 				{
 					// dA = magnitude of dx_dxi1 (x) dx_dxi2
-					FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
-					FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
-					FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
-					dLAV = n1*n1 + n2*n2 + n3*n3;
-					dLAV = sqrt(dLAV);
+					const FE_value n1 = dx_dxi[2]*dx_dxi[5] - dx_dxi[3]*dx_dxi[4];
+					const FE_value n2 = dx_dxi[4]*dx_dxi[1] - dx_dxi[5]*dx_dxi[0];
+					const FE_value n3 = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
+					dLAV = sqrt(n1*n1 + n2*n2 + n3*n3);
 				}
 				break;
 			case 3:
@@ -280,7 +286,6 @@ public:
 	{
 		for (int i = 0; i < componentsCount; i++)
 			values[i] = 0;
-		valueCache.derivatives_valid = 0;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
@@ -419,7 +424,7 @@ public:
 	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_mesh_integral_squares::get_number_of_sum_square_terms(cmzn_fieldcache& cache) const
@@ -523,7 +528,6 @@ public:
 	{
 		for (int i = 0; i < componentsCount; i++)
 			values[i] = 0;
-		valueCache.derivatives_valid = 0;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
@@ -562,7 +566,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral(
 	if (integrand_field && integrand_field->isNumerical() &&
 		coordinate_field && coordinate_field->isNumerical() && mesh)
 	{
-		int numCoordinates = Computed_field_get_number_of_components(coordinate_field);
+		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{
@@ -656,7 +660,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral_squares(
 	if (integrand_field && integrand_field->isNumerical() &&
 		coordinate_field && coordinate_field->isNumerical() && mesh)
 	{
-		int numCoordinates = Computed_field_get_number_of_components(coordinate_field);
+		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{

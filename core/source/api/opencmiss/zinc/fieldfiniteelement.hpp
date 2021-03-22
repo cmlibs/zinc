@@ -196,6 +196,13 @@ public:
 	explicit FieldStoredMeshLocation(cmzn_field_stored_mesh_location_id field_stored_mesh_location_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_stored_mesh_location_id))
 	{	}
+
+	Mesh getMesh()
+	{
+		return Mesh(cmzn_field_stored_mesh_location_get_mesh(
+			reinterpret_cast<cmzn_field_stored_mesh_location_id>(id)));
+	}
+
 };
 
 class FieldStoredString : public Field

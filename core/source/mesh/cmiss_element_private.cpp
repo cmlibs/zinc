@@ -189,7 +189,8 @@ FE_basis *cmzn_elementbasis::getFeBasis() const
 		++temp;
 		for (int j = i + 1; j < dimension; j++)
 		{
-			if (((fe_basis_type == LINEAR_SIMPLEX) ||
+			if (((fe_basis_type == CUBIC_HERMITE_SERENDIPITY) ||
+				(fe_basis_type == LINEAR_SIMPLEX) ||
 				(fe_basis_type == QUADRATIC_SIMPLEX)) &&
 				(function_types[j] == function_types[i]))
 			{
@@ -505,7 +506,7 @@ int cmzn_elementtemplate::setLegacyNodesInElement(cmzn_element *element)
 				for (int n = 0; n < nodeIndexesCount; ++n)
 				{
 					cmzn_node *node = this->legacyNodes[nodeIndexes[n] - 1];
-					workingNodeIndexes[n] = (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID;
+					workingNodeIndexes[n] = (node) ? node->getIndex() : DS_LABEL_INDEX_INVALID;
 				}
 				const int result = eftData->setElementLocalNodes(element->getIndex(), workingNodeIndexes.data());
 				if (result != CMZN_OK)
@@ -684,7 +685,7 @@ int cmzn_elementtemplate::defineFieldSimpleNodal(cmzn_field_id field,
 	if (finite_element_field)
 	{
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
+		if (fe_field->get_FE_region() != this->getMesh()->get_FE_region())
 		{
 			display_message(ERROR_MESSAGE,
 				"Elementtemplate defineFieldSimpleNodal.  Field is from another region");
@@ -745,7 +746,7 @@ int cmzn_elementtemplate::defineFieldElementConstant(cmzn_field_id field, int co
 	if ((fe_field) && (GENERAL_FE_FIELD == get_FE_field_FE_field_type(fe_field)) &&
 		((FE_VALUE_VALUE == get_FE_field_value_type(fe_field)) || (INT_VALUE == get_FE_field_value_type(fe_field))))
 	{
-		if (FE_field_get_FE_region(fe_field) != this->getMesh()->get_FE_region())
+		if (fe_field->get_FE_region() != this->getMesh()->get_FE_region())
 		{
 			display_message(ERROR_MESSAGE,
 				"Elementtemplate defineFieldElementConstant.  Field is from another region");
@@ -934,7 +935,7 @@ int cmzn_elementtemplate::setNode(int local_node_index, cmzn_node_id node)
 			&& (nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_NODES)
 			&& (this->fe_element_template->getMesh()->get_FE_region() == nodeset->get_FE_region()))))
 	{
-		REACCESS(FE_node)(this->legacyNodes + local_node_index - 1, node);
+		cmzn_node::reaccess(this->legacyNodes[local_node_index - 1], node);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -1032,6 +1033,13 @@ protected:
 	cmzn_field_element_group_id group;
 	int access_count;
 
+	cmzn_mesh(FE_mesh *fe_mesh_in) :
+		fe_mesh(fe_mesh_in->access()),
+		group(0),
+		access_count(1)
+	{
+	}
+
 	cmzn_mesh(cmzn_field_element_group_id group) :
 		fe_mesh(Computed_field_element_group_core_cast(group)->get_fe_mesh()->access()),
 		group(group),
@@ -1049,17 +1057,17 @@ protected:
 	}
 
 public:
-	cmzn_mesh(FE_mesh *fe_mesh_in) :
-		fe_mesh(fe_mesh_in->access()),
-		group(0),
-		access_count(1)
-	{
-	}
-
 	cmzn_mesh_id access()
 	{
 		++access_count;
 		return this;
+	}
+
+	static cmzn_mesh *create(FE_mesh *fe_mesh_in)
+	{
+		if (fe_mesh_in)
+			return new cmzn_mesh(fe_mesh_in);
+		return nullptr;
 	}
 
 	static int deaccess(cmzn_mesh_id &mesh)
@@ -1190,7 +1198,7 @@ public:
 	{
 		if (!isGroup())
 			return access();
-		return new cmzn_mesh(this->fe_mesh);
+		return cmzn_mesh::create(this->fe_mesh);
 	}
 
 	int getSize() const
@@ -1277,7 +1285,7 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 	if (fieldmodule && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
-		FE_region *fe_region = cmzn_region_get_FE_region(region);
+		FE_region *fe_region = region->get_FE_region();
 		if (fe_region)
 		{
 			return cmzn_elementbasis::create(fe_region, dimension, function_type);
@@ -1292,8 +1300,8 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_mesh_id mesh = NULL;
 	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule));
-		mesh = new cmzn_mesh(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
+		FE_region *fe_region = cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region();
+		mesh = cmzn_mesh::create(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
 	}
 	return mesh;
 }
@@ -1424,9 +1432,14 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
-	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
-		return new cmzn_differentialoperator(mesh->get_FE_mesh()->get_FE_region(), mesh->getDimension(), term);
-	return 0;
+	FieldDerivativeMesh *fieldDerivative;
+	if ((mesh) && (1 <= order) && (order <= MAXIMUM_FIELD_DERIVATIVE_ORDER) &&
+		((fieldDerivative = mesh->get_FE_mesh()->getFieldDerivative(order))))
+	{
+		return cmzn_differentialoperator::create(fieldDerivative, term - 1);
+	}
+	display_message(ERROR_MESSAGE, "Mesh getChartDifferentialoperator.  Invalid argument(s)");
+	return nullptr;
 }
 
 int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
@@ -1521,6 +1534,11 @@ int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
 	if (mesh_group)
 		return mesh_group->removeElementsConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_mesh *cmzn_mesh_create(FE_mesh *fe_mesh)
+{
+	return cmzn_mesh::create(fe_mesh);
 }
 
 int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
@@ -1822,7 +1840,7 @@ cmzn_elementfieldtemplate_id cmzn_element_get_elementfieldtemplate(
 		display_message(ERROR_MESSAGE, "Element getElementfieldtemplate.  Can only query a finite element type field on elements");
 		return 0;
 	}
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(fe_field, element->getMesh());
+	FE_mesh_field_data *meshFieldData = fe_field->getMeshFieldData(element->getMesh());
 	if (!meshFieldData)
 		return 0;
 	FE_element_field_template *eft = 0;
@@ -1866,10 +1884,9 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
-	FE_mesh *fe_mesh = element->getMesh();
-	if (fe_mesh)
-		return new cmzn_mesh(fe_mesh);
-	return 0;
+	if (element)
+		return cmzn_mesh::create(element->getMesh());
+	return nullptr;
 }
 
 cmzn_node_id cmzn_element_get_node(cmzn_element_id element,
@@ -1920,7 +1937,7 @@ int cmzn_element_set_node(cmzn_element_id element,
 		display_message(ERROR_MESSAGE, "Element setNode.  Element field template is not used by element's mesh");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? get_FE_node_index(node) : DS_LABEL_INDEX_INVALID);
+	return eftData->setElementLocalNode(element->getIndex(), localNodeIndex - 1, (node) ? node->getIndex() : DS_LABEL_INDEX_INVALID);
 }
 
 int cmzn_element_set_nodes_by_identifier(cmzn_element_id element,
@@ -2154,6 +2171,15 @@ public:
 			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
 				enum_string = "CUBIC_HERMITE";
 				break;
+			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE_SERENDIPITY:
+				enum_string = "CUBIC_HERMITE_SERENDIPITY";
+				break;
+			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_HERMITE_LAGRANGE:
+				enum_string = "QUADRATIC_HERMITE_LAGRANGE";
+				break;
+			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE_HERMITE:
+				enum_string = "QUADRATIC_LAGRANGE_HERMITE";
+				break;
 			default:
 				break;
 		}
@@ -2191,7 +2217,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
-		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_mesh_get_FE_region_internal(meshIn)))
+		(eventIn->getRegion()->get_FE_region() == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
 }

@@ -23,7 +23,7 @@
 #include "computed_field/computed_field_private.hpp"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include <map>
 #include <iterator>
@@ -284,7 +284,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 	};
@@ -448,7 +448,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 		virtual int check_dependency();
@@ -532,7 +532,7 @@ public:
 		bool containsObject(cmzn_node *object)
 		{
 			return this->isNodeCompatible(object) &&
-				this->labelsGroup->hasIndex(get_FE_node_index(object));
+				this->labelsGroup->hasIndex(object->getIndex());
 		};
 
 		cmzn_nodeiterator_id createNodeiterator()
@@ -612,7 +612,7 @@ public:
 			return 0;
 		}
 
-		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 		int list()
 		{
@@ -621,7 +621,7 @@ public:
 
 		inline void update()
 		{
-			Computed_field_changed(field);
+			this->field->setChanged();
 		}
 
 		static int FE_node_is_not_in_FE_nodeset(cmzn_node *node, void *fe_nodeset_void)

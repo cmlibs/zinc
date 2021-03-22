@@ -32,24 +32,17 @@ The data structures used for representing graphical materials.
 Global types
 ------------
 */
+
+/** Pre-declared here to satisfy function prototype. */
 struct IO_stream;
-/*******************************************************************************
-LAST MODIFIED : 6 December 2004
 
-DESCRIPTION :
-Declared here to satisfy function prototype.
-==============================================================================*/
-
-
-
-/***************************************************************************//**
+/**
  * A structure for storing related object for the texture of a material.
  * Each material consists four of this (multitexture support).
  */
 struct Material_image_texture
 {
 	struct Texture *texture;
-	struct MANAGER(Computed_field) *manager;
 	cmzn_field_image_id field;
 	void *callback_id;
 	struct cmzn_material *material;

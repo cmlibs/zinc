@@ -14,7 +14,7 @@ Implements computed fields for lookups.
 #if !defined (COMPUTED_FIELD_LOOKUP_H)
 #define COMPUTED_FIELD_LOOKUP_H
 
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /***************************************************************************//**
  * If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the
@@ -24,8 +24,8 @@ Implements computed fields for lookups.
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
   struct Computed_field **source_field, struct FE_node **lookup_node);
 
-struct Computed_field *Computed_field_create_quaternion_SLERP(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+cmzn_field *cmzn_fieldmodule_create_field_quaternion_SLERP(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_node_id quaternion_SLERP_node);
 
 #endif /* !defined (COMPUTED_FIELD_LOOKUP_H) */

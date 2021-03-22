@@ -1,0 +1,9 @@
+ Group name: bob
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=0
+Node: 1
+!#nodeset datapoints
+Shape. Dimension=0
+#Fields=0
+Node: 2

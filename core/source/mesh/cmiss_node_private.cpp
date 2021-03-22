@@ -70,7 +70,7 @@ public:
 	  * @return  Result OK on success, any other value on failure. Client should clean up on failure. */
 	int cloneNodeField(cmzn_node *node)
 	{
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, this->fe_field);
+		const FE_node_field *node_field = node->getNodeField(this->fe_field);
 		if (!node_field)
 		{
 			return CMZN_ERROR_NOT_FOUND;
@@ -252,7 +252,7 @@ public:
 		this->invalidate();
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (!FE_field_has_parameters_at_node(fe_field, node))
+		if (!(node->getNodeField(fe_field)))
 		{
 			this->removeDefineField(fe_field);
 			this->removeUndefineField(fe_field);
@@ -528,7 +528,7 @@ private:
 		Computed_field_get_type_finite_element(field, &fe_field);
 		if (!fe_field)
 			return CMZN_ERROR_ARGUMENT;
-		if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
+		if (fe_field->get_FE_region() != this->fe_nodeset->get_FE_region())
 			return CMZN_ERROR_INCOMPATIBLE_DATA;
 		return CMZN_OK;
 	}
@@ -652,7 +652,7 @@ public:
 			{
 				cmzn_fieldcache_set_node(cache, node);
 				if (cmzn_field_evaluate_boolean(conditional_field, cache))
-					labelsGroup->setIndex(get_FE_node_index(node), true);
+					labelsGroup->setIndex(node->getIndex(), true);
 			}
 			cmzn::Deaccess(iterator);
 			cmzn_fieldcache_destroy(&cache);
@@ -673,7 +673,7 @@ public:
 		else
 			node = this->fe_nodeset->findNodeByIdentifier(identifier);
 		if (node)
-			ACCESS(FE_node)(node);
+			node->access();
 		return node;
 	}
 
@@ -791,7 +791,7 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 {
 	cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-		cmzn_region_get_FE_region(region), domain_type);
+		region->get_FE_region(), domain_type);
 	if (fe_nodeset)
 		return new cmzn_nodeset(fe_nodeset);
 	return 0;
@@ -1170,7 +1170,7 @@ int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template,
 cmzn_node_id cmzn_node_access(cmzn_node_id node)
 {
 	if (node)
-		return ACCESS(FE_node)(node);
+		return node->access();
 	return 0;
 }
 
@@ -1178,7 +1178,7 @@ int cmzn_node_destroy(cmzn_node_id *node_address)
 {
 	if (node_address && *node_address)
 	{
-		DEACCESS(FE_node)(node_address);
+		cmzn_node::deaccess(*node_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -1271,7 +1271,7 @@ cmzn_nodesetchanges::~cmzn_nodesetchanges()
 cmzn_nodesetchanges *cmzn_nodesetchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn)
 {
 	if (eventIn && (eventIn->getFeRegionChanges()) && nodesetIn &&
-		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
+		(eventIn->getRegion()->get_FE_region() == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
 		return new cmzn_nodesetchanges(eventIn, nodesetIn);
 	return 0;
 }
@@ -1294,7 +1294,7 @@ cmzn_node_change_flags cmzn_nodesetchanges::getNodeChangeFlags(cmzn_node *node)
 	cmzn_node_change_flags change = CMZN_NODE_CHANGE_FLAG_NONE;
 	if (node)
 	{
-		if (this->changeLog->isIndexChange(get_FE_node_index(node)))
+		if (this->changeLog->isIndexChange(node->getIndex()))
 			change = this->changeLog->getChangeSummary();
 	}
 	return change;

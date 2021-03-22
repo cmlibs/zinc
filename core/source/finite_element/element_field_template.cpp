@@ -394,17 +394,10 @@ int FE_element_field_template::setParameterMappingMode(cmzn_elementfieldtemplate
 		this->localNodeIndexes = new int[this->numberOfFunctions];
 		this->nodeValueLabels = new cmzn_node_value_label[this->numberOfFunctions];
 		this->nodeVersions = new int[this->numberOfFunctions];
-		int fn = 0;
-		for (int n = 0; n < this->numberOfLocalNodes; ++n)
+		for (int fn = 0; fn < this->numberOfFunctions; ++fn)
 		{
-			const int valuesCount = FE_basis_get_number_of_functions_per_node(this->basis, n);
-			for (int v = 0; v < valuesCount; ++v)
-			{
-				this->localNodeIndexes[fn] = n;
-				this->nodeValueLabels[fn] = static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + v);
-				this->nodeVersions[fn] = 0;
-				++fn;
-			}
+			FE_basis_get_function_node_index_and_derivative(this->basis, fn, this->localNodeIndexes[fn], this->nodeValueLabels[fn]);
+			this->nodeVersions[fn] = 0;
 		}
 	}
 	return CMZN_OK;

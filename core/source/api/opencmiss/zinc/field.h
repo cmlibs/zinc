@@ -242,7 +242,7 @@ ZINC_API int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value);
  * Get the name of a component of the field. This is only meaningful for
  * finite element fields; all other fields' component names are the string
  * equivalent of the component number, e.g. 1 -> "1" etc.
- * Also, node_value and basis_derivative fields return the base finite element
+ * Also, node_value fields return the base finite element
  * field component names.
  *
  * @param field  The field whose component name is requested.

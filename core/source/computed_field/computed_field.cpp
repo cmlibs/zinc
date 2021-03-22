@@ -8,7 +8,7 @@ A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
-caching of FE_element_field_values, for example. Their main benefit is in
+caching of evaluation caches, for example. Their main benefit is in
 allowing new types of fields to be defined as functions of other fields and
 source information, such as scale, offset, magnitude, gradient,
 coordinate transformations etc., thus providing cmgui with the ability to
@@ -117,9 +117,9 @@ like the number of components.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "opencmiss/zinc/result.h"
 #include "opencmiss/zinc/status.h"
+#include "opencmiss/zinc/fieldcomposite.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
-#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.hpp"
 #include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
@@ -129,7 +129,6 @@ like the number of components.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
-#include "general/any_object_definition.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -138,7 +137,6 @@ like the number of components.
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
-#include "region/cmiss_region_private.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>
@@ -183,7 +181,7 @@ static int Computed_field_clear_type(struct Computed_field *field)
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Used internally by DESTROY and Computed_field_set_type_*() functions to
+Used internally by DESTROY and Computed_field_copy_type_specific functions to
 deallocate or deaccess data specific to any Computed_field_type. Functions
 changing the type of the Computed_field should allocate any dynamic data needed
 for the type, call this function to clear what is currently in the field and
@@ -671,8 +669,7 @@ Do not allow copy if:
 		}
 		if (return_code)
 		{
-			COPY(Coordinate_system)(&destination->coordinate_system,
-				&source->coordinate_system);
+			destination->coordinate_system = source->coordinate_system;
 			if (!Computed_field_copy_type_specific(destination, source))
 			{
 				display_message(ERROR_MESSAGE,
@@ -920,14 +917,14 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 	return return_code;
 }
 
-Computed_field *Computed_field_create_generic(
+cmzn_field *Computed_field_create_generic(
 	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
-	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core)
 {
-	Computed_field *field = 0;
+	cmzn_field *field = 0;
 	if ((NULL != fieldmodule) && (0 < number_of_components) &&
 		((0 == number_of_source_fields) ||
 			((0 < number_of_source_fields) && (NULL != source_fields))) &&
@@ -1030,9 +1027,8 @@ Computed_field *Computed_field_create_generic(
 							(replace_field->core->get_type_string() == field_core->get_type_string()))
 						{
 							/* copy modifications to existing field. Can fail if new definition is incompatible */
-							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-								replace_field, field,
-								cmzn_region_get_Computed_field_manager(region));
+							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field, name)(
+								replace_field, field, region->getFieldManager());
 							REACCESS(Computed_field)(&field, replace_field);
 						}
 						else
@@ -1045,7 +1041,7 @@ Computed_field *Computed_field_create_generic(
 					}
 					else
 					{
-						if (!cmzn_region_add_field_private(region, field))
+						if (!region->addField(field))
 						{
 							display_message(ERROR_MESSAGE,
 								"Computed_field_create_generic.  Unable to add field to region");
@@ -1094,7 +1090,7 @@ void cmzn_field::clearCaches()
 		cmzn_field_id field = *iter;
 		if (field->dependsOnField(this))
 		{
-			cmzn_region_clear_field_value_caches(region, field);
+			region->clearFieldValueCaches(field);
 		}
 	}
 }
@@ -1150,7 +1146,7 @@ char *Computed_field_core::getComponentName(int componentNumber) const
 	return duplicate_string(name);
 }
 
-FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*parentCache*/)
+FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*fieldCache*/)
 {
 	return new RealFieldValueCache(field->number_of_components);
 }
@@ -1164,6 +1160,108 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 			return false;
 	}
 	return true;
+}
+
+int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, const FieldDerivative&)
+{
+	return 0;  // Invalid operation for non-real fields, or not available / fallback to finite difference
+}
+
+int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getType() != FieldDerivative::TYPE_ELEMENT_XI)
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
+		return 0;
+	}
+	const FieldDerivativeMesh &fieldDerivativeElementXi = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (!element_xi_location)
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
+		return 0;
+	}
+	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.getElementDimension())
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
+		return 0;
+	}
+	// evaluate field at perturbed locations in extra working cache
+	cmzn_fieldcache *workingCache = valueCache.getOrCreateSharedExtraCache(cache);
+	RealFieldValueCache* lowerValueCache;
+	if ((0 == workingCache) || (0 == (lowerValueCache = static_cast<RealFieldValueCache*>(this->field->getValueCache(*workingCache)))))
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not get working value cache");
+		return 0;
+	}
+	workingCache->setTime(cache.getTime());
+	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
+	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getTermCount() : 1;
+	const int componentCount = this->field->number_of_components;
+	cmzn_element *element = element_xi_location->get_element();
+	const int elementDimension = element_xi_location->get_element_dimension();
+	const FE_value *xi = element_xi_location->get_xi();
+	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	for (int d = 0; d < elementDimension; ++d)
+		perturbedXi[d] = xi[d];
+	const FE_value xiPerturbation = 1.0E-5;
+	const FE_value weight = 0.5 / xiPerturbation;
+	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
+	const FE_value *lowerValues = nullptr;
+	for (int d = 0; d < elementDimension; ++d)
+	{
+		for (int k = 0; k < 2; ++k)
+		{
+			if (k == 0)
+				perturbedXi[d] -= xiPerturbation;
+			else
+				perturbedXi[d] += xiPerturbation;
+			workingCache->setMeshLocation(element, perturbedXi);
+			if (lowerFieldDerivative)
+			{
+				const DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
+				if (!derivativeValueCache)
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
+					return 0;
+				}
+				lowerValues = derivativeValueCache->values;
+			}
+			else
+			{
+				if (!this->field->evaluate(*workingCache))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field values");
+					return 0;
+				}
+				lowerValues = lowerValueCache->values;
+			}
+			// values cycle over components slowest, then this outermost derivative, then lower derivatives
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
+				FE_value *dst = derivativeValueCache.values + (c*elementDimension + d)*lowerDerivativeTermCount;
+				if (k == 0)
+				{
+					for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						dst[v] = src[v];
+				}
+				else
+				{
+					for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						dst[v] = weight*(src[v] - dst[v]);
+				}
+			}
+			perturbedXi[d] = xi[d];
+		}
+	}
+	return 1;
 }
 
 int Computed_field_has_string_value_type(struct Computed_field *field,
@@ -1298,14 +1396,14 @@ bool cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
 	const FE_value zero_tolerance = 1e-6;
 	if (cmzn_fieldcache_check(field, cache) && field->isNumerical())
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
+			const FE_value *sourceValues = RealFieldValueCache::cast(valueCache)->values;
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				if ((realValueCache.values[i] < -zero_tolerance) ||
-					(realValueCache.values[i] > zero_tolerance))
+				if ((sourceValues[i] < -zero_tolerance) ||
+					(sourceValues[i] > zero_tolerance))
 				{
 					return true;
 				}
@@ -1324,10 +1422,10 @@ cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
 	if (cmzn_fieldcache_check(field, cache) && chart_coordinates &&
 		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			MeshLocationFieldValueCache& meshLocationValueCache =
+			const MeshLocationFieldValueCache& meshLocationValueCache =
 				MeshLocationFieldValueCache::cast(*valueCache);
 			int dimension = get_FE_element_dimension(meshLocationValueCache.element);
 			if (number_of_chart_coordinates >= dimension)
@@ -1356,13 +1454,13 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
+			const FE_value *sourceValues = RealFieldValueCache::cast(valueCache)->values;
 			for (int i = 0; i < field->number_of_components; ++i)
 			{
-				values[i] = realValueCache.values[i];
+				values[i] = sourceValues[i];
 			}
 			return CMZN_OK;
 		}
@@ -1371,38 +1469,46 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-// Internal API
-// IMPORTANT: Not yet approved for external API!
+/** Internal function only. Evaluate real field values with all first derivatives w.r.t. xi.
+ * @deprecated
+ * Try to remove its use as soon as possible.
+ */
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values,
 	int number_of_derivatives, double *derivatives)
 {
-	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
-		(number_of_derivatives > 0) && (number_of_derivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives &&
-		field->core->has_numerical_components())
+	const Field_location_element_xi* element_xi_location = cache->get_location_element_xi();
+	if (!element_xi_location)
 	{
-		RealFieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, number_of_derivatives);
-		if (valueCache)
-		{
-			RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
-			if (realValueCache.derivatives_valid)
-			{
-				int i;
-				for (i = 0; i < field->number_of_components; ++i)
-				{
-					values[i] = realValueCache.values[i];
-				}
-				int size = field->number_of_components*number_of_derivatives;
-				for (i = 0; i < size; ++i)
-				{
-					derivatives[i] = realValueCache.derivatives[i];
-				}
-				return CMZN_OK;
-			}
-		}
-		return CMZN_ERROR_GENERAL;
+		display_message(ERROR_MESSAGE, "cmzn_field_evaluate_real_with_derivatives.  Requires element_xi location");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	return CMZN_ERROR_ARGUMENT;
+	int result = cmzn_field_evaluate_real(field, cache, number_of_values, values);
+	if (result != CMZN_OK)
+		return result;
+	const FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
+	const int termCount = fieldDerivative->getTermCount();
+	if ((number_of_derivatives != termCount) || (!derivatives))
+	{
+		result = CMZN_ERROR_ARGUMENT;
+	}
+	else
+	{
+		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, *fieldDerivative);
+		if (!derivativeValueCache)
+		{
+			result = CMZN_ERROR_GENERAL;
+		}
+		else
+		{
+			const int valueCount = field->number_of_components*termCount;
+			const FE_value *srcValues = derivativeValueCache->values;
+			for (int v = 0; v < valueCount; ++v)
+				derivatives[v] = srcValues[v];
+			result = CMZN_OK;
+		}
+	}
+	return result;
 }
 
 // External API
@@ -1412,7 +1518,7 @@ char *cmzn_field_evaluate_string(cmzn_field_id field,
 {
 	if (cmzn_fieldcache_check(field, cache))
 	{
-		FieldValueCache *valueCache = field->evaluate(*cache);
+		const FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
 			return valueCache->getAsString();
 	}
@@ -1428,31 +1534,21 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		(number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
-		Field_element_xi_location *element_xi_location =
-			dynamic_cast<Field_element_xi_location *>(cache->getLocation());
-		if (element_xi_location)
+		FieldDerivative& fieldDerivative = differential_operator->getFieldDerivative();
+		if (field->manager->owner != fieldDerivative.getRegion())
+			return CMZN_ERROR_ARGUMENT;
+		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, fieldDerivative);
+		if (derivativeValueCache)
 		{
-			int element_dimension = element_xi_location->get_dimension();
-			if (element_dimension == differential_operator->getDimension())
-			{
-				FieldValueCache *valueCache = field->evaluateWithDerivatives(*cache, element_dimension);
-				if (valueCache)
-				{
-					RealFieldValueCache& realValueCache = RealFieldValueCache::cast(*valueCache);
-					if (realValueCache.derivatives_valid)
-					{
-						FE_value *derivative = realValueCache.derivatives + (differential_operator->getTerm() - 1);
-						for (int i = 0; i < field->number_of_components; i++)
-						{
-							values[i] = *derivative;
-							derivative += element_dimension;
-						}
-						return CMZN_OK;
-					}
-				}
-				return CMZN_ERROR_GENERAL;
-			}
+			const int termCount = fieldDerivative.getTermCount();
+			const int term = differential_operator->getTerm();
+			const int componentCount = field->number_of_components;
+			const FE_value *derivatives = derivativeValueCache->values + term;
+			for (int c = 0; c < componentCount; ++c)
+				values[c] = derivatives[c*termCount];
+			return CMZN_OK;
 		}
+		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1600,30 +1696,13 @@ int Computed_field_is_non_linear(struct Computed_field *field)
 	return return_code;
 }
 
-int Computed_field_get_number_of_components(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-==============================================================================*/
+int cmzn_field_get_number_of_components(cmzn_field *field)
 {
-	int number_of_components;
-
-	ENTER(Computed_field_get_number_of_components);
 	if (field)
-	{
-		number_of_components=field->number_of_components;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_number_of_components.  Missing field");
-		number_of_components=0;
-	}
-	LEAVE;
-
-	return (number_of_components);
-} /* Computed_field_get_number_of_components */
+		return field->number_of_components;
+	display_message(ERROR_MESSAGE, "cmzn_field_get_number_of_components.  Missing field");
+	return 0;
+}
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field)
@@ -1654,7 +1733,7 @@ Computed_field_set_coordinate_system for further details.
 } /* Computed_field_get_coordinate_system */
 
 int Computed_field_set_coordinate_system(struct Computed_field *field,
-	struct Coordinate_system *coordinate_system)
+	const Coordinate_system *coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1667,24 +1746,15 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 ???RC How to check the coordinate system is valid?
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Computed_field_set_coordinate_system);
-	if (field&&coordinate_system)
+	if ((field) && (coordinate_system))
 	{
-		return_code=
-			COPY(Coordinate_system)(&(field->coordinate_system),coordinate_system);
+		field->coordinate_system = *coordinate_system;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_coordinate_system.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_coordinate_system */
+	display_message(ERROR_MESSAGE,
+		"Computed_field_set_coordinate_system.  Invalid argument(s)");
+	return 0;
+}
 
 const char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************
@@ -2586,12 +2656,12 @@ int Computed_field::setOptionalSourceField(int index, Computed_field *sourceFiel
 				tmp[index - 1] = ACCESS(Computed_field)(sourceField);
 				this->source_fields = tmp;
 				++(this->number_of_source_fields);
-				Computed_field_changed(this);
+				this->setChanged();
 			}
 			else if (sourceField != this->source_fields[index - 1])
 			{
 				REACCESS(Computed_field)(&(this->source_fields[index - 1]), sourceField);
-				Computed_field_changed(this);
+				this->setChanged();
 			}
 		}
 		else
@@ -2600,8 +2670,8 @@ int Computed_field::setOptionalSourceField(int index, Computed_field *sourceFiel
 			{
 				DEACCESS(Computed_field)(&(this->source_fields[index - 1]));
 				--(this->number_of_source_fields);
-				Computed_field_changed(this);
-			}			
+				this->setChanged();
+			}
 		}
 		return CMZN_OK;
 	}
@@ -2657,29 +2727,12 @@ bool Computed_field_core::is_purely_function_of_field(cmzn_field *other_field)
 }
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field **field_one, struct Computed_field **field_two)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Takes two ACCESSED fields <field_one> and <field_two> and compares their number
-of components.  If they are equal then the function just returns.  If one
-is a scalar field and the is not then the scalar is wrapped in a composite field
-which repeats the scalar to match the non scalar number of components.  The
-wrapped field will be DEACCESSED by the function but now will be accessed by
-the wrapping field and an ACCESSED pointer to the wrapper field is returned
-replacing the wrapped field.
-If the two fields are non scalar and have different numbers of components then
-nothing is done, although other shape broadcast operations could be proposed
-for matrix operations.
-==============================================================================*/
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field **field_one, cmzn_field **field_two)
 {
-	int i, number_of_components, return_code, *source_field_numbers,
-		*source_value_numbers;
-	Computed_field *broadcast_wrapper, ***field_to_wrap;
+	int return_code;
+	cmzn_field *broadcast_wrapper, ***field_to_wrap;
 
-	ENTER(Computed_field_broadcast_field_components);
 	if (field_one && *field_one && field_two && *field_two)
 	{
 		if ((*field_one)->number_of_components ==
@@ -2690,7 +2743,8 @@ for matrix operations.
 		else
 		{
 			return_code = 0;
-			field_to_wrap = (Computed_field ***)NULL;
+			int number_of_components;
+			field_to_wrap = nullptr;
 			if (1 == (*field_one)->number_of_components)
 			{
 				number_of_components = (*field_two)->number_of_components;
@@ -2709,33 +2763,20 @@ for matrix operations.
 
 			if (field_to_wrap)
 			{
-				ALLOCATE(source_field_numbers, int, number_of_components);
-				ALLOCATE(source_value_numbers, int, number_of_components);
-				for (i = 0 ; i < number_of_components ; i++)
-				{
-					/* First (and only) field */
-					source_field_numbers[i] = 0;
-					/* First (and only) component */
-					source_value_numbers[i] = 0;
-				}
+				int *source_component_indexes_in = new int[number_of_components];
+				for (int c = 0; c < number_of_components; ++c)
+					source_component_indexes_in[c] = 1;
 				// use temporary field module for broadcast wrapper since needs different defaults
 				cmzn_fieldmodule *temp_field_module =
 					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(fieldmodule));
 				// wrapper field has same name stem as wrapped field
 				cmzn_fieldmodule_set_field_name(temp_field_module, (**field_to_wrap)->name);
-				broadcast_wrapper = Computed_field_create_composite(temp_field_module,
-					number_of_components,
-					/*number_of_source_fields*/1, *field_to_wrap,
-					0, (double *)NULL,
-					source_field_numbers, source_value_numbers);
+				broadcast_wrapper = cmzn_fieldmodule_create_field_component_multiple(temp_field_module,
+					**field_to_wrap, number_of_components, source_component_indexes_in);
 				cmzn_fieldmodule_destroy(&temp_field_module);
-
-				DEALLOCATE(source_field_numbers);
-				DEALLOCATE(source_value_numbers);
-
+				delete[] source_component_indexes_in;
 				DEACCESS(Computed_field)(*field_to_wrap);
 				*(*field_to_wrap) = broadcast_wrapper;
-
 				return_code = 1;
 			}
 		}
@@ -3093,7 +3134,7 @@ cmzn_region *Computed_field_modify_data::get_region()
 
 MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
 {
-	return cmzn_region_get_Computed_field_manager(get_region());
+	return this->get_region()->getFieldManager();
 };
 
 int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_field_void)

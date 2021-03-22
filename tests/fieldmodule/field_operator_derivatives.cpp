@@ -15,6 +15,7 @@
 #include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
+#include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmatrixoperators.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
@@ -599,6 +600,165 @@ TEST(ZincField, field_operator_derivatives_3d)
 	compare_double_array("expected_multiply_deformed_temperature_derivatives1", expected_multiply_deformed_temperature_derivatives1, multiply_deformed_temperature_derivatives1, 12, 3, temperatureDerivatives1Tol);
 	compare_double_array("expected_divide_deformed_temperature_derivatives1", expected_divide_deformed_temperature_derivatives1, divide_deformed_temperature_derivatives1, 12, 3, temperatureDerivatives1Tol);
 }
+
+void evaluateCubicLagrangeBasis(double xi, int derivative, double *basisValuesOut4)
+{
+	if (derivative == 0)
+	{
+		const double xi2 = xi*xi;
+		const double xi3 = xi2*xi;
+		basisValuesOut4[0] = 1.0 - 5.5*xi +  9.0*xi2 -  4.5*xi3;
+		basisValuesOut4[1] =       9.0*xi - 22.5*xi2 + 13.5*xi3;
+		basisValuesOut4[2] =      -4.5*xi + 18.0*xi2 - 13.5*xi3;
+		basisValuesOut4[3] =       1.0*xi -  4.5*xi2 +  4.5*xi3;
+	}
+	else if (derivative == 1)
+	{
+		const double xi2 = xi*xi;
+		basisValuesOut4[0] = -5.5 + 18.0*xi - 13.5*xi2;
+		basisValuesOut4[1] =  9.0 - 45.0*xi + 40.5*xi2;
+		basisValuesOut4[2] = -4.5 + 36.0*xi - 40.5*xi2;
+		basisValuesOut4[3] =  1.0 -  9.0*xi + 13.5*xi2;
+	}
+	else if (derivative == 2)
+	{
+		basisValuesOut4[0] =  18.0 - 27.0*xi;
+		basisValuesOut4[1] = -45.0 + 81.0*xi;
+		basisValuesOut4[2] =  36.0 - 81.0*xi;
+		basisValuesOut4[3] =  -9.0 + 27.0*xi;
+	}
+	else if (derivative == 3)
+	{
+		basisValuesOut4[0] = -27.0;
+		basisValuesOut4[1] =  81.0;
+		basisValuesOut4[2] = -81.0;
+		basisValuesOut4[3] =  27.0;
+	}
+	else
+	{
+		basisValuesOut4[0] = 0.0;
+		basisValuesOut4[1] = 0.0;
+		basisValuesOut4[2] = 0.0;
+		basisValuesOut4[3] = 0.0;
+	}
+}
+
+// Interpolate nodal parameters for 3 components using tricubic Lagrange basis with 4 basis values in each xi direction.
+void interpolateTricubicLagrange(const double nodeParameters[64][3],
+	const double basisValues1[4], const double basisValues2[4], const double basisValues3[4], double valuesOut3[3])
+{
+	for (int c = 0; c < 3; ++c)
+		valuesOut3[c] = 0.0;
+	double wt;
+	for (int n = 0; n < 64; ++n)
+	{
+		wt = basisValues1[n % 4]*basisValues2[(n/4) % 4]*basisValues3[n/16];
+		for (int c = 0; c < 3; ++c)
+			valuesOut3[c] += wt*nodeParameters[n][c];
+	}
+}
+
+// Compare Zinc derivatives to basis derivatives calculated directly
+TEST(ZincFieldDerivative, higher_derivatives)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+
+	FieldFiniteElement deformed = zinc.fm.findFieldByName("deformed").castFiniteElement();
+	EXPECT_TRUE(deformed.isValid());
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	Elementfieldtemplate eft = element.getElementfieldtemplate(deformed, -1);
+	EXPECT_TRUE(eft.isValid());
+	EXPECT_EQ(64, eft.getNumberOfLocalNodes());
+	Fieldcache cache = zinc.fm.createFieldcache();
+	// get nodal parameters for deformed field to interpolate
+	double nodeDeformed[64][3];
+	for (int n = 0; n < 64; ++n)
+	{
+		Node node = element.getNode(eft, n + 1);
+		EXPECT_TRUE(node.isValid());
+;		EXPECT_EQ(RESULT_OK, cache.setNode(node));
+		EXPECT_EQ(RESULT_OK, deformed.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, nodeDeformed[n]));
+	}
+	// get zinc first and second derivative fields
+	EXPECT_EQ(RESULT_OK, zinc.fm.beginChange());
+	FieldDerivative firstDerivatives[3], secondDerivatives[3][3];
+	for (int i = 0; i < 3; ++i)
+	{
+		firstDerivatives[i] = zinc.fm.createFieldDerivative(deformed, i + 1);
+		EXPECT_TRUE(firstDerivatives[i].isValid());
+		for (int j = 0; j < 3; ++j)
+		{
+			secondDerivatives[i][j] = zinc.fm.createFieldDerivative(firstDerivatives[i], j + 1);
+			EXPECT_TRUE(secondDerivatives[i][j].isValid());
+		}
+	}
+	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+	const int pointCount = 10;
+	const double xi[pointCount][3] =
+	{
+		{ 0.00, 0.00, 0.00 },
+		{ 0.00, 0.75, 0.25 },
+		{ 0.50, 0.50, 0.50 },
+		{ 0.20, 0.10, 0.40 },
+		{ 0.75, 0.33, 0.45 },
+		{ 0.95, 0.95, 0.95 },
+		{ 1.00, 1.00, 1.00 },
+		{ 2.0/3.0, 1.0/3.0, 1.0/3.0 },
+		{ 1.0/3.0, 2.0/3.0, 1.0/3.0 },
+		{ 1.0/3.0, 1.0/3.0, 2.0/3.0 }
+	};
+	const int derivativeCount = 3;
+	double basisValues[3][derivativeCount][4];  // xi direction, derivative, nodes
+	double expectedValues[3], values[3];
+	double derivatives1[3], expectedDerivatives1[3];
+	double derivatives2[3], expectedDerivatives2[3];
+	const double valuesTolerance = 1.0E-11;
+	const double derivatives1Tolerance = 1.0E-11;
+	const double derivatives2Tolerance = 1.0E-7;  // as currently computed by finite difference
+	for (int p = 0; p < pointCount; ++p)
+	{
+		EXPECT_EQ(RESULT_OK, cache.setMeshLocation(element, 3, xi[p]));
+		for (int i = 0; i < 3; ++i)
+			for (int d = 0; d < 3; ++d)
+				evaluateCubicLagrangeBasis(xi[p][i], d, basisValues[i][d]);
+		// value
+		interpolateTricubicLagrange(nodeDeformed, basisValues[0][0], basisValues[1][0], basisValues[2][0], expectedValues);
+		EXPECT_EQ(RESULT_OK, result = deformed.evaluateReal(cache, 3, values));
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(expectedValues[c], values[c], valuesTolerance);
+		// first derivatives
+		for (int i = 0; i < 3; ++i)
+		{
+			interpolateTricubicLagrange(nodeDeformed,
+				basisValues[0][(i == 0) ? 1 : 0],
+				basisValues[1][(i == 1) ? 1 : 0],
+				basisValues[2][(i == 2) ? 1 : 0], expectedDerivatives1);
+			EXPECT_EQ(RESULT_OK, result = firstDerivatives[i].evaluateReal(cache, 3, derivatives1));
+			for (int c = 0; c < 3; ++c)
+				EXPECT_NEAR(expectedDerivatives1[c], derivatives1[c], derivatives1Tolerance);
+		}
+		// second derivatives
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+			{
+				interpolateTricubicLagrange(nodeDeformed,
+					basisValues[0][((i == 0) ? 1 : 0) + ((j == 0) ? 1 : 0)],
+					basisValues[1][((i == 1) ? 1 : 0) + ((j == 1) ? 1 : 0)],
+					basisValues[2][((i == 2) ? 1 : 0) + ((j == 2) ? 1 : 0)], expectedDerivatives2);
+				EXPECT_EQ(RESULT_OK, result = secondDerivatives[i][j].evaluateReal(cache, 3, derivatives2));
+				for (int c = 0; c < 3; ++c)
+					EXPECT_NEAR(expectedDerivatives2[c], derivatives2[c], derivatives2Tolerance);
+			}
+	}
+}
+
 
 /** Test evaluation of gradient at nodes which uses a finite different approximation */
 TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)

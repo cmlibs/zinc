@@ -35,7 +35,6 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/region.hpp"
-#include "region/cmiss_region_private.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -551,7 +550,7 @@ OpenCMISS::Zinc::Field importTimeValueField(enum cmzn_field_type type,
 		case CMZN_FIELD_TYPE_TIME_VALUE:
 		{
 			OpenCMISS::Zinc::Region region = fieldmodule.getRegion();
-			cmzn_context_id context = cmzn_region_get_context_private(region.getId());
+			cmzn_context_id context = region.getId()->getContext();
 			OpenCMISS::Zinc::Timekeepermodule tm(cmzn_context_get_timekeepermodule(context));
 			OpenCMISS::Zinc::Timekeeper timekeeper = tm.getDefaultTimekeeper();
 			field = fieldmodule.createFieldTimeValue(timekeeper);

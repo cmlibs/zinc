@@ -48,7 +48,7 @@ protected:
 	void writeIndexBuffer(struct GT_object *object, int typeMask,
 		int number_of_points, unsigned int offset);
 
-	void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
+	virtual void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
 
 	void writeSpecialDataBuffer(struct GT_object *object, GLfloat *vertex_buffer,
 		unsigned int values_per_vertex, unsigned int vertex_count);
@@ -57,7 +57,7 @@ protected:
 	void writeUVsBuffer(GLfloat *texture_buffer, unsigned int values_per_vertex,
 		unsigned int vertex_count);
 
-private:
+protected:
 	char *filename;
 	cmzn_streaminformation_scene_io_data_type mode;
 	std::string facesString;
@@ -114,6 +114,9 @@ public:
 		return groupName;
 	}
 
+	/* this return json format describing colours and transformation of the glyph */
+	Json::Value getExportJson();
+
 	std::string *getExportString();
 
 	bool getMorphVerticesExported()
@@ -144,10 +147,12 @@ private:
 
 	void exportGlyphsTransformation(struct GT_object *glyph,  int time_step);
 
+	void exportGlyphsLabel(struct GT_object *glyph);
+
 	void writeGlyphIndexBuffer(struct GT_object *object, int typeMask);
 
 	Json::Value metadata, positions_json, axis1_json, axis2_json, axis3_json,
-		scale_json, color_json;
+		scale_json, color_json, label_json;
 
 	std::string glyphTransformationString;
 
@@ -171,8 +176,57 @@ public:
 	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
 
 	/* this return json format describing colours and transformation of the glyph */
+	Json::Value getGlyphTransformationExportJson();
+
+	/* this return string format describing colours and transformation of the glyph */
 	std::string *getGlyphTransformationExportString();
 
 	void setGlyphGeometriesURLName(char *name);
 
 };
+
+/* class for export point into WebGL format.
+ */
+class Threejs_export_point : public Threejs_export
+{
+private:
+
+	void exportPointsLabel(struct GT_object *point);
+
+public:
+
+	Threejs_export_point(const char *filename_in, int number_of_time_steps_in,
+		cmzn_streaminformation_scene_io_data_type mode_in,
+		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		double *textureSizesIn, char *groupNameIn) :
+		Threejs_export(filename_in, number_of_time_steps_in,
+		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn, groupNameIn)
+	{
+	}
+
+	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
+
+	virtual void writeIndexBufferWithoutIndex(int typeMask, int number_of_points, unsigned int offset);
+};
+
+
+/* class for export point into WebGL format.
+ */
+class Threejs_export_line : public Threejs_export_point
+{
+
+public:
+
+	Threejs_export_line(const char *filename_in, int number_of_time_steps_in,
+		cmzn_streaminformation_scene_io_data_type mode_in,
+		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		double *textureSizesIn, char *groupNameIn) :
+			Threejs_export_point(filename_in, number_of_time_steps_in,
+		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn, groupNameIn)
+	{
+	}
+
+	virtual int exportGraphicsObject(struct GT_object *object, int time_step);
+};
+
+

@@ -15,7 +15,7 @@ has a particular value.
 #if !defined (COMPUTED_FIELD_FIND_XI_H)
 #define COMPUTED_FIELD_FIND_XI_H
 
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 struct Graphics_buffer_package;
 

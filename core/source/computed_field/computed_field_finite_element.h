@@ -26,10 +26,10 @@ Global functions
 
 /**
  * internal-only constructor for creating wrapper field for an FE_field
- * Call only from cmzn_region_FE_region_change
+ * Call only from cmzn_region::FeRegionChange
  */
-cmzn_field *Computed_field_create_finite_element_internal(
-	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field);
+cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
+	cmzn_fieldmodule *fieldmodule, struct FE_field *fe_field);
 
 int Computed_field_is_type_finite_element(struct Computed_field *field);
 /*******************************************************************************
@@ -98,8 +98,8 @@ DESCRIPTION :
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_cmiss_number(
-	struct cmzn_fieldmodule *field_module);
+cmzn_field *cmzn_fieldmodule_create_field_cmiss_number(
+	cmzn_fieldmodule *fieldmodule);
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
 	void *dummy);
@@ -154,8 +154,8 @@ DESCRIPTION :
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_xi_coordinates(
-	struct cmzn_fieldmodule *field_module);
+cmzn_field *cmzn_fieldmodule_create_field_xi_coordinates(
+	cmzn_fieldmodule *fieldmodule);
 
 struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *computed_field, struct FE_node *node);
@@ -177,7 +177,7 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);
 
 /** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
-const FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
 
 /** Discover and set destination host mesh from source field, or check it matches if already set.
   * @return  Result OK on success, any other value on failure. */

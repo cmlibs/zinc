@@ -11,12 +11,14 @@
 #if !defined (FINITE_ELEMENT_MESH_HPP)
 #define FINITE_ELEMENT_MESH_HPP
 
+#include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/field_derivative.hpp"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
-#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
 #include <algorithm>
@@ -262,7 +264,7 @@ public:
 
 	inline FE_element_shape *getElementShape() const;
 
-	/** @return  Non-accessed mesh, or 0 if invalid. */
+	/** @return  Non-accessed mesh, or nullptr if invalid. */
 	inline FE_mesh *getMesh() const
 	{
 		return this->mesh;
@@ -270,6 +272,8 @@ public:
 
 };
 
+DECLARE_LIST_CONDITIONAL_FUNCTION(cmzn_element);
+DECLARE_LIST_ITERATOR_FUNCTION(cmzn_element);
 
 /** Stores FE_element_field_template and its element-varying local-to-global map data */
 class FE_mesh_element_field_template_data
@@ -736,6 +740,8 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
+	FieldDerivativeMesh *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
+
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
@@ -890,6 +896,10 @@ public:
 	}
 
 	void elementChange(DsLabelIndex elementIndex, int change);
+
+	void elementFieldChange(DsLabelIndex elementIndex, int change, FE_field *fe_field);
+
+	void elementAllFieldChange(DsLabelIndex elementIndex, int change);
 
 	int getDimension() const
 	{
@@ -1067,10 +1077,12 @@ public:
 
 	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
 
-	struct FE_element *get_first_FE_element_that(
-		LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function, void *user_data_void);
+	/** @return First element in mesh for which function returns true / non-zero.
+	 * @param conditional_function  If none, return first element, if any. */
+	cmzn_element *get_first_FE_element_that(
+		LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void);
 
-	int for_each_FE_element(LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data_void);
+	int for_each_FE_element(LIST_ITERATOR_FUNCTION(cmzn_element) iterator_function, void *user_data_void);
 
 	DsLabelsGroup *createLabelsGroup();
 
@@ -1190,6 +1202,14 @@ public:
 	int destroyAllElements();
 
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
+
+	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
+	FieldDerivativeMesh *getFieldDerivative(int order) const
+	{
+		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
+			return nullptr;
+		return this->fieldDerivatives[order - 1];
+	}
 
 	/** @param scaleFactorIndex  Not checked. Must be valid. */
 	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const
@@ -1561,13 +1581,7 @@ private:
 	const Value_type valueType;
 	ComponentBase **components;
 
-	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn) :
-		field(fieldIn),
-		componentCount(get_FE_field_number_of_components(fieldIn)),
-		valueType(get_FE_field_value_type(fieldIn)),
-		components(componentsIn) // takes ownership of passed-in array
-	{
-	}
+	FE_mesh_field_data(FE_field *fieldIn, ComponentBase **componentsIn);
 
 public:
 

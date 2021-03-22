@@ -21,7 +21,7 @@ Structure describing an interactive event containing:
 
 #include "general/object.h"
 #include "interaction/interaction_volume.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 
 /*
 Global constants

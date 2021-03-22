@@ -8,7 +8,7 @@ A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
-caching of FE_element_field_values, for example. Their main benefit is in
+evaluation caches, for example. Their main benefit is in
 allowing new types of fields to be defined as functions of other fields and
 source information, such as scale, offset, magnitude, gradient,
 coordinate transformations etc., thus providing cmgui with the ability to
@@ -48,7 +48,7 @@ if a value is already known.
 struct cmzn_region;
 
 /*
-The cmzn_computed_field which is Public is currently the same object as the
+The cmzn_field which is Public is currently the same object as the
 cmgui internal Computed_field.  The Public interface is contained in
 zinc/field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
@@ -57,11 +57,6 @@ functions are given their public names.
 
 /* Convert to use external field object name */
 #define Computed_field cmzn_field
-
-/* Convert the functions that have identical interfaces */
-#define Computed_field_get_number_of_components \
-	cmzn_field_get_number_of_components
-#define Computed_field_set_type cmzn_field_set_type
 
 enum cmzn_field_type
 {
@@ -332,11 +327,12 @@ bool cmzn_field_evaluate_boolean(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
 
 /***************************************************************************//**
- * Temporary function to allow derivatives to be evaluated with value.
- * Currently only needed for evaluation of derivatives on CAD surfaces.
+ * Temporary function to allow first derivatives to be evaluated with value.
  * @param number_of_derivatives  Expected number of derivatives for domain.
  * @param derivatives  Array of size number_of_values*number_of_derivatives.
  * IMPORTANT: Not approved for external API!
+ * @deprecated
+ * Try to remove its use as soon as possible.
  */
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values,
@@ -370,13 +366,6 @@ the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
 
-int Computed_field_get_number_of_components(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 23 December 1998
-
-DESCRIPTION :
-==============================================================================*/
-
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field);
 /*******************************************************************************
@@ -388,7 +377,7 @@ Computed_field_set_coordinate_system for further details.
 ==============================================================================*/
 
 int Computed_field_set_coordinate_system(struct Computed_field *field,
-	struct Coordinate_system *coordinate_system);
+	const Coordinate_system *coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 19 January 1999
 

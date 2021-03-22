@@ -37,7 +37,7 @@ void Mesh_triangle::list() const
 	trivertex3->list();
 }
 
-bool Triangle_vertex_compare::operator() (const Triangle_vertex *v1, const Triangle_vertex *v2)
+bool Triangle_vertex_compare::operator() (const Triangle_vertex *v1, const Triangle_vertex *v2) const
 {
 	if (v1->coordinates[2] < (v2->coordinates[2] - tolerance))
 	{
@@ -99,7 +99,7 @@ const Triangle_vertex *Triangle_mesh::add_vertex(const Triple coordinates)
 	if (0 == NUMBER_IN_LIST(Octree_object)(nearby_vertex))
 	{
 		vertex_in_set = new Triangle_vertex(coordinates_FEValue);
-		vertex_in_set->set_identifier(static_cast<int>(vertex_set.size()) + 1);
+		vertex_in_set->set_identifier(vertex_set.size() + 1);
 		Octree_object *octree_vertex = CREATE(Octree_object)(/*dimension*/3, coordinates_FEValue);
 		Octree_object_set_user_data(octree_vertex, (void *)vertex_in_set);
 		Octree_add_object(octree, octree_vertex);
@@ -144,9 +144,9 @@ void Triangle_mesh::add_quadrilateral(const Triangle_vertex *v1, const Triangle_
 	add_triangle(v3, v1, vc);
 }
 
-void Triangle_mesh::set_vertex_identifiers(int first_identifier)
+void Triangle_mesh::set_vertex_identifiers(size_t first_identifier)
 {
-	int i = first_identifier;
+	size_t i = first_identifier;
 	for (Triangle_vertex_set_iterator iter = vertex_set.begin(); iter != vertex_set.end(); iter++)
 	{
 		(*iter)->set_identifier(i);

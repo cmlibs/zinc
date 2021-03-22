@@ -1629,7 +1629,7 @@ int FieldMLReader::readMeshes()
 			return_code = 0;
 			break;
 		}
-		FE_region *fe_region = cmzn_region_get_FE_region(this->region);
+		FE_region *fe_region = this->region->get_FE_region();
 		this->mesh = FE_region_find_FE_mesh_by_dimension(fe_region, meshDimension);
 		if (!this->mesh)
 		{
@@ -2985,10 +2985,10 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 	FE_mesh_field_data *meshFieldData = 0;
 	if (return_code)
 	{
-		meshFieldData = FE_field_getMeshFieldData(feField, this->mesh);
+		meshFieldData = feField->getMeshFieldData(this->mesh);
 		if (!meshFieldData)
 		{
-			meshFieldData = FE_field_createMeshFieldData(feField, this->mesh);
+			meshFieldData = feField->createMeshFieldData(this->mesh);
 			if (!meshFieldData)
 			{
 				display_message(ERROR_MESSAGE, "FieldMLReader::readField.  Failed to create mesh field data");

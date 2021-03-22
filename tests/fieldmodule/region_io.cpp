@@ -115,14 +115,14 @@ TEST(region_file_output, invalid_args)
 	result = cmzn_region_write(root_region, si_region);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	const char *regionName = "plate";
-	char *temp_char = strstr ( memory_buffer, regionName);
+	const char *temp_char = strstr ( memory_buffer, regionName);
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
 	cmzn_streamresource_destroy(&sr);
@@ -168,7 +168,7 @@ TEST(region_file_output, invalid_args)
 	memory_buffer = 0;
 	size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer, fieldName);
@@ -177,7 +177,7 @@ TEST(region_file_output, invalid_args)
 	temp_char = strstr ( memory_buffer, "coordinates");
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr2, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr2, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer, "elevated");
@@ -334,13 +334,13 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
+	const char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	cmzn_nodeset_destroy(&dataset);
@@ -433,13 +433,13 @@ TEST(element_dimension_file, invalid_args)
 	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		output_sr);
 
-	char *memory_buffer;
+	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	char *temp_char = strstr ( memory_buffer, "Dimension=1");
+	const char *temp_char = strstr ( memory_buffer, "Dimension=1");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "Dimension=2");

@@ -28,7 +28,7 @@
 #include "field_io/fieldml_common.hpp"
 #include "field_io/write_fieldml.hpp"
 #include "finite_element/finite_element.h"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_private.h"
@@ -40,7 +40,7 @@
 #include "general/refcounted.hpp"
 #include "general/refhandle.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "FieldmlIoApi.h"
 
 namespace {
@@ -436,7 +436,7 @@ class FieldMLWriter
 public:
 	FieldMLWriter(struct cmzn_region *region, const char *locationIn, const char *filenameIn) :
 		region(cmzn_region_access(region)),
-		fe_region(cmzn_region_get_FE_region(this->region)),
+		fe_region(this->region->get_FE_region()),
 		location(locationIn),
 		filename(filenameIn),
 		fmlSession(Fieldml_Create(location, /*regionName*/"/")),
@@ -1238,8 +1238,7 @@ int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 
 int FieldMLWriter::getHighestMeshDimension() const
 {
-	FE_region *fe_region = cmzn_region_get_FE_region(this->region);
-	return FE_region_get_highest_dimension(fe_region);
+	return FE_region_get_highest_dimension(this->region->get_FE_region());
 }
 
 // Ensures the versions ensemble and labels have at least as many entries as the
@@ -1710,12 +1709,12 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 	FmlObjectHandle fmlValueType = FML_INVALID_OBJECT_HANDLE;
 	FmlObjectHandle fmlComponentsType = FML_INVALID_OBJECT_HANDLE;
 	FmlObjectHandle fmlComponentsArgument = FML_INVALID_OBJECT_HANDLE;
-	const bool isCoordinate = get_FE_field_CM_field_type(field) == CM_COORDINATE_FIELD;
+	const bool isCoordinate = field->get_CM_field_type() == CM_COORDINATE_FIELD;
 	const int componentCount = get_FE_field_number_of_components(field);
 
-	struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(field);
+	const Coordinate_system& coordinate_system = field->getCoordinateSystem();
 	std::string componentsTypeName;
-	if (isCoordinate && (componentCount <= 3) && (RECTANGULAR_CARTESIAN == coordinate_system->type))
+	if (isCoordinate && (componentCount <= 3) && (RECTANGULAR_CARTESIAN == coordinate_system.type))
 	{
 		if (1 == componentCount)
 			fmlValueType = this->libraryImport("coordinates.rc.1d");
@@ -1740,10 +1739,10 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 	}
 	else
 	{
-		if (isCoordinate && (RECTANGULAR_CARTESIAN != coordinate_system->type))
+		if (isCoordinate && (RECTANGULAR_CARTESIAN != coordinate_system.type))
 		{
 			display_message(WARNING_MESSAGE, "FieldMLWriter: Field %s written without %s coordinate system attribute(s)",
-				get_FE_field_name(field), ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system->type));
+				get_FE_field_name(field), ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system.type));
 		}
 		std::string fieldDomainName(get_FE_field_name(field));
 		fieldDomainName += ".domain";
@@ -1770,7 +1769,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 	HDsLabels versionsLabels;
 	int highestNodeDerivative = 0;
 	int highestNodeVersion = 0;
-	FE_field_get_highest_node_derivative_and_version(field, highestNodeDerivative, highestNodeVersion);
+	nodeset->getHighestNodeFieldDerivativeAndVersion(field, highestNodeDerivative, highestNodeVersion);
 	if (highestNodeDerivative > 1)
 	{
 		derivativesLabels = this->nodeDerivatives;
@@ -1813,7 +1812,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 			return_code = CMZN_ERROR_GENERAL;
 			break;
 		}
-		const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, field);
+		const FE_node_field *node_field = node->getNodeField(field);
 		if (!node_field)
 		{
 			continue; // field not defined at node
@@ -1913,7 +1912,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(const FE_mesh *mesh, FE_field *fie
 
 	FmlObjectHandle fmlField = FML_INVALID_OBJECT_HANDLE;
 	FmlErrorNumber fmlError;
-	FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, mesh);
+	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(mesh);
 	const FE_mesh_field_template *mft1 = meshFieldData->getComponentMeshfieldtemplate(0);
 	if (1 == componentCount)
 	{
@@ -1981,10 +1980,10 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 		FE_field *field = 0;
 		if (Computed_field_get_type_finite_element(cfield, &field) && field)
 		{
-			if ((get_FE_field_FE_field_type(field) == GENERAL_FE_FIELD)
+			if ((field->get_FE_field_type() == GENERAL_FE_FIELD)
 				&& (get_FE_field_value_type(field) == FE_VALUE_VALUE))
 			{
-				FE_mesh_field_data *meshFieldData = FE_field_getMeshFieldData(field, mesh);
+				FE_mesh_field_data *meshFieldData = field->getMeshFieldData(mesh);
 				if (meshFieldData) // i.e. is field defined on mesh
 				{
 					fields.push_back(field);

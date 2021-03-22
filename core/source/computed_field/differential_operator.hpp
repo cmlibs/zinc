@@ -15,27 +15,32 @@
 #include "opencmiss/zinc/differentialoperator.h"
 #include "opencmiss/zinc/status.h"
 #include "finite_element/finite_element_region.h"
+#include "computed_field/field_derivative.hpp"
 
-/**
- * For now can only represent a differential differential_operator give first derivatives
- * with respect to differential_operator elements of given dimension from fe_region.
- */
+/** Currently limited to one or all terms of a FieldDerivative */
 struct cmzn_differentialoperator
 {
 private:
-	FE_region *fe_region;
-	int dimension;
-	int term; // which derivative for multiple dimensions, 1 = d/dx1
+	FieldDerivative *fieldDerivative;  // accessed
+	int term; // starting at 0 or negative for all
 	int access_count;
 
-public:
-	cmzn_differentialoperator(FE_region *fe_region, int dimension, int term) :
-		fe_region(ACCESS(FE_region)(fe_region)),
-		dimension(dimension),
-		term(term),
+	cmzn_differentialoperator(FieldDerivative *fieldDerivativeIn, int termIn) :
+		fieldDerivative(fieldDerivativeIn->access()),
+		term(termIn),
 		access_count(1)
 	{
 	}
+
+	~cmzn_differentialoperator()
+	{
+		FieldDerivative::deaccess(this->fieldDerivative);
+	}
+
+public:
+
+	/** @param term_in  Term from 0 to number-1, or negative for all terms */
+	static cmzn_differentialoperator* create(FieldDerivative *fieldDerivativeIn, int termIn);
 
 	cmzn_differentialoperator_id access()
 	{
@@ -54,15 +59,21 @@ public:
 		return CMZN_OK;
 	}
 
-	int getDimension() const { return dimension; }
-	FE_region *getFeRegion() const { return fe_region; }
-	int getTerm() const { return term; }
-
-private:
-
-	~cmzn_differentialoperator()
+	int getElementDimension() const
 	{
-		DEACCESS(FE_region)(&fe_region);
+		if (this->fieldDerivative->getType() == FieldDerivative::TYPE_ELEMENT_XI)
+			return static_cast<FieldDerivativeMesh*>(this->fieldDerivative)->getElementDimension();
+		return 0;
+	}
+
+	FieldDerivative& getFieldDerivative() const
+	{
+		return *this->fieldDerivative;
+	}
+
+	int getTerm() const
+	{
+		return this->term;
 	}
 
 };

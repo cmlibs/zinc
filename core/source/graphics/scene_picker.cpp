@@ -15,14 +15,14 @@
 #include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/render_gl.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "graphics/scene_picker.hpp"
 #include "graphics/scene_viewer.h"
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "interaction/interaction_volume.h"
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 

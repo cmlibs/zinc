@@ -15,7 +15,7 @@ DESCRIPTION :
 
 #include "opencmiss/zinc/mesh.h"
 #include "finite_element/finite_element.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "computed_field/computed_field_private.hpp"
 
 
@@ -76,14 +76,14 @@ private:
 
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 

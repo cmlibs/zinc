@@ -17,6 +17,7 @@ value over 2-D elements.
 
 #include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -873,13 +874,13 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	if (element && field_cache && (2==get_FE_element_dimension(element))&&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
+		(3>=cmzn_field_get_number_of_components(coordinate_field))&&
+		isoscalar_field&&(1==cmzn_field_get_number_of_components(isoscalar_field))&&
 		array)
 	{
 		if (data_field)
 		{
-			n_data_components=Computed_field_get_number_of_components(data_field);
+			n_data_components=cmzn_field_get_number_of_components(data_field);
 		}
 		else
 		{
@@ -901,6 +902,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 		distance1=(FE_value)(number_of_points_in_xi1-1);
 		distance2=(FE_value)(number_of_points_in_xi2-1);
 		contour_lines=(struct Contour_lines *)NULL;
+		unsigned int point_index = 0;
 		if (ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(scalars,FE_value,number_of_points)&&((!data_field)||
 				ALLOCATE(data,FE_value,n_data_components*number_of_points))&&
@@ -923,7 +925,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 				for (j=0;(j<adjusted_number_of_points_in_xi2)&&return_code;j++)
 				{
 					xi[1]=(FE_value)j / distance2;
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element)) &&
+					if ((CMZN_OK == field_cache->setIndexedMeshLocation(point_index, element, xi, top_level_element)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, 3, coordinates)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(isoscalar_field, field_cache, 1, scalar)) &&
 						((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field, field_cache, n_data_components, datum))))
@@ -941,6 +943,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 							"create_iso_lines_from_FE_element.  Error calculating fields");
 						return_code=0;
 					}
+					++point_index;
 				}
 			}
 			/* perform contouring on the squares joining the points */

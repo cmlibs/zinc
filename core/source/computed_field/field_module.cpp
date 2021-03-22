@@ -55,8 +55,7 @@
 #include "image_processing/computed_field_binary_dilate_image_filter.h"
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif
-#include "region/cmiss_region.h"
-#include "region/cmiss_region_private.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
@@ -155,8 +154,7 @@ char *cmzn_fieldmodule_get_unique_field_name(
 	struct cmzn_fieldmodule *fieldmodule)
 {
 	struct MANAGER(Computed_field) *manager;
-	if (fieldmodule &&
-		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
+	if (fieldmodule && (manager = fieldmodule->region->getFieldManager()))
 	{
 		return Computed_field_manager_get_unique_field_name(manager);
 	}
@@ -175,8 +173,7 @@ struct Computed_field *cmzn_fieldmodule_find_field_by_name(
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(cmzn_fieldmodule_find_field_by_name);
-	if (fieldmodule && field_name &&
-		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
+	if (fieldmodule && field_name && (manager = fieldmodule->region->getFieldManager()))
 	{
 		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			(char *)field_name, manager);
@@ -353,7 +350,7 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 {
 	if (!fieldmodule)
 		return 0;
-	return cmzn_region_create_fielditerator(fieldmodule->region);
+	return fieldmodule->region->createFielditerator();
 }
 
 cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
@@ -368,7 +365,7 @@ cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 	if (!fieldmodule)
 		return NULL;
 	FE_time_sequence *fe_timesequence = FE_region_get_FE_time_sequence_matching_series(
-			cmzn_region_get_FE_region(fieldmodule->region), number_of_times, times);
+		fieldmodule->region->get_FE_region(), number_of_times, times);
 	ACCESS(FE_time_sequence)(fe_timesequence);
 	return reinterpret_cast<cmzn_timesequence_id>(fe_timesequence);
 }
@@ -395,7 +392,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 			}
 			else
 			{
-				xi_field = Computed_field_create_xi_coordinates(fieldmodule);
+				xi_field = cmzn_fieldmodule_create_field_xi_coordinates(fieldmodule);
 				cmzn_field_set_name(xi_field, xi_field_name);
 				cmzn_field_set_managed(xi_field, true);
 				break;
@@ -425,7 +422,7 @@ cmzn_fieldmodulenotifier::cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule
 	user_data(0),
 	access_count(1)
 {
-	cmzn_region_add_fieldmodulenotifier(region, this);
+	this->region->addFieldmodulenotifier(this);
 }
 
 cmzn_fieldmodulenotifier::~cmzn_fieldmodulenotifier()
@@ -440,7 +437,7 @@ int cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
 		if (notifier->access_count <= 0)
 			delete notifier;
 		else if ((1 == notifier->access_count) && notifier->region)
-			cmzn_region_remove_fieldmodulenotifier(notifier->region, notifier);
+			notifier->region->removeFieldmodulenotifier(notifier);
 		notifier = 0;
 		return CMZN_OK;
 	}

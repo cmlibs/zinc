@@ -23,14 +23,14 @@
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #if defined (USE_OPENCASCADE)
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 #include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "general/message.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "mesh/cmiss_element_private.hpp"
@@ -176,12 +176,12 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 #endif /* defined (USE_OPENCASCADE) */
 	else
 	{
-		Field_element_xi_location *element_xi_location;
-		if (dynamic_cast<Field_node_location*>(cache.getLocation()))
+		const Field_location_element_xi *element_xi_location;
+		if (cache.get_location_node())
 		{
 			if (local_node_group)
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_node_group->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_node_group->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];
@@ -189,20 +189,20 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 			}
 			if (local_data_group && (0.0 == valueCache.values[0]))
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_data_group->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(local_data_group->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];
 				}
 			}
 		}
-		else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+		else if (element_xi_location = cache.get_location_element_xi())
 		{
-			int dimension = element_xi_location->get_dimension();
+			int dimension = element_xi_location->get_element_dimension();
 			cmzn_field_id subobject_group_field = get_element_group_field_private(dimension);
 			if (subobject_group_field)
 			{
-				RealFieldValueCache *sourceCache = RealFieldValueCache::cast(subobject_group_field->evaluate(cache));
+				const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(subobject_group_field->evaluate(cache));
 				if (sourceCache)
 				{
 					valueCache.values[0] = sourceCache->values[0];
@@ -264,7 +264,7 @@ int Computed_field_group::clearLocal()
 		clearLocalElementGroup(i);
 	change_detail.changeRemoveLocal();
 	this->subelementHandlingMode = oldSubelementHandlingMode;
-	Computed_field_changed(this->field);
+	this->field->setChanged();
 	this->endChange();
 	return CMZN_OK;
 };
@@ -280,7 +280,7 @@ int Computed_field_group::clear()
 		group_core->clear();
 	}
 	return_code = clearLocal();
-	Computed_field_changed(this->field);
+	this->field->setChanged();
 	this->endChange();
 	return return_code;
 };
@@ -553,7 +553,7 @@ cmzn_field_group_id Computed_field_group::createSubRegionGroup(cmzn_region_id su
 	cmzn_field_group_id subregion_group = NULL;
 	if (cmzn_region_contains_subregion(region, subregion) && region != subregion)
 	{
-		cmzn_region_id parent_region = cmzn_region_get_parent_internal(subregion);
+		cmzn_region_id parent_region = subregion->getParent();
 		if (parent_region != region)
 		{
 			cmzn_field_group_id temp = getSubRegionGroup(subregion);
@@ -880,7 +880,7 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 		cmzn_field_cad_primitive_group_template_id cad_primitive_group =
 			cmzn_field_cast_cad_primitive_group_template(it->second);
 		return_code = cmzn_field_cad_primitive_group_template_clear(cad_primitive_group);
-		Computed_field_changed(this->field);
+		this->field->setChanged();
 		//cmzn_field_id cad_primitive_group_field = reinterpret_cast<Computed_field*>(cad_primitive_group);
 		cmzn_field_cad_primitive_group_template_destroy(&cad_primitive_group);
 		cmzn_field_destroy(&it->second);
@@ -942,7 +942,7 @@ void Computed_field_group::remove_child_group(struct cmzn_region *child_region)
 		if (nonEmptySubregionRemoved)
 		{
 			this->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_REMOVE);
-			Computed_field_changed(this->field);
+			this->field->setChanged();
 		}
 	}
 }
@@ -1011,7 +1011,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		return_code = cmzn_nodeset_group_remove_all_nodes(nodeset_group);
 		cmzn_nodeset_group_destroy(&nodeset_group);
 		check_subobject_group_dependency(local_node_group->core);
-		Computed_field_changed(this->field);
+		this->field->setChanged();
 		cmzn_field_node_group_destroy(&node_group);
 	}
 	if (use_data && local_data_group)
@@ -1021,7 +1021,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 		return_code = cmzn_nodeset_group_remove_all_nodes(nodeset_group);
 		cmzn_nodeset_group_destroy(&nodeset_group);
 		check_subobject_group_dependency(local_data_group->core);
-		Computed_field_changed(this->field);
+		this->field->setChanged();
 		cmzn_field_node_group_destroy(&data_group);
 	}
 	if (!subregion_group_map.empty())
@@ -1045,7 +1045,7 @@ int Computed_field_group::addLocalRegion()
 	{
 		this->contains_all = true;
 		change_detail.changeAddLocal();
-		Computed_field_changed(this->field);
+		this->field->setChanged();
 	}
 	return CMZN_OK;
 }
@@ -1056,7 +1056,7 @@ int Computed_field_group::removeLocalRegion()
 	{
 		this->contains_all = false;
 		change_detail.changeRemoveLocal();
-		Computed_field_changed(this->field);
+		this->field->setChanged();
 	}
 	return CMZN_OK;
 }
@@ -1080,7 +1080,7 @@ int Computed_field_group::clear_region_tree_element()
 				cmzn_field_cast_element_group(this->local_element_group[i]);
 			return_code = Computed_field_element_group_core_cast(element_group)->clear();
 			check_subobject_group_dependency(this->local_element_group[i]->core);
-			Computed_field_changed(this->field);
+			this->field->setChanged();
 			cmzn_field_element_group_destroy(&element_group);
 		}
 	}
@@ -1369,16 +1369,13 @@ int cmzn_field_group_destroy(cmzn_field_group_id *group_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(group_address));
 }
 
-Computed_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_module)
+cmzn_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id fieldmodule)
 {
-	Computed_field *field;
-
-	ENTER(Computed_field_create_group);
-	field = (Computed_field *)NULL;
-	if (field_module)
+	cmzn_field *field = nullptr;
+	if (fieldmodule)
 	{
-		cmzn_region_id region = cmzn_fieldmodule_get_region(field_module);
-		field = Computed_field_create_generic(field_module,
+		cmzn_region_id region = cmzn_fieldmodule_get_region(fieldmodule);
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/false, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
@@ -1390,10 +1387,8 @@ Computed_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_mo
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* cmzn_fieldmodule_create_field_group */
+}
 
 int cmzn_field_group_clear(cmzn_field_group_id group)
 {

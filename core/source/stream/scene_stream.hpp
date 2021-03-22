@@ -13,7 +13,7 @@
 #if !defined (CMZN_SCENE_STREAM_HPP)
 #define CMZN_SCENE_STREAM_HPP
 
-#include "graphics/scene.h"
+#include "graphics/scene.hpp"
 #include "opencmiss/zinc/scenefilter.h"
 #include "opencmiss/zinc/scenepicker.h"
 #include "stream/stream_private.hpp"
@@ -27,7 +27,8 @@ public:
 		format(CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID),
 		data_type(CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR),
 		overwriteSceneGraphics(0),  outputTimeDependentVertices(1),
-		outputTimeDependentColours(0), outputTimeDependentNormals(0)
+		outputTimeDependentColours(0), outputTimeDependentNormals(0),
+		outputIsInline(0)
 	{
 		cmzn_scene_access(scene_in);
 	}
@@ -69,11 +70,17 @@ public:
 	{
 		if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 		{
+			if (outputIsInline)
+			{
+				return 1;
+			}
 			/* multiply the following by 2, each glyph export also requires an extra resource
 			 * with informations on the transformation.
 			 */
-			int numberOfResources = Scene_get_number_of_web_compatible_glyph_in_tree(scene, scenefilter) * 2;
+			int numberOfResources = Scene_get_number_of_exportable_glyph_resources(scene, scenefilter);
 			numberOfResources += Scene_get_number_of_graphics_with_surface_vertices_in_tree(
+				scene, scenefilter);
+			numberOfResources += Scene_get_number_of_graphics_with_line_vertices_in_tree(
 				scene, scenefilter);
 			/* An additional resources on new metadata file describing each graphics. */
 			if (numberOfResources > 0)
@@ -178,6 +185,17 @@ public:
 		return CMZN_OK;
 	}
 
+	int getOutputIsInline()
+	{
+		return outputIsInline;
+	}
+
+	int setOutputIsInline(int outputIsInlineIn)
+	{
+		outputIsInline = outputIsInlineIn;
+		return CMZN_OK;
+	}
+
 private:
 	cmzn_scene_id scene;
 	cmzn_scenefilter_id scenefilter;
@@ -186,7 +204,8 @@ private:
 	enum cmzn_streaminformation_scene_io_format format;
 	enum cmzn_streaminformation_scene_io_data_type data_type;
 	int overwriteSceneGraphics;
-	int outputTimeDependentVertices, outputTimeDependentColours, outputTimeDependentNormals;
+	int outputTimeDependentVertices, outputTimeDependentColours, outputTimeDependentNormals,
+		outputIsInline;
 };
 
 

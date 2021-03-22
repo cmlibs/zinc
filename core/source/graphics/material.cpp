@@ -36,6 +36,7 @@ return to direct rendering, as described with these routines.
 #include "opencmiss/zinc/material.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
+#include "computed_field/computed_field_private.hpp"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -1101,22 +1102,18 @@ cmzn_material *cmzn_material_create_private()
 		material->spectrum=(struct cmzn_spectrum *)NULL;
 		material->spectrum_manager_callback_id=NULL;
 		(material->image_texture).texture=(struct Texture *)NULL;
-		(material->image_texture).manager = NULL;
 		(material->image_texture).field  = NULL;
 		(material->image_texture).callback_id = NULL;
 		(material->image_texture).material = material;
 		(material->second_image_texture).texture=(struct Texture *)NULL;
-		(material->second_image_texture).manager = NULL;
 		(material->second_image_texture).field  = NULL;
 		(material->second_image_texture).callback_id = NULL;
 		(material->second_image_texture).material = material;
 		(material->third_image_texture).texture=(struct Texture *)NULL;
-		(material->third_image_texture).manager = NULL;
 		(material->third_image_texture).field  = NULL;
 		(material->third_image_texture).callback_id = NULL;
 		(material->third_image_texture).material = material;
 		(material->fourth_image_texture).texture=(struct Texture *)NULL;
-		(material->fourth_image_texture).manager = NULL;
 		(material->fourth_image_texture).field  = NULL;
 		(material->fourth_image_texture).callback_id = NULL;
 		(material->fourth_image_texture).material = material;
@@ -1154,16 +1151,19 @@ int Material_image_texture_reset(struct Material_image_texture *image_texture)
 	{
 		if (image_texture->texture)
 			DEACCESS(Texture)(&(image_texture->texture));
-
-		if (image_texture->manager &&
-				image_texture->callback_id)
-		{
-			MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
-				image_texture->manager);
-			image_texture->callback_id = NULL;
-		}
 		if (image_texture->field)
 		{
+			// field manager may be nullptr during clean-up. This means it has been destroyed and callback_id is defunct.
+			MANAGER(Computed_field) *field_manager = cmzn_field_image_base_cast(image_texture->field)->getManager();
+			if (field_manager && image_texture->callback_id)
+			{
+				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id, field_manager);
+				image_texture->callback_id = nullptr;
+			}
+			else
+			{
+				image_texture->callback_id = nullptr;
+			}
 			cmzn_field_image_destroy(&(image_texture->field));
 		}
 	}
@@ -1295,28 +1295,25 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 		return_code = 1;
 		if (image_texture->field)
 		{
+			MANAGER(Computed_field) *field_manager = cmzn_field_image_base_cast(image_texture->field)->getManager();
 			cmzn_field_image_destroy(&(image_texture->field));
-			image_texture->field=NULL;
-			if (image_texture->manager &&	image_texture->callback_id)
+			image_texture->field = nullptr;
+			if ((field_manager) && (image_texture->callback_id))
 			{
-				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id,
-						image_texture->manager);
-				image_texture->callback_id = NULL;
+				MANAGER_DEREGISTER(Computed_field)(image_texture->callback_id, field_manager);
+				image_texture->callback_id = nullptr;
 			}
 			if (image_texture->texture)
 				DEACCESS(Texture)(&(image_texture->texture));
 		}
 		if (field)
 		{
-			struct cmzn_region *temp_region = Computed_field_get_region(cmzn_field_image_base_cast(field));
-			MANAGER(Computed_field) *field_manager =
-				cmzn_region_get_Computed_field_manager(temp_region);
+			MANAGER(Computed_field) *field_manager = cmzn_field_image_base_cast(field)->getManager();
 			if (field_manager)
 			{
 				image_texture->callback_id=
 					MANAGER_REGISTER(Computed_field)(Material_image_field_change,
 						(void *)image_texture, field_manager);
-				image_texture->manager = field_manager;
 				image_texture->field = field;
 				cmzn_field_access(cmzn_field_image_base_cast(image_texture->field));
 				image_texture->texture = ACCESS(Texture)(cmzn_field_image_get_texture(image_texture->field));

@@ -72,7 +72,6 @@ Threejs_export::~Threejs_export()
 
 int Threejs_export::beginExport()
 {
-
 	outputString += "{\n\t\"metadata\" : {\n\t\t\"formatVersion\" : 3,\n";
 	outputString += "\t\t\"description\" : \"Exported from LibZinc.\"\n\t},\n\n";
 	return 1;
@@ -86,6 +85,14 @@ int Threejs_export::endExport()
 	outputString += facesString;
 	outputString += "}\n";
 	return 1;
+}
+
+Json::Value Threejs_export::getExportJson()
+{
+	Json::Value root;
+	Json::Reader reader;
+	reader.parse( outputString, root );
+	return root;
 }
 
 std::string *Threejs_export::getExportString()
@@ -377,6 +384,11 @@ void Threejs_export::writeIndexBufferWithoutIndex(int typeMask, int number_of_po
 				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
 				facesString += temp;
 			}
+			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+				facesString += temp;
+			}
 			current_index += 3;
 			if (i != number_of_triangles - 1)
 			{
@@ -617,7 +629,6 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 	if (texture_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
 		unsigned int valid_output_per_vertex = 2;
-
 		GLfloat *currentVertex = texture_buffer;
 		char new_string[100];
 		sprintf(new_string, "\t\"uvs\" : [[");
@@ -629,12 +640,14 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 			if (textureSizes[0] > 0.0)
 				sprintf(new_string, "%f,", currentVertex[0]/textureSizes[0]);
 			else
-				sprintf(new_string, "%f,", 0.0);
+				sprintf(new_string, "%f,", currentVertex[0]);
 			outputString += new_string;
-			if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
+			if (values_per_vertex  == 1)
+				sprintf(new_string, "%f", 0.0);
+			else if ((values_per_vertex > 1) && textureSizes[1] > 0.0 )
 				sprintf(new_string, "%f", currentVertex[1]/textureSizes[1]);
 			else
-				sprintf(new_string, "%f", 0.0);
+				sprintf(new_string, "%f", currentVertex[1]);
 			outputString += new_string;
 			if (i < vertex_count - 1)
 			{
@@ -757,7 +770,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 			if (object->vertex_array->get_float_vertex_buffer(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 				&normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
-				&& (3 == normal_values_per_vertex))
+				&& (3 == normal_values_per_vertex) && (normal_vertex_count > 0))
 			{
 				if (time_step == 0)
 				{
@@ -785,7 +798,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 			if (object->vertex_array->get_float_vertex_buffer(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
 				&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
-				&texture_coordinate0_vertex_count))
+				&texture_coordinate0_vertex_count) && (texture_coordinate0_vertex_count > 0))
 			{
 				if (time_step == 0)
 				{
@@ -948,9 +961,35 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 	delete[] uvs;
 }
 
+void Threejs_export_glyph::exportGlyphsLabel(struct GT_object *object)
+{
+	GT_glyphset_vertex_buffers *glyph_set = NULL;
+	if (object->primitive_lists)
+		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+	cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+	unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
+		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+	if (number_of_vertices > 0)
+	{
+		unsigned int label_per_vertex = 0, label_count = 0;
+		std::string *label_buffer = 0;
+		object->vertex_array->get_string_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL,
+			&label_buffer, &label_per_vertex, &label_count);
+		std::string *label = label_buffer;
+		if (label)
+		{
+			for (unsigned int i = 0; i < number_of_vertices; i++)
+			{
+				label_json.append(label->c_str());
+				label++;
+			}
+		}
+	}
+}
+
 void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, int time_step)
 {
-
 	GT_glyphset_vertex_buffers *glyph_set = NULL;
 	if (object->primitive_lists)
 		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
@@ -1001,7 +1040,7 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 				{
 					if (time_step != 0)
 						morphVerticesExported = true;
-					for (int k = 0; k < position_values_per_vertex; k++)
+					for (unsigned int k = 0; k < position_values_per_vertex; k++)
 					{
 						positions_json[temp_string].append(position[k]);
 						axis1_json[temp_string].append(axis1[k]);
@@ -1078,6 +1117,7 @@ int Threejs_export_glyph::exportGraphicsObject(struct GT_object *object, int tim
 				{
 					/* first time step, export both glyph primitives and transformation */
 					exportStaticGlyphs(glyph_set->glyph);
+					exportGlyphsLabel(object);
 					exportGlyphsTransformation(object, time_step);
 				}
 			}
@@ -1101,7 +1141,7 @@ void Threejs_export_glyph::setGlyphGeometriesURLName(char *name)
 		glyphGeometriesURLName = duplicate_string(name);
 }
 
-std::string *Threejs_export_glyph::getGlyphTransformationExportString()
+Json::Value Threejs_export_glyph::getGlyphTransformationExportJson()
 {
 	Json::Value root;
 	root["metadata"] = metadata;
@@ -1112,8 +1152,289 @@ std::string *Threejs_export_glyph::getGlyphTransformationExportString()
 	root["scale"] = scale_json;
 	if (color_json.size() > 0)
 		root["colors"] = color_json;
-	root["GlyphGeometriesURL"] = glyphGeometriesURLName;
+	if (label_json.size() > 0)
+		root["label"] = label_json;
+	if (glyphGeometriesURLName)
+		root["GlyphGeometriesURL"] = glyphGeometriesURLName;
+	return root;
+}
+
+std::string *Threejs_export_glyph::getGlyphTransformationExportString()
+{
+	Json::Value root = getGlyphTransformationExportJson();
 	glyphTransformationString = Json::StyledWriter().write(root);
 
 	return &glyphTransformationString;
 }
+
+/* write index for triangle surfaces (non triangle-stripe). */
+void Threejs_export_point::writeIndexBufferWithoutIndex(int typeMask, int number_of_points,
+	unsigned int offset)
+{
+	if (number_of_points)
+	{
+		char temp[100];
+		facesString += "\t\"faces\": [\n";
+		unsigned int number_of_triangles = number_of_points / 3;
+		int current_index = 0;
+		for (unsigned i = 0; i < number_of_triangles; i++)
+		{
+			sprintf(temp,"\t\t%d", typeMask);
+			facesString += temp;
+			sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+			facesString += temp;
+			if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+2);
+				facesString += temp;
+			}
+			current_index += 3;
+			if (i != number_of_triangles - 1)
+			{
+				facesString += ",";
+			}
+			facesString += "\n";
+		}
+		/* fill it up */
+		unsigned int unused_points =  number_of_points - number_of_triangles * 3;
+		if (unused_points > 0)
+		{
+			facesString += ",";
+			sprintf(temp,"\t\t%d", typeMask);
+			facesString += temp;
+			if (unused_points == 1)
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+				facesString += temp;
+				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+				{
+					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset, current_index+offset);
+					facesString += temp;
+				}
+			}
+			else
+			{
+				sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+				facesString += temp;
+				if (typeMask & THREEJS_TYPE_VERTEX_COLOR)
+				{
+					sprintf(temp," ,%d,%d,%d", current_index+offset, current_index+offset+1, current_index+offset+1);
+					facesString += temp;
+				}
+			}
+			facesString += "\n";
+		}
+
+
+		facesString += "\t]\n\n";
+	}
+}
+
+/* Export surfaces graphics into a json format recognisable by threejs. */
+int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int time_step)
+{
+	if (object)
+	{
+		int typebitmask = 0;
+		int buffer_binding = object->buffer_binding;
+		object->buffer_binding = 1;
+
+		/* export the vertices */
+		GLfloat *position_vertex_buffer = NULL;
+		unsigned int position_values_per_vertex, position_vertex_count;
+		if (object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_vertex_buffer, &position_values_per_vertex,
+				&position_vertex_count))
+		{
+			if (time_step == 0)
+			{
+				writeVertexBuffer("vertices",
+						position_vertex_buffer, position_values_per_vertex,
+						position_vertex_count);
+			}
+			if (number_of_time_steps > 1)
+			{
+				if (morphVertices)
+				{
+					morphVerticesExported = true;
+					writeMorphVertexBuffer("vertices", &verticesMorphString,
+							position_vertex_buffer, position_values_per_vertex,
+							position_vertex_count, time_step);
+				}
+			}
+		}
+
+		/* export the colour buffer */
+		if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
+		{
+			/* this case export the colour */
+			unsigned int colour_values_per_vertex, colour_vertex_count;
+			GLfloat *colour_buffer = (GLfloat *)NULL;
+			if (Graphics_object_create_colour_buffer_from_data(object,
+					&colour_buffer,
+					&colour_values_per_vertex, &colour_vertex_count)
+					&& (colour_vertex_count == position_vertex_count))
+			{
+				int *hex_colours = new int[colour_vertex_count];
+				GLfloat *colours = colour_buffer;
+				for (unsigned int i = 0; i < colour_vertex_count; i++)
+				{
+					hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
+					colours += colour_values_per_vertex;
+				}
+				if (time_step == 0)
+				{
+					typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+					writeIntegerBuffer("colors",
+							hex_colours, 1, colour_vertex_count);
+				}
+				if (number_of_time_steps > 1)
+				{
+					if (morphColours)
+					{
+						morphColoursExported = true;
+						writeMorphIntegerBuffer("colors", &colorsMorphString,
+								hex_colours, 1, colour_vertex_count, time_step);
+					}
+				}
+				delete[] hex_colours;
+				if (colour_buffer)
+				{
+					DEALLOCATE(colour_buffer);
+				}
+			}
+		}
+		else if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE ||
+				CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+		{
+			/* this case export the field data directly */
+			GLfloat *data_buffer = NULL;
+			unsigned int data_values_per_vertex, data_vertex_count;
+			if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+					&data_buffer, &data_values_per_vertex, &data_vertex_count))
+			{
+				if (time_step == 0)
+				{
+					if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+					{
+						typebitmask |= THREEJS_TYPE_FACE_COLOR;
+					}
+					else
+					{
+						typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+					}
+					writeSpecialDataBuffer(object, data_buffer, data_values_per_vertex,
+							data_vertex_count);
+				}
+			}
+		}
+
+		if (time_step == 0)
+		{
+			writeIndexBuffer(object, typebitmask, position_vertex_count, 0);
+		}
+
+		object->buffer_binding = buffer_binding;
+		return 1;
+	}
+	return 0;
+}
+
+/* Export surfaces graphics into a json format recognisable by threejs. */
+int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time_step)
+{
+	if (object)
+	{
+		int buffer_binding = object->buffer_binding;
+		object->buffer_binding = 1;
+		unsigned int line_index;
+		unsigned int line_count = object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			data_values_per_vertex = 0, data_vertex_count = 0;
+		GLfloat *position_buffer = 0;
+		GLfloat *data_buffer = 0;
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			&position_buffer, &position_values_per_vertex, &position_vertex_count);
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			&data_buffer, &data_values_per_vertex, &data_vertex_count);
+
+		/* cannot use the index as i will be using GL_LINE for rendering on threejs */
+		FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
+		int totalVertices =0;
+
+		for (line_index = 0; line_index < line_count; line_index++)
+		{
+			unsigned int index_count = 0;
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				line_index, 1, &index_count);
+			totalVertices += (index_count - 1) * 2;
+		}
+
+		GLfloat *positions = 0;
+		ALLOCATE(positions, GLfloat, position_values_per_vertex * totalVertices);
+
+		int currentIndex = 0;
+
+		for (line_index = 0; line_index < line_count; line_index++)
+		{
+			unsigned int i, index_start, index_count;
+			GLfloat *position_vertex = 0;
+
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				line_index, 1, &index_start);
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				line_index, 1, &index_count);
+			position_vertex = position_buffer + position_values_per_vertex * index_start;
+
+			for (i = 0; i < index_count; ++i)
+			{
+				for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+				{
+					positions[currentIndex+j] = position_vertex[j];
+				}
+				currentIndex += position_values_per_vertex;
+				if ((i != 0) && (i != index_count - 1))
+				{
+					for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+					{
+						positions[currentIndex+j] = position_vertex[j];
+					}
+					currentIndex += position_values_per_vertex;
+				}
+				position_vertex += position_values_per_vertex;
+			}
+		}
+		if (time_step == 0)
+		{
+			writeVertexBuffer("vertices", 	positions, position_values_per_vertex, totalVertices);
+		}
+		if (number_of_time_steps > 1)
+		{
+			if (morphVertices)
+			{
+				morphVerticesExported = true;
+				writeMorphVertexBuffer("vertices", &verticesMorphString, positions,
+					position_values_per_vertex, totalVertices, time_step);
+			}
+		}
+		if (time_step == 0)
+		{
+			writeIndexBuffer(object, 0, totalVertices, 0);
+		}
+		object->buffer_binding = buffer_binding;
+		DEALLOCATE(positions);
+		return 1;
+	}
+
+	return 0;
+
+}
+

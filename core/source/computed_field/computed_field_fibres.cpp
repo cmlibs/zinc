@@ -66,7 +66,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -77,10 +77,8 @@ private:
 
 bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location* element_xi_location;
-	// only works for element_xi locations & at least 2-D
-	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
-		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if ((element_xi_location) && (2 <= element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -88,7 +86,7 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
 	return false;
 }
 
-/***************************************************************************//**
+/**
  * Compute the three 3-component fibre axes in the order fibre, sheet, normal from
  * the source fibre and coordinate fields. Function reads the coordinate field and
  * derivatives in rectangular cartesian coordinates. The 1 to 3 fibre angles in
@@ -98,18 +96,17 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
  * 3 = sheet angle, rotation of the sheet about the fibre vector.
  * coordinates from the source_field values in an arbitrary
  * <element_dimension> may be 2 or 3 only.
- * Derivatives may not be computed for this type of Computed_field [yet].
+ * Derivatives may not be computed for this type of field yet.
  */
 int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	/* Only works for element_xi locations */
-	Field_element_xi_location* element_xi_location;
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		FE_element *top_level_element = element_xi_location->get_top_level_element();;
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		cmzn_element *top_level_element = element_xi_location->get_top_level_element();;
 		FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		int top_level_element_dimension = 0;
 		FE_element_get_top_level_element_and_xi(element,
@@ -119,19 +116,21 @@ int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_fieldcache *workingCache = &cache;
 		if (top_level_element != element)
 		{
-			workingCache = valueCache.getOrCreateExtraCache(cache);
+			workingCache = valueCache.getOrCreateSharedExtraCache(cache);
 			workingCache->setTime(cache.getTime());
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
 
 		cmzn_field_id fibre_field = getSourceField(0);
 		cmzn_field_id coordinate_field = getSourceField(1);
-		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
-		RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
+		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
+		const RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluate(*workingCache));
+		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
 		FE_value x[3], dx_dxi[9];
-		if (fibreCache && coordinateCache && coordinateCache->derivatives_valid &&
+		if (fibreCache && coordinateCache && coordinateDerivativeCache &&
 			convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
-				coordinate_field->number_of_components, coordinateCache->values, coordinateCache->derivatives,
+				coordinate_field->number_of_components, coordinateCache->values, coordinateDerivativeCache->values,
 				top_level_element_dimension, x, dx_dxi))
 		{
 			FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha,

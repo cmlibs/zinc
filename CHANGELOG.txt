@@ -1,5 +1,9 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.2.0
+Add support for cubic Hermite serendipity basis.
+Add support for higher derivative evaluation w.r.t. element chart coordinates.
+
 v3.1.2
 API changes:
 (Break) Split element API header into: element, elementbasis, elementfieldtemplate, elementtemplate, mesh

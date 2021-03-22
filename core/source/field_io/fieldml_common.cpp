@@ -11,7 +11,7 @@
 
 #include <cstring>
 #include "field_io/fieldml_common.hpp"
-#include "finite_element/finite_element_basis.h"
+#include "finite_element/finite_element_basis.hpp"
 #include "general/message.h"
 #include "general/mystring.h"
 

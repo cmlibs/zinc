@@ -207,7 +207,7 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 		ALLOCATE(mapping_item,Computed_field_node_integration_mapping,1) &&
 		ALLOCATE(mapping_item->values, FE_value, number_of_components))
 	{
-		mapping_item->node_ptr = ACCESS(FE_node)(node);
+		mapping_item->node_ptr = node->access();
 		for (i = 0 ; i < number_of_components ; i++)
 		{
 			mapping_item->values[i] = 0.0;
@@ -243,7 +243,7 @@ Frees memory/deaccess mapping at <*mapping_address>.
 		{
 			if ((*mapping_address)->node_ptr)
 			{
-				DEACCESS(FE_node)(&((*mapping_address)->node_ptr));
+				cmzn_node::deaccess((*mapping_address)->node_ptr);
 			}
 			DEALLOCATE((*mapping_address)->values);
 			DEALLOCATE(*mapping_address);
@@ -361,7 +361,7 @@ private:
 
 	bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
@@ -407,8 +407,8 @@ time is supplied in the workingCache
 		{
 			xi[k] = 0.0;
 		}
-		element_dimension = get_FE_element_dimension(element);
-		coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
+		element_dimension = element->getDimension();
+		coordinate_dimension = cmzn_field_get_number_of_components(coordinate_field);
 		if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -431,6 +431,7 @@ time is supplied in the workingCache
 		{
 			xi_vector[k] = final_xi[k] - initial_xi[k];
 		}
+		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		for (m = 0 ; m < number_of_gauss_points ; m++)
 		{
 			final_position = gauss_positions[number_of_gauss_points - 1][m];
@@ -442,34 +443,38 @@ time is supplied in the workingCache
 			}
 			/* Integrand elements should always be top level */
 			workingCache.setMeshLocation(element, xi);
-			RealFieldValueCache* coordinateValueCache = coordinate_field->evaluateWithDerivatives(workingCache, element_dimension);
-			RealFieldValueCache* integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(workingCache));
-			if (magnitude_coordinates)
+			const DerivativeValueCache* coordinateDerivativeCache = coordinate_field->evaluateDerivative(workingCache, fieldDerivative);
+			const RealFieldValueCache* integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(workingCache));
+			if ((coordinateDerivativeCache) && (integrandValueCache))
 			{
-				for (k = 0 ; k < element_dimension ; k++)
+				const FE_value *coordinateDerivatives = coordinateDerivativeCache->values;
+				if (magnitude_coordinates)
 				{
-					dsdxi = 0.0;
-					for (j = 0 ; j < coordinate_dimension ; j++)
+					for (k = 0; k < element_dimension; k++)
 					{
-						dsdxi +=
-							coordinateValueCache->derivatives[j * element_dimension + k] *
-							coordinateValueCache->derivatives[j * element_dimension + k];
-					}
-					dsdxi = sqrt(dsdxi);
-					values[0] += integrandValueCache->values[0] *
-						xi_vector[k] * dsdxi *
-						gauss_weights[number_of_gauss_points - 1][m];
-				}
-			}
-			else
-			{
-				for (k = 0 ; k < element_dimension ; k++)
-				{
-					for (j = 0 ; j < coordinate_dimension ; j++)
-					{
-						values[j] += integrandValueCache->values[0] * xi_vector[k] *
-							coordinateValueCache->derivatives[j * element_dimension + k] *
+						dsdxi = 0.0;
+						for (j = 0; j < coordinate_dimension; j++)
+						{
+							dsdxi +=
+								coordinateDerivatives[j * element_dimension + k] *
+								coordinateDerivatives[j * element_dimension + k];
+						}
+						dsdxi = sqrt(dsdxi);
+						values[0] += integrandValueCache->values[0] *
+							xi_vector[k] * dsdxi *
 							gauss_weights[number_of_gauss_points - 1][m];
+					}
+				}
+				else
+				{
+					for (k = 0; k < element_dimension; k++)
+					{
+						for (j = 0; j < coordinate_dimension; j++)
+						{
+							values[j] += integrandValueCache->values[0] * xi_vector[k] *
+								coordinateDerivatives[j * element_dimension + k] *
+								gauss_weights[number_of_gauss_points - 1][m];
+						}
 					}
 				}
 			}
@@ -535,7 +540,7 @@ time is supplied in the workingCache.
 		}
 		else
 		{
-			number_of_components = Computed_field_get_number_of_components(
+			number_of_components = cmzn_field_get_number_of_components(
 				coordinate_field);
 		}
 		for (i = 0; (return_code == CMZN_OK)&&(i<number_of_faces);i++)
@@ -664,7 +669,7 @@ time is supplied in the workingCache.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_set_type_integration.  "
+								"Computed_field_integration::add_neighbours.  "
 								"Unable to allocate member");
 							DEALLOCATE(fifo_node);
 							return_code=CMZN_ERROR_MEMORY;
@@ -740,7 +745,7 @@ time is supplied in the workingCache.
 
 			for (i = 0 ; i < number_of_element_field_nodes ; i++)
 			{
-				DEACCESS(FE_node)(element_field_nodes_array + i);
+				cmzn_node::deaccess(element_field_nodes_array[i]);
 			}
 			DEALLOCATE(element_field_nodes_array);
 		}
@@ -749,13 +754,13 @@ time is supplied in the workingCache.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_add_neighbours.  Invalid argument(s)");
+			"Computed_field_integration::add_neighbours.  Invalid argument(s)");
 		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_integration_add_neighbours */
+} /* Computed_field_integration::add_neighbours */
 
 /***************************************************************************//**
  * Calculates the mapping for the time and location details in the cache.
@@ -785,7 +790,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			if (ALLOCATE(fifo_node,
 				Computed_field_element_integration_mapping_fifo,1)&&
 				(mapping_item=CREATE(Computed_field_element_integration_mapping)(
-					 seed_element, Computed_field_get_number_of_components(field))))
+					 seed_element, cmzn_field_get_number_of_components(field))))
 			{
 				ADD_OBJECT_TO_LIST(Computed_field_element_integration_mapping)
 					(mapping_item, texture_mapping);
@@ -798,7 +803,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_integration.  "
+					"Computed_field_integration::calculate_mapping.  "
 					"Unable to allocate member");
 				DEALLOCATE(fifo_node);
 				return_code=CMZN_ERROR_MEMORY;
@@ -861,7 +866,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_integration_calculate_mapping.  "
+				"Computed_field_integration::calculate_mapping.  "
 				"Unable to create mapping list.");
 			return_code=CMZN_ERROR_GENERAL;
 		}
@@ -872,12 +877,12 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_integration_calculate_mapping.  "
+			"Computed_field_integration::calculate_mapping.  "
 			"Invalid arguments.");
 		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	return (return_code);
-} /* Computed_field_integration_calculate_mapping */
+} /* Computed_field_integration::calculate_mapping */
 
 int Computed_field_element_integration_mapping_has_values(
 	Computed_field_element_integration_mapping *mapping, void *user_data)
@@ -1050,11 +1055,11 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 		return_code = Computed_field_core::is_defined_at_location(location);
 		if (return_code)
 		{
-			Field_element_xi_location *element_xi_location;
-			Field_node_location *node_location;
+			Field_location_element_xi *element_xi_location;
+			Field_location_node *node_location;
 
 			element_xi_location =
-				dynamic_cast<Field_element_xi_location*>(location);
+				dynamic_cast<Field_location_element_xi*>(location);
 			if (element_xi_location != 0)
 			{
 				FE_element* element = element_xi_location->get_element();
@@ -1100,7 +1105,7 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 				}
 			}
 			else if (0 != (node_location =
-				dynamic_cast<Field_node_location*>(location)))
+				dynamic_cast<Field_location_node*>(location)))
 			{
 				FE_node *node = node_location->get_node();
 
@@ -1158,23 +1163,20 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	FE_value time = cache.getTime();
 
-	double dsdxi;
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int coordinate_dimension, element_dimension, i, j, k,
 		top_level_element_dimension = -1;
-	Computed_field *coordinate_field, *integrand;
 
 	int return_code = 1;
-	Field_element_xi_location *element_xi_location;
-	Field_node_location *node_location;
+	const Field_location_element_xi *element_xi_location;
+	const Field_location_node *node_location;
 
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	if (element_xi_location = cache.get_location_element_xi())
 	{
 		FE_element* element = element_xi_location->get_element();
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
 		const FE_value* xi = element_xi_location->get_xi();
-		int number_of_derivatives = cache.getRequestedDerivatives();
 
 		Computed_field_element_integration_mapping *mapping;
 
@@ -1234,10 +1236,10 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				return_code=0;
 			}
 		}
-		integrand = field->source_fields[0];
-		coordinate_field = field->source_fields[1];
+		cmzn_field *integrand = field->source_fields[0];
+		cmzn_field *coordinate_field = field->source_fields[1];
 		coordinate_dimension =
-			Computed_field_get_number_of_components(field->source_fields[1]);
+			cmzn_field_get_number_of_components(field->source_fields[1]);
 		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
@@ -1253,7 +1255,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				(top_level_element, texture_mapping);
 			if (mapping != 0)
 			{
-				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateExtraCache(cache));
+				cmzn_fieldcache& workingCache = *(valueCache.getOrCreateSharedExtraCache(cache));
 				workingCache.setTime(time);
 				/* Integrate to the specified top_level_xi location */
 				for (i = 0 ; i < top_level_element_dimension ; i++)
@@ -1265,52 +1267,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 					/*number_of_gauss_points*/2, workingCache, field->source_fields[0],
 					magnitude_coordinates, field->source_fields[1],
 					valueCache.values);
-				if (number_of_derivatives)
-				{
-					// Evaluate the fields at this location
-					// use the normal cache if already on a top level element, otherwise use extra cache
-					cmzn_fieldcache *useCache = &cache;
-					if (top_level_element != element)
-					{
-						useCache = &workingCache;
-						useCache->setMeshLocation(top_level_element, top_level_xi);
-					}
-					RealFieldValueCache *integrandValueCache = RealFieldValueCache::cast(integrand->evaluate(*useCache));
-					RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(
-						coordinate_field->evaluateWithDerivatives(*useCache, top_level_element_dimension));
-					if (magnitude_coordinates)
-					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							dsdxi = 0.0;
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								dsdxi +=
-									coordinateValueCache->derivatives[j * element_dimension + k] *
-									coordinateValueCache->derivatives[j * element_dimension + k];
-							}
-							dsdxi = sqrt(dsdxi);
-							valueCache.derivatives[k] = integrandValueCache->values[0] * dsdxi;
-						}
-					}
-					else
-					{
-						for (k = 0 ; k < element_dimension ; k++)
-						{
-							for (j = 0 ; j < coordinate_dimension ; j++)
-							{
-								valueCache.derivatives[j * element_dimension + k] =
-									integrandValueCache->values[0] *
-									coordinateValueCache->derivatives[j * element_dimension + k];
-							}
-						}
-					}
-					valueCache.derivatives_valid = 1;
-				}
-				else
-				{
-					valueCache.derivatives_valid = 0;
-				}
 			}
 			else
 			{
@@ -1329,7 +1285,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 			return_code=0;
 		}
 	}
-	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
+	else if (node_location = cache.get_location_node())
 	{
 		FE_node *node = node_location->get_node();
 
@@ -1364,7 +1320,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				{
 					valueCache.values[i] = mapping->values[i];
 				}
-				valueCache.derivatives_valid = 0;
 			}
 			else
 			{
@@ -1676,15 +1631,16 @@ Returns true if <field> has the appropriate static type string.
  * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
-struct Computed_field *Computed_field_create_integration(
-	struct cmzn_fieldmodule *field_module, cmzn_mesh_id mesh,
-	cmzn_element_id seed_element, Computed_field *integrand,
-	int magnitude_coordinates, Computed_field *coordinate_field)
+cmzn_field *cmzn_fieldmodule_create_field_integration(
+	cmzn_fieldmodule *fieldmodule, cmzn_mesh_id mesh,
+	cmzn_element_id seed_element, cmzn_field *integrand,
+	int magnitude_coordinates, cmzn_field *coordinate_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
-		integrand && coordinate_field &&
-		(1 == Computed_field_get_number_of_components(integrand)))
+		integrand && integrand->isNumerical() && coordinate_field &&
+		coordinate_field->isNumerical() && 
+		(1 == cmzn_field_get_number_of_components(integrand)))
 	{
 		int number_of_components = 0;
 		if (magnitude_coordinates)
@@ -1702,11 +1658,11 @@ struct Computed_field *Computed_field_create_integration(
 				number_of_components = get_FE_element_dimension(seed_element);
 			}
 		}
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = integrand;
 		source_fields[1] = coordinate_field;
 
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1717,7 +1673,7 @@ struct Computed_field *Computed_field_create_integration(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_integration.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_integration.  Invalid argument(s)");
 	}
 	return (field);
 }

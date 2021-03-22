@@ -61,7 +61,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -70,10 +70,8 @@ private:
 
 bool Computed_field_2d_strain::is_defined_at_location(cmzn_fieldcache& cache)
 {
-	Field_element_xi_location* element_xi_location;
-	// only works for element_xi locations & at least 2-D
-	if ((element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation()))
-		&& (2 <= get_FE_element_dimension(element_xi_location->get_element())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if ((element_xi_location) && (2 <= element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -83,55 +81,57 @@ bool Computed_field_2d_strain::is_defined_at_location(cmzn_fieldcache& cache)
 
 int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	Field_element_xi_location* element_xi_location;
-	/* Only works for element_xi locations */
-	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
+	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
+	if (element_xi_location)
 	{
-		FE_element* element = element_xi_location->get_element();
-		int element_dimension = get_FE_element_dimension(element);
-		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-		RealFieldValueCache *deformedCache = RealFieldValueCache::cast(getSourceField(0)->evaluateWithDerivatives(cache, element_dimension));
-		RealFieldValueCache *undeformedCache = RealFieldValueCache::cast(getSourceField(1)->evaluateWithDerivatives(cache, element_dimension));
-		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
-		if (deformedCache && undeformedCache && fibreCache)
+		cmzn_element* element = element_xi_location->get_element();
+		const int element_dimension = element_xi_location->get_element_dimension();
+		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const DerivativeValueCache *deformedDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+		const DerivativeValueCache *undeformedDerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
+		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+		if (deformedDerivativeCache && undeformedDerivativeCache && fibreCache)
 		{
 			double A,A2,B,B2,cos_fibre_angle,C2,D,dxi_dnu[6],E[4],fibre_angle,
 				F_x[6],F_X[6],sin_fibre_angle;
 			FE_value def_derivative_xi[9], undef_derivative_xi[9];
-			valueCache.derivatives_valid = 0;
-			switch(element_dimension)
+
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			const FE_value *deformedDerivatives = deformedDerivativeCache->values;
+			const FE_value *undeformedDerivatives = undeformedDerivativeCache->values;
+			switch (element_dimension)
 			{
 				case 2:
 				{
-					def_derivative_xi[0] = deformedCache->derivatives[0];
-					def_derivative_xi[1] = deformedCache->derivatives[1];
-					def_derivative_xi[3] = deformedCache->derivatives[2];
-					def_derivative_xi[4] = deformedCache->derivatives[3];
-					def_derivative_xi[6] = deformedCache->derivatives[4];
-					def_derivative_xi[7] = deformedCache->derivatives[5];
-					undef_derivative_xi[0] = undeformedCache->derivatives[0];
-					undef_derivative_xi[1] = undeformedCache->derivatives[1];
-					undef_derivative_xi[3] = undeformedCache->derivatives[2];
-					undef_derivative_xi[4] = undeformedCache->derivatives[3];
-					undef_derivative_xi[6] = undeformedCache->derivatives[4];
-					undef_derivative_xi[7] = undeformedCache->derivatives[5];
+					def_derivative_xi[0] = deformedDerivatives[0];
+					def_derivative_xi[1] = deformedDerivatives[1];
+					def_derivative_xi[3] = deformedDerivatives[2];
+					def_derivative_xi[4] = deformedDerivatives[3];
+					def_derivative_xi[6] = deformedDerivatives[4];
+					def_derivative_xi[7] = deformedDerivatives[5];
+					undef_derivative_xi[0] = undeformedDerivatives[0];
+					undef_derivative_xi[1] = undeformedDerivatives[1];
+					undef_derivative_xi[3] = undeformedDerivatives[2];
+					undef_derivative_xi[4] = undeformedDerivatives[3];
+					undef_derivative_xi[6] = undeformedDerivatives[4];
+					undef_derivative_xi[7] = undeformedDerivatives[5];
 				} break;
 				case 3:
 				{
 					/* Convert to 2D ignoring xi3, should be able to choose the
 						direction that is ignored */
-					def_derivative_xi[0] = deformedCache->derivatives[0];
-					def_derivative_xi[1] = deformedCache->derivatives[1];
-					def_derivative_xi[3] = deformedCache->derivatives[3];
-					def_derivative_xi[4] = deformedCache->derivatives[4];
-					def_derivative_xi[6] = deformedCache->derivatives[6];
-					def_derivative_xi[7] = deformedCache->derivatives[7];
-					undef_derivative_xi[0] = undeformedCache->derivatives[0];
-					undef_derivative_xi[1] = undeformedCache->derivatives[1];
-					undef_derivative_xi[3] = undeformedCache->derivatives[3];
-					undef_derivative_xi[4] = undeformedCache->derivatives[4];
-					undef_derivative_xi[6] = undeformedCache->derivatives[6];
-					undef_derivative_xi[7] = undeformedCache->derivatives[7];
+					def_derivative_xi[0] = deformedDerivatives[0];
+					def_derivative_xi[1] = deformedDerivatives[1];
+					def_derivative_xi[3] = deformedDerivatives[3];
+					def_derivative_xi[4] = deformedDerivatives[4];
+					def_derivative_xi[6] = deformedDerivatives[6];
+					def_derivative_xi[7] = deformedDerivatives[7];
+					undef_derivative_xi[0] = undeformedDerivatives[0];
+					undef_derivative_xi[1] = undeformedDerivatives[1];
+					undef_derivative_xi[3] = undeformedDerivatives[3];
+					undef_derivative_xi[4] = undeformedDerivatives[4];
+					undef_derivative_xi[6] = undeformedDerivatives[6];
+					undef_derivative_xi[7] = undeformedDerivatives[7];
 				} break;
 				default:
 				{
@@ -306,14 +306,14 @@ Returns allocated command string for reproducing field. Includes type.
  * fibre_angle_field.  Sets the number of components to 4.
  * The <coordinate_field>s must have no more than 3 components.
  */
-struct Computed_field *Computed_field_create_2d_strain(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *deformed_coordinate_field,
-	struct Computed_field *undeformed_coordinate_field,
-	struct Computed_field *fibre_angle_field)
+cmzn_field *cmzn_fieldmodule_create_field_2d_strain(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *deformed_coordinate_field,
+	cmzn_field *undeformed_coordinate_field,
+	cmzn_field *fibre_angle_field)
 {
-	Computed_field *field = NULL;
-	if (field_module && deformed_coordinate_field &&
+	cmzn_field *field = NULL;
+	if (fieldmodule && deformed_coordinate_field &&
 		(3 >= deformed_coordinate_field->number_of_components) &&
 		undeformed_coordinate_field &&
 		(3 >= undeformed_coordinate_field->number_of_components) &&
@@ -323,7 +323,7 @@ struct Computed_field *Computed_field_create_2d_strain(
 		source_fields[0] = deformed_coordinate_field;
 		source_fields[1] = undeformed_coordinate_field;
 		source_fields[2] = fibre_angle_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/3, source_fields,
@@ -333,7 +333,7 @@ struct Computed_field *Computed_field_create_2d_strain(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_2d_strain.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_2d_strain.  Invalid argument(s)");
 	}
 
 	return (field);

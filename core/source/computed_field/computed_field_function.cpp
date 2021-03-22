@@ -56,14 +56,14 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		valueCache->getOrCreateSharedExtraCache(fieldCache);
 		return valueCache;
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -107,27 +107,16 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 	cmzn_field_id sourceField = getSourceField(0);
 	cmzn_field_id resultField = getSourceField(1);
 	cmzn_field_id referenceField = getSourceField(2);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 	if (sourceCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
-		int number_of_xi = cache.getRequestedDerivatives();
 		if (sourceField->number_of_components == referenceField->number_of_components)
 		{
-			RealFieldValueCache *resultCache = 0;
-			if (number_of_xi && sourceCache->derivatives_valid)
-			{
-				extraCache.setFieldRealWithDerivatives(referenceField, referenceField->number_of_components,
-					sourceCache->values, number_of_xi, sourceCache->derivatives);
-				resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
-			}
-			else
-			{
-				extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
-				resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
-			}
+			extraCache.setFieldReal(referenceField, referenceField->number_of_components, sourceCache->values);
+			const RealFieldValueCache *resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 			if (resultCache)
 			{
 				valueCache.copyValues(*resultCache);
@@ -137,38 +126,13 @@ int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		else
 		{
 			/* Apply the scalar function operation to each source field component */
-			valueCache.derivatives_valid = sourceCache->derivatives_valid;
 			for (int i = 0; i < field->number_of_components; i++)
 			{
-				RealFieldValueCache *resultCache = 0;
-				if (valueCache.derivatives_valid)
-				{
-					extraCache.setFieldRealWithDerivatives(referenceField, 1,
-						sourceCache->values + i, number_of_xi, sourceCache->derivatives + i*number_of_xi);
-					resultCache = RealFieldValueCache::cast(resultField->evaluateWithDerivatives(extraCache, number_of_xi));
-				}
-				else
-				{
-					extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
-					resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
-				}
+				extraCache.setFieldReal(referenceField, 1, sourceCache->values + i);
+				const RealFieldValueCache *resultCache = RealFieldValueCache::cast(resultField->evaluate(extraCache));
 				if (!resultCache)
 					return 0;
-				valueCache.values[i] = resultCache->values[0];
-				if (valueCache.derivatives_valid)
-				{
-					if (resultCache->derivatives_valid)
-					{
-						for (int j=0;j<number_of_xi;j++)
-						{
-							valueCache.derivatives[i*number_of_xi+j] = resultCache->derivatives[j];
-						}
-					}
-					else
-					{
-						valueCache.derivatives_valid = 0;
-					}
-				}
+				valueCache.values[i] = *(resultCache->values);
 			}
 			return 1;
 		}
@@ -261,12 +225,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_function(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct Computed_field *result_field,
-	struct Computed_field *reference_field)
+cmzn_field *cmzn_fieldmodule_create_field_function(
+	struct cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, cmzn_field *result_field,
+	cmzn_field *reference_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	if (source_field && result_field && reference_field &&
 		((source_field->number_of_components ==
 			reference_field->number_of_components) ||
@@ -287,7 +251,7 @@ struct Computed_field *Computed_field_create_function(
 		source_fields[0] = source_field;
 		source_fields[1] = result_field;
 		source_fields[2] = reference_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/3, source_fields,
@@ -297,7 +261,7 @@ struct Computed_field *Computed_field_create_function(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_function.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_function.  Invalid argument(s)");
 	}
 	LEAVE;
 

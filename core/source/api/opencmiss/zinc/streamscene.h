@@ -312,6 +312,28 @@ ZINC_API int cmzn_streaminformation_scene_set_output_time_dependent_normals(
 	cmzn_streaminformation_scene_id streaminformation,
 	int outputTimeDependentNormals);
 
+/**
+ * Get the flag which specifies if resources should be inlined into one file.
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @return  1 if normals are set to be output for each time step, otherwise 0.
+ */
+ZINC_API int cmzn_streaminformation_scene_get_output_is_inline(
+	cmzn_streaminformation_scene_id streaminformation);
+
+/**
+ * Set the flag which specifies if the resource should be inlined into one file.
+ * This option is only applicatble to ThreeJS export only.
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @param outputIsInline  value to be assigned to the flag.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_scene_set_output_is_inline(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputIsInline);
+
+
 #ifdef __cplusplus
 }
 #endif

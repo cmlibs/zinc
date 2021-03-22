@@ -119,7 +119,7 @@ int cmzn_nodeset_assign_field_from_source(
 							{
 								if (feField)
 								{
-									const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, feField);
+									const FE_node_field *node_field = node->getNodeField(feField);
 									if (node_field)
 									{
 										int assign_count = 0;
@@ -128,7 +128,7 @@ int cmzn_nodeset_assign_field_from_source(
 										if (sourceFeField)
 										{
 											// special case for assigning finite element parameters directly
-											const FE_node_field *source_node_field = cmzn_node_get_FE_node_field(node, sourceFeField);
+											const FE_node_field *source_node_field = node->getNodeField(sourceFeField);
 											if (source_node_field)
 											{
 												for (int d = 0; d <= maximumDerivativeNumber; ++d)
@@ -532,8 +532,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 											/*density_field*/(struct Computed_field *)NULL,
 											grid_point_number, xi))
 								{
-									if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache,
-											element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+									if ((CMZN_OK == data->field_cache->setMeshLocation(element, xi)) &&
 										(CMZN_OK == cmzn_field_evaluate_real(data->source_field,
 											data->field_cache, componentCount, values)))
 									{
@@ -575,8 +574,8 @@ int cmzn_mesh_assign_grid_field_from_source(
 	int return_code = 1;
 	if (mesh && destination_field && source_field)
 	{
-		if (Computed_field_get_number_of_components(source_field) ==
-			 Computed_field_get_number_of_components(destination_field))
+		if (cmzn_field_get_number_of_components(source_field) ==
+			 cmzn_field_get_number_of_components(destination_field))
 		{
 			cmzn_region_id region = cmzn_mesh_get_region_internal(mesh);
 			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);

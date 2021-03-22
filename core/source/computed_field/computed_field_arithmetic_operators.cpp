@@ -65,7 +65,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -74,53 +76,49 @@ private:
 
 int Computed_field_power::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
-		int i, j;
-		/* 2. Calculate the field */
-		for (i = 0 ; i < field->number_of_components ; i++)
-		{
-			valueCache.values[i] =
-				(FE_value)pow((double)(source1Cache->values[i]),
-				(double)(source2Cache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(u^v)/dx =
-					 *   v * u^(v-1) * du/dx   +   u^v * ln(u) * dv/dx
-					 */
-					*derivative =
-						source2Cache->values[i] *
-						(FE_value)pow((double)(source1Cache->values[i]),
-							(double)(source2Cache->values[i]-1)) *
-							source1Cache->derivatives[i * number_of_xi + j] +
-						(FE_value)pow((double)(source1Cache->values[i]),
-							(double)(source2Cache->values[i])) *
-						(FE_value)log((double)(source1Cache->values[i])) *
-						source2Cache->derivatives[i * number_of_xi + j];
-					derivative++;
-				}
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0 ; i < field->number_of_components ; ++i)
+			valueCache.values[i] = pow(source1Cache->values[i], source2Cache->values[i]);
 		return 1;
 	}
 	return 0;
 }
 
+int Computed_field_power::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
+	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
+	if (source1Cache && source2Cache)
+	{
+		const FE_value *source1values = source1Cache->values;
+		const FE_value *source2values = source2Cache->values;
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
+		{
+			for (int j = 0; j < number_of_xi; ++j)
+			{
+				/* d(u^v)/dx =
+					*   v * u^(v-1) * du/dx   +   u^v * ln(u) * dv/dx
+					*/
+				*derivative =
+					source2values[i] * pow(source1values[i], source2Cache->values[i] - 1.0) * source1Derivatives[i * number_of_xi + j] +
+					pow(source1values[i], source2Cache->values[i]) * log(source1values[i]) * source2Derivatives[i * number_of_xi + j];
+				derivative++;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
 
 int Computed_field_power::list()
 /*******************************************************************************
@@ -195,13 +193,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_power(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_power);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -226,19 +223,18 @@ Computed_field *Computed_field_create_power(cmzn_fieldmodule *field_module,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_power.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_power.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_power */
+}
 
-int Computed_field_get_type_power(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_power(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -306,7 +302,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -315,38 +313,41 @@ private:
 
 int Computed_field_multiply_components::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0 ; i < field->number_of_components ; i++)
+			valueCache.values[i] = source1Cache->values[i] * source2Cache->values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_multiply_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
+	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
+	if (source1Cache && source2Cache)
+	{
+		const FE_value *source1values = source1Cache->values;
+		const FE_value *source2values = source2Cache->values;
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] = source1Cache->values[i] *
-				source2Cache->values[i];
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					*derivative =
-						source1Cache->derivatives[i * number_of_xi + j] *
-						source2Cache->values[i] +
-						source2Cache->derivatives[i * number_of_xi + j] *
-						source1Cache->values[i];
-					derivative++;
-				}
+				*derivative =
+					source1Derivatives[i * number_of_xi + j] * source2values[i] +
+					source2Derivatives[i * number_of_xi + j] * source1values[i];
+				derivative++;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -426,13 +427,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_multiply(
+cmzn_field *cmzn_fieldmodule_create_field_multiply(
 	cmzn_fieldmodule *field_module,
-	Computed_field *source_field_one, Computed_field *source_field_two)
+	cmzn_field *source_field_one, cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_multiply);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -457,19 +457,18 @@ Computed_field *Computed_field_create_multiply(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_multiply.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_multiply.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_multiply */
+}
 
-int Computed_field_get_type_multiply_components(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_multiply_components(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -537,7 +536,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -546,41 +547,42 @@ private:
 
 int Computed_field_divide_components::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0 ; i < field->number_of_components ; i++)
+			valueCache.values[i] = source1Cache->values[i] / source2Cache->values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_divide_components::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
+	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
+	if (source1Cache && source2Cache)
+	{
+		const FE_value *source1values = source1Cache->values;
+		const FE_value *source2values = source2Cache->values;
+		const FE_value *source1Derivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *source2Derivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] = source1Cache->values[i] /
-				source2Cache->values[i];
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			FE_value vsquared;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			const FE_value vsquared = source2values[i] * source2values[i];
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				vsquared = source2Cache->values[i]
-					* source2Cache->values[i];
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					*derivative =
-						(source1Cache->derivatives[i * number_of_xi + j] *
-						source2Cache->values[i] -
-						source2Cache->derivatives[i * number_of_xi + j] *
-						source1Cache->values[i]) / vsquared;
-					derivative++;
-				}
+				*derivative = (
+					source1Derivatives[i * number_of_xi + j] * source2values[i] -
+					source2Derivatives[i * number_of_xi + j] * source1values[i]) / vsquared;
+				derivative++;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -660,13 +662,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_divide(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 
-	ENTER(Computed_field_create_divide);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
@@ -691,19 +692,18 @@ Computed_field *Computed_field_create_divide(cmzn_fieldmodule *field_module,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_divide.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_divide.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_divide_components */
+}
 
-int Computed_field_get_type_divide_components(struct Computed_field *field,
-	struct Computed_field **source_field_one,
-	struct Computed_field **source_field_two)
+int Computed_field_get_type_divide_components(cmzn_field *field,
+	cmzn_field **source_field_one,
+	cmzn_field **source_field_two)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -777,6 +777,8 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
 	int list();
 
 	char* get_command_string();
@@ -784,36 +786,32 @@ private:
 
 int Computed_field_add::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
-		for (int i = 0; i < field->number_of_components; i++)
-		{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
 			valueCache.values[i] =
 				field->source_values[0] * source1Cache->values[i] +
 				field->source_values[1] * source2Cache->values[i];
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			FE_value *temp = valueCache.derivatives;
-			FE_value *temp1 = source1Cache->derivatives;
-			FE_value *temp2 = source2Cache->derivatives;
-			for (int i = (field->number_of_components*number_of_xi); 0 < i; i--)
-			{
-				(*temp) = field->source_values[0]*(*temp1) + field->source_values[1]*(*temp2);
-				temp++;
-				temp1++;
-				temp2++;
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_add::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const DerivativeValueCache *source1DerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	const DerivativeValueCache *source2DerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
+	if (source1DerivativeCache && source2DerivativeCache)
+	{
+		const FE_value *source1Derivatives = source1DerivativeCache->values;
+		const FE_value *source2Derivatives = source2DerivativeCache->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int valuesCount = field->number_of_components*fieldDerivative.getTermCount();
+		for (int i = 0; i < valuesCount; ++i)
+			derivative[i] = field->source_values[0]*source1Derivatives[i] + field->source_values[1]*source2Derivatives[i];
 		return 1;
 	}
 	return 0;
@@ -898,22 +896,28 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one, double scale_factor1,
-	struct Computed_field *source_field_two, double scale_factor2)
+
+/**
+ * Create field of type COMPUTED_FIELD_ADD with the supplied
+ * fields, <source_field_one> and <source_field_two>.  Sets the number of
+ * components equal to the source_fields.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+*/
+cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field_one, double scale_factor1,
+	cmzn_field *source_field_two, double scale_factor2)
 {
-	Computed_field *field, *source_fields[2];
+	cmzn_field *field, *source_fields[2];
 	double source_values[2];
 
-	ENTER(Computed_field_create_weighted_add);
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_one->isNumerical() &&
+	if (fieldmodule && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -922,7 +926,7 @@ Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_modul
 		source_fields[1] = source_field_two;
 		source_values[0] = scale_factor1;
 		source_values[1] = scale_factor2;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -932,29 +936,28 @@ Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_modul
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_weighted_add.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"cmzn_fieldmodule_create_field_weighted_add.  Invalid argument(s)");
+		field = nullptr;
 	}
 	DEACCESS(Computed_field)(&source_field_one);
 	DEACCESS(Computed_field)(&source_field_two);
-	LEAVE;
 
 	return (field);
-} /* Computed_field_create_weighted_add */
+}
 
-Computed_field *Computed_field_create_add(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_add(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	return(Computed_field_create_weighted_add(field_module,
+	return(cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
-} /* Computed_field_create_add */
+}
 
-Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field *cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field_one,
+	cmzn_field *source_field_two)
 {
-	struct Computed_field *field = Computed_field_create_weighted_add(field_module,
+	cmzn_field *field = cmzn_fieldmodule_create_field_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, -1.0);
 	if (field && field->core)
 	{
@@ -962,18 +965,17 @@ Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
 			field->core);
 		fieldAdd->type = CMZN_FIELD_TYPE_SUBTRACT;
 	}
-
 	return field;
-} /* Computed_field_create_subtract */
+}
 
-int Computed_field_get_type_add(struct Computed_field *field,
-	struct Computed_field **source_field_one, FE_value *scale_factor1,
-	struct Computed_field **source_field_two, FE_value *scale_factor2)
+int Computed_field_get_type_weighted_add(cmzn_field *field,
+	cmzn_field **source_field_one, FE_value *scale_factor1,
+	cmzn_field **source_field_two, FE_value *scale_factor2)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_ADD, the
+If the field is of type COMPUTED_FIELD_WEIGHTED_ADD, the
 <source_field_one> and <source_field_two> used by it are returned.
 ==============================================================================*/
 {
@@ -1041,7 +1043,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1057,35 +1061,33 @@ private:
 
 int Computed_field_scale::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i=0;i<field->number_of_components;i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = field->source_values[i]*sourceCache->values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_scale::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeCache)
+	{
+		const FE_value *sourceDerivative = sourceDerivativeCache->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i]=
-				field->source_values[i]*sourceCache->values[i];
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *temp = valueCache.derivatives;
-			FE_value *temp2 = sourceCache->derivatives;
-			for (i=0;i<field->number_of_components;i++)
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				for (j=0;j<number_of_xi;j++)
-				{
-					(*temp)=field->source_values[i]*(*temp2);
-					temp++;
-					temp2++;
-				}
+				*derivative = (*sourceDerivative) * field->source_values[i];
+				++derivative;
+				++sourceDerivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -1095,14 +1097,13 @@ int Computed_field_scale::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 enum FieldAssignmentResult Computed_field_scale::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
-	for (int i = 0; i < field->number_of_components; i++)
+	for (int i = 0; i < field->number_of_components; ++i)
 	{
 		FE_value scale_value = valueCache.values[i];
 		if (0.0 == scale_value)
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
 		sourceCache->values[i] = valueCache.values[i] / scale_value;
 	}
-	sourceCache->derivatives_valid = 0;
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
@@ -1237,17 +1238,14 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_scale(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *scale_factors)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SCALE which scales the values of the
-<source_field> by <scale_factors>.
-Sets the number of components equal to that of <source_field>.
-Not exposed in the API as this is really just a multiply with constant
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_SCALE which scales the values of the
+ * <source_field> by <scale_factors>.
+ * Sets the number of components equal to that of <source_field>.
+ * Not exposed in the API as this is really just a multiply with constant
+ */
+cmzn_field *cmzn_fieldmodule_create_field_scale(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field, double *scale_factors)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -1260,10 +1258,10 @@ Not exposed in the API as this is really just a multiply with constant
 			new Computed_field_scale());
 	}
 	return (field);
-} /* Computed_field_create_scale */
+}
 
-int Computed_field_get_type_scale(struct Computed_field *field,
-	struct Computed_field **source_field, double **scale_factors)
+int Computed_field_get_type_scale(cmzn_field *field,
+	cmzn_field **source_field, double **scale_factors)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1339,7 +1337,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1351,49 +1351,43 @@ private:
 
 int Computed_field_clamp_maximum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		FE_value *temp = 0, *temp2 = 0;
-		int i, j;
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			temp=valueCache.derivatives;
-			temp2=sourceCache->derivatives;
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
-		for (i=0;i<field->number_of_components;i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = (sourceCache->values[i] < field->source_values[i]) ? sourceCache->values[i] : field->source_values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_clamp_maximum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceCache && sourceDerivativeCache)
+	{
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
 			if (sourceCache->values[i] < field->source_values[i])
 			{
-				valueCache.values[i]=sourceCache->values[i];
-				if (valueCache.derivatives_valid)
+				const FE_value *sourceDerivative = sourceDerivativeCache->values + i*termCount;
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (j=0;j<number_of_xi;j++)
-					{
-						(*temp)=(*temp2);
-						temp++;
-						temp2++;
-					}
+					*derivative = *sourceDerivative;
+					++sourceDerivative;
+					++derivative;
 				}
 			}
 			else
 			{
-				valueCache.values[i]=field->source_values[i];
-				if (valueCache.derivatives_valid)
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (j=0;j<number_of_xi;j++)
-					{
-						(*temp)=0.0;
-						temp++;
-						temp2++; /* To ensure that the following components match */
-					}
+					*derivative = 0.0;
+					++derivative;
 				}
 			}
 		}
@@ -1407,7 +1401,7 @@ enum FieldAssignmentResult Computed_field_clamp_maximum::assign(cmzn_fieldcache&
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
-	for (int i = 0; i < field->number_of_components; i++)
+	for (int i = 0; i < field->number_of_components; ++i)
 	{
 		FE_value max = field->source_values[i];
 		if (valueCache.values[i] > max)
@@ -1420,7 +1414,6 @@ enum FieldAssignmentResult Computed_field_clamp_maximum::assign(cmzn_fieldcache&
 			sourceCache->values[i] = valueCache.values[i];
 		}
 	}
-	sourceCache->derivatives_valid = 0;
 	enum FieldAssignmentResult result2 = getSourceField(0)->assign(cache, *sourceCache);
 	if (result2 == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET)
 		return result1;
@@ -1504,25 +1497,22 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_maximum(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *maximums)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
-<source_field> and <maximums>.  Each component is clamped by its respective limit
-in <maximums>.
-The <maximums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-SAB.  I think this should be changed so that the maximums come from a source
-field rather than constant maximums before it is exposed in the API.
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
+ * <source_field> and <maximums>.  Each component is clamped by its respective limit
+ * in <maximums>.
+ * The <maximums> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * SAB.  I think this should be changed so that the maximums come from a source
+ * field rather than constant maximums before it is exposed in the API.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_clamp_maximum(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *maximums)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1530,10 +1520,10 @@ field rather than constant maximums before it is exposed in the API.
 			new Computed_field_clamp_maximum());
 	}
 	return (field);
-} /* Computed_field_create_clamp_maximum */
+}
 
-int Computed_field_get_type_clamp_maximum(struct Computed_field *field,
-	struct Computed_field **source_field, double **maximums)
+int Computed_field_get_type_clamp_maximum(cmzn_field *field,
+	cmzn_field **source_field, double **maximums)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1609,7 +1599,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1620,49 +1612,43 @@ private:
 
 int Computed_field_clamp_minimum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		FE_value *temp = 0, *temp2 = 0;
-		int i, j;
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			temp=valueCache.derivatives;
-			temp2=sourceCache->derivatives;
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
-		for (i=0;i<field->number_of_components;i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = (sourceCache->values[i] > field->source_values[i]) ? sourceCache->values[i] : field->source_values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_clamp_minimum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceCache && sourceDerivativeCache)
+	{
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
 			if (sourceCache->values[i] > field->source_values[i])
 			{
-				valueCache.values[i]=sourceCache->values[i];
-				if (valueCache.derivatives_valid)
+				const FE_value *sourceDerivative = sourceDerivativeCache->values + i*termCount;
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (j=0;j<number_of_xi;j++)
-					{
-						(*temp)=(*temp2);
-						temp++;
-						temp2++;
-					}
+					*derivative = *sourceDerivative;
+					++sourceDerivative;
+					++derivative;
 				}
 			}
 			else
 			{
-				valueCache.values[i]=field->source_values[i];
-				if (valueCache.derivatives_valid)
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (j=0;j<number_of_xi;j++)
-					{
-						(*temp)=0.0;
-						temp++;
-						temp2++; /* To ensure that the following components match */
-					}
+					*derivative = 0.0;
+					++derivative;
 				}
 			}
 		}
@@ -1676,7 +1662,7 @@ enum FieldAssignmentResult Computed_field_clamp_minimum::assign(cmzn_fieldcache&
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
-	for (int i = 0; i < field->number_of_components; i++)
+	for (int i = 0; i < field->number_of_components; ++i)
 	{
 		FE_value min = field->source_values[i];
 		if (valueCache.values[i] < min)
@@ -1689,7 +1675,6 @@ enum FieldAssignmentResult Computed_field_clamp_minimum::assign(cmzn_fieldcache&
 			sourceCache->values[i] = valueCache.values[i];
 		}
 	}
-	sourceCache->derivatives_valid = 0;
 	enum FieldAssignmentResult result2 = getSourceField(0)->assign(cache, *sourceCache);
 	if (result2 == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET)
 		return result1;
@@ -1772,25 +1757,22 @@ DESCRIPTION :
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_minimum(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *minimums)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CLAMP_MINIMUM with the supplied
-<source_field> and <minimums>.  Each component is clamped by its respective limit
-in <minimums>.
-The <minimums> array must therefore contain as many FE_values as there are
-components in <source_field>.
-SAB.  I think this should be changed so that the minimums come from a source
-field rather than constant minimums before it is exposed in the API.
-==============================================================================*/
+/**
+ * Create field of type COMPUTED_FIELD_CLAMP_MINIMUM with the supplied
+ * <source_field> and <minimums>.  Each component is clamped by its respective limit
+ * in <minimums>.
+ * The <minimums> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * SAB.  I think this should be changed so that the minimums come from a source
+ * field rather than constant minimums before it is exposed in the API.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_clamp_minimum(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *minimums)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1798,10 +1780,10 @@ field rather than constant minimums before it is exposed in the API.
 			new Computed_field_clamp_minimum());
 	}
 	return (field);
-} /* Computed_field_create_clamp_minimum */
+}
 
-int Computed_field_get_type_clamp_minimum(struct Computed_field *field,
-	struct Computed_field **source_field, double **minimums)
+int Computed_field_get_type_clamp_minimum(cmzn_field *field,
+	cmzn_field **source_field, double **minimums)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1885,7 +1867,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1901,36 +1885,23 @@ private:
 
 int Computed_field_offset::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i=0;i<field->number_of_components;i++)
-		{
-			valueCache.values[i]=
-				field->source_values[i]+sourceCache->values[i];
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *temp=valueCache.derivatives;
-			FE_value *temp2=sourceCache->derivatives;
-			for (i=0;i<field->number_of_components;i++)
-			{
-				for (j=0;j<number_of_xi;j++)
-				{
-					(*temp)=(*temp2);
-					temp++;
-					temp2++;
-				}
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = sourceCache->values[i] + field->source_values[i];
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_offset::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeCache)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
 		return 1;
 	}
 	return 0;
@@ -1939,11 +1910,10 @@ int Computed_field_offset::evaluate(cmzn_fieldcache& cache, FieldValueCache& inV
 enum FieldAssignmentResult Computed_field_offset::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
-	for (int i = 0; i < field->number_of_components; i++)
+	for (int i = 0; i < field->number_of_components; ++i)
 	{
 		sourceCache->values[i] = valueCache.values[i] - field->source_values[i];
 	}
-	sourceCache->derivatives_valid = 0;
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
@@ -2064,23 +2034,20 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_offset(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *offsets)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
-<source_field> plus the <offsets>.
-The <offsets> array must therefore contain as many FE_values as there are
-components in <source_field>; this is the number of components in the field.
-Not exposed in the API is this is just an add with constant field.
-==============================================================================*/
+/**
+ * Create type COMPUTED_FIELD_OFFSET which returns the values of the
+ * <source_field> plus the <offsets>.
+ * The <offsets> array must therefore contain as many FE_values as there are
+ * components in <source_field>; this is the number of components in the field.
+ * Not exposed in the API is this is just an add with constant field.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_offset(cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, double *offsets)
 {
-	cmzn_field_id field = 0;
+	cmzn_field_id field = nullptr;
 	if (source_field && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2088,10 +2055,10 @@ Not exposed in the API is this is just an add with constant field.
 			new Computed_field_offset());
 	}
 	return (field);
-} /* Computed_field_create_offset */
+}
 
-int Computed_field_get_type_offset(struct Computed_field *field,
-	struct Computed_field **source_field, double **offsets)
+int Computed_field_get_type_offset(cmzn_field *field,
+	cmzn_field **source_field, double **offsets)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2179,7 +2146,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2191,7 +2160,7 @@ private:
 int Computed_field_edit_mask::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		/* exact copy of source field */
@@ -2201,20 +2170,31 @@ int Computed_field_edit_mask::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	return 0;
 }
 
+int Computed_field_edit_mask::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeCache)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->copyValues(*sourceDerivativeCache);
+		return 1;
+	}
+	return 0;
+}
+
 /* assigns only components for which edit mask value is non-zero */
 enum FieldAssignmentResult Computed_field_edit_mask::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	if (sourceCache)
+	if (getSourceField(0)->evaluate(cache))
 	{
-		for (int i = 0; i < field->number_of_components; i++)
+		// get non-const sourceCache to modify:
+		RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
 			if (field->source_values[i])
 			{
 				sourceCache->values[i] = valueCache.values[i];
 			}
 		}
-		sourceCache->derivatives_valid = 0;
 		enum FieldAssignmentResult result = getSourceField(0)->assign(cache, *sourceCache);
 		if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
 			return FIELD_ASSIGNMENT_RESULT_PARTIAL_VALUES_SET;
@@ -2299,21 +2279,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_edit_mask(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double *edit_mask)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
-with each component edit_masked by its respective FE_value in <edit_mask>, ie.
-if the edit_mask value for a component is non-zero, the component is editable.
-The <edit_mask> array must therefore contain as many FE_values as there are
-components in <source_field>.
-Sets the number of components to the same as <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/**
+ * Create field of to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
+ * with each component edit_masked by its respective FE_value in <edit_mask>, ie.
+ * if the edit_mask value for a component is non-zero, the component is editable.
+ * The <edit_mask> array must therefore contain as many FE_values as there are
+ * components in <source_field>.
+ * Sets the number of components to the same as <source_field>.
+ * If function fails, field is guaranteed to be unchanged from its original state,
+ * although its cache may be lost.
+ */
+cmzn_field *cmzn_fieldmodule_create_field_edit_mask(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field, double *edit_mask)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
@@ -2326,10 +2303,10 @@ although its cache may be lost.
 			new Computed_field_edit_mask());
 	}
 	return (field);
-} /* Computed_field_create_edit_mask */
+}
 
-int Computed_field_get_type_edit_mask(struct Computed_field *field,
-	struct Computed_field **source_field, double **edit_mask)
+int Computed_field_get_type_edit_mask(cmzn_field *field,
+	cmzn_field **source_field, double **edit_mask)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2413,7 +2390,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2422,35 +2401,36 @@ private:
 
 int Computed_field_log::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = log(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_log::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourcevalues = sourceCache->values;
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] =
-				(FE_value)log((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(log u)/dx = 1 / u * du/dx */
-					*derivative = 1.0 / sourceCache->values[i] *
-						sourceCache->derivatives[i * number_of_xi + j];
-					derivative++;
-				}
+				/* d(log u)/dx = 1 / u * du/dx */
+				*derivative = 1.0 / sourcevalues[i] * sourceDerivatives[i * number_of_xi + j];
+				++derivative;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -2522,8 +2502,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_log(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_log(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2543,10 +2523,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_log());
 	}
 	return (field);
-} /* Computed_field_create_log */
+}
 
-int Computed_field_get_type_log(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_log(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2613,7 +2593,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2622,36 +2604,37 @@ private:
 
 int Computed_field_sqrt::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = sqrt(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_sqrt::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourceValues = sourceCache->values;
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] =
-				(FE_value)sqrt((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			const FE_value dsqrt_u = 0.5 / sqrt(sourceValues[i]);
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(sqrt u)/dx = du/dx / 2 sqrt(u) */
-					*derivative =
-						sourceCache->derivatives[i * number_of_xi + j]
-						/ ( 2 * valueCache.values[i] );
-					derivative++;
-				}
+				/* d(sqrt u)/dx = du/dx / 2 sqrt(u) */
+				*derivative = sourceDerivatives[i * number_of_xi + j] * dsqrt_u;
+				derivative++;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -2723,8 +2706,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sqrt(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2744,10 +2727,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_sqrt());
 	}
 	return (field);
-} /* Computed_field_create_sqrt */
+}
 
-int Computed_field_get_type_sqrt(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_sqrt(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2814,7 +2797,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2823,36 +2808,36 @@ private:
 
 int Computed_field_exp::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = exp(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_exp::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative));
+	if (sourceCache)
+	{
+		const FE_value *sourcevalues = sourceCache->values;
+		const FE_value *sourceDerivatives = sourceCache->getDerivativeValueCache(fieldDerivative)->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int number_of_xi = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] =
-				(FE_value)exp((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			for (int j = 0; j < number_of_xi; ++j)
 			{
-				for (j = 0 ; j < number_of_xi ; j++)
-				{
-					/* d(exp u)/dx = du/dx exp(u) */
-					*derivative =
-						sourceCache->derivatives[i * number_of_xi + j]
-						* valueCache.values[i];
-					derivative++;
-				}
+				/* d(exp u)/dx = du/dx exp(u) */
+				*derivative = sourceDerivatives[i * number_of_xi + j] * exp(sourcevalues[i]);
+				derivative++;
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
 		}
 		return 1;
 	}
@@ -2924,8 +2909,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_exp(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2945,10 +2930,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_exp());
 	}
 	return (field);
-} /* Computed_field_create_exp */
+}
 
-int Computed_field_get_type_exp(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_exp(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3015,7 +3000,9 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -3024,55 +3011,58 @@ private:
 
 int Computed_field_abs::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
-		int i, j;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+		for (int i = 0; i < field->number_of_components; ++i)
+			valueCache.values[i] = fabs(sourceCache->values[i]);
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_abs::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceCache && sourceDerivativeCache)
+	{
+		const FE_value *sourceDerivative = sourceDerivativeCache->values;
+		FE_value *derivative = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int termCount = fieldDerivative.getTermCount();
+		for (int i = 0; i < field->number_of_components; ++i)
 		{
-			valueCache.values[i] =
-				(FE_value)fabs((double)(sourceCache->values[i]));
-		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
-		{
-			FE_value *derivative = valueCache.derivatives;
-			for (i = 0 ; i < field->number_of_components ; i++)
+			/* d(abs u)/dx =  du/dx u>0
+			 *               -du/dx u<0
+			 *               and lets just put 0 at u=0 */
+			if (sourceCache->values[i] > 0.0)
 			{
-				/* d(abs u)/dx = du/dx u>0
-				 *               -du/dx u<0
-				 *               and lets just put 0 at u=0 */
-				if (sourceCache->values[i] > 0)
+				for (int j = 0; j < termCount; ++j)
 				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						*derivative = sourceCache->derivatives[i * number_of_xi + j];
-						derivative++;
-					}
-				}
-				else if (sourceCache->values[i] < 0)
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						*derivative = -sourceCache->derivatives[i * number_of_xi + j];
-						derivative++;
-					}
-				}
-				else
-				{
-					for (j = 0 ; j < number_of_xi ; j++)
-					{
-						*derivative = 0.0;
-						derivative++;
-					}
+					*derivative = *sourceDerivative;
+					++sourceDerivative;
+					++derivative;
 				}
 			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
+			else if (sourceCache->values[i] < 0.0)
+			{
+				for (int j = 0; j < termCount; ++j)
+				{
+					*derivative = -(*sourceDerivative);
+					++sourceDerivative;
+					++derivative;
+				}
+			}
+			else
+			{
+				for (int j = 0; j < termCount; ++j)
+				{
+					*derivative = 0.0;
+					++sourceDerivative;
+					derivative++;
+				}
+			}
 		}
 		return 1;
 	}
@@ -3144,8 +3134,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_abs(cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule *field_module,
+	cmzn_field *source_field)
 /*******************************************************************************
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EXP with the supplied
@@ -3163,10 +3153,10 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 			new Computed_field_abs());
 	}
 	return (field);
-} /* Computed_field_create_abs */
+}
 
-int Computed_field_get_type_abs(struct Computed_field *field,
-	struct Computed_field **source_field)
+int Computed_field_get_type_abs(cmzn_field *field,
+	cmzn_field **source_field)
 /*******************************************************************************
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_EXP, the

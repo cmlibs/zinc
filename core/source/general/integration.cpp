@@ -18,6 +18,7 @@ elements.
 #include "opencmiss/zinc/fieldcache.h"
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/status.h"
+#include "computed_field/field_cache.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
@@ -163,7 +164,7 @@ value for each component of the field.
 				return_code=1;
 				while (return_code&&(i>0))
 				{
-					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache, element, dimension, abscissa)) &&
+					if ((CMZN_OK == data->field_cache->setMeshLocation(element, abscissa)) &&
 						(CMZN_OK == cmzn_field_evaluate_real(field, data->field_cache, number_of_components, values)))
 					{
 						for (j=0;j<number_of_components;j++)
@@ -258,6 +259,7 @@ also defines the dimension of the integration scheme.
 								number_of_weights *= 2;
 							} break;
 							case CUBIC_HERMITE:
+							case CUBIC_HERMITE_SERENDIPITY:
 							case CUBIC_LAGRANGE:
 							{
 								number_of_weights *= 3;
@@ -317,6 +319,7 @@ also defines the dimension of the integration scheme.
 										number_of_weights *= 2;
 									} break;
 									case CUBIC_HERMITE:
+									case CUBIC_HERMITE_SERENDIPITY:
 									case CUBIC_LAGRANGE:
 									{
 										for (j=number_of_weights;j>0;j--)
@@ -450,7 +453,7 @@ value for each component of the <field>.
 		if (Computed_field_has_numerical_components(field,(void *)NULL))
 		{
 			/* evaluate the integral */
-			number_of_components=Computed_field_get_number_of_components(field);
+			number_of_components=cmzn_field_get_number_of_components(field);
 			if ((0<number_of_components)&&
 				ALLOCATE(integrate_Computed_field_over_element_data.values,FE_value,
 				number_of_components))

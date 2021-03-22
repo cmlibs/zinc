@@ -27,8 +27,6 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
-#include "general/any_object_private.h"
-#include "general/any_object_definition.h"
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -126,7 +124,7 @@ void Minimisation::touch_independent_fields()
 	for (iter = optimisation.independentFields.begin();
 		iter != optimisation.independentFields.end(); ++iter)
 	{
-		Computed_field_changed(iter->independentField);
+		iter->independentField->setChanged();
 	}
 }
 
@@ -214,7 +212,7 @@ int Minimisation::construct_dof_arrays()
 					if ((1 == conditionalComponents) && (conditionalValues[0] == 0.0))
 						continue; // scalar conditional field is zero => skip
 				}
-				const FE_node_field *node_field = cmzn_node_get_FE_node_field(node, fe_field);
+				const FE_node_field *node_field = node->getNodeField(fe_field);
 				if (node_field)
 				{
 					for (int c = 0; c < componentCount; ++c)
@@ -499,7 +497,6 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	minimisation->do_fieldassignments();
 
 	int return_code = 1;
-	Field_time_location location;
 	// NEWMAT::ColumnVector::element(int m) is 0-based, not 1 as are other interfaces
 	int termIndex = 0;
 	for (ObjectiveFieldDataVector::iterator iter = minimisation->objectiveFields.begin();

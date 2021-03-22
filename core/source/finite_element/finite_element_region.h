@@ -19,7 +19,7 @@ finite element fields defined on or interpolated over them.
 #include "general/callback.h"
 #include "general/change_log.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 
 /*
 Global types
@@ -175,13 +175,6 @@ Global functions
 ----------------
 */
 
-/**
- * Creates a struct FE_region owning sets of nodes, elements and datapoints.
- * If <basis_manager> or <element_shape_list> are not supplied then new ones
- * are created for this region.
- */
-struct FE_region *FE_region_create(struct FE_region *base_fe_region);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
 /**
@@ -277,6 +270,7 @@ int FE_region_get_number_of_FE_fields(struct FE_region *fe_region);
  * Field must be of FE_field_type GENERAL_FE_FIELD.
  * Field properties other than those listed are ignored in comparisons and
  * left at their default values.
+ * @return  Accessed FE_field or nullptr if failed.
  */
 struct FE_field *FE_region_get_FE_field_with_general_properties(
 	struct FE_region *fe_region, const char *name, enum Value_type value_type,
@@ -464,13 +458,6 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
  */
 struct FE_basis *FE_region_get_constant_FE_basis_of_dimension(
 	struct FE_region *fe_region, int dimension);
-
-/**
- * Sets the owning cmiss_region for this fe_region. Can also clear it.
- * Private - only for use by cmzn_region on construction and destruction!
- */
-void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
-	struct cmzn_region *cmiss_region);
 
 /**
  * @return  The cmzn_region containing this fe_region. Not accessed.

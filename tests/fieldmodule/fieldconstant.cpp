@@ -14,7 +14,12 @@
 #include <opencmiss/zinc/fieldconstant.h>
 #include <opencmiss/zinc/status.h>
 
+#include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldconstant.hpp>
+
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 // Issue 3348: Assigning to a constant field invalidates only its own values in
 // the field cache. It needs to invalidate all value caches for that field and
@@ -88,4 +93,38 @@ TEST(cmzn_field_constant, issue_3348_assign)
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_field_destroy(&f3);
+}
+
+TEST(ZincFieldConstant, valid_arguments)
+{
+	ZincTestSetupCpp zinc;
+
+	const double values_in[3] = { 1.0, 2.5, -3.0 };
+	FieldConstant fieldConstant = zinc.fm.createFieldConstant(3, values_in);
+	EXPECT_TRUE(fieldConstant.isValid());
+	// test cast
+	FieldConstant tmpFieldConstant = fieldConstant.castConstant();
+	EXPECT_EQ(fieldConstant, tmpFieldConstant);
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	double values_out[3];
+	EXPECT_EQ(RESULT_OK, fieldConstant.evaluateReal(fieldcache,3, values_out));
+	for (int c = 0; c < 3; ++c)
+		EXPECT_DOUBLE_EQ(values_in[c], values_out[c]);
+}
+
+TEST(ZincFieldStringConstant, valid_arguments)
+{
+	ZincTestSetupCpp zinc;
+
+	const char string_in[] = "blah!";
+	FieldStringConstant fieldStringConstant = zinc.fm.createFieldStringConstant(string_in);
+	EXPECT_TRUE(fieldStringConstant.isValid());
+	// test cast
+	FieldStringConstant tmpFieldStringConstant = fieldStringConstant.castStringConstant();
+	EXPECT_EQ(fieldStringConstant, tmpFieldStringConstant);
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	char *string_out = fieldStringConstant.evaluateString(fieldcache);
+	EXPECT_STREQ(string_in, string_out);
 }

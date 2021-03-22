@@ -49,7 +49,6 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
 #include "graphics/light.hpp"
-#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
@@ -2522,8 +2521,7 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 		if (field)
 		{
 			struct cmzn_region *temp_region = Computed_field_get_region(cmzn_field_image_base_cast(field));
-			MANAGER(Computed_field) *field_manager =
-				cmzn_region_get_Computed_field_manager(temp_region);
+			MANAGER(Computed_field) *field_manager = temp_region->getFieldManager();
 			if (field_manager)
 			{
 				image_texture->callback_id=

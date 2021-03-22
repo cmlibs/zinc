@@ -125,7 +125,7 @@ private:
 		return (0 != dynamic_cast<Computed_field_determinant*>(other_field));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -135,7 +135,7 @@ private:
 int Computed_field_determinant::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		FE_value *source_values = sourceCache->values;
@@ -229,9 +229,19 @@ public:
 		delete[] v;
 	}
 
+	static const EigenvalueFieldValueCache* cast(const FieldValueCache* valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const EigenvalueFieldValueCache*>(valueCache);
+	}
+
 	static EigenvalueFieldValueCache* cast(FieldValueCache* valueCache)
 	{
 		return FIELD_VALUE_CACHE_CAST<EigenvalueFieldValueCache*>(valueCache);
+	}
+
+	static const EigenvalueFieldValueCache& cast(const FieldValueCache& valueCache)
+	{
+		return FIELD_VALUE_CACHE_CAST<const EigenvalueFieldValueCache&>(valueCache);
 	}
 
 	static EigenvalueFieldValueCache& cast(FieldValueCache& valueCache)
@@ -278,12 +288,12 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new EigenvalueFieldValueCache(field->number_of_components);
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -293,7 +303,7 @@ private:
 int Computed_field_eigenvalues::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	EigenvalueFieldValueCache &valueCache = EigenvalueFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		const int n = field->number_of_components;
@@ -544,7 +554,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -554,7 +564,7 @@ private:
 int Computed_field_eigenvectors::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	EigenvalueFieldValueCache *eigenvalueCache = EigenvalueFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const EigenvalueFieldValueCache *eigenvalueCache = EigenvalueFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (eigenvalueCache)
 	{
 		double *v = eigenvalueCache->v;
@@ -764,12 +774,12 @@ private:
 		}
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*fieldCache*/)
 	{
 		return new MatrixInvertFieldValueCache(field->number_of_components, Computed_field_get_square_matrix_size(getSourceField(0)));
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -779,7 +789,7 @@ private:
 int Computed_field_matrix_invert::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	MatrixInvertFieldValueCache &valueCache = MatrixInvertFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		const int n = valueCache.n;
@@ -903,7 +913,7 @@ Computed_field *cmzn_fieldmodule_create_field_matrix_invert(
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
-			Computed_field_get_number_of_components(source_field),
+			cmzn_field_get_number_of_components(source_field),
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_matrix_invert());
@@ -977,7 +987,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1019,15 +1031,15 @@ Compare the type specific data
 int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
 		const int m = this->number_of_rows;
 		const int s = getSourceField(0)->number_of_components / m;
 		const int n = getSourceField(1)->number_of_components / s;
-		FE_value *a=source1Cache->values;
-		FE_value *b=source2Cache->values;
+		const FE_value *a = source1Cache->values;
+		const FE_value *b = source2Cache->values;
 		for (int i=0;i<m;i++)
 		{
 			for (int j=0;j<n;j++)
@@ -1040,40 +1052,52 @@ int Computed_field_matrix_multiply::evaluate(cmzn_fieldcache& cache, FieldValueC
 				valueCache.values[i*n+j]=sum;
 			}
 		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	if (fieldDerivative.getOrder() > 1)
+		return 0;  // fall back to numerical derivatives
+	const RealFieldValueCache *source1Cache = getSourceField(0)->evaluateDerivativeTree(cache, fieldDerivative);
+	const RealFieldValueCache *source2Cache = getSourceField(1)->evaluateDerivativeTree(cache, fieldDerivative);
+	if (source1Cache && source2Cache)
+	{
+		FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const int m = this->number_of_rows;
+		const int s = getSourceField(0)->number_of_components / m;
+		const int n = getSourceField(1)->number_of_components / s;
+		const FE_value *a = source1Cache->values;
+		const FE_value *aDerivatives = source1Cache->getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *b = source2Cache->values;
+		const FE_value *bDerivatives = source2Cache->getDerivativeValueCache(fieldDerivative)->values;
+		int termCount = fieldDerivative.getTermCount();
+		for (int d = 0; d < termCount; ++d)
 		{
-			for (int d=0;d<number_of_xi;d++)
+			// use the product rule
+			const FE_value *ad = aDerivatives + d;
+			const FE_value *bd = bDerivatives + d;
+			for (int i = 0; i<m; i++)
 			{
-				/* use the product rule */
-				a = source1Cache->values;
-				FE_value *ad = source1Cache->derivatives+d;
-				b = source2Cache->values;
-				FE_value *bd = source2Cache->derivatives+d;
-				for (int i=0;i<m;i++)
+				for (int j = 0; j<n; j++)
 				{
-					for (int j=0;j<n;j++)
+					FE_value sum = 0.0;
+					for (int k = 0; k<s; k++)
 					{
-						FE_value sum=0.0;
-						for (int k=0;k<s;k++)
-						{
-							sum += a[i*s+k] * bd[number_of_xi*(k*n+j)] +
-								ad[number_of_xi*(i*s+k)] * b[k*n+j];
-						}
-						valueCache.derivatives[number_of_xi*(i*n+j)+d]=sum;
+						sum += a[i*s+k] * bd[termCount*(k*n+j)] +
+							ad[termCount*(i*s+k)] * b[k*n+j];
 					}
+					derivatives[termCount*(i*n+j)+d] = sum;
 				}
 			}
-			valueCache.derivatives_valid=1;
-		}
-		else
-		{
-			valueCache.derivatives_valid=0;
 		}
 		return 1;
 	}
 	return 0;
 }
+
 
 int Computed_field_matrix_multiply::list()
 /*******************************************************************************
@@ -1279,7 +1303,7 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1290,14 +1314,24 @@ private:
 
 int Computed_field_projection::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	const RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *source2Cache = RealFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (source1Cache && source2Cache)
 	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		/* Calculate the transformed coordinates */
 		int coordinate_components = getSourceField(0)->number_of_components;
 		FE_value *projection_matrix = source2Cache->values;
+		/* The last calculated value is the perspective value which divides through
+			all the other components */
+		FE_value perspective = 0.0;
+		for (int j = 0 ; j < coordinate_components ; j++)
+		{
+			perspective += projection_matrix[field->number_of_components
+				* (coordinate_components + 1) + j] * source1Cache->values[j];
+		}
+		perspective += projection_matrix[field->number_of_components
+			* (coordinate_components + 1) + coordinate_components];
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 			valueCache.values[i] = 0.0;
@@ -1310,65 +1344,6 @@ int Computed_field_projection::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 			/* The last source value is fixed at 1 */
 			valueCache.values[i] += projection_matrix[
 				i * (coordinate_components + 1) + coordinate_components];
-		}
-		/* The last calculated value is the perspective value which divides through
-			all the other components */
-		FE_value perspective = 0.0;
-		for (int j = 0 ; j < coordinate_components ; j++)
-		{
-			perspective += projection_matrix[field->number_of_components
-				* (coordinate_components + 1) + j] * source1Cache->values[j];
-		}
-		perspective += projection_matrix[field->number_of_components
-			* (coordinate_components + 1) + coordinate_components];
-
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
-		{
-			for (int k=0;k<number_of_xi;k++)
-			{
-				/* Calculate the coordinate derivatives without perspective */
-				for (int i = 0 ; i < field->number_of_components ; i++)
-				{
-					valueCache.derivatives[i * number_of_xi + k] = 0.0;
-					for (int j = 0 ; j < coordinate_components ; j++)
-					{
-						valueCache.derivatives[i * number_of_xi + k] +=
-							projection_matrix[i * (coordinate_components + 1) + j]
-							* source1Cache->derivatives[j * number_of_xi + k];
-					}
-				}
-				/* Calculate the perspective derivative */
-				FE_value dhdxi = 0.0;
-				for (int j = 0 ; j < coordinate_components ; j++)
-				{
-					dhdxi += projection_matrix[field->number_of_components
-						* (coordinate_components + 1) + j]
-						* source1Cache->derivatives[j *number_of_xi + k];
-				}
-
-				/* Calculate the perspective reciprocal derivative using chain rule */
-				FE_value dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
-
-				/* Calculate the derivatives of the perspective scaled transformed
-					 coordinates, which is ultimately what we want */
-				for (int i = 0 ; i < field->number_of_components ; i++)
-				{
-					valueCache.derivatives[i * number_of_xi + k] =
-						valueCache.derivatives[i * number_of_xi + k] / perspective
-						+ valueCache.values[i] * dh1dxi;
-				}
-			}
-			valueCache.derivatives_valid = 1;
-		}
-		else
-		{
-			valueCache.derivatives_valid = 0;
-		}
-		/* Now apply the perspective scaling to the non derivative transformed
-			 coordinates */
-		for (int i = 0 ; i < field->number_of_components ; i++)
-		{
 			valueCache.values[i] /= perspective;
 		}
 		return 1;
@@ -1455,11 +1430,10 @@ enum FieldAssignmentResult Computed_field_projection::assign(cmzn_fieldcache& ca
 	{
 		cmzn_field_id coordinateField = getSourceField(0);
 		cmzn_field_id projectionField = getSourceField(1);
-		RealFieldValueCache *projectionCache = RealFieldValueCache::cast(projectionField->evaluate(cache));
+		const RealFieldValueCache *projectionCache = RealFieldValueCache::cast(projectionField->evaluate(cache));
 		if (projectionCache)
 		{
 			// Inefficient; inverse matrix could be cached
-			valueCache.derivatives_valid = 0;
 			double *projection_matrix = projectionCache->values;
 			double lu_matrix[16];
 			for (int i = 0; i < 16; ++i)
@@ -1585,7 +1559,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -1626,10 +1602,10 @@ Compare the type specific data
 
 int Computed_field_transpose::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
+		RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 		/* returns n row x m column tranpose of m row x n column source field,
 			 where values always change along rows fastest */
 		const int m = this->source_number_of_rows;
@@ -1642,29 +1618,33 @@ int Computed_field_transpose::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 				valueCache.values[i*m + j] = source_values[j*n + i];
 			}
 		}
-		int number_of_xi = cache.getRequestedDerivatives();
-		if (number_of_xi && sourceCache->derivatives_valid)
+		return 1;
+	}
+	return 0;
+}
+
+int Computed_field_transpose::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
+	if (sourceDerivativeCache)
+	{
+		FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
+		const FE_value *sourceDerivatives = sourceDerivativeCache->values;
+		/* returns n row x m column tranpose of m row x n column source field,
+			 where values always change along rows fastest */
+		const int m = this->source_number_of_rows;
+		const int n = getSourceField(0)->number_of_components / m;
+		const int termCount = fieldDerivative.getTermCount();
+		/* transpose derivatives in same way as values */
+		for (int i = 0; i < n; ++i)
 		{
-			/* transpose derivatives in same way as values */
-			for (int i = 0; i < n; i++)
+			for (int j = 0; j < m; ++j)
 			{
-				for (int j = 0; j < m; j++)
-				{
-					FE_value *source_derivatives = sourceCache->derivatives +
-						number_of_xi*(j*n + i);
-					FE_value *destination_derivatives = valueCache.derivatives +
-						number_of_xi*(i*m + j);
-					for (int d = 0; d < number_of_xi; d++)
-					{
-						destination_derivatives[d] = source_derivatives[d];
-					}
-				}
+				FE_value *dst = derivatives + termCount*(i*m + j);
+				const FE_value *src = sourceDerivatives + termCount*(j*n + i);
+				for (int d = 0; d < termCount; ++d)
+					dst[d] = src[d];
 			}
-			valueCache.derivatives_valid=1;
-		}
-		else
-		{
-			valueCache.derivatives_valid=0;
 		}
 		return 1;
 	}
@@ -1844,7 +1824,7 @@ private:
 			}
 	 }
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1854,7 +1834,7 @@ private:
 int Computed_field_quaternion_to_matrix::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		Quaternion quat(
@@ -1941,15 +1921,14 @@ Returns allocated command string for reproducing field. Includes type.
  * @param source_field  4 component field giving source quaternion value.
  * @return Newly created field.
  */
-Computed_field *Computed_field_create_quaternion_to_matrix(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_quaternion_to_matrix(
+	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field && source_field->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if (fieldmodule && source_field && source_field->isNumerical() &&
 		(source_field->number_of_components == 4))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/16,
 			/*number_of_source_fields*/1, &source_field,
@@ -1959,7 +1938,7 @@ Computed_field *Computed_field_create_quaternion_to_matrix(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_quaternion_to_matrix.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_quaternion_to_matrix.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -2034,7 +2013,7 @@ private:
 			}
 	 }
 
-	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -2044,7 +2023,7 @@ private:
 int Computed_field_matrix_to_quaternion::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+	const RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
 	{
 		return Quaternion::matrix_to_quaternion(
@@ -2128,15 +2107,14 @@ Returns allocated command string for reproducing field. Includes type.
  * @param source_field  4x4 component source field.
  * @return Newly created field.
  */
-Computed_field *Computed_field_create_matrix_to_quaternion(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field *cmzn_fieldmodule_create_field_matrix_to_quaternion(
+	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field && source_field->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if (fieldmodule && source_field && source_field->isNumerical() &&
 		(source_field->number_of_components == 16))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/1, &source_field,
@@ -2146,7 +2124,7 @@ Computed_field *Computed_field_create_matrix_to_quaternion(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_matrix_to_quaternion.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_matrix_to_quaternion.  Invalid argument(s)");
 	}
 
 	return (field);

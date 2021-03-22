@@ -7,12 +7,13 @@
  */
 
 #include <gtest/gtest.h>
-
+#include <cmath>
 #include <opencmiss/zinc/context.h>
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/differentialoperator.h>
 #include <opencmiss/zinc/element.h>
 #include <opencmiss/zinc/field.h>
+#include <opencmiss/zinc/fieldarithmeticoperators.h>
 #include <opencmiss/zinc/fieldcache.h>
 #include <opencmiss/zinc/fieldconstant.h>
 #include <opencmiss/zinc/fieldderivatives.h>
@@ -26,7 +27,9 @@
 #include <opencmiss/zinc/differentialoperator.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
 
 #include "test_resources.h"
 
@@ -67,7 +70,8 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(root_region);
 
-	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	int result = cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
@@ -86,16 +90,20 @@ TEST(cmzn_fieldmodule_create_field_derivative, valid_args)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double chart_coordinates[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, chart_coordinates);
+	double xi[] = {0.6, 0.2, 0.45};
+	result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi);
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[3];
-	result = cmzn_field_evaluate_real(f2, fc, 3, outvalues);
-	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_EQ(1.0, outvalues[0]);
-	EXPECT_EQ(0.0, outvalues[1]);
-	EXPECT_EQ(0.0, outvalues[2]);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(xi[0], outvalues[0]);
+	EXPECT_DOUBLE_EQ(xi[1], outvalues[1]);
+	EXPECT_DOUBLE_EQ(xi[2], outvalues[2]);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f2, fc, 3, outvalues));
+	EXPECT_DOUBLE_EQ(1.0, outvalues[0]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[1]);
+	EXPECT_DOUBLE_EQ(0.0, outvalues[2]);
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
@@ -221,14 +229,14 @@ TEST(cmzn_fieldmodule_create_field_divergence, valid_args)
 
 	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
-	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
-	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
+	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
 
 	double values[] = {2.0, 3.0, 5.0};
 	cmzn_field_id c1 = cmzn_fieldmodule_create_field_constant(fm, 3, values);
 
-	cmzn_field_id f2 = cmzn_fieldmodule_create_field_divergence(fm, c1, f1);
-	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
+	cmzn_field_id div_const = cmzn_fieldmodule_create_field_divergence(fm, c1, coordinates);
+	EXPECT_NE(static_cast<cmzn_field *>(0), div_const);
 
 	cmzn_fieldcache_id fc = cmzn_fieldmodule_create_fieldcache(fm);
 
@@ -243,15 +251,15 @@ TEST(cmzn_fieldmodule_create_field_divergence, valid_args)
 	EXPECT_EQ(CMZN_OK, result);
 
 	double outvalues[1];
-	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
+	result = cmzn_field_evaluate_real(div_const, fc, 1, outvalues);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(0.0, outvalues[0]);
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_field_destroy(&f1);
+	cmzn_field_destroy(&coordinates);
 	cmzn_field_destroy(&c1);
-	cmzn_field_destroy(&f2);
+	cmzn_field_destroy(&div_const);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
@@ -266,15 +274,16 @@ TEST(cmzn_fieldmodule_create_field_divergence, grad_mag)
 
 	cmzn_region_read_file(root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 
-	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
-	EXPECT_NE(static_cast<cmzn_field *>(0), f1);
+	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field *>(0), coordinates);
 
-	cmzn_field_id c1 = cmzn_fieldmodule_create_field_magnitude(fm, f1);
-
-	cmzn_field_id c2 = cmzn_fieldmodule_create_field_gradient(fm, c1, f1);
-
-	cmzn_field_id f2 = cmzn_fieldmodule_create_field_divergence(fm, c2, f1);
-	EXPECT_NE(static_cast<cmzn_field *>(0), f2);
+	const double scaling[] = { 2.0, 1.5, 0.75 };
+	cmzn_field_id constant_scaling = cmzn_fieldmodule_create_field_constant(fm, 3, scaling);
+	cmzn_field_id scaled_coordinates = cmzn_fieldmodule_create_field_multiply(fm, coordinates, constant_scaling);
+	cmzn_field_id mag = cmzn_fieldmodule_create_field_magnitude(fm, scaled_coordinates);
+	cmzn_field_id grad_mag = cmzn_fieldmodule_create_field_gradient(fm, mag, scaled_coordinates);
+	cmzn_field_id div_grad_mag = cmzn_fieldmodule_create_field_divergence(fm, grad_mag, scaled_coordinates);
+	EXPECT_NE(static_cast<cmzn_field *>(0), div_grad_mag);
 
 	cmzn_fieldcache_id fc = cmzn_fieldmodule_create_fieldcache(fm);
 
@@ -284,21 +293,45 @@ TEST(cmzn_fieldmodule_create_field_divergence, grad_mag)
 	cmzn_element_id el = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), el);
 
-	double chart_coordinates[] = {0.6, 0.2, 0.45};
-	int result = cmzn_fieldcache_set_mesh_location(fc, el, 3, chart_coordinates);
-	EXPECT_EQ(CMZN_OK, result);
-
-	double outvalues[1];
-	result = cmzn_field_evaluate_real(f2, fc, 1, outvalues);
-	EXPECT_NE(CMZN_OK, result);
-	//EXPECT_EQ(0.0, outvalues[0]);
+	const double xi[3][3] = {
+		{ 0.10, 0.90, 0.25 },
+		{ 0.50, 0.50, 0.00 },
+		{ 0.60, 0.20, 0.45 } };
+	double x[3];
+	const double fineTol = 1.0E-10;
+	const double coarseTol = 1.0E-7;
+	int result;
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int c = 0; c < 3; ++c)
+			x[c] = scaling[c]*xi[i][c];
+		result = cmzn_fieldcache_set_mesh_location(fc, el, 3, xi[i]);
+		EXPECT_EQ(CMZN_OK, result);
+		double outvalues[3];
+		result = cmzn_field_evaluate_real(grad_mag, fc, 3, outvalues);
+		// exact math answers:
+		const double mag1 = sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]);
+		const double gradMagAnswers[] = { x[0]/mag1, x[1]/mag1, x[2]/mag1 };
+		double divGradMagAnswer = 0.0;
+		for (int c = 0; c < 3; ++c)
+			divGradMagAnswer += (1.0/mag1) - x[c]*x[c]/(mag1*mag1*mag1);
+		for (int c = 0; c < 3; ++c)
+			EXPECT_NEAR(outvalues[c], gradMagAnswers[c], fineTol);
+		// div_grad_mag currently computed with finite differences, hence coarser tolerance:
+		double outValue;
+		result = cmzn_field_evaluate_real(div_grad_mag, fc, 1, &outValue);
+		EXPECT_EQ(CMZN_OK, result);
+		EXPECT_NEAR(divGradMagAnswer, outValue, coarseTol);
+	}
 
 	cmzn_element_destroy(&el);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_field_destroy(&f1);
-	cmzn_field_destroy(&c1);
-	cmzn_field_destroy(&f2);
-	cmzn_field_destroy(&c2);
+	cmzn_field_destroy(&coordinates);
+	cmzn_field_destroy(&constant_scaling);
+	cmzn_field_destroy(&scaled_coordinates);
+	cmzn_field_destroy(&mag);
+	cmzn_field_destroy(&grad_mag);
+	cmzn_field_destroy(&div_grad_mag);
 	cmzn_fieldcache_destroy(&fc);
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&root_region);
@@ -384,6 +417,60 @@ TEST(cmzn_fieldmodule_create_field_gradient, valid_args)
 	cmzn_context_destroy(&context);
 }
 
+// Zinc issue #163 numerical derivative use for gradient of gradient indexed
+// values incorrectly if elementDimension != componentsCount
+TEST(ZincFieldGradient, gradientOfGradient)
+{
+	ZincTestSetupCpp zinc;
+
+	int result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE));
+	EXPECT_EQ(CMZN_OK, result);
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	Field deformed = zinc.fm.findFieldByName("deformed");
+	Field displacement = deformed - coordinates;
+	EXPECT_TRUE(displacement.isValid());
+	Field displacementGradient1 = zinc.fm.createFieldGradient(displacement, coordinates);
+	EXPECT_TRUE(displacementGradient1.isValid());
+	EXPECT_EQ(9, displacementGradient1.getNumberOfComponents());
+	Field displacementGradient2 = zinc.fm.createFieldGradient(displacementGradient1, coordinates);
+	EXPECT_TRUE(displacementGradient2.isValid());
+	EXPECT_EQ(27, displacementGradient2.getNumberOfComponents());
+
+	const double xi[2][3] =
+	{
+		{ 0.5, 0.5, 0.5 },
+		{ 0.1, 0.2, 0.3 }
+	};
+	const double displGrad1Answer[2][9] = {
+		{-0.0132767,-0.0274628, 0.0112656,-0.0299884,-0.0401232,-0.0101377,-0.0005196, 0.0508512,-0.0255976},
+		{-0.1066798,-0.0086179, 0.0600045,-0.0210395, 0.1247084, 0.0950958, 0.2936052, 0.0786568, 0.1425584} };
+	const double displGrad2Answer[2][27] = {
+		{-0.1494242,-0.0611968,-0.1640609,-0.0611968,-0.0046702,-0.1575785,-0.1640609,-0.1575785,-0.1622634,
+		 -0.1411490, 0.2206460, 0.2305718, 0.2206460,-0.4751799, 0.2183105, 0.2305718, 0.2183105,-0.0874906,
+		 -0.0244105, 0.9511653, 0.7109450, 0.9511653,-0.1729542, 0.8192559, 0.7109450, 0.8192559, 0.3452878},
+		{ 0.6763522,-0.0832618, 1.4575007,-0.0832618, 0.2925900,-0.1729627, 1.4575007,-0.1729627,-1.1215458,
+		 -0.2739081, 1.0910543, 0.2909908, 1.0910543,-0.7688550, 0.1861709, 0.2909908, 0.1861709,-0.6266895,
+		 -2.0214297, 0.6055436,-0.2633694, 0.6055436,-1.1092826,-0.2157290,-0.2633694,-0.2157290,-1.3034022} };
+	double displGrad1[9], displGrad2[27];
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	const double TOL = 1.0E-6;
+	for (int i = 0; i < 2; ++i)
+	{
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, xi[i]));
+		EXPECT_EQ(RESULT_OK, displacementGradient1.evaluateReal(fieldcache, 9, displGrad1));
+		for (int c = 0; c < 9; ++c)
+			EXPECT_NEAR(displGrad1Answer[i][c], displGrad1[c], TOL);
+		EXPECT_EQ(RESULT_OK, displacementGradient2.evaluateReal(fieldcache, 27, displGrad2));
+		for (int c = 0; c < 27; ++c)
+			EXPECT_NEAR(displGrad2Answer[i][c], displGrad2[c], TOL);
+	}
+}
+
 // Issue 3317: Gradient field calculations for grid based scalar fields are not
 // being scaled by the number of grid points in each xi direction. The resulting
 // gradients are smaller than their correct values.
@@ -420,22 +507,22 @@ TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 
 	double outValue;
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(potential, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(1.75, outValue);
+	EXPECT_DOUBLE_EQ(1.75, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi1, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(2.0, outValue);
+	EXPECT_DOUBLE_EQ(2.0, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi2, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(1.5, outValue);
+	EXPECT_DOUBLE_EQ(1.5, outValue);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_derivative(potential, d_dxi3, cache, 1, &outValue));
-	ASSERT_DOUBLE_EQ(8.0, outValue);
+	EXPECT_DOUBLE_EQ(8.0, outValue);
 
 	cmzn_field_id grad_potential = cmzn_fieldmodule_create_field_gradient(zinc.fm, potential, coordinates);
 	EXPECT_NE(static_cast<cmzn_field *>(0), grad_potential);
 
 	double outValues[3];
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(grad_potential, cache, 3, outValues));
-	ASSERT_DOUBLE_EQ(2.0, outValues[0]);
-	ASSERT_DOUBLE_EQ(1.5, outValues[1]);
-	ASSERT_DOUBLE_EQ(8.0, outValues[2]);
+	EXPECT_DOUBLE_EQ(2.0, outValues[0]);
+	EXPECT_DOUBLE_EQ(1.5, outValues[1]);
+	EXPECT_DOUBLE_EQ(8.0, outValues[2]);
 
 	cmzn_field_destroy(&grad_potential);
 	cmzn_fieldcache_destroy(&cache);
@@ -447,7 +534,7 @@ TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 	cmzn_mesh_destroy(&mesh);
 }
 
-// Issue 3812 – Grid-based field component derivatives only work for first component
+// Issue 3812 Grid-based field component derivatives only work for first component
 // Derivatives for higher grid-based components were overwriting those of first component
 TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 {
@@ -480,23 +567,24 @@ TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
 	double x[4];
 	EXPECT_EQ(OK, result = dependent.evaluateReal(cache, 4, x));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_x[i], x[i]);
+		EXPECT_DOUBLE_EQ(expected_x[i], x[i]);
 
 	const double expected_dx_dxi1[4] = { 1.0, 0.0, 0.0, 0.0 };
 	double dx_dxi1[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi1, cache, 4, dx_dxi1));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi1[i], dx_dxi1[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi1[i], dx_dxi1[i]);
 
 	const double expected_dx_dxi2[4] = { 0.0, 1.0, 0.0, 0.0 };
 	double dx_dxi2[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi2, cache, 4, dx_dxi2));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi2[i], dx_dxi2[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi2[i], dx_dxi2[i]);
 
 	const double expected_dx_dxi3[4] = { 0.0, 0.0, 1.0, 0.0 };
 	double dx_dxi3[4];
 	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi3, cache, 4, dx_dxi3));
 	for (int i = 0; i < 4; ++i)
-		ASSERT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
+		EXPECT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
 }
+

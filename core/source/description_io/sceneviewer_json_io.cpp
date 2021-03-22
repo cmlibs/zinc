@@ -15,7 +15,7 @@
 #include "opencmiss/zinc/scene.hpp"
 #include "opencmiss/zinc/sceneviewer.hpp"
 #include "opencmiss/zinc/region.hpp"
-#include "region/cmiss_region.h"
+#include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/status.h"
 
 namespace
