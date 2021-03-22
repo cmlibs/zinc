@@ -43,7 +43,7 @@ ELSEIF( APPLE )
     LIST( LENGTH LENGTH_ARCHS CMAKE_OSX_ARCHITECTURES )
 
     SET( ZINC_ARCHITECTURE "universal" )
-    SET( CPACK_GENERATOR  "TGZ" "PackageMaker" )
+    SET( CPACK_GENERATOR  "TGZ" "productbuild" )
 ELSEIF( UNIX )
     # Preserve the CMAKE_INSTALL_PREFIX for the project and work with absolute install
     SET(CPACK_SET_DESTDIR ON)
