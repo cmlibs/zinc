@@ -11,11 +11,12 @@
 #if !defined (FINITE_ELEMENT_FIELD_PARAMETERS_HPP)
 #define FINITE_ELEMENT_FIELD_PARAMETERS_HPP
 
+#include "opencmiss/zinc/types/elementid.h"
+#include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/zincconfigure.h"
 #include "datastore/labels.hpp"
 #include "general/block_array.hpp"
 
-struct cmzn_element;
 struct FE_field;
 
 /**
@@ -77,6 +78,15 @@ public:
 	 * @return Result OK on success, ERROR_NOT_FOUND if field not defined/no parameters on element,
 	 * otherwise any other error code. */
 	int getElementParameterIndexes(cmzn_element *element, int valuesCount, int *valuesOut, int startIndex = 0);
+
+	/** If parameter is node-based, return the node, field component, value label and version.
+	 * @param parameterIndex  Zero-based parameter parameter index.
+	 * @param fieldComponent  Return field component starting at 0 for node parameter, or -1 if not.
+	 * @param valueLabel  Return value label for node parameter, or INVALID if not.
+	 * @param version  Return version starting at 0 for node parameter, or -1 if not.
+	 * @return  Non-accessed node if node parameter, or nullptr if not or failed.
+	 */
+	cmzn_node *getNodeParameter(int parameterIndex, int &fieldComponent, cmzn_node_value_label& valueLabel, int& version);
 
 	/** @return  Number of parameters >=0, or -1 if error */
 	int getNumberOfElementParameters(cmzn_element *element);

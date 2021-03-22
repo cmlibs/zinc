@@ -1204,45 +1204,6 @@ int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template)
 	return 0;
 }
 
-class cmzn_node_value_label_conversion
-{
-public:
-	static const char *to_string(enum cmzn_node_value_label label)
-	{
-		const char *enum_string = 0;
-		switch (label)
-		{
-			case CMZN_NODE_VALUE_LABEL_VALUE:
-				enum_string = "VALUE";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS1:
-				enum_string = "D_DS1";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS2:
-				enum_string = "D_DS2";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS3:
-				enum_string = "D_DS3";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
-				enum_string = "D2_DS1DS2";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
-				enum_string = "D2_DS1DS3";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
-				enum_string = "D2_DS2DS3";
-				break;
-			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
-				enum_string = "D3_DS1DS2DS3";
-				break;
-			default:
-				break;
-		}
-		return enum_string;
-	}
-};
-
 enum cmzn_node_value_label cmzn_node_value_label_enum_from_string(
 	const char *string)
 {

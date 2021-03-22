@@ -183,6 +183,29 @@ public:
 		return -1;
 	}
 
+	/** Get value label and version from relative index.
+	 * @param valueIndex  Index from 0 to totalValuesCount - 1.
+	 * @param version  If a value label is returned, set to version number starting at 0.
+	 * @return  Value label, or INVALID if out of range. */
+	inline cmzn_node_value_label getValueLabelAndVersion(int valueIndex, int& version) const
+	{
+		if (valueIndex > 0)
+		{
+			int index = valueIndex;
+			for (int d = 0; d < this->valueLabelsCount; ++d)
+			{
+				if (index < this->versionsCounts[d])
+				{
+					version = index;
+					return this->valueLabels[d];
+				}
+				index -= this->versionsCounts[d];
+			}
+		}
+		version = -1;
+		return CMZN_NODE_VALUE_LABEL_INVALID;
+	}
+
 	/** Convert legacy DOF index which 
 	  * @param dofIndex  Legacy index of parameter at node. From 0 to number of DOFs at node - 1.
 	  * @param valueLabel  On success, contains the node value label of the DOF index.

@@ -119,6 +119,11 @@ FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, in
 	return fieldDerivative;
 }
 
+cmzn_node *cmzn_fieldparameters::getNodeParameter(int parameterIndex, int &fieldComponent, cmzn_node_value_label& valueLabel, int& version)
+{
+	return this->feFieldParameters->getNodeParameter(parameterIndex, fieldComponent, valueLabel, version);
+}
+
 int cmzn_fieldparameters::getNumberOfElementParameters(cmzn_element *element) const
 {
 	return this->feFieldParameters->getNumberOfElementParameters(element);

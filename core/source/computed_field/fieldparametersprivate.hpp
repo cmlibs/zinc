@@ -79,6 +79,15 @@ public:
 	 * The derivative is held by parameters until parameters object destroyed */
 	FieldDerivative *getFieldDerivativeMixed(FE_mesh *mesh, int meshOrder, int parameterOrder);
 
+	/** If parameter is node-based, return the node, field component, value label and version.
+	 * @param parameterIndex  Zero-based parameter parameter index.
+	 * @param fieldComponent  Return field component starting at 0 for node parameter, or -1 if not.
+	 * @param valueLabel  Return value label for node parameter, or INVALID if not.
+	 * @param version  Return version starting at 0 for node parameter, or -1 if not.
+	 * @return  Non-accessed node if node parameter, or nullptr if not or failed.
+	 */
+	cmzn_node *getNodeParameter(int parameterIndex, int &fieldComponent, cmzn_node_value_label& valueLabel, int& version);
+
 	/** @return  Number of parameters >=0, or -1 if error */
 	int getNumberOfElementParameters(cmzn_element *element) const;
 

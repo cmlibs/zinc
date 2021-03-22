@@ -34,6 +34,7 @@
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/fieldassignmentprivate.hpp"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -42,6 +43,7 @@
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
+#include "mesh/cmiss_node_private.hpp"
 #include "time/time_keeper.hpp"
 #include "general/message.h"
 #include "computed_field/computed_field_private.hpp"
@@ -51,6 +53,7 @@
 #include "computed_field/field_module.hpp"
 #include <iostream>
 #include <sstream>
+#include <vector>
 using namespace std;
 
 // OPT++ includes and namespaces
@@ -657,6 +660,7 @@ int Minimisation::minimise_Newton()
 	globalJacobian = 0.0;
 	NEWMAT::SquareMatrix globalHessian(globalParameterCount);
 	globalHessian = 0.0;
+	std::vector<unsigned char> parameterUsed(globalParameterCount, 0);  // set to 1 if parameter used in element
 
 	Fieldcache fieldcache = fieldmodule.createFieldcache();
 	std::vector<int> elementParameterIndexes;  // grows to fit maximum elementParametersCount
@@ -701,6 +705,7 @@ int Minimisation::minimise_Newton()
 		for (int i = 0; i < elementParametersCount; ++i)
 		{
 			const int row = elementParameterIndexes[i];
+			parameterUsed[row - 1] = 1;
 			globalJacobian(row) -= elementJacobian[i];
 			for (int j = 0; j < elementParametersCount; ++j)
 				globalHessian(row, elementParameterIndexes[j]) += elementHessianRow[j];
@@ -709,6 +714,24 @@ int Minimisation::minimise_Newton()
 	}
 	if (!return_code)
 		return return_code;
+
+	// need internal class to access some query API which is not yet publicly exposed
+	cmzn_fieldparameters *fieldparametersInternal = fieldparameters.getId();
+	for (int i = 0; i < globalParameterCount; ++i)
+	{
+		if (!parameterUsed[i])
+		{
+			const int row = i + 1;
+			globalHessian(row, row) = 1.0;
+			// warn which parameter is eliminated
+			cmzn_node_value_label valueLabel;
+			int fieldComponent, version;
+			cmzn_node *node = fieldparametersInternal->getNodeParameter(i, fieldComponent, valueLabel, version);
+			display_message(WARNING_MESSAGE, "Optimisation optimise NEWTON:  Parameter %d (node %d, component %d, %s, version %d) is unused in elements; eliminating.",
+				row, (node) ? node->getIdentifier() : -1, fieldComponent + 1, cmzn_node_value_label_conversion::to_string(valueLabel), version + 1);
+		}
+	}
+	display_message(INFORMATION_MESSAGE, "\n");
 
 	// solve
 	NEWMAT::CroutMatrix LUmatrix = globalHessian;

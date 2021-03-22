@@ -240,6 +240,54 @@ int FE_field_parameters::getElementParameterIndexes(cmzn_element *element, int v
 	return CMZN_RESULT_OK;
 }
 
+cmzn_node *FE_field_parameters::getNodeParameter(int parameterIndex, int &fieldComponent, cmzn_node_value_label& valueLabel, int& version)
+{
+	fieldComponent = -1;
+	valueLabel = CMZN_NODE_VALUE_LABEL_INVALID;
+	version = -1;
+	if ((parameterIndex < 0) || (parameterIndex >= this->parameterCount))
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters getNodeParameter:  Invalid parameter index");
+		return nullptr;
+	}
+	FE_region *feRegion = this->field->get_FE_region();
+	const FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(feRegion, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	DsLabelIndex nodeIndex = this->parameterNodeMap.getValue(parameterIndex);
+	cmzn_node *node = feNodeset->getNode(nodeIndex);
+	if (!node)
+	{
+		display_message(ERROR_MESSAGE, "Fieldparameters getNodeParameter:  Missing node");
+	}
+	else
+	{
+		const DsLabelIndex startParameterIndex = this->nodeParameterMap.getValue(nodeIndex);
+		const FE_node_field *nodeField = node->getNodeField(this->field);
+		if (!nodeField)
+		{
+			display_message(ERROR_MESSAGE, "Fieldparameters getNodeParameter:  Missing node field for node %d", node->getIdentifier());
+		}
+		else
+		{
+			DsLabelIndex parameterOffset = parameterIndex - startParameterIndex;
+			const int componentCount = this->field->getNumberOfComponents();
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_node_field_template *nft = nodeField->getComponent(c);
+				const int componentValuesCount = nft->getTotalValuesCount();
+				if (parameterOffset < componentValuesCount)
+				{
+					fieldComponent = c;
+					valueLabel = nft->getValueLabelAndVersion(parameterOffset, version);
+					return node;
+				}
+				parameterOffset -= componentValuesCount;
+			}
+			display_message(ERROR_MESSAGE, "Fieldparameters getNodeParameter:  Parameter out of range for node %d", node->getIdentifier());
+		}
+	}
+	return nullptr;
+}
+
 int FE_field_parameters::getNumberOfElementParameters(cmzn_element *element)
 {
 	if (!element)
