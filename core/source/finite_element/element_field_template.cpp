@@ -906,8 +906,8 @@ bool FE_element_field_template::validateAndLock()
 			{
 				if (scaleFactorUseCounts[s] == 0)
 				{
-					display_message(WARNING_MESSAGE, "Elementfieldtemplate validate:  Local scale factor %d is not used", s + 1);
-					//valid = false;  // enforce later
+					display_message(ERROR_MESSAGE, "Elementfieldtemplate validate:  Local scale factor %d is not used", s + 1);
+					valid = false;
 				}
 				if (isScaleFactorTypeElement(this->scaleFactorTypes[s]))
 				{

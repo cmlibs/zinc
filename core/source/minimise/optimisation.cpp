@@ -731,7 +731,6 @@ int Minimisation::minimise_Newton()
 				row, (node) ? node->getIdentifier() : -1, fieldComponent + 1, cmzn_node_value_label_conversion::to_string(valueLabel), version + 1);
 		}
 	}
-	display_message(INFORMATION_MESSAGE, "\n");
 
 	// solve
 	NEWMAT::CroutMatrix LUmatrix = globalHessian;

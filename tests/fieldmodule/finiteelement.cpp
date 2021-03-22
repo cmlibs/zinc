@@ -1969,6 +1969,7 @@ TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
 	}
 }
 
+// Test EFT validate fails if scale factors are defined but not used
 // Test EFT validate fails for non-zero identifier for element-based scale factor
 // Test EFT validate fails for zero identifier for non-element-based scale factor
 TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
@@ -1987,7 +1988,11 @@ TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(1));
 	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(1));
 	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
-	EXPECT_TRUE(eft.validate());
+	EXPECT_FALSE(eft.validate());  // scale factor is unused
+	// need to use the scale factor to be valid
+	const int scaleFactorIndex = 1;
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(1, 1, 1, &scaleFactorIndex));
+	EXPECT_TRUE(eft.validate());  // scale factor is unused
 	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 1));
 	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
 	EXPECT_FALSE(eft.validate());
