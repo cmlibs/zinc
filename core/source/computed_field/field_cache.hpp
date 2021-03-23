@@ -250,6 +250,17 @@ public:
 		return derivativeValueCache;
 	}
 
+	/** remove any derivative value cache for index */
+	void removeDerivativeValueCacheAtIndex(int derivativeCacheIndex)
+	{
+		if (derivativeCacheIndex < this->derivatives.size())
+		{
+			DerivativeValueCache* &derivativeValueCache = this->derivatives[derivativeCacheIndex];
+			delete derivativeValueCache;
+			derivativeValueCache = nullptr;
+		}
+	}
+
 	void zeroValues()
 	{
 		for (int i = 0; i < this->componentCount; ++i)
@@ -511,6 +522,9 @@ public:
 			this->sharedWorkingCache = new cmzn_fieldcache(this->region, this);
 		return this->sharedWorkingCache;
 	}
+
+	/** Remove derivative caches for derivativeCacheIndex for all real field value caches */
+	void removeDerivativeCaches(int derivativeCacheIndex);
 
 };
 

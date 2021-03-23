@@ -516,6 +516,9 @@ TEST(ZincFieldparameters, mixedBasisMultipleScaledTerms)
 								EXPECT_DOUBLE_EQ(0.0, outDerivativesMesh2Parameters1[v++]);
 						}
 	}
+	// clear fieldparameters and differential operators to invoke derivative cache cleanup
+	parameterDerivative1 = Differentialoperator();
+	fieldparameters = Fieldparameters();
 }
 
 // Test evaluation of 2nd parameter derivatives of sum square of data point

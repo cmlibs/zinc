@@ -262,6 +262,16 @@ int cmzn_fieldcache::setFieldReal(cmzn_field *field, int numberOfValues, const d
 	return CMZN_OK;
 }
 
+void cmzn_fieldcache::removeDerivativeCaches(int derivativeCacheIndex)
+{
+	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	{
+		RealFieldValueCache *realValueCache = dynamic_cast<RealFieldValueCache *>(*iter);
+		if (realValueCache)
+			realValueCache->removeDerivativeValueCacheAtIndex(derivativeCacheIndex);
+	}
+}
+
 /*
 Global functions
 ----------------

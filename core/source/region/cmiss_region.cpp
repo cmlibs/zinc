@@ -539,16 +539,21 @@ void cmzn_region::removeFieldDerivative(FieldDerivative *fieldDerivative)
 		display_message(ERROR_MESSAGE, "cmzn_region::removeFieldDerivative.  Invalid field derivative");
 		return;
 	}
-	const int cacheIndex = fieldDerivative->getCacheIndex();
+	const int derivativeCacheIndex = fieldDerivative->getCacheIndex();
 	const int size = static_cast<int>(this->fieldDerivatives.size());
-	if ((fieldDerivative->getRegion() != this) || (cacheIndex < 0) || (cacheIndex >= size))
+	if ((fieldDerivative->getRegion() != this) || (derivativeCacheIndex < 0) || (derivativeCacheIndex >= size))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_region::removeFieldDerivative.  Invalid field derivative");
 		return;
 	}
 	fieldDerivative->setRegionAndCacheIndexPrivate();
-	// ???GRC Future: clear derivative caches
-	this->fieldDerivatives[cacheIndex] = nullptr;
+	// remove derivative caches from field caches so index can be recycled
+	for (std::list<cmzn_fieldcache_id>::iterator iter = this->field_caches.begin();
+		iter != this->field_caches.end(); ++iter)
+	{
+		(*iter)->removeDerivativeCaches(derivativeCacheIndex);
+	}
+	this->fieldDerivatives[derivativeCacheIndex] = nullptr;
 }
 
 void cmzn_region::clearFieldValueCaches(cmzn_field *field)
