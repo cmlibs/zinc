@@ -639,12 +639,13 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
 	FE_value *derivatives = derivativeCache->values;
 	const int vectorComponentCount = sourceField1->number_of_components;
+	const int totalDerivativeOrder = fieldDerivative.getTotalOrder();
 	if ((source1Order == 0) || (source2Order == 0))
 	{
 		// case 1: one factor is constant
 		derivativeCache->zeroValues();
-		if ((source1Order == 0) && (source2Order == 0))
-			return 1;  // case 1b: zero derivatives if both factors are constant
+		if ((source1Order < totalDerivativeOrder) && (source2Order < totalDerivativeOrder))
+			return 1;  // case 1b: zero derivatives if both have zero derivatives of total order
 		cmzn_field *constSourceField = (source1Order == 0) ? sourceField1 : sourceField2;
 		cmzn_field *derivSourceField = (source1Order == 0) ? sourceField2 : sourceField1;
 		const RealFieldValueCache *constSourceCache = RealFieldValueCache::cast(constSourceField->evaluate(cache));
@@ -662,7 +663,6 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 		}
 		return 1;
 	}
-	const int totalDerivativeOrder = fieldDerivative.getTotalOrder();
 	if (totalDerivativeOrder == 1)
 	{
 		// case 2: regular first derivative
@@ -685,16 +685,17 @@ int Computed_field_dot_product::evaluateDerivative(cmzn_fieldcache& cache, RealF
 		}
 		return 1;
 	}
-	if ((source1Order == 1) && (source2Order == 1) && ((totalDerivativeOrder > 2) || (fieldDerivative.getParameterOrder() == 1)))
+	const bool mixedDerivative = fieldDerivative.getMeshOrder() && fieldDerivative.getParameterOrder();
+	if ((source1Order == 1) && (source2Order == 1) && ((totalDerivativeOrder > 2) || mixedDerivative))
 	{
 		// case 3: both factors have non-zero first derivatives only, but total order > 2 or mixed derivatives
 		derivativeCache->zeroValues();
 		return 1;
 	}
-	if (totalDerivativeOrder == 2)
+	if ((totalDerivativeOrder == 2) && (!mixedDerivative))
 	{
 		// case 4: second derivative w.r.t. mesh OR parameters, but not mixed
-		// start with mixed term from higher order produce rule and add higher terms as needed
+		// start with mixed term from higher order product rule and add higher terms as needed
 		const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
 		const DerivativeValueCache *source1DerivativeCache = sourceField1->evaluateDerivative(cache, *lowerFieldDerivative);
 		const DerivativeValueCache *source2DerivativeCache = sourceField2->evaluateDerivative(cache, *lowerFieldDerivative);
