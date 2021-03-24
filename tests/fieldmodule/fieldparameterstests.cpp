@@ -175,6 +175,172 @@ TEST(ZincFieldparameters, fieldStructureChange)
 	EXPECT_EQ(5, fieldparameters.getNumberOfParameters());
 }
 
+// Test evaluating field parameter derivative for mixed node and element constant components
+TEST(ZincFieldparameters, elementConstantComponent)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement xyp = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(xyp.isValid());
+	EXPECT_EQ(RESULT_OK, xyp.setName("xyp"));
+	EXPECT_EQ(RESULT_OK, xyp.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, xyp.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, xyp.setComponentName(3, "p"));
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+	Nodetemplate nodetemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(xyp));
+	// p is not stored at nodes, will be per-element constant
+	EXPECT_EQ(RESULT_OK, nodetemplate.setValueNumberOfVersions(xyp, /*component*/3, Node::VALUE_LABEL_VALUE, 0));
+
+	const double xyValue[2][2] = { { 0.0, 0.0 }, { 2.0, 0.0 } };
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+
+	for (int n = 0; n < 2; ++n)
+	{
+		Node node = nodes.createNode(n + 1, nodetemplate);
+		EXPECT_TRUE(node.isValid());
+		EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+		for (int c = 0; c < 2; ++c)
+			EXPECT_EQ(RESULT_OK, xyp.setNodeParameters(fieldcache, c + 1, Node::VALUE_LABEL_VALUE, 1, 1, &(xyValue[n][c])));
+	}
+
+	Elementbasis constantBasis = zinc.fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_CONSTANT);
+	EXPECT_TRUE(constantBasis.isValid());
+	Elementbasis linearBasis = zinc.fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(linearBasis.isValid());
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	Elementfieldtemplate eftLinear = mesh1d.createElementfieldtemplate(linearBasis);
+	EXPECT_TRUE(eftLinear.isValid());
+	Elementfieldtemplate eftElementConstant = mesh1d.createElementfieldtemplate(constantBasis);
+	EXPECT_TRUE(eftElementConstant.isValid());
+	EXPECT_EQ(RESULT_OK, eftElementConstant.setParameterMappingMode(Elementfieldtemplate::PARAMETER_MAPPING_MODE_ELEMENT));
+	EXPECT_TRUE(eftElementConstant.validate());
+
+	Elementtemplate elementtemplate = mesh1d.createElementtemplate();
+	EXPECT_TRUE(elementtemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementtemplate.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(xyp, -1, eftLinear));
+	EXPECT_EQ(RESULT_OK, elementtemplate.defineField(xyp, 3, eftElementConstant));
+
+	Element element1 = mesh1d.createElement(1, elementtemplate);
+	EXPECT_TRUE(element1.isValid());
+	const int nodeIdentifiers[2] = { 1, 2 };
+	EXPECT_EQ(RESULT_OK, element1.setNodesByIdentifier(eftLinear, 2, nodeIdentifiers));
+	const double xi = 0.4;
+	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element1, 1, &xi));
+	const double xypValue[3] = { 0.0, 0.0, 2.75 };  // first 2 components are dummies
+	EXPECT_EQ(RESULT_OK, xyp.assignReal(fieldcache, 3, xypValue));
+
+	// just to be sure we're not just reading the cache
+	fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+
+	double xypOut[3], xypMeshDerivative1[3], xypMeshDerivative2[3];
+	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element1, 1, &xi));
+	EXPECT_EQ(RESULT_OK, xyp.evaluateReal(fieldcache, 3, xypOut));
+	EXPECT_DOUBLE_EQ(0.8, xypOut[0]);
+	EXPECT_DOUBLE_EQ(0.0, xypOut[1]);
+	EXPECT_DOUBLE_EQ(2.75, xypOut[2]);
+
+	Differentialoperator meshDerivative1 = mesh1d.getChartDifferentialoperator(/*order1*/1, /*term*/-1);
+	Differentialoperator meshDerivative2 = mesh1d.getChartDifferentialoperator(/*order1*/2, /*term*/-1);
+	EXPECT_EQ(RESULT_OK, xyp.evaluateDerivative(meshDerivative1, fieldcache, 3, xypMeshDerivative1));
+	EXPECT_DOUBLE_EQ(2.0, xypMeshDerivative1[0]);
+	EXPECT_DOUBLE_EQ(0.0, xypMeshDerivative1[1]);
+	EXPECT_DOUBLE_EQ(0.0, xypMeshDerivative1[2]);
+	EXPECT_EQ(RESULT_OK, xyp.evaluateDerivative(meshDerivative2, fieldcache, 3, xypMeshDerivative2));
+	EXPECT_DOUBLE_EQ(0.0, xypMeshDerivative2[0]);
+	EXPECT_DOUBLE_EQ(0.0, xypMeshDerivative2[1]);
+	EXPECT_DOUBLE_EQ(0.0, xypMeshDerivative2[2]);
+
+	Fieldparameters fieldparameters = xyp.getFieldparameters();
+	EXPECT_TRUE(fieldparameters.isValid());
+	EXPECT_EQ(4, fieldparameters.getNumberOfParameters());
+
+	Differentialoperator parameterDerivative1 = fieldparameters.getDerivativeOperator(/*order*/1);
+	EXPECT_TRUE(parameterDerivative1.isValid());
+	Differentialoperator parameterDerivative2 = fieldparameters.getDerivativeOperator(/*order*/2);
+	EXPECT_TRUE(parameterDerivative2.isValid());
+
+	int parameterIndexes[4];
+	EXPECT_EQ(RESULT_OK, fieldparameters.getElementParameterIndexes(element1, 4, parameterIndexes));
+	EXPECT_EQ(1, parameterIndexes[0]);
+	EXPECT_EQ(3, parameterIndexes[1]);
+	EXPECT_EQ(2, parameterIndexes[2]);
+	EXPECT_EQ(4, parameterIndexes[3]);
+	double xypParameterDerivative1[12], xypParameterDerivative2[48];
+	const double expectedXyzParameterDerivative1[12] = {
+		0.6, 0.4, 0.0, 0.0,
+		0.0, 0.0, 0.6, 0.4,
+		0.0, 0.0, 0.0, 0.0
+	};
+	const double TOL = 1.0E-12;
+	EXPECT_EQ(RESULT_OK, xyp.evaluateDerivative(parameterDerivative1, fieldcache, 12, xypParameterDerivative1));
+	for (int i = 0; i < 12; ++i)
+		EXPECT_NEAR(expectedXyzParameterDerivative1[i], xypParameterDerivative1[i], TOL);
+	EXPECT_EQ(RESULT_OK, xyp.evaluateDerivative(parameterDerivative2, fieldcache, 48, xypParameterDerivative2));
+	for (int i = 0; i < 48; ++i)
+		EXPECT_NEAR(0.0, xypParameterDerivative2[i], TOL);
+}
+
+// Test getting parameter derivatives for trilinear cube field with mixed node, element and legacy grid components
+TEST(ZincFieldparameters, linear_node_element_grid_mixed)
+{
+	ZincTestSetupCpp zinc;
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_CUBE_NODE_ELEMENT_GRID_RESOURCE)));
+
+	FieldFiniteElement coordinates_node = zinc.fm.findFieldByName("coordinates_node").castFiniteElement();
+	EXPECT_TRUE(coordinates_node.isValid());
+	FieldFiniteElement coordinates_mixed = zinc.fm.findFieldByName("coordinates_mixed").castFiniteElement();
+	EXPECT_TRUE(coordinates_mixed.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+
+	Fieldparameters fieldparameters_node = coordinates_node.getFieldparameters();
+	EXPECT_TRUE(fieldparameters_node.isValid());
+	EXPECT_EQ(24, fieldparameters_node.getNumberOfParameters());
+	EXPECT_EQ(24, fieldparameters_node.getNumberOfElementParameters(element1));
+	Differentialoperator parameterDerivative1_node = fieldparameters_node.getDerivativeOperator(/*order*/1);
+	EXPECT_TRUE(parameterDerivative1_node.isValid());
+
+	Fieldparameters fieldparameters_mixed = coordinates_mixed.getFieldparameters();
+	EXPECT_TRUE(fieldparameters_mixed.isValid());
+	// only 8 since only node-based parameters are supported by fieldparameters
+	EXPECT_EQ(8, fieldparameters_mixed.getNumberOfParameters());
+	EXPECT_EQ(8, fieldparameters_mixed.getNumberOfElementParameters(element1));
+	Differentialoperator parameterDerivative1_mixed = fieldparameters_mixed.getDerivativeOperator(/*order*/1);
+	EXPECT_TRUE(parameterDerivative1_mixed.isValid());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	const double xi[4][3] = {
+		{ 0.5, 0.5, 0.5 },
+		{ 0.3, 0.3, 0.9 },
+		{ 1.0, 0.1, 0.1 },
+		{ 0.7, 0.9, 0.3 }
+	};
+	double derivatives_node[72], derivatives_mixed[24];
+	for (int p = 0; p < 4; ++p)
+	{
+		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element1, 3, xi[p]));
+		EXPECT_EQ(RESULT_OK, coordinates_node.evaluateDerivative(parameterDerivative1_node, fieldcache, 72, derivatives_node));
+		EXPECT_EQ(RESULT_OK, coordinates_mixed.evaluateDerivative(parameterDerivative1_mixed, fieldcache, 24, derivatives_mixed));
+		for (int v = 0; v < 24; ++v)
+			EXPECT_DOUBLE_EQ(derivatives_node[v], derivatives_mixed[v]);
+	}
+}
+
+
 TEST(ZincFieldparameters, invalidAPI)
 {
 	ZincTestSetupCpp zinc;

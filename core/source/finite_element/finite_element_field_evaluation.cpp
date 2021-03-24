@@ -831,6 +831,24 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					if (number_in_xi)
 					{
 						/* legacy grid-based */
+						if (parameter_derivative_order)
+						{
+							// element constant or grid parameters are not support for derivatives yet, so not calculated
+							// must still set derivatives w.r.t. other components' nodal parameters to zero
+							int componentValueCount = 0;
+							for (int pc = 0; pc < componentCount; ++pc)
+							{
+								const FE_element_field_template *eft = this->component_efts[pc];
+								// only node-based parameters are included for now
+								if (eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+									componentValueCount += eft->getParameterCount();
+							}
+							componentValueCount *= number_of_mesh_derivatives;
+							for (int v = 0; v < componentValueCount; ++v)
+								calculated_value[v] = 0.0;
+							calculated_value += componentValueCount;
+							continue;
+						}
 						// convert parent xi to grid base offset and grid xi
 						int grid_base_offset = this->component_base_grid_offset[this_comp_no];
 						FE_value grid_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -959,17 +977,16 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 								for (int pc = 0; pc < componentCount; ++pc)
 								{
 									const FE_element_field_template *eft = this->component_efts[pc];
+									// only node-based parameters are included for now
+									if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+										continue;
 									const int parameterCount = eft->getParameterCount();
 									if (pc != this_comp_no)
 									{
 										// derivatives w.r.t. other components' parameters are zero
-										// only node-based parameters are included for now
-										if (eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
-										{
-											for (int p = 0; p < parameterCount; ++p)
-												calculated_value[p] = 0.0;
-											calculated_value += parameterCount;
-										}
+										for (int p = 0; p < parameterCount; ++p)
+											calculated_value[p] = 0.0;
+										calculated_value += parameterCount;
 										continue;
 									}
 									const FE_basis *feBasis = eft->getBasis();

@@ -2270,8 +2270,8 @@ TEST(ZincElementfieldtemplate, mergeExternalElementfieldtemplate)
 	}
 }
 
-// Test identical trilinear interpolation with 3 different mappings: node, element and legacy grid
-TEST(ZincFieldFiniteElement, linear_node_element_grid)
+// Test identical trilinear interpolation with 4 different mappings: node, element, legacy grid and mixed
+TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -2284,6 +2284,8 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid)
 	EXPECT_TRUE(coordinates_element.isValid());
 	FieldFiniteElement coordinates_grid = zinc.fm.findFieldByName("coordinates_grid").castFiniteElement();
 	EXPECT_TRUE(coordinates_grid.isValid());
+	FieldFiniteElement coordinates_mixed = zinc.fm.findFieldByName("coordinates_mixed").castFiniteElement();
+	EXPECT_TRUE(coordinates_mixed.isValid());
 
 	// test against trilinear interpolation of these node coordinates
 	const double node_coordinates[8][3] =
@@ -2395,12 +2397,13 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid)
 						d3[c] += basis_values[n]*node_coordinates[n][c];
 				}
 				EXPECT_EQ(CMZN_RESULT_OK, result = cache.setMeshLocation(element1, 3, xi));
-				for (int f = 0; f < 3; ++f)
+				for (int f = 0; f < 4; ++f)
 				{
 					Field test_field =
 						(f == 0) ? coordinates_node :
 						(f == 1) ? coordinates_element :
-						coordinates_grid;
+						(f == 2) ? coordinates_grid :
+						coordinates_mixed;
 					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateReal(cache, 3, xout));
 					for (int c = 0; c < 3; ++c)
 						EXPECT_NEAR(x[c], xout[c], tol);
