@@ -1,5 +1,17 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.3.0
+Add field parameters interface.
+Add evaluation of field derivatives with respect to field parameters, fallback to finite difference.
+Add NEWTON method to optimisation using field parameter derivatives and matrix assembly.
+Add optimisation dependent field API
+Deprecate optimisation independent field API (should have been called dependent).
+Maintain map from element to nodes for stored mesh location fields at nodes.
+Add optional map from nodes to elements in nodeset operators, to evaluate per-element.
+Evaluate mesh integral field at elements to give element integral.
+Evaluate exact higher field derivatives for many field operators, some to just second order.
+(Break) Element field templates with unused scale factors now fail in validate check.
+
 v3.2.0
 Add support for cubic Hermite serendipity basis.
 Add support for higher derivative evaluation w.r.t. element chart coordinates.

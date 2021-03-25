@@ -29,6 +29,8 @@ Global types
  */
 struct FE_region;
 
+class FE_field_parameters;
+
 /** Information about what the field represents physically.
  * It is derived from how fields are used in cm, but does not correspond to a
  * field type in cm or identify fields in cm.
@@ -94,7 +96,10 @@ private:
 	int number_of_values;
 	/* the type of the values returned by the field */
 	enum Value_type value_type;
-	/* for value_type== ELEMENT_XI_VALUE, host mesh, or 0 if not determined from legacy input */
+	// with element_xi_host_mesh, embedded node field data for 0=nodes, 1=datapoints
+	FE_mesh_embedded_node_field *embeddedNodeFields[2];
+	// for value_type == ELEMENT_XI_VALUE, accessed host mesh
+	// or nullptr if not yet determined from legacy input
 	FE_mesh *element_xi_host_mesh;
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
@@ -103,6 +108,10 @@ private:
 	// field definition and data on FE_mesh[dimension - 1]
 	// Future: limit to being defined on a single mesh; requires change to current usage
 	FE_mesh_field_data *meshFieldData[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+
+	// non-accessed handle to object indexing parameters, when exists
+	// clients access it, and it accesses this FE_field
+	FE_field_parameters *fe_field_parameters;
 
 	/* the number of computed fields wrapping this FE_field */
 	int number_of_wrappers;
@@ -119,6 +128,7 @@ protected:
 		component_names(nullptr),
 		element_xi_host_mesh(nullptr),
 		values_storage(nullptr),
+		fe_field_parameters(nullptr),
 		access_count(0)
 	{
 		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
@@ -194,12 +204,20 @@ public:
 	/** @return  true on success, otherwise false */
 	bool setComponentName(int componentIndex, const char *componentName);
 
+	/* @return  Accessed handle to existing or new field parameters for field */
+	FE_field_parameters *get_FE_field_parameters();
+
+	/** Only to be called by ~FE_field_parameters */
+	void clear_FE_field_parameters()
+	{
+		this->fe_field_parameters = nullptr;
+	}
+
 	/** Writes a text description of field to console/logger */
 	void list() const;
 
 	/** Returns true if field varies with time on any nodes */
 	bool hasMultipleTimes();
-
 
 	/**
 	 * Copies the field definition from source to destination, except for name,
@@ -300,6 +318,14 @@ public:
 	 * @return  Standard result code.
 	 */
 	int setElementXiHostMesh(FE_mesh *hostMesh);
+
+	/**
+	 * If field is of value_type ELEMENT_XI_VALUE and element_xi_host_mesh is set,
+	 * returns pointer to embedded node information for it in host mesh, otherwise
+	 * nullptr.
+	 * @param nodeset  Nodeset from same region. Not checked.
+	 **/
+	FE_mesh_embedded_node_field *getEmbeddedNodeField(FE_nodeset *nodeset) const;
 
 	FE_field *getIndexerField() const
 	{

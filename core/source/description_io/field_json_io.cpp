@@ -436,9 +436,9 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 					derivedField.setConditionalField(sourcefields[1]);
 				}
 				if (typeSettings["Measure"].isString())
-					cmzn_field_edge_discontinuity_set_measure(derivedField.getDerivedId(),
+					derivedField.setMeasure(static_cast<OpenCMISS::Zinc::FieldEdgeDiscontinuity::Measure>(
 						cmzn_field_edge_discontinuity_measure_enum_from_string(
-							typeSettings["Measure"].asCString()));
+							typeSettings["Measure"].asCString())));
 				field = derivedField;
 			}
 			delete[] sourcefields;
@@ -479,6 +479,11 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 					cmzn_field_find_mesh_location_search_mode_enum_from_string(typeSettings["SearchMode"].asCString());
 				OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation =
 					fieldmodule.createFieldFindMeshLocation(sourcefields[0], sourcefields[1], mesh);
+				if (typeSettings["SearchMesh"].isString())
+				{
+					OpenCMISS::Zinc::Mesh searchMesh = fieldmodule.findMeshByName(typeSettings["SearchMesh"].asCString());
+					fieldFindMeshLocation.setSearchMesh(searchMesh);
+				}
 				fieldFindMeshLocation.setSearchMode(
 					static_cast<OpenCMISS::Zinc::FieldFindMeshLocation::SearchMode>(searchMode));
 				field = fieldFindMeshLocation;
@@ -761,7 +766,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
 		{
 			char *enumString = cmzn_field_edge_discontinuity_measure_enum_to_string(
-				cmzn_field_edge_discontinuity_get_measure(field.castEdgeDiscontinuity().getDerivedId()));
+				static_cast<cmzn_field_edge_discontinuity_measure>(field.castEdgeDiscontinuity().getMeasure()));
 			if (enumString)
 			{
 				typeSettings["Measure"] = enumString;
@@ -807,12 +812,16 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		{
 			OpenCMISS::Zinc::Mesh mesh = field.castFindMeshLocation().getMesh();
 			char *meshName = mesh.getName();
+			OpenCMISS::Zinc::Mesh searchMesh = field.castFindMeshLocation().getSearchMesh();
+			char *searchMeshName = searchMesh.getName();
 			enum cmzn_field_find_mesh_location_search_mode searchMode =
 				static_cast<cmzn_field_find_mesh_location_search_mode>(field.castFindMeshLocation().getSearchMode());
 			char *modeName = cmzn_field_find_mesh_location_search_mode_enum_to_string(searchMode);
 			typeSettings["Mesh"] = meshName;
+			typeSettings["SearchMesh"] = searchMeshName;
 			typeSettings["SearchMode"] = modeName;
 			DEALLOCATE(meshName);
+			DEALLOCATE(searchMeshName);
 			DEALLOCATE(modeName);
 		} break;
 		default:

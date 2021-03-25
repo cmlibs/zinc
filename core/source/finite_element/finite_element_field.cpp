@@ -10,6 +10,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/status.h"
+#include "finite_element/finite_element_field_parameters.hpp"
 #include "finite_element/finite_element_field_private.hpp"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region_private.h"
@@ -97,12 +98,15 @@ FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
 	values_storage(nullptr),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
+	fe_field_parameters(nullptr),
 	number_of_wrappers(0),
 	access_count(1)
 {
 	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		this->meshFieldData[d] = nullptr;
+	for (int i = 0; i < 2; ++i)
+		this->embeddedNodeFields[i] = nullptr;
 }
 
 FE_field::~FE_field()
@@ -113,7 +117,11 @@ FE_field::~FE_field()
 		return;
 	}
 	if (this->element_xi_host_mesh)
+	{
+		for (int i = 0; i < 2; ++i)
+			this->element_xi_host_mesh->removeEmbeddedNodeField(this->embeddedNodeFields[i]);
 		FE_mesh::deaccess(this->element_xi_host_mesh);
+	}
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		delete this->meshFieldData[d];
 	if (this->indexer_field)
@@ -387,6 +395,14 @@ bool FE_field::setComponentName(int componentIndex, const char *componentName)
 	return false;
 }
 
+FE_field_parameters *FE_field::get_FE_field_parameters()
+{
+	if (this->fe_field_parameters)
+		return this->fe_field_parameters->access();
+	this->fe_field_parameters = FE_field_parameters::create(this);
+	return this->fe_field_parameters;
+}
+
 void FE_field::list() const
 {
 	display_message(INFORMATION_MESSAGE, "field : %s\n", this->name);
@@ -558,7 +574,7 @@ int FE_field::copyProperties(FE_field *source)
 			}
 		}
 	}
-	FE_mesh *element_xi_host_mesh = nullptr;
+	FE_mesh *hostMesh = nullptr;
 	if (ELEMENT_XI_VALUE == source->value_type)
 	{
 		if (!source->element_xi_host_mesh)
@@ -571,8 +587,8 @@ int FE_field::copyProperties(FE_field *source)
 		{
 			// find equivalent host mesh in destination FE_region
 			// to be fixed in future when arbitrary meshes are allowed:
-			element_xi_host_mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, source->element_xi_host_mesh->getDimension());
-			if (strcmp(element_xi_host_mesh->getName(), source->element_xi_host_mesh->getName()) != 0)
+			hostMesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, source->element_xi_host_mesh->getDimension());
+			if (strcmp(hostMesh->getName(), source->element_xi_host_mesh->getName()) != 0)
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_field::copyProperties.  Cannot find destination host mesh named %s for merging 'element:xi' valued field %s. Needs to be implemented.",
@@ -582,7 +598,7 @@ int FE_field::copyProperties(FE_field *source)
 		}
 		else
 		{
-			element_xi_host_mesh = source->element_xi_host_mesh;
+			hostMesh = source->element_xi_host_mesh;
 		}
 	}
 	if (return_code)
@@ -616,11 +632,17 @@ int FE_field::copyProperties(FE_field *source)
 		this->component_names=component_names;
 		this->coordinate_system = source->coordinate_system;
 		this->value_type=source->value_type;
-		if (element_xi_host_mesh)
-			element_xi_host_mesh->access();
+		/*
+		if (hostMesh)
+			hostMesh->access();
 		if (this->element_xi_host_mesh)
+		{
 			FE_mesh::deaccess(this->element_xi_host_mesh);
-		this->element_xi_host_mesh = element_xi_host_mesh;
+		}
+		this->element_xi_host_mesh = hostMesh;
+		*/
+		if (hostMesh)
+			this->setElementXiHostMesh(hostMesh);
 		/* replace old values_storage with new */
 		if (0<this->number_of_values)
 		{
@@ -1309,7 +1331,16 @@ int FE_field::setElementXiHostMesh(FE_mesh *hostMesh)
 		return CMZN_ERROR_ALREADY_EXISTS;
 	}
 	this->element_xi_host_mesh = hostMesh->access();
+	for (int i = 0; i < 2; ++i)
+		this->embeddedNodeFields[i] = hostMesh->addEmbeddedNodeField(this, this->fe_region->nodesets[i]);
 	return CMZN_OK;
+}
+
+FE_mesh_embedded_node_field *FE_field::getEmbeddedNodeField(FE_nodeset *nodeset) const
+{
+	if (this->value_type == ELEMENT_XI_VALUE)
+		return this->embeddedNodeFields[(nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_NODES) ? 0 : 1];
+	return nullptr;
 }
 
 int set_FE_field_string_value(struct FE_field *field, int value_number,

@@ -7,7 +7,7 @@
 SET(CURRENT_TEST optimisation)
 LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
-    ${CURRENT_TEST}/optimisation.cpp
+    ${CURRENT_TEST}/optimisationtests.cpp
     )
 
 SET(OPTIMISATION_CUBE_TRICUBIC_LAGRANGE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/tricubic.exfile")

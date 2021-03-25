@@ -19,8 +19,6 @@ namespace Zinc
 
 class Differentialoperator;
 class Element;
-class Fieldassignment;
-class Fieldcache;
 class FieldComponent;
 class FieldConstant;
 class FieldEdgeDiscontinuity;
@@ -36,9 +34,13 @@ class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
 class FieldMeshIntegral;
 class FieldNodeGroup;
+class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
 class FieldStoredString;
+class Fieldassignment;
+class Fieldcache;
+class Fieldparameters;
 class Fieldmodule;
 class Fieldsmoothing;
 
@@ -193,6 +195,8 @@ public:
 			static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
 	}
 
+	inline Fieldparameters getFieldparameters();
+
 	int getNumberOfComponents()
 	{
 		return cmzn_field_get_number_of_components(id);
@@ -272,6 +276,7 @@ public:
 	inline FieldImagefilterThreshold castImagefilterThreshold();
 	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
+	inline FieldNodesetOperator castNodesetOperator();
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();

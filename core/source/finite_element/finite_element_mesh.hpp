@@ -13,11 +13,11 @@
 
 #include "opencmiss/zinc/types/elementid.h"
 #include "opencmiss/zinc/status.h"
-#include "computed_field/field_derivative.hpp"
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
+#include "finite_element/finite_element_constants.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -27,9 +27,15 @@
 #include <set>
 #include <vector>
 
+struct FE_field;
+
 class FE_mesh;
 
 class FE_mesh_field_template;
+
+class FE_nodeset;
+
+class FieldDerivative;
 
 /**
  * Template for creating a new element in the given FE_mesh, or redefining
@@ -231,7 +237,7 @@ public:
 		{
 			if (--(element->access_count) == 0)
 				delete element;
-			element = 0;
+			element = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -269,6 +275,19 @@ public:
 	{
 		return this->mesh;
 	}
+
+	/**
+	 * Get the first ancestor of element on ancestorMesh and the mapping from
+	 * this element's xi coordinates to those of the ancestor in the form:
+	 * xi(ancestor) = b + A.xi(element) where b is in the first column of the
+	 * matrix and the rest is A. Recursive to handle 1-D to 3-D case.
+	 * @param ancestorMesh  The mesh the ancestor must be on.
+	 * @param elementToAncestor  If the returned element is different to this
+	 * element, returns the matrix above, otherwise nullptr. Must be at least
+	 * MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS in size.
+	 * @return  Ancestor element or nullptr if not found.
+	 */
+	cmzn_element *getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor);
 
 };
 
@@ -401,7 +420,14 @@ public:
 	  * @param elementIndex  The element to get scale factors for.
 	  * @param valuesOut  Array to receive scale factors. Must have enough space for correct number in EFT.
 	  * @return  Result OK on success, any other value on failure. */
-	int getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut);
+	int getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut) const;
+
+	/** Get all scale factors for this element field template in the given element,
+	  * creating new scale factor indexes with zero values as needed.
+	  * @param elementIndex  The element to get scale factors for.
+	  * @param valuesOut  Array to receive scale factors. Must have enough space for correct number in EFT.
+	  * @return  Result OK on success, any other value on failure. */
+	int getOrCreateElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut);
 
 	/** Set all scale factors for this element field template in the given element.
 	  * Notifies all fields at this element changed.
@@ -409,6 +435,14 @@ public:
 	  * @param valuesIn  Array of scale factors to set. Required to have correct number for EFT.
 	  * @return  Result OK on success, any other value on failure. */
 	int setElementScaleFactors(DsLabelIndex elementIndex, const FE_value *valuesIn);
+
+	/** Gets array of scale factor indexes for element, if available.
+	  * @param elementIndex  Label index for element. Not checked.
+	  * @return  Pointer to array of global scale factor indexes for element, or nullptr if failed. NOT to be freed. */
+	const DsLabelIndex *getElementScaleFactorIndexes(DsLabelIndex elementIndex) const
+	{
+		return this->localToGlobalScaleFactors.getArray(elementIndex);
+	}
 
 	/** Gets or creates array of scale factor indexes for element. If creating, guarantees
 	  * to create full array of valid indexes. Fails if any scale factor
@@ -420,7 +454,7 @@ public:
 	  * @param result  Result OK on success, ERROR_NOT_FOUND if cannot create due to absent
 	  * nodes or other data, otherwise any other error.
 	  * @param elementIndex  Label index for element. Not checked.
-	  * @return  Pointer new array of global scale factor indexes for element, or 0 if failed. NOT to be freed. */
+	  * @return  Pointer to array of global scale factor indexes for element, or nullptr if failed. NOT to be freed. */
 	DsLabelIndex *getOrCreateElementScaleFactorIndexes(int &result, DsLabelIndex elementIndex)
 	{
 		DsLabelIndex *scaleFactorIndexes = this->localToGlobalScaleFactors.getArray(elementIndex);
@@ -600,6 +634,78 @@ public:
 
 };
 
+/** Stores reverse map from element index to arrays of embedded node indexes
+ * for a given field (of element_xi value type) and nodeset.
+ * These objects are held by the mesh while the FE_field holds a handle to it.
+ * The FE_field which must call FE_mesh::removeEmbeddedNodeField to free it */
+class FE_mesh_embedded_node_field
+{
+	friend class FE_mesh;
+
+	FE_field *field;  // non-accessed field giving locations in the owning mesh
+	FE_nodeset *nodeset;  // not accessed nodes or elements
+	// map from element to allocated array of node indexes
+	// strictly growning except freed when down to zero size
+	// first 2 values are size, allocated size
+	dynarray_block_array<DsLabelIndex, DsLabelIndex*> map;
+
+	const int growStep = 16;  // step size of node arrays growth
+
+	FE_mesh_embedded_node_field(FE_field *fieldIn, FE_nodeset *nodesetIn) :
+		field(fieldIn),
+		nodeset(nodesetIn)
+	{
+	}
+
+public:
+
+	/** add nodeIndex to the list of indexes for elementIndex. *
+	 * Client must guarantee nodeIndex is valid and not already in array. */
+	void addNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex);
+
+	/** remove nodeIndex from list of indexes for elementIndex. *
+	 * Client must guarantee nodeIndex is valid and not already in array. */
+	void removeNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex);
+
+	/** Get the last node index for element, which is the most efficient to remove.
+	 * @return  Index of last node in map for element, or -1 if none */
+	DsLabelIndex getLastNodeIndex(DsLabelIndex elementIndex) const
+	{
+		DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+		if (!nodeIndexesAddress)
+			return -1;
+		DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+		if (!nodeIndexes)
+			return -1;
+		// following requires removeNode to free array when last node removed
+		const DsLabelIndex size = nodeIndexes[0];
+		return nodeIndexes[size + 1];
+	}
+
+	/** Get pointer to node indexes stored for elementIndex, and size.
+	 * @param size  On return, size is set to the number of indexes.
+	 * @return  Pointer to internal array of node indexes, or nullptr if none. Do not
+	 * keep beyond function or through modifications as it may be reallocated. */
+	const DsLabelIndex *getNodeIndexes(DsLabelIndex elementIndex, int& size)
+	{
+		if (elementIndex >= 0)
+		{
+			DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+			if (nodeIndexesAddress)
+			{
+				DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+				if (nodeIndexes)
+				{
+					size = nodeIndexes[0];
+					return nodeIndexes + 2;
+				}
+			}
+		}
+		size = 0;
+		return nullptr;
+	}
+
+};
 
 /**
  * A set of elements in the FE_region.
@@ -713,6 +819,11 @@ private:
 
 	std::list<FE_mesh_field_template*> meshFieldTemplates;
 
+	// vector of reverse maps from elements to arrays of node indexes held
+	// for all field of element_xi type for nodeset with nodes embedded in this mesh
+	// indexes are given out for lifetime of nodeset x field
+	std::list<FE_mesh_embedded_node_field*> embeddedNodeFields;
+
 	DsLabelIndex scaleFactorsCount;  // actual number of scale factors. Note can be holes in scaleFactors array
 	DsLabelIndex scaleFactorsIndexSize;  // allocated size of scale factors array, including holes
 	block_array<DsLabelIndex, FE_value> scaleFactors;
@@ -740,7 +851,7 @@ private:
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
 
-	FieldDerivativeMesh *fieldDerivatives[MAXIMUM_FIELD_DERIVATIVE_ORDER];
+	FieldDerivative *fieldDerivatives[MAXIMUM_MESH_DERIVATIVE_ORDER];
 
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
@@ -807,6 +918,11 @@ public:
 
 	void detach_from_FE_region();
 
+	void clearChangeLog()
+	{
+		this->createChangeLog();
+	}
+
 	int addElementfieldtemplate(FE_element_field_template *eft);
 
 	int removeElementfieldtemplate(FE_element_field_template *eft);
@@ -858,6 +974,19 @@ public:
 	FE_mesh_field_template *getOrCreateBlankMeshFieldTemplate();
 
 	void removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate);
+
+	/** Adds to mesh FE_mesh_embedded_node_field object for the field and nodeset,
+	 * held by the mesh so knows which fields embed nodes in this mesh.
+	 * Fields may optionally maintain reverse maps from elements to nodes in this
+	 * structure.
+	 * @return  FE_mesh_embedded_node_field for field to store. Field must call
+	 * removeEmbeddedNodeField to free.
+	 */
+	FE_mesh_embedded_node_field *addEmbeddedNodeField(FE_field *field, FE_nodeset *nodeset);
+	
+	/** Remove the embeddedNodeField from mesh and delete.
+	 * @param embeddedNodeField  Client pointer to embedded node field. Cleared by this function */
+	void removeEmbeddedNodeField(FE_mesh_embedded_node_field*& embeddedNodeField);
 
 	bool equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const;
 
@@ -1203,13 +1332,19 @@ public:
 
 	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
 
-	/** @return non-Accessed field derivative w.r.t. element xi chart of given order */
-	FieldDerivativeMesh *getFieldDerivative(int order) const
+	/** @return  Non-accessed field derivative w.r.t. mesh chart of given order */
+	FieldDerivative *getFieldDerivative(int order) const
 	{
-		if ((order < 0) || (order > MAXIMUM_FIELD_DERIVATIVE_ORDER))
+		if ((order < 1) || (order > MAXIMUM_MESH_DERIVATIVE_ORDER))
 			return nullptr;
 		return this->fieldDerivatives[order - 1];
 	}
+
+	/** Get derivative w.r.t. mesh chart followed by supplied field derivative operation.
+	 * @param fieldDerivative  Derivative to apply after. If it involves mesh derivatives,
+	 * they must be for this mesh.
+	 * @return  Non-accessed field derivative or nullptr on error */
+	FieldDerivative *getHigherFieldDerivative(const FieldDerivative& fieldDerivative);
 
 	/** @param scaleFactorIndex  Not checked. Must be valid. */
 	FE_value getScaleFactor(DsLabelIndex scaleFactorIndex) const

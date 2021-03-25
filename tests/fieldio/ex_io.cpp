@@ -41,3 +41,12 @@ TEST(FieldIO, data_and_node_group)
 	Node datapoint = dataGroup.findNodeByIdentifier(2);
 	EXPECT_TRUE(datapoint.isValid());
 }
+
+// Test can overwrite nodes and elements with different definitions
+TEST(FieldIO, changeNodeElementDefinition)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX_TWOHERMITECUBES_NOSCALEFACTORS_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+}

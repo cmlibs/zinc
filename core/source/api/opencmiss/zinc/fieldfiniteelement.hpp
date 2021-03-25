@@ -23,6 +23,11 @@ namespace Zinc
 
 class FieldFiniteElement : public Field
 {
+	inline cmzn_field_finite_element_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
+	}
+
 public:
 
 	FieldFiniteElement() : Field(0)
@@ -32,11 +37,6 @@ public:
 	explicit FieldFiniteElement(cmzn_field_finite_element_id field_finite_element_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_finite_element_id))
 	{	}
-
-	inline cmzn_field_finite_element_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
-	}
 
 	int getNodeParameters(const Fieldcache& cache, int componentNumber,
 		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut)
@@ -62,9 +62,13 @@ public:
 
 class FieldEdgeDiscontinuity : public Field
 {
-private:
 	friend FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
 		const Field& sourceField);
+
+	inline cmzn_field_edge_discontinuity_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_edge_discontinuity_id>(id);
+	}
 
 public:
 
@@ -75,11 +79,6 @@ public:
 	explicit FieldEdgeDiscontinuity(cmzn_field_edge_discontinuity_id field_edge_discontinuity_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_edge_discontinuity_id))
 	{	}
-
-	inline cmzn_field_edge_discontinuity_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_field_edge_discontinuity_id>(id);
-	}
 
 	enum Measure
 	{
@@ -131,6 +130,11 @@ public:
 
 class FieldFindMeshLocation : public Field
 {
+	inline cmzn_field_find_mesh_location_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_find_mesh_location_id>(id);
+	}
+
 public:
 
 	FieldFindMeshLocation() : Field(0)
@@ -148,22 +152,30 @@ public:
 		SEARCH_MODE_NEAREST = CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST
 	};
 
-	Mesh getMesh()
+	Mesh getMesh() const
 	{
-		return Mesh(cmzn_field_find_mesh_location_get_mesh(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id)));
+		return Mesh(cmzn_field_find_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
-	SearchMode getSearchMode()
+	Mesh getSearchMesh() const
+	{
+		return Mesh(cmzn_field_find_mesh_location_get_search_mesh(this->getDerivedId()));
+	}
+
+	int setSearchMesh(const Mesh& mesh)
+	{
+		return cmzn_field_find_mesh_location_set_search_mesh(this->getDerivedId(), mesh.getId());
+	}
+
+	SearchMode getSearchMode() const
 	{
 		return static_cast<SearchMode>(cmzn_field_find_mesh_location_get_search_mode(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id)));
+			this->getDerivedId()));
 	}
 
 	int setSearchMode(SearchMode searchMode)
 	{
-		return cmzn_field_find_mesh_location_set_search_mode(
-			reinterpret_cast<cmzn_field_find_mesh_location_id>(id),
+		return cmzn_field_find_mesh_location_set_search_mode(this->getDerivedId(),
 			static_cast<cmzn_field_find_mesh_location_search_mode>(searchMode));
 	}
 };
@@ -187,6 +199,11 @@ public:
 
 class FieldStoredMeshLocation : public Field
 {
+	inline cmzn_field_stored_mesh_location_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_stored_mesh_location_id>(id);
+	}
+
 public:
 
 	FieldStoredMeshLocation() : Field(0)
@@ -197,10 +214,9 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_stored_mesh_location_id))
 	{	}
 
-	Mesh getMesh()
+	Mesh getMesh() const
 	{
-		return Mesh(cmzn_field_stored_mesh_location_get_mesh(
-			reinterpret_cast<cmzn_field_stored_mesh_location_id>(id)));
+		return Mesh(cmzn_field_stored_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
 };

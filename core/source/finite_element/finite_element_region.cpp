@@ -141,6 +141,15 @@ bool FE_region_changes::propagateToDimension(int dimension)
 	return true;
 }
 
+void FE_region::clearCachedChanges()
+{
+	CHANGE_LOG_CLEAR(FE_field)(this->fe_field_changes);
+	for (int n = 0; n < 2; ++n)
+		this->nodesets[n]->clearChangeLog();
+	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+		this->meshes[dim]->clearChangeLog();
+}
+
 /**
  * Tells parent region about changes to fields, nodes and elements.
  * No messages sent if change level is positive, or no changes have been made.
@@ -334,16 +343,6 @@ int FE_region_end_change(struct FE_region *fe_region)
 		{
 			display_message(ERROR_MESSAGE, "FE_region_end_change.  Change not enabled");
 		}
-	}
-	return 0;
-}
-
-int FE_region_end_change_no_notify(struct FE_region *fe_region)
-{
-	if (fe_region)
-	{
-		--(fe_region->change_level);
-		return 1;
 	}
 	return 0;
 }
@@ -992,15 +991,15 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 			{
 				FE_region_begin_change(fe_region);
 
-				const int componentsCount = fe_field->getNumberOfComponents();
+				const int componentCount = fe_field->getNumberOfComponents();
 
 				// create field for accumulating node values for averaging
 				FE_field *node_accumulate_fe_field = FE_region_get_FE_field_with_general_properties(
-					fe_region, "cmzn_smooth_node_accumulate", FE_VALUE_VALUE, componentsCount);
+					fe_region, "cmzn_smooth_node_accumulate", FE_VALUE_VALUE, componentCount);
 
 				/* create a field to store an integer value per component of fe_field */
 				FE_field *element_count_fe_field = FE_region_get_FE_field_with_general_properties(
-					fe_region, "cmzn_smooth_element_count", INT_VALUE, componentsCount);
+					fe_region, "cmzn_smooth_element_count", INT_VALUE, componentCount);
 
 				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
 				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();

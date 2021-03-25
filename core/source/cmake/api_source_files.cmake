@@ -35,6 +35,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldmeshoperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldmodule.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldnodesetoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldparameters.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldsceneviewerprojection.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldsmoothing.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/fieldsubobjectgroup.h
@@ -91,6 +92,8 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmatrixoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmeshoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldmoduleid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldnodesetoperatorsid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldparametersid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldsmoothingid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/opencmiss/zinc/types/fontid.h

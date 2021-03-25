@@ -21,6 +21,45 @@ struct cmzn_fieldmoduleevent;
 struct FE_region;
 class FE_nodeset;
 
+class cmzn_node_value_label_conversion
+{
+public:
+	static const char *to_string(enum cmzn_node_value_label label)
+	{
+		const char *enum_string = nullptr;
+		switch (label)
+		{
+		case CMZN_NODE_VALUE_LABEL_VALUE:
+			enum_string = "VALUE";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS1:
+			enum_string = "D_DS1";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS2:
+			enum_string = "D_DS2";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS3:
+			enum_string = "D_DS3";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
+			enum_string = "D2_DS1DS2";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
+			enum_string = "D2_DS1DS3";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
+			enum_string = "D2_DS2DS3";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
+			enum_string = "D3_DS1DS2DS3";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
 /***************************************************************************//**
  * Ensures all nodes of the supplied element are in this nodeset_group.
  * Candidate for external API.

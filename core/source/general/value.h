@@ -111,11 +111,8 @@ without knowing which order the types are in.
 	VALUE_TYPE_AFTER_LAST
 }; /* enum Value_type */
 
-#define MAXIMUM_ELEMENT_XI_DIMENSIONS (3)
-
 /* A replacement for the use of Triple for values that really should be FE_value's */
 typedef FE_value FE_value_triple[3];
-typedef FE_value FE_value_tuple[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 /*
 Global functions

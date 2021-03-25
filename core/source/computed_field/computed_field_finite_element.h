@@ -183,4 +183,15 @@ FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
   * @return  Result OK on success, any other value on failure. */
 int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field);
 
+class FE_element_field_evaluation;
+
+/** Special function used only by Computed_field_core::evaluateDerivativeFiniteDifference.
+ * Get internal finite element field evaluation object for finite element field,
+ * creating if needed, in fieldcache at element location contained in it.
+ * Used to apply parameter perturbation to for calculating parameter derivatives.
+ * @param field  Field, must be of finite element type with real components.
+ * @param fieldcache  Field cache in which to find or create object & containing element location.
+ * @return  Pointer to object or nullptr if failed. */
+FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cmzn_field *field, cmzn_fieldcache *fieldcache);
+
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

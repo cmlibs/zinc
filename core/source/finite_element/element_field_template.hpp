@@ -53,7 +53,7 @@ class FE_element_field_template
 
 	friend int global_to_element_map_values(FE_field *field, int componentNumber,
 		const FE_element_field_template *eft, cmzn_element *element, FE_value time,
-		const FE_nodeset *nodeset, FE_value*& elementValues);
+		const FE_nodeset *nodeset, const FE_value *scaleFactors, FE_value*& elementValues);
 
 	friend int global_to_element_map_nodes(FE_field *field, int componentNumber,
 		const FE_element_field_template *eft, cmzn_element *element,
@@ -114,6 +114,15 @@ private:
 	// this is a dirty hack and not for public API, for translating legacy EX files only
 	FE_basis_modify_theta_mode legacyModifyThetaMode;
 
+	// data computed only on validation, for working with field parameters:
+	// note that element component parameters are in the order first used by function terms
+	// note that arrays are not allocated for default case where all functions have one term
+	int parameterCount;
+	int *parameterTermCounts;  // number of function terms multiplying each parameter
+	int *parameterTermOffsets;  // for each parameter, offset into parameterFunctionTerms where it's values are held, multiples of 2
+	int parameterFunctionTermsSize;  // size of parameterFunctionTerms, multiple of 2 for the pairs
+	int *parameterFunctionTerms;  // packed array of pairs (function index, term index) for each parameter term
+
 	int access_count;
 
 	FE_element_field_template(FE_mesh *meshIn, FE_basis *basisIn);
@@ -125,6 +134,8 @@ private:
 	FE_element_field_template &operator=(const FE_element_field_template &source); // not implemented
 
 	void clearNodeMapping();
+
+	void clearParameterMaps();
 
 	void clearScaling();
 
@@ -391,6 +402,28 @@ public:
 	{
 		return this->totalTermCount;
 	}
+
+	/** Get number of parameters in use by element field template.
+	 * Only available when validated. */
+	int getParameterCount() const
+	{
+		return this->parameterCount;
+	}
+
+	/** Get number of terms multiplying the parameter.
+	 * Only available when validated.
+	 * @param parameterIndex  Index of parameter to query, starting at 0
+	 * @return  Number of terms > 0, or 0 if failed. */
+	int getParameterTermCount(int parameterIndex) const;
+
+	/** Get function and term for one parameter term multiplying the parameter.
+	 * Only available when validated.
+	 * @param parameterIndex  Index of parameter to query, starting at 0
+	 * @param parameterTerm  Parameter term, from 0 to 1 less than
+	 * getParameterTermCount(parameterIndex).
+	 * @param term  On success returns the function term for the parameter term.
+	 * @return  Function index for parameter term, or -1 if failed */
+	int getParameterTermFunctionAndTerm(int parameterIndex, int parameterTerm, int &term) const;
 
 	/** @return  True if validated and locked, false if failed. */
 	bool validateAndLock();

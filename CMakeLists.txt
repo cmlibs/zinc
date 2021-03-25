@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.4.0)
 cmake_policy(VERSION 3.4.0)
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.2.0 LANGUAGES C CXX)
+project(Zinc VERSION 3.3.0 LANGUAGES C CXX)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_BINDINGS "Build bindings for ${PROJECT_NAME}, requires SWIG." YES)

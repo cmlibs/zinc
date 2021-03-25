@@ -179,34 +179,56 @@ IntegrationPointsCache::IntegrationPointsCache(cmzn_element_quadrature_rule quad
 	quadratureRule(quadratureRuleIn),
 	variableNumbersOfPoints(false)
 {
-	int lastNumPointsInDirection = 1;
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
-	{
-		if ((i < numbersOfPointsCountIn) && numbersOfPointsIn &&
-			(0 < numbersOfPointsIn[i]))
-		{
-			if ((this->quadratureRule == CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN) &&
-					(numbersOfPointsIn[i] > CMZN_MAX_GAUSS_POINTS))
-				this->numbersOfPoints[i] = CMZN_MAX_GAUSS_POINTS;
-			else
-				this->numbersOfPoints[i] = numbersOfPointsIn[i];
-			if ((i > 0) && (lastNumPointsInDirection != this->numbersOfPoints[i]))
-				variableNumbersOfPoints = true;
-			lastNumPointsInDirection = this->numbersOfPoints[i];
-		}
-		else
-			this->numbersOfPoints[i] = lastNumPointsInDirection;
-	}
+		this->numbersOfPoints[i] = 1;
+	this->setQuadrature(quadratureRuleIn, numbersOfPointsCountIn, numbersOfPointsIn);
 }
 
 IntegrationPointsCache::~IntegrationPointsCache()
 {
+	this->clearCache();
+}
+
+void IntegrationPointsCache::clearCache()
+{
 	for (std::vector<IntegrationShapePoints*>::iterator iter = knownShapePoints.begin();
-			iter != knownShapePoints.end(); ++iter)
+		iter != knownShapePoints.end(); ++iter)
 	{
 		IntegrationShapePoints *shapePoints = *iter;
 		delete shapePoints;
 	}
+	this->knownShapePoints.clear();
+}
+
+void IntegrationPointsCache::setQuadrature(cmzn_element_quadrature_rule quadratureRuleIn,
+	int numbersOfPointsCountIn, const int *numbersOfPointsIn)
+{
+	int lastNumPointsInDirection = 1;
+	this->variableNumbersOfPoints = false;
+	bool changed = quadratureRuleIn != this->quadratureRule;
+	this->quadratureRule = quadratureRuleIn;
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+	{
+		const int oldNumberOfPoints = this->numbersOfPoints[i];
+		if ((i < numbersOfPointsCountIn) && (numbersOfPointsIn) &&
+			(0 < numbersOfPointsIn[i]))
+		{
+			if ((quadratureRuleIn == CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN) &&
+				(numbersOfPointsIn[i] > CMZN_MAX_GAUSS_POINTS))
+				this->numbersOfPoints[i] = CMZN_MAX_GAUSS_POINTS;
+			else
+				this->numbersOfPoints[i] = numbersOfPointsIn[i];
+			if ((i > 0) && (lastNumPointsInDirection != this->numbersOfPoints[i]))
+				this->variableNumbersOfPoints = true;
+			lastNumPointsInDirection = numbersOfPoints[i];
+		}
+		else
+			numbersOfPoints[i] = lastNumPointsInDirection;
+		if (this->numbersOfPoints[i] != oldNumberOfPoints)
+			changed = true;
+	}
+	if (changed)
+		this->clearCache();
 }
 
 IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)

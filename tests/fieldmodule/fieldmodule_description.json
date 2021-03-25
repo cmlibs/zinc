@@ -103,6 +103,7 @@
       {
          "FieldFindMeshLocation" : {
             "Mesh" : "mesh2d",
+            "SearchMesh" : "mesh2d",
             "SearchMode" : "FIND_EXACT",
             "SourceFields" : [ "coordinates", "coordinates" ]
          },

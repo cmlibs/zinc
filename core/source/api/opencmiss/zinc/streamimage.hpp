@@ -20,6 +20,13 @@ namespace Zinc
 
 class StreaminformationImage : public Streaminformation
 {
+	friend class FieldImage;
+
+	cmzn_streaminformation_image_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_streaminformation_image_id>(id);
+	}
+
 public:
 	StreaminformationImage() : Streaminformation()
 	{ }
@@ -32,11 +39,6 @@ public:
 	bool isValid() const
 	{
 		return (0 != id);
-	}
-
-	cmzn_streaminformation_image_id getDerivedId() const
-	{
-		return reinterpret_cast<cmzn_streaminformation_image_id>(id);
 	}
 
 	enum Attribute

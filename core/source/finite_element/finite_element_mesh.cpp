@@ -10,6 +10,8 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "opencmiss/zinc/element.h"
+#include "computed_field/field_derivative.hpp"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
@@ -18,6 +20,7 @@
 #include "general/debug.h"
 #include "general/message.h"
 #include "general/mystring.h"
+#include <algorithm>
 
 /*
 Module types
@@ -311,6 +314,67 @@ cmzn_element::~cmzn_element()
 		display_message(ERROR_MESSAGE, "~cmzn_element.  Element destroyed with non-zero access count %d. Dimension %d Index %d",
 			this->access_count, this->mesh ? this->mesh->getDimension() : -1, this->index);
 	}
+}
+
+cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor)
+{
+	if (!((this) && (this->mesh) && (elementToAncestor)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  Invalid argument(s)");
+		return nullptr;
+	}
+	if (this->mesh == ancestorMesh)
+	{
+		elementToAncestor = nullptr;
+		return this;
+	}
+	FE_mesh *parentMesh = this->mesh->getParentMesh();
+	const DsLabelIndex *parents;
+	const int parentsCount = this->mesh->getElementParents(this->index, parents);
+	if ((!parentMesh) || (0 == parentsCount))
+		return nullptr;
+	for (int p = 0; p < parentsCount; ++p)
+	{
+		DsLabelIndex parentIndex = parents[p];
+		if (parentIndex < 0)
+			continue;
+		cmzn_element *parent = parentMesh->getElement(parentIndex);
+		FE_element_shape *parentShape = parentMesh->getElementShape(parentIndex);
+		const int faceNumber = parentMesh->getElementFaceNumber(parentIndex, this->index);
+		if ((parentShape) && (faceNumber >= 0))
+		{
+			cmzn_element *ancestorElement = (parentMesh == ancestorMesh) ? parent :
+				parent->getAncestorConversion(ancestorMesh, elementToAncestor);
+			if (!ancestorElement)
+				continue;
+			const FE_value *faceToElement = get_FE_element_shape_face_to_element(parentShape, faceNumber);
+			if (!faceToElement)
+				continue;
+			const int size = ancestorElement->getDimension();
+			if (parent == ancestorElement)
+			{
+				for (int i = size*size - 1; 0 <= i; --i)
+					elementToAncestor[i] = faceToElement[i];
+			}
+			else
+			{
+				// multiply faceToElement of ancestorElement (in elementToAncestor)
+				// by faceToElement from parent. This is the 1:3 case
+				for (int i = 0; i < size; ++i)
+				{
+					elementToAncestor[i*2] = elementToAncestor[i*size] +
+						elementToAncestor[i*size+1]*faceToElement[0]+
+						elementToAncestor[i*size+2]*faceToElement[2];
+					elementToAncestor[i*2+1] =
+						elementToAncestor[i*size+1]*faceToElement[1]+
+						elementToAncestor[i*size+2]*faceToElement[3];
+				}
+			}
+			return ancestorElement;
+		}
+	}
+	display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  No ancestor found");
+	return nullptr;
 }
 
 /** Free dynamic memory or resources held per-element e.g. reduce node element usage counts
@@ -658,7 +722,28 @@ int FE_mesh_element_field_template_data::setElementScaleFactor(DsLabelIndex elem
 	return CMZN_OK;
 }
 
-int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut)
+int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut) const
+{
+	if (elementIndex < 0)
+		return CMZN_ERROR_ARGUMENT;
+	FE_mesh *mesh = this->eft->getMesh();
+	if (!mesh)
+		return CMZN_ERROR_ARGUMENT;
+	const DsLabelIndex *scaleFactorIndexes = this->getElementScaleFactorIndexes(elementIndex);
+	if (!scaleFactorIndexes)
+	{
+		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element has no scale factors");
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const int count = this->eft->getNumberOfLocalScaleFactors();
+	for (int i = 0; i < count; ++i)
+	{
+		valuesOut[i] = mesh->getScaleFactor(scaleFactorIndexes[i]);
+	}
+	return CMZN_OK;
+}
+
+int FE_mesh_element_field_template_data::getOrCreateElementScaleFactors(DsLabelIndex elementIndex, FE_value *valuesOut)
 {
 	if (elementIndex < 0)
 		return CMZN_ERROR_ARGUMENT;
@@ -669,7 +754,7 @@ int FE_mesh_element_field_template_data::getElementScaleFactors(DsLabelIndex ele
 	const DsLabelIndex *scaleFactorIndexes = this->getOrCreateElementScaleFactorIndexes(result, elementIndex);
 	if (!scaleFactorIndexes)
 	{
-		display_message(ERROR_MESSAGE, "Element getScaleFactors.  Element has no scale factors");
+		display_message(ERROR_MESSAGE, "Element getOrCreateElementScaleFactors.  Element has no scale factors");
 		return result;
 	}
 	const int count = this->eft->getNumberOfLocalScaleFactors();
@@ -1215,6 +1300,69 @@ int FE_mesh_field_template::getElementsDefinedCount() const
 	return count;
 }
 
+void FE_mesh_embedded_node_field::addNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex)
+{
+	DsLabelIndex **nodeIndexesAddress = this->map.getOrCreateAddress(elementIndex);
+	DsLabelIndex *nodeIndexes = *nodeIndexesAddress;
+	if (nodeIndexes)
+	{
+		const DsLabelIndex size = nodeIndexes[0];
+		if (size == nodeIndexes[1])
+		{
+			DsLabelIndex *tmpNodeIndexes = new DsLabelIndex[2 + size + growStep];
+			memcpy(tmpNodeIndexes, nodeIndexes, (2 + size)*sizeof(DsLabelIndex));
+			delete[] nodeIndexes;
+			nodeIndexes = *nodeIndexesAddress = tmpNodeIndexes;
+			nodeIndexes[1] += growStep;
+		}
+		nodeIndexes[2 + size] = nodeIndex;
+		++(nodeIndexes[0]);  // size
+	}
+	else
+	{
+		nodeIndexes = *nodeIndexesAddress = new DsLabelIndex[2 + growStep];
+		nodeIndexes[0] = 1;
+		nodeIndexes[1] = growStep;
+		nodeIndexes[2] = nodeIndex;
+	}
+}
+
+void FE_mesh_embedded_node_field::removeNode(DsLabelIndex elementIndex, DsLabelIndex nodeIndex)
+{
+	DsLabelIndex **nodeIndexesAddress = this->map.getAddress(elementIndex);
+	DsLabelIndex *nodeIndexes = (nodeIndexesAddress) ? *nodeIndexesAddress : nullptr;
+	if (!nodeIndexes)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh_embedded_nodes::removeNode.  "
+			"Element index %d has no nodes; node index %d", elementIndex, nodeIndex);
+		return;
+	}
+	// find nodeIndex in array, not sorted
+	const DsLabelIndex size = nodeIndexes[0];
+	const DsLabelIndex last = size + 1;
+	// reverse order to speed up element clean-up
+	for (int i = last; 1 < i; --i)
+	{
+		if (nodeIndexes[i] == nodeIndex)
+		{
+			if (size == 1)
+			{
+				// free only when down to zero size
+				delete[] nodeIndexes;
+				*nodeIndexesAddress = nullptr;
+			}
+			else
+			{
+				memmove(nodeIndexes + i, nodeIndexes + i + 1, (last - i)*sizeof(DsLabelIndex));
+				--(nodeIndexes[0]);  // size
+			}
+			return;
+		}
+	}
+	display_message(ERROR_MESSAGE, "FE_mesh_embedded_nodes::removeNode.  "
+		"Element index %d has no entry for node index %d", elementIndex, nodeIndex);
+}
+
 DsLabelIndex FE_mesh::ElementShapeFaces::getElementFace(DsLabelIndex elementIndex, int faceNumber)
 {
 	// could remove following test if good arguments guaranteed
@@ -1238,7 +1386,7 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	lastMergedElementTemplate(0),
 	parentMesh(0),
 	faceMesh(0),
-	changeLog(0),
+	changeLog(nullptr),
 	element_type_node_sequence_list(0),
 	definingFaces(false),
 	activeElementIterators(0),
@@ -1247,17 +1395,16 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	this->createChangeLog();
 	std::string name(this->getName());
 	this->labels.setName(name + ".elements");
-	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
-		this->fieldDerivatives[i] = new FieldDerivativeMesh(this, /*order*/(i + 1), (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
+	for (int i = 0; i < MAXIMUM_MESH_DERIVATIVE_ORDER; ++i)
+		this->fieldDerivatives[i] = FieldDerivative::createMeshDerivative(this, (i > 0) ? this->fieldDerivatives[i - 1] : nullptr);
 }
 
 FE_mesh::~FE_mesh()
 {
-	for (int i = 0; i < MAXIMUM_FIELD_DERIVATIVE_ORDER; ++i)
+	for (int i = 0; i < MAXIMUM_MESH_DERIVATIVE_ORDER; ++i)
 	{
-		this->fieldDerivatives[i]->clearMesh();
-		FieldDerivative *tmp = this->fieldDerivatives[i];
-		FieldDerivative::deaccess(tmp);
+		this->fieldDerivatives[i]->clearOwnerPrivate();
+		FieldDerivative::deaccess(this->fieldDerivatives[i]);
 	}
 	// safely detach from parent/face meshes
 	if (this->parentMesh)
@@ -1280,6 +1427,16 @@ FE_mesh::~FE_mesh()
 	}
 
 	this->clear();
+
+	if (this->embeddedNodeFields.size() > 0)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::~FE_mesh.  Unexpected embedded node fields remaining");
+		for (std::list<FE_mesh_embedded_node_field *>::iterator iter = this->embeddedNodeFields.begin();
+			iter != this->embeddedNodeFields.end(); ++iter)
+		{
+			delete *iter;
+		}
+	}
 
 	// destroy shared element mapping data
 	for (int i = 0; i < this->elementFieldTemplateDataCount; ++i)
@@ -1465,6 +1622,35 @@ void FE_mesh::removeMeshFieldTemplate(FE_mesh_field_template *meshFieldTemplate)
 	display_message(ERROR_MESSAGE, "FE_mesh::removeFieldTemplate.  Field template not found");
 }
 
+FE_mesh_embedded_node_field *FE_mesh::addEmbeddedNodeField(FE_field *field, FE_nodeset *nodeset)
+{
+	if ((field) && (field->get_FE_region() == this->fe_region) &&
+		(nodeset) && (nodeset->get_FE_region() == this->fe_region))
+	{
+		FE_mesh_embedded_node_field *embeddedNodeField = new FE_mesh_embedded_node_field(field, nodeset);
+		this->embeddedNodeFields.push_back(embeddedNodeField);
+		return embeddedNodeField;
+	}
+	display_message(ERROR_MESSAGE, "FE_mesh::addEmbeddedNodeField.  Invalid arguments");
+	return nullptr;
+}
+
+void FE_mesh::removeEmbeddedNodeField(FE_mesh_embedded_node_field*& embeddedNodeField)
+{
+	std::list<FE_mesh_embedded_node_field *>::iterator iter = std::find(this->embeddedNodeFields.begin(), this->embeddedNodeFields.end(), embeddedNodeField);
+	if (iter != this->embeddedNodeFields.end())
+	{
+		this->embeddedNodeFields.erase(iter);
+		delete embeddedNodeField;
+		embeddedNodeField = nullptr;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::addEmbeddedNodeField.  Embedded node field not found");
+	}
+}
+
+
 /** @return  True if fields defined identically for the two elements
   * @param elementIndex1, elementIndex2  Element indexes to compare. Not checked, must be valid. */
 bool FE_mesh::equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const
@@ -1586,6 +1772,13 @@ void FE_mesh::clear()
 					delete[] *parentsArrayAddress;
 			}
 		}
+		// clear embedding of nodes in this mesh
+		for (int i = 0; i < 2; ++i)
+		{
+			// this is not very efficient
+			FE_nodeset_clear_embedded_locations(this->fe_region->nodesets[i],
+				this->fe_region->fe_field_list, /*hostMesh*/this);
+		}
 		cmzn_element *element;
 		for (DsLabelIndex index = 0; index < indexLimit; ++index)
 		{
@@ -1619,9 +1812,10 @@ void FE_mesh::clear()
 	this->labels.clear();
 }
 
-/** Private: assumes current change log pointer is null or invalid */
+/** Private: can be used to clear cached changes */
 void FE_mesh::createChangeLog()
 {
+	cmzn::Deaccess(this->changeLog);
 	this->changeLog = DsLabelsChangeLog::create(&this->labels);
 	if (!this->changeLog)
 		display_message(ERROR_MESSAGE, "FE_mesh::createChangeLog.  Failed to create change log");
@@ -1631,7 +1825,7 @@ DsLabelsChangeLog *FE_mesh::extractChangeLog()
 {
 	// take access count of changelog when extracting
 	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = 0;
+	this->changeLog = nullptr;
 	this->lastMergedElementTemplate = 0; // ensures field notifications are recorded if template is merged again
 	this->createChangeLog();
 	return returnChangeLog;
@@ -1668,7 +1862,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex elementIndex, 
 		if (1 == this->elementShapeFacesCount)
 		{
 			// must now store per-element shape
-			if (!this->elementShapeMap.setValues(0, this->labels.getIndexSize() - 1, 0))
+			if (!this->elementShapeMap.setValues(0, this->labels.getIndexSize(), 0))
 			{
 				display_message(ERROR_MESSAGE, "FE_mesh::setElementShape  Failed to make per-element shape map");
 				return 0;
@@ -2763,19 +2957,43 @@ int FE_mesh::define_faces()
 	return return_code;
 }
 
+namespace {
+
 struct FE_mesh_and_element_index
 {
 	FE_mesh *mesh;
 	const DsLabelIndex elementIndex;
 };
 
-int FE_field_clear_element_varying_data(struct FE_field *field, void *mesh_and_element_index_void)
+int FE_field_clear_element_varying_data(FE_field *field, void *mesh_and_element_index_void)
 {
 	auto args = static_cast<FE_mesh_and_element_index*>(mesh_and_element_index_void);
-	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(args->mesh);
+	FE_mesh *mesh = args->mesh;
+	const DsLabelIndex elementIndex = args->elementIndex;
+	FE_mesh_field_data *meshFieldData = field->getMeshFieldData(mesh);
 	if (meshFieldData)
-		meshFieldData->clearElementData(args->elementIndex);
+		meshFieldData->clearElementData(elementIndex);
+	if ((field->getValueType() == ELEMENT_XI_VALUE) && (field->getElementXiHostMesh() == args->mesh))
+	{
+		// clear embedding of nodes & data points in this element
+		for (int i = 0; i < 2; ++i)
+		{
+			FE_nodeset *nodeset = mesh->get_FE_region()->nodesets[i];
+			FE_mesh_embedded_node_field *embeddedNodeField = field->getEmbeddedNodeField(nodeset);
+			if (embeddedNodeField)
+			{
+				DsLabelIndex nodeIndex;
+				while ((nodeIndex = embeddedNodeField->getLastNodeIndex(elementIndex)) >= 0)
+				{
+					// this removes the node index from the embeddedNodeField, so loop should end
+					set_FE_nodal_element_xi_value(nodeset->getNode(nodeIndex), field, /*component*/0, /*element*/nullptr, /*xi*/nullptr);
+				}
+			}
+		}
+	}
 	return 1;
+}
+
 }
 
 /**
@@ -2793,10 +3011,6 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
 	cmzn_element *element = this->fe_elements.getValue(elementIndex);
 	if (element)
 	{
-		element->invalidate();
-		this->fe_elements.setValue(elementIndex, 0);
-		cmzn_element::deaccess(element);
-		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
 		// clear data for this element stored with field, e.g. per-element DOFs
 		FE_mesh_and_element_index mesh_and_element_index = { this, elementIndex };
 		FE_region_for_each_FE_field(this->fe_region, FE_field_clear_element_varying_data, &mesh_and_element_index);
@@ -2807,6 +3021,10 @@ int FE_mesh::removeElementPrivate(DsLabelIndex elementIndex)
 			FE_mesh_field_template *mft = *mftIter;
 			mft->setElementfieldtemplateIndex(elementIndex, FE_mesh_field_template::ELEMENT_FIELD_TEMPLATE_DATA_INDEX_INVALID);
 		}
+		element->invalidate();
+		this->fe_elements.setValue(elementIndex, 0);
+		cmzn_element::deaccess(element);
+		this->changeLog->setIndexChange(elementIndex, DS_LABEL_CHANGE_TYPE_REMOVE);
 		if (this->parentMesh)
 			this->clearElementParents(elementIndex);
 		if (this->faceMesh)
@@ -2896,6 +3114,19 @@ int FE_mesh::destroyElementsInGroup(DsLabelsGroup& labelsGroup)
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	FE_region_end_change(this->fe_region);
 	return (return_code);
+}
+
+FieldDerivative *FE_mesh::getHigherFieldDerivative(const FieldDerivative& fieldDerivative)
+{
+	if ((fieldDerivative.getMesh()) && (fieldDerivative.getMesh() != this))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh::getHigherFieldDerivative.  Cannot create derivative w.r.t. multiple meshes");
+		return nullptr;
+	}
+	if (fieldDerivative.getFieldparameters())
+		return fieldDerivative.getFieldparameters()->getFieldDerivativeMixed(this,
+			fieldDerivative.getMeshOrder() + 1, fieldDerivative.getParameterOrder());
+	return this->getFieldDerivative(fieldDerivative.getMeshOrder() + 1);
 }
 
 DsLabelIndex FE_mesh::createScaleFactorIndex()

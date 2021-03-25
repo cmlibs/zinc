@@ -87,8 +87,6 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	EXPECT_TRUE(scaledLengthField.isValid());
 	EXPECT_EQ(Element::QUADRATURE_RULE_GAUSSIAN, scaledLengthField.getElementQuadratureRule());
 
-	// Note: working around bug where cache is not invalidated after setting order
-
 	const double expectedVolume = 3.0 + 1.0/6.0;
 	const double sqrt_2 = sqrt(2.0);
 	const double expectedSurfaceArea = 11.5 + sqrt_2*(2.0 + 0.5*sqrt(0.5 + 1.0));
@@ -104,13 +102,14 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	double length = 0, scaledLength = 0;
 	const double tolerance = 1.0E-12;
 
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
 	int numbersOfPoints[3];
 	for (numbersOfPoints[0] = 1; numbersOfPoints[0] <= 4; ++numbersOfPoints[0])
 		for (numbersOfPoints[1] = 1; numbersOfPoints[1] <= 4; ++numbersOfPoints[1])
 			for (numbersOfPoints[2] = 1; numbersOfPoints[2] <= 4; ++numbersOfPoints[2])
 			{
-				Fieldcache cache = zinc.fm.createFieldcache();
-				EXPECT_TRUE(cache.isValid());
 				EXPECT_EQ(OK, volumeField.setNumbersOfPoints(3, numbersOfPoints));
 				EXPECT_EQ(OK, surfaceAreaField.setNumbersOfPoints(3, numbersOfPoints));
 				EXPECT_EQ(OK, lengthField.setNumbersOfPoints(3, numbersOfPoints));
@@ -133,6 +132,23 @@ TEST(ZincFieldMeshIntegral, quadrature)
 				EXPECT_NEAR(expectedScaledLength, scaledLength, tolerance);
 			}
 
+	// test per-element evaluation to get element volumes
+	EXPECT_EQ(6, mesh3d.getSize());
+	const double expectedElementVolumes[6] = { 0.5, 0.5, 0.5, 0.5, 1.0, 1.0/6.0 };
+	double elementVolume;
+	for (int numberOfPoints = 1; numberOfPoints <= 4; ++numberOfPoints)
+	{
+		EXPECT_EQ(OK, volumeField.setNumbersOfPoints(1, &numberOfPoints));
+		for (int i = 0; i < 6; ++i)
+		{
+			Element element = mesh3d.findElementByIdentifier(i + 1);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(OK, cache.setElement(element));
+			EXPECT_EQ(OK, volumeField.evaluateReal(cache, 1, &elementVolume));
+			EXPECT_NEAR(expectedElementVolumes[i], elementVolume, tolerance);
+		}
+	}
+
 	// test midpoint quadrature
 
 	EXPECT_EQ(OK, volumeField.setElementQuadratureRule(Element::QUADRATURE_RULE_MIDPOINT));
@@ -149,12 +165,13 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	EXPECT_EQ(OK, scaledLengthField.setElementQuadratureRule(Element::QUADRATURE_RULE_MIDPOINT));
 	EXPECT_EQ(Element::QUADRATURE_RULE_MIDPOINT, scaledLengthField.getElementQuadratureRule());
 
+	// must clear cache location otherwise evaluating at the last element
+	cache.clearLocation();
+
 	for (numbersOfPoints[0] = 1; numbersOfPoints[0] <= 2; ++numbersOfPoints[0])
 		for (numbersOfPoints[1] = 3; numbersOfPoints[1] <= 4; ++numbersOfPoints[1])
 			for (numbersOfPoints[2] = 5; numbersOfPoints[2] <= 6; ++numbersOfPoints[2])
 			{
-				Fieldcache cache = zinc.fm.createFieldcache();
-				EXPECT_TRUE(cache.isValid());
 				EXPECT_EQ(OK, volumeField.setNumbersOfPoints(3, numbersOfPoints));
 				EXPECT_EQ(OK, surfaceAreaField.setNumbersOfPoints(3, numbersOfPoints));
 				EXPECT_EQ(OK, lengthField.setNumbersOfPoints(3, numbersOfPoints));
@@ -230,9 +247,6 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	double nonLinearScaledSurfaceArea = 0;
 	for (int nPoints = 1; nPoints <= 4; ++nPoints)
 	{
-		Fieldcache cache = zinc.fm.createFieldcache();
-		EXPECT_TRUE(cache.isValid());
-
 		EXPECT_EQ(OK, nonLinearScaledVolumeField.setNumbersOfPoints(1, &nPoints));
 		EXPECT_EQ(OK, nonLinearScaledSurfaceAreaField.setNumbersOfPoints(1, &nPoints));
 		EXPECT_EQ(OK, nonLinearScaledVolumeField2.setNumbersOfPoints(1, &nPoints));

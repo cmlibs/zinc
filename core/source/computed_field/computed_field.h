@@ -4,8 +4,8 @@ FILE : computed_field.h
 LAST MODIFIED : 18 April 2005
 
 DESCRIPTION :
-A Computed_field is an abstraction of an FE_field. For each FE_field there is
-a wrapper Computed_field automatically generated that can be called on to
+A cmzn_field is an abstraction of an FE_field. For each FE_field there is
+a wrapper cmzn_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
 evaluation caches, for example. Their main benefit is in
@@ -48,14 +48,13 @@ if a value is already known.
 struct cmzn_region;
 
 /*
-The cmzn_field which is Public is currently the same object as the
-cmgui internal Computed_field.  The Public interface is contained in
+The Public interface to cmzn_field is contained in
 zinc/field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 functions are given their public names.
 */
 
-/* Convert to use external field object name */
+/* Convert legacy object type name to use external field object type name */
 #define Computed_field cmzn_field
 
 enum cmzn_field_type
@@ -146,29 +145,22 @@ Global types
 ------------
 */
 
-struct Computed_field;
-/*******************************************************************************
-LAST MODIFIED : 24 December 1998
+DECLARE_LIST_TYPES(cmzn_field);
 
-DESCRIPTION :
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Computed_field);
-
-DECLARE_MANAGER_TYPES(Computed_field);
+DECLARE_MANAGER_TYPES(cmzn_field);
 
 
 struct List_Computed_field_commands_data
 {
 	const char *command_prefix;
 	int listed_fields;
-	struct LIST(Computed_field) *computed_field_list;
-	struct MANAGER(Computed_field) *computed_field_manager;
+	struct LIST(cmzn_field) *computed_field_list;
+	struct MANAGER(cmzn_field) *computed_field_manager;
 }; /* struct List_Computed_field_commands_data */
 
 struct Computed_field_conditional_data
 {
-	struct Computed_field *conditional_field;
+	struct cmzn_field *conditional_field;
 	FE_value time;
 }; /* struct Computed_field_conditional_data */
 
@@ -182,11 +174,11 @@ struct cmzn_fieldmodule;
 Global functions
 ----------------
 */
-PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_field);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_field);
 
-PROTOTYPE_LIST_FUNCTIONS(Computed_field);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_field);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_field,name,const char *);
 
 /**
  * Get non-allocated field name. Internal use only, for error messages etc.
@@ -218,9 +210,9 @@ int cmzn_field_set_name_unique_concatentate(cmzn_field_id field,
 cmzn_field_id cmzn_fielditerator_next_non_access(
 	cmzn_fielditerator_id iterator);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
-PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Computed_field,name,const char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(cmzn_field,name,const char *);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_field);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_field,name,const char *);
 
 /***************************************************************************//**
  * Returns true if <field> can be calculated in <element>. If the field depends
@@ -229,7 +221,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Computed_field,name,const 
  * For new code, prefer managing your own field cache and directly using
  * cmzn_field_id_defined_at_location.
  */
-int Computed_field_is_defined_in_element(struct Computed_field *field,
+int Computed_field_is_defined_in_element(struct cmzn_field *field,
 	struct FE_element *element);
 
 /***************************************************************************//**
@@ -240,7 +232,7 @@ int Computed_field_is_defined_in_element(struct Computed_field *field,
  * cmzn_field_id_defined_at_location.
  */
 int Computed_field_is_defined_in_element_conditional(
-	struct Computed_field *field,void *element_void);
+	struct cmzn_field *field,void *element_void);
 
 /***************************************************************************//**
  * Returns true if <field> can be calculated in <node>. If the field depends
@@ -249,7 +241,7 @@ int Computed_field_is_defined_in_element_conditional(
  * For new code, prefer managing your own field cache and directly using
  * cmzn_field_id_defined_at_location.
  */
-int Computed_field_is_defined_at_node(struct Computed_field *field,
+int Computed_field_is_defined_at_node(struct cmzn_field *field,
 	struct FE_node *node);
 
 /***************************************************************************//**
@@ -259,18 +251,18 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
  * For new code, prefer managing your own field cache and directly using
  * cmzn_field_id_defined_at_location.
  */
-int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
+int Computed_field_is_defined_at_node_conditional(struct cmzn_field *field,
 	void *node_void);
 
 /***************************************************************************//**
  * List conditional function returning true if field value type is
  * CMZN_FIELD_VALUE_TYPE_STRING.
  */
-int Computed_field_has_string_value_type(struct Computed_field *field,
+int Computed_field_has_string_value_type(struct cmzn_field *field,
 	void *dummy_void);
 
-int Computed_field_for_each_ancestor(struct Computed_field *field,
-	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data);
+int Computed_field_for_each_ancestor(struct cmzn_field *field,
+	LIST_ITERATOR_FUNCTION(cmzn_field) *iterator_function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
 
@@ -339,7 +331,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	int number_of_derivatives, double *derivatives);
 
 int Computed_field_get_native_discretization_in_element(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
+	struct cmzn_field *field,struct FE_element *element,int *number_in_xi);
 /*******************************************************************************
 LAST MODIFIED : 28 October 1999
 
@@ -354,9 +346,9 @@ int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
 Returns 0 with no errors if the field is not grid-based.
 ==============================================================================*/
 
-int Computed_field_get_native_resolution(struct Computed_field *field,
+int Computed_field_get_native_resolution(struct cmzn_field *field,
 		int *dimension, int **sizes,
-	struct Computed_field **texture_coordinate_field);
+	struct cmzn_field **texture_coordinate_field);
 /*******************************************************************************
 LAST MODIFIED : 03 February 2005
 
@@ -367,7 +359,7 @@ the <field>. These parameters will be used in image processing.
 ==============================================================================*/
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
-	struct Computed_field *field);
+	struct cmzn_field *field);
 /*******************************************************************************
 LAST MODIFIED : 19 January 1999
 
@@ -376,7 +368,7 @@ Returns the coordinate system <field> is to be interpreted under. See function
 Computed_field_set_coordinate_system for further details.
 ==============================================================================*/
 
-int Computed_field_set_coordinate_system(struct Computed_field *field,
+int Computed_field_set_coordinate_system(struct cmzn_field *field,
 	const Coordinate_system *coordinate_system);
 /*******************************************************************************
 LAST MODIFIED : 19 January 1999
@@ -390,7 +382,7 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 <focus> must be given with prolate and oblate spheroidal coordinate systems.
 ==============================================================================*/
 
-const char *Computed_field_get_type_string(struct Computed_field *field);
+const char *Computed_field_get_type_string(struct cmzn_field *field);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2002
 
@@ -399,7 +391,7 @@ Returns the string which identifies the type.
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 
-int Computed_field_has_3_components(struct Computed_field *field,
+int Computed_field_has_3_components(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
@@ -408,7 +400,7 @@ DESCRIPTION :
 Conditional function returning true if <field> has exactly three components.
 ==============================================================================*/
 
-int Computed_field_has_4_components(struct Computed_field *field,
+int Computed_field_has_4_components(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999
@@ -417,7 +409,7 @@ DESCRIPTION :
 Conditional function returning true if <field> has exactly four components.
 ==============================================================================*/
 
-int Computed_field_has_16_components(struct Computed_field *field,
+int Computed_field_has_16_components(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 21 February 2008
@@ -428,7 +420,7 @@ components - useful for selecting transformation matrix.
 ==============================================================================*/
 
 int Computed_field_has_up_to_4_numerical_components(
-	struct Computed_field *field,void *dummy_void);
+	struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
 
@@ -437,7 +429,7 @@ Conditional function returning true if <field> has up to 4 components and they
 are numerical - useful for selecting vector/coordinate fields.
 ==============================================================================*/
 
-int Computed_field_has_n_components(struct Computed_field *field,
+int Computed_field_has_n_components(struct cmzn_field *field,
 	void *components_ptr_void);
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
@@ -447,7 +439,7 @@ Iterator/conditional function returning true if <field> has the same number of
 components as that specified by <components_ptr_void>.
 ==============================================================================*/
 
-int Computed_field_has_at_least_2_components(struct Computed_field *field,
+int Computed_field_has_at_least_2_components(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 16 March 1999
@@ -459,10 +451,10 @@ Iterator/conditional function returning true if <field> has at least 2 component
 /*******************************************************************************
  * @return  1 if field returns mesh_location value type.
  */
-int Computed_field_has_value_type_mesh_location(struct Computed_field *field,
+int Computed_field_has_value_type_mesh_location(struct cmzn_field *field,
 	void *dummy_void);
 
-int Computed_field_has_numerical_components(struct Computed_field *field,
+int Computed_field_has_numerical_components(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
@@ -473,7 +465,7 @@ Note that whether the numbers were integer, FE_value or double, they may be
 returned as FE_value when evaluated.
 ==============================================================================*/
 
-int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void);
+int Computed_field_is_scalar(struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
 
@@ -483,7 +475,7 @@ numerical.
 ==============================================================================*/
 
 int Computed_field_has_up_to_3_numerical_components(
-	struct Computed_field *field,void *dummy_void);
+	struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
 
@@ -493,7 +485,7 @@ are numerical - useful for selecting vector/coordinate fields.
 ==============================================================================*/
 
 int Computed_field_has_up_to_4_numerical_components(
-	struct Computed_field *field,void *dummy_void);
+	struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 23 May 2000
 
@@ -502,7 +494,7 @@ Conditional function returning true if <field> has up to 4 components and they
 are numerical - useful for selecting vector/coordinate fields.
 ==============================================================================*/
 
-int Computed_field_has_multiple_times(struct Computed_field *field);
+int Computed_field_has_multiple_times(struct cmzn_field *field);
 /*******************************************************************************
 LAST MODIFIED : 22 November 2001
 
@@ -510,7 +502,7 @@ DESCRIPTION :
 Conditional function returning true if <field> depends on time.
 ==============================================================================*/
 
-int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
+int Computed_field_is_orientation_scale_capable(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 12 February 1999
@@ -527,7 +519,7 @@ glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
 ???RC.  Include coordinate system in test?
 ==============================================================================*/
 
-int Computed_field_is_stream_vector_capable(struct Computed_field *field,
+int Computed_field_is_stream_vector_capable(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 15 March 1999
@@ -573,12 +565,12 @@ The number of components controls how the field is interpreted:
  * @return  1 if search carried out without error including when no element is
  * found, or 0 if failed.
  */
-int Computed_field_find_element_xi(struct Computed_field *field,
+int Computed_field_find_element_xi(struct cmzn_field *field,
 	cmzn_fieldcache_id field_cache, const FE_value *values,
 	int number_of_values, struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest);
 
-int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
+int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
 	void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 16 June 2000
@@ -601,7 +593,7 @@ DESCRIPTION :
 Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
-int list_Computed_field(struct Computed_field *field,void *dummy_void);
+int list_Computed_field(struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 25 January 1999
 
@@ -609,7 +601,7 @@ DESCRIPTION :
 Writes the properties of the <field> to the command window.
 ==============================================================================*/
 
-int write_Computed_field_commands_to_comfile(struct Computed_field *field,
+int write_Computed_field_commands_to_comfile(struct cmzn_field *field,
 	 void *command_prefix_void);
 /*******************************************************************************
 LAST MODIFIED : 10 August 2007
@@ -619,7 +611,7 @@ Writes the commands needed to reproduce <field> to the com file.
 ==============================================================================*/
 
 int write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile(
-	 struct Computed_field *field, void *list_commands_data_void);
+	 struct cmzn_field *field, void *list_commands_data_void);
 /*******************************************************************************
 LAST MODIFIED : 10 August 2007
 
@@ -632,7 +624,7 @@ Note, must be cycled through as many times as it takes till listed_fields -> 0.
 Second argument is a struct List_Computed_field_commands_data.
 ==============================================================================*/
 
-int list_Computed_field_name(struct Computed_field *field,void *dummy_void);
+int list_Computed_field_name(struct cmzn_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 4 February 1999
 
@@ -641,7 +633,7 @@ Lists a single line about a computed field including just name, number of
 components, coordinate system and type.
 ==============================================================================*/
 
-int Computed_field_can_be_destroyed(struct Computed_field *field);
+int Computed_field_can_be_destroyed(struct cmzn_field *field);
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
 
@@ -657,7 +649,7 @@ be destroyed, assuming it is only accessed by this field and its manager.
  * @param field  The field.
  * @return  A handle to the owning region if in one, or NULL if none.
  */
-struct cmzn_region *Computed_field_get_region(struct Computed_field *field);
+struct cmzn_region *Computed_field_get_region(struct cmzn_field *field);
 
 /**
  * Returns true if the field is a finite element coordinate type field and
@@ -666,7 +658,7 @@ struct cmzn_region *Computed_field_get_region(struct Computed_field *field);
  * @param field the field to determine whether or not it is a coordinate field
  * @return 1 if the field is a coordinate field, 0 otherwise
  */
-int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use);
+int Computed_field_is_coordinate_field(struct cmzn_field *field, void *not_in_use);
 
 /*******************************************************************************
  * Returns the domains of the given field by recursively searching through the
@@ -676,8 +668,8 @@ int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_i
  * @param domain_field_list  A handle to the list of domains for the field
  * @return  1 on success, 0 otherwise
  */
-int Computed_field_get_domain( struct Computed_field *field,
-	struct LIST(Computed_field) *domain_field_list );
+int Computed_field_get_domain( struct cmzn_field *field,
+	struct LIST(cmzn_field) *domain_field_list );
 
 /*******************************************************************************
  * Returns true if the field value varies non-linearly over its domain.
@@ -690,7 +682,7 @@ int Computed_field_get_domain( struct Computed_field *field,
  * @param field  The field to query.
  * @return  1 if non-linear, 0 if linear.
  */
-int Computed_field_is_non_linear(struct Computed_field *field);
+int Computed_field_is_non_linear(struct cmzn_field *field);
 
 /**
  * @return  Allocated field name unused by any other field in field module.
@@ -704,7 +696,7 @@ char *cmzn_fieldmodule_get_unique_field_name(
  * @param field  The field.
  * @return  1 if field is not a source field of others otherwise 0.
  */
-int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
+int Computed_field_is_not_source_field_of_others(struct cmzn_field *field);
 
 #if defined (DEBUG_CODE)
 /**

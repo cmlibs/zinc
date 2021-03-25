@@ -64,6 +64,12 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_or::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -195,6 +201,12 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_and::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -325,6 +337,13 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_xor::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -462,6 +481,12 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
 };
 
 int Computed_field_equal_to::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -617,6 +642,13 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_less_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -745,6 +777,13 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_greater_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -874,10 +913,17 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 	virtual bool is_defined_at_location(cmzn_fieldcache&)
 	{
-		return true;
+		return true;  // field can be evaluated everywhere to true or false
 	}
+
 };
 
 int Computed_field_is_defined::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -962,6 +1008,13 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
 };
 
 int Computed_field_not::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)

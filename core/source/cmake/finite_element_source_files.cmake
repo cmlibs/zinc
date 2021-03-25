@@ -17,6 +17,7 @@ SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/finite_element_discretization.cpp
 	source/finite_element/finite_element_field.cpp
 	source/finite_element/finite_element_field_evaluation.cpp
+	source/finite_element/finite_element_field_parameters.cpp
 	source/finite_element/finite_element_mesh.cpp
 	source/finite_element/finite_element_nodeset.cpp
 	source/finite_element/finite_element_region.cpp
@@ -30,9 +31,11 @@ SET( FINITE_ELEMENT_CORE_HDRS
 	source/finite_element/export_finite_element.h
 	source/finite_element/finite_element.h
 	source/finite_element/finite_element_basis.hpp
+	source/finite_element/finite_element_constants.hpp
 	source/finite_element/finite_element_discretization.h
 	source/finite_element/finite_element_field.hpp
 	source/finite_element/finite_element_field_evaluation.hpp
+	source/finite_element/finite_element_field_parameters.hpp
 	source/finite_element/finite_element_field_private.hpp
 	source/finite_element/finite_element_mesh.hpp
 	source/finite_element/finite_element_nodeset.hpp

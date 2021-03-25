@@ -1428,8 +1428,14 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	FieldFindMeshLocation find_heart = zinc.fm.createFieldFindMeshLocation(plate_coordinates, coordinates, heart_mesh);
 	EXPECT_TRUE(find_heart.isValid());
 	// test cast function and type-specific APIs
-	ASSERT_EQ(find_heart, find_heart.castFindMeshLocation());
-	ASSERT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(find_heart, find_heart.castFindMeshLocation());
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(heart_mesh, find_heart.getSearchMesh());
+	EXPECT_EQ(RESULT_OK, find_heart.setSearchMesh(mesh2d));
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
+	EXPECT_EQ(mesh2d, find_heart.getSearchMesh());
+	EXPECT_EQ(RESULT_OK, find_heart.setSearchMesh(heart_mesh));
+	EXPECT_EQ(heart_mesh, find_heart.getMesh());
 	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_EXACT, find_heart.getSearchMode());
 	EXPECT_EQ(RESULT_OK, find_heart.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
 	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_NEAREST, find_heart.getSearchMode());
@@ -1530,6 +1536,60 @@ TEST(ZincFieldFindMeshLocation, issue_50_find_xi_cache_and_convergence)
 	}
 
 	zinc.fm.endChange();
+}
+
+// test findMeshLocation with searchMesh of different dimension
+TEST(ZincFieldFindMeshLocation, searchMesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(12, mesh1d.getSize());
+	EXPECT_EQ(6, mesh2d.getSize());
+	EXPECT_EQ(1, mesh3d.getSize());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	const double xValues[3] = { 0.3, 0.8, 0.1 };
+	FieldConstant constCoordinates = zinc.fm.createFieldConstant(3, xValues);
+	EXPECT_TRUE(constCoordinates.isValid());
+	FieldFindMeshLocation findMeshLocation = zinc.fm.createFieldFindMeshLocation(constCoordinates, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocation.isValid());
+	EXPECT_EQ(mesh3d, findMeshLocation.getMesh());
+	EXPECT_EQ(mesh3d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_EXACT, findMeshLocation.getSearchMode());
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	EXPECT_EQ(FieldFindMeshLocation::SEARCH_MODE_NEAREST, findMeshLocation.getSearchMode());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	Element element;
+	double xi[3];
+	const double TOL = 1.0E-12;
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(xValues[1], xi[1], TOL);
+	EXPECT_NEAR(xValues[2], xi[2], TOL);
+
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMesh(mesh2d));
+	EXPECT_EQ(mesh2d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(xValues[1], xi[1], TOL);
+	EXPECT_NEAR(0.0, xi[2], TOL);
+
+	EXPECT_EQ(RESULT_OK, findMeshLocation.setSearchMesh(mesh1d));
+	EXPECT_EQ(mesh1d, findMeshLocation.getSearchMesh());
+	EXPECT_EQ(element1, findMeshLocation.evaluateMeshLocation(fieldcache, 3, xi));
+	EXPECT_NEAR(xValues[0], xi[0], TOL);
+	EXPECT_NEAR(1.0, xi[1], TOL);
+	EXPECT_NEAR(0.0, xi[2], TOL);
 }
 
 TEST(ZincFieldStoredMeshLocation, valid_arguments)
@@ -1909,6 +1969,7 @@ TEST(ZincElementfieldtemplate, node_based_tricubic_Hermite)
 	}
 }
 
+// Test EFT validate fails if scale factors are defined but not used
 // Test EFT validate fails for non-zero identifier for element-based scale factor
 // Test EFT validate fails for zero identifier for non-element-based scale factor
 TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
@@ -1927,7 +1988,11 @@ TEST(ZincElementfieldtemplate, validate_scale_factor_identifier)
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(1));
 	EXPECT_EQ(Elementfieldtemplate::SCALE_FACTOR_TYPE_ELEMENT_GENERAL, eft.getScaleFactorType(1));
 	EXPECT_EQ(0, eft.getScaleFactorIdentifier(1));
-	EXPECT_TRUE(eft.validate());
+	EXPECT_FALSE(eft.validate());  // scale factor is unused
+	// need to use the scale factor to be valid
+	const int scaleFactorIndex = 1;
+	EXPECT_EQ(RESULT_OK, eft.setTermScaling(1, 1, 1, &scaleFactorIndex));
+	EXPECT_TRUE(eft.validate());  // scale factor is unused
 	EXPECT_EQ(RESULT_OK, eft.setScaleFactorIdentifier(1, 1));
 	EXPECT_EQ(1, eft.getScaleFactorIdentifier(1));
 	EXPECT_FALSE(eft.validate());
@@ -2205,8 +2270,8 @@ TEST(ZincElementfieldtemplate, mergeExternalElementfieldtemplate)
 	}
 }
 
-// Test identical trilinear interpolation with 3 different mappings: node, element and legacy grid
-TEST(ZincFieldFiniteElement, linear_node_element_grid)
+// Test identical trilinear interpolation with 4 different mappings: node, element, legacy grid and mixed
+TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -2219,6 +2284,8 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid)
 	EXPECT_TRUE(coordinates_element.isValid());
 	FieldFiniteElement coordinates_grid = zinc.fm.findFieldByName("coordinates_grid").castFiniteElement();
 	EXPECT_TRUE(coordinates_grid.isValid());
+	FieldFiniteElement coordinates_mixed = zinc.fm.findFieldByName("coordinates_mixed").castFiniteElement();
+	EXPECT_TRUE(coordinates_mixed.isValid());
 
 	// test against trilinear interpolation of these node coordinates
 	const double node_coordinates[8][3] =
@@ -2330,12 +2397,13 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid)
 						d3[c] += basis_values[n]*node_coordinates[n][c];
 				}
 				EXPECT_EQ(CMZN_RESULT_OK, result = cache.setMeshLocation(element1, 3, xi));
-				for (int f = 0; f < 3; ++f)
+				for (int f = 0; f < 4; ++f)
 				{
 					Field test_field =
 						(f == 0) ? coordinates_node :
 						(f == 1) ? coordinates_element :
-						coordinates_grid;
+						(f == 2) ? coordinates_grid :
+						coordinates_mixed;
 					EXPECT_EQ(CMZN_RESULT_OK, result = test_field.evaluateReal(cache, 3, xout));
 					for (int c = 0; c < 3; ++c)
 						EXPECT_NEAR(x[c], xout[c], tol);

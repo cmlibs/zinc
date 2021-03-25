@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_NODESET_HPP)
 #define FINITE_ELEMENT_NODESET_HPP
 
+#include "opencmiss/zinc/types/fieldid.h"  // for cmzn_field_domain_type
 #include "opencmiss/zinc/types/nodeid.h"
 #include "opencmiss/zinc/status.h"
 #include "datastore/labels.hpp"
@@ -84,7 +85,7 @@ public:
 		{
 			if (--(info->access_count) == 0)
 				delete info;
-			info = 0;
+			info = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -244,7 +245,7 @@ public:
 		{
 			if (--(node->access_count) == 0)
 				delete node;
-			node = 0;
+			node = nullptr;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -409,8 +410,13 @@ public:
 			--(nodeset->access_count);
 			if (nodeset->access_count <= 0)
 				delete nodeset;
-			nodeset = 0;
+			nodeset = nullptr;
 		}
+	}
+
+	void clearChangeLog()
+	{
+		this->createChangeLog();
 	}
 
 	// in following change is a logical OR of values from enum DsLabelChangeType

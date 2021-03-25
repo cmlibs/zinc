@@ -23,11 +23,13 @@
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmatrixoperators.hpp>
 #include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldnodesetoperators.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include <opencmiss/zinc/optimisation.hpp>
 
 #include "test_resources.h"
@@ -43,6 +45,8 @@ TEST(cmzn_optimisation, arguments)
 	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_QUASI_NEWTON, cmzn_optimisation_get_method(optimisation));
 	EXPECT_EQ(OK, result = cmzn_optimisation_set_method(optimisation, CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON, cmzn_optimisation_get_method(optimisation));
+	EXPECT_EQ(OK, result = cmzn_optimisation_set_method(optimisation, CMZN_OPTIMISATION_METHOD_NEWTON));
+	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_NEWTON, cmzn_optimisation_get_method(optimisation));
 
 	cmzn_optimisation_destroy(&optimisation);
 }
@@ -58,8 +62,10 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_EQ(Optimisation::METHOD_QUASI_NEWTON, optimisation.getMethod());
 	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON, optimisation.getMethod());
+	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(Optimisation::METHOD_NEWTON, optimisation.getMethod());
 
-	// made-up fields to test objective/independent field APIs
+	// made-up fields to test objective/dependent field APIs
 	FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
 	EXPECT_TRUE(f1.isValid());
 	FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
@@ -75,17 +81,17 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_TRUE(fcond.isValid());
 
 	Field temp;
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f1));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f2));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(f3));
-	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.addIndependentField(f1));
-	temp = optimisation.getFirstIndependentField();
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f1));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f2));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(f3));
+	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.addDependentField(f1));
+	temp = optimisation.getFirstDependentField();
 	EXPECT_EQ(f1, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f2, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f3, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_FALSE(temp.isValid());
 	temp = optimisation.getConditionalField(f1);
 	EXPECT_FALSE(temp.isValid());
@@ -98,13 +104,13 @@ TEST(ZincOptimisation, arguments)
 	temp = optimisation.getConditionalField(f2);
 	EXPECT_EQ(fcond, temp);
 
-	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.removeIndependentField(f4)); // not in use
-	EXPECT_EQ(OK, result = optimisation.removeIndependentField(f1));
-	temp = optimisation.getFirstIndependentField();
+	EXPECT_EQ(ERROR_ARGUMENT, result = optimisation.removeDependentField(f4)); // not in use
+	EXPECT_EQ(OK, result = optimisation.removeDependentField(f1));
+	temp = optimisation.getFirstDependentField();
 	EXPECT_EQ(f2, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_EQ(f3, temp);
-	temp = optimisation.getNextIndependentField(temp);
+	temp = optimisation.getNextDependentField(temp);
 	EXPECT_FALSE(temp.isValid());
 	temp = optimisation.getConditionalField(f2);
 	EXPECT_EQ(fcond, temp);
@@ -127,6 +133,32 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_EQ(f4, temp);
 	temp = optimisation.getNextObjectiveField(temp);
 	EXPECT_FALSE(temp.isValid());
+}
+
+TEST(ZincOptimisation, deprecatedIndependentFieldAPI)
+{
+	ZincTestSetupCpp zinc;
+
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	// made-up fields to test independent field APIs
+	FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(f1.isValid());
+	FieldFiniteElement f2 = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_TRUE(f2.isValid());
+	// Test Dependent and deprecated Independent field APIs do the same thing
+	EXPECT_EQ(OK, optimisation.addIndependentField(f1));
+	EXPECT_EQ(f1, optimisation.getFirstIndependentField());
+	EXPECT_EQ(f1, optimisation.getFirstDependentField());
+	EXPECT_EQ(OK, optimisation.addDependentField(f2));
+	EXPECT_EQ(f2, optimisation.getNextIndependentField(f1));
+	EXPECT_EQ(f2, optimisation.getNextDependentField(f1));
+	EXPECT_EQ(OK, optimisation.removeIndependentField(f1));
+	EXPECT_EQ(f2, optimisation.getFirstIndependentField());
+	EXPECT_EQ(f2, optimisation.getFirstDependentField());
+	EXPECT_EQ(OK, optimisation.removeDependentField(f2));
+	EXPECT_FALSE(optimisation.getFirstIndependentField().isValid());
+	EXPECT_FALSE(optimisation.getFirstDependentField().isValid());
 }
 
 // A non-linear optimisation for deformation of a tricubic Lagrange unit cube.
@@ -206,7 +238,7 @@ TEST(ZincOptimisation, tricubicFit)
 
 	EXPECT_EQ(OK, result = optimisation.addObjectiveField(end2Objective));
 	EXPECT_EQ(OK, result = optimisation.addObjectiveField(WObjective));
-	EXPECT_EQ(OK, result = optimisation.addIndependentField(coordinates));
+	EXPECT_EQ(OK, result = optimisation.addDependentField(coordinates));
 	EXPECT_EQ(OK, result = optimisation.setConditionalField(coordinates, xCondition));
 	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON));
 	EXPECT_EQ(OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
@@ -338,7 +370,7 @@ TEST(ZincOptimisation, addFieldassignment)
 	EXPECT_TRUE(optimisation.isValid());
 	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addIndependentField(zOffset));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(zOffset));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignment));
 	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
 
@@ -470,7 +502,7 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 	EXPECT_TRUE(optimisation.isValid());
 	EXPECT_EQ(RESULT_OK, result = optimisation.setMethod(Optimisation::METHOD_QUASI_NEWTON));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addObjectiveField(objective));
-	EXPECT_EQ(RESULT_OK, result = optimisation.addIndependentField(s));
+	EXPECT_EQ(RESULT_OK, result = optimisation.addDependentField(s));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignmentReset));
 	EXPECT_EQ(RESULT_OK, result = optimisation.addFieldassignment(fieldassignmentTransform));
 	EXPECT_EQ(RESULT_OK, result = optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 10));
@@ -486,4 +518,216 @@ TEST(ZincOptimisation, addFieldassignmentReset)
 	EXPECT_EQ(RESULT_OK, s.evaluateReal(cache, 1, &sValueOut));
 	EXPECT_NEAR(1.0, sValueOut, tolerance);
 	cmzn_deallocate(solutionReport);
+}
+
+// Use NEWTON method to solve least squares fit of square bilinear element field to 4 points project at known locations onto it
+TEST(ZincOptimisation, leastSquaresFitNewton)
+{
+	ZincTestSetupCpp zinc;
+
+	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	Field dataCoordinates = zinc.fm.findFieldByName("data_coordinates");
+	EXPECT_TRUE(dataCoordinates.isValid());
+	FieldStoredMeshLocation hostLocation = zinc.fm.findFieldByName("host_location").castStoredMeshLocation();
+	EXPECT_TRUE(hostLocation.isValid());
+	FieldEmbedded hostCoordinates = zinc.fm.createFieldEmbedded(coordinates, hostLocation);
+	EXPECT_TRUE(hostCoordinates.isValid());
+	FieldSubtract delta = hostCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct errorSquared = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(errorSquared.isValid());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	FieldNodesetSum sumErrorSquared = zinc.fm.createFieldNodesetSum(errorSquared, nodeset);
+	EXPECT_TRUE(sumErrorSquared.isValid());
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.setElementMapField(hostLocation));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double outSum;
+	const double TOL = 1.0E-11;
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
+	EXPECT_NEAR(0.5563, outSum, TOL);
+
+	// solve optimisation
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(sumErrorSquared));
+	EXPECT_EQ(OK, optimisation.addDependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	EXPECT_EQ(OK, optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s", solutionReport);
+
+	EXPECT_EQ(RESULT_OK, sumErrorSquared.evaluateReal(fieldcache, 1, &outSum));
+	EXPECT_NEAR(0.0, outSum, TOL);
+}
+
+// Use NEWTON method to solve least squares fit of two hermite cubes without cross derivatives
+// to data points in an ellipsoid shape.
+TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
+{
+	ZincTestSetupCpp zinc;
+
+	// a handy model with nodes 1-4 in the corners of a square and nodes 5-8 with host locations
+	const char *filename = TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE);
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(filename));
+
+	Field referenceCoordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(referenceCoordinates.isValid());
+	EXPECT_EQ(OK, referenceCoordinates.setName("reference_coordinates"));
+	EXPECT_EQ(OK, zinc.root_region.readFile(filename));
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	const int elementCount = mesh3d.getSize();
+	EXPECT_EQ(elementCount, 2);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+
+	zinc.fm.beginChange();
+
+	// generate regular data points over ellipse
+	FieldFiniteElement dataCoordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(dataCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setName("data_coordinates"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setTypeCoordinate(true));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setManaged(true));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(1, "x"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(2, "y"));
+	EXPECT_EQ(RESULT_OK, dataCoordinates.setComponentName(3, "z"));
+	// want to store mesh locations at the data points
+	FieldStoredMeshLocation storedMeshLocationVolume = zinc.fm.createFieldStoredMeshLocation(mesh3d);
+	EXPECT_TRUE(storedMeshLocationVolume.isValid());
+	EXPECT_EQ(RESULT_OK, storedMeshLocationVolume.setName("host_location"));
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_TRUE(datapoints.isValid());
+	Nodetemplate nodetemplate = datapoints.createNodetemplate();
+	EXPECT_TRUE(nodetemplate.isValid());
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(dataCoordinates));
+	EXPECT_EQ(RESULT_OK, nodetemplate.defineField(storedMeshLocationVolume));
+	const int pointsCountAlong = 16;
+	const int pointsCountAround = 16;
+	const double xRadius = 1.2;
+	const double yRadius = 0.9;
+	const double zRadius = 0.6;
+	const double xCentre = 1.0;
+	const double yCentre = 0.5;
+	const double zCentre = 0.5;
+	const double pi = 3.1415926535897932384626433832795;
+	const double radiansPerPointAlong = pi/static_cast<double>(pointsCountAlong);
+	const double radiansPerPointAround = 2.0*pi/static_cast<double>(pointsCountAround);
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	double x[3];
+	for (int i = 0; i < pointsCountAlong; ++i)
+	{
+		const double radiansAlong = (i + 0.5)*radiansPerPointAlong;
+		x[0] = xCentre + xRadius*cos(radiansAlong);
+		const double ySize = yRadius*sin(radiansAlong);
+		const double zSize = zRadius*sin(radiansAlong);
+		for (int j = 0; j < pointsCountAround; ++j)
+		{
+			const double radiansAround = (j + 0.5)*radiansPerPointAround;
+			x[1] = yCentre + ySize*cos(radiansAround);
+			x[2] = zCentre + zSize*sin(radiansAround);
+			Node node = datapoints.createNode(-1, nodetemplate);
+			EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+			EXPECT_EQ(RESULT_OK, dataCoordinates.assignReal(fieldcache, 3, x));
+		}
+	}
+
+	FieldGroup outside = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(outside.isValid());
+	EXPECT_EQ(RESULT_OK, outside.setName("outside"));
+	MeshGroup outsideMeshGroup = outside.createFieldElementGroup(mesh2d).getMeshGroup();
+	EXPECT_TRUE(outsideMeshGroup.isValid());
+	outsideMeshGroup.addElementsConditional(zinc.fm.createFieldIsExterior());
+	EXPECT_EQ(10, outsideMeshGroup.getSize());
+
+	// need to find locations on the 2D outside mesh group but store locations on mesh3d
+	FieldFindMeshLocation findMeshLocationOutside = zinc.fm.createFieldFindMeshLocation(dataCoordinates, coordinates, mesh3d);
+	EXPECT_TRUE(findMeshLocationOutside.isValid());
+	EXPECT_EQ(RESULT_OK, findMeshLocationOutside.setSearchMesh(outsideMeshGroup));
+	EXPECT_EQ(RESULT_OK, findMeshLocationOutside.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	Fieldassignment fieldassignment = storedMeshLocationVolume.createFieldassignment(findMeshLocationOutside);
+	EXPECT_EQ(RESULT_OK, fieldassignment.setNodeset(datapoints));
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+	fieldassignment = Fieldassignment();
+
+	FieldEmbedded projectedCoordinates = zinc.fm.createFieldEmbedded(coordinates, storedMeshLocationVolume);
+	EXPECT_TRUE(projectedCoordinates.isValid());
+	FieldSubtract delta = projectedCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct delta_sq = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(delta_sq.isValid());
+
+	FieldNodesetSum outsideSurfaceFitObjective = zinc.fm.createFieldNodesetSum(delta_sq, datapoints);
+	EXPECT_TRUE(outsideSurfaceFitObjective.isValid());
+	EXPECT_EQ(RESULT_OK, outsideSurfaceFitObjective.setElementMapField(storedMeshLocationVolume));
+
+	// test getting element stiffness matrix for displacement gradient
+	FieldGradient dx_dX = zinc.fm.createFieldGradient(coordinates, referenceCoordinates);
+	EXPECT_TRUE(dx_dX.isValid());
+	FieldMultiply square_dx_dX = dx_dX * dx_dX;
+	EXPECT_TRUE(square_dx_dX.isValid());
+	const double alpha9[9] = { 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001 };
+	FieldConstant alpha = zinc.fm.createFieldConstant(9, alpha9);
+	EXPECT_TRUE(alpha.isValid());
+	FieldDotProduct sumScaledSquare_dx_dX = zinc.fm.createFieldDotProduct(alpha, square_dx_dX);
+	EXPECT_TRUE(sumScaledSquare_dx_dX.isValid());
+
+	FieldGradient d2x_dX2 = zinc.fm.createFieldGradient(dx_dX, referenceCoordinates);
+	EXPECT_TRUE(d2x_dX2.isValid());
+	FieldMultiply square_d2x_dX2 = d2x_dX2 * d2x_dX2;
+	EXPECT_TRUE(square_d2x_dX2.isValid());
+	const double beta27[27] = {
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 ,
+		0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 };
+	FieldConstant beta = zinc.fm.createFieldConstant(27, beta27);
+	EXPECT_TRUE(beta.isValid());
+	FieldDotProduct sumScaledSquare_d2x_dX2 = zinc.fm.createFieldDotProduct(beta, square_d2x_dX2);
+	EXPECT_TRUE(sumScaledSquare_d2x_dX2.isValid());
+
+	FieldMeshIntegral smoothingObjective = zinc.fm.createFieldMeshIntegral(sumScaledSquare_dx_dX + sumScaledSquare_d2x_dX2, referenceCoordinates, mesh3d);
+	EXPECT_TRUE(smoothingObjective.isValid());
+	const int pointCount = 3;
+	EXPECT_EQ(RESULT_OK, smoothingObjective.setNumbersOfPoints(1, &pointCount));
+
+	zinc.fm.endChange();
+
+	// solve optimisation
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(outsideSurfaceFitObjective));
+	EXPECT_EQ(OK, optimisation.addObjectiveField(smoothingObjective));
+
+	EXPECT_EQ(OK, optimisation.addDependentField(coordinates));
+	EXPECT_EQ(OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	EXPECT_EQ(OK, optimisation.optimise());
+	char *solutionReport = optimisation.getSolutionReport();
+	EXPECT_NE((char *)0, solutionReport);
+	printf("%s", solutionReport);
+
+	const double TOL = 1.0E-8;
+	double outSurfaceFitObjectiveValue;
+	EXPECT_EQ(RESULT_OK, outsideSurfaceFitObjective.evaluateReal(fieldcache, 1, &outSurfaceFitObjectiveValue));
+	EXPECT_NEAR(0.57100132382309376, outSurfaceFitObjectiveValue, TOL);
+
+	double outSmoothingObjectiveValue;
+	EXPECT_EQ(RESULT_OK, smoothingObjective.evaluateReal(fieldcache, 1, &outSmoothingObjectiveValue));
+	EXPECT_NEAR(0.31669258057011818, outSmoothingObjectiveValue, TOL);
 }

@@ -20,6 +20,7 @@
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_field_evaluation.hpp"
@@ -333,7 +334,7 @@ public:
 
 	/** @param componentNumber  Component number >= 0 or negative to set all components
 	  * @param versionNumber  Version number >= 0 */
-		int setNodeParameters(cmzn_fieldcache& cache, int componentNumber,
+	int setNodeParameters(cmzn_fieldcache& cache, int componentNumber,
 		cmzn_node_value_label valueLabel, int versionNumber,
 		int valuesCount, const double *valuesIn);
 
@@ -383,6 +384,19 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		// assumes derivatives are evaluated in elements
+		// Future:  tabulate highest order basis in use esp. if all per-element constant
+		if ((this->fe_field->getValueType() == FE_VALUE_VALUE) || (this->fe_field->getValueType() == SHORT_VALUE))
+		{
+			if (fieldDerivative.getFieldparameters() && (fieldDerivative.getFieldparameters()->getField() == this->field))
+				return fieldDerivative.getMeshOrder() + 1;  // since linear with own parameters
+			return fieldDerivative.getMeshOrder();
+		}
+		return 0;  // all other value types are either stored in nodes only, or have zero mesh derivatives (e.g. integer)
+	}
 
 	int list();
 
@@ -783,7 +797,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 						{
 							return_code = element_field_evaluation->evaluate_real(
 								/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-								/*derivative_order*/0, feValueCache.values);
+								/*mesh_derivative_order*/0, /*parameter_derivative_order*/0, feValueCache.values);
 						} break;
 						case INT_VALUE:
 						{
@@ -887,27 +901,60 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 {
 	// derivative must be w.r.t. mesh which owns this element
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	const Value_type value_type = this->fe_field->getValueType();
-	if ((element_xi_location) && ((value_type == FE_VALUE_VALUE) || (value_type == SHORT_VALUE))
-		&& ((fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
-		&& (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh())))
+	const Value_type valueType = this->fe_field->getValueType();
+	if (element_xi_location)
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-		FE_value *derivatives = feValueCache.getDerivativeValueCache(fieldDerivative)->values;
-		const FE_value* xi = element_xi_location->get_xi();
 		FE_element_field_evaluation *element_field_evaluation =
 			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
 				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
 				element_xi_location->get_top_level_element());
-		if ((element_field_evaluation) &&
-			element_field_evaluation->evaluate_real(
-				/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
-				fieldDerivative.getOrder(), derivatives))
+		if (!element_field_evaluation)
+			return 0;
+		if ((valueType == FE_VALUE_VALUE) || (valueType == SHORT_VALUE))
 		{
+			if ((fieldDerivative.getMesh()) && (element_xi_location->get_element()->getMesh() != fieldDerivative.getMesh()))
+				return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+			DerivativeValueCache *derivativeCache = feValueCache.getDerivativeValueCache(fieldDerivative);
+			cmzn_fieldparameters *fieldparameters = fieldDerivative.getFieldparameters();
+			// current finite element field is a linear function of parameters
+			if ((!fieldparameters) || ((fieldparameters->getField() == this->field) && (fieldDerivative.getParameterOrder() <= 1)))
+			{
+				FE_value *derivatives = derivativeCache->values;
+				const FE_value* xi = element_xi_location->get_xi();
+				if (element_field_evaluation->evaluate_real(
+					/*component_number*/-1, xi, element_xi_location->get_basis_function_evaluation(),
+					fieldDerivative.getMeshOrder(), fieldDerivative.getParameterOrder(), derivatives))
+				{
+					return 1;
+				}
+				return 0;
+			}
+			else
+			{
+				derivativeCache->zeroValues();
+				return 1;
+			}
+		}
+		else if (valueType == INT_VALUE)
+		{
+			// all derivatives of int values are zero as field is constant with step changes
+			inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
 			return 1;
 		}
 	}
-	return 0;
+	else if (((valueType == FE_VALUE_VALUE)
+		|| (valueType == INT_VALUE)
+		|| (valueType == DOUBLE_VALUE)
+		|| (valueType == FLT_VALUE)
+		|| (valueType == SHORT_VALUE)) && this->is_defined_at_location(cache))
+	{
+		// assume all derivatives are zero
+		// future: handle derivatives w.r.t. own field parameters?
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+	return 0;  // non-numeric
 }
 
 int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
@@ -1454,7 +1501,7 @@ cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field)
 			dynamic_cast<Computed_field_finite_element*>(field->core);
 		if (core &&
 			(core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD) &&
-			(get_FE_field_value_type(core->fe_field) == FE_VALUE_VALUE))
+			(core->fe_field->getValueType() == FE_VALUE_VALUE))
 		{
 			cmzn_field_access(field);
 			return (reinterpret_cast<cmzn_field_finite_element_id>(field));
@@ -1702,6 +1749,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -1882,6 +1934,17 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2043,6 +2106,8 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -2223,6 +2288,23 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+int Computed_field_node_value::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	const Value_type valueType = this->fe_field->getValueType();
+	if (((valueType == FE_VALUE_VALUE)
+		|| (valueType == INT_VALUE)
+		|| (valueType == DOUBLE_VALUE)
+		|| (valueType == FLT_VALUE)
+		|| (valueType == SHORT_VALUE)) && this->is_defined_at_location(cache))
+	{
+		// assume all derivatives are zero
+		// future: handle derivatives w.r.t. own field parameters?
+		inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+		return 1;
+	}
+	return 0;
 }
 
 enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
@@ -2522,6 +2604,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2548,7 +2635,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
 	const RealFieldValueCache *sourceValueCache;
-	const FieldDerivativeMesh& fieldDerivative = *fe_mesh->getFieldDerivative(/*order*/1);
+	const FieldDerivative& fieldDerivative = *fe_mesh->getFieldDerivative(/*order*/1);
 	if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
 		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluateDerivativeTree(cache, fieldDerivative));
 	else
@@ -2573,9 +2660,9 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	RealFieldValueCache parent2SourceValueCache(numberOfComponents);
 	RealFieldValueCache *parentSourceValueCaches[2] =
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
-	const FieldDerivativeMesh& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
+	const FieldDerivative& parentFieldDerivative = *parentMesh->getFieldDerivative(/*order*/1);
 	for (int i = 0; i < 2; ++i)
-		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative)))
+		if (!(parentSourceValueCaches[i]->getOrCreateDerivativeValueCache(parentFieldDerivative, *element_xi_location)))
 			return 0;
 	const FE_value *elementToParentsXi[2];
 	int qualifyingParents = 0;
@@ -2888,6 +2975,15 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getProductTreeOrder(
+			this->field->source_fields[0]->getDerivativeTreeOrder(fieldDerivative),
+			this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative));
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -2962,6 +3058,32 @@ int Computed_field_embedded::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 		}
 	}
 	return 0;
+}
+
+// implemented for parameter derivatives of constant mesh location, used in fitting
+int Computed_field_embedded::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	// handle xi not interpreted on the host element, or expression too complex
+	if ((fieldDerivative.getMeshOrder() > 0) || (this->field->source_fields[1]->getDerivativeTreeOrder(fieldDerivative) > 0))
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	const Field_location_node *fieldLocationNode = cache.get_location_node();
+	if ((!fieldLocationNode) || (!fieldLocationNode->get_host_element()))
+		return 0;  // can only evaluate at node locations embedded in an element; see check below
+	const MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
+	if (!meshLocationValueCache)
+		return 0;
+	if (meshLocationValueCache->element != fieldLocationNode->get_host_element())
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
+	extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
+	extraCache.setTime(cache.getTime());
+	const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(extraCache, fieldDerivative);
+	if (!sourceDerivativeCache)
+		return 0;
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	derivativeCache->copyValues(*sourceDerivativeCache);
+	return 1;
 }
 
 int Computed_field_embedded::list()
@@ -3091,21 +3213,36 @@ const char computed_field_find_mesh_location_type_string[] = "find_mesh_location
 class Computed_field_find_mesh_location : public Computed_field_core
 {
 private:
-	cmzn_mesh_id mesh;
-	enum cmzn_field_find_mesh_location_search_mode search_mode;
+	cmzn_mesh *mesh;  // mesh for storing locations in
+	cmzn_mesh *searchMesh;  // mesh for search for locations e.g. subset/faces
+	enum cmzn_field_find_mesh_location_search_mode searchMode;
 
 public:
 
-	Computed_field_find_mesh_location(cmzn_mesh_id mesh) :
+	Computed_field_find_mesh_location(cmzn_mesh *mesh) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		search_mode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
+		searchMesh(cmzn_mesh_access(mesh)),
+		searchMode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
 	{
 	};
 
-	virtual ~Computed_field_find_mesh_location();
+	Computed_field_find_mesh_location(const Computed_field_find_mesh_location& source) :
+		Computed_field_core(),
+		mesh(cmzn_mesh_access(source.mesh)),
+		searchMesh(cmzn_mesh_access(source.searchMesh)),
+		searchMode(source.searchMode)
+	{
+	};
 
-	cmzn_field_id get_source_field()
+	virtual ~Computed_field_find_mesh_location()
+	{
+		cmzn_mesh_destroy(&this->mesh);
+		cmzn_mesh_destroy(&this->searchMesh);
+	}
+
+	/** @return  Non-accessed field */
+	cmzn_field *getSourceField()
 	{
 		return field->source_fields[0];
 	}
@@ -3115,26 +3252,55 @@ public:
 		return CMZN_FIELD_TYPE_FIND_MESH_LOCATION;
 	}
 
-	cmzn_field_id get_mesh_field()
+	/** @return  Non-accessed field */
+	cmzn_field *getMeshField()
 	{
 		return field->source_fields[1];
 	}
 
-	cmzn_mesh_id get_mesh()
+	/** @return  Non accessed mesh */
+	cmzn_mesh *getMesh()
 	{
-		return mesh;
+		return this->mesh;
 	}
 
-	enum cmzn_field_find_mesh_location_search_mode get_search_mode() const
+	/** @return  Non-accessed search mesh */
+	cmzn_mesh *getSearchMesh()
 	{
-		return search_mode;
+		return this->searchMesh;
 	}
 
-	int set_search_mode(enum cmzn_field_find_mesh_location_search_mode search_mode_in)
+	int setSearchMesh(cmzn_mesh *searchMeshIn)
 	{
-		if (search_mode_in != search_mode)
+		if (searchMeshIn != this->searchMesh)
 		{
-			search_mode = search_mode_in;
+			FE_mesh *feMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
+			FE_mesh *feSearchMesh = cmzn_mesh_get_FE_mesh_internal(searchMeshIn);
+			if ((!searchMeshIn)
+				|| (feSearchMesh->get_FE_region() != feMesh->get_FE_region())
+				|| (feSearchMesh->getDimension() > feMesh->getDimension()))
+			{
+				display_message(ERROR_MESSAGE, "FieldFindMeshLocation setSearchMesh  Invalid search mesh");
+				return CMZN_RESULT_ERROR_ARGUMENT;
+			}
+			cmzn_mesh_access(searchMeshIn);
+			cmzn_mesh_destroy(&this->searchMesh);
+			this->searchMesh = searchMeshIn;
+			this->field->setChanged();
+		}
+		return CMZN_RESULT_OK;
+	}
+
+	enum cmzn_field_find_mesh_location_search_mode getSearchMode() const
+	{
+		return this->searchMode;
+	}
+
+	int setSearchMode(enum cmzn_field_find_mesh_location_search_mode searchModeIn)
+	{
+		if (searchModeIn != this->searchMode)
+		{
+			this->searchMode = searchModeIn;
 			this->field->setChanged();
 		}
 		return CMZN_OK;
@@ -3144,7 +3310,7 @@ public:
 	{
 		if (this->field == other_field)
 			return true;
-		return this->get_source_field()->core->is_purely_function_of_field(other_field);
+		return this->getSourceField()->core->is_purely_function_of_field(other_field);
 	}
 
 private:
@@ -3165,6 +3331,11 @@ private:
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return 0;  // non-numeric
+	}
 
 	int list();
 
@@ -3205,20 +3376,15 @@ void FindMeshLocationFieldValueCache::clear()
 {
 	// clear extra cache value cache for mesh field
 	cmzn_fieldcache& extraCache = *this->getExtraCache();
-	cmzn_field *meshField = this->findMeshLocationField->get_mesh_field();
+	cmzn_field *meshField = this->findMeshLocationField->getMeshField();
 	FieldValueCache *meshFieldValueCache = meshField->getValueCache(extraCache);
 	meshFieldValueCache->clear();
 	MeshLocationFieldValueCache::clear();
 }
 
-Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
-{
-	cmzn_mesh_destroy(&mesh);
-}
-
 Computed_field_core* Computed_field_find_mesh_location::copy()
 {
-	return new Computed_field_find_mesh_location(mesh);
+	return new Computed_field_find_mesh_location(*this);
 }
 
 int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
@@ -3239,28 +3405,50 @@ bool Computed_field_find_mesh_location::is_defined_at_location(cmzn_fieldcache& 
 
 int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	int return_code = 0;
-	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluate(cache));
-	if (sourceValueCache)
+	const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField()->evaluate(cache));
+	if (!sourceValueCache)
+		return 0;
+	MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
+	meshLocationValueCache.clearElement();
+	cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
+	extraCache.setTime(cache.getTime());
+	cmzn_element *element;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	if (!(Computed_field_find_element_xi(this->getMeshField(), &extraCache, sourceValueCache->values,
+		sourceValueCache->componentCount, &element, xi, this->searchMesh, /*propagate_field*/0,
+		/*find_nearest*/(this->searchMode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
+		&& (element)))
+		return 0;
+	FE_mesh *searchFeMesh = cmzn_mesh_get_FE_mesh_internal(this->searchMesh);
+	FE_mesh *ancestorFeMesh = cmzn_mesh_get_FE_mesh_internal(this->mesh);
+	if (searchFeMesh != ancestorFeMesh)
 	{
-		MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
-		if (meshLocationValueCache.element)
+		FE_value elementToAncestor[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		cmzn_element *ancestorElement = element->getAncestorConversion(ancestorFeMesh, elementToAncestor);
+		if (!ancestorElement)
 		{
-			cmzn_element_destroy(&meshLocationValueCache.element);
+			display_message(ERROR_MESSAGE, "FieldFindMeshLocation evaluate.  Failed to map from search mesh to main mesh");
+			return 0;
 		}
-		cmzn_fieldcache& extraCache = *meshLocationValueCache.getExtraCache();
-		extraCache.setTime(cache.getTime());
-		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
-			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
-			meshLocationValueCache.xi, mesh, /*propagate_field*/0,
-			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
-			&& meshLocationValueCache.element)
+		if (elementToAncestor)
 		{
-			meshLocationValueCache.element->access();
-			return_code = 1;
+			const int searchDimension = element->getDimension();
+			const int ancestorDimension = ancestorElement->getDimension();
+			FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			for (int k = 0; k < searchDimension; ++k)
+				searchXi[k] = xi[k];
+			for (int j = 0; j < ancestorDimension; ++j)
+			{
+				const FE_value *row = elementToAncestor + j*(1 + searchDimension);
+				xi[j] = row[0];
+				for (int k = 0; k < searchDimension; ++k)
+					xi[j] += row[1 + k]*searchXi[k];
+			}
+			element = ancestorElement;
 		}
 	}
-	return (return_code);
+	meshLocationValueCache.setMeshLocation(element, xi);
+	return 1;
 }
 
 int Computed_field_find_mesh_location::list()
@@ -3269,7 +3457,7 @@ int Computed_field_find_mesh_location::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    search mode : ");
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
+		if (this->searchMode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			display_message(INFORMATION_MESSAGE, " find_nearest\n");
 		}
@@ -3282,9 +3470,9 @@ int Computed_field_find_mesh_location::list()
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
 		display_message(INFORMATION_MESSAGE,
-			"    mesh field : %s\n", get_mesh_field()->name);
+			"    mesh field : %s\n", getMeshField()->name);
 		display_message(INFORMATION_MESSAGE,
-			"    source field : %s\n", get_source_field()->name);
+			"    source field : %s\n", getSourceField()->name);
 		return_code = 1;
 	}
 	return (return_code);
@@ -3299,7 +3487,7 @@ char *Computed_field_find_mesh_location::get_command_string()
 	{
 		append_string(&command_string, computed_field_find_mesh_location_type_string, &error);
 
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
+		if (this->searchMode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
@@ -3313,13 +3501,13 @@ char *Computed_field_find_mesh_location::get_command_string()
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 
-		char *mesh_field_name = cmzn_field_get_name(get_mesh_field());
+		char *mesh_field_name = cmzn_field_get_name(this->getMeshField());
 		make_valid_token(&mesh_field_name);
 		append_string(&command_string, " mesh_field ", &error);
 		append_string(&command_string, mesh_field_name, &error);
 		DEALLOCATE(mesh_field_name);
 
-		char *source_field_name = cmzn_field_get_name(get_source_field());
+		char *source_field_name = cmzn_field_get_name(this->getSourceField());
 		make_valid_token(&source_field_name);
 		append_string(&command_string, " source_field ", &error);
 		append_string(&command_string, source_field_name, &error);
@@ -3394,14 +3582,28 @@ int cmzn_field_find_mesh_location_destroy(
 cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
 	cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	cmzn_mesh_id mesh = 0;
 	if (find_mesh_location_field)
-	{
-		mesh = find_mesh_location_field->get_core()->get_mesh();
-		cmzn_mesh_access(mesh);
-	}
-	return mesh;
+		return cmzn_mesh_access(find_mesh_location_field->get_core()->getMesh());
+	return nullptr;
 }
+
+cmzn_mesh_id cmzn_field_find_mesh_location_get_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field)
+{
+	if (find_mesh_location_field)
+		return cmzn_mesh_access(find_mesh_location_field->get_core()->getSearchMesh());
+	return nullptr;
+}
+
+int cmzn_field_find_mesh_location_set_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field,
+	cmzn_mesh_id search_mesh)
+{
+	if (find_mesh_location_field)
+		return find_mesh_location_field->get_core()->setSearchMesh(search_mesh);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 
 class cmzn_field_find_mesh_location_search_mode_conversion
 {
@@ -3443,7 +3645,7 @@ enum cmzn_field_find_mesh_location_search_mode
 		cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
 	if (find_mesh_location_field)
-		return find_mesh_location_field->get_core()->get_search_mode();
+		return find_mesh_location_field->get_core()->getSearchMode();
 	return CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID;
 }
 
@@ -3452,7 +3654,7 @@ int cmzn_field_find_mesh_location_set_search_mode(
 	enum cmzn_field_find_mesh_location_search_mode search_mode)
 {
 	if (find_mesh_location_field)
-		return find_mesh_location_field->get_core()->set_search_mode(search_mode);
+		return find_mesh_location_field->get_core()->setSearchMode(search_mode);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -3499,6 +3701,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return fieldDerivative.getMeshOrder() ? 1 : 0;
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -3529,32 +3736,34 @@ int Computed_field_xi_coordinates::evaluate(cmzn_fieldcache& cache, FieldValueCa
 
 int Computed_field_xi_coordinates::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getType() == FieldDerivative::TYPE_ELEMENT_XI)
+	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+	if (fieldDerivative.isMeshOnly())
 	{
 		// directly evaluate only derivative w.r.t. mesh which owns element at location
 		// first derivatives are 1.0 in the xi direction, otherwise 0.0
 		// derivatives w.r.t. face xi currently handled by fallback finite difference
 		const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-		if ((element_xi_location) && (element_xi_location->get_element()->getMesh() == static_cast<const FieldDerivativeMesh&>(fieldDerivative).getMesh()))
+		if (element_xi_location)
 		{
-			FE_value *derivatives = inValueCache.getDerivativeValueCache(fieldDerivative)->values;
-			// start with all derivatives zero
-			const int valuesCount = this->field->number_of_components*fieldDerivative.getTermCount();
-			for (int i = 0; i < valuesCount; ++i)
-				derivatives[i] = 0.0;
-			// first derivatives have 1.0 on main diagonal up to element_dimension
-			if (fieldDerivative.getOrder() == 1)
+			if (element_xi_location->get_element()->getMesh() == fieldDerivative.getMesh())
 			{
-				const int elementDimension = element_xi_location->get_element_dimension();
-				for (int i = 0; i < elementDimension; ++i)
-					derivatives[i*(elementDimension + 1)] = 1.0;
+				FE_value *derivatives = derivativeCache->values;
+				// start with all derivatives zero
+				derivativeCache->zeroValues();
+				// first derivatives have 1.0 on main diagonal up to element_dimension
+				if (fieldDerivative.getMeshOrder() == 1)
+				{
+					const int elementDimension = element_xi_location->get_element_dimension();
+					for (int i = 0; i < elementDimension; ++i)
+						derivatives[i*(elementDimension + 1)] = 1.0;
+				}
+				return 1;
 			}
-			return 1;
+			return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);  // could be a related element/face/line mesh
 		}
-		return 0;
 	}
 	// all other derivatives are zero
-	inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+	derivativeCache->zeroValues();
 	return 1;
 }
 
@@ -4049,6 +4258,11 @@ private:
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
+
 	int list()
 	{
 		return 1;
@@ -4152,6 +4366,11 @@ private:
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return 0;
+	}
 
 	int list()
 	{
@@ -4281,7 +4500,7 @@ FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field)
 		Computed_field_find_mesh_location *fieldFindMeshLocation = dynamic_cast<Computed_field_find_mesh_location*>(field->core);
 		if (fieldFindMeshLocation)
 		{
-			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->get_mesh());
+			return cmzn_mesh_get_FE_mesh_internal(fieldFindMeshLocation->getMesh());
 		}
 	}
 	display_message(ERROR_MESSAGE, "cmzn_field_get_host_FE_mesh.  Invalid argument(s)");
@@ -4336,4 +4555,27 @@ int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination
 		}
 	}
 	return CMZN_OK;
+}
+
+FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cmzn_field *field, cmzn_fieldcache *fieldcache)
+{
+	Computed_field_finite_element* core;
+	const Field_location_element_xi *element_xi_location;
+	if (!((field) && (fieldcache)
+		&& (core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		&& (core->fe_field->get_FE_field_type() == GENERAL_FE_FIELD)
+		&& (core->fe_field->getValueType() == FE_VALUE_VALUE)
+		&& (element_xi_location = fieldcache->get_location_element_xi())))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_field_get_cache_FE_element_field_evaluation.  Invalid argument(s)");
+		return nullptr;
+	}
+	FiniteElementRealFieldValueCache *feValueCache = FiniteElementRealFieldValueCache::cast(field->getValueCache(*fieldcache));
+	if (!feValueCache)
+		return nullptr;
+	cmzn_element_id element = element_xi_location->get_element();
+	cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
+	const FE_value time = element_xi_location->get_time();
+	const FE_value* xi = element_xi_location->get_xi();
+	return feValueCache->element_field_evaluation_cache->get_element_field_evaluation(core->fe_field, element, time, top_level_element);
 }
