@@ -33,6 +33,7 @@
 #include <opencmiss/zinc/optimisation.hpp>
 
 #include "test_resources.h"
+#include <cmath>
 
 TEST(cmzn_optimisation, arguments)
 {
