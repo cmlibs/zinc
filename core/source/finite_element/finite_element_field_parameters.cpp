@@ -16,6 +16,7 @@
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/message.h"
+#include <cmath>
 #include <vector>
 
 
@@ -406,7 +407,7 @@ private:
 
 public:
 	ProcessValuesOperatorModify(FE_region *feRegionIn, int valuesCountIn, ValueType *valuesIn) :
-		ProcessValuesOperatorBase(valuesCountIn, valuesIn),
+		ProcessValuesOperatorBase<ValueType>(valuesCountIn, valuesIn),
 		feRegion(feRegionIn)
 	{
 		FE_region_begin_change(feRegion);
