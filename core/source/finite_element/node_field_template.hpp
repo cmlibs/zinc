@@ -33,7 +33,7 @@ class FE_node_field_template
 {
 	friend int global_to_element_map_values(FE_field *field, int componentNumber,
 		const FE_element_field_template *eft, cmzn_element *element, FE_value time,
-		const FE_nodeset *nodeset, FE_value*& elementValues);
+		const FE_nodeset *nodeset, const FE_value *scaleFactors, FE_value*& elementValues);
 
 	// the offset for the field component values within the node values storage
 	int valuesOffset;
@@ -181,6 +181,29 @@ public:
 			return valueIndex;
 		}
 		return -1;
+	}
+
+	/** Get value label and version from relative index.
+	 * @param valueIndex  Index from 0 to totalValuesCount - 1.
+	 * @param version  If a value label is returned, set to version number starting at 0.
+	 * @return  Value label, or INVALID if out of range. */
+	inline cmzn_node_value_label getValueLabelAndVersion(int valueIndex, int& version) const
+	{
+		if (valueIndex > 0)
+		{
+			int index = valueIndex;
+			for (int d = 0; d < this->valueLabelsCount; ++d)
+			{
+				if (index < this->versionsCounts[d])
+				{
+					version = index;
+					return this->valueLabels[d];
+				}
+				index -= this->versionsCounts[d];
+			}
+		}
+		version = -1;
+		return CMZN_NODE_VALUE_LABEL_INVALID;
 	}
 
 	/** Convert legacy DOF index which 

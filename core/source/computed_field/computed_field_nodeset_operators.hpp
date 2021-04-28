@@ -11,4 +11,8 @@
 #if !defined (COMPUTED_FIELD_NODESET_OPERATORS_HPP)
 #define COMPUTED_FIELD_NODESET_OPERATORS_HPP
 
+/** @return 1 if field is stored mesh location type suitable for using as an
+ * element evaluation map in nodeset operators */
+int cmzn_field_is_valid_nodeset_operator_element_map(cmzn_field_id field, void *);
+
 #endif /* !defined (COMPUTED_FIELD_NODESET_OPERATORS_HPP) */

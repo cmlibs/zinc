@@ -4,8 +4,8 @@ FILE : computed_field.cpp
 LAST MODIFIED : 16 April 2008
 
 DESCRIPTION :
-A Computed_field is an abstraction of an FE_field. For each FE_field there is
-a wrapper Computed_field automatically generated that can be called on to
+A cmzn_field is an abstraction of an FE_field. For each FE_field there is
+a wrapper cmzn_field automatically generated that can be called on to
 evaluate the field in an element or node. The interface for evaluating
 Computed_fields is much simpler than for FE_field, since they hide details of
 caching of evaluation caches, for example. Their main benefit is in
@@ -32,7 +32,7 @@ if a value is already known.
 NOTES ABOUT COMPUTED FIELDS:
 ----------------------------
 
-- Each Computed_field has a coordinate system that tells the application how to
+- Each cmzn_field has a coordinate system that tells the application how to
 interpret the field/components. The important thing to note is that it does not
 have to be the truth - you could for instance create a RC computed field that is
 simply a copy of the prolate field; the graphics functions will then plot the
@@ -124,9 +124,12 @@ like the number of components.
 #include "general/indexed_list_stl_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
+#include "computed_field/fieldparametersprivate.hpp"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_field_evaluation.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/compare.h"
@@ -147,8 +150,8 @@ Module functions
 */
 
 /** override to set change status of fields which depend on changed fields */
-inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
-	struct MANAGER(Computed_field) *manager)
+inline void MANAGER_UPDATE_DEPENDENCIES(cmzn_field)(
+	struct MANAGER(cmzn_field) *manager)
 {
 	cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
 	for (cmzn_set_cmzn_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
@@ -158,32 +161,32 @@ inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
 	}
 }
 
-inline struct cmzn_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Computed_field)(
-	struct Computed_field *field)
+inline struct cmzn_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_field)(
+	struct cmzn_field *field)
 {
 	return field->core->extract_change_detail();
 }
 
-inline void MANAGER_CLEANUP_CHANGE_DETAIL(Computed_field)(
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_field)(
 	cmzn_field_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
 }
 
-DECLARE_MANAGER_UPDATE_FUNCTION(Computed_field)
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_field)
 
-DECLARE_MANAGER_FIND_CLIENT_FUNCTION(Computed_field)
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_field)
 
-DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(Computed_field)
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_field)
 
-static int Computed_field_clear_type(struct Computed_field *field)
+static int Computed_field_clear_type(struct cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Used internally by DESTROY and Computed_field_copy_type_specific functions to
 deallocate or deaccess data specific to any Computed_field_type. Functions
-changing the type of the Computed_field should allocate any dynamic data needed
+changing the type of the cmzn_field should allocate any dynamic data needed
 for the type, call this function to clear what is currently in the field and
 then set values - that way the field will never be left in an invalid state.
 ==============================================================================*/
@@ -199,7 +202,7 @@ then set values - that way the field will never be left in an invalid state.
 		{
 			for (i=0;i< field->number_of_source_fields;i++)
 			{
-				DEACCESS(Computed_field)(&(field->source_fields[i]));
+				DEACCESS(cmzn_field)(&(field->source_fields[i]));
 			}
 			DEALLOCATE(field->source_fields);
 		}
@@ -223,7 +226,7 @@ then set values - that way the field will never be left in an invalid state.
 } /* Computed_field_clear_type */
 
 int Computed_field_set_coordinate_system_from_sources(
-	struct Computed_field *field)
+	struct cmzn_field *field)
 {
 	int return_code;
 	struct Coordinate_system *coordinate_system_ptr;
@@ -256,193 +259,112 @@ Global functions
 ----------------
 */
 
-static struct Computed_field *CREATE(Computed_field)(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Creates a basic Computed_field with the given <name>. Its type is initially
-COMPUTED_FIELD_INVALID with no components.
-==============================================================================*/
+cmzn_field::cmzn_field() :
+	name(nullptr),
+	cache_index(0),
+	command_string(nullptr),  // by default the name and the command_string are the same
+	number_of_components(0),
+	core(nullptr),
+	source_fields(nullptr),
+	number_of_source_fields(0),
+	source_values(nullptr),
+	number_of_source_values(0),
+	fieldparameters(nullptr),
+	manager(nullptr),
+	manager_change_status(MANAGER_CHANGE_NONE(cmzn_field)),
+	attribute_flags(0),
+	access_count(1)
 {
-	struct Computed_field *field;
+}
 
-	ENTER(CREATE(Computed_field));
-	if (name)
-	{
-		if (ALLOCATE(field, struct Computed_field, 1) &&
-			(field->name = duplicate_string(name)))
-		{
-			field->cache_index = 0;
-			/* By default the name and the command_string are the same */
-			field->command_string = (char *)field->name;
-			/* initialise all members of computed_field */
-			field->number_of_components = 0;
-			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
-			field->coordinate_system.parameters.focus = 1.0;
-
-			field->core = (Computed_field_core*)NULL;
-
-			/* for all types of Computed_field calculated from others */
-			field->source_fields = (struct Computed_field **)NULL;
-			field->number_of_source_fields = 0;
-			/* for all Computed_fields which use real source values */
-			field->source_values = (FE_value *)NULL;
-			field->number_of_source_values = 0;
-
-			field->access_count = 0;
-
-			field->manager = (struct MANAGER(Computed_field) *)NULL;
-			field->manager_change_status = MANAGER_CHANGE_NONE(Computed_field);
-
-			field->attribute_flags = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field).  Not enough memory");
-			DEALLOCATE(field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(Computed_field).  Missing name");
-		field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (field);
-} /* CREATE(Computed_field) */
-
-int DESTROY(Computed_field)(struct Computed_field **field_address)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Frees memory/deaccess objects in computed_field at <*field_address>.
-==============================================================================*/
+cmzn_field::~cmzn_field()
 {
-	int return_code;
-	struct Computed_field *field;
-	ENTER(DESTROY(Computed_field));
-	if (field_address&&(field= *field_address))
-	{
-		if (0 >= field->access_count)
-		{
-			/* Only DEALLOCATE the command_string if it is different to the name */
-			if (field->command_string && (field->command_string != field->name))
-			{
-				DEALLOCATE(field->command_string);
-			}
-			DEALLOCATE(field->name);
-			Computed_field_clear_type(field);
-			DEALLOCATE(*field_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Computed_field).  Positive access_count");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field).  Missing field");
-		return_code=0;
-	}
-	LEAVE;
+	/* Only DEALLOCATE the command_string if it is different to the name */
+	if (this->command_string && (this->command_string != this->name))
+		DEALLOCATE(this->command_string);
+	DEALLOCATE(this->name);
+	Computed_field_clear_type(this);
+}
 
-	return (return_code);
-} /* DESTROY(Computed_field) */
-
-DECLARE_ACCESS_OBJECT_FUNCTION(Computed_field)
-
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
+cmzn_field *cmzn_field::create(const char *nameIn)
 {
-	int return_code;
-	struct Computed_field *object;
-
-	ENTER(DEACCESS(Computed_field));
-	if (object_address && (object = *object_address))
+	char *nameCopy = duplicate_string(nameIn);
+	if (nameCopy)
 	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
+		cmzn_field *field = new cmzn_field();
+		field->name = nameCopy;
+		field->command_string = field->name;  // current default
+		return field;
+	}
+	display_message(ERROR_MESSAGE, "cmzn_field::create.  Could not copy name.");
+	return nullptr;
+}
+
+int cmzn_field::deaccess(cmzn_field **field_address)
+{
+	int return_code = 1;
+	cmzn_field *field;
+	if (field_address && (field = *field_address))
+	{
+		--(field->access_count);
+		if (field->access_count <= 0)
 		{
-			return_code = DESTROY(Computed_field)(object_address);
+			delete field;
 		}
-		else if ((0 == (object->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT)) &&
-			(object->manager) && ((1 == object->access_count) ||
-				((2 == object->access_count) &&
-					(MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status))) &&
-			object->core->not_in_use())
+		else if ((0 == (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT)) &&
+			(field->manager) && ((1 == field->access_count) ||
+			((2 == field->access_count) &&
+				(MANAGER_CHANGE_NONE(cmzn_field) != field->manager_change_status))) &&
+			field->core->not_in_use())
 		{
-			return_code =
-				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(object, object->manager);
+			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_field)(field, field->manager);
 		}
-		else
-		{
-			return_code = 1;
-		}
-		*object_address = (struct Computed_field *)NULL;
+		*field_address = (struct cmzn_field *)NULL;
 	}
 	else
 	{
 		return_code = 0;
 	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
-} /* DEACCESS(Computed_field) */
-
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_field)
 {
-	int return_code;
+	if (object)
+		return object->access();
+	return nullptr;
+}
 
-	ENTER(REACCESS(Computed_field));
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_field)
+{
+	return cmzn_field::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_field)
+{
 	if (object_address)
 	{
-		return_code = 1;
 		if (new_object)
-		{
-			/* access the new object */
-			(new_object->access_count)++;
-		}
+			new_object->access();
 		if (*object_address)
-		{
-			/* deaccess the current object */
-			DEACCESS(Computed_field)(object_address);
-		}
-		/* point to the new object */
+			cmzn_field::deaccess(object_address);
 		*object_address = new_object;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(Computed_field).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(Computed_field) */
+	display_message(ERROR_MESSAGE, "REACCESS(cmzn_field).  Invalid argument");
+	return 0;
+}
 
 cmzn_field_id cmzn_field_access(cmzn_field_id field)
 {
 	if (field)
-		return ACCESS(Computed_field)(field);
-	return 0;
+		return field->access();
+	return nullptr;
 }
 
 int cmzn_field_destroy(cmzn_field_id *field_address)
 {
-	if (field_address && *field_address)
-	{
-		DEACCESS(Computed_field)(field_address);
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
+	return cmzn_field::deaccess(field_address);
 }
 
 cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field)
@@ -468,7 +390,7 @@ int cmzn_field_get_access_count(cmzn_field_id field)
 }
 #endif /* defined (DEBUG_CODE) */
 
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_field)
 /*****************************************************************************
 LAST MODIFIED : 6 September 2007
 
@@ -481,7 +403,7 @@ in computed_field_set.cpp.
 {
 	int return_code;
 
-	ENTER(GET_NAME(Computed_field));
+	ENTER(GET_NAME(cmzn_field));
 	if (object&&name_ptr)
 	{
 		if (ALLOCATE(*name_ptr,char,strlen(object->command_string)+1))
@@ -492,24 +414,24 @@ in computed_field_set.cpp.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"GET_NAME(Computed_field).  Could not allocate space for name");
+				"GET_NAME(cmzn_field).  Could not allocate space for name");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GET_NAME(Computed_field).  Invalid argument(s)");
+			"GET_NAME(cmzn_field).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GET_NAME(Computed_field) */
+} /* GET_NAME(cmzn_field) */
 
-DECLARE_INDEXED_LIST_STL_FUNCTIONS(Computed_field)
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_field)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Computed_field,name,const char *)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_field,name,const char *)
 
 cmzn_fielditerator_id cmzn_fielditerator_access(cmzn_fielditerator_id iterator)
 {
@@ -552,7 +474,7 @@ cmzn_field_id cmzn_fielditerator_next_non_access(cmzn_fielditerator_id iterator)
  * @return  1 on success, 0 on failure.
  */
 int Computed_field_copy_type_specific(
-	struct Computed_field *destination, struct Computed_field *source)
+	struct cmzn_field *destination, struct cmzn_field *source)
 {
 	int return_code;
 
@@ -560,11 +482,11 @@ int Computed_field_copy_type_specific(
 	if (source && destination)
 	{
 		return_code = 1;
-		Computed_field **source_fields = (struct Computed_field **)NULL;
+		cmzn_field **source_fields = (struct cmzn_field **)NULL;
 		FE_value *source_values = (FE_value *)NULL;
 		if (source->number_of_source_fields > 0)
 		{
-			if (!ALLOCATE(source_fields, struct Computed_field *, source->number_of_source_fields))
+			if (!ALLOCATE(source_fields, struct cmzn_field *, source->number_of_source_fields))
 			{
 				return_code = 0;
 			}
@@ -584,7 +506,7 @@ int Computed_field_copy_type_specific(
 			destination->number_of_source_fields = source->number_of_source_fields;
 			for (int i = 0; i < source->number_of_source_fields; i++)
 			{
-				source_fields[i] = ACCESS(Computed_field)(source->source_fields[i]);
+				source_fields[i] = ACCESS(cmzn_field)(source->source_fields[i]);
 			}
 			destination->source_fields = source_fields;
 			destination->number_of_source_values = source->number_of_source_values;
@@ -633,7 +555,7 @@ int Computed_field_copy_type_specific(
 	return (return_code);
 } /* Computed_field_copy_type_specific */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_field,name)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2009
 
@@ -647,7 +569,7 @@ Do not allow copy if:
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name));
 	if (source && destination && (source != destination))
 	{
 		return_code = 1;
@@ -655,7 +577,7 @@ Do not allow copy if:
 		if (source->dependsOnField(destination))
 		{
 			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+				"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name).  "
 				"Cannot make field depend on itself");
 			return_code=0;
 		}
@@ -663,7 +585,7 @@ Do not allow copy if:
 			(destination->manager != source->manager))
 		{
 			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+				"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name).  "
 				"Cannot modify definition to depend on field from another region");
 			return_code = 0;
 		}
@@ -673,7 +595,7 @@ Do not allow copy if:
 			if (!Computed_field_copy_type_specific(destination, source))
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  Not enough memory");
+					"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name).  Not enough memory");
 				return_code=0;
 			}
 		}
@@ -681,23 +603,23 @@ Do not allow copy if:
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+			"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name).  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Computed_field, manager)
+DECLARE_MANAGER_FUNCTIONS(cmzn_field, manager)
 
-PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_field)
+PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Computed_field requires a special version of this function mainly due to the
+cmzn_field requires a special version of this function mainly due to the
 finite_element type which automatically wraps FE_fields. If the computed field
 is not itself in use, it calls the field's optional computed_field_not_in_use
 function and bases its result on that.
@@ -706,14 +628,14 @@ Note: assumes caller is accessing field once!
 {
 	int return_code;
 
-	ENTER(MANAGED_OBJECT_NOT_IN_USE(Computed_field));
+	ENTER(MANAGED_OBJECT_NOT_IN_USE(cmzn_field));
 	return_code = 0;
 	if (manager && object)
 	{
 		if (manager == object->manager)
 		{
 			if ((2 >= object->access_count) ||
-				((MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status) &&
+				((MANAGER_CHANGE_NONE(cmzn_field) != object->manager_change_status) &&
 				 (3 == object->access_count)))
 			{
 				return_code = object->core ? object->core->not_in_use() : 1;
@@ -722,49 +644,49 @@ Note: assumes caller is accessing field once!
 		else
 		{
 			display_message(WARNING_MESSAGE,
-				"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Object is not in this manager");
+				"MANAGED_OBJECT_NOT_IN_USE(cmzn_field).  Object is not in this manager");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Invalid argument(s)");
+			"MANAGED_OBJECT_NOT_IN_USE(cmzn_field).  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGED_OBJECT_NOT_IN_USE(Computed_field) */
+} /* MANAGED_OBJECT_NOT_IN_USE(cmzn_field) */
 
-DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name,manager)
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(cmzn_field,name,manager)
 
-PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(Computed_field, name)
+PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_field, name)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Computed_field type needs a special versions of MANAGER_MODIFY_NOT_IDENTIFIER
+cmzn_field type needs a special versions of MANAGER_MODIFY_NOT_IDENTIFIER
 since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name));
+	ENTER(MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name));
 	if (manager && object && new_data)
 	{
 		if (!(manager->locked))
 		{
-			if (IS_OBJECT_IN_LIST(Computed_field)(object,manager->object_list))
+			if (IS_OBJECT_IN_LIST(cmzn_field)(object,manager->object_list))
 			{
 				/* can only change number_of_components and value type if field NOT_IN_USE */
 				if (((new_data->number_of_components == object->number_of_components) &&
 					(cmzn_field_get_value_type(new_data) == cmzn_field_get_value_type(object))) ||
-					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
+					MANAGED_OBJECT_NOT_IN_USE(cmzn_field)(object, manager))
 				{
 					return_code = 1;
 					if ((new_data->manager) && (new_data->manager != manager))
 					{
 						display_message(ERROR_MESSAGE,
-							"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+							"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 							"Cannot modify definition to depend on field from another region");
 						return_code = 0;
 					}
@@ -772,24 +694,24 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 					{
 						/* cache changes because there could be new source fields added to manager and
 						 * old, volatile source fields removed by this modification */
-						MANAGER_BEGIN_CACHE(Computed_field)(manager);
-						if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
+						MANAGER_BEGIN_CACHE(cmzn_field)(manager);
+						if (!MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_field,
 							name)(object, new_data))
 						{
 							display_message(ERROR_MESSAGE,
-								"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+								"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 								"Could not copy object");
 							return_code = 0;
 						}
-						MANAGED_OBJECT_CHANGE(Computed_field)(object,
-							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
-						MANAGER_END_CACHE(Computed_field)(manager);
+						MANAGED_OBJECT_CHANGE(cmzn_field)(object,
+							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
+						MANAGER_END_CACHE(cmzn_field)(manager);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+						"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 						"Cannot change number of components or value type while field is in use");
 					return_code = 0;
 				}
@@ -797,7 +719,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+					"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 					"Object is not managed");
 				return_code = 0;
 			}
@@ -805,7 +727,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 		else
 		{
 			display_message(WARNING_MESSAGE,
-				"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+				"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 				"Manager is locked");
 			return_code = 0;
 		}
@@ -813,22 +735,22 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+			"MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name).  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
+} /* MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field,name) */
 
-DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
-DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(Computed_field,cmzn_fielditerator)
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(cmzn_field, name, const char *)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_field,cmzn_fielditerator)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct cmzn_region)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_field, struct cmzn_region)
 
 char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(Computed_field) *manager, const char *stem_name,
+	struct MANAGER(cmzn_field) *manager, const char *stem_name,
 	const char *separator, int first_number)
 {
 	char *field_name = NULL;
@@ -836,29 +758,29 @@ char *Computed_field_manager_get_unique_field_name(
 	int number = first_number;
 	if (number < 0)
 	{
-		number = NUMBER_IN_MANAGER(Computed_field)(manager) + 1;
+		number = NUMBER_IN_MANAGER(cmzn_field)(manager) + 1;
 	}
 	do
 	{
 		sprintf(field_name, "%s%s%d", stem_name, separator, number);
 		number++;
 	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(field_name, manager));
 	return field_name;
 }
 
 cmzn_fielditerator_id Computed_field_manager_create_iterator(
-	struct MANAGER(Computed_field) *manager)
+	struct MANAGER(cmzn_field) *manager)
 {
 	if (manager)
-		return CREATE_LIST_ITERATOR(Computed_field)(manager->object_list);
+		return CREATE_LIST_ITERATOR(cmzn_field)(manager->object_list);
 	return 0;
 }
 
 cmzn_fielditerator_id Computed_field_list_create_iterator(
-	struct LIST(Computed_field) *list)
+	struct LIST(cmzn_field) *list)
 {
-	return CREATE_LIST_ITERATOR(Computed_field)(list);
+	return CREATE_LIST_ITERATOR(cmzn_field)(list);
 }
 
 int cmzn_field_get_cache_index_private(cmzn_field_id field)
@@ -876,8 +798,8 @@ int cmzn_field_set_cache_index_private(cmzn_field_id field, int cache_index)
 	return 0;
 }
 
-int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager)
+int Computed_field_add_to_manager_private(struct cmzn_field *field,
+	struct MANAGER(cmzn_field) *manager)
 {
 	int return_code;
 
@@ -886,7 +808,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 	{
 		if (field->name[0] != 0)
 		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field->name, manager))
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(field->name, manager))
 			{
 				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
 				cmzn_field_set_name(field, unique_name);
@@ -899,7 +821,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 			cmzn_field_set_name(field, unique_name);
 			DEALLOCATE(unique_name);
 		}
-		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
+		return_code = ADD_OBJECT_TO_MANAGER(cmzn_field)(field,manager);
 		if (return_code)
 		{
 			/* notify field types which need to know when they are managed */
@@ -924,7 +846,7 @@ cmzn_field *Computed_field_create_generic(
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core)
 {
-	cmzn_field *field = 0;
+	cmzn_field *field = nullptr;
 	if ((NULL != fieldmodule) && (0 < number_of_components) &&
 		((0 == number_of_source_fields) ||
 			((0 < number_of_source_fields) && (NULL != source_fields))) &&
@@ -956,24 +878,21 @@ cmzn_field *Computed_field_create_generic(
 		if (return_code)
 		{
 			char *field_name = cmzn_fieldmodule_get_field_name(fieldmodule);
-			field = CREATE(Computed_field)(field_name ? field_name : "");
+			field = cmzn_field::create((field_name) ? field_name : "");
 			if (field_name)
-			{
 				DEALLOCATE(field_name);
-			}
-			if (NULL != field)
+			if (field)
 			{
-				ACCESS(Computed_field)(field);
 				field->number_of_components = number_of_components;
 				if (0 < number_of_source_fields)
 				{
-					ALLOCATE(field->source_fields, struct Computed_field *, number_of_source_fields);
+					ALLOCATE(field->source_fields, struct cmzn_field *, number_of_source_fields);
 					if (NULL != field->source_fields)
 					{
 						field->number_of_source_fields = number_of_source_fields;
 						for (int i = 0; i < number_of_source_fields; i++)
 						{
-							field->source_fields[i] = ACCESS(Computed_field)(source_fields[i]);
+							field->source_fields[i] = ACCESS(cmzn_field)(source_fields[i]);
 						}
 					}
 					else
@@ -1019,7 +938,7 @@ cmzn_field *Computed_field_create_generic(
 						Computed_field_set_coordinate_system(field, &coordinate_system);
 					}
 
-					Computed_field *replace_field =
+					cmzn_field *replace_field =
 						cmzn_fieldmodule_get_replace_field(fieldmodule);
 					if (replace_field)
 					{
@@ -1027,9 +946,9 @@ cmzn_field *Computed_field_create_generic(
 							(replace_field->core->get_type_string() == field_core->get_type_string()))
 						{
 							/* copy modifications to existing field. Can fail if new definition is incompatible */
-							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field, name)(
+							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(cmzn_field, name)(
 								replace_field, field, region->getFieldManager());
-							REACCESS(Computed_field)(&field, replace_field);
+							REACCESS(cmzn_field)(&field, replace_field);
 						}
 						else
 						{
@@ -1051,7 +970,7 @@ cmzn_field *Computed_field_create_generic(
 				}
 				if (!return_code)
 				{
-					DEACCESS(Computed_field)(&field);
+					DEACCESS(cmzn_field)(&field);
 				}
 			}
 		}
@@ -1064,8 +983,8 @@ cmzn_field *Computed_field_create_generic(
 	if (fieldmodule)
 	{
 		// replace_field, name etc. must not be used for further field creates, so clear
-		cmzn_fieldmodule_set_replace_field(fieldmodule, 0);
-		cmzn_fieldmodule_set_field_name(fieldmodule, 0);
+		cmzn_fieldmodule_set_replace_field(fieldmodule, nullptr);
+		cmzn_fieldmodule_set_field_name(fieldmodule, nullptr);
 		cmzn_fieldmodule_clear_coordinate_system(fieldmodule);
 	}
 	return (field);
@@ -1095,7 +1014,15 @@ void cmzn_field::clearCaches()
 	}
 }
 
-int Computed_field_is_defined_in_element(struct Computed_field *field,
+cmzn_fieldparameters *cmzn_field::getFieldparameters()
+{
+	if (this->fieldparameters)
+		return this->fieldparameters->access();
+	this->fieldparameters = cmzn_fieldparameters::create(this);
+	return this->fieldparameters;
+}
+
+int Computed_field_is_defined_in_element(struct cmzn_field *field,
 	struct FE_element *element)
 {
 	int return_code = 0;
@@ -1112,12 +1039,12 @@ int Computed_field_is_defined_in_element(struct Computed_field *field,
 }
 
 int Computed_field_is_defined_in_element_conditional(
-	struct Computed_field *field, void *element_void)
+	struct cmzn_field *field, void *element_void)
 {
 	return Computed_field_is_defined_in_element(field, static_cast<FE_element*>(element_void));
 }
 
-int Computed_field_is_defined_at_node(struct Computed_field *field,
+int Computed_field_is_defined_at_node(struct cmzn_field *field,
 	struct FE_node *node)
 {
 	int return_code = 0;
@@ -1133,7 +1060,7 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
 	return return_code;
 }
 
-int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
+int Computed_field_is_defined_at_node_conditional(struct cmzn_field *field,
 	void *node_void)
 {
 	return Computed_field_is_defined_at_node(field, static_cast<FE_node*>(node_void));
@@ -1162,31 +1089,40 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-int Computed_field_core::evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, const FieldDerivative&)
-{
-	return 0;  // Invalid operation for non-real fields, or not available / fallback to finite difference
-}
-
 int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative)
 {
-	if (fieldDerivative.getType() != FieldDerivative::TYPE_ELEMENT_XI)
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi derivatives");
-		return 0;
-	}
-	const FieldDerivativeMesh &fieldDerivativeElementXi = static_cast<const FieldDerivativeMesh&>(fieldDerivative);
+	const FE_mesh *mesh = fieldDerivative.getMesh();
 	const Field_location_element_xi* element_xi_location = cache.get_location_element_xi();
-	if (!element_xi_location)
+	const Field_location_node* node_location = nullptr;
+	cmzn_element *element = nullptr;
+	const FE_value *xi = nullptr;
+	cmzn_node *node = nullptr;
+	if (element_xi_location)
+	{
+		element = element_xi_location->get_element();
+		xi = element_xi_location->get_xi();
+	}
+	else if (node_location = cache.get_location_node())
+	{
+		node = node_location->get_node();
+		element = node_location->get_host_element();
+		if (mesh)
+		{
+			display_message(ERROR_MESSAGE,
+				"Field evaluateDerivativeFiniteDifference:  Cannot evaluate mesh derivatives at embedded node locations");
+			return 0;
+		}
+	}
+	if (!element)
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for element_xi location");
+			"Field evaluateDerivativeFiniteDifference:  Only implemented for element location or node location with host element");
 		return 0;
 	}
-	if (element_xi_location->get_element_dimension() != fieldDerivativeElementXi.getElementDimension())
+	if ((mesh) && (element->getMesh() != mesh))
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_core::evaluateDerivativeFiniteDifference.  Only implemented for derivative and location of same element dimension");
+			"Field evaluateDerivativeFiniteDifference:  Only implemented for derivative and location on the same mesh");
 		return 0;
 	}
 	// evaluate field at perturbed locations in extra working cache
@@ -1200,71 +1136,149 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	}
 	workingCache->setTime(cache.getTime());
 	const FieldDerivative *lowerFieldDerivative = fieldDerivative.getLowerDerivative();
-	const int lowerDerivativeTermCount = (lowerFieldDerivative) ? lowerFieldDerivative->getTermCount() : 1;
 	const int componentCount = this->field->number_of_components;
-	cmzn_element *element = element_xi_location->get_element();
-	const int elementDimension = element_xi_location->get_element_dimension();
-	const FE_value *xi = element_xi_location->get_xi();
 	FE_value perturbedXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	for (int d = 0; d < elementDimension; ++d)
-		perturbedXi[d] = xi[d];
-	const FE_value xiPerturbation = 1.0E-5;
-	const FE_value weight = 0.5 / xiPerturbation;
+	// values set differently for parameter or mesh derivative applied:
+	FE_value perturbationDelta;
+	int derivativeCount;
+	FE_element_field_evaluation *parameterFieldEvaluation;
+	cmzn_fieldparameters *fieldParameters = fieldDerivative.getFieldparameters();
+	if (fieldParameters)
+	{
+		// parameter derivatives are always applied first here so outside/after mesh derivatives
+		perturbationDelta = fieldParameters->getPerturbationDelta();
+		derivativeCount = fieldParameters->getNumberOfElementParameters(element);
+		if (derivativeCount <= 0)  // GRC or is zero a success?
+			return 0;
+		// need to set element location first to obtain FE_element_field_evaluation for
+		if (node_location)
+		{
+			const int elementDimension = element->getDimension();
+			// need any valid xi coordinate
+			for (int d = 0; d < elementDimension; ++d)
+				perturbedXi[d] = 0.0;
+			xi = perturbedXi;
+		}
+		workingCache->setMeshLocation(element, xi);
+		parameterFieldEvaluation = cmzn_field_get_cache_FE_element_field_evaluation(fieldParameters->getField(), workingCache);
+		if (!parameterFieldEvaluation)
+		{
+			display_message(ERROR_MESSAGE, "Field evaluateDerivativeFiniteDifference:  Failed to get parameter field evaluation");
+			return 0;
+		}
+	}
+	else
+	{
+		const int elementDimension = mesh->getDimension();
+		for (int d = 0; d < elementDimension; ++d)
+			perturbedXi[d] = xi[d];
+		perturbationDelta = 1.0E-5;
+		derivativeCount = elementDimension;
+	}
+	const FE_value plusDelta = +perturbationDelta;
+	const FE_value minusDelta = -perturbationDelta;
+	const FE_value weight = 0.5/perturbationDelta;
 	DerivativeValueCache &derivativeValueCache = *valueCache.getDerivativeValueCache(fieldDerivative);
 	const FE_value *lowerValues = nullptr;
-	for (int d = 0; d < elementDimension; ++d)
+	for (int d = 0; d < derivativeCount; ++d)
 	{
+		// -/+ perturbation of lower derivative
 		for (int k = 0; k < 2; ++k)
 		{
-			if (k == 0)
-				perturbedXi[d] -= xiPerturbation;
-			else
-				perturbedXi[d] += xiPerturbation;
-			workingCache->setMeshLocation(element, perturbedXi);
+			if (fieldParameters)
+			{
+				parameterFieldEvaluation->addParameterPerturbation(/*parameterIndex*/d, (k == 0) ? minusDelta : plusDelta);
+				// the following must call locationChanged:
+				if (element_xi_location)
+					workingCache->setMeshLocation(element, xi);
+				else
+					workingCache->setNodeWithHostElement(node, element);
+			}
+			else  // (mesh)
+			{
+				perturbedXi[d] += (k == 0) ? minusDelta : plusDelta;
+				workingCache->setMeshLocation(element, perturbedXi);
+			}
+			int lowerDerivativeTermCount = 1;
 			if (lowerFieldDerivative)
 			{
-				const DerivativeValueCache *derivativeValueCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
-				if (!derivativeValueCache)
+				const DerivativeValueCache *derivativeCache = this->field->evaluateDerivative(*workingCache, *lowerFieldDerivative);
+				if (derivativeCache)
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field lower derivative values");
-					return 0;
-				}
-				lowerValues = derivativeValueCache->values;
-			}
-			else
-			{
-				if (!this->field->evaluate(*workingCache))
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_core::evaluateDerivativeFiniteDifference.  Could not evaluate field values");
-					return 0;
-				}
-				lowerValues = lowerValueCache->values;
-			}
-			// values cycle over components slowest, then this outermost derivative, then lower derivatives
-			for (int c = 0; c < componentCount; ++c)
-			{
-				const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
-				FE_value *dst = derivativeValueCache.values + (c*elementDimension + d)*lowerDerivativeTermCount;
-				if (k == 0)
-				{
-					for (int v = 0; v < lowerDerivativeTermCount; ++v)
-						dst[v] = src[v];
+					lowerValues = derivativeCache->values;
+					lowerDerivativeTermCount = derivativeCache->getTermCount();
 				}
 				else
 				{
-					for (int v = 0; v < lowerDerivativeTermCount; ++v)
-						dst[v] = weight*(src[v] - dst[v]);
+					display_message(ERROR_MESSAGE,
+						"Field evaluateDerivativeFiniteDifference:  Could not evaluate field lower derivative values");
+					lowerValues = nullptr;
 				}
 			}
-			perturbedXi[d] = xi[d];
+			else
+			{
+				if (this->field->evaluate(*workingCache))
+				{
+					lowerValues = lowerValueCache->values;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Field evaluateDerivativeFiniteDifference:  Could not evaluate field values");
+					lowerValues = nullptr;
+				}
+			}
+			if (lowerValues)
+			{
+				// values cycle over components slowest, then lower derivatives, fastest over this finite difference derivative
+				for (int c = 0; c < componentCount; ++c)
+				{
+					const FE_value *src = lowerValues + c*lowerDerivativeTermCount;
+					FE_value *dst = derivativeValueCache.values + c*derivativeCount*lowerDerivativeTermCount + d;
+					if (k == 0)
+					{
+						for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						{
+							*dst = src[v];
+							dst += derivativeCount;
+						}
+					}
+					else
+					{
+						for (int v = 0; v < lowerDerivativeTermCount; ++v)
+						{
+							*dst = weight*(src[v] - *dst);
+							dst += derivativeCount;
+						}
+					}
+				}
+			}
+			if (fieldParameters)
+				parameterFieldEvaluation->removeParameterPerturbation();
+			else
+				perturbedXi[d] = xi[d];
+			if (!lowerValues)
+				return 0;  // can only return here now parameter perturbation is removed
 		}
 	}
 	return 1;
 }
 
-int Computed_field_has_string_value_type(struct Computed_field *field,
+// default valid for most complicated or transcendental functions:
+// use the maximum source field order, maximised up to the mesh order or total order
+int Computed_field_core::getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+{
+	int order = 0;
+	for (int i = 0; i < this->field->number_of_source_fields; ++i)
+	{
+		const int sourceMaximumOrder = fieldDerivative.getMaximumTreeOrder(this->field->source_fields[i]->getDerivativeTreeOrder(fieldDerivative));
+		if (sourceMaximumOrder > order)
+			order = sourceMaximumOrder;
+	}
+	return order;
+}
+
+int Computed_field_has_string_value_type(struct cmzn_field *field,
 	void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
@@ -1305,8 +1319,8 @@ Returns 1 if any of the source fields have multiple times.
 	return (return_code);
 } /* Computed_field_default_has_multiple_times */
 
-int Computed_field_for_each_ancestor(struct Computed_field *field,
-	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data)
+int Computed_field_for_each_ancestor(struct cmzn_field *field,
+	LIST_ITERATOR_FUNCTION(cmzn_field) *iterator_function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1486,8 +1500,8 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 	int result = cmzn_field_evaluate_real(field, cache, number_of_values, values);
 	if (result != CMZN_OK)
 		return result;
-	const FieldDerivativeMesh *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
-	const int termCount = fieldDerivative->getTermCount();
+	const FieldDerivative *fieldDerivative = element_xi_location->get_element()->getMesh()->getFieldDerivative(/*order*/1);
+	const int termCount = fieldDerivative->getMeshTermCount();
 	if ((number_of_derivatives != termCount) || (!derivatives))
 	{
 		result = CMZN_ERROR_ARGUMENT;
@@ -1530,9 +1544,10 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_differentialoperator_id differential_operator,
 	cmzn_fieldcache_id cache, int number_of_values, double *values)
 {
-	if (cmzn_fieldcache_check(field, cache) && differential_operator &&
-		(number_of_values >= field->number_of_components) && values &&
-		field->core->has_numerical_components())
+	if (cmzn_fieldcache_check(field, cache)
+		&& (differential_operator)
+		&& (number_of_values > 0) && (values)
+		&& field->core->has_numerical_components())
 	{
 		FieldDerivative& fieldDerivative = differential_operator->getFieldDerivative();
 		if (field->manager->owner != fieldDerivative.getRegion())
@@ -1540,16 +1555,38 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 		const DerivativeValueCache *derivativeValueCache = field->evaluateDerivative(*cache, fieldDerivative);
 		if (derivativeValueCache)
 		{
-			const int termCount = fieldDerivative.getTermCount();
-			const int term = differential_operator->getTerm();
+			// with some derivatives, don't know number of terms until evaluated, so check here:
 			const int componentCount = field->number_of_components;
-			const FE_value *derivatives = derivativeValueCache->values + term;
-			for (int c = 0; c < componentCount; ++c)
-				values[c] = derivatives[c*termCount];
+			const int termCount = derivativeValueCache->getTermCount();
+			const int term = differential_operator->getTerm();
+			if (term < 0)
+			{
+				const int valueCount = componentCount*termCount;
+				if (number_of_values < valueCount)
+				{
+					display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Too few values requested");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const FE_value *derivatives = derivativeValueCache->values;
+				for (int v = 0; v < valueCount; ++v)
+					values[v] = derivatives[v];
+			}
+			else
+			{
+				if (number_of_values < componentCount)
+				{
+					display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Too few values requested");
+					return CMZN_ERROR_ARGUMENT;
+				}
+				const FE_value *derivatives = derivativeValueCache->values + term;
+				for (int c = 0; c < componentCount; ++c)
+					values[c] = derivatives[c*termCount];
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_GENERAL;
 	}
+	display_message(ERROR_MESSAGE, "Field evaluateDerivative.  Invalid arguments");
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1562,7 +1599,7 @@ bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 }
 
 int Computed_field_get_native_discretization_in_element(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
+	struct cmzn_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1637,12 +1674,12 @@ Inherits its result from the first source field -- if any.
 	return (return_code);
 } /* Computed_field_default_get_native_discretization_in_element */
 
-int recursively_add_source_fields_to_list( struct Computed_field *field, struct LIST(Computed_field) *field_list )
+int recursively_add_source_fields_to_list( struct cmzn_field *field, struct LIST(cmzn_field) *field_list )
 {
 	int return_code = 1;
 	if ( field )
 	{
-		ADD_OBJECT_TO_LIST(Computed_field)(field,field_list);
+		ADD_OBJECT_TO_LIST(cmzn_field)(field,field_list);
 		for (int i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
 		{
 			recursively_add_source_fields_to_list(field->source_fields[i],field_list);
@@ -1658,14 +1695,14 @@ int recursively_add_source_fields_to_list( struct Computed_field *field, struct 
 	return return_code;
 }
 
-int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use)
+int Computed_field_is_coordinate_field(struct cmzn_field *field, void *not_in_use)
 {
 	USE_PARAMETER(not_in_use);
 	return (cmzn_field_is_type_coordinate(field) &&
 		Computed_field_has_up_to_3_numerical_components(field, 0));
 }
 
-int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )
+int Computed_field_get_domain( struct cmzn_field *field, struct LIST(cmzn_field) *domain_field_list )
 {
 	int return_code = 0;
 	if (field && domain_field_list)
@@ -1680,7 +1717,7 @@ int Computed_field_get_domain( struct Computed_field *field, struct LIST(Compute
 	return return_code;
 }
 
-int Computed_field_is_non_linear(struct Computed_field *field)
+int Computed_field_is_non_linear(struct cmzn_field *field)
 {
 	int return_code = 0;
 	if (field)
@@ -1705,7 +1742,7 @@ int cmzn_field_get_number_of_components(cmzn_field *field)
 }
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
-	struct Computed_field *field)
+	struct cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1732,7 +1769,7 @@ Computed_field_set_coordinate_system for further details.
 	return (coordinate_system);
 } /* Computed_field_get_coordinate_system */
 
-int Computed_field_set_coordinate_system(struct Computed_field *field,
+int Computed_field_set_coordinate_system(struct cmzn_field *field,
 	const Coordinate_system *coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -1756,7 +1793,7 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 	return 0;
 }
 
-const char *Computed_field_get_type_string(struct Computed_field *field)
+const char *Computed_field_get_type_string(struct cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1789,7 +1826,7 @@ The calling function must not deallocate the returned string.
 	return (return_string);
 } /* Computed_field_get_type_string */
 
-int Computed_field_set_command_string(struct Computed_field *field,
+int Computed_field_set_command_string(struct cmzn_field *field,
 	const char *command_string)
 /*******************************************************************************
 LAST MODIFIED : 6 September 2007
@@ -1823,9 +1860,9 @@ using as an identifier in the manager, such as spaces or punctuation.
 	return (return_code);
 } /* Computed_field_set_command_string */
 
-int Computed_field_get_native_resolution(struct Computed_field *field,
+int Computed_field_get_native_resolution(struct cmzn_field *field,
 	int *dimension, int **sizes,
-	struct Computed_field **texture_coordinate_field)
+	struct cmzn_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1855,7 +1892,7 @@ the <field>. These parameters will be used in image processing.
 
 int Computed_field_core::get_native_resolution(
 	int *dimension, int **sizes,
-	struct Computed_field **texture_coordinate_field)
+	struct cmzn_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1897,14 +1934,14 @@ Inherits its result from the first source field that returns it-- if any.
 	return (return_code);
 } /* Computed_field_default_get_native_resolution */
 
-int Computed_field_has_value_type_mesh_location(struct Computed_field *field,
+int Computed_field_has_value_type_mesh_location(struct cmzn_field *field,
 	void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
 	return (cmzn_field_get_value_type(field) == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION);
 }
 
-int Computed_field_has_numerical_components(struct Computed_field *field,
+int Computed_field_has_numerical_components(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -1933,7 +1970,7 @@ returned as FE_value when evaluated.
 	return (return_code);
 } /* Computed_field_has_numerical_components */
 
-int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void)
+int Computed_field_is_scalar(struct cmzn_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1961,7 +1998,7 @@ numerical.
 } /* Computed_field_is_scalar */
 
 int Computed_field_has_up_to_3_numerical_components(
-	struct Computed_field *field,void *dummy_void)
+	struct cmzn_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -1990,7 +2027,7 @@ are numerical - useful for selecting vector/coordinate fields.
 } /* Computed_field_has_up_to_3_numerical_components */
 
 int Computed_field_has_up_to_4_numerical_components(
-	struct Computed_field *field,void *dummy_void)
+	struct cmzn_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -2018,7 +2055,7 @@ are numerical - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_up_to_4_numerical_components */
 
-int Computed_field_has_at_least_2_components(struct Computed_field *field,
+int Computed_field_has_at_least_2_components(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2045,7 +2082,7 @@ Iterator/conditional function returning true if <field> has at least 2 component
 	return (return_code);
 } /* Computed_field_has_at_least_2_components */
 
-int Computed_field_has_3_components(struct Computed_field *field,
+int Computed_field_has_3_components(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2073,7 +2110,7 @@ components - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_3_components */
 
-int Computed_field_has_4_components(struct Computed_field *field,
+int Computed_field_has_4_components(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2101,7 +2138,7 @@ components - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_4_components */
 
-int Computed_field_has_16_components(struct Computed_field *field,
+int Computed_field_has_16_components(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 21 February 2008
@@ -2129,7 +2166,7 @@ components - useful for selecting transformation matrix.
 	return (return_code);
 } /* Computed_field_has_16_components */
 
-int Computed_field_has_n_components(struct Computed_field *field,
+int Computed_field_has_n_components(struct cmzn_field *field,
 	void *components_ptr_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2156,7 +2193,7 @@ components as that specified by <components_ptr_void>.
 	return (return_code);
 } /* Computed_field_has_n_components */
 
-int Computed_field_has_multiple_times(struct Computed_field *field)
+int Computed_field_has_multiple_times(struct cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -2183,7 +2220,7 @@ Conditional function returning true if <field> depends on time.
 	return (return_code);
 } /* Computed_field_has_multiple_times */
 
-int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
+int Computed_field_is_orientation_scale_capable(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2222,7 +2259,7 @@ glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
 	return (return_code);
 } /* Computed_field_is_orientation_scale_capable */
 
-int Computed_field_is_stream_vector_capable(struct Computed_field *field,
+int Computed_field_is_stream_vector_capable(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2263,7 +2300,7 @@ The number of components controls how the field is interpreted:
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
 
-int Computed_field_find_element_xi(struct Computed_field *field,
+int Computed_field_find_element_xi(struct cmzn_field *field,
 	cmzn_fieldcache_id field_cache, const FE_value *values,
 	int number_of_values, struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest)
@@ -2291,7 +2328,7 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 	return (return_code);
 }
 
-int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
+int Computed_field_is_find_element_xi_capable(struct cmzn_field *field,
 	void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2354,7 +2391,7 @@ Returns true if all fields are defined in the same way at the two nodes.
 	return (return_code);
 } /* equivalent_computed_fields_at_nodes */
 
-int list_Computed_field(struct Computed_field *field,void *dummy_void)
+int list_Computed_field(struct cmzn_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -2413,7 +2450,7 @@ Writes the properties of the <field> to the command window.
 	return (return_code);
 } /* list_Computed_field */
 
-int list_Computed_field_name(struct Computed_field *field,void *dummy_void)
+int list_Computed_field_name(struct cmzn_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -2453,7 +2490,7 @@ components and coordinate system.
 	return (return_code);
 } /* list_Computed_field_name */
 
-int Computed_field_contents_match(struct Computed_field *field,
+int Computed_field_contents_match(struct cmzn_field *field,
 	void *other_computed_field_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2464,10 +2501,10 @@ its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
 {
 	int i, return_code;
-	struct Computed_field *other_computed_field;
+	struct cmzn_field *other_computed_field;
 
 	ENTER(Computed_field_contents_match);
-	if (field && (other_computed_field=(struct Computed_field *)other_computed_field_void))
+	if (field && (other_computed_field=(struct cmzn_field *)other_computed_field_void))
 	{
 		if((field->number_of_components==other_computed_field->number_of_components)
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
@@ -2584,7 +2621,7 @@ Default listing of source fields and source values.
 				append_string(&command_string, " fields", &error);
 			for (i = 0 ; i < field->number_of_source_fields ; i++)
 			{
-				if (GET_NAME(Computed_field)(field->source_fields[i], &field_name))
+				if (GET_NAME(cmzn_field)(field->source_fields[i], &field_name))
 				{
 					append_string(&command_string, " ", &error);
 					make_valid_token(&field_name);
@@ -2612,7 +2649,7 @@ Default listing of source fields and source values.
 	return (command_string);
 } /* Computed_field_core::get_command_string */
 
-int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_list ) const
+int Computed_field_core::get_domain( struct LIST(cmzn_field) *domain_field_list ) const
 {
 	int return_code = 0;
 
@@ -2633,34 +2670,34 @@ int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_l
 	return return_code;
 }
 
-void Computed_field::setChangedPrivate(MANAGER_CHANGE(Computed_field) change)
+void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
 {
-	if (this->manager_change_status == MANAGER_CHANGE_NONE(Computed_field))
-		ADD_OBJECT_TO_LIST(Computed_field)(this, this->manager->changed_object_list);
+	if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
+		ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
 	this->manager_change_status |= change;
 }
 
-int Computed_field::setOptionalSourceField(int index, Computed_field *sourceField)
+int cmzn_field::setOptionalSourceField(int index, cmzn_field *sourceField)
 {
-	if ((index > 0) && ((index == this->number_of_source_fields) ||
-		(index == (this->number_of_source_fields + 1))))
+	if ((index == this->number_of_source_fields) ||
+		(index == (this->number_of_source_fields + 1)))
 	{
 		if (sourceField)
 		{
 			if (index > this->number_of_source_fields)
 			{
-				Computed_field **tmp;
-				REALLOCATE(tmp, this->source_fields, Computed_field *, index);
+				cmzn_field **tmp;
+				REALLOCATE(tmp, this->source_fields, cmzn_field *, index);
 				if (!tmp)
 					return CMZN_ERROR_MEMORY;
-				tmp[index - 1] = ACCESS(Computed_field)(sourceField);
+				tmp[index - 1] = ACCESS(cmzn_field)(sourceField);
 				this->source_fields = tmp;
 				++(this->number_of_source_fields);
 				this->setChanged();
 			}
 			else if (sourceField != this->source_fields[index - 1])
 			{
-				REACCESS(Computed_field)(&(this->source_fields[index - 1]), sourceField);
+				REACCESS(cmzn_field)(&(this->source_fields[index - 1]), sourceField);
 				this->setChanged();
 			}
 		}
@@ -2668,7 +2705,7 @@ int Computed_field::setOptionalSourceField(int index, Computed_field *sourceFiel
 		{
 			if (index == this->number_of_source_fields)
 			{
-				DEACCESS(Computed_field)(&(this->source_fields[index - 1]));
+				DEACCESS(cmzn_field)(&(this->source_fields[index - 1]));
 				--(this->number_of_source_fields);
 				this->setChanged();
 			}
@@ -2682,23 +2719,23 @@ int Computed_field_core::check_dependency()
 {
 	if (field)
 	{
-		if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(cmzn_field)))
 		{
 			for (int i = 0; i < field->number_of_source_fields; i++)
 			{
 				int source_change_status = field->source_fields[i]->core->check_dependency();
-				if (source_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field))
+				if (source_change_status & MANAGER_CHANGE_FULL_RESULT(cmzn_field))
 				{
-					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 					break;
 				}
-				else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
-					field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+				else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(cmzn_field))
+					field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(cmzn_field));
 			}
 		}
 		return field->manager_change_status;
 	}
-	return MANAGER_CHANGE_NONE(Computed_field);
+	return MANAGER_CHANGE_NONE(cmzn_field);
 }
 
 bool Computed_field_core::is_non_linear() const
@@ -2775,7 +2812,7 @@ int Computed_field_broadcast_field_components(
 					**field_to_wrap, number_of_components, source_component_indexes_in);
 				cmzn_fieldmodule_destroy(&temp_field_module);
 				delete[] source_component_indexes_in;
-				DEACCESS(Computed_field)(*field_to_wrap);
+				DEACCESS(cmzn_field)(*field_to_wrap);
 				*(*field_to_wrap) = broadcast_wrapper;
 				return_code = 1;
 			}
@@ -2816,8 +2853,8 @@ int cmzn_field_set_managed(cmzn_field_id field, bool value)
 		}
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Computed_field)(
-				field, MANAGER_CHANGE_DEFINITION(Computed_field));
+			MANAGED_OBJECT_CHANGE(cmzn_field)(
+				field, MANAGER_CHANGE_DEFINITION(cmzn_field));
 		}
 		return CMZN_OK;
 	}
@@ -2862,7 +2899,7 @@ int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus)
 			field->coordinate_system.parameters.focus = useFocus;
 			// copy to wrapped FE_field:
 			field->core->propagate_coordinate_system();
-			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+			MANAGED_OBJECT_CHANGE(cmzn_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
 		}
 		return CMZN_OK;
 	}
@@ -2936,7 +2973,7 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 		field->coordinate_system.type = type;
 		// copy to wrapped FE_field:
 		field->core->propagate_coordinate_system();
-		MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+		MANAGED_OBJECT_CHANGE(cmzn_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
 	}
 	return 1;
 }
@@ -2951,7 +2988,7 @@ const char *cmzn_field_get_name_internal(cmzn_field_id field)
 	return field->name;
 }
 
-int cmzn_field_set_name(struct Computed_field *field, const char *name)
+int cmzn_field_set_name(struct cmzn_field *field, const char *name)
 {
 	int return_code;
 	if (field && name)
@@ -2962,7 +2999,7 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 		if (field->manager)
 		{
 			manager_field_list = reinterpret_cast<cmzn_set_cmzn_field *>(field->manager->object_list);
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(
 				name, field->manager))
 			{
 				display_message(ERROR_MESSAGE, "cmzn_field_set_name.  "
@@ -3012,14 +3049,14 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 			if (field->manager)
 			{
 				// begin/end cache to avoid two messages if core implements set_name
-				MANAGER_BEGIN_CACHE(Computed_field)(field->manager);
-				MANAGED_OBJECT_CHANGE(Computed_field)(field,
-					MANAGER_CHANGE_IDENTIFIER(Computed_field));
+				MANAGER_BEGIN_CACHE(cmzn_field)(field->manager);
+				MANAGED_OBJECT_CHANGE(cmzn_field)(field,
+					MANAGER_CHANGE_IDENTIFIER(cmzn_field));
 			}
 			// allow core type to change name of wrapped objects e.g. FE_field
 			field->core->set_name(name);
 			if (field->manager)
-				MANAGER_END_CACHE(Computed_field)(field->manager);
+				MANAGER_END_CACHE(cmzn_field)(field->manager);
 		}
 	}
 	else
@@ -3044,7 +3081,7 @@ int cmzn_field_set_name_unique_concatentate(cmzn_field_id field, const char *fir
 		return CMZN_RESULT_ERROR_MEMORY;
 	int number = 0;
 	sprintf(name, "%s%s", first, second);
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(name, field->manager))
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(name, field->manager))
 	{
 		++number;
 		sprintf(name + len, "%d", number);
@@ -3066,7 +3103,7 @@ cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index)
 	cmzn_field_id source_field = 0;
 	if (field && (0 < index) && (index <= field->number_of_source_fields))
 	{
-		source_field = ACCESS(Computed_field)(field->source_fields[index - 1]);
+		source_field = ACCESS(cmzn_field)(field->source_fields[index - 1]);
 	}
 	return source_field;
 }
@@ -3089,40 +3126,40 @@ int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value)
 		const bool newValue = field->core->isTypeCoordinate();
 		if (newValue != oldValue)
 		{
-			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_DEFINITION(Computed_field));
+			MANAGED_OBJECT_CHANGE(cmzn_field)(field, MANAGER_CHANGE_DEFINITION(cmzn_field));
 		}
 		return result;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
+int Computed_field_manager_set_region(struct MANAGER(cmzn_field) *manager,
 	struct cmzn_region *region)
 {
-	return MANAGER_SET_OWNER(Computed_field)(manager, region);
+	return MANAGER_SET_OWNER(cmzn_field)(manager, region);
 }
 
 struct cmzn_region *Computed_field_manager_get_region(
-	struct MANAGER(Computed_field) *manager)
+	struct MANAGER(cmzn_field) *manager)
 {
-	return MANAGER_GET_OWNER(Computed_field)(manager);
+	return MANAGER_GET_OWNER(cmzn_field)(manager);
 }
 
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
-	struct MANAGER(Computed_field) *manager)
+	struct MANAGER(cmzn_field) *manager)
 {
 	return const_cast<const cmzn_set_cmzn_field&>(
 		*(reinterpret_cast<cmzn_set_cmzn_field*>(manager->object_list)));
 }
 
-struct cmzn_region *Computed_field_get_region(struct Computed_field *field)
+struct cmzn_region *Computed_field_get_region(struct cmzn_field *field)
 {
 	if (field)
-		return MANAGER_GET_OWNER(Computed_field)(field->manager);
+		return MANAGER_GET_OWNER(cmzn_field)(field->manager);
 	return 0;
 }
 
-Computed_field *Computed_field_modify_data::get_field()
+cmzn_field *Computed_field_modify_data::get_field()
 {
 	return cmzn_fieldmodule_get_replace_field(fieldmodule);
 };
@@ -3132,14 +3169,14 @@ cmzn_region *Computed_field_modify_data::get_region()
 	return cmzn_fieldmodule_get_region_internal(fieldmodule);
 };
 
-MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
+MANAGER(cmzn_field) *Computed_field_modify_data::get_field_manager()
 {
 	return this->get_region()->getFieldManager();
 };
 
-int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_field_void)
+int Computed_field_does_not_depend_on_field(cmzn_field *field, void *source_field_void)
 {
-	struct Computed_field *source_field = (struct Computed_field *)source_field_void;
+	struct cmzn_field *source_field = (struct cmzn_field *)source_field_void;
 	int return_code = 0;
 
 	if (field && source_field && field != source_field)
@@ -3150,13 +3187,13 @@ int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_
 	return !return_code;
 }
 
-int Computed_field_is_not_source_field_of_others(struct Computed_field *field)
+int Computed_field_is_not_source_field_of_others(struct cmzn_field *field)
 {
 	int return_code = 0;
 
 	if (field->manager)
 	{
-		return_code = FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+		return_code = FOR_EACH_OBJECT_IN_MANAGER(cmzn_field)(
 			Computed_field_does_not_depend_on_field,(void *)field,
 			field->manager);
 	}
@@ -3169,40 +3206,40 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field)
 }
 
 void Computed_field_manager_propagate_hierarchical_field_changes(
-	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message)
+	MANAGER(cmzn_field) *manager, MANAGER_MESSAGE(cmzn_field) *message)
 {
 	if (manager && message)
 	{
-		MANAGER_BEGIN_CACHE(Computed_field)(manager);
+		MANAGER_BEGIN_CACHE(cmzn_field)(manager);
 		cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
 		for (cmzn_set_cmzn_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
 			(*iter)->core->propagate_hierarchical_field_changes(message);
-		MANAGER_END_CACHE(Computed_field)(manager);
+		MANAGER_END_CACHE(cmzn_field)(manager);
 	}
 }
 
-void Computed_field_manager_subregion_removed(MANAGER(Computed_field) *manager,
+void Computed_field_manager_subregion_removed(MANAGER(cmzn_field) *manager,
 	cmzn_region *subregion)
 {
 	if (manager && subregion)
 	{
-		MANAGER_BEGIN_CACHE(Computed_field)(manager);
+		MANAGER_BEGIN_CACHE(cmzn_field)(manager);
 		cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
 		for (cmzn_set_cmzn_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
 			(*iter)->core->subregionRemoved(subregion);
-		MANAGER_END_CACHE(Computed_field)(manager);
+		MANAGER_END_CACHE(cmzn_field)(manager);
 	}
 }
 
 int Computed_field_manager_message_get_object_change_and_detail(
-	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
+	struct MANAGER_MESSAGE(cmzn_field) *message, struct cmzn_field *field,
 	const struct cmzn_field_change_detail **change_detail_address)
 {
 	if (message)
 		return message->getObjectChangeFlagsAndDetail(field, change_detail_address);
 	if (change_detail_address)
 		*change_detail_address = 0;
-	return MANAGER_CHANGE_NONE(Computed_field);
+	return MANAGER_CHANGE_NONE(cmzn_field);
 }
 
 class cmzn_field_coordinate_system_type_conversion
@@ -3677,4 +3714,12 @@ char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)
 enum cmzn_field_type cmzn_field_get_type(cmzn_field_id field)
 {
 	return field->core->get_type();
+}
+
+cmzn_fieldparameters_id cmzn_field_get_fieldparameters(cmzn_field_id field)
+{
+	if (field)
+		return field->getFieldparameters();
+	display_message(ERROR_MESSAGE, "Field getFieldparameters:  Invalid field");
+	return nullptr;
 }

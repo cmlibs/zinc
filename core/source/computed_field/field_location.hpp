@@ -21,6 +21,11 @@
 #include "finite_element/finite_element_basis.hpp"
 #include "general/value.h"
 
+class Field_location_element_xi;
+class Field_location_field_values;
+class Field_location_node;
+class Field_location_time;
+
 class Field_location
 {
 public:
@@ -65,6 +70,19 @@ public:
 	{
 		return this->type;
 	}
+
+	/** @return  Pointer to element xi location, or nullptr if not this type of location */
+	inline const Field_location_element_xi *cast_element_xi() const;
+
+	/** @return  Pointer to field values location, or nullptr if not this type of location */
+	inline const Field_location_field_values *cast_field_values() const;
+
+	/** @return  Pointer to node location, or nullptr if not this type of location */
+	inline const Field_location_node *cast_node() const;
+
+	/** @return Pointer to time location, or nullptr if not this type of location */
+	inline const Field_location_time *cast_time() const;
+
 };
 
 class Field_location_element_xi : public Field_location
@@ -150,6 +168,13 @@ public:
 
 };
 
+const Field_location_element_xi *Field_location::cast_element_xi() const
+{
+	if (this->get_type() == TYPE_ELEMENT_XI)
+		return static_cast<const Field_location_element_xi *>(this);
+	return nullptr;
+}
+
 /** A location represented by values of a single field */
 class Field_location_field_values : public Field_location
 {
@@ -198,15 +223,24 @@ public:
 
 };
 
+const Field_location_field_values *Field_location::cast_field_values() const
+{
+	if (this->get_type() == TYPE_FIELD_VALUES)
+		return static_cast<const Field_location_field_values *>(this);
+	return nullptr;
+}
+
 class Field_location_node : public Field_location
 {
 private:
 	cmzn_node *node;  // not accessed
+	cmzn_element *host_element;  // optional; not accessed
 
 public:
 	Field_location_node() :
 		Field_location(TYPE_NODE),
-		node(0)
+		node(nullptr),
+		host_element(nullptr)
 	{
 	}
 
@@ -220,8 +254,31 @@ public:
 	void set_node(cmzn_node *node_in)
 	{
 		this->node = node_in;
+		this->host_element = nullptr;
 	}
+
+	/** Set node with host element the node is embedded in.
+	 * @param node_in  Node pointer. Client must ensure exists while pointer held.
+	 * @param element_in  Element pointer. Client must ensure exists while pointer held */
+	void set_node_with_host_element(cmzn_node *node_in, cmzn_element *element_in)
+	{
+		this->node = node_in;
+		this->host_element = element_in;
+	}
+
+	cmzn_element *get_host_element() const
+	{
+		return this->host_element;
+	}
+
 };
+
+const Field_location_node *Field_location::cast_node() const
+{
+	if (this->get_type() == TYPE_NODE)
+		return static_cast<const Field_location_node *>(this);
+	return nullptr;
+}
 
 class Field_location_time : public Field_location
 {
@@ -231,5 +288,12 @@ public:
 	{
 	}
 };
+
+const Field_location_time *Field_location::cast_time() const
+{
+	if (this->get_type() == TYPE_TIME)
+		return static_cast<const Field_location_time *>(this);
+	return nullptr;
+}
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */

@@ -283,8 +283,9 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * Creates a field returning the location in a mesh at which the calculated
  * source_field value equals the mesh_field value. Its values consist of an
  * element and coordinates in the element's local 'xi' coordinate chart.
- * Type-specific functions allow the search to find the nearest value and set a
- * conditional field.
+ * Type-specific functions allow the search to find the nearest value and
+ * set the search mesh to be different e.g. to limit to a subset mesh such
+ * as faces or lines.
  *
  * @param fieldmodule  Region field module which will own new field.
  * @param source_field  Source field whose value is to be searched for. Must have
@@ -293,7 +294,9 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * @param mesh_field  Field defined over the mesh which is to be matched with
  * source_field. Must have the same number of numerical components as the
  * source_field, and at least as many as mesh dimension.
- * @param mesh  The mesh to find locations in.
+ * @param mesh  The mesh to find and store locations in. The search mesh is
+ * initially set to this mesh, but can be changed, e.g. to find locations on a
+ * face mesh (the search mesh) and store them on a 3D mesh (e.g. this mesh).
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
@@ -340,13 +343,37 @@ ZINC_API int cmzn_field_find_mesh_location_destroy(
 	cmzn_field_find_mesh_location_id *find_mesh_location_field_address);
 
 /**
- * Returns the mesh the find_mesh_location field is to find locations in.
+ * Get the mesh the find mesh location field is to find and store locations in.
  *
  * @param find_mesh_location_field  The field to query.
  * @return  Handle to the mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
 	cmzn_field_find_mesh_location_id find_mesh_location_field);
+
+/**
+ * Get the search mesh which found locations are limited to.
+ *
+ * @param find_mesh_location_field  The field to query.
+ * @return  Handle to the search mesh, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field);
+
+/**
+ * Set a search mesh for limiting found locations to, a subset of the main
+ * mesh. The search mesh can be lower dimension such as faces or lines of
+ * a 3D main mesh, in which case locations are converted to the main mesh
+ * for storage. Initially the search mesh and the main mesh are the same.
+ *
+ * @param find_mesh_location_field  The field to modify.
+ * @param search_mesh  The mesh to search for locations in, must be an equal
+ * or lower dimension subset of the main mesh.
+ * @return  Result OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_find_mesh_location_set_search_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field,
+	cmzn_mesh_id search_mesh);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
@@ -385,7 +412,7 @@ ZINC_API enum cmzn_field_find_mesh_location_search_mode
  *
  * @param find_mesh_location_field  The field to modify.
  * @param search_mode  The search mode to set.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
 	cmzn_field_find_mesh_location_id find_mesh_location_field,

@@ -55,6 +55,14 @@ public:
 		child_removed(nullptr)
 	{
 	}
+
+	void clear()
+	{
+		this->name_changed = 0;
+		this->children_changed = 0;
+		this->child_added = nullptr;
+		this->child_removed = nullptr;
+	}
 };
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
@@ -186,13 +194,10 @@ public:
 		this->beginChangeFields();
 	}
 
+	// clear cached changes to prevent notifications about them
+	void clearCachedChanges();
+
 	int endChange();
-
-	// special version for use during merge
-	void beginChangeNoNotify();
-
-	// special version for use during merge
-	void endChangeNoNotify();
 
 	int getSumHierarchicalChangeLevel() const;
 

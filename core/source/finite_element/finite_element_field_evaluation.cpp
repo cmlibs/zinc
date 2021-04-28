@@ -25,7 +25,7 @@
 // function from finite_element.cpp
 int global_to_element_map_values(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element, FE_value time,
-	const FE_nodeset *nodeset, FE_value*& elementValues);
+	const FE_nodeset *nodeset, const FE_value *scaleFactors, FE_value*& elementValues);
 
 /*
 Global functions
@@ -33,22 +33,25 @@ Global functions
 */
 
 FE_element_field_evaluation::FE_element_field_evaluation() :
-	field(0),
-	element(0),
-	field_element(0),
+	field(nullptr),
+	element(nullptr),
+	field_element(nullptr),
 	time_dependent(0),
 	time(0.0),
-	component_number_in_xi(0),
+	component_number_in_xi(nullptr),
 	destroy_standard_basis_arguments(false),
 	number_of_components(0),
-	component_number_of_values(0),
-	component_grid_values_storage(0),
-	component_base_grid_offset(0),
-	component_grid_offset_in_xi(0),
-	element_value_offsets(0),
-	component_values(0),
-	component_standard_basis_functions(0),
-	component_standard_basis_function_arguments(0),
+	component_number_of_values(nullptr),
+	component_grid_values_storage(nullptr),
+	component_base_grid_offset(nullptr),
+	component_grid_offset_in_xi(nullptr),
+	element_value_offsets(nullptr),
+	component_values(nullptr),
+	component_efts(nullptr),
+	component_scale_factors(nullptr),
+	component_standard_basis_functions(nullptr),
+	component_standard_basis_function_arguments(nullptr),
+	parameterPerturbationCount(0),
 	access_count(1)
 {
 	this->last_grid_xi[0] = std::numeric_limits<FE_value>::quiet_NaN();  // to force initial grid xi to be invalid
@@ -118,6 +121,8 @@ void FE_element_field_evaluation::clear()
 		}
 		DEALLOCATE(this->component_values);
 	}
+	delete[] this->component_efts;
+	this->component_efts = nullptr;
 	if (this->component_standard_basis_function_arguments)
 	{
 		if (this->destroy_standard_basis_arguments)
@@ -139,6 +144,29 @@ void FE_element_field_evaluation::clear()
 	{
 		DEALLOCATE(this->component_standard_basis_functions);
 	}
+	if (this->component_scale_factors)
+	{
+		for (int i = 0; i < this->number_of_components; ++i)
+		{
+			const FE_value *scaleFactors = this->component_scale_factors[i];
+			if (scaleFactors)
+			{
+				// clear duplicate entries
+				for (int j = i + 1; j < this->number_of_components; ++j)
+					if (this->component_scale_factors[j] == scaleFactors)
+						this->component_scale_factors[j] = nullptr;
+				delete[] scaleFactors;
+			}
+		}
+		delete[] this->component_scale_factors;
+		this->component_scale_factors = nullptr;
+	}
+	this->number_of_components = 0;
+	if (this->parameterPerturbationCount > 0)
+	{
+		display_message(WARNING_MESSAGE, "FE_element_field_evaluation::clear.  Parameter perturbation still active.");
+		this->parameterPerturbationCount = 0;
+	}
 }
 
 int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
@@ -152,6 +180,8 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 
+	if (this->element)
+		this->clear();
 	if (!((element) && (fieldIn)))
 	{
 		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  Invalid argument(s)");
@@ -197,23 +227,9 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 			// and field_element to ensure field values are still valid for
 			// a given line or face. */
 			this->field_element = fieldElement->access();
-			this->component_number_in_xi=(int **)NULL;
-			this->destroy_standard_basis_arguments = false;
-			this->number_of_components=number_of_components;
-			this->component_number_of_values=(int *)NULL;
-			this->component_grid_values_storage=
-				(const Value_storage **)NULL;
-			this->component_base_grid_offset=(int *)NULL;
-			this->component_grid_offset_in_xi=(int **)NULL;
-			this->element_value_offsets=(int *)NULL;
-			/* clear arrays not used for grid-based fields */
-			this->component_values=(FE_value **)NULL;
-			this->component_standard_basis_functions=
-				(Standard_basis_function **)NULL;
-			this->component_standard_basis_function_arguments=
-				(int **)NULL;
 			this->time_dependent = 0;
 			this->time = time;
+			this->number_of_components = number_of_components;
 		} break;
 		case INDEXED_FE_FIELD:
 		{
@@ -237,20 +253,24 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 			ALLOCATE(values_address, FE_value *, number_of_components);
 			ALLOCATE(standard_basis_address, Standard_basis_function *, number_of_components);
 			ALLOCATE(standard_basis_arguments_address, int *, number_of_components);
-			blending_matrix = (FE_value *)NULL;
+			blending_matrix = nullptr;
 			ALLOCATE(component_number_in_xi, int *, number_of_components);
 			if (number_of_values_address&&values_address&&
 				standard_basis_address&&standard_basis_arguments_address&&
 				component_number_in_xi)
 			{
+				this->component_efts = new const FE_element_field_template*[number_of_components];
+				this->component_scale_factors = new const FE_value *[number_of_components];
 				for (i=0;i<number_of_components;i++)
 				{
 					number_of_values_address[i] = 0;
-					values_address[i] = (FE_value *)NULL;
-					standard_basis_address[i] = (Standard_basis_function *)NULL;
-					standard_basis_arguments_address[i]=(int *)NULL;
+					values_address[i] = nullptr;
+					this->component_efts[i] = nullptr;
+					standard_basis_address[i] = nullptr;
+					standard_basis_arguments_address[i] = nullptr;
 					/* following is non-NULL only for grid-based components */
-					component_number_in_xi[i] = NULL;
+					component_number_in_xi[i] = nullptr;
+					this->component_scale_factors[i] = nullptr;
 				}
 				this->component_number_in_xi = component_number_in_xi;
 				this->field = fieldIn->access();
@@ -265,7 +285,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				this->component_grid_values_storage = 0;
 				this->component_grid_offset_in_xi = 0;
 				this->element_value_offsets = 0;
-
 				this->component_values = values_address;
 				this->component_standard_basis_functions = standard_basis_address;
 				this->component_standard_basis_function_arguments = standard_basis_arguments_address;
@@ -282,15 +301,15 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				const DsLabelIndex fieldElementIndex = fieldElement->getIndex();
 				for (int component_number = 0; component_number < number_of_components; ++component_number)
 				{
-					const FE_element_field_template *componentEFT =
+					const FE_element_field_template *eft = this->component_efts[component_number] =
 						meshFieldData->getComponentMeshfieldtemplate(component_number)->getElementfieldtemplate(fieldElementIndex);
-					if (!componentEFT)
+					if (!eft)
 					{
 						return_code = 0;
 						break;
 					}
-					if ((componentEFT->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
-						&& (0 != componentEFT->getLegacyGridNumberInXi()))
+					if ((eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT)
+						&& (0 != eft->getLegacyGridNumberInXi()))
 					{
 						/* legacy grid-based */
 						// always uses linear Lagrange for the element dimension, monomial has same number of functions
@@ -304,7 +323,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 							return_code = 0;
 							break;
 						}
-						const int *top_level_component_number_in_xi = componentEFT->getLegacyGridNumberInXi();
+						const int *top_level_component_number_in_xi = eft->getLegacyGridNumberInXi();
 						/* one-off allocation of arrays only needed for grid-based components */
 						if (NULL == this->component_grid_values_storage)
 						{
@@ -335,7 +354,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						}
 						// GRC risky to cache pointers into per-element data
 						FE_mesh_field_data::ComponentBase *componentBase = meshFieldData->getComponentBase(component_number);
-						const int valuesCount = componentEFT->getNumberOfElementDOFs();
+						const int valuesCount = eft->getNumberOfElementDOFs();
 						// following could be done as a virtual function
 						switch (fieldIn->getValueType())
 						{
@@ -388,19 +407,46 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 					else /* not grid-based; includes non-grid element-based */
 					{
 						// calculate element values for component on the fieldElement
-						const int basisFunctionCount = componentEFT->getNumberOfFunctions();
+						const int basisFunctionCount = eft->getNumberOfFunctions();
 						ALLOCATE(*values_address, FE_value, basisFunctionCount);
 						if (!(*values_address))
 						{
 							return_code = 0;
 							break;
 						}
-						switch (componentEFT->getParameterMappingMode())
+						switch (eft->getParameterMappingMode())
 						{
 						case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 						{
+							const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+							if (scaleFactorCount)
+							{
+								// get scale factors for same eft in lower component, if any
+								for (int i = component_number - 1; i >= 0; --i)
+								{
+									if (this->component_efts[i] == eft)
+									{
+										this->component_scale_factors[component_number] = this->component_scale_factors[i];
+										break;
+									}
+								}
+								if (!this->component_scale_factors[component_number])
+								{
+									FE_value *scaleFactors = new FE_value[scaleFactorCount];
+									this->component_scale_factors[component_number] = scaleFactors;
+									const FE_mesh_element_field_template_data *mftData = fieldElement->getMesh()->getElementfieldtemplateData(eft->getIndexInMesh());
+									if (CMZN_OK != mftData->getElementScaleFactors(fieldElementIndex, scaleFactors))
+									{
+										display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
+											"Element %d dimension %d is missing scale factors for field %s component %d.",
+											fieldElement->getIdentifier(), fieldElement->getDimension(), field->getName(), component_number + 1);
+										return_code = 0;
+										break;
+									}
+								}
+							}
 							if (0 == (*number_of_values_address = global_to_element_map_values(fieldIn, component_number,
-								componentEFT, fieldElement, time, nodeset, *values_address)))
+								eft, fieldElement, time, nodeset, this->component_scale_factors[component_number], *values_address)))
 							{
 								display_message(ERROR_MESSAGE, "FE_element_field_evaluation::calculate_values.  "
 									"Could not calculate node-based values for field %s in %d-D element %d",
@@ -430,7 +476,7 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 								break;
 							}
 							// transform values to standard basis functions if needed
-							FE_basis *basis = componentEFT->getBasis();
+							FE_basis *basis = eft->getBasis();
 							const int blendedElementValuesCount = FE_basis_get_number_of_blended_functions(basis);
 							if (blendedElementValuesCount > 0)
 							{
@@ -483,14 +529,14 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 						}
 						if (!return_code)
 							break;
-						if (previous_basis == componentEFT->getBasis())
+						if (previous_basis == eft->getBasis())
 						{
 							*standard_basis_address = *(standard_basis_address - 1);
 							*standard_basis_arguments_address = *(standard_basis_arguments_address - 1);
 						}
 						else
 						{
-							previous_basis = componentEFT->getBasis();
+							previous_basis = eft->getBasis();
 							if (blending_matrix)
 							{
 								DEALLOCATE(blending_matrix);
@@ -609,8 +655,8 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 	if ((this->field) && xi_coordinates && values &&
 		((INT_VALUE == this->field->getValueType())))
 	{
-		const int componentsCount = this->field->getNumberOfComponents();
-		if ((0 <= component_number) && (component_number < componentsCount))
+		const int componentCount = this->field->getNumberOfComponents();
+		if ((0 <= component_number) && (component_number < componentCount))
 		{
 			comp_no = component_number;
 			components_to_calculate = 1;
@@ -625,7 +671,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 		case CONSTANT_FE_FIELD:
 		{
 			const int *fieldValues = this->field->getIntValues();
-			if ((fieldValues) && (componentsCount <= field->getNumberOfValues()))
+			if ((fieldValues) && (componentCount <= field->getNumberOfValues()))
 			{
 				for (i = 0; i < components_to_calculate; i++)
 					values[i] = fieldValues[comp_no++];
@@ -652,7 +698,7 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 				if ((1 <= index) && (index <= indexedValuesCount))
 				{
 					const int *fieldValues = indexed_field->getIntValues();
-					if ((fieldValues) && (indexedValuesCount*componentsCount < field->getNumberOfValues()))
+					if ((fieldValues) && (indexedValuesCount*componentCount < field->getNumberOfValues()))
 					{
 						int value_no = index-1 + comp_no*indexedValuesCount;
 						for (i = 0; i < components_to_calculate; i++)
@@ -745,15 +791,16 @@ int FE_element_field_evaluation::evaluate_int(int component_number,
 
 int FE_element_field_evaluation::evaluate_real(int component_number,
 	const FE_value *xi_coordinates, Standard_basis_function_evaluation &basis_function_evaluation,
-	int derivative_order, FE_value *values)
+	int mesh_derivative_order, int parameter_derivative_order, FE_value *values)
 {
 	int return_code = 1;
 	if ((this->field) && (xi_coordinates) && (values))
 	{
 		const int dimension = this->element->getDimension();
-		const int number_of_derivatives = this->get_number_of_derivatives(derivative_order, dimension);
+		const int number_of_mesh_derivatives = this->get_number_of_mesh_derivatives(mesh_derivative_order, dimension);
+		const int componentCount = this->field->getNumberOfComponents();
 		int comp_no, components_to_calculate;
-		if ((0<=component_number)&&(component_number<this->field->getNumberOfComponents()))
+		if ((0<=component_number)&&(component_number < componentCount))
 		{
 			comp_no=component_number;
 			components_to_calculate=1;
@@ -761,7 +808,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 		else
 		{
 			comp_no=0;
-			components_to_calculate=this->field->getNumberOfComponents();
+			components_to_calculate = componentCount;
 		}
 		switch (this->field->get_FE_field_type())
 		{
@@ -784,6 +831,24 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					if (number_in_xi)
 					{
 						/* legacy grid-based */
+						if (parameter_derivative_order)
+						{
+							// element constant or grid parameters are not support for derivatives yet, so not calculated
+							// must still set derivatives w.r.t. other components' nodal parameters to zero
+							int componentValueCount = 0;
+							for (int pc = 0; pc < componentCount; ++pc)
+							{
+								const FE_element_field_template *eft = this->component_efts[pc];
+								// only node-based parameters are included for now
+								if (eft->getParameterMappingMode() == CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+									componentValueCount += eft->getParameterCount();
+							}
+							componentValueCount *= number_of_mesh_derivatives;
+							for (int v = 0; v < componentValueCount; ++v)
+								calculated_value[v] = 0.0;
+							calculated_value += componentValueCount;
+							continue;
+						}
 						// convert parent xi to grid base offset and grid xi
 						int grid_base_offset = this->component_base_grid_offset[this_comp_no];
 						FE_value grid_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -823,9 +888,9 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						// these are for linear Lagrange interpolation for dimension
 						const int size = get_Value_storage_size(this->field->getValueType(), (struct FE_time_sequence *)NULL);
 						const Value_storage **component_grid_values_storage = this->component_grid_values_storage + this_comp_no;
-						const int number_of_values = *number_of_element_values_ptr;
+						const int valueCount = *number_of_element_values_ptr;
 						FE_value *set_element_values = *element_values_ptr;
-						for (int i = 0; i < number_of_values; ++i)
+						for (int i = 0; i < valueCount; ++i)
 						{
 							int offset = grid_base_offset;
 							for (int d = 0; d < dimension; ++d)
@@ -836,7 +901,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 
 						// convert linear Lagrange parameters to monomial: 1 x y xy z xz xy xyz
 						// first parameter at xi = (0,0,0) is unchanged
-						for (int i = 1; i < number_of_values; ++i)
+						for (int i = 1; i < valueCount; ++i)
 						{
 							FE_value delta = set_element_values[0];
 							for (int j = 1; j < i; ++j)
@@ -848,7 +913,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						// interpolate
 						const int standard_basis_function_arguments[] = { dimension, 1, 1, 1 };
 						const FE_value *basis_values = this->grid_basis_function_evaluation.evaluate(
-							monomial_basis_functions, standard_basis_function_arguments, grid_xi, derivative_order);
+							monomial_basis_functions, standard_basis_function_arguments, grid_xi, mesh_derivative_order);
 						if (!basis_values)
 						{
 							display_message(ERROR_MESSAGE,
@@ -860,18 +925,18 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 						{
 							// calculate field value as a dot product of the element and basis values
 							const FE_value *basis_value = basis_values;
-							for (int k = 0; k < number_of_derivatives; ++k)
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								const FE_value *element_value = *element_values_ptr;
 								FE_value sum = 0.0;
 								// keep this loop simple & let compiler optimise it
-								for (int j = 0; j < number_of_values; ++j)
+								for (int j = 0; j < valueCount; ++j)
 									sum += element_value[j]*basis_value[j];
-								if (derivative_order)
+								if (mesh_derivative_order)
 								{
 									// scale grid derivatives to be w.r.t. parent element xi
 									int j = k;
-									for (int o = 0; o < derivative_order; ++o)
+									for (int o = 0; o < mesh_derivative_order; ++o)
 									{
 										sum *= number_in_xi_real[j % dimension];
 										j /= dimension;
@@ -879,7 +944,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 								}
 								*calculated_value = sum;
 								++calculated_value;
-								basis_value += number_of_values;
+								basis_value += valueCount;
 							}
 						}
 					}
@@ -887,7 +952,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 					{
 						/* standard interpolation */
 						const FE_value *basis_values = basis_function_evaluation.evaluate(
-							*standard_basis_function_ptr, *standard_basis_function_arguments_ptr, xi_coordinates, derivative_order);
+							*standard_basis_function_ptr, *standard_basis_function_arguments_ptr, xi_coordinates, mesh_derivative_order);
 						if (!basis_values)
 						{
 							display_message(ERROR_MESSAGE,
@@ -895,21 +960,141 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 							return_code = 0;
 							break;
 						}
+						const FE_value *basis_value = basis_values;
+						const int valueCount = *number_of_element_values_ptr;
+						if (parameter_derivative_order)
+						{
+							if (this->element != this->field_element)
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_evaluation::evaluate_real.  Can only evaluate parameter derivatives on top-level element field is defined on");
+								return_code = 0;
+								break;
+							}
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
+							{
+								// need to compute derivatives w.r.t. all components' parameters
+								for (int pc = 0; pc < componentCount; ++pc)
+								{
+									const FE_element_field_template *eft = this->component_efts[pc];
+									// only node-based parameters are included for now
+									if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
+										continue;
+									const int parameterCount = eft->getParameterCount();
+									if (pc != this_comp_no)
+									{
+										// derivatives w.r.t. other components' parameters are zero
+										for (int p = 0; p < parameterCount; ++p)
+											calculated_value[p] = 0.0;
+										calculated_value += parameterCount;
+										continue;
+									}
+									const FE_basis *feBasis = eft->getBasis();
+									const FE_value *blendingMatrix = feBasis->getBlendingMatrix();
+									for (int p = 0; p < parameterCount; ++p)
+									{
+										const int parameterTermCount = eft->getParameterTermCount(p);
+										// sum over 1 or more scaled basis functions that this parameter is a term in
+										FE_value parameterDerivative = 0.0;
+										for (int pt = 0; pt < parameterTermCount; ++pt)
+										{
+											int term;
+											const int func = eft->getParameterTermFunctionAndTerm(p, pt, term);
+											const FE_value *blendingValue = blendingMatrix + func*valueCount;
+											// performance critical dot product: keep simple & let compiler optimise it
+											FE_value sum = 0.0;
+											for (int j = 0; j < valueCount; ++j)
+												sum += blendingValue[j]*basis_value[j];
+											const int termScalingCount = eft->getTermScalingCount(func, term);
+											for (int termScaleFactorIndex = 0; termScaleFactorIndex < termScalingCount; ++termScaleFactorIndex)
+											{
+												const int scaleFactorIndex = eft->getTermScaleFactorIndex(func, term, termScaleFactorIndex);
+												sum *= this->component_scale_factors[this_comp_no][scaleFactorIndex];
+											}
+											parameterDerivative += sum;
+										}
+										*calculated_value = parameterDerivative;
+										++calculated_value;
+									}
+								}
+								basis_value += valueCount;
+							}
+						}
 						else
 						{
 							// calculate field value as a dot product of the element and basis values
-							const int number_of_values = *number_of_element_values_ptr;
-							const FE_value *basis_value = basis_values;
-							for (int k = 0; k < number_of_derivatives; ++k)
+							for (int k = 0; k < number_of_mesh_derivatives; ++k)
 							{
 								const FE_value *element_value = *element_values_ptr;
+								// performance critical dot product: keep simple & let compiler optimise it
 								FE_value sum = 0.0;
-								// keep this loop simple & let compiler optimise it
-								for (int j = 0; j < number_of_values; ++j)
+								for (int j = 0; j < valueCount; ++j)
 									sum += element_value[j]*basis_value[j];
 								*calculated_value = sum;
 								++calculated_value;
-								basis_value += number_of_values;
+								basis_value += valueCount;
+							}
+							if (this->parameterPerturbationCount)
+							{
+								if (this->element != this->field_element)
+								{
+									display_message(ERROR_MESSAGE,
+										"FE_element_field_evaluation::evaluate_real.  Can only apply parameter perturbations on top-level element field is defined on");
+									return_code = 0;
+									break;
+								}
+								const FE_value *basis_value = basis_values;
+								FE_value *perturb_calculated_value = calculated_value - number_of_mesh_derivatives;
+								for (int k = 0; k < number_of_mesh_derivatives; ++k)
+								{
+									// add perturbations: delta*parameterDerivative[parameterIndex]
+									for (int pp = 0; pp < this->parameterPerturbationCount; ++pp)
+									{
+										const int parameterIndex = this->parameterPerturbationIndex[pp];
+										int componentParameterIndex = parameterIndex;
+										for (int pc = 0; pc < this_comp_no; ++pc)
+											componentParameterIndex -= this->component_efts[pc]->getParameterCount();
+										const FE_element_field_template *eft = this->component_efts[this_comp_no];
+										const int componentParameterCount = eft->getParameterCount();
+										if ((componentParameterIndex < 0) || (componentParameterIndex >= componentParameterCount))
+											continue;  // derivative w.r.t. other components' parameters are zero => no perturbation
+										FE_value delta = this->parameterPerturbationDelta[pp];
+										// optimisation: apply consecutive permutations to same parameter index together
+										if ((pp < (this->parameterPerturbationCount - 1)) &&
+											(this->parameterPerturbationIndex[pp + 1] == parameterIndex))
+										{
+											++pp;
+											if (this->parameterPerturbationDelta[pp] == -delta)
+												continue;  // no perturbation if +/- same delta
+											delta += this->parameterPerturbationDelta[pp];
+										}
+										const FE_basis *feBasis = eft->getBasis();
+										const FE_value *blendingMatrix = feBasis->getBlendingMatrix();
+										const int parameterTermCount = eft->getParameterTermCount(componentParameterIndex);
+										// sum over 1 or more scaled basis functions that this parameter is a term in
+										FE_value parameterDerivative = 0.0;
+										for (int pt = 0; pt < parameterTermCount; ++pt)
+										{
+											int term;
+											const int func = eft->getParameterTermFunctionAndTerm(componentParameterIndex, pt, term);
+											const FE_value *blendingValue = blendingMatrix + func*valueCount;
+											// performance critical dot product: keep simple & let compiler optimise it
+											FE_value sum = 0.0;
+											for (int j = 0; j < valueCount; ++j)
+												sum += blendingValue[j]*basis_value[j];
+											const int termScalingCount = eft->getTermScalingCount(func, term);
+											for (int termScaleFactorIndex = 0; termScaleFactorIndex < termScalingCount; ++termScaleFactorIndex)
+											{
+												const int scaleFactorIndex = eft->getTermScaleFactorIndex(func, term, termScaleFactorIndex);
+												sum *= this->component_scale_factors[this_comp_no][scaleFactorIndex];
+											}
+											parameterDerivative += sum;
+										}
+										*perturb_calculated_value += delta*parameterDerivative;
+									}
+									++perturb_calculated_value;
+									basis_value += valueCount;
+								}
 							}
 						}
 					}
@@ -922,7 +1107,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 			case CONSTANT_FE_FIELD:
 			case INDEXED_FE_FIELD:
 			{
-				if (derivative_order <= 0)
+				if (mesh_derivative_order <= 0)
 				{
 					const FE_value *fieldValues = this->field->getRealValues();
 					if (!fieldValues)
@@ -978,7 +1163,7 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 				else
 				{
 					/* derivatives are zero for constant and indexed fields */
-					const int values_count = number_of_derivatives*components_to_calculate;
+					const int values_count = number_of_mesh_derivatives*components_to_calculate;
 					for (int i = 0; 0 < values_count; ++i)
 						values[i] = 0.0;
 				}
@@ -995,8 +1180,8 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_field_evaluation::evaluate_real.  Invalid argument(s)\n"
-			"xi_coordinates %p, derivative_order %d, values %p",
-			xi_coordinates, derivative_order, values);
+			"xi_coordinates %p, mesh_derivative_order %d, values %p",
+			xi_coordinates, mesh_derivative_order, values);
 		return_code = 0;
 	}
 	return (return_code);
@@ -1137,7 +1322,7 @@ int FE_element_field_evaluation::evaluate_as_string(int component_number,
 				if (ALLOCATE(values,FE_value,components_to_calculate))
 				{
 					if (this->evaluate_real(component_number, xi_coordinates,
-						basis_function_evaluation, /*derivative_order*/0, values))
+						basis_function_evaluation, /*mesh_derivative_order*/0, /*parameter_derivative_order*/0, values))
 					{
 						error=0;
 						for (i=0;i<components_to_calculate;i++)
@@ -1291,11 +1476,6 @@ int FE_element_field_evaluation::get_component_values(int component_number,
 	return (return_code);
 }
 
-/** If component_number is monomial, integer values describing the monomial basis
- * are returned. The first number is the dimension, the following numbers are the
- * order of the monomial in each direction, where 3=cubic, for example.
- * <monomial_info> should point to a block of memory big enough to take
- * 1 + MAXIMUM_ELEMENT_XI_DIMENSIONS integers. */
 int FE_element_field_evaluation::get_monomial_component_info(int component_number,
 	int *monomial_info) const
 {
@@ -1334,4 +1514,41 @@ int FE_element_field_evaluation::get_monomial_component_info(int component_numbe
 			this->number_of_components, monomial_info);
 	}
 	return (return_code);
+}
+
+bool FE_element_field_evaluation::addParameterPerturbation(int parameterIndex, FE_value parameterDelta)
+{
+	if (!this->element)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Values not yet calculated");
+		return false;
+	}
+	if (this->parameterPerturbationCount >= MAXIMUM_PARAMETER_DERIVATIVE_ORDER)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Too many perturbations");
+		return false;
+	}
+	int parameterCount = 0;
+	if (this->component_efts)
+		for (int c = 0; c <this->number_of_components; ++c)
+			parameterCount += this->component_efts[c]->getParameterCount();
+	if ((parameterIndex < 0) || (parameterIndex >= parameterCount))
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::addParameterPerturbation.  Parameter index out of range");
+		return false;
+	}
+	this->parameterPerturbationIndex[this->parameterPerturbationCount] = parameterIndex;
+	this->parameterPerturbationDelta[this->parameterPerturbationCount] = parameterDelta;
+	++(this->parameterPerturbationCount);
+	return true;
+}
+
+void FE_element_field_evaluation::removeParameterPerturbation()
+{
+	if (this->parameterPerturbationCount <= 0)
+	{
+		display_message(ERROR_MESSAGE, "FE_element_field_evaluation::removeParameterPerturbation.  No perturbation active.");
+		return;
+	}
+	--(this->parameterPerturbationCount);
 }

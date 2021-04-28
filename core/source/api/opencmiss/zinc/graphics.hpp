@@ -326,11 +326,14 @@ inline bool operator==(const Graphics& a, const Graphics& b)
 
 class GraphicsContours : public Graphics
 {
-friend class Scene;
-private:
-	explicit GraphicsContours(cmzn_graphics_id graphics_id) : Graphics(graphics_id) {}
+	friend class Scene;
 
-	inline cmzn_graphics_contours_id getDerivedId()
+	explicit GraphicsContours(cmzn_graphics_id graphics_id) :
+		Graphics(graphics_id)
+	{
+	}
+
+	inline cmzn_graphics_contours_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_graphics_contours_id>(this->id);
 	}
@@ -417,11 +420,14 @@ public:
 
 class GraphicsStreamlines : public Graphics
 {
-friend class Scene;
-private:
-	explicit GraphicsStreamlines(cmzn_graphics_id graphics_id) : Graphics(graphics_id) {}
+	friend class Scene;
 
-	inline cmzn_graphics_streamlines_id getDerivedId()
+	explicit GraphicsStreamlines(cmzn_graphics_id graphics_id) :
+		Graphics(graphics_id)
+	{
+	}
+
+	inline cmzn_graphics_streamlines_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_graphics_streamlines_id>(this->id);
 	}

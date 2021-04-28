@@ -19,12 +19,13 @@ Computed field types
 Types used only internally to computed fields.
 */
 
+#include "opencmiss/zinc/types/fieldparametersid.h"
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.h"
 #include "general/cmiss_set.hpp"
+#include "computed_field/computed_field.h"
 #include "computed_field/field_location.hpp"
 #include "computed_field/field_cache.hpp"
-#include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "region/cmiss_region.hpp"
@@ -63,12 +64,12 @@ public:
 	 * @param new_field  Field to take ownership of.
 	 * @return  1 if field supplied, 0 if not.
 	 */
-	int update_field_and_deaccess(Computed_field *new_field)
+	int update_field_and_deaccess(cmzn_field *new_field)
 	{
 		if (new_field)
 		{
 			cmzn_field_set_managed(new_field, true);
-			DEACCESS(Computed_field)(&new_field);
+			DEACCESS(cmzn_field)(&new_field);
 			return 1;
 		}
 		return 0;
@@ -77,11 +78,11 @@ public:
 	/**
 	 * Get existing field to replace, if any.
 	 */
-	Computed_field *get_field();
+	cmzn_field *get_field();
 
 	cmzn_region *get_region();
 
-	MANAGER(Computed_field) *get_field_manager();
+	MANAGER(cmzn_field) *get_field_manager();
 };
 
 class Computed_field_type_package
@@ -164,16 +165,16 @@ class Computed_field_core
 LAST MODIFIED : 23 August 2006
 
 DESCRIPTION :
-This is the internal core which each type of Computed_field will implement.
-Separating the Computed_field_core and the public Computed_field enables the
+This is the internal core which each type of cmzn_field will implement.
+Separating the Computed_field_core and the public cmzn_field enables the
 core object to be replaced while maintaining the same wrapper (enabling
-changes to an existing Computed_field heirarchy.  It also enables different
+changes to an existing cmzn_field heirarchy.  It also enables different
 interfaces on the internal core to the public interface (which I am maintaining
 in C).
 ==============================================================================*/
 {
 protected:
-	struct Computed_field *field;
+	struct cmzn_field *field;
 
 public:
 	Computed_field_core()
@@ -195,7 +196,7 @@ public:
 	 * @param parent  Field to attach core to
 	 * @return  true on success, false if construction of field failed.
 	 */
-	virtual bool attach_to_field(Computed_field* parent)
+	virtual bool attach_to_field(cmzn_field* parent)
 	{
 		if (parent)
 		{
@@ -205,7 +206,7 @@ public:
 		return false;
 	};
 
-	struct Computed_field *getField()
+	struct cmzn_field *getField()
 	{
 		return field;
 	}
@@ -260,8 +261,8 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
-	/** Override for real-valued fields */
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
+	/** Override for real-valued fields, or return zero for non-numeric fields */
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative) = 0;
 
 	/** Evaluate derivatives using finite differences. Only for real-valued fields
 	 * Only implemented for element_xi derivatives & locations.
@@ -269,6 +270,12 @@ public:
 	 * @param valueCache  The real field value cache to put values in.
 	 * @param fieldDerivative  The field derivative operator. */
 	int evaluateDerivativeFiniteDifference(cmzn_fieldcache& cache, RealFieldValueCache& valueCache, const FieldDerivative& fieldDerivative);
+
+	/** Get the highest order of derivatives with non-zero terms for the
+	 * derivative tree evaluated for fieldDerivative. For example, returns
+	 * zero for a constant field, 1 if the field only has the first derivative
+	 * in the tree. Overridden for field operators with potentially lower orders */
+	virtual int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative);
 
 	/** Override & return true for field types supporting the sum_square_terms API */
 	virtual bool supports_sum_square_terms() const
@@ -343,7 +350,7 @@ public:
 	virtual int has_multiple_times();
 
 	virtual int get_native_resolution(int *dimension, int **sizes,
-		struct Computed_field **texture_coordinate_field);
+		struct cmzn_field **texture_coordinate_field);
 
 	/* override if field type needs to be informed when it has been added to region */
 	virtual void field_is_managed(void)
@@ -351,7 +358,7 @@ public:
 	}
 
 	/* override if field is a domain */
-	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
+	virtual int get_domain( struct LIST(cmzn_field) *domain_field_list ) const;
 
 	/**
 	 * Propagate changes to the result of this field depending on changes to its
@@ -414,7 +421,7 @@ public:
 	}
 
 	/** override for hierarchical fields to merge changes from sub-region fields */
-	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message)
+	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(cmzn_field) *message)
 	{
 		USE_PARAMETER(message);
 	}
@@ -460,14 +467,9 @@ enum Computed_field_attribute_flags
 	 * @see cmzn_field_set_mnanaged */
 };
 
-struct Computed_field
-	/*******************************************************************************
-	LAST MODIFIED : 23 August 2006
-
-	DESCRIPTION :
-	==============================================================================*/
+struct cmzn_field
 {
-	/* the name/identifier of the Computed_field */
+	/* the name/identifier of the cmzn_field */
 	const char *name;
 	/* index of field values in field cache, unique in region */
 	int cache_index;
@@ -475,7 +477,7 @@ struct Computed_field
 		the same as the name (and just points to it) however it is separated
 		out so that we can specify an string for the command_string which is not
 		a valid identifier (contains spaces etc.) */
-	char *command_string;
+	const char *command_string;
 	int number_of_components;
 
 	struct Coordinate_system coordinate_system;
@@ -486,31 +488,39 @@ struct Computed_field
 
 	/* array of computed fields this field is calculated from */
 	int number_of_source_fields;
-	struct Computed_field **source_fields;
+	struct cmzn_field **source_fields;
 	/* array of constant values this field is calculated from */
 	int number_of_source_values;
 	FE_value *source_values;
 
-	int access_count;
+	cmzn_fieldparameters *fieldparameters;
 
 	/* after clearing in create, following to be modified only by manager */
 	/* Keep a reference to the objects manager */
-	struct MANAGER(Computed_field) *manager;
+	struct MANAGER(cmzn_field) *manager;
 	int manager_change_status;
 
 	/** bit flag attributes. @see Computed_field_attribute_flags. */
 	int attribute_flags;
 
-	inline Computed_field *access()
+	int access_count;
+
+protected:
+
+	cmzn_field();
+	~cmzn_field();
+
+public:
+
+	static cmzn_field *create(const char *nameIn);
+
+	inline cmzn_field *access()
 	{
-		++access_count;
+		++(this->access_count);
 		return this;
 	}
 
-	static inline int deaccess(Computed_field **field_address)
-	{
-		return DEACCESS(Computed_field)(field_address);
-	}
+	static int deaccess(cmzn_field **field_address);
 
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.
@@ -570,6 +580,24 @@ struct Computed_field
 		return false;
 	}
 
+	/** Get the highest order of derivatives with non-zero terms for the
+	 * derivative tree evaluated for fieldDerivative. For example, returns
+	 * zero for a constant field, 1 if the field only has the first derivative
+	 * in the tree. */
+	int getDerivativeTreeOrder(const FieldDerivative& fieldDerivative)
+	{
+		return this->core->getDerivativeTreeOrder(fieldDerivative);
+	}
+
+	/* @return  Accessed handle to existing or new field parameters for field, or nullptr if wrong type of field */
+	cmzn_fieldparameters *getFieldparameters();
+
+	/** Only to be called by ~cmzn_fieldparameters */
+	void clearFieldparameters()
+	{
+		this->fieldparameters = nullptr;
+	}
+
 	const char *getName() const
 	{
 		return this->name;
@@ -608,7 +636,7 @@ struct Computed_field
 	 * @param change  A change status flag, one of OBJECT_NOT_IDENTIFIER, DEPENDENCY
 	 * or PARTIAL.
 	 */
-	void setChangedPrivate(MANAGER_CHANGE(Computed_field) change);
+	void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
 
 	/**
 	 * Enlarges or shrinks source fields array to fit optional source field.
@@ -617,30 +645,30 @@ struct Computed_field
 	 *
 	 * @param index  Index of optional source field, starting at 1. Must be equal
 	 * or one greater than the number of source fields.
-	 * @param sourceField  The source field to set, or 0 to clear.
+	 * @param sourceField  The source field to set, or nullptr to clear.
 	 * @return  CMZN_OK or other status code on failure.
 	 */
-	int setOptionalSourceField(int index, Computed_field *sourceField);
+	int setOptionalSourceField(int index, cmzn_field *sourceField);
 
 	/** Return owning field manager. Must check not nullptr before use as
 	 * can be cleared during clean-up. */
-	struct MANAGER(Computed_field) *getManager() const
+	struct MANAGER(cmzn_field) *getManager() const
 	{
 		return this->manager;
 	}
 
-}; /* struct Computed_field */
+}; /* struct cmzn_field */
 
 inline void Computed_field_core::beginChange() const
 {
 	if (this->field->manager)
-		MANAGER_BEGIN_CACHE(Computed_field)(this->field->manager);
+		MANAGER_BEGIN_CACHE(cmzn_field)(this->field->manager);
 }
 
 inline void Computed_field_core::endChange() const
 {
 	if (this->field->manager)
-		MANAGER_END_CACHE(Computed_field)(this->field->manager);
+		MANAGER_END_CACHE(cmzn_field)(this->field->manager);
 }
 
 inline cmzn_field_id Computed_field_core::getSourceField(int index) const
@@ -652,39 +680,40 @@ inline cmzn_field_id Computed_field_core::getSourceField(int index) const
  * Creates a pseudo object with name identifier suitable for finding
  * objects by identifier with cmzn_set.
  */
-class Computed_field_identifier : private Computed_field
+class cmzn_field_identifier : private cmzn_field
 {
 public:
-	Computed_field_identifier(const char *name)
+	cmzn_field_identifier(const char *name) :
+		cmzn_field()
 	{
-		Computed_field::name = name;
+		this->name = name;
 	}
 
-	~Computed_field_identifier()
+	~cmzn_field_identifier()
 	{
-		Computed_field::name = NULL;
+		this->name = nullptr;
 	}
 
-	Computed_field *getPseudoObject()
+	cmzn_field *getPseudoObject()
 	{
 		return this;
 	}
 };
 
-/** functor for ordering cmzn_set<Computed_field> by field name */
+/** functor for ordering cmzn_set<cmzn_field> by field name */
 struct Computed_field_compare_name
 {
-	bool operator() (const Computed_field* field1, const Computed_field* field2) const
+	bool operator() (const cmzn_field* field1, const cmzn_field* field2) const
 	{
 		return strcmp(field1->name, field2->name) < 0;
 	}
 };
 
-typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
+typedef cmzn_set<cmzn_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct cmzn_field_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
-inline const FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
+inline const FieldValueCache *cmzn_field::evaluate(cmzn_fieldcache& cache)
 {
 	FieldValueCache *valueCache = this->getValueCache(cache);
 	if ((valueCache->evaluationCounter < cache.getLocationCounter())
@@ -699,18 +728,15 @@ inline const FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
 }
 
 /** Caller is responsible for ensuring field is real-valued */
-inline const DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+inline const DerivativeValueCache *cmzn_field::evaluateDerivative(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
 {
 	RealFieldValueCache *realValueCache = RealFieldValueCache::cast(this->getValueCache(cache));
-	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative);
+	DerivativeValueCache *derivativeValueCache = realValueCache->getOrCreateDerivativeValueCache(fieldDerivative, cache.get_location());
 	if ((derivativeValueCache->evaluationCounter < cache.getLocationCounter())
 		|| cache.hasRegionModifications())
 	{
-		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative) ||
-			this->core->evaluateDerivativeFiniteDifference(cache, *realValueCache, fieldDerivative))
-		{
+		if (this->core->evaluateDerivative(cache, *realValueCache, fieldDerivative))
 			derivativeValueCache->evaluationCounter = cache.getLocationCounter();
-		}
 		else
 			return nullptr;
 	}
@@ -718,7 +744,7 @@ inline const DerivativeValueCache *Computed_field::evaluateDerivative(cmzn_field
 }
 
 /** Caller is responsible for ensuring field is real-valued */
-inline const RealFieldValueCache *Computed_field::evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
+inline const RealFieldValueCache *cmzn_field::evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative)
 {
 	const FieldDerivative *thisFieldDerivative = &fieldDerivative;
 	do
@@ -774,20 +800,20 @@ Functions used only internally to computed fields or the region that owns them.
  * in manager. Caller must DEALLOCATE. NULL on failure.
  */
 char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
+	struct MANAGER(cmzn_field) *manager, const char *stem_name="temp",
 	const char *separator="", int first_number=-1);
 
 /**
  * Create an iterator for the objects in the manager.
  */
 cmzn_fielditerator_id Computed_field_manager_create_iterator(
-	struct MANAGER(Computed_field) *manager);
+	struct MANAGER(cmzn_field) *manager);
 
 /**
  * Create an iterator for the objects in the list.
  */
 cmzn_fielditerator_id Computed_field_list_create_iterator(
-	struct LIST(Computed_field) *list);
+	struct LIST(cmzn_field) *list);
 
 /***************************************************************************//**
  * Return index of field in field cache.
@@ -803,8 +829,8 @@ int cmzn_field_set_cache_index_private(cmzn_field_id field, int cache_index);
  * Private function for adding field to manager; use only from cmzn_region.
  * Ensures field name is unique and informs field core that field is managed.
  */
-int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager);
+int Computed_field_add_to_manager_private(struct cmzn_field *field,
+	struct MANAGER(cmzn_field) *manager);
 
 /**
  * Creates a new computed field with the supplied content and for the region
@@ -836,7 +862,7 @@ cmzn_field *Computed_field_create_generic(
  * @param manager  Computed field manager.
  * @return  The owning cmzn_region object.
  */
-int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
+int Computed_field_manager_set_region(struct MANAGER(cmzn_field) *manager,
 	struct cmzn_region *region);
 
 /***************************************************************************//**
@@ -846,7 +872,7 @@ int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
  * @return  The owning cmzn_region object.
  */
 struct cmzn_region *Computed_field_manager_get_region(
-	struct MANAGER(Computed_field) *manager);
+	struct MANAGER(cmzn_field) *manager);
 
 /***************************************************************************//**
  * Gets a reference to the set of fields in the manager.
@@ -856,19 +882,19 @@ struct cmzn_region *Computed_field_manager_get_region(
  * @return  The set of fields in the manager.
  */
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
-	struct MANAGER(Computed_field) *manager);
+	struct MANAGER(cmzn_field) *manager);
 
 inline void Computed_field_core::setChanged()
 {
 	this->field->setChanged();
 }
 
-inline void Computed_field::setChanged()
+inline void cmzn_field::setChanged()
 {
 	if ((this->manager) && (this->manager->owner))
 	{
 		this->manager->owner->setFieldModify();
-		MANAGED_OBJECT_CHANGE(Computed_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+		MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
 	}
 }
 
@@ -878,7 +904,7 @@ inline void Computed_field::setChanged()
  *
  * @param field  The field that has changed.
  */
-inline int Computed_field_changed(struct Computed_field *field)
+inline int Computed_field_changed(struct cmzn_field *field)
 {
 	if (field)
 	{
@@ -896,11 +922,11 @@ inline int Computed_field_changed(struct Computed_field *field)
  *
  * @param field  The field whose dependencies have changed.
  */
-inline int Computed_field_dependency_changed(struct Computed_field *field)
+inline int Computed_field_dependency_changed(struct cmzn_field *field)
 {
 	if (field)
-		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_FULL_RESULT(Computed_field));
+		return MANAGED_OBJECT_CHANGE(cmzn_field)(field,
+			MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 	display_message(ERROR_MESSAGE, "Computed_field_dependency_changed.  Invalid argument(s)");
 	return 0;
 }
@@ -915,7 +941,7 @@ Returns a pointer to a sharable simple type package which just contains a
 function to access the Computed_field_package.
 ==============================================================================*/
 
-int Computed_field_set_command_string(struct Computed_field *field,
+int Computed_field_set_command_string(struct cmzn_field *field,
 	const char *command_string);
 /*******************************************************************************
 LAST MODIFIED : 6 September 2007
@@ -926,7 +952,7 @@ This may be different from the name when it contains characters invalid for
 using as an identifier in the manager, such as spaces or punctuation.
 ==============================================================================*/
 
-int Computed_field_contents_match(struct Computed_field *field,
+int Computed_field_contents_match(struct cmzn_field *field,
 	void *other_computed_field_void);
 /*******************************************************************************
 LAST MODIFIED : 22 January 1999
@@ -940,7 +966,7 @@ its name matches the contents of the <other_computed_field_void>.
  * Sets coordinate system of the <field> to that of its first source field.
  */
 int Computed_field_set_coordinate_system_from_sources(
-	struct Computed_field *field);
+	struct cmzn_field *field);
 
 /**
  * Takes two ACCESSED fields <field_one> and <field_two> and compares their number
@@ -965,7 +991,7 @@ int Computed_field_broadcast_field_components(cmzn_fieldmodule *fieldmodule,
  * @param message  Child region field manager change message.
  */
 void Computed_field_manager_propagate_hierarchical_field_changes(
-	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message);
+	MANAGER(cmzn_field) *manager, MANAGER_MESSAGE(cmzn_field) *message);
 
 /**
  * For each hierarchical field in manager, ensure any subfields in the removed
@@ -974,11 +1000,11 @@ void Computed_field_manager_propagate_hierarchical_field_changes(
  * @param manager  Parent region field manager.
  * @param subregion  The subregion being removed.
  */
-void Computed_field_manager_subregion_removed(MANAGER(Computed_field) *manager,
+void Computed_field_manager_subregion_removed(MANAGER(cmzn_field) *manager,
 	cmzn_region *subregion);
 
 /***************************************************************************//**
- * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field) but also returns
+ * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_field) but also returns
  * change_detail for field, if any.
  *
  * @param message  The field manager change message.
@@ -987,7 +1013,7 @@ void Computed_field_manager_subregion_removed(MANAGER(Computed_field) *manager,
  * @return  manager change flags for the object.
  */
 int Computed_field_manager_message_get_object_change_and_detail(
-	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
+	struct MANAGER_MESSAGE(cmzn_field) *message, struct cmzn_field *field,
 	const struct cmzn_field_change_detail **change_detail_address);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

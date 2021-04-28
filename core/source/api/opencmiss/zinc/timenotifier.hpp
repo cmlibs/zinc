@@ -181,6 +181,11 @@ public:
 
 class TimenotifierRegular : public Timenotifier
 {
+	cmzn_timenotifier_regular_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_timenotifier_regular_id>(id);
+	}
+
 public:
 
 	TimenotifierRegular() : Timenotifier()
@@ -190,11 +195,6 @@ public:
 	explicit TimenotifierRegular(cmzn_timenotifier_regular_id timenotifier_regular_id) :
 		Timenotifier(reinterpret_cast<cmzn_timenotifier_id>(timenotifier_regular_id))
 	{ }
-
-	cmzn_timenotifier_regular_id getDerivedId()
-	{
-		return reinterpret_cast<cmzn_timenotifier_regular_id>(id);
-	}
 
 	int setFrequency(double frequency)
 	{

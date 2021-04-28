@@ -41,6 +41,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_optimisation_method)
 	case CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON:
 		enumerator_string = "LEAST_SQUARES_QUASI_NEWTON";
 		break;
+	case CMZN_OPTIMISATION_METHOD_NEWTON:
+		enumerator_string = "NEWTON";
+		break;
 	default:
 		break;
 	}

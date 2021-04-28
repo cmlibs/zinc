@@ -1505,20 +1505,17 @@ void createUnusedLocalNodesModel(Fieldmodule& fm)
 	EXPECT_TRUE(eft.isValid());
 	// note: 1 more local node and scale factor than necessary
 	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalNodes(5));
-	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(5));
-	// use local nodes 1,2,4,5 i.e. leave a gap
+	EXPECT_EQ(RESULT_OK, eft.setNumberOfLocalScaleFactors(4));
 	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(1, 1, 1, Node::VALUE_LABEL_VALUE, 1));
 	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(2, 1, 2, Node::VALUE_LABEL_VALUE, 1));
 	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(3, 1, 4, Node::VALUE_LABEL_VALUE, 1));
 	EXPECT_EQ(RESULT_OK, eft.setTermNodeParameter(4, 1, 5, Node::VALUE_LABEL_VALUE, 1));
 
 	EXPECT_TRUE(eft.isValid());
-	EXPECT_TRUE(eft.validate());
+	EXPECT_FALSE(eft.validate());
 	for (int f = 1; f <= 4; ++f)
-	{
-		const int sfi = f + 1;
-		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &sfi));
-	}
+		EXPECT_EQ(RESULT_OK, eft.setTermScaling(f, 1, 1, &f));
+	EXPECT_TRUE(eft.validate());
 
 	Elementtemplate elementtemplate = mesh2d.createElementtemplate();
 	EXPECT_TRUE(elementtemplate.isValid());
@@ -1540,11 +1537,11 @@ void createUnusedLocalNodesModel(Fieldmodule& fm)
 
 	// note 3rd node is invalid and not used
 	const int nodeIdentifiers[5] = { 1, 2, -1, 3, 4 };
-	const double scaleFactors[5] = { 1.0, 1.0, 1.0, 1.0, 1.0 };
+	const double scaleFactors[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 	Element element = mesh2d.createElement(1, elementtemplate);
 	EXPECT_EQ(RESULT_OK, element.setNodesByIdentifier(eft, 5, nodeIdentifiers));
-	EXPECT_EQ(RESULT_OK, element.setScaleFactors(eft, 5, scaleFactors));
+	EXPECT_EQ(RESULT_OK, element.setScaleFactors(eft, 4, scaleFactors));
 
 	EXPECT_EQ(RESULT_OK, fm.defineAllFaces());
 }
@@ -1575,14 +1572,11 @@ void checkUnusedLocalNodesModel(Fieldmodule& fm, bool first)
 	EXPECT_EQ(first ? 5 : 4, eft.getTermLocalNodeIndex(4, 1));
 
 	int sfi;
-	EXPECT_EQ(RESULT_OK, eft.getTermScaling(1, 1, 1, &sfi));
-	EXPECT_EQ(2, sfi);
-	EXPECT_EQ(RESULT_OK, eft.getTermScaling(2, 1, 1, &sfi));
-	EXPECT_EQ(3, sfi);
-	EXPECT_EQ(RESULT_OK, eft.getTermScaling(3, 1, 1, &sfi));
-	EXPECT_EQ(4, sfi);
-	EXPECT_EQ(RESULT_OK, eft.getTermScaling(4, 1, 1, &sfi));
-	EXPECT_EQ(5, sfi);
+	for (int f = 1; f <= 4; ++f)
+	{
+		EXPECT_EQ(RESULT_OK, eft.getTermScaling(f, 1, 1, &sfi));
+		EXPECT_EQ(f, sfi);
+	}
 }
 
 }

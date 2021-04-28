@@ -2,7 +2,7 @@
  * @file optimisation.h
  *
  * The public interface to optimisation class which can minimise N
- * objective functions by modifying parameters of M independent fields.
+ * objective functions by modifying parameters of M dependent fields.
  *
  */
 /* OpenCMISS-Zinc Library
@@ -56,42 +56,44 @@ ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id opti
  * Destroys handle to the optimisation object and sets pointer/handle to NULL.
  *
  * @param optimisation_address  Address of optimisation object handle.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address);
 
 /**
- * Get the conditional field which controls which degrees of freedom of an
- * independent field are included in the optimisation, if any.
+ * Get the conditional field which controls which degrees of freedom of a
+ * dependent field are included in the optimisation.
  * @see cmzn_optimisation_set_conditional_field
  *
  * @param optimisation  Handle to the optimisation object.
- * @param independent_field  The independent field the condition applies to.
+ * @param dependent_field  The dependent field the condition applies to.
  * @return  Handle to conditional field, or NULL/invalid handle if none
  * or failed.
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_conditional_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id independent_field);
+	cmzn_optimisation_id optimisation, cmzn_field_id dependent_field);
 
 /**
- * Set a conditional field which controls which degrees of freedom of an
- * independent field are included in the optimisation, for all components or
+ * Set a conditional field which controls which degrees of freedom of a
+ * dependent field are included in the optimisation, for all components or
  * per-component. The conditional field is queried at the start of the
  * optimisation, so the number of DOFs remains constant throughout it.
- * The conditional field only applies to finite element independent fields,
+ * The conditional field only applies to finite element dependent fields,
  * and is queried and applied to nodal DOFs only.
+ * @note
+ * The conditional field is not yet supported by the NEWTON method.
  *
  * @param optimisation  Handle to the optimisation object.
- * @param independent_field  The independent field to select a subset of DOFs
+ * @param dependent_field  The dependent field to select a subset of DOFs
  * from. Must already have been added to the optimisation.
  * @param conditional_field  A field with either one component or the same
- * number of components as the independent field. DOFs for the independent
+ * number of components as the dependent field. DOFs for the dependent
  * field (or components of it, if non-scalar) are included only where this
  * field is defined and non-zero. Pass a NULL/invalid handle to clear.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK on success, any other value on failure.
  */
 ZINC_API int cmzn_optimisation_set_conditional_field(
-	cmzn_optimisation_id optimisation, cmzn_field_id independent_field,
+	cmzn_optimisation_id optimisation, cmzn_field_id dependent_field,
 	cmzn_field_id conditional_field);
 
 /**
@@ -109,11 +111,12 @@ ZINC_API int cmzn_optimisation_set_conditional_field(
  * target field requires the source field to be a function of it; the solution
  * is to add two field assignments, the first resets target DOFs to their
  * initial values, the second assigns them to the source values.
+ * Field assignment is not supported by the NEWTON method.
  *
  * @param optimisation  The optimisation object to modify.
  * @param fieldassignment  Field assignment to apply. Must be for a field in
  * the same fieldmodule as this optimisation object.
- * @return  Result OK if field successfully added, any other value if
+ * @return  Result OK if field successfully added, or an error code if
  * failed or already added.
  */
 ZINC_API int cmzn_optimisation_add_fieldassignment(
@@ -133,7 +136,7 @@ ZINC_API enum cmzn_optimisation_method cmzn_optimisation_get_method(
  *
  * @param optimisation  Handle to the optimisation object.
  * @param method  The optimisation method to use.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 	enum cmzn_optimisation_method method);
@@ -174,7 +177,7 @@ ZINC_API int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimi
  * @param attribute  The identifier of the integer attribute to set.
  * @param value  The new value for the attribute. For Boolean values use 1 for
  * true in case more options are added in future.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
+ * @return  Result OK if attribute successfully set, or an error code if
  * failed or attribute not valid or able to be set for this optimisation object.
  */
 ZINC_API int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
@@ -196,7 +199,7 @@ ZINC_API double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimi
  * @param optimisation  Handle to the optimisation object.
  * @param attribute  The identifier of the real attribute to set.
  * @param value  The new value for the attribute.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
+ * @return  Result OK if attribute successfully set, or an error code if
  * failed or attribute not valid or able to be set for this optimisation object.
  */
 ZINC_API int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
@@ -223,60 +226,86 @@ ZINC_API char *cmzn_optimisation_attribute_enum_to_string(
 	enum cmzn_optimisation_attribute attribute);
 
 /**
- * Get the first independent field from the optimisation problem description.
- * @see cmzn_optimisation_get_next_independent_field
+ * Get the first dependent field from the optimisation problem description.
+ * @see cmzn_optimisation_get_next_dependent_field
  *
  * @param optimisation  Handle to the optimisation object to query.
- * @return  Handle to first independent field, or NULL/invalid handle if none or failed.
+ * @return  Handle to first dependent field, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_field_id cmzn_optimisation_get_first_dependent_field(
+	cmzn_optimisation_id optimisation);
+
+/**
+ * Get the next dependent field in the optimisation problem description after
+ * the supplied ref_field.
+ *
+ * @param optimisation  Handle to the optimisation object to query.
+ * @param ref_field  Handle to a dependent field from the optimisation.
+ * @return  Handle to next dependent field after ref_field,
+ * or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_field_id cmzn_optimisation_get_next_dependent_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id ref_field);
+
+/**
+ * Add a dependent field to the optimisation problem, whose parameters are
+ * solved for to minimise the objective function/s.
+ * Valid dependent fields are limited to constant or finite element types.
+ * @note
+ * Multiple dependent fields can only be used if all are constant type. The
+ * NEWTON method only works with a single finite element dependent field. These
+ * are checked when optimisation is run as the method may be set later.
+ * @note
+ * Some existing cubic Hermite meshes use different value or derivative
+ * parameter versions on adjacent elements and require parameter tying to
+ * maintain continuity during computation. These models need to be modified to
+ * share common parameters and remove unused parameters before use.
+ *
+ * @param optimisation  Handle to the optimisation object.
+ * @param field  Real-valued dependent field to add to the optimisation object.
+ * Must be constant or finite element type, and used in the objective
+ * expression.
+ * @return  Result OK if field successfully added, or an error code if
+ * failed or already added.
+ */
+ZINC_API int cmzn_optimisation_add_dependent_field(cmzn_optimisation_id optimisation,
+	cmzn_field_id field);
+
+/**
+ * Remove a dependent field from the optimisation problem.
+ *
+ * @param optimisation  Handle to the optimisation object.
+ * @param field  The dependent field to remove.
+ * @return  Result OK if field successfully removed, or an error code if
+ * failed or field not found.
+ */
+ZINC_API int cmzn_optimisation_remove_dependent_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id field);
+
+/**
+ * @deprecated  Misnamed: use dependent field function.
+ * @see cmzn_optimisation_get_first_dependent_field
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_first_independent_field(
 	cmzn_optimisation_id optimisation);
 
 /**
- * Get the next independent field in the optimisation problem description after
- * the supplied ref_field. Use to iterate over the independent fields, taking
- * care to destroy all returned field handles exactly once:
- *
- * cmzn_field_id field = cmzn_optimisation_get_first_objective_field(optimisation);
- * while (field)
- * {
- *    cmzn_field_id next_field = cmzn_optimisation_get_next_objective_field(optimisation, field);
- *    cmzn_field_destroy(&field);
- *    field = next_field;
- * }
- *
- * @param optimisation  Handle to the optimisation object to query.
- * @param ref_field  Handle to an independent field from the optimisation.
- * @return  Handle to next independent field after ref_field,
- * or NULL/invalid handle if none or failed.
+ * @deprecated  Misnamed: use dependent field function.
+ * @see cmzn_optimisation_get_next_dependent_field
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_next_independent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id ref_field);
 
 /**
- * Add an independent field to the given optimisation problem description.
- * Valid independent fields are limited to constant and finite_element types.
- * The parameters of these fields are modified to minimise the objective fields.
- * NOTE: Beware that many existing cubic Hermite meshes in EX format do not
- * correctly share common value or derivative versions and thus will 'open up'
- * during fitting/optimisation.
- *
- * @param optimisation  Handle to the optimisation object.
- * @param field  Real-valued independent field to add to the optimisation object
- * (accessed internally so safe for caller to destroy locally).
- * @return  Status CMZN_OK if field successfully added, any other value if
- * failed or already added.
+ * @deprecated  Misnamed: use dependent field function.
+ * @see cmzn_optimisation_add_dependent_field
  */
 ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
 	cmzn_field_id field);
 
 /**
- * Remove an independent field from the optimisation problem.
- *
- * @param optimisation  Handle to the optimisation object.
- * @param field  The independent field to remove.
- * @return  Status CMZN_OK if field successfully removed, any other value if
- * failed or field not found.
+ * @deprecated  Misnamed: use dependent field function.
+ * @see cmzn_optimisation_remove_dependent_field
  */
 ZINC_API int cmzn_optimisation_remove_independent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id field);
@@ -324,7 +353,7 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_objective_field(
  * @param optimisation  Handle to the optimisation object.
  * @param field  Real-valued objective field to add to the optimisation object
  * (accessed internally so safe for caller to destroy locally).
- * @return  Status CMZN_OK if field successfully added, any other value if
+ * @return  Result OK if field successfully added, or an error code if
  * failed or already added.
  */
 ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisation,
@@ -335,7 +364,7 @@ ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisa
  *
  * @param optimisation  Handle to the optimisation object.
  * @param field  The objective field to remove.
- * @return   Status CMZN_OK if field successfully removed, any other value if
+ * @return  Result OK if field successfully removed, or an error code if
  * failed or field not found.
  */
 ZINC_API int cmzn_optimisation_remove_objective_field(
@@ -354,7 +383,7 @@ ZINC_API char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimi
  * Perform the optimisation described by the provided optimisation object.
  *
  * @param optimisation Handle to the zinc optimisation object.
- * @return Status CMZN_OK if optimisation completed successfully (stopping
+ * @return Result OK if optimisation completed successfully (stopping
  * criteria satisfied), and any other value on failure.
  */
 ZINC_API int cmzn_optimisation_optimise(cmzn_optimisation_id optimisation);

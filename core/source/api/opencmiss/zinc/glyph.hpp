@@ -161,8 +161,7 @@ inline bool operator==(const Glyph& a, const Glyph& b)
 
 class GlyphAxes : public Glyph
 {
-private:
-	inline cmzn_glyph_axes_id getDerivedId()
+	inline cmzn_glyph_axes_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_glyph_axes_id>(id);
 	}
@@ -213,8 +212,7 @@ inline GlyphAxes Glyph::castAxes()
 
 class GlyphColourBar : public Glyph
 {
-private:
-	inline cmzn_glyph_colour_bar_id getDerivedId()
+	inline cmzn_glyph_colour_bar_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_glyph_colour_bar_id>(id);
 	}

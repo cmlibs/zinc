@@ -63,6 +63,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -86,7 +91,7 @@ int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *deformedDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 		const DerivativeValueCache *undeformedDerivativeCache = getSourceField(1)->evaluateDerivative(cache, fieldDerivative);
 		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(getSourceField(2)->evaluate(cache));

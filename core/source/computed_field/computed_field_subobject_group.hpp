@@ -441,6 +441,12 @@ public:
 
 		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+		virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+		{
+			inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+			return 1;
+		}
+
 		int list()
 		{
 			return 1;
@@ -613,6 +619,12 @@ public:
 		}
 
 		virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+		virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+		{
+			inValueCache.getDerivativeValueCache(fieldDerivative)->zeroValues();
+			return 1;
+		}
 
 		int list()
 		{

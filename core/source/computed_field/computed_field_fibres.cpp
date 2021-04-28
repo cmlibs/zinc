@@ -68,6 +68,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 	int list();
 
 	char* get_command_string();
@@ -125,7 +130,7 @@ int Computed_field_fibre_axes::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_field_id coordinate_field = getSourceField(1);
 		const RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
 		const RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluate(*workingCache));
-		const FieldDerivativeMesh& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *top_level_element->getMesh()->getFieldDerivative(/*order*/1);
 		const DerivativeValueCache *coordinateDerivativeCache = coordinate_field->evaluateDerivative(*workingCache, fieldDerivative);
 		FE_value x[3], dx_dxi[9];
 		if (fibreCache && coordinateCache && coordinateDerivativeCache &&

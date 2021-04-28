@@ -311,7 +311,7 @@ public:
 	 */
 	bool setValue(IndexType index, EntryType value)
 	{
-		IndexType blockIndex = index / blockLength;
+		const IndexType blockIndex = index / blockLength;
 		EntryType* block = getOrCreateBlock(blockIndex);
 		if (!block)
 			return false;
@@ -320,13 +320,27 @@ public:
 		return true;
 	}
 
-	bool setValues(IndexType minIndex, IndexType maxIndex, EntryType value)
+	/**
+	 * Set consecutive values from start index up to supplied value.
+	 * @param startIndex  The lowest index to set value at >= 0.
+	 * @param count  The number of consecutive values to set.
+	 * @param value  The value to assign.
+	 * @return  Boolean true on success, false on failure.
+	 */
+	bool setValues(IndexType startIndex, IndexType count, EntryType value)
 	{
-		// GRC: can be made faster
-		for (IndexType index = minIndex; index <= maxIndex; index++)
+		const IndexType stopIndex = startIndex + count - 1;
+		const IndexType startBlockIndex = startIndex / blockLength;
+		const IndexType stopBlockIndex = stopIndex / blockLength;
+		for (IndexType blockIndex = startBlockIndex; blockIndex <= stopBlockIndex; ++blockIndex)
 		{
-			if (!setValue(index, value))
+			EntryType* block = getOrCreateBlock(blockIndex);
+			if (!block)
 				return false;
+			const IndexType startEntryIndex = (blockIndex == startBlockIndex) ? (startIndex % blockLength) : 0;
+			const IndexType stopEntryIndex = (blockIndex == stopBlockIndex) ? (stopIndex % blockLength) : (blockLength - 1);
+			for (IndexType entryIndex = startEntryIndex; entryIndex <= stopEntryIndex; ++entryIndex)
+				block[entryIndex] = value;
 		}
 		return true;
 	}
@@ -503,7 +517,7 @@ public:
 		// bulk set the flags in lots of 32 bits
 		if (intIndexCount > 0)
 		{
-			if (!setValues(0, intIndexCount-1, 0xFFFFFFFF))
+			if (!setValues(0, intIndexCount, 0xFFFFFFFF))
 				return false;
 		}
 		// individually set remaining bits

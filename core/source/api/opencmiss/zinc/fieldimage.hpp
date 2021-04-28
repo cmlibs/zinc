@@ -22,9 +22,7 @@ class StreaminformationImage;
 
 class FieldImage : public Field
 {
-private:
-
-	inline cmzn_field_image_id getDerivedId()
+	inline cmzn_field_image_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_field_image_id>(id);
 	}

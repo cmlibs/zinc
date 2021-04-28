@@ -194,24 +194,29 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
 /**
  * Evaluate derivatives of a real-valued field.
  * CURRENT LIMITATIONS:
- * 1. Can only evaluate at an element location.
- * 2. Differential operator must be obtained from mesh owning element. It is not
- * yet possible to evaluate derivatives with respect to parent element chart.
- * NOTE:
- * It is currently more efficient to evaluate derivatives before field values
- * since values are cached simultaneously.
+ * 1. Mesh differential operator must be obtained from mesh owning element
+ * derivative is evaluated on. Cannot yet evaluate derivatives with respect to
+ * parent element chart.
+ * 2. Field parameter derivatives can only be evaluated on the top-level
+ * element the field is defined on, not on faces or lines inheriting the field.
+ * 3. Not implemented for all field operators and cache locations; falls back
+ * to approximate finite difference calculation for many cases.
  *
  * @param field  The field to evaluate derivatives for. Must be real valued.
  * @param differential_operator  The differential operator identifying which
- * derivative to evaluate. Currently must be obtained from mesh owning element
- * from element location in cache.
- * @param cache  Store of location to evaluate at and intermediate field values.
- * Only element locations are supported by this function.
+ * derivative to evaluate. Can be obtained from mesh or field parameters.
+ * @param cache  Store of location to evaluate at and intermediate field
+ * values. Except for constants, can only evaluate at element locations.
  * @param number_of_values  Size of values array, must equal number of
- * components of field.
- * @param values  Array of real values to evaluate derivatives into.
- * @return  Status CMZN_OK on success, any other value on failure including
- * if field is not defined at cache location.
+ * components of field times the number of derivative terms. For parameter
+ * derivatives, the number of terms equals the number of parameters in each
+ * element (obtained from field parameters) to the power of the derivative
+ * order.
+ * @param values  Array of real values to evaluate derivatives into. For
+ * multiple terms, output values cycle slowest by components, then by earliest
+ * derivative index etc.
+ * @return  Result OK on success, any other value on failure including case
+ * of field not being defined at cache location.
  */
 ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_differentialoperator_id differential_operator,

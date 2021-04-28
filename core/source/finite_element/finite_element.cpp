@@ -1782,11 +1782,12 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
  * functions used by the EFT basis. Note this is a reference and will be
  * reallocated if basis uses a blending function. Either way, caller is
  * required to deallocate.
+ * @param scaleFactors  Pointer to element scale factors.
  * @return  Number of values calculated or 0 if error.
  */
 int global_to_element_map_values(FE_field *field, int componentNumber,
 	const FE_element_field_template *eft, cmzn_element *element, FE_value time,
-	const FE_nodeset *nodeset, FE_value*& elementValues)
+	const FE_nodeset *nodeset, const FE_value *scaleFactors, FE_value*& elementValues)
 {
 	if (eft->getParameterMappingMode() != CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE)
 	{
@@ -1813,18 +1814,13 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			field->getName(), componentNumber + 1, element->getIdentifier());
 		return 0;
 	}
-	std::vector<FE_value> scaleFactorsVector(eft->getNumberOfLocalScaleFactors());
-	FE_value *scaleFactors = 0;
-	if (0 < eft->getNumberOfLocalScaleFactors())
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	if ((scaleFactorCount) && (!scaleFactors))
 	{
-		scaleFactors = scaleFactorsVector.data();
-		if (CMZN_OK != meshEFTData->getElementScaleFactors(elementIndex, scaleFactors))
-		{
-			display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
-				"Element %d is missing scale factors for field %s component %d.",
-				element->getIdentifier(), field->getName(), componentNumber + 1);
-			return 0;
-		}
+		display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+			"Element %d is missing scale factors for field %s component %d.",
+			element->getIdentifier(), field->getName(), componentNumber + 1);
+		return 0;
 	}
 
 	const int basisFunctionCount = eft->getNumberOfFunctions();
@@ -1898,7 +1894,7 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 			{
 				termValue = reinterpret_cast<FE_value *>(node->values_storage + nft->valuesOffset)[valueIndex];
 			}
-			if (scaleFactors)
+			if (scaleFactorCount)
 			{
 				const int termScaleFactorCount = eft->termScaleFactorCounts[tt];
 				for (int s = 0; s < termScaleFactorCount; ++s)
@@ -3683,14 +3679,28 @@ int set_FE_nodal_element_xi_value(struct FE_node *node,
 			CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, valuesStorage, time_sequence))
 		{
 			/* copy in the element_xi_value */
-			REACCESS(FE_element)((struct FE_element **)valuesStorage, element);
-			valuesStorage += sizeof(struct FE_element *);
-			for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			cmzn_element** elementAddress = reinterpret_cast<cmzn_element**>(valuesStorage);
+			cmzn_element *oldElement = *elementAddress;
+			if (element != oldElement)
 			{
-				/* set spare xi values to 0 */
-				*((FE_value *)valuesStorage) = (i < dimension) ? xi[i] : 0.0;
-				valuesStorage += sizeof(FE_value);
+				FE_mesh_embedded_node_field *embeddedNodeField = field->getEmbeddedNodeField(node->getNodeset());
+				if (oldElement)
+				{
+					cmzn_element::deaccess(*elementAddress);
+					embeddedNodeField->removeNode(oldElement->getIndex(), node->getIndex());
+				}
+				if (element)
+				{
+					*elementAddress = element->access();
+					embeddedNodeField->addNode(element->getIndex(), node->getIndex());
+				}
 			}
+			FE_value *xiStored = reinterpret_cast<FE_value*>(elementAddress + 1);
+			for (int i = 0; i < dimension; ++i)
+				xiStored[i] = xi[i];
+			// set spare xi values to zero
+			for (int i = dimension; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+				xiStored[i] = 0.0;
 			// notify of changes, but only for valid nodes (i.e. not template nodes)
 			if (node->getIndex() >= 0)
 			{
@@ -4027,7 +4037,7 @@ Iterator function for adding the number of <node> to <multi_range>.
 } /* add_FE_node_number_to_Multi_range */
 
 int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
-	struct LIST(FE_field) *field_list)
+	struct LIST(FE_field) *field_list, FE_mesh *hostMesh)
 {
 	if (!field_list || !fe_nodeset)
 		return 0;
@@ -4037,17 +4047,18 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
 	{
 		FE_field *field = *field_iter;
 		if ((ELEMENT_XI_VALUE == field->getValueType()) &&
-			(GENERAL_FE_FIELD == field->get_FE_field_type()))
+			(GENERAL_FE_FIELD == field->get_FE_field_type()) &&
+			((!hostMesh) || (field->getElementXiHostMesh() == hostMesh)))
 		{
 			cmzn_nodeiterator *node_iter = fe_nodeset->createNodeiterator();
 			cmzn_node_id node = 0;
+			// inefficient to loop over all nodes; set_FE_nodal_element_xi_value silently fails if field not defined
 			while (0 != (node = node_iter->nextNode()))
 			{
 				// don't clear embedded locations on nodes now owned by a different nodeset
 				// as happens when merging from a separate region
 				if (node->fields->nodeset == fe_nodeset)
-					set_FE_nodal_element_xi_value(node, field, /*componentNumber*/0,
-						(struct FE_element *)0, xi);
+					set_FE_nodal_element_xi_value(node, field, /*component*/0, /*element*/nullptr, /*xi*/nullptr);
 			}
 			cmzn_nodeiterator_destroy(&node_iter);
 		}
@@ -4204,8 +4215,7 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field,
-		node->fields->node_field_list);
+	FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_node_get_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d",
@@ -4259,6 +4269,67 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 	return CMZN_OK;
 }
 
+template <typename VALUE_TYPE> int cmzn_node_add_field_component_values(
+	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
+	int valuesCount, const VALUE_TYPE *valuesIn)
+{
+	if (!(node && node->fields && node->values_storage
+		&& (0 <= componentNumber) && (componentNumber < field->getNumberOfComponents()) && (valuesIn)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_values<VALUE_TYPE>.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_node_field *node_field = node->getNodeField(field);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s is not defined at node %d", field->getName(), node->getIdentifier());
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	const FE_node_field_template &nft = *(node_field->getComponent(componentNumber));
+	const int totalValuesCount = nft.getTotalValuesCount();
+	if (totalValuesCount != valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s component %d at node %d has %d values, %d are supplied",
+			field->getName(), componentNumber + 1, node->getIdentifier(), totalValuesCount, valuesCount);
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const VALUE_TYPE *source = valuesIn;
+	if (node_field->time_sequence)
+	{
+		int time_index = 0;
+		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		VALUE_TYPE **destArray = (VALUE_TYPE **)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			(*destArray)[time_index] += *source;
+			++destArray;
+			++source;
+		}
+	}
+	else
+	{
+		VALUE_TYPE *dest = (VALUE_TYPE *)(node->values_storage + nft.getValuesOffset());
+		for (int j = 0; j < totalValuesCount; ++j)
+		{
+			*dest += *source;
+			++dest;
+			++source;
+		}
+	}
+	// notify of changes, but only for valid nodes (i.e. not template nodes)
+	if (node->getIndex() >= 0)
+	{
+		node->fields->nodeset->nodeFieldChange(node, field);
+	}
+	return CMZN_OK;
+}
+
 template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 	cmzn_node *node, FE_field *field, int componentNumber, FE_value time,
 	int valuesCount, const VALUE_TYPE *valuesIn)
@@ -4269,8 +4340,7 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 		display_message(ERROR_MESSAGE, "cmzn_node_set_field_component_values<VALUE_TYPE>.  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-		field, node->fields->node_field_list);
+	FE_node_field *node_field = node->getNodeField(field);
 	if (!node_field)
 	{
 		display_message(ERROR_MESSAGE,
@@ -4331,6 +4401,18 @@ int cmzn_node_get_field_component_FE_value_values(cmzn_node *node,
 		return CMZN_ERROR_ARGUMENT;
 	}
 	return cmzn_node_get_field_component_values(node, field, componentNumber, time, valuesCount, valuesOut);
+}
+
+int cmzn_node_add_field_component_FE_value_values(cmzn_node *node,
+	FE_field *field, int componentNumber, FE_value time, int valuesCount,
+	const FE_value *valuesIn)
+{
+	if (!(field && (field->getValueType() == FE_VALUE_VALUE)))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_node_add_field_component_FE_value_values.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	return cmzn_node_add_field_component_values(node, field, componentNumber, time, valuesCount, valuesIn);
 }
 
 int cmzn_node_set_field_component_FE_value_values(cmzn_node *node,
@@ -4465,6 +4547,25 @@ int get_FE_node_identifier(struct FE_node *node)
 	return DS_LABEL_IDENTIFIER_INVALID;
 }
 
+/** If node_field is defined differently in the node, undefine it there so it
+ * can be redefined. This is done because merge code cannot yet handle changing
+ * the definition, but undefine + redefine works. */
+static int FE_node_field_undefine_nonmatching_FE_field_at_node(FE_node_field *node_field, void *node_void)
+{
+	cmzn_node *node = static_cast<cmzn_node *>(node_void);
+	FE_field *field = node_field->field;
+	FE_node_field *existing_node_field = node->getNodeField(field);
+	if (existing_node_field)
+	{
+		const int componentCount = field->getNumberOfComponents();
+		// undefine if any component does not match
+		for (int c = 0; c < componentCount; ++c)
+			if (!existing_node_field->getComponent(c)->matches(*node_field->getComponent(c)))
+				return (CMZN_OK == undefine_FE_field_at_node(node, field)) ? 1 : 0;
+	}
+	return 1;
+}
+
 int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge)
 {
 	int number_of_values, values_storage_size, return_code;
@@ -4481,6 +4582,15 @@ int merge_FE_node(cmzn_node *destination, cmzn_node *source, int optimised_merge
 		(source_fields->nodeset == fe_nodeset))
 	{
 		return_code = 1;
+		// undefine fields on destination which are being redefined differently in merge
+		if (!(FOR_EACH_OBJECT_IN_LIST(FE_node_field)(FE_node_field_undefine_nonmatching_FE_field_at_node,
+			static_cast<void *>(destination), source_fields->node_field_list)))
+		{
+			display_message(ERROR_MESSAGE, "merge_FE_node.  Failed to undefine field(s) being redefined");
+			return 0;
+		}
+		// this will have changed if fields were undefined:
+		destination_fields = destination->fields;
 		/* construct a node field list containing the fields from destination */
 		node_field_list = CREATE_LIST(FE_node_field)();
 		if (COPY_LIST(FE_node_field)(node_field_list,
@@ -6111,7 +6221,8 @@ bool FE_element_smooth_FE_field(struct FE_element *element,
 			xi[2] = (FE_value)((n & 4)/4);
 			basis_function_evaluation.invalidate();
 			if (!fe_element_field_evaluation->evaluate_real(componentNumber,
-				xi, basis_function_evaluation, /*derivative_order*/0, &(component_value[n])))
+				xi, basis_function_evaluation, /*derivative_order*/0,
+				/*parameter_derivative_order*/0, &(component_value[n])))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_smooth_FE_field.  Could not calculate element field");

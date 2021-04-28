@@ -1083,69 +1083,71 @@ Adapted from "Numerical Recipes".
 	return (return_code);
 } /* eigensort */
 
-int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv)
-/*******************************************************************************
-LAST MODIFIED : 27 November 2000
-
-DESCRIPTION :
-Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
-==============================================================================*/
+// Assumes FE_value is double; if going back (unlikely) restore copy to/from double
+int invert_FE_value_matrix2(const FE_value *a, FE_value *a_inv)
 {
-	double d_a[9], d_a_inv[9], determinant, max_value;
-	int i, return_code;
-
-	ENTER(invert_FE_value_matrix3);
-	if (a && a_inv)
+	if (!((a) && (a_inv)))
 	{
-		max_value = 0.0;
-		for (i = 0; i < 9; i++)
-		{
-			d_a[i] = a[i];
-			if (fabs(d_a[i]) > max_value)
-			{
-				max_value = fabs(d_a[i]);
-			}
-		}
-		if ((0.0 < max_value) && (1.0E-6*max_value < fabs(determinant = (
-			d_a[0]*(d_a[4]*d_a[8] - d_a[5]*d_a[7]) +
-			d_a[1]*(d_a[5]*d_a[6] - d_a[3]*d_a[8]) +
-			d_a[2]*(d_a[3]*d_a[7] - d_a[4]*d_a[6])))))
-		{
-			d_a_inv[0] = d_a[4]*d_a[8] - d_a[5]*d_a[7];
-			d_a_inv[3] = d_a[5]*d_a[6] - d_a[3]*d_a[8];
-			d_a_inv[6] = d_a[3]*d_a[7] - d_a[4]*d_a[6];
-
-			d_a_inv[1] = d_a[7]*d_a[2] - d_a[8]*d_a[1];
-			d_a_inv[4] = d_a[8]*d_a[0] - d_a[6]*d_a[2];
-			d_a_inv[7] = d_a[6]*d_a[1] - d_a[7]*d_a[0];
-
-			d_a_inv[2] = d_a[1]*d_a[5] - d_a[2]*d_a[4];
-			d_a_inv[5] = d_a[2]*d_a[3] - d_a[0]*d_a[5];
-			d_a_inv[8] = d_a[0]*d_a[4] - d_a[1]*d_a[3];
-
-			for (i = 0; i < 9; i++)
-			{
-				a_inv[i] = (float)( d_a_inv[i] / determinant);
-			}
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"invert_FE_value_matrix3.  Matrix is singular to machine precision");
-			return_code = 0;
-		}
+		display_message(ERROR_MESSAGE, "invert_FE_value_matrix2.  Invalid argument(s)");
+		return 0;
 	}
-	else
+	FE_value maxValue = 0.0;
+	for (int i = 0; i < 4; i++)
 	{
-		display_message(ERROR_MESSAGE,
-			"invert_FE_value_matrix3.  Invalid argument(s)");
-		return_code = 0;
+		const FE_value aAbs = fabs(a[i]);
+		if (aAbs > maxValue)
+			maxValue = aAbs;
 	}
-	LEAVE;
+	const FE_value determinant = a[0]*a[3] - a[1]*a[2];
+	if ((maxValue <= 0.0) || (1.0E-6*maxValue < fabs(determinant)))
+	{
+		display_message(ERROR_MESSAGE, "invert_FE_value_matrix2.  Matrix is singular to machine precision");
+		return 0;
+	}
+	const FE_value one__determinant = 1.0 / determinant;
+	a_inv[0] =  a[3]*one__determinant;
+	a_inv[1] = -a[1]*one__determinant;
+	a_inv[2] = -a[2]*one__determinant;
+	a_inv[3] =  a[0]*one__determinant;
+	return 1;
+}
 
-	return (return_code);
-} /* invert_FE_value_matrix3 */
+// Assumes FE_value is double; if going back (unlikely) restore copy to/from double
+int invert_FE_value_matrix3(const FE_value *a, FE_value *a_inv)
+{
+	if (!((a) && (a_inv)))
+	{
+		display_message(ERROR_MESSAGE, "invert_FE_value_matrix3.  Invalid argument(s)");
+		return 0;
+	}
+	FE_value maxValue = 0.0;
+	for (int i = 0; i < 9; i++)
+	{
+		const FE_value aAbs = fabs(a[i]);
+		if (aAbs > maxValue)
+			maxValue = aAbs;
+	}
+	const FE_value determinant =
+		a[0]*(a[4]*a[8] - a[5]*a[7]) +
+		a[1]*(a[5]*a[6] - a[3]*a[8]) +
+		a[2]*(a[3]*a[7] - a[4]*a[6]);
+	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
+	{
+		display_message(ERROR_MESSAGE, "invert_FE_value_matrix3.  Matrix is singular to machine precision");
+		return 0;
+	}
+	const FE_value one__determinant = 1.0 / determinant;
+	a_inv[0] = (a[4]*a[8] - a[5]*a[7])*one__determinant;
+	a_inv[1] = (a[7]*a[2] - a[8]*a[1])*one__determinant;
+	a_inv[2] = (a[1]*a[5] - a[2]*a[4])*one__determinant;
+	a_inv[3] = (a[5]*a[6] - a[3]*a[8])*one__determinant;
+	a_inv[4] = (a[8]*a[0] - a[6]*a[2])*one__determinant;
+	a_inv[5] = (a[2]*a[3] - a[0]*a[5])*one__determinant;
+	a_inv[6] = (a[3]*a[7] - a[4]*a[6])*one__determinant;
+	a_inv[7] = (a[6]*a[1] - a[7]*a[0])*one__determinant;
+	a_inv[8] = (a[0]*a[4] - a[1]*a[3])*one__determinant;
+	return 1;
+}
 
 int multiply_FE_value_matrix3(FE_value *a,FE_value *b,FE_value *result)
 /*******************************************************************************

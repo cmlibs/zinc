@@ -21,9 +21,7 @@ namespace Zinc
 
 class FieldMeshIntegral : public Field
 {
-private:
-
-	inline cmzn_field_mesh_integral_id getDerivedId()
+	inline cmzn_field_mesh_integral_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_field_mesh_integral_id>(id);
 	}

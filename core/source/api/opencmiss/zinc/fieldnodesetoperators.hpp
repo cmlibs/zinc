@@ -19,27 +19,62 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class FieldNodesetSum : public Field
+class FieldNodesetOperator : public Field
+{
+	inline cmzn_field_nodeset_operator_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_nodeset_operator_id>(id);
+	}
+
+public:
+
+	FieldNodesetOperator() :
+		Field()
+	{
+	}
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodesetOperator(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_nodeset_operator_id))
+	{
+	}
+
+	Field getElementMapField() const
+	{
+		return Field(cmzn_field_nodeset_operator_get_element_map_field(this->getDerivedId()));
+	}
+		
+	int setElementMapField(const Field& elementMapField)
+	{
+		return cmzn_field_nodeset_operator_set_element_map_field(
+			this->getDerivedId(), elementMapField.getId());
+	}
+
+};
+
+class FieldNodesetSum : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSum(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetSum(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetSum Fieldmodule::createFieldNodesetSum(const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
-	FieldNodesetSum() : Field(0)
+	FieldNodesetSum() : FieldNodesetOperator()
 	{	}
 
 };
 
-class FieldNodesetMean : public Field
+class FieldNodesetMean : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMean(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMean(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetMean Fieldmodule::createFieldNodesetMean(const Field& sourceField,
@@ -47,16 +82,17 @@ private:
 
 public:
 
-	FieldNodesetMean() : Field(0)
+	FieldNodesetMean() : FieldNodesetOperator()
 	{	}
 
 };
 
-class FieldNodesetSumSquares : public Field
+class FieldNodesetSumSquares : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetSumSquares(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetSumSquares(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
@@ -64,16 +100,17 @@ private:
 
 public:
 
-	FieldNodesetSumSquares() : Field(0)
+	FieldNodesetSumSquares() : FieldNodesetOperator()
 	{	}
 
 };
 
-class FieldNodesetMeanSquares : public Field
+class FieldNodesetMeanSquares : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMeanSquares(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMeanSquares(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
@@ -81,16 +118,17 @@ private:
 
 public:
 
-	FieldNodesetMeanSquares() : Field(0)
+	FieldNodesetMeanSquares() : FieldNodesetOperator()
 	{	}
 
 };
 
-class FieldNodesetMinimum : public Field
+class FieldNodesetMinimum : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMinimum(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMinimum(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
@@ -98,16 +136,17 @@ private:
 
 public:
 
-	FieldNodesetMinimum() : Field(0)
+	FieldNodesetMinimum() : FieldNodesetOperator()
 	{	}
 
 };
 
-class FieldNodesetMaximum : public Field
+class FieldNodesetMaximum : public FieldNodesetOperator
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodesetMaximum(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldNodesetMaximum(cmzn_field_nodeset_operator_id field_nodeset_operator_id) :
+		FieldNodesetOperator(field_nodeset_operator_id)
 	{	}
 
 	friend FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
@@ -115,49 +154,54 @@ private:
 
 public:
 
-	FieldNodesetMaximum() : Field(0)
+	FieldNodesetMaximum() : FieldNodesetOperator()
 	{	}
 
 };
 
+inline FieldNodesetOperator Field::castNodesetOperator()
+{
+	return FieldNodesetOperator(cmzn_field_cast_nodeset_operator(this->id));
+}
+
 inline FieldNodesetSum Fieldmodule::createFieldNodesetSum(const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetSum(cmzn_fieldmodule_create_field_nodeset_sum(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetSum(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_sum(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 inline FieldNodesetMean Fieldmodule::createFieldNodesetMean(const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetMean(cmzn_fieldmodule_create_field_nodeset_mean(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetMean(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_mean(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 inline FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
 	const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetSumSquares(cmzn_fieldmodule_create_field_nodeset_sum_squares(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetSumSquares(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_sum_squares(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 inline FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
 	const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetMeanSquares(cmzn_fieldmodule_create_field_nodeset_mean_squares(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetMeanSquares(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_mean_squares(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 inline FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
 	const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetMinimum(cmzn_fieldmodule_create_field_nodeset_minimum(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetMinimum(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_minimum(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 inline FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
 	const Field& sourceField, const Nodeset& nodeset)
 {
-	return FieldNodesetMaximum(cmzn_fieldmodule_create_field_nodeset_maximum(id,
-		sourceField.getId(), nodeset.getId()));
+	return FieldNodesetMaximum(reinterpret_cast<cmzn_field_nodeset_operator_id>(
+		cmzn_fieldmodule_create_field_nodeset_maximum(this->id, sourceField.getId(), nodeset.getId())));
 }
 
 }  // namespace Zinc

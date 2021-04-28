@@ -363,6 +363,11 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+
 };
 
 int Computed_field_integration::integrate_path(FE_element *element,
@@ -431,7 +436,7 @@ time is supplied in the workingCache
 		{
 			xi_vector[k] = final_xi[k] - initial_xi[k];
 		}
-		const FieldDerivativeMesh& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
+		const FieldDerivative& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 		for (m = 0 ; m < number_of_gauss_points ; m++)
 		{
 			final_position = gauss_positions[number_of_gauss_points - 1][m];
