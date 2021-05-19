@@ -17,7 +17,7 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.3.0 LANGUAGES C CXX)
+project(Zinc VERSION 3.3.1 LANGUAGES C CXX)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
