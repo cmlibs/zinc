@@ -23,6 +23,7 @@ project(Zinc VERSION 3.3.0 LANGUAGES C CXX)
 set(ZINC_BASE_NAME zinc)
 
 if (NEW_CONFIGURATION_STYLE)
+    set(NEW_CONFIGURATION_STYLE TRUE CACHE BOOL "Use new configuration style.")
     find_package(OPENCMISSDEPENDENCIES REQUIRED)
 
     if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
@@ -409,6 +410,7 @@ install(FILES
 # Create the build tree imported targets
 set(ZINC_CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/zinc-config.cmake)
 file(WRITE ${ZINC_CONFIG_FILE}
+    "set(Zinc_VERSION ${Zinc_VERSION})\n"
     "get_filename_component(_HERE \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)\n"
     "include(\"\${_HERE}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake\")\n"
     "include(\"\${_HERE}/${ZINC_EXPORT_SET_NAME}.cmake\")\n"
@@ -423,9 +425,9 @@ endif ()
 )
 
 install(FILES
-        ${ZINC_CONFIG_FILE}
-        DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
-        COMPONENT DevelopmentSDK
+    ${ZINC_CONFIG_FILE}
+    DESTINATION ${ZINC_PACKAGE_CONFIG_DIR}
+    COMPONENT DevelopmentSDK
 )
 
 
