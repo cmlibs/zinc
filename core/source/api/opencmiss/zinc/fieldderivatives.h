@@ -88,8 +88,36 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field, cmzn_field_id coordinate_field);
+
+/**
+ * Creates a field returning the gradient of a source field with respect to
+ * local coordinate directions transformed from the coordinate field, which
+ * can be of lower dimension to allow gradient calculations on lower dimension
+ * elements e.g. in 2D elements where there are 3 coordinate components.
+ * The number of components of the final field is the product of the number of
+ * source field components with the number of local basis vectors.
+ * Values vary by local basis directions fastest, source components slowest.
+ * The gradient can also be calculated at nodes, albeit approximately using a
+ * finite difference approach by perturbing the coordinate field.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to calculate gradients for.
+ * @param coordinate_field  Field supplying coordinate location over which
+ * the source field is expected to vary.
+ * @param direction_field  Transformation matrix mapping derivatives of
+ * coordinates into local coordinates. Its values are N basis vectors of M
+ * components which by dot product with the M component coordinates makes a
+ * change of basis to the N component local coordinates. Commonly used with a
+ * fibre axes field to make a gradient relative to element local fibre axes.
+ * Can supply 2x3 local basis to evaluate gradients and thus strains w.r.t.
+ * local 2D coordinates for 3 component coordinates field on 2D elements.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient_directional(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
+	cmzn_field_id coordinate_field, cmzn_field_id direction_field);
 
 #ifdef __cplusplus
 }

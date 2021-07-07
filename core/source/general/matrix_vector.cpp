@@ -1099,7 +1099,7 @@ int invert_FE_value_matrix2(const FE_value *a, FE_value *a_inv)
 			maxValue = aAbs;
 	}
 	const FE_value determinant = a[0]*a[3] - a[1]*a[2];
-	if ((maxValue <= 0.0) || (1.0E-6*maxValue < fabs(determinant)))
+	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
 	{
 		display_message(ERROR_MESSAGE, "invert_FE_value_matrix2.  Matrix is singular to machine precision");
 		return 0;
