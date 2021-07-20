@@ -161,7 +161,7 @@ GET_SYSTEM_NAME(SYSTEM_NAME)
 set(PYPI_PACKAGE_NAME opencmiss.zinc)
 set(PYPI_SOURCE_TARGZ_VERSION "${Zinc_VERSION}${Zinc_DEVELOPER_VERSION}-${PYZINC_ARCHITECTURE}-${SYSTEM_NAME}-Python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
 
-###############################################################
+################################################################
 # Generate the required package files
 set(ADDITIONAL_PACKAGE_FILES
     CHANGES.txt
