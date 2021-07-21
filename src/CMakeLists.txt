@@ -15,11 +15,11 @@ ENDIF()
 
 set(FILES_FOR_CLEANING)
 
-set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincconfigure.h )
-set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/source/api/opencmiss/zinc/zincsharedobject.h )
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
+set( ZINC_CONFIGURE_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${CMAKE_CURRENT_BINARY_DIR}/api/opencmiss/zinc/zincsharedobject.h )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincconfigure.h.cmake
     ${ZINC_CONFIGURE_HDR} )
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/configure/zincsharedobject.h.cmake
     ${ZINC_SHARED_OBJECT_HDR} )
 set( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
 list(APPEND FILES_FOR_CLEANING ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} ${CMAKE_CURRENT_BINARY_DIR}/source)
@@ -28,42 +28,42 @@ list(APPEND FILES_FOR_CLEANING ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} $
 # CMake variables see comments for a list of _SRCS included from
 # a particular file (similarly that file defines a _HDRS variable).
 # Defines API_HDRS, API_TYPES_HDRS
-include(source/cmake/api_source_files.cmake )
+include(cmake/api_source_files.cmake )
 
 # Defines APIPP_HDRS, APIPP_TYPES_HDRS
-include(source/cmake/apipp_source_files.cmake )
+include(cmake/apipp_source_files.cmake )
 
 # Defines COMMAND_SRCS, CONTEXT_SRCS
-include(source/cmake/command_source_files.cmake )
+include(cmake/command_source_files.cmake )
 
 # Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS,
 # COMPUTED_FIELD_SRCS (contains previous two)
-include(source/cmake/computed_field_source_files.cmake )
+include(cmake/computed_field_source_files.cmake )
 
 # Defines FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS,
 # FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS
 # (group definition which includes the previous three)
-include(source/cmake/finite_element_source_files.cmake )
+include(cmake/finite_element_source_files.cmake )
 
 # Defines GENERAL_SRCS
-include(source/cmake/general_source_files.cmake )
+include(cmake/general_source_files.cmake )
 
 # Defines GRAPHICS_SRCS
-include(source/cmake/graphics_source_files.cmake )
+include(cmake/graphics_source_files.cmake )
 
 # Defines IMAGE_PROCESSING_SRCS
-include(source/cmake/image_processing_source_files.cmake )
+include(cmake/image_processing_source_files.cmake )
 
 # Defines COMFILE_SRCS, ELEMENT_SRCS, EMOTER_SRCS
 # FIELD_IO_SRCS, INTERACTION_SRCS, IO_DEVICES_SRCS, MESH_SRCS, NODE_SRCS,
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
-include(source/cmake/misc_source_files.cmake )
+include(cmake/misc_source_files.cmake )
 
 # Defines OPENCASCADE_SRCS
-#include(source/cmake/opencascade_source_files.cmake )
+#include(cmake/opencascade_source_files.cmake )
 
 # Defines ZINC_LIB_SRCS, ZINC_LIB_HDRS
-include(source/cmake/zinc_lib_source_files.cmake)
+include(cmake/zinc_lib_source_files.cmake)
 
 # Generate the version.cpp / version.h files
 set(ZINC_VERSION_STAGING_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.staged.cpp)
@@ -90,8 +90,8 @@ list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 #print_list_duplications( ZINC_LIB_SRCS )
 #print_list_duplications( ZINC_LIB_HDRS )
 
-include_directories( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
-    ${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS})
+include_directories( source api ${CMAKE_CURRENT_BINARY_DIR}/source
+    ${CMAKE_CURRENT_BINARY_DIR}/api ${INCLUDE_DIRS})
 
 if( MSVC_IDE )
     # I want to group the source files by the directory layout for Visual Studio
@@ -107,8 +107,8 @@ if( ZINC_BUILD_SHARED_LIBRARY )
     set( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
     target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${DEPENDENT_LIBS})
     target_include_directories(${ZINC_SHARED_TARGET}
-        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/api>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/source/api>
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/api>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/api>
         $<INSTALL_INTERFACE:include/>
         PRIVATE ${FREETYPE_INCLUDE_DIRS})
     if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -135,7 +135,7 @@ if( ZINC_BUILD_STATIC_LIBRARY )
     target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
     target_include_directories(${ZINC_STATIC_TARGET}
         PUBLIC ${FREETYPE_INCLUDE_DIRS}
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/source/api>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/api>
         )
     add_dependencies(${ZINC_STATIC_TARGET} generate_version_cpp_file)
     if (CMAKE_VERSION VERSION_EQUAL "3.5.1" AND CMAKE_CXX_COMPILER_ID STREQUAL "Intel")

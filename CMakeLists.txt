@@ -175,8 +175,7 @@ foreach( DEF ${DEPENDENT_DEFINITIONS} )
 endforeach()
 set(ZINC_SHARED_DEFINITIONS )
 
-set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/core/source/api;${PROJECT_BINARY_DIR}/core/source/api")
-#include_directories(${PROJECT_BINARY_DIR}/core/source/api)
+set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/src/api;${PROJECT_BINARY_DIR}/src/api")
 
 # Set those before we define libraries in subfolders
 set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
@@ -184,7 +183,7 @@ set(ZINC_INSTALL_BIN_DIR bin)# "Installation directory for executables"
 set(ZINC_INSTALL_INC_DIR include)# "Installation directory for header files"
 set(ZINC_EXPORT_SET_NAME zinc-targets)
 
-add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
+add_subdirectory(src) # Defines ZINC_LIBRARY_TARGETS
 
 if(ZINC_BUILD_TESTS)
     enable_testing()
