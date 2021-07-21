@@ -90,7 +90,7 @@ list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
 #print_list_duplications( ZINC_LIB_SRCS )
 #print_list_duplications( ZINC_LIB_HDRS )
 
-include_directories( source api ${CMAKE_CURRENT_BINARY_DIR}/source
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/api ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/api ${INCLUDE_DIRS})
 
 if( MSVC_IDE )
