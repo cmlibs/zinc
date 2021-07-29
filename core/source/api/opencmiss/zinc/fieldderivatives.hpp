@@ -74,7 +74,6 @@ private:
 	{	}
 
 	friend FieldGradient Fieldmodule::createFieldGradient(const Field& sourceField, const Field& coordinateField);
-	friend FieldGradient Fieldmodule::createFieldGradient(const Field& sourceField, const Field& coordinateField, const Field& directionField);
 
 public:
 
@@ -102,12 +101,6 @@ inline FieldGradient Fieldmodule::createFieldGradient(const Field& sourceField, 
 {
 	return FieldGradient(cmzn_fieldmodule_create_field_gradient(id, sourceField.getId(),
 		coordinateField.getId()));
-}
-
-inline FieldGradient Fieldmodule::createFieldGradient(const Field& sourceField, const Field& coordinateField, const Field& directionField)
-{
-	return FieldGradient(cmzn_fieldmodule_create_field_gradient_directional(id, sourceField.getId(),
-		coordinateField.getId(), directionField.getId()));
 }
 
 }  // namespace Zinc

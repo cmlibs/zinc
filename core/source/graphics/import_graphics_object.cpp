@@ -1272,7 +1272,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 								vector2[k]=vertex2[k]-vertex0[k];
 							}
 							cross_product_FE_value_vector3(vector1, vector2, result);
-							normalize_FE_value3(result);
+							normalize3(result);
 							for (k=0;k<3;k++)
 							{
 								vectorsum[k] += result[k];

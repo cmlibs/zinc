@@ -425,75 +425,6 @@ TEST(cmzn_fieldmodule_create_field_gradient, valid_args)
 	cmzn_context_destroy(&context);
 }
 
-// Test evaluation of gradients with a directional field
-TEST(ZincFieldGradient, directional_gradient)
-{
-	ZincTestSetupCpp zinc;
-
-	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
-
-	Field coordinates = zinc.fm.findFieldByName("coordinates");
-	Field deformed = zinc.fm.findFieldByName("deformed");
-	Mesh mesh = zinc.fm.findMeshByDimension(3);
-	Element element = mesh.findElementByIdentifier(1);
-	EXPECT_TRUE(element.isValid());
-	Fieldcache fieldcache = zinc.fm.createFieldcache();
-	//const double fibreAnglesComponents[3] = { 0.1, 1.8, -0.2 };
-	//FieldConstant fibreAngles = zinc.fm.createFieldConstant(3, fibreAnglesComponents);
-	//FieldFibreAxes fibreAxes = zinc.fm.createFieldFibreAxes(fibreAngles, coordinates);
-	//EXPECT_TRUE(fibreAxes.isValid());
-	//const double xif[3] = { 0.5, 0.7, 0.2 };
-	//EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, xif));
-	//double fibreAxesValues[9];
-	//EXPECT_EQ(RESULT_OK, fibreAxes.evaluateReal(fieldcache, 9, fibreAxesValues));
-	const double transformationComponents[9] = {
-		-0.22606703057951411, -0.022682361382527071, -0.97384763087819515 ,
-		-0.29035048971614047,  0.95585519098007721 ,  0.045138088107911742,
-		 0.92983347477199296,  0.29296137007897927 , -0.22267317942421561 };
-	FieldConstant transformation = zinc.fm.createFieldConstant(9, transformationComponents);
-	EXPECT_TRUE(transformation.isValid());
-	Field displacement = deformed - coordinates;
-	EXPECT_TRUE(displacement.isValid());
-	Field displacementGradientDirectional1 = zinc.fm.createFieldGradient(displacement, coordinates, transformation);
-	EXPECT_TRUE(displacementGradientDirectional1.isValid());
-	EXPECT_EQ(9, displacementGradientDirectional1.getNumberOfComponents());
-	Field displacementGradientDirectional2 = zinc.fm.createFieldGradient(displacementGradientDirectional1, coordinates, transformation);
-	EXPECT_TRUE(displacementGradientDirectional2.isValid());
-	EXPECT_EQ(27, displacementGradientDirectional2.getNumberOfComponents());
-	// for spatially constant transformation, directional gradient equals
-	// gradient of transformed coordinates, so check their values match
-	Field transformedCoordinates = zinc.fm.createFieldMatrixMultiply(3, transformation, coordinates);
-	Field displacementGradient1 = zinc.fm.createFieldGradient(displacement, transformedCoordinates);
-	EXPECT_TRUE(displacementGradient1.isValid());
-	EXPECT_EQ(9, displacementGradient1.getNumberOfComponents());
-	Field displacementGradient2 = zinc.fm.createFieldGradient(displacementGradient1, transformedCoordinates);
-	EXPECT_TRUE(displacementGradient2.isValid());
-	EXPECT_EQ(27, displacementGradient2.getNumberOfComponents());
-	const double xi[4][3] =
-	{
-		{ 0.5, 0.5, 0.5 },
-		{ 0.1, 0.2, 0.3 },
-		{ 1.0, 0.7, 0.9 },
-		{ 0.6, 0.3, 0.1 }
-	};
-	double displGradDir1Out[9], displGrad1Out[9];
-	double displGradDir2Out[27], displGrad2Out[27];
-
-	const double TOL = 1.0E-8;
-	for (int i = 0; i < 4; ++i)
-	{
-		EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, xi[i]));
-		EXPECT_EQ(RESULT_OK, displacementGradient1.evaluateReal(fieldcache, 9, displGrad1Out));
-		EXPECT_EQ(RESULT_OK, displacementGradientDirectional1.evaluateReal(fieldcache, 9, displGradDir1Out));
-		for (int c = 0; c < 9; ++c)
-			EXPECT_NEAR(displGrad1Out[c], displGradDir1Out[c], TOL);
-		EXPECT_EQ(RESULT_OK, displacementGradient2.evaluateReal(fieldcache, 27, displGrad2Out));
-		EXPECT_EQ(RESULT_OK, displacementGradientDirectional2.evaluateReal(fieldcache, 27, displGradDir2Out));
-		for (int c = 0; c < 27; ++c)
-			EXPECT_NEAR(displGrad2Out[c], displGradDir2Out[c], TOL);
-	}
-}
-
 // test evaluation of 2D Lagrange strains on a 2D element with 3D coordinates
 TEST(ZincFieldGradient, large_strain_2d)
 {
@@ -537,15 +468,19 @@ TEST(ZincFieldGradient, large_strain_2d)
 	FieldConstant fibreAngles = zinc.fm.createFieldConstant(3, fibreAnglesComponents);
 	FieldFibreAxes fibreAxes = zinc.fm.createFieldFibreAxes(fibreAngles, referenceCoordinates);
 	EXPECT_TRUE(fibreAxes.isValid());
-	const int fibreAxes2DComponentIndexes[6] = { 1, 2, 3, 4, 5, 6 };
-	FieldComponent fibreAxes2D = zinc.fm.createFieldComponent(fibreAxes, 6, fibreAxes2DComponentIndexes);
-	EXPECT_TRUE(fibreAxes2D.isValid());
-	FieldGradient F = zinc.fm.createFieldGradient(deformedCoordinates, referenceCoordinates, fibreAxes2D);
+	const int transposeComponentIndexes[6] = { 1, 4, 2, 5, 3, 6 };
+	FieldComponent fibreAxesT = zinc.fm.createFieldComponent(fibreAxes, 6, transposeComponentIndexes);
+	EXPECT_TRUE(fibreAxesT.isValid());
+	FieldGradient F = zinc.fm.createFieldGradient(deformedCoordinates, referenceCoordinates);
 	EXPECT_TRUE(F.isValid());
-	EXPECT_EQ(6, F.getNumberOfComponents());
-	FieldTranspose Ft = zinc.fm.createFieldTranspose(3, F);
-	EXPECT_TRUE(Ft.isValid());
-	FieldMatrixMultiply C = zinc.fm.createFieldMatrixMultiply(2, Ft, F);
+	EXPECT_EQ(9, F.getNumberOfComponents());
+	FieldMatrixMultiply Ff = zinc.fm.createFieldMatrixMultiply(3, F, fibreAxesT);
+	EXPECT_TRUE(Ff.isValid());
+	EXPECT_EQ(6, Ff.getNumberOfComponents());
+
+	FieldTranspose FfT = zinc.fm.createFieldTranspose(3, Ff);
+	EXPECT_TRUE(FfT.isValid());
+	FieldMatrixMultiply C = zinc.fm.createFieldMatrixMultiply(2, FfT, Ff);
 	EXPECT_EQ(4, C.getNumberOfComponents());
 	const double IValues[4] = { 1.0, 0.0, 0.0, 1.0 };
 	FieldConstant I = zinc.fm.createFieldConstant(4, IValues);
@@ -596,36 +531,46 @@ TEST(ZincFieldGradient, large_strain_2d)
 	Field deformedCoordinates2 = zinc.fm.createFieldConcatenate(2, deformedFields2);
 	EXPECT_TRUE(deformedCoordinates2.isValid());
 	EXPECT_EQ(3, deformedCoordinates2.getNumberOfComponents());
-	Field F2 = zinc.fm.createFieldGradient(deformedCoordinates2, referenceCoordinates, fibreAxes2D);
+	Field F2 = zinc.fm.createFieldGradient(deformedCoordinates2, referenceCoordinates);
 	EXPECT_TRUE(F2.isValid());
-	EXPECT_EQ(6, F2.getNumberOfComponents());
-	Field FF2 = zinc.fm.createFieldGradient(F2, referenceCoordinates, fibreAxes2D);
+	EXPECT_EQ(9, F2.getNumberOfComponents());
+	// convert to local fibre directions, reducing dimension
+	FieldMatrixMultiply F2f = zinc.fm.createFieldMatrixMultiply(3, F2, fibreAxesT);
+	EXPECT_TRUE(F2f.isValid());
+	EXPECT_EQ(6, F2f.getNumberOfComponents());
+	Field FF2 = zinc.fm.createFieldGradient(F2, referenceCoordinates);
 	EXPECT_TRUE(FF2.isValid());
-	EXPECT_EQ(12, FF2.getNumberOfComponents());
+	EXPECT_EQ(27, FF2.getNumberOfComponents());
+	// convert to local fibre directions, reducing dimension
+	Field FF2a = zinc.fm.createFieldMatrixMultiply(9, FF2, fibreAxesT);
+	// transpose each displacement component of FF2a to remultiply by fibreAxesT
+	const int transposeComponents[18] = { 1, 3, 5, 2, 4, 6, 7, 9, 11, 8, 10, 12, 13, 15, 17, 14, 16, 18 };
+	Field FF2aT = zinc.fm.createFieldComponent(FF2a, 18, transposeComponents);
+	Field FF2f = zinc.fm.createFieldMatrixMultiply(6, FF2aT, fibreAxesT);
 
 	const double xiValues2[2] = { 0.0, 0.0 };
 	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 2, xiValues2));
-	double F2Values[6], FF2Values[12];
-	EXPECT_EQ(RESULT_OK, F2.evaluateReal(fieldcache, 6, F2Values));
-	const double expectedF2Values2[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+	double F2fValues[6], FF2fValues[12];
+	EXPECT_EQ(RESULT_OK, F2f.evaluateReal(fieldcache, 6, F2fValues));
+	const double expectedF2fValues2[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 	for (int i = 0; i < 6; ++i)
-		EXPECT_NEAR(expectedF2Values2[i], F2Values[i], TOL);
-	EXPECT_EQ(RESULT_OK, FF2.evaluateReal(fieldcache, 12, FF2Values));
+		EXPECT_NEAR(expectedF2fValues2[i], F2fValues[i], TOL);
+	EXPECT_EQ(RESULT_OK, FF2f.evaluateReal(fieldcache, 12, FF2fValues));
 	// expect "curvature" d2z/dxi1dxi1 = 2.0; d2z/dxi2dxi2 = 1.0
-	const double expectedFF2Values2[12] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 1.0 };
+	const double expectedFF2fValues2[12] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 1.0 };
 	for (int i = 0; i < 12; ++i)
-		EXPECT_NEAR(expectedFF2Values2[i], FF2Values[i], TOL);
+		EXPECT_NEAR(expectedFF2fValues2[i], FF2fValues[i], TOL);
 
 	const double xiValues3[2] = { 1.0, 1.0 };
 	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 2, xiValues3));
-	EXPECT_EQ(RESULT_OK, F2.evaluateReal(fieldcache, 6, F2Values));
-	const double expectedF2Values3[6] = { 1.0, 0.0, 0.0, 1.0, 2.0, 1.0 };
+	EXPECT_EQ(RESULT_OK, F2f.evaluateReal(fieldcache, 6, F2fValues));
+	const double expectedF2fValues3[6] = { 1.0, 0.0, 0.0, 1.0, 2.0, 1.0 };
 	for (int i = 0; i < 6; ++i)
-		EXPECT_NEAR(expectedF2Values3[i], F2Values[i], TOL);
-	EXPECT_EQ(RESULT_OK, FF2.evaluateReal(fieldcache, 12, FF2Values));
+		EXPECT_NEAR(expectedF2fValues3[i], F2fValues[i], TOL);
+	EXPECT_EQ(RESULT_OK, FF2f.evaluateReal(fieldcache, 12, FF2fValues));
 	// "curvature" FF2 values should not have changed:
 	for (int i = 0; i < 12; ++i)
-		EXPECT_NEAR(expectedFF2Values2[i], FF2Values[i], TOL);
+		EXPECT_NEAR(expectedFF2fValues2[i], FF2fValues[i], TOL);
 }
 
 // Zinc issue #163 numerical derivative use for gradient of gradient indexed

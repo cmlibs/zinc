@@ -1933,7 +1933,7 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 				axis2[1] = v3->coordinates[1] - v1->coordinates[1];
 				axis2[2] = v3->coordinates[2] - v1->coordinates[2];
 				cross_product_FE_value_vector3(axis1, axis2, facet_normal);
-				normalize_FE_value3(facet_normal);
+				normalize3(facet_normal);
 				if (number_of_available_vertices < 3)
 				{
 					add_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,

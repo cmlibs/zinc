@@ -805,22 +805,16 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 	Field dx_dX = zinc.fm.createFieldGradient(transCoordinates, coordinates);
 	EXPECT_TRUE(dx_dX.isValid());
 	// test directional variant
-	const double directionValues[9] = { 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 };
-	Field direction = zinc.fm.createFieldConstant(9, directionValues);
 	EXPECT_TRUE(matrix.isValid());
-	Field dx_dS = zinc.fm.createFieldGradient(transCoordinates, coordinates, direction);
-	EXPECT_TRUE(dx_dS.isValid());
 
 	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodes.isValid());
 	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
-	double values[9], valuesDir[9];
+	double values[9];
 	EXPECT_EQ(RESULT_OK, matrix.evaluateReal(cache, 9, values));
 	for (int c = 0; c < 9; ++c)
-	{
 		EXPECT_DOUBLE_EQ(matrixValues[c], values[c]);
-	}
 	const double tolerance = 1.0E-6;
 	for (int n = 0; n < 8; ++n)
 	{
@@ -828,11 +822,7 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 		EXPECT_TRUE(node.isValid());
 		EXPECT_EQ(RESULT_OK, cache.setNode(node));
 		EXPECT_EQ(RESULT_OK, dx_dX.evaluateReal(cache, 9, values));
-		EXPECT_EQ(RESULT_OK, dx_dS.evaluateReal(cache, 9, valuesDir));
 		for (int c = 0; c < 9; ++c)
-		{
 			EXPECT_NEAR(matrixValues[c], values[c], tolerance);
-			EXPECT_NEAR(matrixValues[(c/3)*3 + (c%3 + 1)%3], valuesDir[c], tolerance);
-		}
 	}
 }

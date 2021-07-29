@@ -385,8 +385,6 @@ public:
 
 	inline FieldGradient createFieldGradient(const Field& sourceField, const Field& coordinateField);
 
-	inline FieldGradient createFieldGradient(const Field& sourceField, const Field& coordinateField, const Field& directionField);
-
 	inline FieldSin createFieldSin(const Field& sourceField);
 
 	inline FieldCos createFieldCos(const Field& sourceField);
