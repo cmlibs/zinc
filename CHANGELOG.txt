@@ -2,7 +2,7 @@ CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.4.0
 Fix crash in manager cleanup when change caching left active.
-Add directional gradient operator.
+Evaluate gradient in lower dimensional elements.
 
 v3.3.0
 Add field parameters interface.
