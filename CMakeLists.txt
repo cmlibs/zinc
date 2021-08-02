@@ -22,169 +22,25 @@ project(Zinc VERSION 3.3.0 LANGUAGES C CXX)
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
-if (NEW_CONFIGURATION_STYLE)
-    set(NEW_CONFIGURATION_STYLE TRUE CACHE BOOL "Use new configuration style.")
-    find_package(OPENCMISSDEPENDENCIES REQUIRED)
+find_package(OPENCMISSDEPENDENCIES REQUIRED)
 
-    if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
-        list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-    endif ()
+if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
+    list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+endif ()
 
-    include(MacroDefinitions)
-    include(FunctionDefinitions)
-    include(OCMiscFunctions)
+include(MacroDefinitions)
+include(FunctionDefinitions)
+include(OCMiscFunctions)
 
-    set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
-else()
-
-    set(_CORRECT_CMAKE_MODULE_PATH FALSE)
-    # First check if the CMAKE_MODULE_PATH is already set properly.
-    foreach(_PATH ${CMAKE_MODULE_PATH})
-        if (EXISTS "${_PATH}/OpenCMISS/OCMiscFunctions.cmake")
-            set(_CORRECT_CMAKE_MODULE_PATH TRUE)
-            set(ZINC_CMAKE_MODULE_PATH "${_PATH}" CACHE STRING "Location of OpenCMISS CMake modules.")
-            break()
-        endif ()
-    endforeach()
-
-    if (NOT _CORRECT_CMAKE_MODULE_PATH)
-        # Check bare minimum configuration
-        set(ZINC_CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}" CACHE STRING "Location of OpenCMISS CMake modules.")
-        if (EXISTS "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS/OCMiscFunctions.cmake")
-            list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/FindModuleWrappers")
-            list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}")
-            list(APPEND CMAKE_MODULE_PATH "${ZINC_CMAKE_MODULE_PATH}/OpenCMISS")
-            set(_CORRECT_CMAKE_MODULE_PATH TRUE)
-        endif ()
-    endif ()
-
-    if (NOT _CORRECT_CMAKE_MODULE_PATH)
-        message(STATUS "CMAKE_MODULE_PATH: '${CMAKE_MODULE_PATH}'")
-        message(STATUS "ZINC_CMAKE_MODULE_PATH: '${ZINC_CMAKE_MODULE_PATH}'")
-        message(FATAL_ERROR "'OCMiscFunctions.cmake' was not found on the module path.  Check the value of CMAKE_MODULE_PATH and/or ZINC_CMAKE_MODULE_PATH.")
-    endif ()
-
-    if (NOT "${CMAKE_CURRENT_SOURCE_DIR}/cmake" IN_LIST CMAKE_MODULE_PATH)
-        list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-    endif ()
-
-    include(MacroDefinitions)
-    include(FunctionDefinitions)
-    include(OCMiscFunctions)
-
-    # Make relative paths absolute (needed later on)
-    foreach( p LIB BIN INC CMAKE )
-        set(var ZINC_INSTALL_${p}_DIR )
-        if(NOT IS_ABSOLUTE "${${var}}")
-            set(${var}_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${${var}}" )
-        endif()
-    endforeach()
-
-    # Find dependencies default
-    if (APPLE)
-        set(ZLIB_FIND_SYSTEM OFF)
-        set(BZIP2_FIND_SYSTEM OFF)
-        set(LIBXML2_FIND_SYSTEM ON)
-        set(FIELDML-API_FIND_SYSTEM OFF)
-        set(FTGL_FIND_SYSTEM OFF)
-        set(FREETYPE_FIND_SYSTEM ON)
-        set(OPTPP_FIND_SYSTEM OFF)
-        set(GLEW_FIND_SYSTEM OFF)
-        set(NETGEN_FIND_SYSTEM OFF)
-        set(IMAGEMAGICK_FIND_SYSTEM OFF)
-        set(ITK_FIND_SYSTEM OFF)
-    endif()
-
-    # Must have dependencies
-    find_package(ZLIB ${ZLIB_VERSION} REQUIRED)
-    find_package(BZip2 ${BZIP2_VERSION} REQUIRED)
-    find_package(LibXml2 ${LIBXML2_VERSION} REQUIRED)
-    find_package(Fieldml-API ${FIELDML-API_VERSION} REQUIRED)
-    find_package(FTGL ${FTGL_VERSION} REQUIRED)
-    find_package(Freetype REQUIRED)
-    #include_directories(${FREETYPE_INCLUDE_DIRS})
-    find_package(OPTPP ${OPTPP_VERSION} REQUIRED)
-    find_package(GLEW ${GLEW_VERSION} REQUIRED)
-    set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew)
-    set(ZINC_DEPS ZLIB BZip2 LibXml2 Fieldml-API FTGL Freetype OPTPP GLEW)
-
-    #netgen
-    if(ZINC_USE_NETGEN)
-        find_package(NETGEN ${NETGEN_VERSION} REQUIRED)
-        list(APPEND DEPENDENT_LIBS nglib)
-        list(APPEND ZINC_DEPS NETGEN)
-    endif()
-
-    if(ZINC_USE_PNG)
-        find_package(PNG ${PNG_VERSION} CONFIG REQUIRED)
-        list(APPEND DEPENDENT_LIBS png)
-        list(APPEND ZINC_DEPS PNG)
-    endif()
-
-    if(ZINC_USE_IMAGEMAGICK)
-        find_package(ImageMagick ${IMAGEMAGICK_VERSION} CONFIG REQUIRED)
-        list(APPEND DEPENDENT_LIBS MagickCore)
-        list(APPEND ZINC_DEPS ImageMagick)
-    endif()
-
-    if(ZINC_USE_ITK )
-        find_package(ITK ${ITK_VERSION} CONFIG REQUIRED)
-        list(APPEND DEPENDENT_LIBS  ${ITK_LIBRARIES})
-        list(APPEND ZINC_DEPS ITK)
-        include_directories(${ITK_INCLUDE_DIRS})
-    endif()
-
-    #if(ZINC_USE_OCE )
-    #   if(OCE_FOUND )
-    #       MARK_AS_ADVANCED( OCE_DIR )
-    #       set(USE_OPENCASCADE TRUE )
-    #       set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} USE_CAD_FIELDS HAVE_CONFIG_H )
-    #       set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OCE_LIBRARIES} )
-    #       set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OCE_INCLUDE_DIRS} )
-    #   else( OCE_FOUND )
-    #       message(FATAL_ERROR "OCE was requested but not found." )
-    #   endif(OCE_FOUND )
-    #endif(ZINC_USE_OCE )
-
-    # OpenCASCADE - is a config file therefore I cannot find twice
-    #if(ZINC_USE_OPENCASCADE )
-    #   if(OPENCASCADE_FOUND )
-            # Subset of OpenCASCADE libraries Zinc is dependent on
-            # TKernel, TKMath, TKAdvTools, TKGeomBase, TKGeomAlgo, TKBRep, TKPrim,
-            # TKBO, TKBool, TKG2d, TKG3d, PTKernel, TKOffset, TKFillet, TKMESH, TKIGES,
-            # TKXCAF, TKCAF, TKV3d, TKLCAF, TKTopAlgo, TKCDF, TKV2d, TKHLR, TKService,
-            # TKShHealing, TKXSBase, TKSTEP, TKSTEPBase, TKSTEPAttr, TKSTEP209,
-            # TKXDEIGES, TKXDESTEP
-    #       mark_as_advanced( OpenCASCADE_DIR )
-    #       set(USE_OPENCASCADE TRUE )
-    #       set(OPENCASCADE_DEFINITIONS USE_CAD_FIELDS )
-    #       if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
-                # 64-bit architecture
-    #           set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} _OCC64 )
-    #           set(OPENCASCADE_CXX_FLAGS -m64 )
-    #       endif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
-    #       if(WIN32 )
-    #           set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} WNT HAVE_NO_DLL )
-    #       else( WIN32 )
-    #           set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} HAVE_OCC_CONFIG_H )
-    #       endif(WIN32 )
-    #       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENCASCADE_CXX_FLAGS}" )
-    #
-    #       set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENCASCADE_LIBRARIES} )
-    #       set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OPENCASCADE_INCLUDE_DIRS} )
-    #       set(DEPENDENT_CONFIGS "${DEPENDENT_CONFIGS}\nINCLUDE(${OpenCASCADE_DIR}/opencascade-config.cmake)" )
-    #       set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} ${OPENCASCADE_DEFINITIONS} )
-    #   else( OPENCASCADE_FOUND )
-    #       message(FATAL_ERROR "OpenCASCADE was requested but not found." )
-    #   endif(OPENCASCADE_FOUND )
-    #endif(ZINC_USE_OPENCASCADE )
-
+set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
+if(TARGET opencmissdependencies)
+    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
+    set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
 endif()
 
 include(OCMultiConfigEnvironment)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
-option(ZINC_BUILD_BINDINGS "Build bindings for ${PROJECT_NAME}, requires SWIG." YES)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
@@ -216,10 +72,6 @@ if (NOT DEFINED ZINC_PACKAGE_CONFIG_DIR)
     set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake")
 endif ()
 set(ZINC_PACKAGE_CONFIG_DIR "${ZINC_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
-
-if(ZINC_BUILD_BINDINGS)
-    option(ZINC_BUILD_PYTHON_BINDINGS "Build Python bindings for ${PROJECT_NAME}" YES)
-endif()
 
 if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
     message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
@@ -327,8 +179,7 @@ foreach( DEF ${DEPENDENT_DEFINITIONS} )
 endforeach()
 set(ZINC_SHARED_DEFINITIONS )
 
-set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/core/source/api;${PROJECT_BINARY_DIR}/core/source/api")
-#include_directories(${PROJECT_BINARY_DIR}/core/source/api)
+set(ZINC_API_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/src/api;${PROJECT_BINARY_DIR}/src/api")
 
 # Set those before we define libraries in subfolders
 set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
@@ -336,7 +187,7 @@ set(ZINC_INSTALL_BIN_DIR bin)# "Installation directory for executables"
 set(ZINC_INSTALL_INC_DIR include)# "Installation directory for header files"
 set(ZINC_EXPORT_SET_NAME zinc-targets)
 
-add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
+add_subdirectory(src) # Defines ZINC_LIBRARY_TARGETS
 
 if(ZINC_BUILD_TESTS)
     enable_testing()
@@ -350,10 +201,6 @@ if(ZINC_BUILD_TESTS)
     endif()
 
     add_subdirectory(tests)
-endif()
-
-if(SWIG_FOUND AND ZINC_BUILD_BINDINGS)
-    add_subdirectory(bindings)
 endif()
 
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
@@ -382,22 +229,9 @@ file(WRITE ${DEPFILE}
 )
 
 file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
-foreach(ZINCDEP ${ZINC_DEPS})
-    if (${ZINCDEP}_FOUND)
-        if (DEFINED ${ZINCDEP}_DIR)
-            if(IS_ABSOLUTE "${${ZINCDEP}_DIR}")
-                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \"${${ZINCDEP}_DIR}\")\n")
-            else()
-                file(RELATIVE_PATH _REL_PATH "${CMAKE_INSTALL_PREFIX}" "${${ZINCDEP}_DIR}")
-                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \${${PROJECT_NAME}_IMPORT_PREFIX}/${_REL_PATH})\n")
-            endif()
-        endif ()
-        string(TOUPPER ${ZINCDEP} ZINCDEP_UPPER)
-        file(APPEND ${DEPFILE} "    set(${ZINCDEP_UPPER}_FIND_SYSTEM ${${ZINCDEP_UPPER}_FIND_SYSTEM})\n    find_dependency(${ZINCDEP})\n")
-    else ()
-        message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
-    endif ()
-endforeach()
+file(APPEND ${DEPFILE} "    set(USE_OPENCMISSDEPENDENCIES TRUE)\n")
+file(APPEND ${DEPFILE} "    set(OPENCMISSDEPENDENCIES_DIR \"${OPENCMISSDEPENDENCIES_DIR}\")\n")
+file(APPEND ${DEPFILE} "    find_dependency(OPENCMISSDEPENDENCIES)\n")
 file(APPEND ${DEPFILE} "endif ()\n")
 
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
@@ -418,7 +252,7 @@ file(WRITE ${ZINC_CONFIG_FILE}
 file(APPEND ${ZINC_CONFIG_FILE} "
 if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
     if (TARGET ${ZINC_STATIC_TARGET_NAME})
-        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
+        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/src APPEND)
     endif ()
 endif ()
 "
@@ -452,9 +286,6 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
     message(STATUS "         Target type: '${ZINC_BUILD_STRING}'")
     message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
     message(STATUS "         Install dir: '${CMAKE_INSTALL_PREFIX}'")
-    if (VIRTUALENV_LOCATION AND ZINC_BUILD_PYTHON_BINDINGS)
-        message(STATUS "   Python VirtualEnv: '${VIRTUALENV_LOCATION}'")
-    endif()
     foreach(ZINCDEP ${ZINC_DEPS})
         if (${ZINCDEP}_FOUND)
             string(SUBSTRING "${ZINCDEP}              " 0 11 ZINCDEP_FIXED_SIZE)
