@@ -33,6 +33,10 @@ include(FunctionDefinitions)
 include(OCMiscFunctions)
 
 set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
+if(TARGET opencmissdependencies)
+    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
+    set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
+endif()
 
 include(OCMultiConfigEnvironment)
 
@@ -225,22 +229,8 @@ file(WRITE ${DEPFILE}
 )
 
 file(APPEND ${DEPFILE} "if (ZINC_USE_STATIC)\n")
-foreach(ZINCDEP ${ZINC_DEPS})
-    if (${ZINCDEP}_FOUND)
-        if (DEFINED ${ZINCDEP}_DIR)
-            if(IS_ABSOLUTE "${${ZINCDEP}_DIR}")
-                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \"${${ZINCDEP}_DIR}\")\n")
-            else()
-                file(RELATIVE_PATH _REL_PATH "${CMAKE_INSTALL_PREFIX}" "${${ZINCDEP}_DIR}")
-                file(APPEND ${DEPFILE} "    set(${ZINCDEP}_DIR \${${PROJECT_NAME}_IMPORT_PREFIX}/${_REL_PATH})\n")
-            endif()
-        endif ()
-        string(TOUPPER ${ZINCDEP} ZINCDEP_UPPER)
-        file(APPEND ${DEPFILE} "    set(${ZINCDEP_UPPER}_FIND_SYSTEM ${${ZINCDEP_UPPER}_FIND_SYSTEM})\n    find_dependency(${ZINCDEP})\n")
-    else ()
-        message(STATUS "Requested dependency '${ZINCDEP}' not found!  Therefore not adding to list of dependencies!")
-    endif ()
-endforeach()
+file(APPEND ${DEPFILE} "    set(OPENCMISSDEPENDENCIES_DIR \"${OPENCMISSDEPENDENCIES_DIR}\")\n")
+file(APPEND ${DEPFILE} "    find_dependency(OPENCMISSDEPENDENCIES)\n")
 file(APPEND ${DEPFILE} "endif ()\n")
 
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})\n")
@@ -261,7 +251,7 @@ file(WRITE ${ZINC_CONFIG_FILE}
 file(APPEND ${ZINC_CONFIG_FILE} "
 if (REQUIRE_INTERNAL_ZINC_INCLUDE_DIR)
     if (TARGET ${ZINC_STATIC_TARGET_NAME})
-        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/core/source APPEND)
+        set_property(TARGET ${ZINC_STATIC_TARGET_NAME} PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/src APPEND)
     endif ()
 endif ()
 "
