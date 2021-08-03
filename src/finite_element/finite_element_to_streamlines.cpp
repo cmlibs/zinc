@@ -947,9 +947,9 @@ following way:
 										if (calculate_curl)
 										{
 											/* evaluate the curl, and its component along vector */
-											if (invert_FE_value_matrix3(dx_dxi,dxi_dx)&&
-												multiply_FE_value_matrix3(dv_dxi,dxi_dx,dv_dx))
+											if (invert_matrix3(dx_dxi, dxi_dx))
 											{
+												multiply_matrix3(dv_dxi, dxi_dx, dv_dx);
 												curl[0] = dv_dx[7] - dv_dx[5];
 												curl[1] = dv_dx[2] - dv_dx[6];
 												curl[2] = dv_dx[3] - dv_dx[1];

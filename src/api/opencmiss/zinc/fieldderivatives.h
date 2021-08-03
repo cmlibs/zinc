@@ -88,7 +88,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field, cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus

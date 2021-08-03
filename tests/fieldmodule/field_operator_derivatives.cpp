@@ -809,14 +809,12 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 	EXPECT_TRUE(nodes.isValid());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
-	EXPECT_TRUE(dx_dX.isValid());
+	EXPECT_TRUE(cache.isValid());
 
 	double values[9];
 	EXPECT_EQ(RESULT_OK, matrix.evaluateReal(cache, 9, values));
 	for (int c = 0; c < 9; ++c)
-	{
 		EXPECT_DOUBLE_EQ(matrixValues[c], values[c]);
-	}
 	const double tolerance = 1.0E-6;
 	for (int n = 0; n < 8; ++n)
 	{
@@ -825,8 +823,6 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 		EXPECT_EQ(RESULT_OK, cache.setNode(node));
 		EXPECT_EQ(RESULT_OK, dx_dX.evaluateReal(cache, 9, values));
 		for (int c = 0; c < 9; ++c)
-		{
 			EXPECT_NEAR(matrixValues[c], values[c], tolerance);
-		}
 	}
 }

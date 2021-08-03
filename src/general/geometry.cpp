@@ -953,8 +953,7 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
-									jacobian_1,jacobian);
+								matrixmult(3,3,3,jacobian_2,jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1005,8 +1004,7 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
-									jacobian_1,jacobian);
+								matrixmult(3,3,3,jacobian_2,jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1024,8 +1022,7 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
-									jacobian_1,jacobian);
+								matrixmult(3,3,3,jacobian_2,jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1077,8 +1074,7 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
-									jacobian_1,jacobian);
+								matrixmult(3,3,3,jacobian_2,jacobian_1,jacobian);
 							}
 						}
 					} break;

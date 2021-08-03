@@ -32,6 +32,7 @@ vector or matrix routines that should be in here are listed in matrix_vector.c.
 #define MATRIX_VECTOR_H
 
 #include "general/value.h"
+#include <cmath>
 
 int identity_matrix4(double *a);
 /*******************************************************************************
@@ -41,62 +42,49 @@ DESCRIPTION :
 Set matrix <a> to the 4x4 identity.
 ==============================================================================*/
 
-int cross_product3(double *a,double *b,double *result);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
+/**
+ * Returns the cross product of the two 3-component vectors = a (x) b.
+ * @param result  Array to receive 3 component result.
+ */
+template <typename T>
+inline void cross_product3(const T *a, const T *b, T *result)
+{
+	result[0] = a[1]*b[2] - a[2]*b[1];
+	result[1] = a[2]*b[0] - a[0]*b[2];
+	result[2] = a[0]*b[1] - a[1]*b[0];
+}
 
-DESCRIPTION :
-Returns in <result> the cross product of the two vectors = a (x) b.
-==============================================================================*/
-
-double dot_product3(double *a,double *b);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
-
-DESCRIPTION :
-Returns the dot product of the two vectors = a.b.
-==============================================================================*/
+/** Returns the dot product of the two 3-component vectors = a.b */
+template <typename T>
+inline T dot_product3(T *a, T *b)
+{
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
 
 /**
- * Returns the norm/length/magnitude of vector <v>.
+ * Returns the norm/length/magnitude of 3-component vector <v>.
  */
-double norm3(const double *v);
+template <typename T>
+inline T norm3(const T *v)
+{
+	return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
 
-double normalize3(double *v);
-/*******************************************************************************
-LAST MODIFIED : 15 October 2001
-
-DESCRIPTION :
-Normalizes vector v - of dimension 3 - and returns its length.
-Zero vectors are returned unchanged.
-==============================================================================*/
-
-FE_value normalize_FE_value3(FE_value *v);
-/*******************************************************************************
-LAST MODIFIED : 15 October 2001
-
-DESCRIPTION :
-Normalizes vector v - of dimension 3 - and returns its length.
-Zero vectors are returned unchanged.
-==============================================================================*/
-
-int normalize_float3(float vector[3]);
-/*******************************************************************************
-LAST MODIFIED : 27 December 1995
-
-DESCRIPTION :
-Normalizes the given <vector>.
-==============================================================================*/
-
-int cross_product_float3(float vector_1[3],float vector_2[3],
-	float result[3]);
-/*******************************************************************************
-LAST MODIFIED : 22 September 1999
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
+/** Normalizes vector v - of dimension 3 - and returns its length.
+ * Zero vectors are returned unchanged.
+ */
+template <typename T>
+inline T normalize3(T *v)
+{
+	const T length = norm3(v);
+	if (length > 0.0)
+	{
+		v[0] /= length;
+		v[1] /= length;
+		v[2] /= length;
+	}
+	return (length);
+}
 
 double scalar_triple_product3(double *a,double *b,double *c);
 /*******************************************************************************
@@ -138,6 +126,33 @@ DESCRIPTION :
 Set matrix <a> to the <n> x <n> identity.
 ==============================================================================*/
 
+/** Perform matrix multiplication result = a*b.
+ * @param rowCount  Number of rows in a and result.
+ * @param midCount  Number of columns in a and rows in b which are eliminated in dot product.
+ * @param colCount  Number of columns in b and result.
+ * @param a. First matrix to multiply.
+ * @param b. Second matrix to multiply.
+ * @param result.  Matrix to fill with result.
+ */
+template <typename T>
+inline void matrixmult(int rowCount, int midCount, int colCount, const T *a, const T *b, T *result)
+{
+	const T *va = a;
+	T *dest = result;
+	for (int i = 0; i < rowCount; ++i)
+	{
+		for (int j = 0; j < colCount; ++j)
+		{
+			T sum = 0.0;
+			for (int k = 0; k < midCount; ++k)
+				sum += va[k]*b[k*colCount + j];
+			*dest = sum;
+			++dest;
+		}
+		va += midCount;
+	}
+}
+
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -145,26 +160,6 @@ LAST MODIFIED : 28 January 1998
 DESCRIPTION :
 Returns in the m rows x n columns matrix <c> that is the product of
 m x s matrix <a> and s x n matrix <b>.
-==============================================================================*/
-
-int multiply_matrix_FE_value(int m,int s,int n,FE_value *a,FE_value *b,
-	FE_value *c);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
-
-DESCRIPTION :
-Returns in the m rows x n columns matrix <c> that is the product of
-m x s matrix <a> and s x n matrix <b>.
-==============================================================================*/
-
-int multiply_matrix_float(int m,int s,int n,float *a,float *b,float *c);
-/*******************************************************************************
-LAST MODIFIED : 2 February 1998
-
-DESCRIPTION :
-Returns in the m rows x n columns matrix <c> that is the product of
-m x s matrix <a> and s x n matrix <b>.
-Uses matrices of floats, not doubles. For matrices od doubles, use "multiply_matrix()"
 ==============================================================================*/
 
 int print_matrix(int m,int n,double *a,char *number_format);
@@ -248,25 +243,87 @@ Adapted from "Numerical Recipes".
 ==============================================================================*/
 
 /**
- * Calculates the inverse of 2X2 FE_value matrix <a>, returning it in <a_inv>.
- * @return  1 on success, 0 on failure.
+ * Calculates the inverse of 2x2 matrix <a>, returning it in <a_inv>.
+ * Caller must ensure a and a_inv are valid.
+ * @return  True on success, false on failure.
  */
-int invert_FE_value_matrix2(const FE_value *a, FE_value *a_inv);
+template <typename T>
+bool invert_matrix2(const T *a, T *a_inv)
+{
+	T maxValue = 0.0;
+	for (int i = 0; i < 4; i++)
+	{
+		const T aAbs = fabs(a[i]);
+		if (aAbs > maxValue)
+			maxValue = aAbs;
+	}
+	const T determinant = a[0]*a[3] - a[1]*a[2];
+	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
+	{
+		display_message(ERROR_MESSAGE, "invert_matrix2.  Matrix is singular to machine precision");
+		return false;
+	}
+	const T one__determinant = 1.0 / determinant;
+	a_inv[0] = a[3]*one__determinant;
+	a_inv[1] = -a[1]*one__determinant;
+	a_inv[2] = -a[2]*one__determinant;
+	a_inv[3] = a[0]*one__determinant;
+	return true;
+}
 
 /**
- * Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
- * @return  1 on success, 0 on failure.
+ * Calculates the inverse of 3x3 matrix <a>, returning it in <a_inv>.
+ * Caller must ensure a and a_inv are valid.
+ * @return  True on success, false on failure.
  */
-int invert_FE_value_matrix3(const FE_value *a, FE_value *a_inv);
+template <typename T>
+bool invert_matrix3(const T *a, T *a_inv)
+{
+	T maxValue = 0.0;
+	for (int i = 0; i < 9; i++)
+	{
+		const T aAbs = fabs(a[i]);
+		if (aAbs > maxValue)
+			maxValue = aAbs;
+	}
+	const T determinant =
+		a[0]*(a[4]*a[8] - a[5]*a[7]) +
+		a[1]*(a[5]*a[6] - a[3]*a[8]) +
+		a[2]*(a[3]*a[7] - a[4]*a[6]);
+	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
+	{
+		display_message(ERROR_MESSAGE, "invert_matrix3.  Matrix is singular to machine precision");
+		return 0;
+	}
+	const T one__determinant = 1.0 / determinant;
+	a_inv[0] = (a[4]*a[8] - a[5]*a[7])*one__determinant;
+	a_inv[1] = (a[7]*a[2] - a[8]*a[1])*one__determinant;
+	a_inv[2] = (a[1]*a[5] - a[2]*a[4])*one__determinant;
+	a_inv[3] = (a[5]*a[6] - a[3]*a[8])*one__determinant;
+	a_inv[4] = (a[8]*a[0] - a[6]*a[2])*one__determinant;
+	a_inv[5] = (a[2]*a[3] - a[0]*a[5])*one__determinant;
+	a_inv[6] = (a[3]*a[7] - a[4]*a[6])*one__determinant;
+	a_inv[7] = (a[6]*a[1] - a[7]*a[0])*one__determinant;
+	a_inv[8] = (a[0]*a[4] - a[1]*a[3])*one__determinant;
+	return 1;
+}
 
-int multiply_FE_value_matrix3(FE_value *a,FE_value *b,FE_value *result);
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
+/** Calculates and returns in <result> the matrix product of 3x3 matrices
+ * <a> and <b>. Client must ensure a, b and result are valid. */
+template <typename T> void multiply_matrix3(T *a, T *b, T *result)
+{
+	result[0] = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
+	result[1] = a[0]*b[1] + a[1]*b[4] + a[2]*b[7];
+	result[2] = a[0]*b[2] + a[1]*b[5] + a[2]*b[8];
 
-DESCRIPTION :
-Calculates and returns in <result> the matrix product of 3x3 FE_value matrices
-<a> and <b>.
-==============================================================================*/
+	result[3] = a[3]*b[0] + a[4]*b[3] + a[5]*b[6];
+	result[4] = a[3]*b[1] + a[4]*b[4] + a[5]*b[7];
+	result[5] = a[3]*b[2] + a[4]*b[5] + a[5]*b[8];
+
+	result[6] = a[6]*b[0] + a[7]*b[3] + a[8]*b[6];
+	result[7] = a[6]*b[1] + a[7]*b[4] + a[8]*b[7];
+	result[8] = a[6]*b[2] + a[7]*b[5] + a[8]*b[8];
+}
 
 /**
  * Calculates and returns in <result> the vector cross product of 2 3-component
