@@ -17,7 +17,7 @@ if(POLICY CMP0086)
 endif()
 
 # This is the project name and shows up in IDEs
-project(Zinc VERSION 3.3.0 LANGUAGES C CXX)
+project(Zinc VERSION 3.3.1 LANGUAGES C CXX)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
@@ -34,8 +34,10 @@ include(OCMiscFunctions)
 
 set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
 if(TARGET opencmissdependencies)
+    message(STATUS "TARGET opencmissdependencies: '${DEPENDENT_LIBS}'")
     set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
-    set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
+    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
+    message(STATUS "TARGET opencmissdependencies after: '${DEPENDENT_LIBS}'")
 endif()
 
 include(OCMultiConfigEnvironment)
