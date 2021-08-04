@@ -2421,3 +2421,23 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 		}
 	}
 }
+
+// Test that reading a finite element model from file while change cache
+// active correctly defines finite element, cmiss_number and xi fields.
+// Previously only defined field wrappers after last end change.
+// See https://github.com/OpenCMISS/zinc/issues/151
+TEST(ZincFieldFiniteElement, readWithChangeCache)
+{
+	ZincTestSetupCpp zinc;
+
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_TRUE(coordinates.castFiniteElement().isValid());
+	Field cmiss_number = zinc.fm.findFieldByName("cmiss_number");
+	EXPECT_TRUE(cmiss_number.isValid());
+	Field xi = zinc.fm.findFieldByName("xi");
+	EXPECT_TRUE(xi.isValid());
+	zinc.fm.endChange();
+}

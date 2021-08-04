@@ -121,7 +121,20 @@ struct FE_region
 	 */
 	void clearCachedChanges();
 
-	void update();
+	/* If not caching changes, call updateRegion */
+	inline void update()
+	{
+		if (this->change_level <= 0)
+			this->updateRegion();
+	}
+
+	/**
+	 * Tells parent region about changes to fields, nodes and elements.
+	 * No messages sent if no changes have been made.
+	 * Note this only informs region of change; change logs are extracted
+	 * on demand when computed field manager change is sent to region.
+	 */
+	void updateRegion();
 
 	/** records change but does no update check; call FE_region::update if needed */
 	inline void FE_field_change(FE_field *fe_field, enum CHANGE_LOG_CHANGE(FE_field) change)

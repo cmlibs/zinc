@@ -150,45 +150,36 @@ void FE_region::clearCachedChanges()
 		this->meshes[dim]->clearChangeLog();
 }
 
-/**
- * Tells parent region about changes to fields, nodes and elements.
- * No messages sent if change level is positive, or no changes have been made.
- */
-void FE_region::update()
+void FE_region::updateRegion()
 {
-	if (this->change_level <= 0)
+	if (this->cmiss_region)
 	{
-		// note this only informs region of change; change logs are extracted
-		// on demand when computed field manager change is sent to region
-		if (this->cmiss_region)
-		{
-			// only inform if fields, nodes or elements changed
-			int fieldChangeSummary = 0;
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(this->fe_field_changes, &fieldChangeSummary);
-			bool changed = (fieldChangeSummary != 0);
-			if (!changed)
-				for (int n = 0; n < 2; ++n)
+		// only inform if fields, nodes or elements changed
+		int fieldChangeSummary = 0;
+		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(this->fe_field_changes, &fieldChangeSummary);
+		bool changed = (fieldChangeSummary != 0);
+		if (!changed)
+			for (int n = 0; n < 2; ++n)
+			{
+				const int nodeChangeSummary = this->nodesets[n]->getChangeLog()->getChangeSummary();
+				if (nodeChangeSummary != 0)
 				{
-					const int nodeChangeSummary = this->nodesets[n]->getChangeLog()->getChangeSummary();
-					if (nodeChangeSummary != 0)
-					{
-						changed = true;
-						break;
-					}
+					changed = true;
+					break;
 				}
-			if (!changed)
-				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			}
+		if (!changed)
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+			{
+				const int elementChangeSummary = this->meshes[dim]->getChangeLog()->getChangeSummary();
+				if (elementChangeSummary != 0)
 				{
-					const int elementChangeSummary = this->meshes[dim]->getChangeLog()->getChangeSummary();
-					if (elementChangeSummary != 0)
-					{
-						changed = true;
-						break;
-					}
+					changed = true;
+					break;
 				}
-			if (changed)
-				this->cmiss_region->FeRegionChange();
-		}
+			}
+		if (changed)
+			this->cmiss_region->FeRegionChange();
 	}
 }
 
@@ -1287,6 +1278,9 @@ int FE_region_merge(struct FE_region *target_fe_region,
 				if (!target_fe_region->meshes[dim]->mergePart2Fields(*(source_fe_region->meshes[dim])))
 					return_code = 0;
 		}
+
+		// force updates to field wrappers in parent region
+		target_fe_region->updateRegion();
 
 		FE_region_end_change(target_fe_region);
 	}

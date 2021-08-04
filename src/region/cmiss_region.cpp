@@ -1588,7 +1588,7 @@ void cmzn_region::FeRegionChange()
 	cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(this);
 	MANAGER_BEGIN_CACHE(Computed_field)(this->field_manager);
 
-	// check field wrappers?
+	// update field wrappers
 	if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
 	{
 		CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
