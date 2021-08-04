@@ -245,7 +245,7 @@ Adapted from "Numerical Recipes".
 /**
  * Calculates the inverse of 2x2 matrix <a>, returning it in <a_inv>.
  * Caller must ensure a and a_inv are valid.
- * @return  True on success, false on failure.
+ * @return  True on success, false on failure = singular matrix.
  */
 template <typename T>
 bool invert_matrix2(const T *a, T *a_inv)
@@ -259,10 +259,7 @@ bool invert_matrix2(const T *a, T *a_inv)
 	}
 	const T determinant = a[0]*a[3] - a[1]*a[2];
 	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
-	{
-		display_message(ERROR_MESSAGE, "invert_matrix2.  Matrix is singular to machine precision");
 		return false;
-	}
 	const T one__determinant = 1.0 / determinant;
 	a_inv[0] = a[3]*one__determinant;
 	a_inv[1] = -a[1]*one__determinant;
@@ -274,7 +271,7 @@ bool invert_matrix2(const T *a, T *a_inv)
 /**
  * Calculates the inverse of 3x3 matrix <a>, returning it in <a_inv>.
  * Caller must ensure a and a_inv are valid.
- * @return  True on success, false on failure.
+ * @return  True on success, false on failure = singular matrix.
  */
 template <typename T>
 bool invert_matrix3(const T *a, T *a_inv)
@@ -291,10 +288,7 @@ bool invert_matrix3(const T *a, T *a_inv)
 		a[1]*(a[5]*a[6] - a[3]*a[8]) +
 		a[2]*(a[3]*a[7] - a[4]*a[6]);
 	if ((maxValue <= 0.0) || (fabs(determinant) < 1.0E-6*maxValue))
-	{
-		display_message(ERROR_MESSAGE, "invert_matrix3.  Matrix is singular to machine precision");
-		return 0;
-	}
+		return false;
 	const T one__determinant = 1.0 / determinant;
 	a_inv[0] = (a[4]*a[8] - a[5]*a[7])*one__determinant;
 	a_inv[1] = (a[7]*a[2] - a[8]*a[1])*one__determinant;
@@ -305,7 +299,7 @@ bool invert_matrix3(const T *a, T *a_inv)
 	a_inv[6] = (a[3]*a[7] - a[4]*a[6])*one__determinant;
 	a_inv[7] = (a[6]*a[1] - a[7]*a[0])*one__determinant;
 	a_inv[8] = (a[0]*a[4] - a[1]*a[3])*one__determinant;
-	return 1;
+	return true;
 }
 
 /** Calculates and returns in <result> the matrix product of 3x3 matrices
