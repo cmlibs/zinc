@@ -2425,7 +2425,6 @@ TEST(ZincFieldFiniteElement, linear_node_element_grid_mixed)
 // Test that reading a finite element model from file while change cache
 // active correctly defines finite element, cmiss_number and xi fields.
 // Previously only defined field wrappers after last end change.
-// See https://github.com/OpenCMISS/zinc/issues/151
 TEST(ZincFieldFiniteElement, readWithChangeCache)
 {
 	ZincTestSetupCpp zinc;
@@ -2440,4 +2439,18 @@ TEST(ZincFieldFiniteElement, readWithChangeCache)
 	Field xi = zinc.fm.findFieldByName("xi");
 	EXPECT_TRUE(xi.isValid());
 	zinc.fm.endChange();
+}
+
+// Test that creating a finite element field while change cache active
+// can keep its unmanaged status past the last end change.
+// Previously the wrapper update code forced field to be managed.
+TEST(ZincFieldFiniteElement, unmanagedWithChangeCache)
+{
+	ZincTestSetupCpp zinc;
+
+	zinc.fm.beginChange();
+	FieldFiniteElement feField = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_FALSE(feField.isManaged());
+	zinc.fm.endChange();
+	EXPECT_FALSE(feField.isManaged());
 }
