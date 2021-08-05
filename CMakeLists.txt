@@ -34,10 +34,8 @@ include(OCMiscFunctions)
 
 set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
 if(TARGET opencmissdependencies)
-    message(STATUS "TARGET opencmissdependencies: '${DEPENDENT_LIBS}'")
     set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
-    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
-    message(STATUS "TARGET opencmissdependencies after: '${DEPENDENT_LIBS}'")
+    set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
 endif()
 
 include(OCMultiConfigEnvironment)
