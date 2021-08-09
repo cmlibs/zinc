@@ -37,6 +37,7 @@ return to direct rendering, as described with these routines.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_private.hpp"
+#include "description_io/material_json_io.hpp"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -999,6 +1000,28 @@ int cmzn_materialmodule_set_default_surface_material(
 {
 	if (materialmodule)
 		return materialmodule->setDefaultSurfaceMaterial(material);
+	return 0;
+}
+
+int cmzn_materialmodule_read_description(cmzn_materialmodule_id materialmodule,
+	const char* description)
+{
+	if (materialmodule && description)
+	{
+		MaterialmoduleJsonImport jsonImport(materialmodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char* cmzn_materialmodule_write_description(cmzn_materialmodule_id materialmodule)
+{
+	if (materialmodule)
+	{
+		MaterialmoduleJsonExport jsonExport(materialmodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
 	return 0;
 }
 

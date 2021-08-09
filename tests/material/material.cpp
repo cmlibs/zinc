@@ -16,6 +16,20 @@
 #include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/material.hpp"
 
+namespace {
+
+int getNumberOfMaterials(Materialmodule& materialmodule)
+{
+	int count = 0;
+	Materialiterator iter = materialmodule.createMaterialiterator();
+	Material material;
+	while ((material = iter.next()).isValid())
+		++count;
+	return count;
+}
+
+}
+
 TEST(cmzn_materialmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
@@ -318,6 +332,8 @@ TEST(ZincMaterialmodule, defaultMaterialsAndGraphics)
 	Materialmodule materialmodule = zinc.context.getMaterialmodule();
 	EXPECT_TRUE(materialmodule.isValid());
 
+	EXPECT_EQ(2, getNumberOfMaterials(materialmodule));
+
 	Material defaultMaterial = materialmodule.getDefaultMaterial();
 	EXPECT_TRUE(defaultMaterial.isValid());
 	tmpMaterial = materialmodule.findMaterialByName("default");
@@ -330,12 +346,14 @@ TEST(ZincMaterialmodule, defaultMaterialsAndGraphics)
 
 	Material defaultSurfaceMaterial = materialmodule.getDefaultSurfaceMaterial();
 	EXPECT_FALSE(defaultSurfaceMaterial.isValid());
-	EXPECT_EQ(OK, materialmodule.defineStandardMaterials());
+	EXPECT_EQ(RESULT_OK, materialmodule.defineStandardMaterials());
 	Material whiteMaterial = materialmodule.findMaterialByName("white");
 	EXPECT_TRUE(whiteMaterial.isValid());
-	EXPECT_EQ(OK, materialmodule.setDefaultSurfaceMaterial(whiteMaterial));
+	EXPECT_EQ(RESULT_OK, materialmodule.setDefaultSurfaceMaterial(whiteMaterial));
 	defaultSurfaceMaterial = materialmodule.getDefaultSurfaceMaterial();
 	EXPECT_EQ(whiteMaterial, defaultSurfaceMaterial);
+
+	EXPECT_EQ(20, getNumberOfMaterials(materialmodule));
 
 	GraphicsContours contours = zinc.scene.createGraphicsContours();
 	EXPECT_TRUE(contours.isValid());
@@ -373,6 +391,76 @@ TEST(ZincMaterialmodule, defaultMaterialsAndGraphics)
 	EXPECT_EQ(defaultSelectedMaterial, tmpMaterial);
 }
 
+TEST(ZincMaterialmodule, writeReadDescription)
+{
+	ZincTestSetupCpp zinc;
+
+	Materialmodule materialmodule = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(materialmodule.isValid());
+	EXPECT_TRUE(materialmodule.findMaterialByName("default").isValid());
+	EXPECT_FALSE(materialmodule.findMaterialByName("green").isValid());
+	EXPECT_EQ(2, getNumberOfMaterials(materialmodule));
+
+	EXPECT_EQ(RESULT_OK, materialmodule.defineStandardMaterials());
+	Material green = materialmodule.findMaterialByName("green");
+	EXPECT_TRUE(materialmodule.findMaterialByName("green").isValid());
+	EXPECT_EQ(20, getNumberOfMaterials(materialmodule));
+
+	// create and serialise a bogus material with different parameters for all attributes to test for mismatches
+	Material bogusMaterial;
+	const double bogusAmbient[3]  = { 0.11, 0.22, 0.33 };
+	const double bogusDiffuse[3]  = { 0.44, 0.55, 0.66 };
+	const double bogusEmission[3] = { 0.77, 0.88, 0.99 };
+	const double bogusSpecular[3] = { 0.15, 0.24, 0.33 };
+	const double bogusAlpha = 0.678;
+	const double bogusShininess = 0.345;
+	{
+		ChangeManager<Materialmodule> changeMaterial(materialmodule);
+		bogusMaterial = materialmodule.createMaterial();
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setName("bogus"));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal3(Material::ATTRIBUTE_AMBIENT, bogusAmbient));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, bogusDiffuse));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal3(Material::ATTRIBUTE_EMISSION, bogusEmission));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal3(Material::ATTRIBUTE_SPECULAR, bogusSpecular));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal(Material::ATTRIBUTE_ALPHA, bogusAlpha));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal(Material::ATTRIBUTE_SHININESS, bogusShininess));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setManaged(true));
+	}
+	EXPECT_EQ(21, getNumberOfMaterials(materialmodule));
+
+	char* jsonString = materialmodule.writeDescription();
+	EXPECT_NE(nullptr, jsonString);
+
+	Context context2("test2");
+	Materialmodule materialmodule2 = context2.getMaterialmodule();
+	EXPECT_EQ(2, getNumberOfMaterials(materialmodule2));
+
+	EXPECT_EQ(RESULT_OK, materialmodule2.readDescription(jsonString));
+	EXPECT_EQ(21, getNumberOfMaterials(materialmodule2));
+
+	char* jsonString2 = materialmodule2.writeDescription();
+	EXPECT_STREQ(jsonString, jsonString2);
+
+	Material bogusMaterial2 = materialmodule2.findMaterialByName("bogus");
+	EXPECT_TRUE(bogusMaterial2.isValid());
+
+	// test bogus material correctly serialised
+	double ambient[3], diffuse[3], emission[3], specular[3], alpha, shininess;
+	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_AMBIENT, ambient));
+	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_DIFFUSE, diffuse));
+	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_EMISSION, emission));
+	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_SPECULAR, specular));
+	for (int i = 0; i < 3; ++i)
+	{
+		EXPECT_DOUBLE_EQ(bogusAmbient[i], ambient[i]);
+		EXPECT_DOUBLE_EQ(bogusDiffuse[i], diffuse[i]);
+		EXPECT_DOUBLE_EQ(bogusEmission[i], emission[i]);
+		EXPECT_DOUBLE_EQ(bogusSpecular[i], specular[i]);
+	}
+	EXPECT_DOUBLE_EQ(bogusAlpha, bogusMaterial.getAttributeReal(Material::ATTRIBUTE_ALPHA));
+	EXPECT_DOUBLE_EQ(bogusShininess, bogusMaterial.getAttributeReal(Material::ATTRIBUTE_SHININESS));
+}
+
 TEST(ZincMaterialiterator, iteration)
 {
 	ZincTestSetupCpp zinc;
@@ -382,15 +470,15 @@ TEST(ZincMaterialiterator, iteration)
 
 	Material xxx = materialmodule.createMaterial();
 	EXPECT_TRUE(xxx.isValid());
-	EXPECT_EQ(OK, xxx.setName("xxx"));
+	EXPECT_EQ(RESULT_OK, xxx.setName("xxx"));
 
 	Material zzz = materialmodule.createMaterial();
 	EXPECT_TRUE(zzz.isValid());
-	EXPECT_EQ(OK, zzz.setName("zzz"));
+	EXPECT_EQ(RESULT_OK, zzz.setName("zzz"));
 
 	Material aaa = materialmodule.createMaterial();
 	EXPECT_TRUE(aaa.isValid());
-	EXPECT_EQ(OK, aaa.setName("aaa"));
+	EXPECT_EQ(RESULT_OK, aaa.setName("aaa"));
 
 	Material defaultMaterial = materialmodule.getDefaultMaterial();
 	EXPECT_TRUE(defaultMaterial.isValid());

@@ -181,6 +181,34 @@ ZINC_API int cmzn_materialmodule_define_standard_materials(
 	cmzn_materialmodule_id materialmodule);
 
 /**
+ * Read the json description into the material module. This will change the
+ * materials and defaults in the material module.
+ * Note that material image field paths in the description are interpreted
+ * relative to the current default region of the owning context.
+ *
+ * @param materialmodule  Handle to the material module.
+ * @description  The string containing json description
+ * @return  Result OK on success, otherwise any ERROR code.
+ */
+ZINC_API int cmzn_materialmodule_read_description(
+	cmzn_materialmodule_id materialmodule, const char* description);
+
+/**
+ * Write the json format string describing the materials and defaults in the
+ * material module, which can be used to store the current material settings.
+ * Note that material image fields are required to be in a single region tree
+ * for valid serialisation, and the partner read method assumes paths are
+ * relative to the current default region of the owning context.
+ * @see cmzn_materialmodule_read_description
+ *
+ * @param materialmodule  Handle to the material module.
+ * @return  Allocated C string containing the json description of material
+ * module, or 0 if failed. Up to caller to deallocate.
+ */
+ZINC_API char* cmzn_materialmodule_write_description(
+	cmzn_materialmodule_id materialmodule);
+
+/**
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.
  *
