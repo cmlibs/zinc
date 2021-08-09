@@ -10,6 +10,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
 
 TEST(cmzn_region, build_tree)
 {
@@ -169,4 +170,68 @@ TEST(ZincRegion, append_insert_region)
 
 	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.appendChild(or1));
 	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.insertChildBefore(or1, r2));
+}
+
+class FieldmodulecallbackRecordChange : public Fieldmodulecallback
+{
+public:
+	Fieldmoduleevent lastEvent;
+
+	FieldmodulecallbackRecordChange()
+	{ }
+
+	virtual void operator()(const Fieldmoduleevent& event)
+	{
+		this->lastEvent = event;
+	}
+};
+
+// Note Zinc currently doesn't notify of region tree changes
+// For now just test that fieldmodule change is active
+TEST(ZincRegion, ChangeManager)
+{
+	ZincTestSetupCpp zinc;
+	int change;
+
+	Region region = zinc.fm.getRegion();
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(RESULT_OK, notifier.setCallback(recordChange));
+	{
+		ChangeManager<Region> changeRegion(region);
+		const double valueOne = 1.0;
+		FieldConstant one = zinc.fm.createFieldConstant(1, &valueOne);
+		EXPECT_EQ(Field::CHANGE_FLAG_NONE, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
+		EXPECT_EQ(RESULT_OK, one.setManaged(true));
+		EXPECT_EQ(Field::CHANGE_FLAG_NONE, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	}
+	change = recordChange.lastEvent.getSummaryFieldChangeFlags();
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
+}
+
+// Note Zinc currently doesn't notify of region tree changes
+TEST(ZincRegion, HierarchicalChangeManager)
+{
+	ZincTestSetupCpp zinc;
+	int change;
+
+	Region region = zinc.fm.getRegion();
+	Region child = region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+	Fieldmodule childFm = child.getFieldmodule();
+	EXPECT_TRUE(childFm.isValid());
+	Fieldmodulenotifier notifier = childFm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(RESULT_OK, notifier.setCallback(recordChange));
+	{
+		HierarchicalChangeManager<Region> changeRegion(region);
+		const double valueOne = 1.0;
+		FieldConstant one = childFm.createFieldConstant(1, &valueOne);
+		EXPECT_EQ(Field::CHANGE_FLAG_NONE, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
+		EXPECT_EQ(RESULT_OK, one.setManaged(true));
+		EXPECT_EQ(Field::CHANGE_FLAG_NONE, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	}
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, change = recordChange.lastEvent.getSummaryFieldChangeFlags());
 }
