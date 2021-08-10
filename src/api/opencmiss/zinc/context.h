@@ -31,12 +31,13 @@ extern "C" {
 #endif
 
 /**
- * Create a new cmgui context with an id <id>.
+ * Create a new Zinc context with name to identify it from others.
  *
- * @param id  The identifier given to the new context.
+ * @param name  The identifier given to the new context. It is up to
+ * the client to ensure this is unique if needing to compare contexts.
  * @return  Handle to new context, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_context_id cmzn_context_create(const char *id);
+ZINC_API cmzn_context_id cmzn_context_create(const char *name);
 
 /**
  * Returns a new handle to the context with reference count incremented.
@@ -54,6 +55,15 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
+
+/**
+ * Return an allocated string containing context name/identifier.
+ *
+ * @param context  The context to query.
+ * @return  Allocated string containing context name, or 0 on failure.
+ * Up to caller to free using cmzn_deallocate().
+ */
+ZINC_API char* cmzn_context_get_name(cmzn_context_id context);
 
 /**
  * Returns the default region in the context. A convenience for applications that

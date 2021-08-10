@@ -109,6 +109,11 @@ public:
 		return cmzn_region_read_file(id, fileName);
 	}
 
+	Context getContext() const
+	{
+		return Context(cmzn_region_get_context(id));
+	}
+
 	char *getName() const
 	{
 		return cmzn_region_get_name(id);

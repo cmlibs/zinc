@@ -27,7 +27,7 @@ struct cmzn_context
 	friend struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 		cmzn_context *context);
 private:
-	const char *id;
+	const char *name;
 	cmzn_logger *logger;
 	cmzn_region *defaultRegion;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -38,7 +38,7 @@ private:
 	cmzn_graphics_module *graphics_module;
 	int access_count;
 
-	cmzn_context(const char *idIn);
+	cmzn_context(const char *nameIn);
 	~cmzn_context();
 
 public:
@@ -62,7 +62,12 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	static cmzn_context *create(const char *id);
+	static cmzn_context *create(const char *name);
+
+	const char* getName() const
+	{
+		return this->name;
+	}
 
 	cmzn_region *createRegion();
 

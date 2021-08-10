@@ -50,6 +50,16 @@ TEST(ZincContext, getVersion)
 	cmzn_deallocate(versionString);
 }
 
+TEST(ZincContext, getName)
+{
+	const char* nameIn = "test";
+	Context context(nameIn);
+	EXPECT_TRUE(context.isValid());
+	char *nameOut = context.getName();
+	EXPECT_STREQ(nameIn, nameOut);
+	cmzn_deallocate(nameOut);
+}
+
 void testCreateFiniteElement(const Region &region)
 {
 	Fieldmodule fm = region.getFieldmodule();

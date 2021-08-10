@@ -142,6 +142,14 @@ TEST(ZincRegion, Fieldmodule_getRegion)
 	EXPECT_EQ(zinc.fm, fm);
 }
 
+TEST(ZincRegion, getContext)
+{
+	ZincTestSetupCpp zinc;
+
+	Context context = zinc.root_region.getContext();
+	EXPECT_EQ(zinc.context, context);
+}
+
 TEST(ZincRegion, append_insert_region)
 {
 	ZincTestSetupCpp zinc;

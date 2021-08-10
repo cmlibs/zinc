@@ -92,6 +92,11 @@ public:
 		return id;
 	}
 
+	char* getName()
+	{
+		return cmzn_context_get_name(id);
+	}
+
 	int getVersion(int *versionOut3)
 	{
 		return cmzn_context_get_version(id, versionOut3);
