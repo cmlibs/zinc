@@ -50,7 +50,7 @@ public:
 
 	int import(const std::string &jsonString);
 
-	void importMaterial(Json::Value &materialSettings);
+	int importMaterial(Json::Value &materialSettings);
 };
 
 #endif

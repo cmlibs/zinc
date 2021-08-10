@@ -6,6 +6,7 @@ Fix defining fields from model files and respecting unmanaged status while chang
 Evaluate gradient in lower dimensional elements.
 Add exception-safe ChangeManager change caching template to C++ API.
 Add Materialmodule description json serialisation API.
+Add Materialmodule getContext API.
 
 v3.3.0
 Add field parameters interface.

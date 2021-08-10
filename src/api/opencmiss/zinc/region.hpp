@@ -109,7 +109,7 @@ public:
 		return cmzn_region_read_file(id, fileName);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_region_get_name(id);
 	}
@@ -119,22 +119,22 @@ public:
 		return cmzn_region_set_name(id, name);
 	}
 
-	Region getParent()
+	Region getParent() const
 	{
 		return Region(cmzn_region_get_parent(id));
 	}
 
-	Region getFirstChild()
+	Region getFirstChild() const
 	{
 		return Region(cmzn_region_get_first_child(id));
 	}
 
-	Region getNextSibling()
+	Region getNextSibling() const
 	{
 		return Region(cmzn_region_get_next_sibling(id));
 	}
 
-	Region getPreviousSibling()
+	Region getPreviousSibling() const
 	{
 		return Region(cmzn_region_get_previous_sibling(id));
 	}
@@ -154,33 +154,33 @@ public:
 		return cmzn_region_remove_child(id, oldChild.id);
 	}
 
-	Region findChildByName(const char *name)
+	Region findChildByName(const char *name) const
 	{
 		return Region(cmzn_region_find_child_by_name(id, name));
 	}
 
-	Region findSubregionAtPath(const char *path)
+	Region findSubregionAtPath(const char *path) const
 	{
 		return Region(cmzn_region_find_subregion_at_path(id, path));
 	}
 
-	bool containsSubregion(const Region& subregion)
+	bool containsSubregion(const Region& subregion) const
 	{
 		return cmzn_region_contains_subregion(id, subregion.id);
 	}
 
-	int writeFile(const char *fileName)
+	int writeFile(const char *fileName) const
 	{
 		return cmzn_region_write_file(id, fileName);
 	}
 
-	inline Scene getScene();
+	inline Scene getScene() const;
 
 	inline StreaminformationRegion createStreaminformationRegion();
 
 	inline int read(const StreaminformationRegion& streaminformationRegion);
 
-	inline int write(const StreaminformationRegion& streaminformationRegion);
+	inline int write(const StreaminformationRegion& streaminformationRegion) const;
 
 };
 

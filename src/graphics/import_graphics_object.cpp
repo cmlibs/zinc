@@ -282,7 +282,7 @@ DESCRIPTION :
 							IO_stream_scan(stream,"%lf", &time);
 						}
 						file_read_Graphical_material_name(stream,&object_material,
-							cmzn_materialmodule_get_manager(materialmodule));
+							materialmodule->getManager());
 						if (version<2)
 						{
 							transtype=g_ID;
@@ -868,7 +868,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 								matname[strlen(word)] = 0;
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									cmzn_material,name)(matname,
-										cmzn_materialmodule_get_manager(materialmodule));
+										materialmodule->getManager());
 								if (scanned_material)
 									ACCESS(cmzn_material)(scanned_material);
 								if (!(scanned_material ||
@@ -878,7 +878,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 									cmzn_material_set_name(scanned_material, matname);
 									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(cmzn_material)
-											(scanned_material, cmzn_materialmodule_get_manager(materialmodule))))
+											(scanned_material, materialmodule->getManager())))
 									{
 										cmzn_material_set_managed(scanned_material, true);
 									}

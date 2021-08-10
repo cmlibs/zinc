@@ -10,6 +10,7 @@
 #ifndef CMZN_MATERIAL_H__
 #define CMZN_MATERIAL_H__
 
+#include "types/contextid.h"
 #include "types/fieldid.h"
 #include "types/materialid.h"
 #include "types/shaderid.h"
@@ -104,6 +105,15 @@ ZINC_API cmzn_material_id cmzn_materialmodule_find_material_by_name(
 	cmzn_materialmodule_id materialmodule, const char *name);
 
 /**
+ * Get the owning context for the material module.
+ *
+ * @param materialmodule  material module to query.
+ * @return  Handle to context, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_context_id cmzn_materialmodule_get_context(
+	cmzn_materialmodule_id materialmodule);
+
+/**
  * Get the default material, if any.
  * @see cmzn_materialmodule_set_default_material
  *
@@ -120,7 +130,7 @@ ZINC_API cmzn_material_id cmzn_materialmodule_get_default_material(
  * @see cmzn_materialmodule_set_default_surface_material
  *
  * @param materialmodule  Material module to modify.
- * @param material  The material to set as default.
+ * @param material  The material to set as default. Must be valid.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_materialmodule_set_default_material(
@@ -140,7 +150,7 @@ ZINC_API cmzn_material_id cmzn_materialmodule_get_default_selected_material(
  * Set the default selected material.
  *
  * @param materialmodule  material module to modify
- * @param material  The material to set as default.
+ * @param material  The material to set as default. Must be valid.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_materialmodule_set_default_selected_material(
@@ -162,8 +172,8 @@ ZINC_API cmzn_material_id cmzn_materialmodule_get_default_surface_material(
  * If this is not set, the default material is used instead.
  *
  * @param materialmodule  Material module to modify.
- * @param material  The material to set as default for surfaces. Pass NULL or
- * unvalid material to clear.
+ * @param material  The material to set as default for surfaces. Pass invalid
+ * null material to clear.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_materialmodule_set_default_surface_material(
@@ -188,7 +198,8 @@ ZINC_API int cmzn_materialmodule_define_standard_materials(
  *
  * @param materialmodule  Handle to the material module.
  * @description  The string containing json description
- * @return  Result OK on success, otherwise any ERROR code.
+ * @return  Result OK on success, otherwise any error code, such as
+ * ERROR_NOT_FOUND if any textures or other objects have not been located.
  */
 ZINC_API int cmzn_materialmodule_read_description(
 	cmzn_materialmodule_id materialmodule, const char* description);

@@ -32,7 +32,7 @@ HISTORY :
 #include "graphics/material.h"
 #include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
-#include "graphics/material.hpp"
+#include "graphics/material.h"
 
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES

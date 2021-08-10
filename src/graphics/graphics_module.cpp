@@ -137,7 +137,7 @@ void cmzn_graphics_module_shaderprogram_manager_callback(
 		{
 			FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 				cmzn_material_shaderprogram_changed, (void *)message,
-				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+				graphics_module->materialmodule->getManager());
 		}
 	}
 }
@@ -153,7 +153,7 @@ void cmzn_graphics_module_shaderuniforms_manager_callback(
 		{
 			FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 				cmzn_material_shaderuniforms_changed, (void *)message,
-				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
+				graphics_module->materialmodule->getManager());
 		}
 	}
 }
@@ -224,9 +224,9 @@ cmzn_graphics_module::cmzn_graphics_module(cmzn_context *contextIn) :
 	spectrummodule(cmzn_spectrummodule_create()),
 	spectrum_manager_callback_id(MANAGER_REGISTER(cmzn_spectrum)(cmzn_graphics_module_spectrum_manager_callback,
 	(void *)this, cmzn_spectrummodule_get_manager(this->spectrummodule))),
-	materialmodule(cmzn_materialmodule_create(cmzn_spectrummodule_get_manager(this->spectrummodule))),
+	materialmodule(cmzn_materialmodule::create()),
 	material_manager_callback_id(MANAGER_REGISTER(cmzn_material)(cmzn_graphics_module_material_manager_callback,
-		(void *)this, cmzn_materialmodule_get_manager(this->materialmodule))),
+		(void *)this, this->materialmodule->getManager())),
 	glyphmodule(cmzn_glyphmodule_create(this->materialmodule)),
 	glyph_manager_callback_id(MANAGER_REGISTER(cmzn_glyph)(cmzn_graphics_module_glyph_manager_callback,
 		(void *)this, cmzn_glyphmodule_get_manager(this->glyphmodule))),
@@ -242,6 +242,7 @@ cmzn_graphics_module::cmzn_graphics_module(cmzn_context *contextIn) :
 	tessellation_manager_callback_id(MANAGER_REGISTER(cmzn_tessellation)(cmzn_graphics_module_tessellation_manager_callback,
 		(void *)this, cmzn_tessellationmodule_get_manager(this->tessellationmodule)))
 {
+	this->materialmodule->setGraphicsmodule(this);
 }
 
 cmzn_graphics_module::~cmzn_graphics_module()
@@ -251,7 +252,7 @@ cmzn_graphics_module::~cmzn_graphics_module()
 		cmzn_glyphmodule_get_manager(this->glyphmodule));
 	MANAGER_DEREGISTER(cmzn_material)(
 		this->material_manager_callback_id,
-		cmzn_materialmodule_get_manager(this->materialmodule));
+		this->materialmodule->getManager());
 	MANAGER_DEREGISTER(cmzn_shaderprogram)(
 		this->shaderprogram_manager_callback_id,
 		cmzn_shadermodule_get_program_manager(this->shadermodule));

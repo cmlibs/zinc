@@ -32,26 +32,24 @@ struct cmzn_graphics_module
 {
 	/* attribute managers and defaults: */
 	cmzn_context *context;  // owning context, not accessed
-	cmzn_fontmodule_id fontmodule;
+	cmzn_fontmodule *fontmodule;
 	void *font_manager_callback_id;
 	// need to construct spectrummodule before materialmodule
-	cmzn_spectrummodule_id spectrummodule;
+	cmzn_spectrummodule *spectrummodule;
 	void *spectrum_manager_callback_id;
 	// need to construct materialmodule before glyphmodule
 	cmzn_materialmodule *materialmodule;
 	void *material_manager_callback_id;
-	struct cmzn_glyphmodule *glyphmodule;
+	cmzn_glyphmodule *glyphmodule;
 	void *glyph_manager_callback_id;
 	cmzn_lightmodule *lightmodule;
 	cmzn_scenefiltermodule *scenefiltermodule;
-	cmzn_sceneviewermodule_id sceneviewermodule;
-	cmzn_shadermodule_id shadermodule;
+	cmzn_sceneviewermodule *sceneviewermodule;
+	cmzn_shadermodule *shadermodule;
 	void *shaderprogram_manager_callback_id;
 	void *shaderuniforms_manager_callback_id;
-	cmzn_tessellationmodule_id tessellationmodule;
+	cmzn_tessellationmodule *tessellationmodule;
 	void *tessellation_manager_callback_id;
-
-public:
 
 	cmzn_graphics_module(cmzn_context *contextIn);
 
@@ -64,6 +62,51 @@ public:
 	cmzn_context *getContext() const
 	{
 		return this->context;
+	}
+
+	cmzn_fontmodule* getFontmodule() const
+	{
+		return this->fontmodule;
+	}
+
+	cmzn_glyphmodule* getGlyphmodule() const
+	{
+		return this->glyphmodule;
+	}
+
+	cmzn_lightmodule* getLightmodule() const
+	{
+		return this->lightmodule;
+	}
+
+	cmzn_materialmodule* getMaterialmodule() const
+	{
+		return this->materialmodule;
+	}
+
+	cmzn_scenefiltermodule* getScenefiltermodule() const
+	{
+		return this->scenefiltermodule;
+	}
+
+	cmzn_sceneviewermodule* getSceneviewermodule() const
+	{
+		return this->sceneviewermodule;
+	}
+
+	cmzn_shadermodule* getShadermodule() const
+	{
+		return this->shadermodule;
+	}
+
+	cmzn_spectrummodule* getSpectrummodule() const
+	{
+		return this->spectrummodule;
+	}
+
+	cmzn_tessellationmodule* getTessellationmodule() const
+	{
+		return this->tessellationmodule;
 	}
 };
 

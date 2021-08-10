@@ -1,12 +1,9 @@
-/*******************************************************************************
-FILE : material.h
-
-LAST MODIFIED : 6 December 2004
-
-DESCRIPTION :
-The data structures used for representing graphical materials.
-???RC Only OpenGL is supported now.
-==============================================================================*/
+/**
+ * FILE : material.h
+ *
+ * Internal interfaces to graphical material and module.
+ * Includes OpenGL rendering.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,6 +17,7 @@ The data structures used for representing graphical materials.
 #include "opencmiss/zinc/fieldimage.h"
 #include "opencmiss/zinc/material.h"
 #include "opencmiss/zinc/shader.h"
+#include "general/callback_class.hpp"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -28,10 +26,14 @@ The data structures used for representing graphical materials.
 #include "graphics/texture.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/shader_program.hpp"
+
 /*
 Global types
 ------------
 */
+
+struct cmzn_context;
+struct cmzn_graphics_module;
 
 /** Pre-declared here to satisfy function prototype. */
 struct IO_stream;
@@ -132,21 +134,134 @@ DECLARE_LIST_TYPES(cmzn_material);
 
 DECLARE_MANAGER_TYPES(cmzn_material);
 
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_material);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_material);
+
+PROTOTYPE_LIST_FUNCTIONS(cmzn_material);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_material, name, const char*);
+
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(cmzn_material, name, const char*);
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_material);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_material, name, const char*);
+PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_material, name);
+
+struct cmzn_materialmodule
+{
+
+private:
+
+	struct MANAGER(cmzn_material)* materialManager;
+	cmzn_material* defaultMaterial;
+	cmzn_material* defaultSelectedMaterial;
+	cmzn_material* defaultSurfaceMaterial;
+	cmzn_graphics_module* graphicsmodule;  // owning object - not accessed
+	int access_count;
+
+	cmzn_materialmodule();
+
+	~cmzn_materialmodule();
+
+public:
+
+	/** first stage of creation; must also call setGraphicsmodule() */
+	static cmzn_materialmodule* create();
+
+	/** second stage of creation */
+	void setGraphicsmodule(cmzn_graphics_module* graphicsmoduleIn)
+	{
+		this->graphicsmodule = graphicsmoduleIn;
+	}
+
+	cmzn_materialmodule* access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(cmzn_materialmodule*& materialmodule);
+
+	cmzn_context* getContext();
+
+	struct MANAGER(cmzn_material)* getManager()
+	{
+		return this->materialManager;
+	}
+
+	struct MANAGER(cmzn_spectrum)* getSpectrumManager();
+
+	int beginChange()
+	{
+		return MANAGER_BEGIN_CACHE(cmzn_material)(this->materialManager);
+	}
+
+	int endChange()
+	{
+		return MANAGER_END_CACHE(cmzn_material)(this->materialManager);
+	}
+
+	cmzn_material* createMaterial();
+
+	cmzn_materialiterator* createMaterialiterator();
+
+	/** @return  Non-accessed material, or nullptr if material with name not found */
+	cmzn_material* findMaterialByName(const char* name)
+	{
+		return FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(name, this->materialManager);
+	}
+
+	/** @return  Non-accessed material */
+	cmzn_material* getDefaultMaterial() const
+	{
+		return this->defaultMaterial;
+	}
+
+	/** @param material  Must be valid. */
+	void setDefaultMaterial(cmzn_material* material)
+	{
+		REACCESS(cmzn_material)(&this->defaultMaterial, material);
+	}
+
+	/** @return  Non-accessed material */
+	cmzn_material* getDefaultSelectedMaterial() const
+	{
+		return this->defaultSelectedMaterial;
+	}
+
+	/** @param material  Must be valid. */
+	void setDefaultSelectedMaterial(cmzn_material* material)
+	{
+		REACCESS(cmzn_material)(&this->defaultSelectedMaterial, material);
+	}
+
+	/** @return  Non-accessed material. Default is a nullptr. */
+	cmzn_material* getDefaultSurfaceMaterial() const
+	{
+		return this->defaultSurfaceMaterial;
+	}
+
+	/** @param material  Can be nullptr. */
+	void setDefaultSurfaceMaterial(cmzn_material* material)
+	{
+		REACCESS(cmzn_material)(&this->defaultSurfaceMaterial, material);
+	}
+
+};
+
+class Render_graphics_opengl;
+
+/** Data for compiling materials specially for order independent transparency. */
+struct Material_order_independent_transparency
+{
+	int layer;
+	Render_graphics_opengl* renderer;
+};
+
 /*
 Global functions
 ----------------
 */
 
 cmzn_material *cmzn_material_create_private();
-
-struct cmzn_materialmodule *cmzn_materialmodule_create(
-	struct MANAGER(cmzn_spectrum) *spectrum_manager);
-
-struct MANAGER(cmzn_material) *cmzn_materialmodule_get_manager(
-	struct cmzn_materialmodule *materialmodule);
-
-struct MANAGER(cmzn_spectrum) *cmzn_materialmodule_get_spectrum_manager(
-	struct cmzn_materialmodule *materialmodule);
 
 int DESTROY(cmzn_material)(struct cmzn_material **material_address);
 /*******************************************************************************
@@ -155,17 +270,6 @@ LAST MODIFIED : 25 September 1995
 DESCRIPTION :
 Frees the memory for the material and sets <*material_address> to NULL.
 ==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_material);
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_material);
-
-PROTOTYPE_LIST_FUNCTIONS(cmzn_material);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_material,name,const char *);
-
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(cmzn_material,name,const char *);
-PROTOTYPE_MANAGER_FUNCTIONS(cmzn_material);
-PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_material,name,const char *);
-PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_material,name);
 
 const char *Graphical_material_name(cmzn_material *material);
 /*******************************************************************************
@@ -431,6 +535,19 @@ DESCRIPTION :
 Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency.
 ==============================================================================*/
+
+int Material_render_opengl(cmzn_material* material,
+	Render_graphics_opengl* renderer);
+
+int Material_compile_members_opengl(cmzn_material* material,
+	Render_graphics_opengl* renderer);
+
+int Material_compile_opengl_display_list(cmzn_material* material,
+	Callback_base< cmzn_material* >* execute_function,
+	Render_graphics_opengl* renderer);
+
+int Material_execute_opengl_display_list(cmzn_material* material,
+	Render_graphics_opengl* renderer);
 
 int cmzn_material_shaderprogram_changed(cmzn_material *material, void *message_void);
 

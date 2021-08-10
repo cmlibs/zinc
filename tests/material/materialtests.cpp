@@ -14,7 +14,10 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "opencmiss/zinc/fieldimage.hpp"
 #include "opencmiss/zinc/material.hpp"
+
+#include "test_resources.h"
 
 namespace {
 
@@ -51,6 +54,10 @@ TEST(cmzn_materialmodule_api, valid_args)
 
 	result = cmzn_materialmodule_end_change(materialmodule);
 	EXPECT_EQ(CMZN_OK, result);
+
+	cmzn_context_id context = cmzn_materialmodule_get_context(materialmodule);
+	EXPECT_EQ(zinc.context, context);
+	cmzn_context_destroy(&context);
 
 	result = cmzn_materialmodule_define_standard_materials(materialmodule);
 	EXPECT_EQ(CMZN_OK, result);
@@ -102,6 +109,9 @@ TEST(cmzn_materialmodule_api, valid_args_cpp)
 
 	result = materialmodule.endChange();
 	EXPECT_EQ(CMZN_OK, result);
+
+	Context context = materialmodule.getContext();
+	EXPECT_EQ(zinc.context, context);
 
 	result = materialmodule.defineStandardMaterials();
 	EXPECT_EQ(CMZN_OK, result);
@@ -395,6 +405,19 @@ TEST(ZincMaterialmodule, writeReadDescription)
 {
 	ZincTestSetupCpp zinc;
 
+	// create image fields in root and child region for material textures
+	FieldImage image1 = zinc.fm.createFieldImage();
+	EXPECT_TRUE(image1.isValid());
+	EXPECT_EQ(RESULT_OK, image1.setName("image_blockcolours"));
+	EXPECT_EQ(RESULT_OK, image1.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+	Region child = zinc.root_region.createChild("child");
+	EXPECT_TRUE(child.isValid());
+	Fieldmodule childFm = child.getFieldmodule();
+	FieldImage image2 = childFm.createFieldImage();
+	EXPECT_TRUE(image2.isValid());
+	EXPECT_EQ(RESULT_OK, image2.setName("image_gray"));
+	EXPECT_EQ(RESULT_OK, image2.readFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
+
 	Materialmodule materialmodule = zinc.context.getMaterialmodule();
 	EXPECT_TRUE(materialmodule.isValid());
 	EXPECT_TRUE(materialmodule.findMaterialByName("default").isValid());
@@ -425,6 +448,8 @@ TEST(ZincMaterialmodule, writeReadDescription)
 		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal(Material::ATTRIBUTE_ALPHA, bogusAlpha));
 		EXPECT_EQ(RESULT_OK, bogusMaterial.setAttributeReal(Material::ATTRIBUTE_SHININESS, bogusShininess));
 		EXPECT_EQ(RESULT_OK, bogusMaterial.setManaged(true));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setTextureField(1, image1));
+		EXPECT_EQ(RESULT_OK, bogusMaterial.setTextureField(3, image2));
 	}
 	EXPECT_EQ(21, getNumberOfMaterials(materialmodule));
 
@@ -434,6 +459,20 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	Context context2("test2");
 	Materialmodule materialmodule2 = context2.getMaterialmodule();
 	EXPECT_EQ(2, getNumberOfMaterials(materialmodule2));
+	Region rootRegion2 = context2.getDefaultRegion();
+	Fieldmodule fm2 = rootRegion2.getFieldmodule();
+	// create image fields in root and child region for material textures - to find in readDescription
+	image1 = fm2.createFieldImage();
+	EXPECT_TRUE(image1.isValid());
+	EXPECT_EQ(RESULT_OK, image1.setName("image_blockcolours"));
+	EXPECT_EQ(RESULT_OK, image1.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+	Region child2 = rootRegion2.createChild("child");
+	EXPECT_TRUE(child2.isValid());
+	Fieldmodule childFm2 = child2.getFieldmodule();
+	image2 = childFm2.createFieldImage();
+	EXPECT_TRUE(image2.isValid());
+	EXPECT_EQ(RESULT_OK, image2.setName("image_gray"));
+	EXPECT_EQ(RESULT_OK, image2.readFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
 
 	EXPECT_EQ(RESULT_OK, materialmodule2.readDescription(jsonString));
 	EXPECT_EQ(21, getNumberOfMaterials(materialmodule2));
@@ -441,10 +480,9 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	char* jsonString2 = materialmodule2.writeDescription();
 	EXPECT_STREQ(jsonString, jsonString2);
 
+	// test bogus material correctly serialised
 	Material bogusMaterial2 = materialmodule2.findMaterialByName("bogus");
 	EXPECT_TRUE(bogusMaterial2.isValid());
-
-	// test bogus material correctly serialised
 	double ambient[3], diffuse[3], emission[3], specular[3], alpha, shininess;
 	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_AMBIENT, ambient));
 	EXPECT_EQ(RESULT_OK, bogusMaterial.getAttributeReal3(Material::ATTRIBUTE_DIFFUSE, diffuse));
@@ -459,6 +497,17 @@ TEST(ZincMaterialmodule, writeReadDescription)
 	}
 	EXPECT_DOUBLE_EQ(bogusAlpha, bogusMaterial.getAttributeReal(Material::ATTRIBUTE_ALPHA));
 	EXPECT_DOUBLE_EQ(bogusShininess, bogusMaterial.getAttributeReal(Material::ATTRIBUTE_SHININESS));
+
+	// test reading without finding the subregion or image
+	Context context3("test3");
+	Materialmodule materialmodule3 = context3.getMaterialmodule();
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, materialmodule3.readDescription(jsonString));
+
+	// test reading without a Default region
+	Context context4("test4");
+	EXPECT_EQ(RESULT_OK, context4.setDefaultRegion(Region()));
+	Materialmodule materialmodule4 = context4.getMaterialmodule();
+	EXPECT_EQ(RESULT_ERROR_NOT_FOUND, materialmodule4.readDescription(jsonString));
 }
 
 TEST(ZincMaterialiterator, iteration)

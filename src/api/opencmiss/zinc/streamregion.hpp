@@ -185,7 +185,7 @@ inline int Region::read(const StreaminformationRegion& streaminformationRegion)
 	return cmzn_region_read(id, streaminformationRegion.getDerivedId());
 }
 
-inline int Region::write(const StreaminformationRegion& streaminformationRegion)
+inline int Region::write(const StreaminformationRegion& streaminformationRegion) const
 {
 	return cmzn_region_write(id, streaminformationRegion.getDerivedId());
 }

@@ -290,6 +290,11 @@ public:
 		return cmzn_materialmodule_define_standard_materials(id);
 	}
 
+	Context getContext()
+	{
+		return Context(cmzn_materialmodule_get_context(id));
+	}
+
 	Material getDefaultMaterial() const
 	{
 		return Material(cmzn_materialmodule_get_default_material(id));

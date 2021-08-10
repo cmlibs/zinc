@@ -158,7 +158,7 @@ public:
 			static_cast<cmzn_graphics_render_polygon_mode>(renderPolygonMode));
 	}
 
-	inline Scene getScene();
+	inline Scene getScene() const;
 
 	enum SelectMode getSelectMode()
 	{

@@ -1754,7 +1754,7 @@ int cmzn_scene_for_each_material(struct cmzn_scene *scene,
 		cmzn_materialmodule_id materialmodule =
 			cmzn_graphics_module_get_materialmodule(scene->graphics_module);
 		return_code = FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
-			iterator_function, user_data, cmzn_materialmodule_get_manager(materialmodule));
+			iterator_function, user_data, materialmodule->getManager());
 		cmzn_materialmodule_destroy(&materialmodule);
 	}
 	else
