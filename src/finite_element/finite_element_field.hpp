@@ -124,13 +124,23 @@ protected:
 	// used only by FE_field_identifier pseudo class
 	FE_field() :
 		name(nullptr),
+		fe_region(nullptr),
+		cm_field_type(CM_GENERAL_FIELD),
+		fe_field_type(GENERAL_FE_FIELD),
 		indexer_field(nullptr),
+		number_of_indexed_values(0),
+		number_of_components(0),
 		component_names(nullptr),
+		number_of_values(0),
+		value_type(UNKNOWN_VALUE),
 		element_xi_host_mesh(nullptr),
 		values_storage(nullptr),
 		fe_field_parameters(nullptr),
+		number_of_wrappers(0),
 		access_count(0)
 	{
+		embeddedNodeFields[0] = nullptr;
+		embeddedNodeFields[1] = nullptr;
 		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 			this->meshFieldData[d] = nullptr;
 	}
