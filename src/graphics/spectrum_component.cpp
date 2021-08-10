@@ -31,7 +31,7 @@ appearance of spectrums.
 #include "computed_field/computed_field_set.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_component.h"
 #include "general/message.h"

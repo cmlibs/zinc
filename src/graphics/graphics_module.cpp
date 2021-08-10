@@ -17,7 +17,7 @@
 #include "graphics/font.h"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
 #include "graphics/shader.hpp"

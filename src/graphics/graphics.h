@@ -24,7 +24,7 @@
 #include "graphics/graphics_object.h"
 #include "general/enumerator.h"
 #include "general/list.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 
 struct cmzn_graphicspointattributes;

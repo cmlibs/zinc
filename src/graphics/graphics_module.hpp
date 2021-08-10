@@ -18,7 +18,7 @@ FILE : graphics_module.h
 #include "context/context.hpp"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/light.hpp"
 #include "graphics/scene.hpp"

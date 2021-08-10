@@ -1,5 +1,5 @@
 /**
- * FILE : material.h
+ * FILE : material.hpp
  *
  * Internal interfaces to graphical material and module.
  * Includes OpenGL rendering.
@@ -9,8 +9,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if !defined (MATERIAL_H)
-#define MATERIAL_H
+#if !defined (MATERIAL_HPP)
+#define MATERIAL_HPP
 
 #include "opencmiss/zinc/zincconfigure.h"
 #include "opencmiss/zinc/field.h"

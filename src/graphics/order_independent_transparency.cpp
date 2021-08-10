@@ -29,10 +29,10 @@ HISTORY :
 #include "general/debug.h"
 #include "general/message.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/scene.hpp"
 #include "graphics/scene_viewer.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES

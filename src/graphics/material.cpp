@@ -50,7 +50,7 @@ return to direct rendering, as described with these routines.
 #include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_module.hpp"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/render_gl.h"
 #include "graphics/shader.hpp"
 #include "graphics/shader_program.hpp"

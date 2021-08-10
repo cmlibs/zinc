@@ -21,7 +21,7 @@
 #include "general/message.h"
 #include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/render.hpp"
 
 /****************** Render_graphics_compile_members **********************/

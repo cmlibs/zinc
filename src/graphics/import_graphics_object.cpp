@@ -24,7 +24,7 @@ Functions for reading graphics object data from a file.
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object.hpp"

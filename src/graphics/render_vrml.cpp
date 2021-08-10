@@ -24,7 +24,7 @@ Renders gtObjects to VRML file
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/render_vrml.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"

@@ -28,7 +28,7 @@ xi2, xi3 space.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/mcubes.h"
 #include "graphics/texture_line.h"
 #include "graphics/volume_texture.h"

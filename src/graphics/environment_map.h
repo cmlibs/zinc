@@ -18,7 +18,7 @@ textures.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 
 /*
 Global types

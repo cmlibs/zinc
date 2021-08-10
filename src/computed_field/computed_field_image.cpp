@@ -24,7 +24,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/image_utilities.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/texture.h"
 #include "general/message.h"
 #include "computed_field/computed_field_image.h"

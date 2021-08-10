@@ -90,7 +90,7 @@ SET( GRAPHICS_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/import_graphics_object.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/iso_field_calculation.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/laguer.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/mcubes.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/order_independent_transparency.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/quaternion.hpp

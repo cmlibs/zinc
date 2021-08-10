@@ -33,7 +33,7 @@ gtObject/gtWindow management routines.
 #include "graphics/font.h"
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "general/message.h"

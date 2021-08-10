@@ -47,7 +47,7 @@ FILE : scene.cpp
 #include "mesh/cmiss_node_private.hpp"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/scene_picker.hpp"
 #include "graphics/spectrum.h"
