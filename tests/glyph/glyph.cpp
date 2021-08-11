@@ -14,6 +14,21 @@
 #include <opencmiss/zinc/spectrum.hpp>
 
 #include "zinctestsetupcpp.hpp"
+#include "test_resources.h"
+
+TEST(ZincGlyphmodule, createStaticGlyphFromGraphics)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	Scene scene = zinc.root_region.getScene();
+	GraphicsSurfaces surfaces = scene.createGraphicsSurfaces();
+	Field coordinates = zinc.root_region.getFieldmodule().findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(RESULT_OK, surfaces.setCoordinateField(coordinates));
+	Glyph glyph = zinc.glyphmodule.createStaticGlyphFromGraphics(surfaces);
+	EXPECT_TRUE(glyph.isValid());
+}
 
 TEST(ZincGlyphiterator, iteration)
 {
