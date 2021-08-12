@@ -22,7 +22,7 @@ Functions and structures for interfacing with the graphics library.
 #	define GLX_GLXEXT_PROTOTYPES
 #	if !defined (DARWIN)
 #		if defined (WIN32_SYSTEM)
-//#			define WINDOWS_LEAN_AND_MEAN
+#			define WINDOWS_LEAN_AND_MEAN
 #			if !defined (NOMINMAX)
 #				define NOMINMAX
 #			endif /*  !defined (NOMINMAX) */
