@@ -1,0 +1,11 @@
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=1
+1) name, field, string, #Components=1
+ 1. #Values=1 (value)
+Node: 1
+ ""
+Node: 2
+ "bob"
