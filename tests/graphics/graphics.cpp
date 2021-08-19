@@ -1325,11 +1325,19 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 	}
 
 	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	{
+		const char *bufferText = static_cast<const char *>(buffer);
+		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
+	}
 	free(buffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 
+	GraphicsLines lines = gr.castLines();
+	EXPECT_TRUE(lines.isValid());
+
+	EXPECT_TRUE(lines.isExterior());
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
 	EXPECT_EQ(Field::DOMAIN_TYPE_MESH1D, gr.getFieldDomainType());
 
 	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
@@ -1355,6 +1363,10 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 
 	char *return_string = zinc.scene.writeDescription();
 	EXPECT_TRUE(return_string != 0);
+	// check exterior flag migrated to boundary mode
+	EXPECT_TRUE(strstr(return_string, "\"Exterior\"") == nullptr);
+	EXPECT_TRUE(strstr(return_string, "\"BoundaryMode\"") != nullptr);
+	EXPECT_TRUE(strstr(return_string, "\"BOUNDARY\"") != nullptr);
 	cmzn_deallocate(return_string);
 }
 
@@ -1509,12 +1521,16 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	}
 
 	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	{
+		const char *bufferText = static_cast<const char *>(buffer);
+		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
+	}
 	free(buffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
 
+	EXPECT_FALSE(gr.isExterior());
 	EXPECT_EQ(Field::DOMAIN_TYPE_MESH_HIGHEST_DIMENSION, gr.getFieldDomainType());
 
 	Graphicssamplingattributes sampling = gr.getGraphicssamplingattributes();
@@ -1537,6 +1553,7 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	EXPECT_EQ(values[2], outputValues[2]);
 
 	GraphicsStreamlines streamlines = gr.castStreamlines();
+	EXPECT_TRUE(streamlines.isValid());
 	EXPECT_EQ(2.0, streamlines.getTrackLength());
 	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_MAGNITUDE, streamlines.getColourDataType());
 	EXPECT_EQ(GraphicsStreamlines::TRACK_DIRECTION_REVERSE, streamlines.getTrackDirection());
@@ -1754,10 +1771,16 @@ TEST(ZincGraphics, boundaryMode)
 	GraphicsLines lines = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(lines.isValid());
 	EXPECT_EQ(Graphics::BOUNDARY_MODE_ALL, lines.getBoundaryMode());
-	EXPECT_EQ(false, lines.isExterior());
+	EXPECT_FALSE(lines.isExterior());
+	EXPECT_EQ(RESULT_OK, lines.setExterior(true));
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
+	EXPECT_TRUE(lines.isExterior());
+	EXPECT_EQ(RESULT_OK, lines.setExterior(false));
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_ALL, lines.getBoundaryMode());
+	EXPECT_FALSE(lines.isExterior());
 	EXPECT_EQ(RESULT_OK, lines.setBoundaryMode(Graphics::BOUNDARY_MODE_BOUNDARY));
 	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
-	EXPECT_EQ(true, lines.isExterior());
+	EXPECT_TRUE(lines.isExterior());
 }
 
 namespace {

@@ -1423,7 +1423,7 @@ bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics)
 int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior)
 {
 	if (graphics)
-		return graphics->setBoundaryMode(CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY);
+		return graphics->setBoundaryMode((exterior) ? CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY : CMZN_GRAPHICS_BOUNDARY_MODE_ALL);
 	return CMZN_ERROR_ARGUMENT;
 }
 
