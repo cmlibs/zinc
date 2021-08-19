@@ -300,11 +300,9 @@ cmzn_field *cmzn_field::create(const char *nameIn)
 	return nullptr;
 }
 
-int cmzn_field::deaccess(cmzn_field **field_address)
+void cmzn_field::deaccess(cmzn_field*& field)
 {
-	int return_code = 1;
-	cmzn_field *field;
-	if (field_address && (field = *field_address))
+	if (field)
 	{
 		--(field->access_count);
 		if (field->access_count <= 0)
@@ -317,15 +315,10 @@ int cmzn_field::deaccess(cmzn_field **field_address)
 				(MANAGER_CHANGE_NONE(cmzn_field) != field->manager_change_status))) &&
 			field->core->not_in_use())
 		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_field)(field, field->manager);
+			REMOVE_OBJECT_FROM_MANAGER(cmzn_field)(field, field->manager);
 		}
-		*field_address = (struct cmzn_field *)NULL;
+		field = nullptr;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
 }
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_field)
@@ -337,7 +330,13 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_field)
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_field)
 {
-	return cmzn_field::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_field::deaccess(*object_address);
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "DEACCESS(cmzn_field).  Invalid argument");
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_field)
@@ -347,7 +346,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_field)
 		if (new_object)
 			new_object->access();
 		if (*object_address)
-			cmzn_field::deaccess(object_address);
+			cmzn_field::deaccess(*object_address);
 		*object_address = new_object;
 		return 1;
 	}
@@ -364,7 +363,12 @@ cmzn_field_id cmzn_field_access(cmzn_field_id field)
 
 int cmzn_field_destroy(cmzn_field_id *field_address)
 {
-	return cmzn_field::deaccess(field_address);
+	if (field_address)
+	{
+		cmzn_field::deaccess(*field_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field)

@@ -125,7 +125,7 @@ FE_field::~FE_field()
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		delete this->meshFieldData[d];
 	if (this->indexer_field)
-		FE_field::deaccess(&this->indexer_field);
+		FE_field::deaccess(this->indexer_field);
 	if (this->values_storage)
 	{
 		/* free any arrays pointed to by field->values_storage */
@@ -150,17 +150,6 @@ FE_field *FE_field::create(const char *nameIn, FE_region *fe_regionIn)
 		return new FE_field(nameIn, fe_regionIn);
 	display_message(ERROR_MESSAGE, "FE_field::create.  Invalid argument(s)");
 	return nullptr;
-}
-
-int FE_field::deaccess(FE_field **fieldAddress)
-{
-	if (!((fieldAddress) && (*fieldAddress)))
-		return 0;
-	--((*fieldAddress)->access_count);
-	if ((*fieldAddress)->access_count <= 0)
-		delete *fieldAddress;
-	*fieldAddress = nullptr;
-	return 1;
 }
 
 int FE_field::setName(const char *nameIn)
@@ -480,7 +469,12 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_field)
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_field)
 {
-	return FE_field::deaccess(object_address);
+	if (object_address)
+	{
+		FE_field::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_field)
@@ -493,7 +487,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_field)
 		}
 		if (*object_address)
 		{
-			FE_field::deaccess(object_address);
+			FE_field::deaccess(*object_address);
 		}
 		*object_address = new_object;
 		return 1;

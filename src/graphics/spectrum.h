@@ -100,7 +100,7 @@ Spectrum type is private.
 		return change_detail;
 	}
 
-	static int deaccess(cmzn_spectrum **spectrumAddress);
+	static void deaccess(cmzn_spectrum*& spectrum);
 
 	int setName(const char *newName);
 }; /* struct cmzn_spectrum */

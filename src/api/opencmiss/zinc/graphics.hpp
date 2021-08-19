@@ -76,6 +76,16 @@ public:
 		return (0 != id);
 	}
 
+	enum BoundaryMode
+	{
+		BOUNDARY_MODE_INVALID = CMZN_GRAPHICS_BOUNDARY_MODE_INVALID,
+		BOUNDARY_MODE_ALL = CMZN_GRAPHICS_BOUNDARY_MODE_ALL,
+		BOUNDARY_MODE_BOUNDARY = CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY,
+		BOUNDARY_MODE_INTERIOR = CMZN_GRAPHICS_BOUNDARY_MODE_INTERIOR,
+		BOUNDARY_MODE_SUBGROUP_BOUNDARY = CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_BOUNDARY,
+		BOUNDARY_MODE_SUBGROUP_INTERIOR = CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_INTERIOR
+	};
+
 	enum RenderPolygonMode
 	{
 		RENDER_POLYGON_MODE_INVALID = CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID,
@@ -290,6 +300,26 @@ public:
 	int setName(const char *name)
 	{
 		return cmzn_graphics_set_name(id, name);
+	}
+
+	static BoundaryMode BoundaryModeEnumFromString(const char *name)
+	{
+		return static_cast<BoundaryMode>(cmzn_graphics_boundary_mode_enum_from_string(name));
+	}
+
+	static char *BoundaryModeEnumToString(BoundaryMode boundaryMode)
+	{
+		return cmzn_graphics_boundary_mode_enum_to_string(static_cast<cmzn_graphics_boundary_mode>(boundaryMode));
+	}
+
+	BoundaryMode getBoundaryMode()
+	{
+		return static_cast<BoundaryMode>(cmzn_graphics_get_boundary_mode(this->id));
+	}
+
+	int setBoundaryMode(BoundaryMode boundaryMode)
+	{
+		return cmzn_graphics_set_boundary_mode(id, static_cast<cmzn_graphics_boundary_mode>(boundaryMode));
 	}
 
 	int setElementFaceType(Element::FaceType faceType)

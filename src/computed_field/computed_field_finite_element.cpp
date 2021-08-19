@@ -1459,7 +1459,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
-		FE_field::deaccess(&fe_field);
+		FE_field::deaccess(fe_field);
 	}
 	DEALLOCATE(field_name);
 	if (no_default_name)

@@ -14,7 +14,7 @@
 //#include "opencmiss/zinc/spectrum.hpp"
 #include "general/debug.h"
 #include "description_io/graphics_json_export.hpp"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 
 void GraphicsJsonExport::addEntries()
 {

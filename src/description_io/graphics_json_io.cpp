@@ -11,7 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "graphics/glyph.hpp"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
 #include "opencmiss/zinc/scene.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
@@ -98,8 +98,9 @@ void GraphicsJsonIO::ioGeneralBoolEntries(Json::Value &graphicsSettings)
 		bool value = graphics.getVisibilityFlag();
 		graphicsSettings["VisibilityFlag"] = value;
 
-		value = graphics.isExterior();
-		graphicsSettings["Exterior"] = value;
+		// Now exported as enum BoundaryMode
+		//value = graphics.isExterior();
+		//graphicsSettings["Exterior"] = value;
 	}
 	else
 	{
@@ -205,10 +206,6 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			graphicsSettings["RenderPolygonMode"] = enumString;
 			DEALLOCATE(enumString);
 		}
-		else
-		{
-			graphicsSettings["RenderPolygonMode"] = "";
-		}
 
 		enumString = cmzn_graphics_select_mode_enum_to_string(
 			(enum cmzn_graphics_select_mode)graphics.getRenderPolygonMode());
@@ -216,10 +213,6 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 		{
 			graphicsSettings["SelectMode"] = enumString;
 			DEALLOCATE(enumString);
-		}
-		else
-		{
-			graphicsSettings["SelectMode"] = "";
 		}
 
 		enumString = cmzn_scenecoordinatesystem_enum_to_string(
@@ -229,10 +222,6 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			graphicsSettings["Scenecoordinatesystem"] = enumString;
 			DEALLOCATE(enumString);
 		}
-		else
-		{
-			graphicsSettings["Scenecoordinatesystem"] = "";
-		}
 
 		enumString = cmzn_field_domain_type_enum_to_string(
 			(enum cmzn_field_domain_type)graphics.getFieldDomainType());
@@ -241,20 +230,20 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			graphicsSettings["FieldDomainType"] = enumString;
 			DEALLOCATE(enumString);
 		}
-		else
+
+		enumString = graphics.BoundaryModeEnumToString(graphics.getBoundaryMode());
+		if (enumString)
 		{
-			graphicsSettings["FieldDomainType"] = "";
+			graphicsSettings["BoundaryMode"] = enumString;
+			DEALLOCATE(enumString);
 		}
+
 		enumString = cmzn_element_face_type_enum_to_string(
 			(enum cmzn_element_face_type)graphics.getElementFaceType());
 		if (enumString)
 		{
 			graphicsSettings["ElementFaceType"] = enumString;
 			DEALLOCATE(enumString);
-		}
-		else
-		{
-			graphicsSettings["ElementFaceType"] = "";
 		}
 	}
 	else
@@ -278,6 +267,10 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 			cmzn_graphics_set_field_domain_type(graphics.getId(),
 				cmzn_field_domain_type_enum_from_string(
 					graphicsSettings["FieldDomainType"].asCString()));
+
+		if (graphicsSettings["BoundaryMode"].isString())
+			graphics.setBoundaryMode(graphics.BoundaryModeEnumFromString(
+				graphicsSettings["BoundaryMode"].asCString()));
 
 		if (graphicsSettings["ElementFaceType"].isString())
 			cmzn_graphics_set_element_face_type(graphics.getId(),

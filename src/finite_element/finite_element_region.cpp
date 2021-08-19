@@ -430,7 +430,7 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 				set_FE_field_type_general(fe_field) &&
 				FE_region_merge_FE_field(fe_region, fe_field)))
 			{
-				FE_field::deaccess(&fe_field);
+				FE_field::deaccess(fe_field);
 			}
 		}
 	}
@@ -1059,8 +1059,8 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 				}
 				cmzn_nodeiterator_destroy(&nodeIter);
 
-				FE_field::deaccess(&element_count_fe_field);
-				FE_field::deaccess(&node_accumulate_fe_field);
+				FE_field::deaccess(element_count_fe_field);
+				FE_field::deaccess(node_accumulate_fe_field);
 
 				FE_region_end_change(fe_region);
 			}
@@ -1173,11 +1173,11 @@ static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_field_merge_into_FE_region.  Failed to create field %s for target region", fieldName);
-		FE_field::deaccess(&targetField);
+		FE_field::deaccess(targetField);
 		return 0;
 	}
 	fe_region->FE_field_change(targetField, CHANGE_LOG_OBJECT_ADDED(FE_field));
-	FE_field::deaccess(&targetField);
+	FE_field::deaccess(targetField);
 	fe_region->update();
 	return 1;
 }

@@ -33,7 +33,7 @@ FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 FE_field_parameters::~FE_field_parameters()
 {
 	this->field->clear_FE_field_parameters();
-	FE_field::deaccess(&(this->field));
+	FE_field::deaccess(this->field);
 }
 
 void FE_field_parameters::generateMaps()

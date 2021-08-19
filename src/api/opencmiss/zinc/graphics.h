@@ -371,21 +371,50 @@ ZINC_API int cmzn_graphics_set_visibility_flag(cmzn_graphics_id graphics,
 	bool visibility_flag);
 
 /**
- * Gets flag to generate graphics for exterior faces or lines only.
+ * Convert enumeration name string into value if it exactly matches name for a
+ * member of the enum.
+ * @see cmzn_graphics_boundary_mode_enum_to_string
  *
- * @param graphics  The graphics to query.
- * @return  Boolean true if the exterior flag is set, otherwise false.
+ * @param name  String enumerator name.
+ * @return  The enumeration matching the string, or mode INVALID if not found.
  */
-ZINC_API bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics);
+ZINC_API enum cmzn_graphics_boundary_mode
+	cmzn_graphics_boundary_mode_enum_from_string(const char *name);
 
 /**
- * Sets flag to generate graphics for exterior faces or lines only.
+ * Return allocated string representing the enumerated value.
+ * The name contains only the unique part of the enumeration, e.g.
+ * "SUBGROUP_INTERIOR", not "BOUNDARY_MODE_SUBGROUP_INTERIOR".
+ * INVALID or undefined values return a null string.
+ *
+ * @param boundary_mode  Enumerated value to convert into string.
+ * @return  On success, allocated string containing the enumerated value name
+ * which caller must free with cmzn_deallocate, or null string on failure.
+ */
+ZINC_API char *cmzn_graphics_boundary_mode_enum_to_string(
+	enum cmzn_graphics_boundary_mode boundary_mode);
+
+/**
+ * Get boundary mode controlling whether showing graphics only on boundary,
+ * interior etc.
+ *
+ * @param graphics  The graphics to query.
+ * @return  The boundary mode of the graphics, or BOUNDARY_MODE_INVALID if
+ * invalid graphics supplied.
+ */
+ZINC_API enum cmzn_graphics_boundary_mode cmzn_graphics_get_boundary_mode(
+	cmzn_graphics_id graphics);
+
+/**
+ * Set boundary mode controlling whether showing graphics only on boundary,
+ * interior etc.
  *
  * @param graphics  The graphics to modify.
- * @param exterior  New boolean value: true to set, false to clear.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @param boundary_mode  New boundary mode.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior);
+ZINC_API int cmzn_graphics_set_boundary_mode(cmzn_graphics_id graphics,
+	enum cmzn_graphics_boundary_mode boundary_mode);
 
 /**
  * Gets the element face type the graphics is limited to generating graphics for.
@@ -409,6 +438,32 @@ ZINC_API enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_gr
  */
 ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
 	enum cmzn_element_face_type face_type);
+
+/**
+ * Query if generating face or line graphics on the exterior boundary of
+ * the mesh only.
+ * Deprecated; just returns whether boundary mode is BOUNDARY_MODE_BOUNDARY.
+ * @deprecated
+ * @see cmzn_graphics_get_boundary_mode
+ *
+ * @param graphics  The graphics to query.
+ * @return  Boolean true if showing graphics on the mesh boundary only,
+ * otherwise false.
+ */
+ZINC_API bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics);
+
+/**
+ * Set to generate face or line graphics on the exterior boundary of the mesh
+ * only.
+ * Deprecated; just sets boundary mode to BOUNDARY_MODE_BOUNDARY.
+ * @deprecated
+ * @see cmzn_graphics_set_boundary_mode
+ *
+ * @param graphics  The graphics to modify.
+ * @param exterior  New boolean value: true to set, false to clear.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior);
 
 /**
  * Get the scene owning this graphics.

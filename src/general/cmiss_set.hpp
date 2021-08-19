@@ -113,7 +113,7 @@ public:
 		for (iterator iter = begin(); iter != end(); ++iter)
 		{
 			Key object = *iter;
-			object->deaccess(&object);
+			object->deaccess(object);
 		}
 		Base_class::operator=(source);
 		for (iterator iter = begin(); iter != end(); ++iter)
@@ -139,18 +139,15 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_set **set_address)
+	static inline void deaccess(cmzn_set*& set)
 	{
-		if (set_address && *set_address)
+		if (set)
 		{
-			if (0 >= (--(*set_address)->access_count))
-			{
-				delete *set_address;
-			}
-			*set_address = 0;
-			return 1;
+			--(set->access_count);
+			if ((set->access_count) <= 0)
+				delete set;
+			set = nullptr;
 		}
-		return 0;
 	}
 
 	size_type erase(Key object)
@@ -158,7 +155,7 @@ public:
 		size_type count = Base_class::erase(object);
 		if (count)
 		{
-			object->deaccess(&object);
+			object->deaccess(object);
 		}
 		return count;
 	}
@@ -167,7 +164,7 @@ public:
 	{
 		Key object = *iter;
 		Base_class::erase(iter);
-		object->deaccess(&object);
+		object->deaccess(object);
 	}
 
 	std::pair<iterator,bool> insert(Key object)
@@ -187,7 +184,7 @@ public:
 		{
 			Key object = *iter;
 			Base_class::erase(iter);
-			object->deaccess(&object);
+			object->deaccess(object);
 		}
 	}
 
@@ -255,7 +252,7 @@ public:
 			if (related_set->temp_removed_object)
 			{
 				related_set->insert(related_set->temp_removed_object); // check success?
-				related_set->temp_removed_object->deaccess(&related_set->temp_removed_object);
+				related_set->temp_removed_object->deaccess(related_set->temp_removed_object);
 			}
 			related_set = related_set->next;
 		}
@@ -285,7 +282,7 @@ public:
 		{
 			// the container may be destroyed immediately before the iterator;
 			// hopefully not a problem
-			container->deaccess(&container);
+			container->deaccess(container);
 		}
 
 	public:

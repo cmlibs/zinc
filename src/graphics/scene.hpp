@@ -18,7 +18,7 @@ FILE : scene.h
 #include "computed_field/computed_field.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_library.h"
 #include "context/context.hpp"
 #include "region/cmiss_region.hpp"

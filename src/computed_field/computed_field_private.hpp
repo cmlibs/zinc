@@ -69,7 +69,7 @@ public:
 		if (new_field)
 		{
 			cmzn_field_set_managed(new_field, true);
-			DEACCESS(cmzn_field)(&new_field);
+			cmzn_field_destroy(&new_field);
 			return 1;
 		}
 		return 0;
@@ -520,7 +520,7 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_field **field_address);
+	static void deaccess(cmzn_field*& field);
 
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.

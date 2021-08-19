@@ -66,38 +66,9 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_glyph **glyphAddress)
-	{
-		int return_code;
-		struct cmzn_glyph *glyph;
-		if (glyphAddress && (glyph = *glyphAddress))
-		{
-			--(glyph->access_count);
-			if (glyph->access_count <= 0)
-			{
-				delete glyph;
-				return_code = 1;
-			}
-			else if ((!glyph->isManagedFlag) && (glyph->manager) &&
-			((1 == glyph->access_count) || ((2 == glyph->access_count) &&
-				(MANAGER_CHANGE_NONE(cmzn_glyph) != glyph->manager_change_status))))
-			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_glyph)(glyph, glyph->manager);
-			}
-			else
-			{
-				return_code = 1;
-			}
-			*glyphAddress = 0;
-		}
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
-	}
+	static void deaccess(cmzn_glyph*& glyph);
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return isManagedFlag;
 	}

@@ -49,17 +49,15 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_context*& context)
+	static inline void deaccess(cmzn_context*& context)
 	{
 		if (context)
 		{
 			--(context->access_count);
 			if (context->access_count <= 0)
 				delete context;
-			context = 0;
-			return CMZN_OK;
+			context = nullptr;
 		}
-		return CMZN_ERROR_ARGUMENT;
 	}
 
 	static cmzn_context *create(const char *name);

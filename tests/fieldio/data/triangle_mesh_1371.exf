@@ -1,0 +1,376 @@
+EX Version: 2
+Region: /
+!#nodeset nodes
+Shape. Dimension=0
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=2
+ x. #Values=1 (value)
+ y. #Values=1 (value)
+Node: 1
+ -1.943765282630920e-01
+  8.911980390548706e-01
+Node: 2
+ -5.244498848915100e-01
+  4.070904552936554e-01
+Node: 3
+ -5.611246824264526e-01
+ -5.391197800636292e-01
+Node: 4
+  1.577017158269882e-01
+ -5.757946372032166e-01
+Node: 5
+  8.435207605361937e-02
+  4.144254326820374e-01
+Node: 6
+ -5.427872836589813e-01
+ -6.601466238498688e-02
+Node: 7
+  1.210268959403038e-01
+ -8.068460226058960e-02
+Node: 8
+ -3.416487799718236e-01
+ -5.503175426773327e-01
+Node: 9
+ -2.170068285502457e-01
+  1.582661289289992e-01
+Node: 10
+ -3.352107356071800e-01
+  6.846412041600590e-01
+Node: 11
+ -6.820238019282981e-02
+  6.753738412485459e-01
+Node: 12
+ -9.197353207241771e-02
+ -5.630560899402746e-01
+Node: 13
+  1.392337932043834e-01
+ -3.264776986811709e-01
+Node: 14
+ -2.139746374433014e-01
+ -2.133730779826172e-01
+Node: 15
+ -5.519559830427170e-01
+ -3.025672212243080e-01
+Node: 16
+ -2.101665180813185e-01
+  4.362618016775429e-01
+Node: 17
+ -2.046675601601958e-01
+  5.946960536897958e-01
+Node: 18
+ -4.298303102493450e-01
+  5.458658297268573e-01
+Node: 19
+ -3.653181496043361e-01
+  4.002359043219333e-01
+Node: 20
+ -5.336185842752457e-01
+  1.705378964543343e-01
+Node: 21
+  8.074847930394778e-03
+  5.448996369652916e-01
+Node: 22
+  1.026894859969616e-01
+  1.668704152107239e-01
+Node: 23
+ -7.266047422317108e-02
+  2.937963611299095e-01
+Node: 24
+ -2.647936319351360e-01
+  7.879196216074649e-01
+Node: 25
+ -1.312894542279609e-01
+  7.832859401517083e-01
+Node: 26
+ -1.684397064805415e-01
+  6.891704441367872e-01
+Node: 27
+ -1.628329912455265e-01
+  8.372419896032894e-01
+Node: 28
+ -2.295850800991140e-01
+  8.395588303311676e-01
+Node: 29
+ -1.982237332900376e-01
+  7.803535736988851e-01
+Node: 30
+ -2.391942518430599e-01
+  7.165150902447557e-01
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element: 1
+Element: 2
+Element: 3
+Element: 4
+Element: 5
+Element: 6
+Element: 7
+Element: 8
+Element: 9
+Element: 10
+Element: 11
+Element: 12
+Element: 13
+Element: 14
+Element: 15
+Element: 16
+Element: 17
+Element: 18
+Element: 19
+Element: 20
+Element: 21
+Element: 22
+Element: 23
+Element: 24
+Element: 25
+Element: 26
+Element: 27
+Element: 28
+Element: 29
+Element: 30
+Element: 31
+Element: 32
+Element: 33
+Element: 34
+Element: 35
+Element: 36
+Element: 37
+Element: 38
+Element: 39
+Element: 40
+Element: 41
+Element: 42
+Element: 43
+Element: 44
+Element: 45
+Element: 46
+Element: 47
+Element: 48
+Element: 49
+Element: 50
+Element: 51
+Element: 52
+Element: 53
+Element: 54
+Element: 55
+Element: 56
+Element: 57
+Element: 58
+Element: 59
+Element: 60
+Element: 61
+Element: 62
+Element: 63
+Element: 64
+Element: 65
+Element: 66
+!#mesh mesh2d, dimension=2, face mesh=mesh1d, nodeset=nodes
+Shape. Dimension=2, simplex(2)*simplex
+#Scale factor sets=0
+#Nodes=3
+#Fields=1
+1) coordinates, coordinate, rectangular cartesian, real, #Components=2
+ x. l.simplex(2)*l.simplex, no modify, standard node based.
+  #Nodes=3
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+ y. l.simplex(2)*l.simplex, no modify, standard node based.
+  #Nodes=3
+  1. #Values=1
+   Value labels: value
+  2. #Values=1
+   Value labels: value
+  3. #Values=1
+   Value labels: value
+Element: 1
+ Faces:
+ 38 8 9
+ Nodes:
+ 12 4 13
+Element: 2
+ Faces:
+ 52 3 4
+ Nodes:
+ 19 2 20
+Element: 3
+ Faces:
+ 51 42 43
+ Nodes:
+ 19 16 18
+Element: 4
+ Faces:
+ 41 13 14
+ Nodes:
+ 14 6 15
+Element: 5
+ Faces:
+ 39 38 40
+ Nodes:
+ 12 13 14
+Element: 6
+ Faces:
+ 41 21 22
+ Nodes:
+ 15 8 14
+Element: 7
+ Faces:
+ 24 17 18
+ Nodes:
+ 9 7 22
+Element: 8
+ Faces:
+ 47 44 45
+ Nodes:
+ 17 16 21
+Element: 9
+ Faces:
+ 64 63 65
+ Nodes:
+ 27 28 29
+Element: 10
+ Faces:
+ 35 34 48
+ Nodes:
+ 11 26 17
+Element: 11
+ Faces:
+ 25 15 13
+ Nodes:
+ 9 6 14
+Element: 12
+ Faces:
+ 40 19 20
+ Nodes:
+ 13 7 14
+Element: 13
+ Faces:
+ 23 39 22
+ Nodes:
+ 12 14 8
+Element: 14
+ Faces:
+ 17 25 20
+ Nodes:
+ 9 14 7
+Element: 15
+ Faces:
+ 31 30 49
+ Nodes:
+ 10 18 17
+Element: 16
+ Faces:
+ 7 6 21
+ Nodes:
+ 3 8 15
+Element: 17
+ Faces:
+ 46 26 27
+ Nodes:
+ 16 9 23
+Element: 18
+ Faces:
+ 44 49 43
+ Nodes:
+ 17 18 16
+Element: 19
+ Faces:
+ 53 45 46
+ Nodes:
+ 21 16 23
+Element: 20
+ Faces:
+ 28 52 29
+ Nodes:
+ 19 20 9
+Element: 21
+ Faces:
+ 3 51 5
+ Nodes:
+ 19 18 2
+Element: 22
+ Faces:
+ 28 26 42
+ Nodes:
+ 9 16 19
+Element: 23
+ Faces:
+ 10 54 11
+ Nodes:
+ 23 22 5
+Element: 24
+ Faces:
+ 16 15 29
+ Nodes:
+ 6 9 20
+Element: 25
+ Faces:
+ 36 35 47
+ Nodes:
+ 11 17 21
+Element: 26
+ Faces:
+ 24 54 27
+ Nodes:
+ 22 23 9
+Element: 27
+ Faces:
+ 12 53 10
+ Nodes:
+ 21 23 5
+Element: 28
+ Faces:
+ 34 37 58
+ Nodes:
+ 11 25 26
+Element: 29
+ Faces:
+ 50 48 61
+ Nodes:
+ 17 26 30
+Element: 30
+ Faces:
+ 63 1 2
+ Nodes:
+ 27 1 28
+Element: 31
+ Faces:
+ 61 62 66
+ Nodes:
+ 26 29 30
+Element: 32
+ Faces:
+ 64 59 60
+ Nodes:
+ 29 25 27
+Element: 33
+ Faces:
+ 56 55 65
+ Nodes:
+ 24 29 28
+Element: 34
+ Faces:
+ 57 66 55
+ Nodes:
+ 30 29 24
+Element: 35
+ Faces:
+ 62 58 59
+ Nodes:
+ 26 25 29
+Element: 36
+ Faces:
+ 57 32 33
+ Nodes:
+ 24 10 30
+Element: 37
+ Faces:
+ 31 50 33
+ Nodes:
+ 17 30 10

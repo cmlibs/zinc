@@ -522,31 +522,23 @@ public:
 	}
 
 	/** deaccess handling is_managed_flag */
-	static inline int deaccess(cmzn_light **object_address)
+	static inline void deaccess(cmzn_light*& light)
 	{
-		int return_code = 1;
-		cmzn_light *object;
-		if (object_address && (object = *object_address))
+		if (light)
 		{
-			(object->access_count)--;
-			if (object->access_count <= 0)
+			(light->access_count)--;
+			if (light->access_count <= 0)
 			{
-				delete object;
-				object = 0;
+				delete light;
 			}
-			else if ((!object->is_managed_flag) && (object->manager) &&
-				((1 == object->access_count) || ((2 == object->access_count) &&
-					(MANAGER_CHANGE_NONE(cmzn_light) != object->manager_change_status))))
+			else if ((!light->is_managed_flag) && (light->manager) &&
+				((1 == light->access_count) || ((2 == light->access_count) &&
+					(MANAGER_CHANGE_NONE(cmzn_light) != light->manager_change_status))))
 			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_light)(object, object->manager);
+				REMOVE_OBJECT_FROM_MANAGER(cmzn_light)(light, light->manager);
 			}
-			*object_address = static_cast<cmzn_light *>(0);
+			light = nullptr;
 		}
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
 	}
 
 	virtual cmzn_light_change_detail *extract_change_detail()
@@ -649,12 +641,17 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_light)
 {
 	if (object)
 		return object->access();
-	return 0;
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_light)
 {
-	return cmzn_light::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_light::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_light)
@@ -667,7 +664,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_light)
 		}
 		if (*object_address)
 		{
-			cmzn_light::deaccess(object_address);
+			cmzn_light::deaccess(*object_address);
 		}
 		*object_address = new_object;
 		return 1;
@@ -1248,7 +1245,12 @@ cmzn_light_id cmzn_light_access(cmzn_light_id light)
 
 int cmzn_light_destroy(cmzn_light_id *light_address)
 {
-	return DEACCESS(cmzn_light)(light_address);
+	if (light_address)
+	{
+		cmzn_light::deaccess(*light_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_light_get_name(struct cmzn_light *light)

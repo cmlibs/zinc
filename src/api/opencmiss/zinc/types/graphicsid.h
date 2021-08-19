@@ -79,6 +79,25 @@ struct cmzn_graphics_streamlines;
 typedef struct cmzn_graphics_streamlines *cmzn_graphics_streamlines_id;
 
 /**
+ * Mode limiting display of faces or lines to boundary, interior etc.
+ */
+enum cmzn_graphics_boundary_mode
+{
+	CMZN_GRAPHICS_BOUNDARY_MODE_INVALID = 0,
+		/*!< Invalid boundary mode */
+	CMZN_GRAPHICS_BOUNDARY_MODE_ALL = 1,
+		/*!< Default: all faces are included */
+	CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY = 2,
+		/*!< Only faces on the boundary of the mesh are included */
+	CMZN_GRAPHICS_BOUNDARY_MODE_INTERIOR = 3,
+		/*!< Only faces in the interior of the mesh are included */
+	CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_BOUNDARY = 4,
+		/*!< Only faces on the boundary of the subgroup are included */
+	CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_INTERIOR = 5
+		/*!< Only faces in the interior of the subgroup are included */
+};
+
+/**
  * Streamlines graphics algorithm specific methods for colouring by data.
  */ 
 enum cmzn_graphics_streamlines_colour_data_type

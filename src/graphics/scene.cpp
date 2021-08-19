@@ -35,7 +35,7 @@ FILE : scene.cpp
 #include "description_io/scene_json_export.hpp"
 #include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_region.h"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_module.hpp"
 #include "graphics/scene_viewer.h"
 #include "graphics/scene.hpp"
@@ -1595,7 +1595,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 				/* add/modify */
 				if (same_graphics)
 				{
-					ACCESS(cmzn_graphics)(same_graphics);
+					same_graphics->access();
 					if (-1 != position)
 					{
 						/* move same_graphics to new position */
@@ -1606,12 +1606,12 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 					return_code = 1;
 					if (same_graphics->getScene() == 0)
 						cmzn_graphics_set_scene_private(same_graphics, scene);
-					DEACCESS(cmzn_graphics)(&same_graphics);
+					cmzn_graphics::deaccess(same_graphics);
 				}
 				else
 				{
 					return_code = 0;
-					if (NULL != (same_graphics = CREATE(cmzn_graphics)(
+					if (NULL != (same_graphics = cmzn_graphics::create(
 						cmzn_graphics_get_type(graphics))))
 					{
 						if (cmzn_graphics_copy_without_graphics_object(
@@ -1620,7 +1620,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 							return_code = cmzn_scene_add_graphics(scene,
 								same_graphics, position);
 						}
-						DEACCESS(cmzn_graphics)(&same_graphics);
+						cmzn_graphics::deaccess(same_graphics);
 					}
 				}
 			}
@@ -1917,7 +1917,7 @@ struct cmzn_graphics *cmzn_scene_get_graphics_at_position(
 			position)(position,scene->list_of_graphics);
 		if (graphics)
 		{
-			ACCESS(cmzn_graphics)(graphics);
+			graphics->access();
 		}
 	}
 	else
@@ -2501,7 +2501,7 @@ cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
 	cmzn_graphics_id graphics = NULL;
 	if (scene)
 	{
-		if (NULL != (graphics=CREATE(cmzn_graphics)(graphics_type)))
+		if (NULL != (graphics = cmzn_graphics::create(graphics_type)))
 		{
 			cmzn_scene_set_minimum_graphics_defaults(scene, graphics);
 			cmzn_scene_add_graphics(scene, graphics, -1);
@@ -2559,7 +2559,7 @@ cmzn_graphics_id cmzn_scene_get_first_graphics(cmzn_scene_id scene)
 			1, scene->list_of_graphics);
 		if (graphics)
 		{
-			ACCESS(cmzn_graphics)(graphics);
+			graphics->access();
 		}
 	}
 	return graphics;
@@ -2578,7 +2578,7 @@ cmzn_graphics_id cmzn_scene_get_next_graphics(cmzn_scene_id scene,
 				ref_pos+1, scene->list_of_graphics);
 			if (graphics)
 			{
-				ACCESS(cmzn_graphics)(graphics);
+				graphics->access();
 			}
 		}
 	}
@@ -2598,7 +2598,7 @@ cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 				ref_pos-1, scene->list_of_graphics);
 			if (graphics)
 			{
-				ACCESS(cmzn_graphics)(graphics);
+				graphics->access();
 			}
 		}
 	}
@@ -2613,7 +2613,7 @@ int cmzn_scene_move_graphics_before(cmzn_scene_id scene,
 		&& ((graphics->getScene() == scene) || (scene->editorCopy && (graphics->getScene() == 0)))
 		&& ((0 == ref_graphics) || (graphics->getScene() == (ref_graphics->getScene()))))
 	{
-		cmzn_graphics_id current_graphics = ACCESS(cmzn_graphics)(graphics);
+		cmzn_graphics_id current_graphics = graphics->access();
 		const int position = cmzn_scene_get_graphics_position(scene, ref_graphics);
 		if (CMZN_OK == cmzn_scene_remove_graphics(scene, current_graphics))
 		{
@@ -2622,7 +2622,7 @@ int cmzn_scene_move_graphics_before(cmzn_scene_id scene,
 				return_code = CMZN_OK;
 			}
 		}
-		DEACCESS(cmzn_graphics)(&current_graphics);
+		cmzn_graphics::deaccess(current_graphics);
 	}
 	else
 	{
