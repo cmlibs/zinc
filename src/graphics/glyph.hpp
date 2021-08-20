@@ -534,14 +534,6 @@ cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 
 int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject);
 
-enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string);
-
-char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode);
-
-enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string);
-
-char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type);
-
 bool cmzn_glyph_contains_surface_primitives(cmzn_glyph *glyph, cmzn_tessellation *tessellation,
 	cmzn_material *material, cmzn_font *font);
 

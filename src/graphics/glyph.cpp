@@ -779,9 +779,9 @@ public:
 	}
 };
 
-enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string)
+enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(string);
+	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(name);
 }
 
 char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode)
@@ -880,9 +880,9 @@ public:
 	}
 };
 
-enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string)
+enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(name);
 }
 
 char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type)

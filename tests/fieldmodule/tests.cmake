@@ -28,6 +28,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldparameterstests.cpp
 	${CURRENT_TEST}/field_operator_derivatives.cpp
 	${CURRENT_TEST}/fieldsmoothing.cpp
+	${CURRENT_TEST}/fieldtests.cpp
 	${CURRENT_TEST}/finiteelement.cpp
 	${CURRENT_TEST}/nodesandelements.cpp
 	${CURRENT_TEST}/numerical_operators.cpp

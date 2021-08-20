@@ -171,7 +171,7 @@ cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
 int cmzn_field_node_value_get_version_number(cmzn_field_id field);
 
 enum cmzn_field_edge_discontinuity_measure
-cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string);
+cmzn_field_edge_discontinuity_measure_enum_from_string(const char *name);
 
 char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);

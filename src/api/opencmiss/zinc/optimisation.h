@@ -145,17 +145,17 @@ ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_optimisation_method cmzn_optimisation_method_enum_from_string(
-	const char *string);
+	const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param format  enum to be converted into string
+ * @param method  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_optimisation_method_enum_to_string(enum cmzn_optimisation_method method);
@@ -213,7 +213,7 @@ ZINC_API int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisat
  * @return  the correct enum type if a match is found.
  */
 ZINC_API enum cmzn_optimisation_attribute cmzn_optimisation_attribute_enum_from_string(
-	const char *string);
+	const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.

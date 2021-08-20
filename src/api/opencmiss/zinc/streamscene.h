@@ -25,11 +25,11 @@ extern "C" {
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum format if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_streaminformation_scene_io_format
-	cmzn_streaminformation_scene_io_format_enum_from_string(const char *string);
+	cmzn_streaminformation_scene_io_format_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum format from the provided enum.

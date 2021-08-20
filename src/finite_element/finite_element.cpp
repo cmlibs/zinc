@@ -2156,10 +2156,10 @@ public:
 };
 
 enum cmzn_element_face_type cmzn_element_face_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_element_face_type,
-		cmzn_element_face_type_conversion>(string);
+		cmzn_element_face_type_conversion>(name);
 }
 
 char *cmzn_element_face_type_enum_to_string(enum cmzn_element_face_type type)
@@ -2226,10 +2226,10 @@ public:
 };
 
 enum cmzn_element_point_sampling_mode cmzn_element_point_sampling_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_element_point_sampling_mode,
-		cmzn_element_point_sampling_mode_conversion>(string);
+		cmzn_element_point_sampling_mode_conversion>(name);
 }
 
 char *cmzn_element_point_sampling_mode_enum_to_string(enum cmzn_element_point_sampling_mode mode)
@@ -2373,10 +2373,10 @@ public:
 };
 
 enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum_bitshift<enum cmzn_field_domain_type,
-		cmzn_field_domain_type_conversion>(string);
+		cmzn_field_domain_type_conversion>(name);
 }
 
 char *cmzn_field_domain_type_enum_to_string(

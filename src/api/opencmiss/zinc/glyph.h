@@ -24,6 +24,43 @@
 extern "C" {
 #endif
 
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string of the short name of the enum.
+ */
+ZINC_API char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string of the short name of the enum.
+ */
+ZINC_API char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type);
+
 /**
  * Returns a new handle to the glyph module with reference count
  * incremented.

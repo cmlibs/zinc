@@ -4043,10 +4043,10 @@ public:
 };
 
 enum cmzn_material_attribute cmzn_material_attribute_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_material_attribute,
-	cmzn_material_attribute_conversion>(string);
+	cmzn_material_attribute_conversion>(name);
 }
 
 char *cmzn_material_attribute_enum_to_string(

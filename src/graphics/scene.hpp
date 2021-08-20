@@ -525,7 +525,7 @@ int cmzn_scene_triggers_top_region_change_callback(
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_io_data_type);
 
 enum cmzn_streaminformation_scene_io_data_type
-	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *string);
+	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *name);
 
 char *cmzn_streaminformation_scene_io_data_type_enum_to_string(
 	enum cmzn_streaminformation_scene_io_data_type mode);

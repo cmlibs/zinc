@@ -358,7 +358,7 @@ public:
 		CONDITION_OUTSIDE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE
 	};
 
-	enum Condition getCondition()
+	Condition getCondition()
 	{
 		return static_cast<Condition>(cmzn_field_imagefilter_threshold_get_condition(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id)));

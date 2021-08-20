@@ -117,9 +117,9 @@ public:
 };
 
 char *cmzn_spectrumcomponent_scale_type_enum_to_string(
-	enum cmzn_spectrumcomponent_scale_type scale_type);
+	enum cmzn_spectrumcomponent_scale_type type);
 
 enum cmzn_spectrumcomponent_scale_type cmzn_spectrumcomponent_scale_type_enum_from_string(
-	const char *string);
+	const char *name);
 
 #endif

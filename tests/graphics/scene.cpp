@@ -33,12 +33,14 @@
 #include <opencmiss/zinc/graphics.hpp>
 #include <opencmiss/zinc/material.hpp>
 #include <opencmiss/zinc/scene.hpp>
+#include <opencmiss/zinc/types/scenecoordinatesystem.hpp>
 #include <opencmiss/zinc/scenefilter.hpp>
 #include <opencmiss/zinc/sceneviewer.hpp>
 #include <opencmiss/zinc/spectrum.hpp>
 #include <opencmiss/zinc/streamscene.hpp>
 
 #include "test_resources.h"
+#include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -1382,3 +1384,10 @@ TEST(ZincScene, transformation)
 	cmzn_deallocate(sceneDescriptionTransformationField);
 }
 
+TEST(ZincScenecoordinatesystem, ScenecoordinatesystemEnum)
+{
+	const char *enumNames[11] = { nullptr, "LOCAL", "WORLD", "NORMALISED_WINDOW_FILL", "NORMALISED_WINDOW_FIT_CENTRE",
+		"NORMALISED_WINDOW_FIT_LEFT", "NORMALISED_WINDOW_FIT_RIGHT", "NORMALISED_WINDOW_FIT_BOTTOM", "NORMALISED_WINDOW_FIT_TOP",
+		"WINDOW_PIXEL_BOTTOM_LEFT", "WINDOW_PIXEL_TOP_LEFT" };
+	testEnum(11, enumNames, ScenecoordinatesystemEnumToString, ScenecoordinatesystemEnumFromString);
+}

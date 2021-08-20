@@ -1730,10 +1730,10 @@ public:
 };
 
 enum cmzn_field_image_combine_mode cmzn_field_image_combine_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_field_image_combine_mode,
-	cmzn_field_image_combine_mode_conversion>(string);
+	cmzn_field_image_combine_mode_conversion>(name);
 }
 
 char *cmzn_field_image_combine_mode_enum_to_string(enum cmzn_field_image_combine_mode mode)
@@ -1795,10 +1795,10 @@ public:
 };
 
 enum cmzn_field_image_hardware_compression_mode
-	cmzn_field_image_hardware_compression_mode_enum_from_string(const char *string)
+	cmzn_field_image_hardware_compression_mode_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_field_image_hardware_compression_mode,
-	cmzn_field_image_hardware_compression_mode_conversion>(string);
+	cmzn_field_image_hardware_compression_mode_conversion>(name);
 }
 
 char *cmzn_field_image_hardware_compression_mode_enum_to_string(
@@ -1880,10 +1880,10 @@ public:
 };
 
 enum cmzn_field_image_filter_mode cmzn_field_image_filter_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_field_image_filter_mode,
-	cmzn_field_image_filter_mode_conversion>(string);
+	cmzn_field_image_filter_mode_conversion>(name);
 }
 
 char *cmzn_field_image_filter_mode_enum_to_string(enum cmzn_field_image_filter_mode mode)
@@ -1953,10 +1953,10 @@ public:
 };
 
 enum cmzn_field_image_wrap_mode cmzn_field_image_wrap_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_field_image_wrap_mode,
-	cmzn_field_image_wrap_mode_conversion>(string);
+	cmzn_field_image_wrap_mode_conversion>(name);
 }
 
 char *cmzn_field_image_wrap_mode_enum_to_string(enum cmzn_field_image_wrap_mode mode)

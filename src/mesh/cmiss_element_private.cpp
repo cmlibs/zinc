@@ -2123,7 +2123,7 @@ public:
 				enum_string = "WEDGE13";
 				break;
 			case CMZN_ELEMENT_SHAPE_TYPE_WEDGE23:
-				enum_string = "_WEDGE23";
+				enum_string = "WEDGE23";
 				break;
 			default:
 				break;
@@ -2133,9 +2133,9 @@ public:
 };
 
 enum cmzn_element_shape_type cmzn_element_shape_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
-	return string_to_enum<enum cmzn_element_shape_type,	cmzn_element_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_element_shape_type,	cmzn_element_shape_type_conversion>(name);
 }
 
 char *cmzn_element_shape_type_enum_to_string(enum cmzn_element_shape_type type)
@@ -2190,9 +2190,9 @@ public:
 };
 
 enum cmzn_elementbasis_function_type cmzn_elementbasis_function_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
-	return string_to_enum<enum cmzn_elementbasis_function_type,	cmzn_elementbasis_function_type_conversion>(string);
+	return string_to_enum<enum cmzn_elementbasis_function_type,	cmzn_elementbasis_function_type_conversion>(name);
 }
 
 char *cmzn_elementbasis_function_type_enum_to_string(enum cmzn_elementbasis_function_type type)

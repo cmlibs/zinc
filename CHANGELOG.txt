@@ -9,6 +9,8 @@ Add exception-safe ChangeManager change caching template to C++ API.
 Add Materialmodule description json serialisation API.
 Add Materialmodule, Fieldmodule getContext API.
 Add Context getName API.
+Add Graphics BoundaryMode which generalises exterior flag.
+Add enum to/from string name APIs. Fix some names to match unique part of enumeration constant.
 
 v3.3.0
 Add field parameters interface.

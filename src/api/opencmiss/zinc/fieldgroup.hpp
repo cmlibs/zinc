@@ -111,7 +111,7 @@ public:
 	int setSubelementHandlingMode(SubelementHandlingMode mode)
 	{
 		return cmzn_field_group_set_subelement_handling_mode(getDerivedId(),
-			static_cast<enum cmzn_field_group_subelement_handling_mode>(mode));
+			static_cast<cmzn_field_group_subelement_handling_mode>(mode));
 	}
 
 	FieldGroup createSubregionFieldGroup(const Region& region)

@@ -136,10 +136,10 @@ public:
 };
 
 enum cmzn_spectrumcomponent_colour_mapping_type cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_spectrumcomponent_colour_mapping_type,
-		cmzn_spectrumcomponent_colour_mapping_type_conversion>(string);
+		cmzn_spectrumcomponent_colour_mapping_type_conversion>(name);
 }
 
 char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
@@ -172,10 +172,10 @@ public:
 };
 
 enum cmzn_spectrumcomponent_scale_type cmzn_spectrumcomponent_scale_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_spectrumcomponent_scale_type,
-		cmzn_spectrumcomponent_scale_type_conversion>(string);
+		cmzn_spectrumcomponent_scale_type_conversion>(name);
 }
 
 char *cmzn_spectrumcomponent_scale_type_enum_to_string(

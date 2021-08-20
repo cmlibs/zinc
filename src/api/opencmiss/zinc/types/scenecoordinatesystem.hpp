@@ -37,6 +37,16 @@ enum Scenecoordinatesystem
 	SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT = CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT
 };
 
+inline Scenecoordinatesystem ScenecoordinatesystemEnumFromString(const char *name)
+{
+	return static_cast<Scenecoordinatesystem>(cmzn_scenecoordinatesystem_enum_from_string(name));
+}
+
+inline char *ScenecoordinatesystemEnumToString(Scenecoordinatesystem system)
+{
+	return cmzn_scenecoordinatesystem_enum_to_string(static_cast<cmzn_scenecoordinatesystem>(system));
+}
+
 } // namespace Zinc
 }
 

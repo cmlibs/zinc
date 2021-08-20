@@ -950,10 +950,10 @@ public:
 };
 
 enum cmzn_font_render_type cmzn_font_render_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_font_render_type,
-		cmzn_font_render_type_conversion>(string);
+		cmzn_font_render_type_conversion>(name);
 }
 
 char *cmzn_font_render_type_enum_to_string(
@@ -988,10 +988,10 @@ public:
 };
 
 enum cmzn_font_typeface_type cmzn_font_typeface_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_font_typeface_type,
-		cmzn_font_typeface_type_conversion>(string);
+		cmzn_font_typeface_type_conversion>(name);
 }
 
 char *cmzn_font_typeface_type_enum_to_string(

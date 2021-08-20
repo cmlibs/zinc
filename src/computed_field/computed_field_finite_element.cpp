@@ -3613,24 +3613,26 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT:
-				enum_string = "FIND_EXACT";
-				break;
-			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST:
-				enum_string = "FIND_NEAREST";
-				break;
-			default:
-				break;
+		case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID:
+			break;
+		case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT:
+			return "EXACT";
+			break;
+		case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST:
+			return "NEAREST";
+			break;
+		default:
+			break;
 		}
-		return enum_string;
+		return nullptr;
 	}
 };
 
 enum cmzn_field_find_mesh_location_search_mode
-	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *string)
+	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_field_find_mesh_location_search_mode,
-		cmzn_field_find_mesh_location_search_mode_conversion>(string);
+		cmzn_field_find_mesh_location_search_mode_conversion>(name);
 }
 
 char *cmzn_field_find_mesh_location_search_mode_enum_to_string(
@@ -4475,10 +4477,10 @@ public:
 };
 
 enum cmzn_field_edge_discontinuity_measure
-cmzn_field_edge_discontinuity_measure_enum_from_string(const char *string)
+cmzn_field_edge_discontinuity_measure_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_field_edge_discontinuity_measure,
-		cmzn_field_edge_discontinuity_measure_conversion>(string);
+		cmzn_field_edge_discontinuity_measure_conversion>(name);
 }
 
 char *cmzn_field_edge_discontinuity_measure_enum_to_string(

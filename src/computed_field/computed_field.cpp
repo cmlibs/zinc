@@ -3279,9 +3279,9 @@ public:
 	}
 };
 
-enum cmzn_field_coordinate_system_type cmzn_field_coordinate_system_type_enum_from_string(const char *string)
+enum cmzn_field_coordinate_system_type cmzn_field_coordinate_system_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_field_coordinate_system_type, cmzn_field_coordinate_system_type_conversion>(string);
+	return string_to_enum<enum cmzn_field_coordinate_system_type, cmzn_field_coordinate_system_type_conversion>(name);
 }
 
 char *cmzn_field_coordinate_system_type_enum_to_string(enum cmzn_field_coordinate_system_type coordinate_system_type)
@@ -3492,9 +3492,9 @@ public:
 	}
 };
 
-enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string)
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_field_type, cmzn_field_type_conversion>(string);
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_conversion>(name);
 }
 
 char *cmzn_field_type_enum_to_string(enum cmzn_field_type type)
@@ -3704,9 +3704,9 @@ public:
 	}
 };
 
-enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string)
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *name)
 {
-	return string_to_enum<enum cmzn_field_type, cmzn_field_type_class_name_conversion>(string);
+	return string_to_enum<enum cmzn_field_type, cmzn_field_type_class_name_conversion>(name);
 }
 
 char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type)

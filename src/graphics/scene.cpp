@@ -3154,10 +3154,10 @@ public:
 };
 
 enum cmzn_streaminformation_scene_io_data_type
-	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *string)
+	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_streaminformation_scene_io_data_type,
-		cmzn_streaminformation_scene_io_data_type_conversion>(string);
+		cmzn_streaminformation_scene_io_data_type_conversion>(name);
 }
 
 char *cmzn_streaminformation_scene_io_data_type_enum_to_string(

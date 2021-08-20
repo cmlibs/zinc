@@ -223,11 +223,11 @@ ZINC_API char* cmzn_materialmodule_write_description(
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.
  *
- * @param attribute_name  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_material_attribute
-	cmzn_material_attribute_enum_from_string(const char *string);
+	cmzn_material_attribute_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.

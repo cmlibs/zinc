@@ -61,10 +61,10 @@ public:
 };
 
 enum cmzn_scenecoordinatesystem	cmzn_scenecoordinatesystem_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_scenecoordinatesystem,
-		cmzn_scenecoordinatesystem_conversion>(string);
+		cmzn_scenecoordinatesystem_conversion>(name);
 }
 
 char *cmzn_scenecoordinatesystem_enum_to_string(

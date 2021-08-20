@@ -130,6 +130,26 @@ public:
 		SHAPE_TYPE_AXES_SOLID_COLOUR = CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR
 	};
 
+	static RepeatMode RepeatModeEnumFromString(const char *name)
+	{
+		return static_cast<RepeatMode>(cmzn_glyph_repeat_mode_enum_from_string(name));
+	}
+
+	static char *RepeatModeEnumToString(RepeatMode mode)
+	{
+		return cmzn_glyph_repeat_mode_enum_to_string(static_cast<cmzn_glyph_repeat_mode>(mode));
+	}
+
+	static ShapeType ShapeTypeEnumFromString(const char *name)
+	{
+		return static_cast<ShapeType>(cmzn_glyph_shape_type_enum_from_string(name));
+	}
+
+	static char *ShapeTypeEnumToString(ShapeType type)
+	{
+		return cmzn_glyph_shape_type_enum_to_string(static_cast<cmzn_glyph_shape_type>(type));
+	}
+
 	char *getName()
 	{
 		return cmzn_glyph_get_name(id);

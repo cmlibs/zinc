@@ -70,12 +70,12 @@ public:
 		return id;
 	}
 
-	enum Element::ShapeType getElementShapeType()
+	Element::ShapeType getElementShapeType()
 	{
 		return static_cast<Element::ShapeType>(cmzn_elementtemplate_get_element_shape_type(id));
 	}
 
-	int setElementShapeType(enum Element::ShapeType shapeType)
+	int setElementShapeType(Element::ShapeType shapeType)
 	{
 		return cmzn_elementtemplate_set_element_shape_type(id,
 			static_cast<cmzn_element_shape_type>(shapeType));

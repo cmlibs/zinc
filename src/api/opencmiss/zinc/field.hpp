@@ -183,6 +183,16 @@ public:
 		return cmzn_field_set_coordinate_system_focus(id, focus);
 	}
 
+	static CoordinateSystemType CoordinateSystemTypeEnumFromString(const char *name)
+	{
+		return static_cast<CoordinateSystemType>(cmzn_field_coordinate_system_type_enum_from_string(name));
+	}
+
+	static char *CoordinateSystemTypeEnumToString(CoordinateSystemType type)
+	{
+		return cmzn_field_coordinate_system_type_enum_to_string(static_cast<cmzn_field_coordinate_system_type>(type));
+	}
+
 	CoordinateSystemType getCoordinateSystemType()
 	{
 		return static_cast<CoordinateSystemType>(
@@ -193,6 +203,16 @@ public:
 	{
 		return cmzn_field_set_coordinate_system_type(id,
 			static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
+	}
+
+	static DomainType DomainTypeEnumFromString(const char *name)
+	{
+		return static_cast<DomainType>(cmzn_field_domain_type_enum_from_string(name));
+	}
+
+	static char *DomainTypeEnumToString(DomainType type)
+	{
+		return cmzn_field_domain_type_enum_to_string(static_cast<cmzn_field_domain_type>(type));
 	}
 
 	inline Fieldparameters getFieldparameters();

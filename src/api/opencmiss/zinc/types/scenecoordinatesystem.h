@@ -73,11 +73,11 @@ extern "C" {
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_scenecoordinatesystem
-	cmzn_scenecoordinatesystem_enum_from_string(const char *string);
+	cmzn_scenecoordinatesystem_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.

@@ -84,12 +84,12 @@ public:
 		return cmzn_light_set_managed(id, value);
 	}
 
-	enum Type getType()
+	Type getType()
 	{
 		return static_cast<Type>(cmzn_light_get_type(id));
 	}
 
-	int setType(enum Type type)
+	int setType(Type type)
 	{
 		return cmzn_light_set_type(id, static_cast<cmzn_light_type>(type));
 	}

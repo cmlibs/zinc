@@ -776,21 +776,21 @@ ZINC_API int cmzn_spectrumcomponent_set_scale_type(
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.
  *
- * @param attribute_name  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_spectrumcomponent_colour_mapping_type
-	cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(const char *string);
+	cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param attribute  enum to be converted into string
+ * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
-	enum cmzn_spectrumcomponent_colour_mapping_type component_colour);
+	enum cmzn_spectrumcomponent_colour_mapping_type type);
 
 /**
  * Get the colour_mapping_type of this component.

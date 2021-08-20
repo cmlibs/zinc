@@ -19,6 +19,7 @@
 #include <opencmiss/zinc/graphics.h>
 #include <opencmiss/zinc/spectrum.h>
 
+#include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
@@ -1740,32 +1741,9 @@ TEST(ZincGraphics, partialEdit)
 	}
 }
 
-// Test Graphics BoundaryMode APIs
 TEST(ZincGraphics, boundaryMode)
 {
 	ZincTestSetupCpp zinc;
-
-	// test BoundaryMode enum to/from string conversions
-	struct
-	{
-		Graphics::BoundaryMode boundaryMode;
-		const char *name;
-	} boundaryModeNames[6] =
-	{
-		{ Graphics::BOUNDARY_MODE_INVALID, nullptr },
-		{ Graphics::BOUNDARY_MODE_ALL, "ALL" },
-		{ Graphics::BOUNDARY_MODE_BOUNDARY, "BOUNDARY" },
-		{ Graphics::BOUNDARY_MODE_INTERIOR, "INTERIOR" },
-		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, "SUBGROUP_BOUNDARY" },
-		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, "SUBGROUP_INTERIOR" }
-	};
-	for (int b = 0; b < 6; ++b)
-	{
-		char *name = Graphics::BoundaryModeEnumToString(boundaryModeNames[b].boundaryMode);
-		EXPECT_STREQ(boundaryModeNames[b].name, name);
-		EXPECT_EQ(boundaryModeNames[b].boundaryMode, Graphics::BoundaryModeEnumFromString(boundaryModeNames[b].name));
-		cmzn_deallocate(name);
-	}
 
 	// test API for getting/setting BoundaryMode in graphics works and exterior API reflects it
 	GraphicsLines lines = zinc.scene.createGraphicsLines();
@@ -2047,4 +2025,46 @@ TEST(ZincGraphics, boundaryMode_range2d)
 			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
 		}
 	}
+}
+
+TEST(ZincGraphics, BoundaryModeEnum)
+{
+	const char *enumNames[6] = { nullptr, "ALL", "BOUNDARY", "INTERIOR", "SUBGROUP_BOUNDARY", "SUBGROUP_INTERIOR" };
+	testEnum(6, enumNames, Graphics::BoundaryModeEnumToString, Graphics::BoundaryModeEnumFromString);
+}
+
+TEST(ZincGraphics, RenderPolygonModeEnum)
+{
+	const char *enumNames[3] = { nullptr, "SHADED", "WIREFRAME" };
+	testEnum(3, enumNames, Graphics::RenderPolygonModeEnumToString, Graphics::RenderPolygonModeEnumFromString);
+}
+
+TEST(ZincGraphics, SelectModeEnum)
+{
+	const char *enumNames[5] = { nullptr, "ON", "OFF", "DRAW_SELECTED", "DRAW_UNSELECTED" };
+	testEnum(5, enumNames, Graphics::SelectModeEnumToString, Graphics::SelectModeEnumFromString);
+}
+
+TEST(ZincGraphics, TypeEnum)
+{
+	const char *enumNames[6] = { nullptr, "POINTS", "LINES", "SURFACES", "CONTOURS", "STREAMLINES" };
+	testEnum(6, enumNames, Graphics::TypeEnumToString, Graphics::TypeEnumFromString);
+}
+
+TEST(ZincGraphicslineattributes, ShapeTypeEnum)
+{
+	const char *enumNames[5] = { nullptr, "LINE", "RIBBON", "CIRCLE_EXTRUSION", "SQUARE_EXTRUSION" };
+	testEnum(5, enumNames, Graphicslineattributes::ShapeTypeEnumToString, Graphicslineattributes::ShapeTypeEnumFromString);
+}
+
+TEST(ZincGraphicsStreamlines, ColourDataTypeEnum)
+{
+	const char *enumNames[4] = { nullptr, "FIELD", "MAGNITUDE", "TRAVEL_TIME" };
+	testEnum(4, enumNames, GraphicsStreamlines::ColourDataTypeEnumToString, GraphicsStreamlines::ColourDataTypeEnumFromString);
+}
+
+TEST(ZincGraphicsStreamlines, TrackDirectionEnum)
+{
+	const char *enumNames[3] = { nullptr, "FORWARD", "REVERSE" };
+	testEnum(3, enumNames, GraphicsStreamlines::TrackDirectionEnumToString, GraphicsStreamlines::TrackDirectionEnumFromString);
 }

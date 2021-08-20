@@ -157,7 +157,17 @@ public:
 		return cmzn_graphics_set_render_point_size(id, size);
 	}
 
-	enum RenderPolygonMode getRenderPolygonMode()
+	static RenderPolygonMode RenderPolygonModeEnumFromString(const char *name)
+	{
+		return static_cast<RenderPolygonMode>(cmzn_graphics_render_polygon_mode_enum_from_string(name));
+	}
+
+	static char *RenderPolygonModeEnumToString(RenderPolygonMode mode)
+	{
+		return cmzn_graphics_render_polygon_mode_enum_to_string(static_cast<cmzn_graphics_render_polygon_mode>(mode));
+	}
+
+	RenderPolygonMode getRenderPolygonMode()
 	{
 		return static_cast<RenderPolygonMode>(cmzn_graphics_get_render_polygon_mode(id));
 	}
@@ -170,7 +180,17 @@ public:
 
 	inline Scene getScene() const;
 
-	enum SelectMode getSelectMode()
+	static SelectMode SelectModeEnumFromString(const char *name)
+	{
+		return static_cast<SelectMode>(cmzn_graphics_select_mode_enum_from_string(name));
+	}
+
+	static char *SelectModeEnumToString(SelectMode mode)
+	{
+		return cmzn_graphics_select_mode_enum_to_string(static_cast<cmzn_graphics_select_mode>(mode));
+	}
+
+	SelectMode getSelectMode()
 	{
 		return static_cast<SelectMode>(cmzn_graphics_get_select_mode(id));
 	}
@@ -236,7 +256,17 @@ public:
 		return cmzn_graphics_set_spectrum(id, spectrum.getId());
 	}
 
-	enum Type getType()
+	static Type TypeEnumFromString(const char *name)
+	{
+		return static_cast<Type>(cmzn_graphics_type_enum_from_string(name));
+	}
+
+	static char *TypeEnumToString(Type type)
+	{
+		return cmzn_graphics_type_enum_to_string(static_cast<cmzn_graphics_type>(type));
+	}
+
+	Type getType()
 	{
 		return static_cast<Type>(cmzn_graphics_get_type(id));
 	}
@@ -271,7 +301,7 @@ public:
 		return cmzn_graphics_set_visibility_flag(id, visibilityFlag);
 	}
 
-	enum Scenecoordinatesystem getScenecoordinatesystem()
+	Scenecoordinatesystem getScenecoordinatesystem()
 	{
 		return static_cast<Scenecoordinatesystem>(cmzn_graphics_get_scenecoordinatesystem(id));
 	}
@@ -307,9 +337,9 @@ public:
 		return static_cast<BoundaryMode>(cmzn_graphics_boundary_mode_enum_from_string(name));
 	}
 
-	static char *BoundaryModeEnumToString(BoundaryMode boundaryMode)
+	static char *BoundaryModeEnumToString(BoundaryMode mode)
 	{
-		return cmzn_graphics_boundary_mode_enum_to_string(static_cast<cmzn_graphics_boundary_mode>(boundaryMode));
+		return cmzn_graphics_boundary_mode_enum_to_string(static_cast<cmzn_graphics_boundary_mode>(mode));
 	}
 
 	BoundaryMode getBoundaryMode()
@@ -484,6 +514,16 @@ public:
 		TRACK_DIRECTION_REVERSE = CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE
 	};
 
+	static ColourDataType ColourDataTypeEnumFromString(const char *name)
+	{
+		return static_cast<ColourDataType>(cmzn_graphics_streamlines_colour_data_type_enum_from_string(name));
+	}
+
+	static char *ColourDataTypeEnumToString(ColourDataType type)
+	{
+		return cmzn_graphics_streamlines_colour_data_type_enum_to_string(static_cast<cmzn_graphics_streamlines_colour_data_type>(type));
+	}
+
 	ColourDataType getColourDataType()
 	{
 		return static_cast<ColourDataType>(cmzn_graphics_streamlines_get_colour_data_type(this->getDerivedId()));
@@ -503,6 +543,16 @@ public:
 	int setStreamVectorField(const Field& field)
 	{
 		return cmzn_graphics_streamlines_set_stream_vector_field(this->getDerivedId(), field.getId());
+	}
+
+	static TrackDirection TrackDirectionEnumFromString(const char *name)
+	{
+		return static_cast<TrackDirection>(cmzn_graphics_streamlines_track_direction_enum_from_string(name));
+	}
+
+	static char *TrackDirectionEnumToString(TrackDirection direction)
+	{
+		return cmzn_graphics_streamlines_track_direction_enum_to_string(static_cast<cmzn_graphics_streamlines_track_direction>(direction));
 	}
 
 	TrackDirection getTrackDirection()
@@ -644,6 +694,16 @@ public:
 		return cmzn_graphicslineattributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
+	static ShapeType ShapeTypeEnumFromString(const char *name)
+	{
+		return static_cast<ShapeType>(cmzn_graphicslineattributes_shape_type_enum_from_string(name));
+	}
+
+	static char *ShapeTypeEnumToString(ShapeType type)
+	{
+		return cmzn_graphicslineattributes_shape_type_enum_to_string(static_cast<cmzn_graphicslineattributes_shape_type>(type));
+	}
+
 	ShapeType getShapeType()
 	{
 		return static_cast<ShapeType>(cmzn_graphicslineattributes_get_shape_type(id));
@@ -746,7 +806,7 @@ public:
 	int setGlyphRepeatMode(Glyph::RepeatMode glyphRepeatMode)
 	{
 		return cmzn_graphicspointattributes_set_glyph_repeat_mode(id,
-			static_cast<enum cmzn_glyph_repeat_mode>(glyphRepeatMode));
+			static_cast<cmzn_glyph_repeat_mode>(glyphRepeatMode));
 	}
 
 	Glyph::ShapeType getGlyphShapeType()

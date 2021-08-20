@@ -5167,9 +5167,9 @@ public:
 	}
 };
 
-enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *string)
+enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_graphics_type, cmzn_graphics_type_conversion>(string);
+	return string_to_enum<enum cmzn_graphics_type, cmzn_graphics_type_conversion>(name);
 }
 
 char *cmzn_graphics_type_enum_to_string(enum cmzn_graphics_type type)
@@ -5205,9 +5205,9 @@ public:
 	}
 };
 
-enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string)
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(name);
 }
 
 char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type)
@@ -5244,10 +5244,10 @@ public:
 };
 
 enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_select_mode,
-		cmzn_graphics_select_mode_conversion>(string);
+		cmzn_graphics_select_mode_conversion>(name);
 }
 
 char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type)
@@ -5265,10 +5265,10 @@ public:
 		switch (type)
 		{
 		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED:
-			enum_string = "RENDER_POLYGON_SHADED";
+			enum_string = "SHADED";
 			break;
 		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME:
-			enum_string = "RENDER_POLYGON_WIREFRAME";
+			enum_string = "WIREFRAME";
 			break;
 		default:
 			break;
@@ -5278,10 +5278,10 @@ public:
 };
 
 enum cmzn_graphics_render_polygon_mode cmzn_graphics_render_polygon_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_render_polygon_mode,
-		cmzn_graphics_render_polygon_mode_conversion>(string);
+		cmzn_graphics_render_polygon_mode_conversion>(name);
 }
 
 char *cmzn_graphics_render_polygon_mode_enum_to_string(
@@ -5313,10 +5313,10 @@ public:
 };
 
 enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_streamlines_track_direction,
-		cmzn_graphics_streamlines_track_direction_conversion>(string);
+		cmzn_graphics_streamlines_track_direction_conversion>(name);
 }
 
 char *cmzn_graphics_streamlines_track_direction_enum_to_string(
@@ -5351,10 +5351,10 @@ public:
 };
 
 enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_streamlines_colour_data_type,
-		cmzn_graphics_streamlines_colour_data_type_conversion>(string);
+		cmzn_graphics_streamlines_colour_data_type_conversion>(name);
 }
 
 char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(

@@ -157,6 +157,16 @@ public:
 		return Mesh(cmzn_field_find_mesh_location_get_mesh(this->getDerivedId()));
 	}
 
+	static SearchMode SearchModeEnumFromString(const char *name)
+	{
+		return static_cast<SearchMode>(cmzn_field_find_mesh_location_search_mode_enum_from_string(name));
+	}
+
+	static char *SearchModeEnumToString(SearchMode mode)
+	{
+		return cmzn_field_find_mesh_location_search_mode_enum_to_string(static_cast<cmzn_field_find_mesh_location_search_mode>(mode));
+	}
+
 	Mesh getSearchMesh() const
 	{
 		return Mesh(cmzn_field_find_mesh_location_get_search_mesh(this->getDerivedId()));
