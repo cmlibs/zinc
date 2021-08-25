@@ -238,7 +238,7 @@ std::string MaterialmoduleJsonExport::getExportString()
 	for (int d = 0; d < 3; ++d)
 	{
 		MaterialmoduleGetSetMaterialToken& getSetMaterialToken = materialmoduleGetSetDefaultMaterialTokens[d];
-		Material& material = (this->materialmodule.*getSetMaterialToken.getMaterial)();
+		material = (this->materialmodule.*getSetMaterialToken.getMaterial)();
 		if (material.isValid())
 		{
 			char* materialName = material.getName();
@@ -266,7 +266,7 @@ int MaterialmoduleJsonImport::import(const std::string &jsonString)
 	for (int d = 0; d < 3; ++d)
 	{
 		MaterialmoduleGetSetMaterialToken& getSetMaterialToken = materialmoduleGetSetDefaultMaterialTokens[d];
-		Material& material = (root[getSetMaterialToken.token].isString()) ?
+		Material material = (root[getSetMaterialToken.token].isString()) ?
 			this->materialmodule.findMaterialByName(root[getSetMaterialToken.token].asCString()) : Material();
 		(this->materialmodule.*getSetMaterialToken.setMaterial)(material);
 	}
