@@ -1566,7 +1566,8 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 			cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_wrapper(fieldmodule, fe_field);
 			if (field)
 			{
-				cmzn_field_set_managed(field, true);
+				// use managed status of existing_wrapper -- new wrappers are managed by default
+				cmzn_field_set_managed(field, (existing_wrapper) ? cmzn_field_is_managed(existing_wrapper) : true);
 				if (strcmp(field_name, field->getName()))
 				{
 					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
@@ -1588,7 +1589,7 @@ void cmzn_region::FeRegionChange()
 	cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(this);
 	MANAGER_BEGIN_CACHE(Computed_field)(this->field_manager);
 
-	// check field wrappers?
+	// update field wrappers
 	if (0 != (field_change_summary & (~(CHANGE_LOG_OBJECT_REMOVED(FE_field) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))))
 	{
 		CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
