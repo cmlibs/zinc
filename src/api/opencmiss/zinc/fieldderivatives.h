@@ -68,27 +68,28 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 /**
  * Creates a field returning the gradient of a source field with respect to
  * a given coordinate field.
- * Calculation will only succeed in any element with
- * xi-dimension equal to the number of components in the <coordinate_field>.
- * Sets the number of components in return field to the product of the number
- * of components in the <source_field> and <coordinate_field>.
- * Note the <source_field> does not have to be a scalar. If it has more than 1
- * component, all the derivatives of its first component w.r.t. the components
- * of <coordinate_field> will be returned first, followed by the second
- * component, etc. Hence, this function can return the standard gradient of a
- * scalar source_field, and the deformation gradient if a deformed coordinate
- * field is passed as the source_field.
+ * Evaluation is only possible in elements of dimension equal or less than the
+ * number of components in the coordinate field. If the element dimension is
+ * lower, ficticious orthogonal xi axes are defined so that the derivative of
+ * coordinates w.r.t. xi is square and hence invertable.
+ * The number of components of the new field is the product of the numbers of
+ * components in the source and coordinate fields.
+ * If the source field has multiple components, all the derivatives of its
+ * first component w.r.t. the coordinate components are given first, followed
+ * by the second component, etc. Hence, this function can return the standard
+ * gradient of a scalar source field, and the deformation gradient if a
+ * deformed coordinate field is passed as the source field.
  * The gradient can also be calculated at nodes, albeit approximately using a
  * finite difference approach by perturbing the coordinate field.
  *
- * @param field_module  Region field module which will own new field.
- * @param source_field  Field to calculate gradients for.
+ * @param fieldmodule  Region field module which will own new field.
+ * @param source_field  Field to calculate gradient of.
  * @param coordinate_field  Field supplying coordinate location over which
- * the source field is expected to vary.
+ * the source field is expected to vary, with up to 3 real components.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field, cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus
