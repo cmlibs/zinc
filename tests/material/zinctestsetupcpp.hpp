@@ -11,11 +11,11 @@
 
 #include <gtest/gtest.h>
 
-#include <opencmiss/zinc/status.hpp>
+#include <opencmiss/zinc/changemanager.hpp>
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
-#include <opencmiss/zinc/glyph.hpp>
+#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/scene.hpp>
 
 using namespace OpenCMISS::Zinc;
@@ -26,20 +26,16 @@ public:
 	Context context;
 	Region root_region;
 	Fieldmodule fm;
-	Glyphmodule glyphmodule;
 	Scene scene;
 
 	ZincTestSetupCpp() :
 		context("test"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule()),
-		glyphmodule(context.getGlyphmodule()),
 		scene(0)
 	{
 		scene = root_region.getScene();
 		EXPECT_TRUE(fm.isValid());
-		EXPECT_TRUE(glyphmodule.isValid());
-		EXPECT_EQ(OK, glyphmodule.defineStandardGlyphs());
 		EXPECT_TRUE(scene.isValid());
 	}
 

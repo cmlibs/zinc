@@ -8,6 +8,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 SET( APIPP_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/changemanager.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/context.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/differentialoperator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/element.hpp

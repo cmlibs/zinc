@@ -970,6 +970,17 @@ int cmzn_region_remove_callback(struct cmzn_region *region,
 	return 0;
 }
 
+cmzn_context_id cmzn_region_get_context(cmzn_region_id region)
+{
+	if (region)
+	{
+		cmzn_context* context = region->getContext();
+		if (context)
+			return context->access();
+	}
+	return nullptr;
+}
+
 char *cmzn_region_get_name(struct cmzn_region *region)
 {
 	if (region)

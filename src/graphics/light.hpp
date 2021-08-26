@@ -19,7 +19,6 @@ The data structures used for representing graphical lights.
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/graphics_library.h"
 #include "opencmiss/zinc/light.h"
 
 /*

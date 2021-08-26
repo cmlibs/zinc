@@ -330,12 +330,12 @@ inline bool operator==(const Scene& a, const Scene& b)
 	return a.getId() == b.getId();
 }
 
-inline Scene Region::getScene()
+inline Scene Region::getScene() const
 {
 	return Scene(cmzn_region_get_scene(id));
 }
 
-inline Scene Graphics::getScene()
+inline Scene Graphics::getScene() const
 {
 	return Scene(cmzn_graphics_get_scene(id));
 }

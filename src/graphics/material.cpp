@@ -37,29 +37,32 @@ return to direct rendering, as described with these routines.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_private.hpp"
+#include "description_io/material_json_io.hpp"
 #include "general/compare.h"
 #include "general/debug.h"
+#include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
 #include "general/io_stream.h"
 #include "general/manager_private.h"
+#include "general/message.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
-#include "graphics/spectrum.h"
-#include "graphics/texture.h"
-#include "three_d_drawing/abstract_graphics_buffer.h"
-#include "general/message.h"
-#include "general/enumerator_conversion.hpp"
-#include "graphics/render_gl.h"
+#include "graphics/graphics_module.hpp"
 #include "graphics/material.hpp"
-#include "graphics/spectrum.hpp"
+#include "graphics/render_gl.h"
 #include "graphics/shader.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/shader_uniforms.hpp"
+#include "graphics/spectrum.h"
+#include "graphics/spectrum.hpp"
+#include "graphics/texture.h"
+#include "three_d_drawing/abstract_graphics_buffer.h"
 
-struct Startup_material_definition
+namespace {
+
+struct StandardMaterialDefinition
 {
 	const char *name;
 	double ambient[3];
@@ -68,7 +71,35 @@ struct Startup_material_definition
 	double specular[3];
 	double alpha;
 	double shininess;
+
+	/** Find or create standard material with this name and setting these attributes.
+	 * @param materialmodule  Material module. Not checked; assumes change cache active.
+	 * @return  Accessed material for client to release. */
+	cmzn_material *defineMaterial(cmzn_materialmodule *materialmodule)
+	{
+		cmzn_material *material = materialmodule->findMaterialByName(name);
+		if (material)
+		{
+			material->access();
+		}
+		else
+		{
+			material = materialmodule->createMaterial();
+			material->setName(this->name);
+			cmzn_material_set_managed(material, true);
+		}
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_AMBIENT, this->ambient);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, this->diffuse);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_EMISSION, this->emission);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_SPECULAR, this->specular);
+		cmzn_material_set_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_ALPHA, this->alpha);
+		cmzn_material_set_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_SHININESS, this->shininess);
+		return material;
+	}
+
 };
+
+} // namespace
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
@@ -506,11 +537,6 @@ static void Graphical_material_Spectrum_change(
 	LEAVE;
 }
 
-/*
-Global functions
-----------------
-*/
-
 static int Graphical_material_remove_module_if_matching(cmzn_material *material,
 	void *materialmodule_void)
 {
@@ -534,175 +560,272 @@ static int Graphical_material_remove_module_if_matching(cmzn_material *material,
 	return (return_code);
 }
 
-struct cmzn_materialmodule
+cmzn_materialmodule::cmzn_materialmodule() :
+	materialManager(CREATE(MANAGER(cmzn_material))()),
+	defaultMaterial(nullptr),
+	defaultSelectedMaterial(nullptr),
+	defaultSurfaceMaterial(nullptr),
+	graphicsmodule(nullptr),
+	access_count(1)
 {
+}
 
-private:
+cmzn_materialmodule::~cmzn_materialmodule()
+{
+	if (this->defaultMaterial)
+		cmzn_material_destroy(&this->defaultMaterial);
+	if (this->defaultSelectedMaterial)
+		cmzn_material_destroy(&this->defaultSelectedMaterial);
+	if (this->defaultSurfaceMaterial)
+		cmzn_material_destroy(&this->defaultSurfaceMaterial);
+	/* Make sure each material no longer points at this module */
+	FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
+		Graphical_material_remove_module_if_matching, (void*)this,
+		materialManager);
+	DESTROY(MANAGER(cmzn_material))(&materialManager);
+}
 
-	struct MANAGER(cmzn_material) *materialManager;
-	cmzn_material *defaultMaterial;
-	cmzn_material *defaultSelectedMaterial;
-	cmzn_material *defaultSurfaceMaterial;
-	struct MANAGER(cmzn_spectrum) *spectrumManager;
-	int access_count;
-
-	cmzn_materialmodule() :
-		materialManager(CREATE(MANAGER(cmzn_material))()),
-		defaultMaterial(0),
-		defaultSelectedMaterial(0),
-		defaultSurfaceMaterial(0),
-		spectrumManager(0),
-		access_count(1)
+cmzn_materialmodule* cmzn_materialmodule::create()
+{
+	cmzn_materialmodule* materialmodule = new cmzn_materialmodule();
+	if (!materialmodule)
 	{
+		return nullptr;
 	}
 
-	~cmzn_materialmodule()
+	StandardMaterialDefinition defaultMaterialDefinition = {
+		"default",
+		/*ambient*/ { 1.00, 1.00, 1.00},
+		/*diffuse*/ { 1.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0 };
+	StandardMaterialDefinition defaultSelectedMaterialDefinition = {
+		"default_selected",
+		/*ambient*/ { 1.00, 0.20, 0.00},
+		/*diffuse*/ { 1.00, 0.20, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0 };
+
+	materialmodule->beginChange();
+	cmzn_material *defaultMaterial = defaultMaterialDefinition.defineMaterial(materialmodule);
+	if (defaultMaterial)
 	{
-		if (this->defaultMaterial)
-			cmzn_material_destroy(&this->defaultMaterial);
-		if (this->defaultSelectedMaterial)
-			cmzn_material_destroy(&this->defaultSelectedMaterial);
-		if (this->defaultSurfaceMaterial)
-			cmzn_material_destroy(&this->defaultSurfaceMaterial);
-		/* Make sure each material no longer points at this module */
-		FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
-			Graphical_material_remove_module_if_matching, (void *)this,
-			materialManager);
-		DESTROY(MANAGER(cmzn_material))(&materialManager);
+		materialmodule->setDefaultMaterial(defaultMaterial);
+		cmzn_material::deaccess(&defaultMaterial);
 	}
-
-public:
-
-	static cmzn_materialmodule *create()
+	cmzn_material *defaultSelectedMaterial = defaultSelectedMaterialDefinition.defineMaterial(materialmodule);
+	if (defaultSelectedMaterial)
 	{
-		return new cmzn_materialmodule();
+		materialmodule->setDefaultSelectedMaterial(defaultSelectedMaterial);
+		cmzn_material::deaccess(&defaultSelectedMaterial);
 	}
+	materialmodule->endChange();
 
-	cmzn_materialmodule *access()
+	return materialmodule;
+}
+
+void cmzn_materialmodule::defineStandardMaterials()
+{
+	StandardMaterialDefinition standardMaterialDefinitions[] =
 	{
-		++access_count;
-		return this;
+		{"black",
+		/*ambient*/ { 0.00, 0.00, 0.00},
+		/*diffuse*/ { 0.00, 0.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.30, 0.30, 0.30},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"blue",
+		/*ambient*/ { 0.00, 0.00, 1.00},
+		/*diffuse*/ { 0.00, 0.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"bone",
+		/*ambient*/ { 0.70, 0.70, 0.60},
+		/*diffuse*/ { 0.90, 0.90, 0.70},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"brown",
+		/*ambient*/ { 0.5, 0.25, 0.0},
+		/*diffuse*/ { 0.5, 0.25, 0.0},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"cyan",
+		/*ambient*/ { 0.00, 1.00, 1.00},
+		/*diffuse*/ { 0.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey25",
+		/*ambient*/ { 0.25, 0.25, 0.25},
+		/*diffuse*/ { 0.25, 0.25, 0.25},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey50",
+		/*ambient*/ { 0.50, 0.50, 0.50},
+		/*diffuse*/ { 0.50, 0.50, 0.50},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey75",
+		/*ambient*/ { 0.75, 0.75, 0.75},
+		/*diffuse*/ { 0.75, 0.75, 0.75},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"gold",
+		/*ambient*/ { 1.00, 0.40, 0.00},
+		/*diffuse*/ { 1.00, 0.70, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.50, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.3},
+		{"green",
+		/*ambient*/ { 0.00, 1.00, 0.00},
+		/*diffuse*/ { 0.00, 1.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"magenta",
+		/*ambient*/ { 1.00, 0.00, 1.00},
+		/*diffuse*/ { 1.00, 0.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"muscle",
+		/*ambient*/ { 0.40, 0.14, 0.11},
+		/*diffuse*/ { 0.50, 0.12, 0.10},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.30, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"orange",
+		/*ambient*/ { 1.00, 0.5, 0.00},
+		/*diffuse*/ { 1.00, 0.5, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"red",
+		/*ambient*/ { 1.00, 0.00, 0.00},
+		/*diffuse*/ { 1.00, 0.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"silver",
+		/*ambient*/ { 0.40, 0.40, 0.40},
+		/*diffuse*/ { 0.70, 0.70, 0.70},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.50, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.3},
+		{"tissue",
+		/*ambient*/ { 0.90, 0.70, 0.50},
+		/*diffuse*/ { 0.90, 0.70, 0.50},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.20, 0.20, 0.30},
+		/*alpha*/1.0,
+		/*shininess*/0.2f},
+		{"white",
+		/*ambient*/ { 1.00, 1.00, 1.00},
+		/*diffuse*/ { 1.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0},
+		{"yellow",
+		/*ambient*/ { 1.00, 1.00, 0.00},
+		/*diffuse*/ { 1.00, 1.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2}
+	};
+
+	this->beginChange();
+	const int standardMaterialCount = sizeof(standardMaterialDefinitions) /
+		sizeof(StandardMaterialDefinition);
+	for (int i = 0; i < standardMaterialCount; ++i)
+	{
+		cmzn_material *material = standardMaterialDefinitions[i].defineMaterial(this);
+		cmzn_material::deaccess(&material);
 	}
+	this->endChange();
+}
 
-	static int deaccess(cmzn_materialmodule* &materialmodule)
+int cmzn_materialmodule::deaccess(cmzn_materialmodule*& materialmodule)
+{
+	if (materialmodule)
 	{
-		if (materialmodule)
+		--(materialmodule->access_count);
+		if (materialmodule->access_count <= 0)
 		{
-			--(materialmodule->access_count);
-			if (materialmodule->access_count <= 0)
-			{
-				delete materialmodule;
-			}
-			materialmodule = 0;
-			return CMZN_OK;
+			delete materialmodule;
 		}
-		return CMZN_ERROR_ARGUMENT;
-	}
-
-
-	void setSpectrumManager(struct MANAGER(cmzn_spectrum) *spectrum_manager)
-	{
-		spectrumManager = spectrum_manager;
-	}
-
-	struct MANAGER(cmzn_spectrum) *getSpectrumManager()
-	{
-		return spectrumManager;
-	}
-
-	struct MANAGER(cmzn_material) *getManager()
-	{
-		return materialManager;
-	}
-
-	int beginChange()
-	{
-		return MANAGER_BEGIN_CACHE(cmzn_material)(this->materialManager);
-	}
-
-	int endChange()
-	{
-		return MANAGER_END_CACHE(cmzn_material)(this->materialManager);
-	}
-
-	cmzn_material_id createMaterial()
-	{
-		cmzn_material_id material = NULL;
-		char temp_name[20];
-		int i = NUMBER_IN_MANAGER(cmzn_material)(this->materialManager);
-		do
-		{
-			i++;
-			sprintf(temp_name, "temp%d",i);
-		}
-		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(temp_name,
-			this->materialManager));
-		material = cmzn_material_create_private();
-		cmzn_material_set_name(material, temp_name);
-		if (!ADD_OBJECT_TO_MANAGER(cmzn_material)(material, this->materialManager))
-		{
-			cmzn_material_destroy(&material);
-		}
-		material->module = this;
-		return material;
-	}
-
-	cmzn_materialiterator *createMaterialiterator()
-	{
-		return CREATE_LIST_ITERATOR(cmzn_material)(this->materialManager->object_list);
-	}
-
-	cmzn_material *findMaterialByName(const char *name)
-	{
-		cmzn_material *material = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(name,
-			this->materialManager);
-		if (material)
-		{
-			return cmzn_material_access(material);
-		}
-		return 0;
-	}
-
-	cmzn_material *getDefaultMaterial()
-	{
-		if (this->defaultMaterial)
-			return this->defaultMaterial->access();
-		return 0;
-	}
-
-	int setDefaultMaterial(cmzn_material *material)
-	{
-		REACCESS(cmzn_material)(&this->defaultMaterial, material);
+		materialmodule = 0;
 		return CMZN_OK;
 	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	cmzn_material *getDefaultSelectedMaterial()
+cmzn_context* cmzn_materialmodule::getContext()
+{
+	return this->graphicsmodule->getContext();
+}
+
+struct MANAGER(cmzn_spectrum)* cmzn_materialmodule::getSpectrumManager()
+{
+	return cmzn_spectrummodule_get_manager(this->graphicsmodule->getSpectrummodule());
+}
+
+cmzn_material* cmzn_materialmodule::createMaterial()
+{
+	cmzn_material_id material = NULL;
+	char temp_name[20];
+	int i = NUMBER_IN_MANAGER(cmzn_material)(this->materialManager);
+	do
 	{
-		if (this->defaultSelectedMaterial)
-			return this->defaultSelectedMaterial->access();
-		return 0;
-	}
-
-	int setDefaultSelectedMaterial(cmzn_material *material)
+		i++;
+		sprintf(temp_name, "temp%d", i);
+	} while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(temp_name,
+		this->materialManager));
+	material = cmzn_material_create_private();
+	cmzn_material_set_name(material, temp_name);
+	if (!ADD_OBJECT_TO_MANAGER(cmzn_material)(material, this->materialManager))
 	{
-		REACCESS(cmzn_material)(&this->defaultSelectedMaterial, material);
-		return CMZN_OK;
+		cmzn_material_destroy(&material);
 	}
+	material->module = this;
+	return material;
+}
 
-	cmzn_material *getDefaultSurfaceMaterial()
-	{
-		if (this->defaultSurfaceMaterial)
-			return this->defaultSurfaceMaterial->access();
-		return 0;
-	}
+cmzn_materialiterator* cmzn_materialmodule::createMaterialiterator()
+{
+	return CREATE_LIST_ITERATOR(cmzn_material)(this->materialManager->object_list);
+}
 
-	int setDefaultSurfaceMaterial(cmzn_material *material)
-	{
-		REACCESS(cmzn_material)(&this->defaultSurfaceMaterial, material);
-		return CMZN_OK;
-	}
-
-};
+/*
+Global functions
+----------------
+*/
 
 cmzn_materialmodule_id cmzn_materialmodule_access(
 	cmzn_materialmodule_id materialmodule)
@@ -735,201 +858,17 @@ cmzn_materialiterator_id cmzn_materialmodule_create_materialiterator(
 	return 0;
 }
 
-struct MANAGER(cmzn_material) *cmzn_materialmodule_get_manager(
-	cmzn_materialmodule_id materialmodule)
-{
-	if (materialmodule)
-		return materialmodule->getManager();
-	return 0;
-}
-
-struct MANAGER(cmzn_spectrum) *cmzn_materialmodule_get_spectrum_manager(
-	struct cmzn_materialmodule *materialmodule)
-{
-	if (materialmodule)
-		return materialmodule->getSpectrumManager();
-	return 0;
-}
-
 int cmzn_materialmodule_define_standard_materials(
 	cmzn_materialmodule_id materialmodule)
 {
-	struct Startup_material_definition
-		startup_materials[] =
-		{
-			{"black",
-			 /*ambient*/ { 0.00, 0.00, 0.00},
-			 /*diffuse*/ { 0.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.30, 0.30},
-	 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"blue",
-			 /*ambient*/ { 0.00, 0.00, 1.00},
-			 /*diffuse*/ { 0.00, 0.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"bone",
-			 /*ambient*/ { 0.70, 0.70, 0.60},
-			 /*diffuse*/ { 0.90, 0.90, 0.70},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"brown",
-			 /*ambient*/ { 0.5, 0.25, 0.0},
-			 /*diffuse*/ { 0.5, 0.25, 0.0},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"cyan",
-			 /*ambient*/ { 0.00, 1.00, 1.00},
-			 /*diffuse*/ { 0.00, 1.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey25",
-			 /*ambient*/ { 0.25, 0.25, 0.25},
-			 /*diffuse*/ { 0.25, 0.25, 0.25},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey50",
-			 /*ambient*/ { 0.50, 0.50, 0.50},
-			 /*diffuse*/ { 0.50, 0.50, 0.50},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey75",
-			 /*ambient*/ { 0.75, 0.75, 0.75},
-			 /*diffuse*/ { 0.75, 0.75, 0.75},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"gold",
-			 /*ambient*/ { 1.00, 0.40, 0.00},
-			 /*diffuse*/ { 1.00, 0.70, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3},
-			{"green",
-			 /*ambient*/ { 0.00, 1.00, 0.00},
-			 /*diffuse*/ { 0.00, 1.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"magenta",
-			 /*ambient*/ { 1.00, 0.00, 1.00},
-			 /*diffuse*/ { 1.00, 0.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"muscle",
-			 /*ambient*/ { 0.40, 0.14, 0.11},
-			 /*diffuse*/ { 0.50, 0.12, 0.10},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"orange",
-			 /*ambient*/ { 1.00, 0.5, 0.00},
-			 /*diffuse*/ { 1.00, 0.5, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"red",
-			 /*ambient*/ { 1.00, 0.00, 0.00},
-			 /*diffuse*/ { 1.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"silver",
-			 /*ambient*/ { 0.40, 0.40, 0.40},
-			 /*diffuse*/ { 0.70, 0.70, 0.70},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3},
-			{"tissue",
-			 /*ambient*/ { 0.90, 0.70, 0.50},
-			 /*diffuse*/ { 0.90, 0.70, 0.50},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.30},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"white",
-			 /*ambient*/ { 1.00, 1.00, 1.00},
-			 /*diffuse*/ { 1.00, 1.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.00, 0.00, 0.00},
-			 /*alpha*/1.0,
-			 /*shininess*/0.0},
-			{"yellow",
-			 /*ambient*/ { 1.00, 1.00, 0.00},
-			 /*diffuse*/ { 1.00, 1.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2}
-		};
-	int i, return_code;
-	int number_of_startup_materials = sizeof(startup_materials) /
-		sizeof(struct Startup_material_definition);
-	cmzn_material *material = 0;
-
 	if (materialmodule)
 	{
-		for (i = 0; i < number_of_startup_materials; i++)
-		{
-			material = NULL;
-			if (NULL != (material = cmzn_materialmodule_find_material_by_name(
-				materialmodule, startup_materials[i].name)))
-			{
-				cmzn_material_destroy(&material);
-			}
-			else if ((NULL != (material = cmzn_materialmodule_create_material(materialmodule))) &&
-				cmzn_material_set_name(material, startup_materials[i].name))
-			{
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
-				cmzn_material_set_attribute_real(material,
-					CMZN_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
-				cmzn_material_set_attribute_real(material,
-					CMZN_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
-				cmzn_material_set_managed(material, true);
-				material->module = materialmodule;
-				cmzn_material_destroy(&material);
-			}
-		}
-
-		return_code = 1;
+		materialmodule->defineStandardMaterials();
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_materialmodule_define_standard_materials.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return return_code;
+	display_message(ERROR_MESSAGE,
+		"Materialmodule defineStandardMaterials: Missing material module");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_materialmodule_begin_change(cmzn_materialmodule_id materialmodule)
@@ -950,128 +889,115 @@ cmzn_material_id cmzn_materialmodule_find_material_by_name(
 	cmzn_materialmodule_id materialmodule, const char *name)
 {
 	if (materialmodule)
-		return materialmodule->findMaterialByName(name);
-   return 0;
+	{
+		cmzn_material* material = materialmodule->findMaterialByName(name);
+		if (material)
+			return material->access();
+	}
+   return nullptr;
+}
+
+cmzn_context_id cmzn_materialmodule_get_context(
+	cmzn_materialmodule_id materialmodule)
+{
+	if (materialmodule)
+	{
+		cmzn_context* context = materialmodule->getContext();
+		if (context)
+			return context->access();
+	}
+	return nullptr;
 }
 
 cmzn_material_id cmzn_materialmodule_get_default_material(
 	cmzn_materialmodule_id materialmodule)
 {
 	if (materialmodule)
-		return materialmodule->getDefaultMaterial();
-	return 0;
+	{
+		cmzn_material* material = materialmodule->getDefaultMaterial();
+		if (material)
+			return material->access();
+	}
+	return nullptr;
 }
 
 int cmzn_materialmodule_set_default_material(
 	cmzn_materialmodule_id materialmodule, cmzn_material_id material)
 {
-	if (materialmodule)
-		return materialmodule->setDefaultMaterial(material);
-	return 0;
+	if ((materialmodule) && (material))
+	{
+		materialmodule->setDefaultMaterial(material);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_material_id cmzn_materialmodule_get_default_selected_material(
 	cmzn_materialmodule_id materialmodule)
 {
 	if (materialmodule)
-		return materialmodule->getDefaultSelectedMaterial();
-	return 0;
+	{
+		cmzn_material* material = materialmodule->getDefaultSelectedMaterial();
+		if (material)
+			return material->access();
+	}
+	return nullptr;
 }
 
 int cmzn_materialmodule_set_default_selected_material(
 	cmzn_materialmodule_id materialmodule, cmzn_material_id material)
 {
-	if (materialmodule)
-		return materialmodule->setDefaultSelectedMaterial(material);
-	return 0;
+	if ((materialmodule) && (material))
+	{
+		materialmodule->setDefaultSelectedMaterial(material);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_material_id cmzn_materialmodule_get_default_surface_material(
 	cmzn_materialmodule_id materialmodule)
 {
 	if (materialmodule)
-		return materialmodule->getDefaultSurfaceMaterial();
-	return 0;
+	{
+		cmzn_material* material = materialmodule->getDefaultSurfaceMaterial();
+		if (material)
+			return material->access();
+	}
+	return nullptr;
 }
 
 int cmzn_materialmodule_set_default_surface_material(
 	cmzn_materialmodule_id materialmodule, cmzn_material_id material)
 {
 	if (materialmodule)
-		return materialmodule->setDefaultSurfaceMaterial(material);
-	return 0;
+	{
+		materialmodule->setDefaultSurfaceMaterial(material);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_materialmodule_id cmzn_materialmodule_create(
-	struct MANAGER(cmzn_spectrum) *spectrum_manager)
+int cmzn_materialmodule_read_description(cmzn_materialmodule_id materialmodule,
+	const char* description)
 {
-	cmzn_materialmodule *materialmodule = cmzn_materialmodule::create();
-	cmzn_material *defaultMaterial = 0, *defaultSelectedMaterial = 0;
-	materialmodule->setSpectrumManager(spectrum_manager);
-	struct Material_definition
+	if (materialmodule && description)
 	{
-		double ambient[3];
-		double diffuse[3];
-		double emission[3];
-		double specular[3];
-		double alpha;
-		double shininess;
+		MaterialmoduleJsonImport jsonImport(materialmodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
 	}
-	default_material = {
-		/*ambient*/ { 1.00, 1.00, 1.00},
-		/*diffuse*/ { 1.00, 1.00, 1.00},
-		/*emission*/{ 0.00, 0.00, 0.00},
-		/*specular*/{ 0.00, 0.00, 0.00},
-		/*alpha*/1.0,
-		/*shininess*/0.0},
-	default_selected = {
-		/*ambient*/ { 1.00, 0.20, 0.00},
-		/*diffuse*/ { 1.00, 0.20, 0.00},
-		/*emission*/{ 0.00, 0.00, 0.00},
-		/*specular*/{ 0.00, 0.00, 0.00},
-		/*alpha*/1.0,
-		/*shininess*/0.0};
-	defaultMaterial = cmzn_materialmodule_create_material(
-		materialmodule);
-	cmzn_material_set_name(defaultMaterial, "default");
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
-	cmzn_material_set_attribute_real(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
-	cmzn_material_set_attribute_real(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
-	cmzn_material_set_managed(defaultMaterial, true);
-	defaultMaterial->module = materialmodule;
-	materialmodule->setDefaultMaterial(defaultMaterial);
-	cmzn_material_destroy(&defaultMaterial);
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	defaultSelectedMaterial = cmzn_materialmodule_create_material(
-		materialmodule);
-	cmzn_material_set_name(defaultSelectedMaterial, "default_selected");
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
-	cmzn_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
-	cmzn_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
-	cmzn_material_set_managed(defaultSelectedMaterial, true);
-	defaultSelectedMaterial->module = materialmodule;
-	materialmodule->setDefaultSelectedMaterial(defaultSelectedMaterial);
-	cmzn_material_destroy(&defaultSelectedMaterial);
-
-	return materialmodule;
+char* cmzn_materialmodule_write_description(cmzn_materialmodule_id materialmodule)
+{
+	if (materialmodule)
+	{
+		MaterialmoduleJsonExport jsonExport(materialmodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
 }
 
 cmzn_material *cmzn_material_create_private()

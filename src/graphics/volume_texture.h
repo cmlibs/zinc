@@ -25,7 +25,7 @@ xi2, xi3 space.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/environment_map.h"
 
 /*

@@ -30,7 +30,7 @@ Spectrum functions and support code.
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/graphics_library.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum_component.h"
 #include "graphics/spectrum.h"
 #include "general/message.h"

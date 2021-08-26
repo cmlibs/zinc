@@ -29,6 +29,7 @@ translating and zooming with mouse button press and motion events.
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "graphics/colour.h"
+#include "graphics/graphics_library.h"
 #include "graphics/light.hpp"
 #include "graphics/render_gl.h"
 #include <list>

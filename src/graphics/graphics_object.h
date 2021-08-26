@@ -17,7 +17,7 @@
 #include "opencmiss/zinc/graphics.h"
 #include "general/geometry.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)

@@ -79,7 +79,7 @@ public:
 		ATTRIBUTE_SPECULAR = CMZN_MATERIAL_ATTRIBUTE_SPECULAR
 	};
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_material_is_managed(id);
 	}
@@ -89,7 +89,7 @@ public:
 		return cmzn_material_set_managed(id, value);
 	}
 
-	double getAttributeReal(Attribute attribute)
+	double getAttributeReal(Attribute attribute) const
 	{
 		return cmzn_material_get_attribute_real(id,
 			static_cast<cmzn_material_attribute>(attribute));
@@ -101,7 +101,7 @@ public:
 			static_cast<cmzn_material_attribute>(attribute), value);
 	}
 
-	int getAttributeReal3(Attribute attribute, double *valuesOut3)
+	int getAttributeReal3(Attribute attribute, double *valuesOut3) const
 	{
 		return cmzn_material_get_attribute_real3(id,
 			static_cast<cmzn_material_attribute>(attribute), valuesOut3);
@@ -113,7 +113,7 @@ public:
 			static_cast<cmzn_material_attribute>(attribute), valuesIn3);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_material_get_name(id);
 	}
@@ -123,7 +123,7 @@ public:
 		return cmzn_material_set_name(id, name);
 	}
 
-	Field getTextureField(int textureNumber)
+	Field getTextureField(int textureNumber) const
 	{
 		return Field(cmzn_material_get_texture_field(id, textureNumber));
 	}
@@ -133,7 +133,7 @@ public:
 		return cmzn_material_set_texture_field(id, textureNumber, textureField.getId());
 	}
 
-	Shaderuniforms getShaderuniforms()
+	Shaderuniforms getShaderuniforms() const
 	{
 		return Shaderuniforms(cmzn_material_get_shaderuniforms(id));
 	}
@@ -143,7 +143,7 @@ public:
 		return cmzn_material_set_shaderuniforms(id, shaderuniforms.getId());
 	}
 
-	Shaderprogram getShaderprogram()
+	Shaderprogram getShaderprogram() const
 	{
 		return Shaderprogram(cmzn_material_get_shaderprogram(id));
 	}
@@ -290,7 +290,12 @@ public:
 		return cmzn_materialmodule_define_standard_materials(id);
 	}
 
-	Material getDefaultMaterial()
+	Context getContext() const
+	{
+		return Context(cmzn_materialmodule_get_context(id));
+	}
+
+	Material getDefaultMaterial() const
 	{
 		return Material(cmzn_materialmodule_get_default_material(id));
 	}
@@ -300,7 +305,7 @@ public:
 		return cmzn_materialmodule_set_default_material(id, material.getId());
 	}
 
-	Material getDefaultSelectedMaterial()
+	Material getDefaultSelectedMaterial() const
 	{
 		return Material(cmzn_materialmodule_get_default_selected_material(id));
 	}
@@ -310,7 +315,7 @@ public:
 		return cmzn_materialmodule_set_default_selected_material(id, material.getId());
 	}
 
-	Material getDefaultSurfaceMaterial()
+	Material getDefaultSurfaceMaterial() const
 	{
 		return Material(cmzn_materialmodule_get_default_surface_material(id));
 	}
@@ -318,6 +323,16 @@ public:
 	int setDefaultSurfaceMaterial(const Material& material)
 	{
 		return cmzn_materialmodule_set_default_surface_material(id, material.getId());
+	}
+
+	int readDescription(const char* description)
+	{
+		return cmzn_materialmodule_read_description(this->id, description);
+	}
+
+	char* writeDescription() const
+	{
+		return cmzn_materialmodule_write_description(this->id);
 	}
 };
 

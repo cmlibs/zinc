@@ -17,7 +17,7 @@ Macro definition for lists of callbacks between objects.
 #include "general/object.h"
 
 #if defined (WIN32_USER_INTERFACE)
-//#define WINDOWS_LEAN_AND_MEAN
+#define WINDOWS_LEAN_AND_MEAN
 #if !defined (NOMINMAX)
 #define NOMINMAX
 #endif

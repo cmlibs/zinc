@@ -11,6 +11,7 @@ SET( GRAPHICS_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_export.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_import.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_io.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/description_io/material_json_io.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/scene_json_export.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/scene_json_import.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/sceneviewer_json_io.cpp
@@ -61,6 +62,7 @@ SET( GRAPHICS_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_export.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_import.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/graphics_json_io.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/description_io/material_json_io.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/scene_json_export.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/scene_json_import.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/sceneviewer_json_io.hpp
@@ -88,7 +90,6 @@ SET( GRAPHICS_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/import_graphics_object.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/iso_field_calculation.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/laguer.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/mcubes.h
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/order_independent_transparency.h

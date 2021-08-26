@@ -13,6 +13,7 @@
 #ifndef CMZN_REGION_H__
 #define CMZN_REGION_H__
 
+#include "types/contextid.h"
 #include "types/elementid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -104,6 +105,14 @@ ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_region_end_hierarchical_change(cmzn_region_id region);
+
+/**
+ * Get the owning context for the region.
+ *
+ * @param region  The region to query.
+ * @return  Handle to context, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_context_id cmzn_region_get_context(cmzn_region_id region);
 
 /**
  * Returns the name of the region.

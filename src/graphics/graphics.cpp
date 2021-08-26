@@ -6639,9 +6639,12 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 				{
 					graphics_to_object_data.top_level_number_in_xi[i] = 0;
 				}
-
+				// graphics->scene must be valid to get field wrappers
+				cmzn_scene *tmpScene = copy_graphics->scene;
+				copy_graphics->scene = graphics->scene;
 				cmzn_graphics_to_graphics_object_no_check_on_filter(copy_graphics,
 					&graphics_to_object_data);
+				copy_graphics->scene = tmpScene;
 				return_object = ACCESS(GT_object)(copy_graphics->graphics_object);
 				if (graphics_to_object_data.selection_group_field)
 				{

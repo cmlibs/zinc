@@ -29,7 +29,7 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 	#include <stdlib.h>
 	#include <crtdbg.h>
 #endif /* defined (_MSC_VER) */
-//#define WINDOWS_LEAN_AND_MEAN
+#define WINDOWS_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 

@@ -51,7 +51,7 @@ Used to be gtypes.h
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"

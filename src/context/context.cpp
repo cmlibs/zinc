@@ -23,8 +23,8 @@
 #include "region/cmiss_region.hpp"
 #include "opencmiss/zinc/timekeeper.h"
 
-cmzn_context::cmzn_context(const char *idIn) :
-	id(duplicate_string(idIn)),
+cmzn_context::cmzn_context(const char *nameIn) :
+	name(duplicate_string(nameIn)),
 	logger(cmzn_logger::create()),
 	defaultRegion(0),
 	element_point_ranges_selection(0),
@@ -60,18 +60,18 @@ cmzn_context::~cmzn_context()
 		on.  When MEMORY_CHECKING is off this function does nothing */
 	list_memory(/*count_number*/0, /*show_pointers*/0, /*increment_counter*/0,
 		/*show_structures*/1);
-	if (this->id)
-		DEALLOCATE(this->id);
+	if (this->name)
+		DEALLOCATE(this->name);
 }
 
-cmzn_context *cmzn_context::create(const char *id)
+cmzn_context *cmzn_context::create(const char *name)
 {
-	cmzn_context *context = new cmzn_context(id);
-	if ((context) && (context->id) && (context->logger) && (context->timekeepermodule) && (context->graphics_module))
+	cmzn_context *context = new cmzn_context(name);
+	if ((context) && (context->name) && (context->logger) && (context->timekeepermodule) && (context->graphics_module))
 		return context;
 	display_message(ERROR_MESSAGE, "Zinc.  Failed to create Context");
 	delete context;
-	return 0;
+	return nullptr;
 }
 
 cmzn_region *cmzn_context::createRegion()
@@ -104,9 +104,9 @@ int cmzn_context::setDefaultRegion(cmzn_region *regionIn)
 	return CMZN_OK;
 }
 
-cmzn_context *cmzn_context_create(const char *id)
+cmzn_context *cmzn_context_create(const char *name)
 {
-	return cmzn_context::create(id);
+	return cmzn_context::create(name);
 }
 
 cmzn_context *cmzn_context_access(cmzn_context *context)
@@ -121,6 +121,13 @@ int cmzn_context_destroy(cmzn_context **context_address)
 	if (context_address)
 		return cmzn_context::deaccess(*context_address);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+char* cmzn_context_get_name(cmzn_context_id context)
+{
+	if (context)
+		return duplicate_string(context->getName());
+	return nullptr;
 }
 
 struct cmzn_region *cmzn_context_get_default_region(cmzn_context *context)

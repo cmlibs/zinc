@@ -15,7 +15,7 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/material.h"
+#include "graphics/material.hpp"
 #include "graphics/texture.h"
 #include <iostream>
 #include <string>
