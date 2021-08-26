@@ -163,8 +163,11 @@ private:
 
 public:
 
-	/** first stage of creation; must also call setGraphicsmodule() */
+	/** @return  Accessed material */
 	static cmzn_materialmodule* create();
+
+	/** define standard zinc materials beyond those made in create() */
+	void defineStandardMaterials();
 
 	/** second stage of creation */
 	void setGraphicsmodule(cmzn_graphics_module* graphicsmoduleIn)
