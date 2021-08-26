@@ -71,16 +71,6 @@ struct cmzn_graphics_select_graphics_data
 	struct cmzn_graphics *graphics;
 };
 
-enum cmzn_graphics_change
-{
-	CMZN_GRAPHICS_CHANGE_NONE = 0,
-	CMZN_GRAPHICS_CHANGE_REDRAW = 1,          /**< minor change requiring redraw, e.g. visibility flag toggled */
-	CMZN_GRAPHICS_CHANGE_RECOMPILE = 2,       /**< graphics display list may need to be recompiled */
-	CMZN_GRAPHICS_CHANGE_SELECTION = 3,       /**< change to selected objects */
-	CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD = 4, /**< partial rebuild of graphics object */
-	CMZN_GRAPHICS_CHANGE_FULL_REBUILD = 5,    /**< graphics object needs full rebuild */
-};
-
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_type)
 {
 	const char *enumerator_string;
@@ -373,7 +363,7 @@ cmzn_graphics *cmzn_graphics::create(cmzn_graphics_type graphicsTypeIn)
 	return new cmzn_graphics(graphicsTypeIn);
 }
 
-void cmzn_graphics::setChange(enum cmzn_graphics_change change)
+void cmzn_graphics::setChange(cmzn_graphics_change change)
 {
 	switch (change)
 	{

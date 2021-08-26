@@ -30,6 +30,16 @@
 struct cmzn_graphicspointattributes;
 struct cmzn_graphicslineattributes;
 
+enum cmzn_graphics_change
+{
+	CMZN_GRAPHICS_CHANGE_NONE = 0,
+	CMZN_GRAPHICS_CHANGE_REDRAW = 1,          /**< minor change requiring redraw, e.g. visibility flag toggled */
+	CMZN_GRAPHICS_CHANGE_RECOMPILE = 2,       /**< graphics display list may need to be recompiled */
+	CMZN_GRAPHICS_CHANGE_SELECTION = 3,       /**< change to selected objects */
+	CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD = 4, /**< partial rebuild of graphics object */
+	CMZN_GRAPHICS_CHANGE_FULL_REBUILD = 5,    /**< graphics object needs full rebuild */
+};
+
 struct cmzn_graphics
 {
 	struct cmzn_scene *scene;  // scene which owns this graphics
@@ -179,7 +189,7 @@ public:
 	/** Call whenever attributes of the graphics have changed to ensure the graphics
 	 * object is invalidated (if needed) or that the minimum rebuild and redraw is
 	 * performed. */
-	void setChange(enum cmzn_graphics_change change);
+	void setChange(cmzn_graphics_change change);
 
 	/** Update internal flag to match whether any graphics field, glyph or other
 	  * member is time dependent */
