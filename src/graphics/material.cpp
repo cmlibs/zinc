@@ -60,7 +60,9 @@ return to direct rendering, as described with these routines.
 #include "graphics/texture.h"
 #include "three_d_drawing/abstract_graphics_buffer.h"
 
-struct Startup_material_definition
+namespace {
+
+struct StandardMaterialDefinition
 {
 	const char *name;
 	double ambient[3];
@@ -69,7 +71,35 @@ struct Startup_material_definition
 	double specular[3];
 	double alpha;
 	double shininess;
+
+	/** Find or create standard material with this name and setting these attributes.
+	 * @param materialmodule  Material module. Not checked; assumes change cache active.
+	 * @return  Accessed material for client to release. */
+	cmzn_material *defineMaterial(cmzn_materialmodule *materialmodule)
+	{
+		cmzn_material *material = materialmodule->findMaterialByName(name);
+		if (material)
+		{
+			material->access();
+		}
+		else
+		{
+			material = materialmodule->createMaterial();
+			material->setName(this->name);
+			cmzn_material_set_managed(material, true);
+		}
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_AMBIENT, this->ambient);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, this->diffuse);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_EMISSION, this->emission);
+		cmzn_material_set_attribute_real3(material, CMZN_MATERIAL_ATTRIBUTE_SPECULAR, this->specular);
+		cmzn_material_set_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_ALPHA, this->alpha);
+		cmzn_material_set_attribute_real(material, CMZN_MATERIAL_ATTRIBUTE_SHININESS, this->shininess);
+		return material;
+	}
+
 };
+
+} // namespace
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
@@ -558,69 +588,187 @@ cmzn_materialmodule::~cmzn_materialmodule()
 cmzn_materialmodule* cmzn_materialmodule::create()
 {
 	cmzn_materialmodule* materialmodule = new cmzn_materialmodule();
-	cmzn_material* defaultMaterial = 0, * defaultSelectedMaterial = 0;
-	struct Material_definition
+	if (!materialmodule)
 	{
-		double ambient[3];
-		double diffuse[3];
-		double emission[3];
-		double specular[3];
-		double alpha;
-		double shininess;
+		return nullptr;
 	}
-	default_material = {
+
+	StandardMaterialDefinition defaultMaterialDefinition = {
+		"default",
 		/*ambient*/ { 1.00, 1.00, 1.00},
 		/*diffuse*/ { 1.00, 1.00, 1.00},
 		/*emission*/{ 0.00, 0.00, 0.00},
 		/*specular*/{ 0.00, 0.00, 0.00},
 		/*alpha*/1.0,
-		/*shininess*/0.0 },
-		default_selected = {
+		/*shininess*/0.0 };
+	StandardMaterialDefinition defaultSelectedMaterialDefinition = {
+		"default_selected",
 		/*ambient*/ { 1.00, 0.20, 0.00},
 		/*diffuse*/ { 1.00, 0.20, 0.00},
 		/*emission*/{ 0.00, 0.00, 0.00},
 		/*specular*/{ 0.00, 0.00, 0.00},
 		/*alpha*/1.0,
 		/*shininess*/0.0 };
-	defaultMaterial = materialmodule->createMaterial();
-	cmzn_material_set_name(defaultMaterial, "default");
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
-	cmzn_material_set_attribute_real3(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
-	cmzn_material_set_attribute_real(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
-	cmzn_material_set_attribute_real(defaultMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
-	cmzn_material_set_managed(defaultMaterial, true);
-	defaultMaterial->module = materialmodule;
-	materialmodule->setDefaultMaterial(defaultMaterial);
-	cmzn_material::deaccess(&defaultMaterial);
 
-	defaultSelectedMaterial = materialmodule->createMaterial();
-	cmzn_material_set_name(defaultSelectedMaterial, "default_selected");
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
-	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
-	cmzn_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
-	cmzn_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
-	cmzn_material_set_managed(defaultSelectedMaterial, true);
-	defaultSelectedMaterial->module = materialmodule;
-	materialmodule->setDefaultSelectedMaterial(defaultSelectedMaterial);
-	cmzn_material::deaccess(&defaultSelectedMaterial);
+	materialmodule->beginChange();
+	cmzn_material *defaultMaterial = defaultMaterialDefinition.defineMaterial(materialmodule);
+	if (defaultMaterial)
+	{
+		materialmodule->setDefaultMaterial(defaultMaterial);
+		cmzn_material::deaccess(&defaultMaterial);
+	}
+	cmzn_material *defaultSelectedMaterial = defaultSelectedMaterialDefinition.defineMaterial(materialmodule);
+	if (defaultSelectedMaterial)
+	{
+		materialmodule->setDefaultSelectedMaterial(defaultSelectedMaterial);
+		cmzn_material::deaccess(&defaultSelectedMaterial);
+	}
+	materialmodule->endChange();
 
 	return materialmodule;
+}
+
+void cmzn_materialmodule::defineStandardMaterials()
+{
+	StandardMaterialDefinition standardMaterialDefinitions[] =
+	{
+		{"black",
+		/*ambient*/ { 0.00, 0.00, 0.00},
+		/*diffuse*/ { 0.00, 0.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.30, 0.30, 0.30},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"blue",
+		/*ambient*/ { 0.00, 0.00, 1.00},
+		/*diffuse*/ { 0.00, 0.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"bone",
+		/*ambient*/ { 0.70, 0.70, 0.60},
+		/*diffuse*/ { 0.90, 0.90, 0.70},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"brown",
+		/*ambient*/ { 0.5, 0.25, 0.0},
+		/*diffuse*/ { 0.5, 0.25, 0.0},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"cyan",
+		/*ambient*/ { 0.00, 1.00, 1.00},
+		/*diffuse*/ { 0.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey25",
+		/*ambient*/ { 0.25, 0.25, 0.25},
+		/*diffuse*/ { 0.25, 0.25, 0.25},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey50",
+		/*ambient*/ { 0.50, 0.50, 0.50},
+		/*diffuse*/ { 0.50, 0.50, 0.50},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"grey75",
+		/*ambient*/ { 0.75, 0.75, 0.75},
+		/*diffuse*/ { 0.75, 0.75, 0.75},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"gold",
+		/*ambient*/ { 1.00, 0.40, 0.00},
+		/*diffuse*/ { 1.00, 0.70, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.50, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.3},
+		{"green",
+		/*ambient*/ { 0.00, 1.00, 0.00},
+		/*diffuse*/ { 0.00, 1.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"magenta",
+		/*ambient*/ { 1.00, 0.00, 1.00},
+		/*diffuse*/ { 1.00, 0.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"muscle",
+		/*ambient*/ { 0.40, 0.14, 0.11},
+		/*diffuse*/ { 0.50, 0.12, 0.10},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.30, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"orange",
+		/*ambient*/ { 1.00, 0.5, 0.00},
+		/*diffuse*/ { 1.00, 0.5, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"red",
+		/*ambient*/ { 1.00, 0.00, 0.00},
+		/*diffuse*/ { 1.00, 0.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2},
+		{"silver",
+		/*ambient*/ { 0.40, 0.40, 0.40},
+		/*diffuse*/ { 0.70, 0.70, 0.70},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.50, 0.50, 0.50},
+		/*alpha*/1.0,
+		/*shininess*/0.3},
+		{"tissue",
+		/*ambient*/ { 0.90, 0.70, 0.50},
+		/*diffuse*/ { 0.90, 0.70, 0.50},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.20, 0.20, 0.30},
+		/*alpha*/1.0,
+		/*shininess*/0.2f},
+		{"white",
+		/*ambient*/ { 1.00, 1.00, 1.00},
+		/*diffuse*/ { 1.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0},
+		{"yellow",
+		/*ambient*/ { 1.00, 1.00, 0.00},
+		/*diffuse*/ { 1.00, 1.00, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.10, 0.10, 0.10},
+		/*alpha*/1.0,
+		/*shininess*/0.2}
+	};
+
+	this->beginChange();
+	const int standardMaterialCount = sizeof(standardMaterialDefinitions) /
+		sizeof(StandardMaterialDefinition);
+	for (int i = 0; i < standardMaterialCount; ++i)
+	{
+		cmzn_material *material = standardMaterialDefinitions[i].defineMaterial(this);
+		cmzn_material::deaccess(&material);
+	}
+	this->endChange();
 }
 
 int cmzn_materialmodule::deaccess(cmzn_materialmodule*& materialmodule)
@@ -713,182 +861,14 @@ cmzn_materialiterator_id cmzn_materialmodule_create_materialiterator(
 int cmzn_materialmodule_define_standard_materials(
 	cmzn_materialmodule_id materialmodule)
 {
-	struct Startup_material_definition
-		startup_materials[] =
-		{
-			{"black",
-			 /*ambient*/ { 0.00, 0.00, 0.00},
-			 /*diffuse*/ { 0.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.30, 0.30},
-	 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"blue",
-			 /*ambient*/ { 0.00, 0.00, 1.00},
-			 /*diffuse*/ { 0.00, 0.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"bone",
-			 /*ambient*/ { 0.70, 0.70, 0.60},
-			 /*diffuse*/ { 0.90, 0.90, 0.70},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"brown",
-			 /*ambient*/ { 0.5, 0.25, 0.0},
-			 /*diffuse*/ { 0.5, 0.25, 0.0},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"cyan",
-			 /*ambient*/ { 0.00, 1.00, 1.00},
-			 /*diffuse*/ { 0.00, 1.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey25",
-			 /*ambient*/ { 0.25, 0.25, 0.25},
-			 /*diffuse*/ { 0.25, 0.25, 0.25},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey50",
-			 /*ambient*/ { 0.50, 0.50, 0.50},
-			 /*diffuse*/ { 0.50, 0.50, 0.50},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"grey75",
-			 /*ambient*/ { 0.75, 0.75, 0.75},
-			 /*diffuse*/ { 0.75, 0.75, 0.75},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"gold",
-			 /*ambient*/ { 1.00, 0.40, 0.00},
-			 /*diffuse*/ { 1.00, 0.70, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3},
-			{"green",
-			 /*ambient*/ { 0.00, 1.00, 0.00},
-			 /*diffuse*/ { 0.00, 1.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"magenta",
-			 /*ambient*/ { 1.00, 0.00, 1.00},
-			 /*diffuse*/ { 1.00, 0.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"muscle",
-			 /*ambient*/ { 0.40, 0.14, 0.11},
-			 /*diffuse*/ { 0.50, 0.12, 0.10},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.30, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"orange",
-			 /*ambient*/ { 1.00, 0.5, 0.00},
-			 /*diffuse*/ { 1.00, 0.5, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"red",
-			 /*ambient*/ { 1.00, 0.00, 0.00},
-			 /*diffuse*/ { 1.00, 0.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2},
-			{"silver",
-			 /*ambient*/ { 0.40, 0.40, 0.40},
-			 /*diffuse*/ { 0.70, 0.70, 0.70},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.50, 0.50, 0.50},
-			 /*alpha*/1.0,
-			 /*shininess*/0.3},
-			{"tissue",
-			 /*ambient*/ { 0.90, 0.70, 0.50},
-			 /*diffuse*/ { 0.90, 0.70, 0.50},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.20, 0.20, 0.30},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2f},
-			{"white",
-			 /*ambient*/ { 1.00, 1.00, 1.00},
-			 /*diffuse*/ { 1.00, 1.00, 1.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.00, 0.00, 0.00},
-			 /*alpha*/1.0,
-			 /*shininess*/0.0},
-			{"yellow",
-			 /*ambient*/ { 1.00, 1.00, 0.00},
-			 /*diffuse*/ { 1.00, 1.00, 0.00},
-			 /*emission*/{ 0.00, 0.00, 0.00},
-			 /*specular*/{ 0.10, 0.10, 0.10},
-			 /*alpha*/1.0,
-			 /*shininess*/0.2}
-		};
-	int i, return_code;
-	int number_of_startup_materials = sizeof(startup_materials) /
-		sizeof(struct Startup_material_definition);
-	cmzn_material *material = 0;
-
 	if (materialmodule)
 	{
-		for (i = 0; i < number_of_startup_materials; i++)
-		{
-			material = NULL;
-			if (NULL != (material = cmzn_materialmodule_find_material_by_name(
-				materialmodule, startup_materials[i].name)))
-			{
-				cmzn_material_destroy(&material);
-			}
-			else if ((NULL != (material = cmzn_materialmodule_create_material(materialmodule))) &&
-				cmzn_material_set_name(material, startup_materials[i].name))
-			{
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
-				cmzn_material_set_attribute_real3(material,
-					CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
-				cmzn_material_set_attribute_real(material,
-					CMZN_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
-				cmzn_material_set_attribute_real(material,
-					CMZN_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
-				cmzn_material_set_managed(material, true);
-				material->module = materialmodule;
-				cmzn_material_destroy(&material);
-			}
-		}
-
-		return_code = 1;
+		materialmodule->defineStandardMaterials();
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_materialmodule_define_standard_materials.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return return_code;
+	display_message(ERROR_MESSAGE,
+		"Materialmodule defineStandardMaterials: Missing material module");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_materialmodule_begin_change(cmzn_materialmodule_id materialmodule)
