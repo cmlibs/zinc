@@ -10,8 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined (TESSELLATION_JSON_IO_HPP)
-#define TESSELLATION_JSON_IO_HPP
+#if !defined (MATERIAL_JSON_IO_HPP)
+#define MATERIAL_JSON_IO_HPP
 
 #include "opencmiss/zinc/material.hpp"
 #include <string>
