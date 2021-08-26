@@ -119,7 +119,10 @@ cmzn_context *cmzn_context_access(cmzn_context *context)
 int cmzn_context_destroy(cmzn_context **context_address)
 {
 	if (context_address)
-		return cmzn_context::deaccess(*context_address);
+	{
+		cmzn_context::deaccess(*context_address);
+		return CMZN_OK;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 

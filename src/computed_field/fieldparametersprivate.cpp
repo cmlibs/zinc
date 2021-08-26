@@ -59,7 +59,7 @@ cmzn_fieldparameters::~cmzn_fieldparameters()
 	}
 	FE_field_parameters::deaccess(this->feFieldParameters);
 	this->field->clearFieldparameters();
-	cmzn_field::deaccess(&(this->field));
+	cmzn_field::deaccess(this->field);
 }
 
 cmzn_fieldparameters *cmzn_fieldparameters::create(cmzn_field *fieldIn)

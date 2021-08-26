@@ -1584,7 +1584,7 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
 						field_name, field->getName());
 				}
-				cmzn_field::deaccess(&field);
+				cmzn_field::deaccess(field);
 			}
 		}
 	}

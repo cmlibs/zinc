@@ -125,7 +125,7 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_material **materialAddress);
+	static void deaccess(cmzn_material*& material);
 
 	int setName(const char *newName);
 };

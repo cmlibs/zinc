@@ -20,7 +20,7 @@ GL rendering calls - API specific.
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.hpp"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/mcubes.h"
 #include "graphics/light.hpp"

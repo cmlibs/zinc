@@ -475,8 +475,15 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 			if (sourcesCount == 2 && typeSettings["Mesh"].isString() && typeSettings["SearchMode"].isString())
 			{
 				OpenCMISS::Zinc::Mesh mesh = fieldmodule.findMeshByName(typeSettings["Mesh"].asCString());
-				enum cmzn_field_find_mesh_location_search_mode searchMode =
-					cmzn_field_find_mesh_location_search_mode_enum_from_string(typeSettings["SearchMode"].asCString());
+				OpenCMISS::Zinc::FieldFindMeshLocation::SearchMode searchMode;
+				// migrate legacy non-standard SearchMode names to enums
+				const char *searchModeName = typeSettings["SearchMode"].asCString();
+				if (0 == strcmp("FIND_EXACT", searchModeName))
+					searchMode = OpenCMISS::Zinc::FieldFindMeshLocation::SEARCH_MODE_EXACT;
+				else if (0 == strcmp("FIND_NEAREST", searchModeName))
+					searchMode = OpenCMISS::Zinc::FieldFindMeshLocation::SEARCH_MODE_NEAREST;
+				else
+					searchMode = OpenCMISS::Zinc::FieldFindMeshLocation::SearchModeEnumFromString(searchModeName);
 				OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation =
 					fieldmodule.createFieldFindMeshLocation(sourcefields[0], sourcefields[1], mesh);
 				if (typeSettings["SearchMesh"].isString())
@@ -484,8 +491,7 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 					OpenCMISS::Zinc::Mesh searchMesh = fieldmodule.findMeshByName(typeSettings["SearchMesh"].asCString());
 					fieldFindMeshLocation.setSearchMesh(searchMesh);
 				}
-				fieldFindMeshLocation.setSearchMode(
-					static_cast<OpenCMISS::Zinc::FieldFindMeshLocation::SearchMode>(searchMode));
+				fieldFindMeshLocation.setSearchMode(searchMode);
 				field = fieldFindMeshLocation;
 			}
 			delete[] sourcefields;
@@ -680,11 +686,10 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 	{
 		// check if coordinate system should be exported
 		bool exportCoordinateSystemType = false;
-		enum cmzn_field_coordinate_system_type coordinateSystemType =
-			cmzn_field_get_coordinate_system_type(field.getId());
+		OpenCMISS::Zinc::Field::CoordinateSystemType coordinateSystemType = field.getCoordinateSystemType();
 		const bool coordinateSystemUsesFocus =
-			(coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL) ||
-			(coordinateSystemType == CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL);
+			(coordinateSystemType == OpenCMISS::Zinc::Field::COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL) ||
+			(coordinateSystemType == OpenCMISS::Zinc::Field::COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL);
 
 		if ((type == CMZN_FIELD_TYPE_FINITE_ELEMENT ||
 			type == CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION ||
@@ -696,8 +701,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		else if (numberOfSourceFields > 0)
 		{
 			OpenCMISS::Zinc::Field sourceField = field.getSourceField(1);
-			enum cmzn_field_coordinate_system_type sourceCoordinateSystemType =
-				cmzn_field_get_coordinate_system_type(sourceField.getId());
+			OpenCMISS::Zinc::Field::CoordinateSystemType sourceCoordinateSystemType = sourceField.getCoordinateSystemType();
 			if ((sourceCoordinateSystemType != coordinateSystemType) ||
 				(coordinateSystemUsesFocus &&
 					(field.getCoordinateSystemFocus() != sourceField.getCoordinateSystemFocus())))
@@ -707,8 +711,7 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		}
 		if (exportCoordinateSystemType)
 		{
-			char *system_string =
-				cmzn_field_coordinate_system_type_enum_to_string(coordinateSystemType);
+			char *system_string = field.CoordinateSystemTypeEnumToString(coordinateSystemType);
 			fieldSettings["CoordinateSystemType"] = system_string;
 			DEALLOCATE(system_string);
 			if (coordinateSystemUsesFocus)
@@ -814,15 +817,14 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			char *meshName = mesh.getName();
 			OpenCMISS::Zinc::Mesh searchMesh = field.castFindMeshLocation().getSearchMesh();
 			char *searchMeshName = searchMesh.getName();
-			enum cmzn_field_find_mesh_location_search_mode searchMode =
-				static_cast<cmzn_field_find_mesh_location_search_mode>(field.castFindMeshLocation().getSearchMode());
-			char *modeName = cmzn_field_find_mesh_location_search_mode_enum_to_string(searchMode);
+			OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation = field.castFindMeshLocation();
+			char *searchModeName = fieldFindMeshLocation.SearchModeEnumToString(fieldFindMeshLocation.getSearchMode());
 			typeSettings["Mesh"] = meshName;
 			typeSettings["SearchMesh"] = searchMeshName;
-			typeSettings["SearchMode"] = modeName;
+			typeSettings["SearchMode"] = searchModeName;
 			DEALLOCATE(meshName);
 			DEALLOCATE(searchMeshName);
-			DEALLOCATE(modeName);
+			DEALLOCATE(searchModeName);
 		} break;
 		default:
 		{
@@ -881,9 +883,8 @@ void FieldJsonIO::ioEntries(Json::Value &fieldSettings)
 			field.setName(fieldSettings["Name"].asCString());
 		}
 		if (fieldSettings["CoordinateSystemType"].isString())
-			cmzn_field_set_coordinate_system_type(field.getId(),
-				cmzn_field_coordinate_system_type_enum_from_string(
-					fieldSettings["CoordinateSystemType"].asCString()));
+			field.setCoordinateSystemType(field.CoordinateSystemTypeEnumFromString(
+				fieldSettings["CoordinateSystemType"].asCString()));
 		if (fieldSettings["CoordinateSystemFocus"].isDouble())
 			field.setCoordinateSystemFocus(fieldSettings["CoordinateSystemFocus"].asDouble());
 

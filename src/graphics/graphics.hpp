@@ -30,37 +30,36 @@
 struct cmzn_graphicspointattributes;
 struct cmzn_graphicslineattributes;
 
-struct cmzn_graphics
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Stores one group of settings for a single line/surface/etc. part of the
-finite element group scene.
-==============================================================================*/
+enum cmzn_graphics_change
 {
-	/* position identifier for ordering settings in list */
-	int position;
+	CMZN_GRAPHICS_CHANGE_NONE = 0,
+	CMZN_GRAPHICS_CHANGE_REDRAW = 1,          /**< minor change requiring redraw, e.g. visibility flag toggled */
+	CMZN_GRAPHICS_CHANGE_RECOMPILE = 2,       /**< graphics display list may need to be recompiled */
+	CMZN_GRAPHICS_CHANGE_SELECTION = 3,       /**< change to selected objects */
+	CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD = 4, /**< partial rebuild of graphics object */
+	CMZN_GRAPHICS_CHANGE_FULL_REBUILD = 5,    /**< graphics object needs full rebuild */
+};
 
-	/* scene which owns this graphics */
-	struct cmzn_scene *scene;
+struct cmzn_graphics
+{
+	struct cmzn_scene *scene;  // scene which owns this graphics
+	int position;  // position in scene's list of graphics
 
 	/* name for identifying settings */
 	const char *name;
 
-// 	/* geometry settings */
-// 	/* for all graphics types */
+	/* geometry settings */
+	/* for all graphics types */
 	enum cmzn_graphics_type graphics_type;
 	struct Computed_field *subgroup_field;
+	enum cmzn_scenecoordinatesystem coordinate_system;
 	struct Computed_field *coordinate_field;
 	enum cmzn_graphics_select_mode select_mode;
 	enum cmzn_field_domain_type domain_type;
 
 	/* for 1-D and 2-D elements only */
-	bool exterior;
-	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
-		 2 is xi2=0 etc. */
-	cmzn_element_face_type face;
+	enum cmzn_graphics_boundary_mode boundary_mode;  // whether to show all/boundary/interior etc.
+	cmzn_element_face_type face;  // show faces relative to parent xi, e.g. xi1=0 etc.
 	/* For surfaces only at the moment */
 	struct Computed_field *texture_coordinate_field;
 
@@ -143,9 +142,18 @@ finite element group scene.
 	int selected_graphics_changed;
 	/* flag indicating that this settings needs to be regenerated when time changes */
 	bool timeDependent;
-	enum cmzn_scenecoordinatesystem coordinate_system;
-// 	/* for accessing objects */
-	int access_count;
+
+private:
+	int access_count;  // number of references held externally
+
+	cmzn_graphics(cmzn_graphics_type graphicsTypeIn);
+
+	~cmzn_graphics();
+
+public:
+
+	/** Created with access_count = 1. */
+	static cmzn_graphics *create(cmzn_graphics_type graphicsTypeIn);
 
 	inline cmzn_graphics *access()
 	{
@@ -153,7 +161,35 @@ finite element group scene.
 		return this;
 	}
 
-	static inline int deaccess(cmzn_graphics **graphics_address);
+	static inline void deaccess(cmzn_graphics*& graphics)
+	{
+		if (graphics)
+		{
+			--(graphics->access_count);
+			if (graphics->access_count <= 0)
+				delete graphics;
+			graphics = nullptr;
+		}
+	}
+
+	static inline void reaccess(cmzn_graphics*& graphics, cmzn_graphics *newGraphics)
+	{
+		if (newGraphics)
+			newGraphics->access();
+		if (graphics)
+			deaccess(graphics);
+		graphics = newGraphics;
+	}
+
+	int getAccessCount() const
+	{
+		return this->access_count;
+	}
+
+	/** Call whenever attributes of the graphics have changed to ensure the graphics
+	 * object is invalidated (if needed) or that the minimum rebuild and redraw is
+	 * performed. */
+	void setChange(cmzn_graphics_change change);
 
 	/** Update internal flag to match whether any graphics field, glyph or other
 	  * member is time dependent */
@@ -199,6 +235,14 @@ finite element group scene.
 	{
 		return this->scene;
 	}
+
+	cmzn_graphics_boundary_mode getBoundaryMode() const
+	{
+		return this->boundary_mode;
+	}
+
+	int setBoundaryMode(cmzn_graphics_boundary_mode boundaryModeIn);
+
 };
 
 struct cmzn_graphics_module;
@@ -207,9 +251,11 @@ typedef enum cmzn_graphics_type cmzn_graphics_type_enum;
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_type);
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_boundary_mode);
+
 enum cmzn_graphics_string_details
 {
-  GRAPHICS_STRING_GEOMETRY,
+	GRAPHICS_STRING_GEOMETRY,
 	GRAPHICS_STRING_COMPLETE,
 	GRAPHICS_STRING_COMPLETE_PLUS
 }; /* enum cmzn_graphics_string_details */
@@ -333,14 +379,6 @@ struct cmzn_graphics_field_change_data
 DECLARE_LIST_TYPES(cmzn_graphics);
 
 /***************************************************************************//**
- * Created with access_count = 1.
- */
-struct cmzn_graphics *CREATE(cmzn_graphics)(
-	enum cmzn_graphics_type graphics_type);
-
-int DESTROY(cmzn_graphics)(struct cmzn_graphics **graphicss_address);
-
-/***************************************************************************//**
  * Adds the <graphics> to <list_of_graphics> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
  * last position in the list cause the graphics to be added at its end, with a
@@ -371,11 +409,6 @@ int cmzn_graphics_modify_in_list(struct cmzn_graphics *graphics,
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_graphics);
 PROTOTYPE_LIST_FUNCTIONS(cmzn_graphics);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_graphics,position,int);
-
-int cmzn_graphics::deaccess(cmzn_graphics **graphics_address)
-{
-	return DEACCESS(cmzn_graphics)(graphics_address);
-}
 
 /***************************************************************************//**
  * Returns a string summarising the graphics type, name and subset field.
@@ -699,27 +732,6 @@ int cmzn_graphics_flag_for_full_rebuild(
 enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics *graphics);
 
 struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graphics);
-
-enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
-	const char *string);
-
-char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type);
-
-enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string);
-
-char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type);
-
-enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
-	const char *string);
-
-char *cmzn_graphics_streamlines_track_direction_enum_to_string(
-	enum cmzn_graphics_streamlines_track_direction direction);
-
-enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
-	const char *string);
-
-char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
-	enum cmzn_graphics_streamlines_colour_data_type type);
 
 bool cmzn_graphicspointattributes_contain_surfaces(cmzn_graphicspointattributes_id point_attributes);
 

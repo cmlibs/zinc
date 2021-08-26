@@ -353,10 +353,10 @@ public:
 };
 
 enum cmzn_optimisation_method
-	cmzn_optimisation_method_enum_from_string(const char *string)
+	cmzn_optimisation_method_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_optimisation_method,
-	cmzn_optimisation_method_conversion>(string);
+	cmzn_optimisation_method_conversion>(name);
 }
 
 char *cmzn_optimisation_method_enum_to_string(
@@ -534,10 +534,10 @@ public:
 };
 
 enum cmzn_optimisation_attribute cmzn_optimisation_attribute_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_optimisation_attribute,
-	cmzn_optimisation_attribute_conversion>(string);
+	cmzn_optimisation_attribute_conversion>(name);
 }
 
 char *cmzn_optimisation_attribute_enum_to_string(

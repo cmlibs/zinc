@@ -1357,7 +1357,7 @@ FE_field *EXReader::readField()
 					{
 						return_code = 0;
 					}
-					FE_field::deaccess(&temp_indexer_field);
+					FE_field::deaccess(temp_indexer_field);
 				}
 				if (return_code)
 				{
@@ -1592,7 +1592,7 @@ FE_field *EXReader::readField()
 		{
 			display_message(ERROR_MESSAGE,
 				"EXReader::readField.  Could not create field '%s'", field_name);
-			FE_field::deaccess(&field);
+			FE_field::deaccess(field);
 		}
 	}
 	DEALLOCATE(field_name);
@@ -1906,7 +1906,7 @@ bool EXReader::readNodeHeaderField()
 		{
 			// must switch field
 			mergedField->access();
-			FE_field::deaccess(&field);
+			FE_field::deaccess(field);
 			field = mergedField;
 			mergedField = 0;
 		}
@@ -1948,7 +1948,7 @@ bool EXReader::readNodeHeaderField()
 	}
 	if (componentName)
 		DEALLOCATE(componentName);
-	FE_field::deaccess(&field);
+	FE_field::deaccess(field);
 	return result;
 }
 
@@ -2713,7 +2713,7 @@ bool EXReader::readElementHeaderField()
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Field %s appears more than once in header.  %s",
 				field->getName(), this->getFileLocation());
-			FE_field::deaccess(&field);
+			FE_field::deaccess(field);
 			return false;
 		}
 	}
@@ -3466,7 +3466,7 @@ bool EXReader::readElementHeaderField()
 		if (mergedField)
 		{
 			mergedField->access();
-			FE_field::deaccess(&field);
+			FE_field::deaccess(field);
 			field = mergedField;
 			mergedField = 0;
 		}
@@ -3525,7 +3525,7 @@ bool EXReader::readElementHeaderField()
 	}
 	for (int c = 0; c < componentCount; ++c)
 		cmzn_elementfieldtemplate::deaccess(componentEFTs[c]);
-	FE_field::deaccess(&field);
+	FE_field::deaccess(field);
 	return result;
 }
 

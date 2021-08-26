@@ -86,7 +86,17 @@ public:
 		return cmzn_elementbasis_get_dimension(id);
 	}
 
-	enum FunctionType getFunctionType(int chartComponent)
+	static FunctionType FunctionTypeEnumFromString(const char *name)
+	{
+		return static_cast<FunctionType>(cmzn_elementbasis_function_type_enum_from_string(name));
+	}
+
+	static char *FunctionTypeEnumToString(FunctionType type)
+	{
+		return cmzn_elementbasis_function_type_enum_to_string(static_cast<cmzn_elementbasis_function_type>(type));
+	}
+
+	FunctionType getFunctionType(int chartComponent)
 	{
 		return static_cast<FunctionType>(cmzn_elementbasis_get_function_type(id, chartComponent));
 	}

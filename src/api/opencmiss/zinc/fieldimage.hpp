@@ -247,7 +247,7 @@ public:
 
 	PixelFormat getPixelFormat()
 	{
-		return static_cast<enum PixelFormat>(cmzn_field_image_get_pixel_format(getDerivedId()));
+		return static_cast<PixelFormat>(cmzn_field_image_get_pixel_format(getDerivedId()));
 	}
 
 	int setPixelFormat(PixelFormat imagePixelFormat)

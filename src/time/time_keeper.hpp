@@ -53,9 +53,15 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_timekeeper **time_keeper_address)
+	static inline void deaccess(cmzn_timekeeper*& timekeeper)
 	{
-		return DEACCESS(cmzn_timekeeper)(time_keeper_address);
+		if (timekeeper)
+		{
+			--(timekeeper->access_count);
+			if (timekeeper->access_count <= 0)
+				delete timekeeper;
+			timekeeper = nullptr;
+		}
 	}
 
 	bool setName(const char *name_in);
@@ -104,7 +110,7 @@ private:
 
 	~cmzn_timekeepermodule()
 	{
-		cmzn_timekeeper::deaccess(&(this->default_timekeeper));
+		cmzn_timekeeper::deaccess(this->default_timekeeper);
 	}
 
 public:

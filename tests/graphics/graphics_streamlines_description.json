@@ -12,7 +12,7 @@
          "Material" : "default",
          "RenderLineWidth" : 1,
          "RenderPointSize" : 1,
-         "RenderPolygonMode" : "RENDER_POLYGON_SHADED",
+         "RenderPolygonMode" : "SHADED",
          "SamplingAttributes" : {
          	"DensityField" : "my_density",
             "ElementPointSamplingMode" : "SET_LOCATION",

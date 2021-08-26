@@ -104,7 +104,7 @@ char *cmzn_sceneviewer_projection_mode_enum_to_string(
  * Function to convert string to projection_mode enum.
  */
 enum cmzn_sceneviewer_projection_mode
-	cmzn_sceneviewer_projection_mode_enum_from_string(const char *string);
+	cmzn_sceneviewer_projection_mode_enum_from_string(const char *name);
 
 /**
  * Function to convert transparency_mode enum to string.
@@ -116,7 +116,7 @@ char *cmzn_sceneviewer_transparency_mode_enum_to_string(
  * Function to convert string to transparency_mode enum.
  */
 enum cmzn_sceneviewer_transparency_mode
-	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *string);
+	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *name);
 
 
 

@@ -199,7 +199,7 @@ public:
 
 	inline Fieldsmoothing createFieldsmoothing();
 
-	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
+	Elementbasis createElementbasis(int dimension, Elementbasis::FunctionType functionType)
 	{
 		return Elementbasis(cmzn_fieldmodule_create_elementbasis(
 			id, dimension, static_cast<cmzn_elementbasis_function_type>(functionType)));

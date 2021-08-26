@@ -196,6 +196,36 @@ public:
 		return cmzn_element_set_scale_factors(this->id, eft.getId(), valuesCount, valuesIn);
 	}
 
+	static FaceType FaceTypeEnumFromString(const char *name)
+	{
+		return static_cast<FaceType>(cmzn_element_face_type_enum_from_string(name));
+	}
+
+	static char *FaceTypeEnumToString(FaceType type)
+	{
+		return cmzn_element_face_type_enum_to_string(static_cast<cmzn_element_face_type>(type));
+	}
+
+	static PointSamplingMode PointSamplingModeEnumFromString(const char *name)
+	{
+		return static_cast<PointSamplingMode>(cmzn_element_point_sampling_mode_enum_from_string(name));
+	}
+
+	static char *PointSamplingModeEnumToString(PointSamplingMode mode)
+	{
+		return cmzn_element_point_sampling_mode_enum_to_string(static_cast<cmzn_element_point_sampling_mode>(mode));
+	}
+
+	static ShapeType ShapeTypeEnumFromString(const char *name)
+	{
+		return static_cast<ShapeType>(cmzn_element_shape_type_enum_from_string(name));
+	}
+
+	static char *ShapeTypeEnumToString(ShapeType type)
+	{
+		return cmzn_element_shape_type_enum_to_string(static_cast<cmzn_element_shape_type>(type));
+	}
+
 	enum ShapeType getShapeType()
 	{
 		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));

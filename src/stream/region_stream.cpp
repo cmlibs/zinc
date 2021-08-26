@@ -745,16 +745,16 @@ cmzn_region_id cmzn_streaminformation_region_get_root_region(
 }
 
 enum cmzn_streaminformation_region_attribute
-	cmzn_streaminformation_region_attribute_enum_from_string(const char *string)
+	cmzn_streaminformation_region_attribute_enum_from_string(const char *name)
 {
 	enum cmzn_streaminformation_region_attribute attribute =
 		(cmzn_streaminformation_region_attribute)0;
-	if (string)
+	if (name)
 	{
 		const char *str[] = {"TIME"};
 		for (unsigned int i = 0; i < 1; i ++)
 		{
-			if (!strcmp(str[i], string))
+			if (!strcmp(str[i], name))
 			{
 				attribute = (cmzn_streaminformation_region_attribute)(i + 1);
 				break;

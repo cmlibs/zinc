@@ -19,7 +19,7 @@
 #include "general/mystring.h"
 #include "general/manager_private.h"
 #include "graphics/element_point_ranges.h"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_module.hpp"
 #include "graphics/scenefilter.hpp"
 #include "region/cmiss_region.hpp"
@@ -47,6 +47,26 @@ inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_scenefilter)(
 	cmzn_scenefilter_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
+}
+
+// Custom version handling is_managed_flag.
+void cmzn_scenefilter::deaccess(cmzn_scenefilter*& scenefilter)
+{
+	if (scenefilter)
+	{
+		(scenefilter->access_count)--;
+		if (scenefilter->access_count <= 0)
+		{
+			delete scenefilter;
+		}
+		else if ((!scenefilter->is_managed_flag) && (scenefilter->manager) &&
+			((1 == scenefilter->access_count) || ((2 == scenefilter->access_count) &&
+			(MANAGER_CHANGE_NONE(cmzn_scenefilter) != scenefilter->manager_change_status))))
+		{
+			REMOVE_OBJECT_FROM_MANAGER(cmzn_scenefilter)(scenefilter, scenefilter->manager);
+		}
+		scenefilter = nullptr;
+	}
 }
 
 struct cmzn_scenefilter_operator : public cmzn_scenefilter
@@ -450,7 +470,12 @@ cmzn_scenefilter *cmzn_scenefilter_access(cmzn_scenefilter *filter)
 
 int cmzn_scenefilter_destroy(cmzn_scenefilter **filter_address)
 {
-	return DEACCESS(cmzn_scenefilter)(filter_address);
+	if (filter_address)
+	{
+		cmzn_scenefilter::deaccess(*filter_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 namespace {
@@ -486,78 +511,36 @@ DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_scenefilter)
 
 } /* anonymous namespace */
 
-DECLARE_ACCESS_OBJECT_FUNCTION(cmzn_scenefilter)
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_scenefilter)
+{
+	if (object)
+		return object->access();
+	return nullptr;
+}
 
-/***************************************************************************//**
- * Custom version handling is_managed_flag.
- */
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_scenefilter)
 {
-	int return_code;
-	cmzn_scenefilter *object;
-
-	ENTER(DEACCESS(cmzn_scenefilter));
-	if (object_address && (object = *object_address))
+	if (object_address)
 	{
-		(object->access_count)--;
-		if (object->access_count <= 0)
-		{
-			delete object;
-			return_code = 1;
-		}
-		else if ((!object->is_managed_flag) && (object->manager) &&
-			((1 == object->access_count) || ((2 == object->access_count) &&
-				(MANAGER_CHANGE_NONE(cmzn_scenefilter) != object->manager_change_status))))
-		{
-			return_code =
-				REMOVE_OBJECT_FROM_MANAGER(cmzn_scenefilter)(object, object->manager);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*object_address = (struct cmzn_scenefilter *)NULL;
+		cmzn_scenefilter::deaccess(*object_address);
+		return 1;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DEACCESS(cmzn_scenefilter) */
+	return 0;
+}
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_scenefilter)
 {
-	int return_code;
-
-	ENTER(REACCESS(cmzn_scenefilter));
 	if (object_address)
 	{
-		return_code = 1;
 		if (new_object)
-		{
-			/* access the new object */
-			(new_object->access_count)++;
-		}
+			new_object->access();
 		if (*object_address)
-		{
-			/* deaccess the current object */
-			DEACCESS(cmzn_scenefilter)(object_address);
-		}
-		/* point to the new object */
+			cmzn_scenefilter::deaccess(*object_address);
 		*object_address = new_object;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(cmzn_scenefilter).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(cmzn_scenefilter) */
+	return 0;
+}
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_scenefilter)
 

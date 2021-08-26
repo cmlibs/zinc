@@ -70,41 +70,41 @@ extern "C" {
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_font_typeface_type
-	cmzn_font_typeface_type_enum_from_string(const char *string);
+	cmzn_font_typeface_type_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param system  enum to be converted into string
+ * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_font_typeface_type_enum_to_string(
-	enum cmzn_font_typeface_type typeface_type);
+	enum cmzn_font_typeface_type type);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_font_render_type
-	cmzn_font_render_type_enum_from_string(const char *string);
+	cmzn_font_render_type_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param system  enum to be converted into string
+ * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_font_render_type_enum_to_string(
-	enum cmzn_font_render_type render_type);
+	enum cmzn_font_render_type type);
 
 #ifdef __cplusplus
 }

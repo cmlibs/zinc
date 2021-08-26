@@ -167,7 +167,16 @@ public:
 		return this;
 	}
 
-	static int deaccess(FE_field **fieldAddress);
+	static void deaccess(FE_field*& field)
+	{
+		if (field)
+		{
+			--(field->access_count);
+			if (field->access_count <= 0)
+				delete field;
+			field = nullptr;
+		}
+	}
 
 	int getAccessCount() const
 	{

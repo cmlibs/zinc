@@ -304,7 +304,41 @@ int DESTROY(cmzn_timekeeper)(struct cmzn_timekeeper **timekeeper_address)
 	return (return_code);
 }
 
-DECLARE_OBJECT_FUNCTIONS(cmzn_timekeeper)
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_timekeeper)
+{
+	if (object)
+		return object->access();
+	return nullptr;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_timekeeper)
+{
+	if (object_address)
+	{
+		cmzn_timekeeper::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_timekeeper)
+{
+	if (object_address)
+	{
+		if (new_object)
+		{
+			new_object->access();
+		}
+		if (*object_address)
+		{
+			cmzn_timekeeper::deaccess(*object_address);
+		}
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
 
 cmzn_timenotifier_id cmzn_timekeeper_create_timenotifier_regular(
 	cmzn_timekeeper_id timekeeper, double update_frequency, double time_offset)
@@ -328,12 +362,17 @@ cmzn_timekeeper_id cmzn_timekeeper_access(cmzn_timekeeper_id timekeeper)
 {
 	if (timekeeper)
 		return timekeeper->access();
-	return 0;
+	return nullptr;
 }
 
 int cmzn_timekeeper_destroy(cmzn_timekeeper_id *timekeeper_address)
 {
-	return (DEACCESS(cmzn_timekeeper)(timekeeper_address));
+	if (timekeeper_address)
+	{
+		cmzn_timekeeper::deaccess(*timekeeper_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_timekeeper_get_maximum_time(cmzn_timekeeper_id timekeeper)

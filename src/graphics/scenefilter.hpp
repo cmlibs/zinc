@@ -87,6 +87,14 @@ public:
 		DEALLOCATE(name);
 	}
 
+	inline cmzn_scenefilter *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static void deaccess(cmzn_scenefilter*& scenefilter);
+
 	virtual bool match(struct cmzn_graphics *graphics) = 0;
 
 	bool setName(const char *name_in)
@@ -132,12 +140,6 @@ public:
 		return true;
 	}
 
-	inline cmzn_scenefilter *access()
-	{
-		++access_count;
-		return this;
-	}
-
 	enum cmzn_scenefilter_type getType()
 	{
 		return filter_type;
@@ -178,11 +180,6 @@ public:
 	virtual bool depends_on_filter(const cmzn_scenefilter *other_filter) const
 	{
 		return (other_filter == this);
-	}
-
-	static inline int deaccess(cmzn_scenefilter **scenefilter_address)
-	{
-		return DEACCESS(cmzn_scenefilter)(scenefilter_address);
 	}
 };
 

@@ -434,10 +434,10 @@ int cmzn_streaminformation_scene_set_scenefilter(
 
 enum cmzn_streaminformation_scene_io_format
 	cmzn_streaminformation_scene_io_format_enum_from_string(
-		const char *string)
+		const char *name)
 {
 	return string_to_enum<enum cmzn_streaminformation_scene_io_format,
-		cmzn_streaminformation_scene_io_format_conversion>(string);
+		cmzn_streaminformation_scene_io_format_conversion>(name);
 }
 
 char *cmzn_streaminformation_scene_io_format_enum_to_string(

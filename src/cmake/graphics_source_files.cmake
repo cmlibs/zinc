@@ -69,7 +69,7 @@ SET( GRAPHICS_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/spectrum_json_io.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/description_io/tessellation_json_io.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/auxiliary_graphics_types.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/graphics.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/graphics/graphics.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/graphics_module.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/graphics/scene.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/stream/scene_stream.hpp

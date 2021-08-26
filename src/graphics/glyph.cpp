@@ -36,7 +36,7 @@
 #include "graphics/glyph.hpp"
 #include "graphics/glyph_axes.hpp"
 #include "graphics/glyph_circular.hpp"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/spectrum.h"
@@ -50,12 +50,19 @@ Module functions
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_glyph)
 {
-	return object->access();
+	if (object)
+		return object->access();
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_glyph)
 {
-	return cmzn_glyph::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_glyph::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_glyph)
@@ -65,7 +72,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_glyph)
 		if (new_object)
 			new_object->access();
 		if (*object_address)
-			cmzn_glyph::deaccess(object_address);
+			cmzn_glyph::deaccess(*object_address);
 		*object_address = new_object;
 		return 1;
 	}
@@ -93,6 +100,23 @@ cmzn_glyph::~cmzn_glyph()
 {
 	if (name)
 		DEALLOCATE(name);
+}
+
+void cmzn_glyph::deaccess(cmzn_glyph*& glyph)
+{
+	if (glyph)
+	{
+		--(glyph->access_count);
+		if (glyph->access_count <= 0)
+			delete glyph;
+		else if ((!glyph->isManagedFlag) && (glyph->manager) &&
+			((1 == glyph->access_count) || ((2 == glyph->access_count) &&
+			(MANAGER_CHANGE_NONE(cmzn_glyph) != glyph->manager_change_status))))
+		{
+			 REMOVE_OBJECT_FROM_MANAGER(cmzn_glyph)(glyph, glyph->manager);
+		}
+		glyph = nullptr;
+	}
 }
 
 int cmzn_glyph::setName(const char *newName)
@@ -755,9 +779,9 @@ public:
 	}
 };
 
-enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string)
+enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(string);
+	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(name);
 }
 
 char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode)
@@ -856,9 +880,9 @@ public:
 	}
 };
 
-enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string)
+enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(name);
 }
 
 char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type)
@@ -1843,7 +1867,7 @@ int cmzn_glyph_destroy(cmzn_glyph_id *glyph_address)
 {
 	if (glyph_address)
 	{
-		cmzn_glyph::deaccess(glyph_address);
+		cmzn_glyph::deaccess(*glyph_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -2163,7 +2187,7 @@ bool cmzn_glyphmodule::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_
 		glyph->setName(name);
 		glyph->setManaged(true);
 		this->addGlyph(glyph);
-		cmzn_glyph::deaccess(&glyph);
+		cmzn_glyph::deaccess(glyph);
 	}
 	else
 	{

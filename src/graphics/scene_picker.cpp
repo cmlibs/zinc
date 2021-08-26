@@ -504,7 +504,9 @@ cmzn_graphics_id cmzn_scenepicker::getNearestGraphics(enum cmzn_scenepicker_obje
 						{
 							current_nearest = nearest;
 							if (graphics != nearest_graphics)
-								REACCESS(cmzn_graphics)(&nearest_graphics, graphics);
+							{
+								cmzn_graphics::reaccess(nearest_graphics, graphics);
+							}
 						}
 						cmzn_graphics_destroy(&graphics);
 						cmzn_scene_destroy(&picked_scene);

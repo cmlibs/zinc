@@ -473,31 +473,23 @@ public:
 	}
 
 	/** deaccess handling is_managed_flag */
-	static inline int deaccess(cmzn_tessellation **object_address)
+	static inline void deaccess(cmzn_tessellation*& tessellation)
 	{
-		int return_code = 1;
-		cmzn_tessellation *object;
-		if (object_address && (object = *object_address))
+		if (tessellation)
 		{
-			(object->access_count)--;
-			if (object->access_count <= 0)
+			(tessellation->access_count)--;
+			if (tessellation->access_count <= 0)
 			{
-				delete object;
-				object = 0;
+				delete tessellation;
 			}
-			else if ((!object->is_managed_flag) && (object->manager) &&
-				((1 == object->access_count) || ((2 == object->access_count) &&
-					(MANAGER_CHANGE_NONE(cmzn_tessellation) != object->manager_change_status))))
+			else if ((!tessellation->is_managed_flag) && (tessellation->manager) &&
+				((1 == tessellation->access_count) || ((2 == tessellation->access_count) &&
+				(MANAGER_CHANGE_NONE(cmzn_tessellation) != tessellation->manager_change_status))))
 			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_tessellation)(object, object->manager);
+				REMOVE_OBJECT_FROM_MANAGER(cmzn_tessellation)(tessellation, tessellation->manager);
 			}
-			*object_address = static_cast<cmzn_tessellation *>(0);
+			tessellation = nullptr;
 		}
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
 	}
 
 }; /* struct cmzn_tessellation */
@@ -600,12 +592,17 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 {
 	if (object)
 		return object->access();
-	return 0;
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 {
-	return cmzn_tessellation::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_tessellation::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_tessellation)
@@ -618,7 +615,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_tessellation)
 		}
 		if (*object_address)
 		{
-			cmzn_tessellation::deaccess(object_address);
+			cmzn_tessellation::deaccess(*object_address);
 		}
 		*object_address = new_object;
 		return 1;
@@ -981,13 +978,18 @@ struct cmzn_tessellation *cmzn_tessellation_create_private()
 cmzn_tessellation_id cmzn_tessellation_access(cmzn_tessellation_id tessellation)
 {
 	if (tessellation)
-		return ACCESS(cmzn_tessellation)(tessellation);
-	return 0;
+		return tessellation->access();
+	return nullptr;
 }
 
 int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_address)
 {
-	return DEACCESS(cmzn_tessellation)(tessellation_address);
+	if (tessellation_address)
+	{
+		cmzn_tessellation::deaccess(*tessellation_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation)

@@ -156,17 +156,17 @@ ZINC_API int cmzn_graphics_set_render_point_size(cmzn_graphics_id graphics,
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name.
- * @return  The enumeration matching the string, or MODE_INVALID if not found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_graphics_render_polygon_mode
-	cmzn_graphics_render_polygon_mode_enum_from_string(const char *string);
+	cmzn_graphics_render_polygon_mode_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param type  enum to be converted into string
+ * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_graphics_render_polygon_mode_enum_to_string(
@@ -193,6 +193,26 @@ ZINC_API enum cmzn_graphics_render_polygon_mode cmzn_graphics_get_render_polygon
  */
 ZINC_API int cmzn_graphics_set_render_polygon_mode(cmzn_graphics_id graphics,
 	enum cmzn_graphics_render_polygon_mode render_polygon_mode);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_graphics_select_mode
+	cmzn_graphics_select_mode_enum_from_string(const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param mode  enum to be converted into string
+ * @return  an allocated string of the short name of the enum.
+ */
+ZINC_API char *cmzn_graphics_select_mode_enum_to_string(
+	enum cmzn_graphics_select_mode mode);
 
 /**
  * Gets the mode controlling how graphics are drawn depending on whether the
@@ -371,21 +391,50 @@ ZINC_API int cmzn_graphics_set_visibility_flag(cmzn_graphics_id graphics,
 	bool visibility_flag);
 
 /**
- * Gets flag to generate graphics for exterior faces or lines only.
+ * Convert enumeration name string into value if it exactly matches name for a
+ * member of the enum.
+ * @see cmzn_graphics_boundary_mode_enum_to_string
  *
- * @param graphics  The graphics to query.
- * @return  Boolean true if the exterior flag is set, otherwise false.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
-ZINC_API bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics);
+ZINC_API enum cmzn_graphics_boundary_mode
+	cmzn_graphics_boundary_mode_enum_from_string(const char *name);
 
 /**
- * Sets flag to generate graphics for exterior faces or lines only.
+ * Return allocated string representing the enumerated value.
+ * The name contains only the unique part of the enumeration, e.g.
+ * "SUBGROUP_INTERIOR", not "BOUNDARY_MODE_SUBGROUP_INTERIOR".
+ * INVALID or undefined values return a null string.
+ *
+ * @param mode  Enumerated value to convert into string.
+ * @return  On success, allocated string containing the enumerated value name
+ * which caller must free with cmzn_deallocate, or null string on failure.
+ */
+ZINC_API char *cmzn_graphics_boundary_mode_enum_to_string(
+	enum cmzn_graphics_boundary_mode mode);
+
+/**
+ * Get boundary mode controlling whether showing graphics only on boundary,
+ * interior etc.
+ *
+ * @param graphics  The graphics to query.
+ * @return  The boundary mode of the graphics, or BOUNDARY_MODE_INVALID if
+ * invalid graphics supplied.
+ */
+ZINC_API enum cmzn_graphics_boundary_mode cmzn_graphics_get_boundary_mode(
+	cmzn_graphics_id graphics);
+
+/**
+ * Set boundary mode controlling whether showing graphics only on boundary,
+ * interior etc.
  *
  * @param graphics  The graphics to modify.
- * @param exterior  New boolean value: true to set, false to clear.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @param boundary_mode  New boundary mode.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior);
+ZINC_API int cmzn_graphics_set_boundary_mode(cmzn_graphics_id graphics,
+	enum cmzn_graphics_boundary_mode boundary_mode);
 
 /**
  * Gets the element face type the graphics is limited to generating graphics for.
@@ -409,6 +458,32 @@ ZINC_API enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_gr
  */
 ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
 	enum cmzn_element_face_type face_type);
+
+/**
+ * Query if generating face or line graphics on the exterior boundary of
+ * the mesh only.
+ * Deprecated; just returns whether boundary mode is BOUNDARY_MODE_BOUNDARY.
+ * @deprecated
+ * @see cmzn_graphics_get_boundary_mode
+ *
+ * @param graphics  The graphics to query.
+ * @return  Boolean true if showing graphics on the mesh boundary only,
+ * otherwise false.
+ */
+ZINC_API bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics);
+
+/**
+ * Set to generate face or line graphics on the exterior boundary of the mesh
+ * only.
+ * Deprecated; just sets boundary mode to BOUNDARY_MODE_BOUNDARY.
+ * @deprecated
+ * @see cmzn_graphics_set_boundary_mode
+ *
+ * @param graphics  The graphics to modify.
+ * @param exterior  New boolean value: true to set, false to clear.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior);
 
 /**
  * Get the scene owning this graphics.
@@ -442,10 +517,10 @@ ZINC_API int cmzn_graphics_set_scenecoordinatesystem(cmzn_graphics_id graphics,
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
-ZINC_API enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *string);
+ZINC_API enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
@@ -736,6 +811,27 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_streamlines_base_cast(cmzn_graphics
 ZINC_API int cmzn_graphics_streamlines_destroy(cmzn_graphics_streamlines_id *streamlines_address);
 
 /**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_graphics_streamlines_colour_data_type
+	cmzn_graphics_streamlines_colour_data_type_enum_from_string(
+		const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
+	enum cmzn_graphics_streamlines_colour_data_type type);
+
+/**
  * Gets the type of data visualised with spectrum colour on the streamlines.
  *
  * @param streamlines  The streamlines graphics to query.
@@ -785,11 +881,31 @@ ZINC_API int cmzn_graphics_streamlines_set_stream_vector_field(
 	cmzn_field_id stream_vector_field);
 
 /**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_graphics_streamlines_track_direction
+	cmzn_graphics_streamlines_track_direction_enum_from_string(
+		const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param direction  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *cmzn_graphics_streamlines_track_direction_enum_to_string(
+	enum cmzn_graphics_streamlines_track_direction direction);
+
+/**
  * Gets the direction in which streamlines are tracked.
  *
  * @param streamlines  The streamlines graphics to query.
- * @return  The current tracking direction, or
- * CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_INVALID on error.
+ * @return  The current tracking direction, or INVALID on error.
  */
 ZINC_API enum cmzn_graphics_streamlines_track_direction
 	cmzn_graphics_streamlines_get_track_direction(
@@ -1000,6 +1116,26 @@ ZINC_API int cmzn_graphicslineattributes_get_scale_factors(
 ZINC_API int cmzn_graphicslineattributes_set_scale_factors(
 	cmzn_graphicslineattributes_id line_attributes, int number,
 	const double *scale_factors);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_graphicslineattributes_shape_type
+	cmzn_graphicslineattributes_shape_type_enum_from_string(const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string which stored the short name of the enum.
+ */
+ZINC_API char *cmzn_graphicslineattributes_shape_type_enum_to_string(
+	enum cmzn_graphicslineattributes_shape_type type);
 
 /**
  * Gets the shape or profile of graphics generated for lines.

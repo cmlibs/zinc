@@ -1205,9 +1205,9 @@ int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template)
 }
 
 enum cmzn_node_value_label cmzn_node_value_label_enum_from_string(
-	const char *string)
+	const char *name)
 {
-	return string_to_enum<enum cmzn_node_value_label, cmzn_node_value_label_conversion>(string);
+	return string_to_enum<enum cmzn_node_value_label, cmzn_node_value_label_conversion>(name);
 }
 
 char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label label)

@@ -13,6 +13,7 @@
 #include <opencmiss/zinc/glyph.hpp>
 #include <opencmiss/zinc/spectrum.hpp>
 
+#include "utilities/testenum.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "test_resources.h"
 
@@ -124,4 +125,19 @@ TEST(ZincGlyphmodulenotifier, changeCallback)
 	EXPECT_FALSE(colourBarGlyph.isValid());
 	result = callback.getChangeSummary();
 	EXPECT_EQ(Glyph::CHANGE_FLAG_REMOVE, result);
+}
+
+TEST(ZincGlyph, RepeatModeEnum)
+{
+	const char *enumNames[5] = { nullptr, "NONE", "AXES_2D", "AXES_3D", "MIRROR" };
+	testEnum(5, enumNames, Glyph::RepeatModeEnumToString, Glyph::RepeatModeEnumFromString);
+}
+
+TEST(ZincGlyph, ShapeTypeEnum)
+{
+	const char *enumNames[26] = { nullptr, "NONE",  "ARROW", "ARROW_SOLID", "AXIS", "AXIS_SOLID",
+		"CONE", "CONE_SOLID", "CROSS", "CUBE_SOLID", "CUBE_WIREFRAME", "CYLINDER", "CYLINDER_SOLID",
+		"DIAMOND", "LINE", "POINT", "SHEET", "SPHERE", "AXES", "AXES_123", "AXES_XYZ" ,
+		"AXES_COLOUR", "AXES_SOLID", "AXES_SOLID_123", "AXES_SOLID_XYZ", "AXES_SOLID_COLOUR" };
+	testEnum(26, enumNames, Glyph::ShapeTypeEnumToString, Glyph::ShapeTypeEnumFromString);
 }

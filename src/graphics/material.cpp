@@ -170,35 +170,23 @@ Module functions
 ----------------
 */
 
-int cmzn_material::deaccess(cmzn_material **materialAddress)
+void cmzn_material::deaccess(cmzn_material*& material)
 {
-	int return_code;
-	struct cmzn_material *material;
-	if (materialAddress && (material = *materialAddress))
+	if (material)
 	{
 		--(material->access_count);
 		if (material->access_count <= 0)
 		{
 			DESTROY(cmzn_material)(&material);
-			return_code = 1;
 		}
 		else if ((!material->isManagedFlag) && (material->manager) &&
 			((1 == material->access_count) || ((2 == material->access_count) &&
 			(MANAGER_CHANGE_NONE(cmzn_material) != material->manager_change_status))))
 		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_material)(material, material->manager);
+			REMOVE_OBJECT_FROM_MANAGER(cmzn_material)(material, material->manager);
 		}
-		else
-		{
-			return_code = 1;
-		}
-		*materialAddress = 0;
+		material = nullptr;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
 }
 
 int cmzn_material::setName(const char *newName)
@@ -242,12 +230,19 @@ int cmzn_material::setName(const char *newName)
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_material)
 {
-	return object->access();
+	if (object)
+		return object->access();
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_material)
 {
-	return cmzn_material::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_material::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_material)
@@ -257,7 +252,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_material)
 		if (new_object)
 			new_object->access();
 		if (*object_address)
-			cmzn_material::deaccess(object_address);
+			cmzn_material::deaccess(*object_address);
 		*object_address = new_object;
 		return 1;
 	}
@@ -615,13 +610,13 @@ cmzn_materialmodule* cmzn_materialmodule::create()
 	if (defaultMaterial)
 	{
 		materialmodule->setDefaultMaterial(defaultMaterial);
-		cmzn_material::deaccess(&defaultMaterial);
+		cmzn_material::deaccess(defaultMaterial);
 	}
 	cmzn_material *defaultSelectedMaterial = defaultSelectedMaterialDefinition.defineMaterial(materialmodule);
 	if (defaultSelectedMaterial)
 	{
 		materialmodule->setDefaultSelectedMaterial(defaultSelectedMaterial);
-		cmzn_material::deaccess(&defaultSelectedMaterial);
+		cmzn_material::deaccess(defaultSelectedMaterial);
 	}
 	materialmodule->endChange();
 
@@ -766,7 +761,7 @@ void cmzn_materialmodule::defineStandardMaterials()
 	for (int i = 0; i < standardMaterialCount; ++i)
 	{
 		cmzn_material *material = standardMaterialDefinitions[i].defineMaterial(this);
-		cmzn_material::deaccess(&material);
+		cmzn_material::deaccess(material);
 	}
 	this->endChange();
 }
@@ -3752,7 +3747,7 @@ int cmzn_material_destroy(cmzn_material_id *material_address)
 {
 	if (material_address)
 	{
-		cmzn_material::deaccess(material_address);
+		cmzn_material::deaccess(*material_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -4028,10 +4023,10 @@ public:
 };
 
 enum cmzn_material_attribute cmzn_material_attribute_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_material_attribute,
-	cmzn_material_attribute_conversion>(string);
+	cmzn_material_attribute_conversion>(name);
 }
 
 char *cmzn_material_attribute_enum_to_string(

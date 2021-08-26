@@ -379,17 +379,17 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mesh(
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_field_find_mesh_location_search_mode
-	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *string);
+	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
- * @param format  enum to be converted into string
+ * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_field_find_mesh_location_search_mode_enum_to_string(

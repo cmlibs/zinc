@@ -7663,10 +7663,10 @@ public:
 };
 
 enum cmzn_sceneviewer_projection_mode
-	cmzn_sceneviewer_projection_mode_enum_from_string(const char *string)
+	cmzn_sceneviewer_projection_mode_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_sceneviewer_projection_mode,
-		cmzn_sceneviewer_projection_mode_conversion>(string);
+		cmzn_sceneviewer_projection_mode_conversion>(name);
 }
 
 char *cmzn_sceneviewer_projection_mode_enum_to_string(
@@ -7701,10 +7701,10 @@ public:
 };
 
 enum cmzn_sceneviewer_transparency_mode
-	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *string)
+	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_sceneviewer_transparency_mode,
-		cmzn_sceneviewer_transparency_mode_conversion>(string);
+		cmzn_sceneviewer_transparency_mode_conversion>(name);
 }
 
 char *cmzn_sceneviewer_transparency_mode_enum_to_string(

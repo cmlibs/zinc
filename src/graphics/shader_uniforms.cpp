@@ -234,13 +234,16 @@ public:
 
 	~cmzn_shaderuniforms()
 	{
+		std::list<cmzn_shaderuniform *>::iterator pos;
+		for (pos = this->uniforms.begin(); pos != this->uniforms.end(); ++pos)
+		{
+			delete (*pos);
+		}
 		if (name)
 		{
 			DEALLOCATE(name);
 		}
 	}
-
-
 
 	/** must construct on the heap with this function */
 	static cmzn_shaderuniforms *create()
@@ -254,26 +257,15 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_shaderuniforms **object_address)
+	static inline void deaccess(cmzn_shaderuniforms*& shaderuniforms)
 	{
-		cmzn_shaderuniforms *shaderuniforms;
-
-		if (object_address && (shaderuniforms = *object_address))
+		if (shaderuniforms)
 		{
 			--(shaderuniforms->access_count);
 			if (shaderuniforms->access_count <= 0)
-			{
-				std::list<cmzn_shaderuniform *>::iterator pos;
-				for (pos = shaderuniforms->uniforms.begin(); pos != shaderuniforms->uniforms.end(); ++pos)
-				{
-					delete (*pos);
-				}
 				delete shaderuniforms;
-			}
-			shaderuniforms = 0;
-			return CMZN_OK;
+			shaderuniforms = nullptr;
 		}
-		return CMZN_ERROR_ARGUMENT;
 	}
 
 	int removeUniform(const char*name)
@@ -526,12 +518,17 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_shaderuniforms)
 {
 	if (object)
 		return object->access();
-	return 0;
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_shaderuniforms)
 {
-	return cmzn_shaderuniforms::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_shaderuniforms::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_shaderuniforms)
@@ -544,7 +541,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_shaderuniforms)
 		}
 		if (*object_address)
 		{
-			cmzn_shaderuniforms::deaccess(object_address);
+			cmzn_shaderuniforms::deaccess(*object_address);
 		}
 		*object_address = new_object;
 		return 1;
@@ -588,13 +585,18 @@ struct cmzn_shaderuniforms *cmzn_shaderuniforms_create_private()
 cmzn_shaderuniforms_id cmzn_shaderuniforms_access(cmzn_shaderuniforms_id shaderuniforms)
 {
 	if (shaderuniforms)
-		return ACCESS(cmzn_shaderuniforms)(shaderuniforms);
-	return 0;
+		return shaderuniforms->access();
+	return nullptr;
 }
 
 int cmzn_shaderuniforms_destroy(cmzn_shaderuniforms_id *shaderuniforms_address)
 {
-	return DEACCESS(cmzn_shaderuniforms)(shaderuniforms_address);
+	if (shaderuniforms_address)
+	{
+		cmzn_shaderuniforms::deaccess(*shaderuniforms_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_shaderuniforms_is_managed(cmzn_shaderuniforms_id shaderuniforms)

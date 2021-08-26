@@ -107,7 +107,7 @@ public:
 		return cmzn_timekeeper_set_time(id, time);
 	}
 
-	double getNextCallbackTime(enum PlayDirection playDirection)
+	double getNextCallbackTime(PlayDirection playDirection)
 	{
 		return cmzn_timekeeper_get_next_callback_time(id,
 			static_cast<cmzn_timekeeper_play_direction>(playDirection));

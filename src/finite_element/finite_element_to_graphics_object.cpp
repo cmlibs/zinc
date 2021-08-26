@@ -2552,7 +2552,7 @@ int add_glyphset_vertex_from_FE_element(
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Computed_field *label_field,
-	enum cmzn_graphics_select_mode select_mode, int element_selected,
+	enum cmzn_graphics_select_mode select_mode, bool element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers)
 {
 	char **label = 0, **labels = 0;

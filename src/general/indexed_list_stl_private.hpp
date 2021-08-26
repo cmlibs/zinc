@@ -42,7 +42,8 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 	{ \
 		CMZN_SET(object_type) **cmiss_set_address = \
 			reinterpret_cast<CMZN_SET(object_type) **>(list_address); \
-		return CMZN_SET(object_type)::deaccess(cmiss_set_address); \
+		CMZN_SET(object_type)::deaccess(*cmiss_set_address); \
+		return 1; \
 	} \
 	return 0; \
 }

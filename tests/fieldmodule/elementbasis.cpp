@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
@@ -19,6 +20,8 @@
 #include <opencmiss/zinc/node.hpp>
 #include <opencmiss/zinc/stream.hpp>
 #include <opencmiss/zinc/streamregion.hpp>
+
+#include "utilities/testenum.hpp"
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
@@ -586,4 +589,12 @@ TEST(ZincElementbasis, quadratic_hermite_lagrange_3d)
 		if (c == 0)
 			EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
 	}
+}
+
+TEST(ZincElementbasis, FunctionTypeEnum)
+{
+	const char *enumNames[11] = {
+		nullptr, "CONSTANT", "LINEAR_LAGRANGE", "QUADRATIC_LAGRANGE", "CUBIC_LAGRANGE", "LINEAR_SIMPLEX",
+		"QUADRATIC_SIMPLEX", "CUBIC_HERMITE", "CUBIC_HERMITE_SERENDIPITY", "QUADRATIC_HERMITE_LAGRANGE", "QUADRATIC_LAGRANGE_HERMITE" };
+	testEnum(11, enumNames, Elementbasis::FunctionTypeEnumToString, Elementbasis::FunctionTypeEnumFromString);
 }

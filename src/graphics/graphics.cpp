@@ -52,7 +52,7 @@
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/scene.hpp"
-#include "graphics/graphics.h"
+#include "graphics/graphics.hpp"
 #include "graphics/graphics_module.hpp"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
@@ -70,61 +70,6 @@ struct cmzn_graphics_select_graphics_data
 	struct FE_region *fe_region;
 	struct cmzn_graphics *graphics;
 };
-
-enum cmzn_graphics_change
-{
-	CMZN_GRAPHICS_CHANGE_NONE = 0,
-	CMZN_GRAPHICS_CHANGE_REDRAW = 1,          /**< minor change requiring redraw, e.g. visibility flag toggled */
-	CMZN_GRAPHICS_CHANGE_RECOMPILE = 2,       /**< graphics display list may need to be recompiled */
-	CMZN_GRAPHICS_CHANGE_SELECTION = 3,       /**< change to selected objects */
-	CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD = 4, /**< partial rebuild of graphics object */
-	CMZN_GRAPHICS_CHANGE_FULL_REBUILD = 5,    /**< graphics object needs full rebuild */
-};
-
-/***************************************************************************//**
- * Call whenever attributes of the graphics have changed to ensure the graphics
- * object is invalidated (if needed) or that the minimum rebuild and redraw is
- * performed.
- */
-static int cmzn_graphics_changed(struct cmzn_graphics *graphics,
-	enum cmzn_graphics_change change)
-{
-	int return_code = 1;
-	if (graphics)
-	{
-		switch (change)
-		{
-		case CMZN_GRAPHICS_CHANGE_REDRAW:
-			break;
-		case CMZN_GRAPHICS_CHANGE_RECOMPILE:
-		case CMZN_GRAPHICS_CHANGE_SELECTION:
-			graphics->selected_graphics_changed = 1;
-			break;
-		case CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD:
-			// partial removal of graphics should have been done by caller
-			graphics->graphics_changed = 1;
-			break;
-		case CMZN_GRAPHICS_CHANGE_FULL_REBUILD:
-			graphics->graphics_changed = 1;
-			if (graphics->graphics_object)
-			{
-				DEACCESS(GT_object)(&(graphics->graphics_object));
-			}
-			break;
-		default:
-			return_code = 0;
-			break;
-		}
-		graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
-		if (return_code && (graphics->scene))
-			graphics->scene->setChanged();
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_type)
 {
@@ -165,269 +110,326 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_type)
 
-struct cmzn_graphics *CREATE(cmzn_graphics)(
-	enum cmzn_graphics_type graphics_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_boundary_mode)
 {
-	struct cmzn_graphics *graphics;
-
-	ENTER(CREATE(cmzn_graphics));
-	if ((CMZN_GRAPHICS_TYPE_POINTS==graphics_type)||
-		(CMZN_GRAPHICS_TYPE_LINES==graphics_type)||
-		(CMZN_GRAPHICS_TYPE_SURFACES==graphics_type)||
-		(CMZN_GRAPHICS_TYPE_CONTOURS==graphics_type)||
-		(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics_type))
+	switch (enumerator_value)
 	{
-		if (ALLOCATE(graphics,struct cmzn_graphics,1))
-		{
-			graphics->position=0;
-			graphics->scene = NULL;
-			graphics->name = (char *)NULL;
-
-			/* geometry settings defaults */
-			/* for all graphics types */
-			graphics->graphics_type=graphics_type;
-			graphics->coordinate_field=(struct Computed_field *)NULL;
-			/* For surfaces only at the moment */
-			graphics->texture_coordinate_field=(struct Computed_field *)NULL;
-			/* for 1-D and 2-D elements only */
-			graphics->exterior = false;
-			graphics->face = CMZN_ELEMENT_FACE_TYPE_ALL; /* match all elements, face or no face */
-
-			/* line attributes */
-			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
-			for (int i = 0; i < 2; i++)
-			{
-				graphics->line_base_size[i] = 0.0;
-				graphics->line_scale_factors[i] = 1.0;
-			}
-			graphics->line_orientation_scale_field = 0;
-
-			/* for contours only */
-			graphics->isoscalar_field=(struct Computed_field *)NULL;
-			graphics->number_of_isovalues=0;
-			graphics->isovalues=(double *)NULL;
-			graphics->first_isovalue=0.0;
-			graphics->last_isovalue=0.0;
-			graphics->decimation_threshold = 0.0;
-
-			/* point attributes */
-			graphics->glyph = 0;
-			graphics->glyph_repeat_mode = CMZN_GLYPH_REPEAT_MODE_NONE;
-			for (int i = 0; i < 3; i++)
-			{
-				graphics->point_offset[i] = 0.0;
-				graphics->point_base_size[i] = 0.0;
-				graphics->point_scale_factors[i] = 1.0;
-				graphics->label_offset[i] = 0.0;
-				graphics->label_text[i] = 0;
-			}
-			graphics->point_orientation_scale_field = 0;
-			graphics->signed_scale_field = 0;
-			graphics->label_field = 0;
-			graphics->label_density_field = 0;
-
-			graphics->subgroup_field=(struct Computed_field *)NULL;
-			graphics->select_mode=CMZN_GRAPHICS_SELECT_MODE_ON;
-			switch (graphics_type)
-			{
-			case CMZN_GRAPHICS_TYPE_POINTS:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_POINT;
-				break;
-			case CMZN_GRAPHICS_TYPE_LINES:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH1D;
-				break;
-			case CMZN_GRAPHICS_TYPE_SURFACES:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH2D;
-				break;
-			default:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
-				break;
-			}
-			// for element sampling: element points, streamlines
-			graphics->sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES;
-			graphics->sample_density_field = 0;
-			for (int i = 0; i < 3; i++)
-			{
-				graphics->sample_location[i] = 0.0;
-			}
-			// for tessellating and sampling elements
-			graphics->tessellation = 0;
-			graphics->tessellation_field = 0;
-			/* for settings starting in a particular element */
-			graphics->seed_element=(struct FE_element *)NULL;
-			/* for streamlines only */
-			graphics->stream_vector_field=(struct Computed_field *)NULL;
-			graphics->streamlines_track_direction = CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD;
-			graphics->streamline_length=1.0;
-			graphics->seed_nodeset = (cmzn_nodeset_id)0;
-			graphics->seed_node_mesh_location_field = (struct Computed_field *)NULL;
-			graphics->overlay_flag = 0;
-			graphics->overlay_order = 1;
-			graphics->coordinate_system = CMZN_SCENECOORDINATESYSTEM_LOCAL;
-			/* appearance settings defaults */
-			/* for all graphics types */
-			graphics->visibility_flag = true;
-			graphics->material=(cmzn_material *)NULL;
-			graphics->secondary_material=(cmzn_material *)NULL;
-			graphics->selected_material=(cmzn_material *)NULL;
-			graphics->data_field=(struct Computed_field *)NULL;
-			graphics->spectrum=(struct cmzn_spectrum *)NULL;
-			graphics->autorange_spectrum_flag = 0;
-			/* for glyphsets */
-			graphics->font = NULL;
-			/* for surface rendering */
-			graphics->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED;
-			/* for streamlines only */
-			graphics->streamlines_colour_data_type = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD;
-			graphics->render_line_width = 1.0;
-			graphics->render_point_size = 1.0;
-
-			/* rendering information defaults */
-			graphics->graphics_object = (struct GT_object *)NULL;
-			graphics->graphics_changed = 1;
-			graphics->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
-			graphics->selected_graphics_changed = 0;
-			graphics->timeDependent = false;
-
-			graphics->access_count=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(cmzn_graphics).  Insufficient memory");
-		}
-	}
-	else
+	case CMZN_GRAPHICS_BOUNDARY_MODE_INVALID:
 	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(cmzn_graphics).  Invalid graphics type");
-		graphics=(struct cmzn_graphics *)NULL;
+	} break;
+	case CMZN_GRAPHICS_BOUNDARY_MODE_ALL:
+	{
+		return "ALL";
+	} break;
+	case CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY:
+	{
+		return "BOUNDARY";
+	} break;
+	case CMZN_GRAPHICS_BOUNDARY_MODE_INTERIOR:
+	{
+		return "INTERIOR";
+	} break;
+	case CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_BOUNDARY:
+	{
+		return "SUBGROUP_BOUNDARY";
+	} break;
+	case CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_INTERIOR:
+	{
+		return "SUBGROUP_INTERIOR";
+	} break;
 	}
-	LEAVE;
+	return nullptr;
+}
 
-	return (graphics);
-} /* CREATE(cmzn_graphics) */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_boundary_mode)
 
-int DESTROY(cmzn_graphics)(
-	struct cmzn_graphics **graphics_address)
+class cmzn_graphics_boundary_mode_conversion
 {
-	int return_code;
-	struct cmzn_graphics *graphics;
-
-	ENTER(DESTROY(cmzn_graphics));
-	if (graphics_address && (graphics= *graphics_address))
+public:
+	static const char *to_string(enum cmzn_graphics_boundary_mode boundary_mode)
 	{
-		if (graphics->scene)
-			cmzn_graphics_set_scene_private(graphics, NULL);
-		if (graphics->name)
-		{
-			DEALLOCATE(graphics->name);
-		}
-		if (graphics->graphics_object)
-		{
-			DEACCESS(GT_object)(&(graphics->graphics_object));
-		}
-		if (graphics->coordinate_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->coordinate_field));
-		}
-		if (graphics->texture_coordinate_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->texture_coordinate_field));
-		}
-		cmzn_field_destroy(&(graphics->line_orientation_scale_field));
-		if (graphics->isoscalar_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->isoscalar_field));
-		}
-		if (graphics->isovalues)
-		{
-			DEALLOCATE(graphics->isovalues);
-		}
-		if (graphics->glyph)
-		{
-			cmzn_glyph_destroy(&(graphics->glyph));
-		}
-		cmzn_field_destroy(&(graphics->point_orientation_scale_field));
-		cmzn_field_destroy(&(graphics->signed_scale_field));
-		for (int i = 0; i < 3; i++)
-		{
-			if (graphics->label_text[i])
-			{
-				DEALLOCATE(graphics->label_text[i]);
-			}
-		}
-		if (graphics->label_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->label_field));
-		}
-		if (graphics->label_density_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->label_density_field));
-		}
-		if (graphics->subgroup_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->subgroup_field));
-		}
-		cmzn_field_destroy(&(graphics->sample_density_field));
-		cmzn_field_destroy(&(graphics->tessellation_field));
-		if (graphics->tessellation)
-		{
-			DEACCESS(cmzn_tessellation)(&(graphics->tessellation));
-		}
-		if (graphics->stream_vector_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->stream_vector_field));
-		}
-		/* appearance graphics */
-		if (graphics->material)
-		{
-			cmzn_material_destroy(&(graphics->material));
-		}
-		if (graphics->secondary_material)
-		{
-			cmzn_material_destroy(&(graphics->secondary_material));
-		}
-		if (graphics->selected_material)
-		{
-			cmzn_material_destroy(&(graphics->selected_material));
-		}
-		if (graphics->data_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->data_field));
-		}
-		if (graphics->spectrum)
-		{
-			DEACCESS(cmzn_spectrum)(&(graphics->spectrum));
-		}
-		if (graphics->font)
-		{
-			DEACCESS(cmzn_font)(&(graphics->font));
-		}
-		if (graphics->seed_element)
-		{
-			DEACCESS(FE_element)(&(graphics->seed_element));
-		}
-		if (graphics->seed_nodeset)
-		{
-			cmzn_nodeset_destroy(&graphics->seed_nodeset);
-		}
-		if (graphics->seed_node_mesh_location_field)
-		{
-			DEACCESS(Computed_field)(&(graphics->seed_node_mesh_location_field));
-		}
-		DEALLOCATE(*graphics_address);
-		return_code = 1;
+		return ENUMERATOR_STRING(cmzn_graphics_boundary_mode)(boundary_mode);
 	}
+};
+
+enum cmzn_graphics_boundary_mode
+	cmzn_graphics_boundary_mode_enum_from_string(const char *name)
+{
+	return string_to_enum<enum cmzn_graphics_boundary_mode,
+		cmzn_graphics_boundary_mode_conversion>(name);
+}
+
+char *cmzn_graphics_boundary_mode_enum_to_string(
+	enum cmzn_graphics_boundary_mode boundary_mode)
+{
+	const char *type_string = cmzn_graphics_boundary_mode_conversion::to_string(boundary_mode);
+	return (type_string) ? duplicate_string(type_string) : nullptr;
+}
+
+cmzn_graphics::cmzn_graphics(enum cmzn_graphics_type graphicsTypeIn) :
+	scene(nullptr),
+	position(0),
+	name(nullptr),
+	graphics_type(graphicsTypeIn),
+	subgroup_field(nullptr),
+	coordinate_system(CMZN_SCENECOORDINATESYSTEM_LOCAL),
+	coordinate_field(nullptr),
+	select_mode(CMZN_GRAPHICS_SELECT_MODE_ON),
+	domain_type(
+		(graphicsTypeIn == CMZN_GRAPHICS_TYPE_POINTS) ? CMZN_FIELD_DOMAIN_TYPE_POINT :
+		(graphicsTypeIn == CMZN_GRAPHICS_TYPE_LINES) ? CMZN_FIELD_DOMAIN_TYPE_MESH1D :
+		(graphicsTypeIn == CMZN_GRAPHICS_TYPE_SURFACES) ? CMZN_FIELD_DOMAIN_TYPE_MESH2D :
+		CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION),
+	boundary_mode(CMZN_GRAPHICS_BOUNDARY_MODE_ALL),
+	face(CMZN_ELEMENT_FACE_TYPE_ALL),
+	texture_coordinate_field(nullptr),
+	line_shape(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE),
+	line_orientation_scale_field(nullptr),
+	isoscalar_field(nullptr),
+	number_of_isovalues(0),
+	isovalues(nullptr),
+	first_isovalue(0.0),
+	last_isovalue(0.0),
+	decimation_threshold(0.0),
+	glyph(nullptr),
+	glyph_repeat_mode(CMZN_GLYPH_REPEAT_MODE_NONE),
+	point_orientation_scale_field(nullptr),
+	signed_scale_field(nullptr),
+	label_field(nullptr),
+	label_density_field(nullptr),
+	sampling_mode(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES),
+	sample_density_field(nullptr),
+	tessellation(nullptr),
+	tessellation_field(nullptr),
+	overlay_flag(0),
+	overlay_order(1),
+	seed_element(nullptr),
+	stream_vector_field(nullptr),
+	streamlines_track_direction(CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD),
+	streamline_length(1.0),
+	streamlines_colour_data_type(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD),
+	seed_nodeset(nullptr),
+	seed_node_mesh_location_field(nullptr),
+	visibility_flag(true),
+	material(nullptr),
+	secondary_material(nullptr),
+	selected_material(nullptr),
+	data_field(nullptr),
+	spectrum(nullptr),
+	autorange_spectrum_flag(0),
+	font(nullptr),
+	render_polygon_mode(CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED),
+	render_line_width(1.0),
+	render_point_size(1.0),
+	graphics_object(nullptr),
+	graphics_changed(1),
+	incrementalBuildIndex(DS_LABEL_INDEX_INVALID),
+	selected_graphics_changed(0),
+	timeDependent(false),
+	access_count(1)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		this->line_base_size[i] = 0.0;
+		this->line_scale_factors[i] = 1.0;
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		this->point_offset[i] = 0.0;
+		this->point_base_size[i] = 0.0;
+		this->point_scale_factors[i] = 1.0;
+		this->label_offset[i] = 0.0;
+		this->label_text[i] = nullptr;
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		this->sample_location[i] = 0.0;
+	}
+}
+
+cmzn_graphics::~cmzn_graphics()
+{
+	if (this->scene)
+		cmzn_graphics_set_scene_private(this, nullptr);
+	if (this->name)
+	{
+		DEALLOCATE(this->name);
+	}
+	if (this->graphics_object)
+	{
+		DEACCESS(GT_object)(&(this->graphics_object));
+	}
+	if (this->coordinate_field)
+	{
+		DEACCESS(Computed_field)(&(this->coordinate_field));
+	}
+	if (this->texture_coordinate_field)
+	{
+		DEACCESS(Computed_field)(&(this->texture_coordinate_field));
+	}
+	cmzn_field_destroy(&(this->line_orientation_scale_field));
+	if (this->isoscalar_field)
+	{
+		DEACCESS(Computed_field)(&(this->isoscalar_field));
+	}
+	if (this->isovalues)
+	{
+		DEALLOCATE(this->isovalues);
+	}
+	if (this->glyph)
+	{
+		cmzn_glyph_destroy(&(this->glyph));
+	}
+	cmzn_field_destroy(&(this->point_orientation_scale_field));
+	cmzn_field_destroy(&(this->signed_scale_field));
+	for (int i = 0; i < 3; i++)
+	{
+		if (this->label_text[i])
+		{
+			DEALLOCATE(this->label_text[i]);
+		}
+	}
+	if (this->label_field)
+	{
+		DEACCESS(Computed_field)(&(this->label_field));
+	}
+	if (this->label_density_field)
+	{
+		DEACCESS(Computed_field)(&(this->label_density_field));
+	}
+	if (this->subgroup_field)
+	{
+		DEACCESS(Computed_field)(&(this->subgroup_field));
+	}
+	cmzn_field_destroy(&(this->sample_density_field));
+	cmzn_field_destroy(&(this->tessellation_field));
+	if (this->tessellation)
+	{
+		DEACCESS(cmzn_tessellation)(&(this->tessellation));
+	}
+	if (this->stream_vector_field)
+	{
+		DEACCESS(Computed_field)(&(this->stream_vector_field));
+	}
+	if (this->material)
+	{
+		cmzn_material_destroy(&(this->material));
+	}
+	if (this->secondary_material)
+	{
+		cmzn_material_destroy(&(this->secondary_material));
+	}
+	if (this->selected_material)
+	{
+		cmzn_material_destroy(&(this->selected_material));
+	}
+	if (this->data_field)
+	{
+		DEACCESS(Computed_field)(&(this->data_field));
+	}
+	if (this->spectrum)
+	{
+		DEACCESS(cmzn_spectrum)(&(this->spectrum));
+	}
+	if (this->font)
+	{
+		DEACCESS(cmzn_font)(&(this->font));
+	}
+	if (this->seed_element)
+	{
+		DEACCESS(FE_element)(&(this->seed_element));
+	}
+	if (this->seed_nodeset)
+	{
+		cmzn_nodeset_destroy(&this->seed_nodeset);
+	}
+	if (this->seed_node_mesh_location_field)
+	{
+		DEACCESS(Computed_field)(&(this->seed_node_mesh_location_field));
+	}
+}
+
+cmzn_graphics *cmzn_graphics::create(cmzn_graphics_type graphicsTypeIn)
+{
+	if ((CMZN_GRAPHICS_TYPE_POINTS != graphicsTypeIn) &&
+		(CMZN_GRAPHICS_TYPE_LINES != graphicsTypeIn) &&
+		(CMZN_GRAPHICS_TYPE_SURFACES != graphicsTypeIn) &&
+		(CMZN_GRAPHICS_TYPE_CONTOURS != graphicsTypeIn) &&
+		(CMZN_GRAPHICS_TYPE_STREAMLINES != graphicsTypeIn))
+	{
+		display_message(ERROR_MESSAGE, "cmzn_graphics::create.  Invalid graphics type");
+		return nullptr;
+	}
+	return new cmzn_graphics(graphicsTypeIn);
+}
+
+void cmzn_graphics::setChange(cmzn_graphics_change change)
+{
+	switch (change)
+	{
+	case CMZN_GRAPHICS_CHANGE_NONE:
+		return;
+		break;
+	case CMZN_GRAPHICS_CHANGE_REDRAW:
+		break;
+	case CMZN_GRAPHICS_CHANGE_RECOMPILE:
+	case CMZN_GRAPHICS_CHANGE_SELECTION:
+		this->selected_graphics_changed = 1;
+		break;
+	case CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD:
+		// partial removal of graphics should have been done by caller
+		this->graphics_changed = 1;
+		break;
+	case CMZN_GRAPHICS_CHANGE_FULL_REBUILD:
+		this->graphics_changed = 1;
+		if (this->graphics_object)
+			DEACCESS(GT_object)(&(this->graphics_object));
+		break;
+	}
+	this->incrementalBuildIndex = DS_LABEL_INDEX_INVALID;
+	if (this->scene)
+		this->scene->setChanged();
+}
+
+void cmzn_graphics::updateTimeDependence()
+{
+	if ((this->glyph) && this->glyph->isTimeVarying())
+		this->timeDependent = true;
+	else if ((this->coordinate_field) && Computed_field_has_multiple_times(this->coordinate_field))
+		this->timeDependent = true;
+	else if ((this->texture_coordinate_field) && Computed_field_has_multiple_times(this->texture_coordinate_field))
+		this->timeDependent = true;
+	else if ((this->line_orientation_scale_field) && Computed_field_has_multiple_times(this->line_orientation_scale_field))
+		this->timeDependent = true;
+	else if (this->isoscalarFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if (this->pointGlyphScalingIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->label_field) && Computed_field_has_multiple_times(this->label_field))
+		this->timeDependent = true;
+	else if ((this->label_density_field) && Computed_field_has_multiple_times(this->label_density_field))
+		this->timeDependent = true;
+	else if (this->subgroupFieldIsTimeDependent())
+		this->timeDependent = true;
+	else if ((this->stream_vector_field) && Computed_field_has_multiple_times(this->stream_vector_field))
+		this->timeDependent = true;
+	else if (this->dataFieldIsTimeDependent())
+		this->timeDependent = true;
 	else
-	{
-		display_message(ERROR_MESSAGE,"DESTROY(cmzn_graphics_address).  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+		this->timeDependent = false;
+}
 
-	return (return_code);
+int cmzn_graphics::setBoundaryMode(cmzn_graphics_boundary_mode boundaryModeIn)
+{
+	if ((boundaryModeIn <= CMZN_GRAPHICS_BOUNDARY_MODE_INVALID) ||
+		(boundaryModeIn > CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_INTERIOR))
+		return CMZN_ERROR_ARGUMENT;
+	if (boundaryModeIn != this->boundary_mode)
+	{
+		this->boundary_mode = boundaryModeIn;
+		this->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+	}
+	return CMZN_OK;
 }
 
 int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
@@ -497,13 +499,43 @@ int cmzn_element_conditional_field_is_true(cmzn_element_id element,
 }
 #endif // OLD_CODE
 
+/** Query if element is on boundary of 2D or 3D subgroup.
+ * @param element  A 1-D or 2-D element.
+ * @param subgroupField  Field whose value is non-zero (true) on elements in the subgroup.
+ * @param fieldcache  Field cache for evaluating field; changes current location to
+ * parent element so caller must reset if previous location is required.
+ * @return  True if element is on the boundary of subgroup.
+ */
+bool cmzn_element_is_on_subgroup_boundary(cmzn_element *element, cmzn_field *subgroupField,
+	cmzn_fieldcache *fieldcache)
+{
+	FE_mesh *fe_mesh = element->getMesh();
+	const int dimension = fe_mesh->getDimension();
+	FE_mesh *parentMesh = fe_mesh->getParentMesh();
+	const DsLabelIndex *parents;
+	const int parentCount = fe_mesh->getElementParents(element->getIndex(), parents);
+	int parentsInGroup = 0;
+	for (int p = 0; p < parentCount; ++p)
+	{
+		cmzn_element *parentElement = parentMesh->getElement(parents[p]);
+		fieldcache->setElement(parentElement);
+		if (cmzn_field_evaluate_boolean(subgroupField, fieldcache))
+		{
+			if ((dimension == 1) && cmzn_element_is_on_subgroup_boundary(parentElement, subgroupField, fieldcache))
+				return true;
+			++parentsInGroup;
+		}
+	}
+	return parentsInGroup == 1;
+}
+
 /**
  * Converts a finite element into a graphics object with the supplied graphics.
  * @param element  The cmzn_element.
  * @param graphics_to_object_data  Data for converting finite element to graphics.
  * @return return 1 if the element would contribute any graphics generated from the cmzn_graphics
  */
-static int FE_element_to_graphics_object(struct FE_element *element,
+static int cmzn_element_to_graphics_object(cmzn_element *element,
 	cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
 	FE_value initial_xi[3];
@@ -514,7 +546,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	struct cmzn_graphics *graphics;
 	FE_value_triple *xi_points = NULL;
 
-	ENTER(FE_element_to_graphics_object);
+	ENTER(cmzn_element_to_graphics_object);
 	FE_mesh *fe_mesh = element->getMesh();
 	if (fe_mesh && graphics_to_object_data &&
 		(NULL != (graphics = graphics_to_object_data->graphics)) &&
@@ -525,10 +557,52 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		const int graphics_domain_dimension = cmzn_graphics_get_domain_dimension(graphics);
 		if (element_dimension != graphics_domain_dimension)
 			return 1; // shouldn't be iterating over wrong dimension
+		graphics_to_object_data->field_cache->setElement(element);
+		// boundary mode with subgroup assumes subgroup check has been performed already
+		if (graphics->subgroup_field && (graphics_to_object_data->iteration_mesh == graphics_to_object_data->master_mesh))
+		{
+			if (!cmzn_field_evaluate_boolean(graphics->subgroup_field, graphics_to_object_data->field_cache))
+				return 1;
+		}
 		if (element_dimension < 3)
 		{
-			if ((graphics->exterior) && (!fe_mesh->isElementExterior(elementIndex)))
-				return 1;
+			if (graphics->boundary_mode != CMZN_GRAPHICS_BOUNDARY_MODE_ALL)
+			{
+				if ((graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY) ||
+					(graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_INTERIOR))
+				{
+					const bool isBoundary = fe_mesh->isElementExterior(elementIndex);
+					if (graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY)
+					{
+						if (!isBoundary)
+							return 1;
+					}
+					else // if (graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_INTERIOR)
+					{
+						if (isBoundary)
+							return 1;
+					}
+				}
+				else
+				{
+					if (!(graphics->subgroup_field))
+						return 1;  // nothing shown for SUBGROUP modes without a subgroup
+					bool isSubgroupBoundary = cmzn_element_is_on_subgroup_boundary(element,
+						graphics->subgroup_field, graphics_to_object_data->field_cache);
+					// must restore the actual element in the field cache as changed by above function
+					graphics_to_object_data->field_cache->setElement(element);
+					if (graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_BOUNDARY)
+					{
+						if (!isSubgroupBoundary)
+							return 1;
+					}
+					else if (graphics->boundary_mode == CMZN_GRAPHICS_BOUNDARY_MODE_SUBGROUP_INTERIOR)
+					{
+						if (isSubgroupBoundary)
+							return 1;
+					}
+				}
+			}
 			if (CMZN_ELEMENT_FACE_TYPE_ALL != graphics->face)
 			{
 				if (CMZN_ELEMENT_FACE_TYPE_NO_FACE == graphics->face)
@@ -539,12 +613,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				else if (fe_mesh->getElementParentOnFace(elementIndex, graphics->face) < 0)
 					return 1;
 			}
-		}
-		cmzn_fieldcache_set_element(graphics_to_object_data->field_cache, element);
-		if (graphics->subgroup_field && (graphics_to_object_data->iteration_mesh == graphics_to_object_data->master_mesh))
-		{
-			if (!cmzn_field_evaluate_boolean(graphics->subgroup_field, graphics_to_object_data->field_cache))
-				return 1;
 		}
 		//cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
 		bool name_selected = false;
@@ -680,7 +748,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						} break;
 						default:
 						{
-							display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
+							display_message(ERROR_MESSAGE,"cmzn_element_to_graphics_object.  "
 								"Invalid graphics type for contours");
 							return_code = 0;
 						} break;
@@ -719,7 +787,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								graphics_to_object_data->wrapper_orientation_scale_field,
 								graphics->signed_scale_field, graphics->data_field,
 								graphics->label_field, graphics->select_mode,
-								name_selected ? 1 : 0, (struct Multi_range *)NULL,
+								name_selected, (struct Multi_range *)NULL,
 								/*point_numbers*/(int *)0);
 						}
 						DEALLOCATE(xi_points);
@@ -788,7 +856,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
 							{
 								display_message(ERROR_MESSAGE,
-									"FE_element_to_graphics_object.  Unknown streamline type");
+									"cmzn_element_to_graphics_object.  Unknown streamline type");
 								return_code = 0;
 							} break;
 						}
@@ -802,7 +870,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				} break;
 				default:
 				{
-					display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
+					display_message(ERROR_MESSAGE,"cmzn_element_to_graphics_object.  "
 						"Unknown element graphics type");
 					return_code = 0;
 				} break;
@@ -811,20 +879,20 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_to_graphics_object.  Could not get discretization");
+				"cmzn_element_to_graphics_object.  Could not get discretization");
 			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
+		display_message(ERROR_MESSAGE,"cmzn_element_to_graphics_object.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_to_graphics_object */
+} /* cmzn_element_to_graphics_object */
 
 /***************************************************************************//**
  * Creates a streamline seeded from the location given by the
@@ -922,7 +990,7 @@ int cmzn_graphics_add_to_list(struct cmzn_graphics *graphics,
 			/* add to end of list */
 			position=last_position+1;
 		}
-		ACCESS(cmzn_graphics)(graphics);
+		graphics->access();
 		while (return_code&&graphics)
 		{
 			graphics->position=position;
@@ -931,24 +999,21 @@ int cmzn_graphics_add_to_list(struct cmzn_graphics *graphics,
 						position)(position,list_of_graphics)))
 			{
 				/* remove the old graphics to make way for the new */
-				ACCESS(cmzn_graphics)(graphics_in_way);
+				graphics_in_way->access();
 				REMOVE_OBJECT_FROM_LIST(cmzn_graphics)(
 					graphics_in_way,list_of_graphics);
 			}
 			if (ADD_OBJECT_TO_LIST(cmzn_graphics)(graphics,list_of_graphics))
 			{
-				DEACCESS(cmzn_graphics)(&graphics);
+				cmzn_graphics::deaccess(graphics);
 				/* the old, in-the-way graphics now become the new graphics */
 				graphics=graphics_in_way;
 				position++;
 			}
 			else
 			{
-				DEACCESS(cmzn_graphics)(&graphics);
-				if (graphics_in_way)
-				{
-					DEACCESS(cmzn_graphics)(&graphics_in_way);
-				}
+				cmzn_graphics::deaccess(graphics);
+				cmzn_graphics::deaccess(graphics_in_way);
 				display_message(ERROR_MESSAGE,"cmzn_graphics_add_to_list.  "
 					"Could not add graphics - graphics lost");
 				return_code=0;
@@ -983,7 +1048,7 @@ int cmzn_graphics_remove_from_list(struct cmzn_graphics *graphics,
 			while (return_code&&(graphics=FIND_BY_IDENTIFIER_IN_LIST(
 				cmzn_graphics,position)(next_position,list_of_graphics)))
 			{
-				ACCESS(cmzn_graphics)(graphics);
+				graphics->access();
 				REMOVE_OBJECT_FROM_LIST(cmzn_graphics)(graphics,list_of_graphics);
 				(graphics->position)--;
 				if (ADD_OBJECT_TO_LIST(cmzn_graphics)(graphics,list_of_graphics))
@@ -997,7 +1062,7 @@ int cmzn_graphics_remove_from_list(struct cmzn_graphics *graphics,
 						"Could not readjust positions - graphics lost");
 					return_code=0;
 				}
-				DEACCESS(cmzn_graphics)(&graphics);
+				cmzn_graphics::deaccess(graphics);
 			}
 		}
 		else
@@ -1052,7 +1117,36 @@ int cmzn_graphics_modify_in_list(struct cmzn_graphics *graphics,
 	return (return_code);
 } /* cmzn_graphics_modify_in_list */
 
-DECLARE_OBJECT_FUNCTIONS(cmzn_graphics);
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_graphics)
+{
+	if (object)
+	{
+		return object->access();
+	}
+	display_message(ERROR_MESSAGE, "ACCESS(cmzn_graphics).  Invalid argument");
+	return 0;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_graphics)
+{
+	if (object_address)
+	{
+		cmzn_graphics::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_graphics)
+{
+	if (object_address)
+	{
+		cmzn_graphics::reaccess(*object_address, new_object);
+		return 1;
+	}
+	return 0;
+}
 
 /** functor for ordering cmzn_set<GT_object> by position */
 struct cmzn_graphics_compare_position_functor
@@ -1150,7 +1244,7 @@ int cmzn_graphics_set_scenecoordinatesystem(
 				graphics->overlay_flag = 0;
 				graphics->overlay_order = 0;
 			}
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_REDRAW);
 		}
 		return CMZN_OK;
 	}
@@ -1174,7 +1268,7 @@ int cmzn_graphics_set_visibility_flag(struct cmzn_graphics *graphics,
 		if (graphics->visibility_flag != visibility_flag)
 		{
 			graphics->visibility_flag = visibility_flag;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_REDRAW);
 		}
 		return CMZN_OK;
 	}
@@ -1273,7 +1367,7 @@ int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
 					graphics->scene->registerVectorField(
 						graphics->stream_vector_field, graphics->coordinate_field);
 			}
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -1302,7 +1396,7 @@ int cmzn_graphics_set_data_field(cmzn_graphics_id graphics,
 		if (data_field != graphics->data_field)
 		{
 			REACCESS(Computed_field)(&(graphics->data_field), data_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return_code = 1;
 	}
@@ -1312,21 +1406,14 @@ int cmzn_graphics_set_data_field(cmzn_graphics_id graphics,
 bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics)
 {
 	if (graphics)
-		return graphics->exterior;
+		return (graphics->getBoundaryMode() == CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY);
 	return false;
 }
 
 int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior)
 {
 	if (graphics)
-	{
-		if (exterior != graphics->exterior)
-		{
-			graphics->exterior = exterior;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-		}
-		return CMZN_OK;
-	}
+		return graphics->setBoundaryMode((exterior) ? CMZN_GRAPHICS_BOUNDARY_MODE_BOUNDARY : CMZN_GRAPHICS_BOUNDARY_MODE_ALL);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1344,10 +1431,25 @@ int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics, enum cmzn_ele
 		if (face_type != graphics->face)
 		{
 			graphics->face = face_type;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+enum cmzn_graphics_boundary_mode cmzn_graphics_get_boundary_mode(cmzn_graphics_id graphics)
+{
+	if (graphics)
+		return graphics->getBoundaryMode();
+	return CMZN_GRAPHICS_BOUNDARY_MODE_INVALID;
+}
+
+int cmzn_graphics_set_boundary_mode(cmzn_graphics_id graphics,
+	enum cmzn_graphics_boundary_mode boundary_mode)
+{
+	if (graphics)
+		return graphics->setBoundaryMode(boundary_mode);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1359,14 +1461,14 @@ int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_vo
 		switch (graphics->select_mode)
 		{
 		case CMZN_GRAPHICS_SELECT_MODE_ON:
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_SELECTION);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_SELECTION);
 			break;
 		case CMZN_GRAPHICS_SELECT_MODE_OFF:
 			/* nothing to do as selection doesn't affect appearance in this mode */
 			break;
 		case CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED:
 		case CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED:
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
@@ -1457,7 +1559,7 @@ int cmzn_graphics_set_material(cmzn_graphics_id graphics,
 		{
 			REACCESS(cmzn_material)(&(graphics->material), material);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -1484,7 +1586,7 @@ int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
 			REACCESS(cmzn_material)(&(graphics->selected_material),
 				selected_material);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -1645,10 +1747,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		const int domain_dimension = cmzn_graphics_get_domain_dimension(graphics);
 		if ((1 == domain_dimension) || (2 == domain_dimension))
 		{
-			if (graphics->exterior)
-			{
-				append_string(&graphics_string, " exterior", &error);
-			}
+			append_string(&graphics_string, " boundary_mode ", &error);
+			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_graphics_boundary_mode)(graphics->boundary_mode), &error);
 			append_string(&graphics_string, " face ", &error);
 			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
 		}
@@ -2654,7 +2754,7 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_ob
 		iterator->setIndex(graphics->incrementalBuildIndex);
 	while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 	{
-		if (!FE_element_to_graphics_object(element, graphics_to_object_data))
+		if (!cmzn_element_to_graphics_object(element, graphics_to_object_data))
 		{
 			return_code = 0;
 			break;
@@ -2696,7 +2796,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 			if (coordinate_field ||
 				(graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_POINT))
 			{
-				/* RC coordinate_field to pass to FE_element_to_graphics_object */
+				/* RC coordinate_field to pass to cmzn_element_to_graphics_object */
 				graphics_to_object_data->rc_coordinate_field = (cmzn_field_id)0;
 				graphics_to_object_data->wrapper_orientation_scale_field = (cmzn_field_id)0;
 				graphics_to_object_data->wrapper_stream_vector_field = (cmzn_field_id)0;
@@ -2808,7 +2908,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 					if (graphics->graphics_object)
 					{
 						graphics->selected_graphics_changed=1;
-						/* need graphics for FE_element_to_graphics_object routine */
+						/* need graphics for cmzn_element_to_graphics_object routine */
 						graphics_to_object_data->graphics=graphics;
 						cmzn_graphics_get_iteration_domain(graphics, graphics_to_object_data);
 						switch (graphics->graphics_type)
@@ -3102,7 +3202,7 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 								GT_object_reset_buffer_binding(graphics->graphics_object);
 							if (graphics->seed_element)
 							{
-								return_code = FE_element_to_graphics_object(
+								return_code = cmzn_element_to_graphics_object(
 									graphics->seed_element, graphics_to_object_data);
 							}
 							else if (graphics->seed_nodeset &&
@@ -3419,7 +3519,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 		cmzn_graphics_update_selected(graphics, (void *)NULL);
 	if (0 == graphics->graphics_object)
 	{
-		cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
+		graphics->setChange(CMZN_GRAPHICS_CHANGE_REDRAW);
 		return 1;
 	}
 	cmzn_field_change_flags fieldChange =
@@ -3433,7 +3533,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 			// node/data points: currently always rebuilt from scratch
 			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_RESULT)
 			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
 			// rebuild all if identifiers changed, for correct picking and editing graphics object
@@ -3441,7 +3541,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
 			if ((nodeChangeLog) && (nodeChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
 			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
 		}
@@ -3449,14 +3549,14 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 		{
 			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_FULL_RESULT)
 			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
 			DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(domainDimension);
 			if (elementChangeLog->getChangeSummary() & DS_LABEL_CHANGE_TYPE_ADD)
 			{
 				// partial rebuild is buggy when new elements are added; workaround is to force full rebuild
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
 			bool partialUpdate = (0 != (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT));
@@ -3476,7 +3576,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES ||
 					graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS)
 				{
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
 				feRegionChanges->propagateToDimension(domainDimension);
@@ -3484,13 +3584,13 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					FE_region_find_FE_mesh_by_dimension(graphics->scene->region->get_FE_region(), domainDimension)->getSize()))
 				{
 					// too many changes for partial rebuild
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
 				}
 				/* partial rebuild for few node/element field changes */
 				GT_object_invalidate_selected_primitives(graphics->graphics_object,
 					feRegionChanges->getElementChangeLog(domainDimension));
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
 			}
 		}
 	}
@@ -3568,7 +3668,7 @@ int cmzn_graphics_set_select_mode(cmzn_graphics_id graphics,
 		if (select_mode != graphics->select_mode)
 		{
 			graphics->select_mode = select_mode;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -3598,7 +3698,7 @@ int cmzn_graphics_set_spectrum(cmzn_graphics_id graphics,
 		{
 			REACCESS(cmzn_spectrum)(&(graphics->spectrum), spectrum);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return_code = 1;
 	}
@@ -3638,7 +3738,7 @@ int cmzn_graphics_copy_without_graphics_object(
 		REACCESS(Computed_field)(&(destination->texture_coordinate_field),
 			source->texture_coordinate_field);
 		/* for 1-D and 2-D elements only */
-		destination->exterior=source->exterior;
+		destination->boundary_mode = source->boundary_mode;
 		destination->face=source->face;
 		/* overlay_flag */
 		destination->overlay_flag = source->overlay_flag;
@@ -3881,7 +3981,7 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 			if ((1 == domain_dimension) || (2 == domain_dimension))
 			{
 				return_code =
-					(graphics->exterior == second_graphics->exterior) &&
+					(graphics->boundary_mode == second_graphics->boundary_mode) &&
 					(graphics->face == second_graphics->face);
 			}
 		}
@@ -4142,9 +4242,9 @@ int cmzn_graphics_list_contents(struct cmzn_graphics *graphics,
 			}
 			/*???RC temp */
 			if ((GRAPHICS_STRING_COMPLETE_PLUS==list_data->graphics_string_detail)&&
-				(graphics->access_count != 1))
+				(graphics->getAccessCount() != 1))
 			{
-				sprintf(line," (access count = %i)",graphics->access_count);
+				sprintf(line," (access count = %i)",graphics->getAccessCount());
 				display_message(INFORMATION_MESSAGE,line);
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
@@ -4208,7 +4308,7 @@ int cmzn_graphics_copy_and_put_in_list(
 		(struct LIST(cmzn_graphics) *)list_of_graphics_void))
 	{
 		/* create new graphics to take the copy */
-		if (NULL != (copy_graphics=CREATE(cmzn_graphics)(graphics->graphics_type)))
+		if (NULL != (copy_graphics = cmzn_graphics::create(graphics->graphics_type)))
 		{
 			/* copy and insert in list */
 			if (!(return_code=cmzn_graphics_copy_without_graphics_object(
@@ -4220,7 +4320,7 @@ int cmzn_graphics_copy_and_put_in_list(
 					"cmzn_graphics_copy_and_put_in_list.  "
 					"Could not put copy in list");
 			}
-			DEACCESS(cmzn_graphics)(&copy_graphics);
+			cmzn_graphics::deaccess(copy_graphics);
 		}
 		else
 		{
@@ -4297,7 +4397,7 @@ int cmzn_graphics_extract_graphics_object_from_list(
 					matching_graphics->selected_graphics_changed;
 				/* reset graphics_object and flags in matching_graphics */
 				matching_graphics->graphics_object = (struct GT_object *)NULL;
-				//cmzn_graphics_changed(matching_graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				//matching_graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 			}
 		}
 	}
@@ -4330,7 +4430,7 @@ int cmzn_graphics_set_render_polygon_mode(cmzn_graphics_id graphics,
 		{
 			graphics->render_polygon_mode = render_polygon_mode;
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -4355,7 +4455,7 @@ int cmzn_graphics_set_subgroup_field(
 		if (subgroup_field != graphics->subgroup_field)
 		{
 			REACCESS(Computed_field)(&(graphics->subgroup_field), subgroup_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -4387,7 +4487,7 @@ int cmzn_graphics_set_tessellation(
 		if (tessellation != graphics->tessellation)
 		{
 			REACCESS(cmzn_tessellation)(&(graphics->tessellation), tessellation);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -4410,7 +4510,7 @@ int cmzn_graphics_set_tessellation_field(cmzn_graphics_id graphics,
 		if (tessellation_field != graphics->tessellation_field)
 		{
 			REACCESS(Computed_field)(&(graphics->tessellation_field), tessellation_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -4530,7 +4630,7 @@ int cmzn_graphics_set_render_line_width(cmzn_graphics_id graphics, double width)
 		{
 			graphics->render_line_width = width;
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -4552,7 +4652,7 @@ int cmzn_graphics_set_render_point_size(cmzn_graphics_id graphics, double size)
 		{
 			graphics->render_point_size = size;
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -4578,7 +4678,7 @@ int cmzn_graphics_set_texture_coordinate_field(
 		if (texture_coordinate_field != graphics->texture_coordinate_field)
 		{
 			REACCESS(Computed_field)(&graphics->texture_coordinate_field, texture_coordinate_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -4601,7 +4701,7 @@ int cmzn_graphics_time_change(
 		}
 		if (graphics->timeDependent)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 	}
 	else
@@ -4614,34 +4714,6 @@ int cmzn_graphics_time_change(
 
 	return (return_code);
 } /* cmzn_graphics_time_change */
-
-void cmzn_graphics::updateTimeDependence()
-{
-	if ((this->glyph) && this->glyph->isTimeVarying())
-		this->timeDependent = true;
-	else if ((this->coordinate_field) && Computed_field_has_multiple_times(this->coordinate_field))
-		this->timeDependent = true;
-	else if ((this->texture_coordinate_field) && Computed_field_has_multiple_times(this->texture_coordinate_field))
-		this->timeDependent = true;
-	else if ((this->line_orientation_scale_field) && Computed_field_has_multiple_times(this->line_orientation_scale_field))
-		this->timeDependent = true;
-	else if (this->isoscalarFieldIsTimeDependent())
-		this->timeDependent = true;
-	else if (this->pointGlyphScalingIsTimeDependent())
-		this->timeDependent = true;
-	else if ((this->label_field) && Computed_field_has_multiple_times(this->label_field))
-		this->timeDependent = true;
-	else if ((this->label_density_field) && Computed_field_has_multiple_times(this->label_density_field))
-		this->timeDependent = true;
-	else if (this->subgroupFieldIsTimeDependent())
-		this->timeDependent = true;
-	else if ((this->stream_vector_field) && Computed_field_has_multiple_times(this->stream_vector_field))
-		this->timeDependent = true;
-	else if (this->dataFieldIsTimeDependent())
-		this->timeDependent = true;
-	else
-		this->timeDependent = false;
-}
 
 int cmzn_graphics_update_time_dependence(struct cmzn_graphics *graphics, void *time_dependent_bool_void)
 {
@@ -4671,7 +4743,7 @@ int cmzn_graphics_glyph_change(
 			if ((change_flags & MANAGER_CHANGE_RESULT(cmzn_glyph)) != 0)
 			{
 				cmzn_graphics_update_graphics_object_trivial_glyph(graphics);
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 			}
 		}
 		return 1;
@@ -4719,7 +4791,7 @@ int cmzn_material_change(
 					(struct LIST(cmzn_material) *)NULL);
 			}
 			/* need a way to tell either graphics is used in any scene or not */
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 	}
 	else
@@ -4752,7 +4824,7 @@ int cmzn_graphics_spectrum_change(
 						(struct LIST(cmzn_spectrum) *)NULL);
 				}
 				/* need a way to tell either graphics is used in any scene or not */
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 			}
 		}
 		/* The material gets it's own notification of the change,
@@ -4771,7 +4843,7 @@ int cmzn_graphics_spectrum_change(
 						(struct LIST(cmzn_material) *)NULL);
 				}
 				/* need a way to tell either graphics is used in any scene or not */
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+				graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 			}
 		}
 	}
@@ -4803,18 +4875,18 @@ int cmzn_graphics_tessellation_change(struct cmzn_graphics *graphics,
 				if (change_detail->isElementDivisionsChanged() &&
 					(0 < cmzn_graphics_get_domain_dimension(graphics)))
 				{
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				}
 				else if (change_detail->isCircleDivisionsChanged())
 				{
 					if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION == graphics->line_shape)
 					{
-						cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+						graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					}
 					else if (graphics->glyph && graphics->glyph->usesCircleDivisions())
 					{
 						cmzn_graphics_update_graphics_object_trivial_glyph(graphics);
-						cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+						graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 					}
 				}
 			}
@@ -4860,7 +4932,7 @@ int cmzn_graphics_font_change(struct cmzn_graphics *graphics,
 						}
 						GT_object_changed(graphics->graphics_object);
 					}
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+					graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 				}
 			}
 		}
@@ -5041,7 +5113,7 @@ int cmzn_graphics_set_scene_for_list_private(struct cmzn_graphics *graphics, voi
 cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics)
 {
 	if (graphics)
-		return (ACCESS(cmzn_graphics)(graphics));
+		return graphics->access();
 	return 0;
 }
 
@@ -5049,7 +5121,7 @@ int cmzn_graphics_destroy(cmzn_graphics_id *graphics_address)
 {
 	if (graphics_address && *graphics_address)
 	{
-		DEACCESS(cmzn_graphics)(graphics_address);
+		cmzn_graphics::deaccess(*graphics_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -5085,9 +5157,9 @@ public:
 	}
 };
 
-enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *string)
+enum cmzn_graphics_type cmzn_graphics_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_graphics_type, cmzn_graphics_type_conversion>(string);
+	return string_to_enum<enum cmzn_graphics_type, cmzn_graphics_type_conversion>(name);
 }
 
 char *cmzn_graphics_type_enum_to_string(enum cmzn_graphics_type type)
@@ -5123,9 +5195,9 @@ public:
 	}
 };
 
-enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string)
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *name)
 {
-	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(name);
 }
 
 char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type)
@@ -5162,10 +5234,10 @@ public:
 };
 
 enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_select_mode,
-		cmzn_graphics_select_mode_conversion>(string);
+		cmzn_graphics_select_mode_conversion>(name);
 }
 
 char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type)
@@ -5183,10 +5255,10 @@ public:
 		switch (type)
 		{
 		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED:
-			enum_string = "RENDER_POLYGON_SHADED";
+			enum_string = "SHADED";
 			break;
 		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME:
-			enum_string = "RENDER_POLYGON_WIREFRAME";
+			enum_string = "WIREFRAME";
 			break;
 		default:
 			break;
@@ -5196,10 +5268,10 @@ public:
 };
 
 enum cmzn_graphics_render_polygon_mode cmzn_graphics_render_polygon_mode_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_render_polygon_mode,
-		cmzn_graphics_render_polygon_mode_conversion>(string);
+		cmzn_graphics_render_polygon_mode_conversion>(name);
 }
 
 char *cmzn_graphics_render_polygon_mode_enum_to_string(
@@ -5231,10 +5303,10 @@ public:
 };
 
 enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_streamlines_track_direction,
-		cmzn_graphics_streamlines_track_direction_conversion>(string);
+		cmzn_graphics_streamlines_track_direction_conversion>(name);
 }
 
 char *cmzn_graphics_streamlines_track_direction_enum_to_string(
@@ -5269,10 +5341,10 @@ public:
 };
 
 enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
-	const char *string)
+	const char *name)
 {
 	return string_to_enum<enum cmzn_graphics_streamlines_colour_data_type,
-		cmzn_graphics_streamlines_colour_data_type_conversion>(string);
+		cmzn_graphics_streamlines_colour_data_type_conversion>(name);
 }
 
 char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
@@ -5305,7 +5377,7 @@ int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 		if (domain_type != graphics->domain_type)
 		{
 			graphics->domain_type = domain_type;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5347,7 +5419,7 @@ int cmzn_graphics_contours_set_decimation_threshold(
 		if (decimation_threshold != graphics->decimation_threshold)
 		{
 			graphics->decimation_threshold = decimation_threshold;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5376,7 +5448,7 @@ int cmzn_graphics_contours_set_isoscalar_field(
 		if (isoscalar_field != graphics->isoscalar_field)
 		{
 			REACCESS(Computed_field)(&(graphics->isoscalar_field), isoscalar_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5462,7 +5534,7 @@ int cmzn_graphics_contours_set_list_isovalues(
 				}
 				graphics->number_of_isovalues = 0;
 			}
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5530,7 +5602,7 @@ int cmzn_graphics_contours_set_range_isovalues(
 			graphics->number_of_isovalues = number_of_isovalues;
 			graphics->first_isovalue = first_isovalue;
 			graphics->last_isovalue = last_isovalue;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5602,7 +5674,7 @@ int cmzn_graphics_streamlines_set_colour_data_type(
 		if (streamlines_colour_data_type != graphics->streamlines_colour_data_type)
 		{
 			graphics->streamlines_colour_data_type = streamlines_colour_data_type;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5640,7 +5712,7 @@ int cmzn_graphics_streamlines_set_stream_vector_field(
 				graphics->scene->registerVectorField(
 					graphics->stream_vector_field, graphics->coordinate_field);
 			}
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5667,7 +5739,7 @@ int cmzn_graphics_streamlines_set_track_direction(
 		if (track_direction != graphics->streamlines_track_direction)
 		{
 			graphics->streamlines_track_direction = track_direction;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5692,7 +5764,7 @@ int cmzn_graphics_streamlines_set_track_length(
 		if (length != graphics->streamline_length)
 		{
 			graphics->streamline_length = length;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5784,7 +5856,7 @@ int cmzn_graphicslineattributes_set_base_size(
 		}
 		if (changed)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5812,7 +5884,7 @@ int cmzn_graphicslineattributes_set_orientation_scale_field(
 		if (orientation_scale_field != graphics->line_orientation_scale_field)
 		{
 			REACCESS(Computed_field)(&(graphics->line_orientation_scale_field), orientation_scale_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5863,7 +5935,7 @@ int cmzn_graphicslineattributes_set_scale_factors(
 		}
 		if (changed)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5894,7 +5966,7 @@ int cmzn_graphicslineattributes_set_shape_type(
 		if (shape_type != graphics->line_shape)
 		{
 			graphics->line_shape = shape_type;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -5967,7 +6039,7 @@ int cmzn_graphicspointattributes_set_base_size(
 		if (changed)
 		{
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -5996,7 +6068,7 @@ int cmzn_graphicspointattributes_set_font(
 		{
 			REACCESS(cmzn_font)(&(graphics->font), font);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6024,7 +6096,7 @@ int cmzn_graphicspointattributes_set_glyph(
 		{
 			REACCESS(cmzn_glyph)(&(graphics->glyph), glyph);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6072,7 +6144,7 @@ int cmzn_graphicspointattributes_set_glyph_offset(
 		if (changed)
 		{
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6103,7 +6175,7 @@ int cmzn_graphicspointattributes_set_glyph_repeat_mode(
 		{
 			graphics->glyph_repeat_mode = glyph_repeat_mode;
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6168,7 +6240,7 @@ int cmzn_graphicspointattributes_set_label_field(
 		if (label_field != graphics->label_field)
 		{
 			REACCESS(Computed_field)(&(graphics->label_field), label_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6216,7 +6288,7 @@ int cmzn_graphicspointattributes_set_label_offset(
 		if (changed)
 		{
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6251,7 +6323,7 @@ int cmzn_graphicspointattributes_set_label_text(
 			graphics->label_text[label_number - 1] =
 				(label_text && (0 < strlen(label_text))) ? duplicate_string(label_text) : 0;
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6290,7 +6362,7 @@ int cmzn_graphicspointattributes_set_orientation_scale_field(
 				graphics->scene->registerVectorField(
 					graphics->point_orientation_scale_field, graphics->coordinate_field);
 			}
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6338,7 +6410,7 @@ int cmzn_graphicspointattributes_set_scale_factors(
 		if (changed)
 		{
 			cmzn_graphics_update_graphics_object_trivial(graphics);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
 		return CMZN_OK;
 	}
@@ -6367,7 +6439,7 @@ int cmzn_graphicspointattributes_set_signed_scale_field(
 		if (signed_scale_field != graphics->signed_scale_field)
 		{
 			REACCESS(Computed_field)(&(graphics->signed_scale_field), signed_scale_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6419,7 +6491,7 @@ int cmzn_graphicssamplingattributes_set_density_field(
 		if (sample_density_field != graphics->sample_density_field)
 		{
 			REACCESS(Computed_field)(&(graphics->sample_density_field), sample_density_field);
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6466,7 +6538,7 @@ int cmzn_graphicssamplingattributes_set_location(
 		}
 		if (changed)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6492,7 +6564,7 @@ int cmzn_graphicssamplingattributes_set_element_point_sampling_mode(
 		if (sampling_mode != graphics->sampling_mode)
 		{
 			graphics->sampling_mode = sampling_mode;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
 	}
@@ -6504,7 +6576,7 @@ void cmzn_graphics_flag_glyph_has_changed(struct cmzn_graphics *graphics)
 	if (graphics)
 	{
 		cmzn_graphics_update_graphics_object_trivial_glyph(graphics);
-		cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+		graphics->setChange(CMZN_GRAPHICS_CHANGE_RECOMPILE);
 	}
 }
 
@@ -6518,7 +6590,7 @@ int cmzn_graphics_flag_for_full_rebuild(
 		return_code = 1;
 		if (graphics->timeDependent)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			graphics->setChange(CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 	}
 	else
@@ -6604,7 +6676,7 @@ struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graph
 	struct GT_object *return_object = 0;
 	if (graphics && graphics->scene)
 	{
-		cmzn_graphics *copy_graphics=CREATE(cmzn_graphics)(graphics->graphics_type);
+		cmzn_graphics *copy_graphics = cmzn_graphics::create(graphics->graphics_type);
 		if (copy_graphics)
 		{
 			/* copy and insert in list */

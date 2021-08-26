@@ -123,7 +123,7 @@ public:
 		return cmzn_font_set_point_size(id, size);
 	}
 
-	enum RenderType getRenderType()
+	RenderType getRenderType()
 	{
 		return static_cast<RenderType>(cmzn_font_get_render_type(id));
 	}

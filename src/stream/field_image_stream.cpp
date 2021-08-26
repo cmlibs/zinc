@@ -505,10 +505,10 @@ public:
 };
 
 enum cmzn_streaminformation_image_attribute
-	cmzn_streaminformation_image_attribute_enum_from_string(const char *string)
+	cmzn_streaminformation_image_attribute_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_streaminformation_image_attribute,
-		cmzn_streaminformation_image_attribute_conversion>(string);
+		cmzn_streaminformation_image_attribute_conversion>(name);
 }
 
 char *cmzn_streaminformation_image_attribute_enum_to_string(
@@ -627,10 +627,10 @@ public:
 };
 
 enum cmzn_streaminformation_image_file_format
-	cmzn_streaminformation_image_file_format_enum_from_string(const char *string)
+	cmzn_streaminformation_image_file_format_enum_from_string(const char *name)
 {
 	return string_to_enum<enum cmzn_streaminformation_image_file_format,
-	cmzn_streaminformation_image_file_format_conversion>(string);
+	cmzn_streaminformation_image_file_format_conversion>(name);
 }
 
 char *cmzn_streaminformation_image_file_format_enum_to_string(
@@ -719,10 +719,10 @@ public:
 
 enum cmzn_streaminformation_image_pixel_format
 	cmzn_streaminformation_image_pixel_format_enum_from_string(
-		const char *string)
+		const char *name)
 {
 	return string_to_enum<enum cmzn_streaminformation_image_pixel_format,
-		cmzn_streaminformation_image_pixel_format_conversion>(string);
+		cmzn_streaminformation_image_pixel_format_conversion>(name);
 }
 
 char *cmzn_streaminformation_image_pixel_format_enum_to_string(

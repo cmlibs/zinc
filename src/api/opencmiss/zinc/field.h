@@ -34,11 +34,11 @@ Global functions
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
  */
 ZINC_API enum cmzn_field_coordinate_system_type
-	cmzn_field_coordinate_system_type_enum_from_string(const char *string);
+	cmzn_field_coordinate_system_type_enum_from_string(const char *name);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
@@ -48,7 +48,27 @@ ZINC_API enum cmzn_field_coordinate_system_type
  * @return  an allocated string which stored the short name of the enum.
  */
 ZINC_API char *cmzn_field_coordinate_system_type_enum_to_string(
-	enum cmzn_field_coordinate_system_type coordinate_system_type);
+	enum cmzn_field_coordinate_system_type type);
+
+/**
+ * Convert a short name into an enum if the name matches any of the members in
+ * the enum.
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
+	const char *name);
+
+/**
+ * Return an allocated short name of the enum type from the provided enum.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
+ *
+ * @param type  enum to be converted into string
+ * @return  an allocated string of the short name of the enum.
+ */
+ZINC_API char *cmzn_field_domain_type_enum_to_string(
+	enum cmzn_field_domain_type type);
 
 /**
  * Get the number of components of the field.

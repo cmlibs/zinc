@@ -17,7 +17,6 @@
 #include <opencmiss/zinc/node.h>
 #include <opencmiss/zinc/stream.h>
 
-#include "zinctestsetupcpp.hpp"
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
@@ -32,6 +31,8 @@
 #include <opencmiss/zinc/region.hpp>
 #include <opencmiss/zinc/scene.hpp>
 #include <opencmiss/zinc/status.hpp>
+#include "utilities/testenum.hpp"
+#include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
 
@@ -2453,4 +2454,10 @@ TEST(ZincFieldFiniteElement, unmanagedWithChangeCache)
 	EXPECT_FALSE(feField.isManaged());
 	zinc.fm.endChange();
 	EXPECT_FALSE(feField.isManaged());
+}
+
+TEST(ZincFieldFindMeshLocation, SearchModeEnum)
+{
+	const char *enumNames[3] = { nullptr, "EXACT", "NEAREST" };
+	testEnum(3, enumNames, FieldFindMeshLocation::SearchModeEnumToString, FieldFindMeshLocation::SearchModeEnumFromString);
 }

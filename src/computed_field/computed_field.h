@@ -709,11 +709,11 @@ int Computed_field_is_not_source_field_of_others(struct cmzn_field *field);
 int cmzn_field_get_access_count(cmzn_field_id field);
 #endif /* defined (DEBUG_CODE) */
 
-enum cmzn_field_type cmzn_field_type_enum_from_string(const char *string);
+enum cmzn_field_type cmzn_field_type_enum_from_string(const char *name);
 
 char *cmzn_field_type_enum_to_string(enum cmzn_field_type type);
 
-enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *string);
+enum cmzn_field_type cmzn_field_type_enum_from_class_name(const char *name);
 
 char *cmzn_field_type_enum_to_class_name(enum cmzn_field_type type);
 

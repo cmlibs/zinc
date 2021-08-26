@@ -199,21 +199,15 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_shaderprogram_id *object_address)
+	static inline void deaccess(cmzn_shaderprogram*& shaderprogram)
 	{
-		cmzn_shaderprogram_id program;
-
-		if (object_address && (program = *object_address))
+		if (shaderprogram)
 		{
-			--(program->access_count);
-			if (program->access_count <= 0)
-			{
-				delete program;
-			}
-			program = 0;
-			return CMZN_OK;
+			--(shaderprogram->access_count);
+			if (shaderprogram->access_count <= 0)
+				delete shaderprogram;
+			shaderprogram = nullptr;
 		}
-		return CMZN_ERROR_ARGUMENT;
 	}
 
 	void programChanged()
@@ -297,12 +291,17 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_shaderprogram)
 {
 	if (object)
 		return object->access();
-	return 0;
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_shaderprogram)
 {
-	return cmzn_shaderprogram::deaccess(object_address);
+	if (*object_address)
+	{
+		cmzn_shaderprogram::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_shaderprogram)
@@ -315,14 +314,13 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_shaderprogram)
 		}
 		if (*object_address)
 		{
-			cmzn_shaderprogram::deaccess(object_address);
+			cmzn_shaderprogram::deaccess(*object_address);
 		}
 		*object_address = new_object;
 		return 1;
 	}
 	return 0;
 }
-
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_shaderprogram)
 
@@ -2933,15 +2931,15 @@ cmzn_shaderprogram_id cmzn_shaderprogram_create_private()
 cmzn_shaderprogram_id cmzn_shaderprogram_access(cmzn_shaderprogram_id shader_program)
 {
 	if (shader_program)
-		return ACCESS(cmzn_shaderprogram)(shader_program);
+		return shader_program->access();
 	return 0;
 }
 
 int cmzn_shaderprogram_destroy(cmzn_shaderprogram_id *shader_program_address)
 {
-	if (shader_program_address && *shader_program_address)
+	if (shader_program_address)
 	{
-		DEACCESS(cmzn_shaderprogram)(shader_program_address);
+		cmzn_shaderprogram::deaccess(*shader_program_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;

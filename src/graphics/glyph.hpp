@@ -66,38 +66,9 @@ public:
 		return this;
 	}
 
-	static inline int deaccess(cmzn_glyph **glyphAddress)
-	{
-		int return_code;
-		struct cmzn_glyph *glyph;
-		if (glyphAddress && (glyph = *glyphAddress))
-		{
-			--(glyph->access_count);
-			if (glyph->access_count <= 0)
-			{
-				delete glyph;
-				return_code = 1;
-			}
-			else if ((!glyph->isManagedFlag) && (glyph->manager) &&
-			((1 == glyph->access_count) || ((2 == glyph->access_count) &&
-				(MANAGER_CHANGE_NONE(cmzn_glyph) != glyph->manager_change_status))))
-			{
-				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_glyph)(glyph, glyph->manager);
-			}
-			else
-			{
-				return_code = 1;
-			}
-			*glyphAddress = 0;
-		}
-		else
-		{
-			return_code = 0;
-		}
-		return (return_code);
-	}
+	static void deaccess(cmzn_glyph*& glyph);
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return isManagedFlag;
 	}
@@ -562,14 +533,6 @@ cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 	cmzn_glyphmodule_id glyphModule, GT_object *graphicsObject);
 
 int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject);
-
-enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string);
-
-char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode);
-
-enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string);
-
-char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type);
 
 bool cmzn_glyph_contains_surface_primitives(cmzn_glyph *glyph, cmzn_tessellation *tessellation,
 	cmzn_material *material, cmzn_font *font);

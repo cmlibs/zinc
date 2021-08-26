@@ -469,28 +469,23 @@ Module functions
 ----------------
 */
 
-int cmzn_spectrum::deaccess(cmzn_spectrum **spectrumAddress)
+void cmzn_spectrum::deaccess(cmzn_spectrum*& spectrum)
 {
-	int return_code = 0;
-	struct cmzn_spectrum *spectrum = 0;
-	if (spectrumAddress && (spectrum = *spectrumAddress))
+	if (spectrum)
 	{
 		--(spectrum->access_count);
 		if (spectrum->access_count <= 0)
 		{
 			DESTROY(cmzn_spectrum)(&spectrum);
-			return_code = 1;
 		}
 		else if ((!spectrum->is_managed_flag) && (spectrum->manager) &&
 			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
 				(MANAGER_CHANGE_NONE(cmzn_spectrum) != spectrum->manager_change_status))))
 		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_spectrum)(spectrum, spectrum->manager);
+			REMOVE_OBJECT_FROM_MANAGER(cmzn_spectrum)(spectrum, spectrum->manager);
 		}
-
+		spectrum = nullptr;
 	}
-
-	return return_code;
 }
 
 int cmzn_spectrum::setName(const char *newName)
@@ -677,12 +672,19 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(cmzn_spectrum,name,const char *)
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_spectrum)
 {
-	return object->access();
+	if (object)
+		return object->access();
+	return nullptr;
 }
 
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_spectrum)
 {
-	return cmzn_spectrum::deaccess(object_address);
+	if (object_address)
+	{
+		cmzn_spectrum::deaccess(*object_address);
+		return 1;
+	}
+	return 0;
 }
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_spectrum)
@@ -692,7 +694,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_spectrum)
 		if (new_object)
 			new_object->access();
 		if (*object_address)
-			cmzn_spectrum::deaccess(object_address);
+			cmzn_spectrum::deaccess(*object_address);
 		*object_address = new_object;
 		return 1;
 	}
@@ -2570,32 +2572,12 @@ cmzn_spectrum_id cmzn_spectrum_access(cmzn_spectrum_id spectrum)
 
 int cmzn_spectrum_destroy(cmzn_spectrum_id *spectrum_address)
 {
-	int return_code = 0;
-	struct cmzn_spectrum *spectrum;
-
-	ENTER(cmzn_spectrum_destroy);
-	if (spectrum_address && (spectrum = *spectrum_address))
+	if (spectrum_address)
 	{
-		(spectrum->access_count)--;
-		if (spectrum->access_count <= 0)
-		{
-			return_code = DESTROY(cmzn_spectrum)(spectrum_address);
-		}
-		else if ((!spectrum->is_managed_flag) && (spectrum->manager) &&
-			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
-				(MANAGER_CHANGE_NONE(cmzn_spectrum) != spectrum->manager_change_status))))
-		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_spectrum)(spectrum, spectrum->manager);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*spectrum_address = (struct cmzn_spectrum *)NULL;
+		cmzn_spectrum::deaccess(*spectrum_address);
+		return CMZN_OK;
 	}
-	LEAVE;
-
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_spectrum_is_managed(cmzn_spectrum_id spectrum)
