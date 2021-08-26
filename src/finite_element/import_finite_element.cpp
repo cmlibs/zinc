@@ -1047,67 +1047,64 @@ char *EXReader::readString(const char *stringDelimitersFormat)
 				break;
 			}
 			int blockLength = static_cast<int>(strlen(block));
-			if (blockLength > 0)
+			// process escaped characters
+			char *dest = block;
+			for (int i = 0; i < blockLength; ++i)
 			{
-				// process escaped characters
-				char *dest = block;
-				for (int i = 0; i < blockLength; ++i)
+				if (block[i] == '\\')
 				{
-					if (block[i] == '\\')
+					++i;
+					if (i < blockLength)
 					{
-						++i;
-						if (i < blockLength)
-						{
-							if (block[i] == 'n')
-								*dest = '\n';
-							else if (block[i] == 't')
-								*dest = '\t';
-							else if (block[i] == 'r')
-								*dest = '\r';
-							else
-								*dest = block[i];
-						}
+						if (block[i] == 'n')
+							*dest = '\n';
+						else if (block[i] == 't')
+							*dest = '\t';
+						else if (block[i] == 'r')
+							*dest = '\r';
 						else
-						{
-							// last character is escape, so must be escaping quote_char, or end of file
-							const int this_char = IO_stream_getc(this->input_file);
-							if (this_char == (int)quoteChar)
-							{
-								*dest = quoteChar;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
-								DEALLOCATE(block);
-								break;
-							}
-						}
+							*dest = block[i];
 					}
 					else
 					{
-						*dest = block[i];
+						// last character is escape, so must be escaping quote_char, or end of file
+						const int this_char = IO_stream_getc(this->input_file);
+						if (this_char == (int)quoteChar)
+						{
+							*dest = quoteChar;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  End of file after escape character in string.  %s", this->getFileLocation());
+							DEALLOCATE(block);
+							break;
+						}
 					}
-					++dest;
-				}
-				if (!block)
-				{
-					if (theString)
-						DEALLOCATE(theString);
-					break;
-				}
-				*dest = '\0';
-				char *tmp;
-				REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
-				if (tmp)
-				{
-					theString = tmp;
-					strcpy(theString + length, block);
 				}
 				else
 				{
-					if (theString)
-						DEALLOCATE(theString);
+					*dest = block[i];
 				}
+				++dest;
+			}
+			if (!block)
+			{
+				if (theString)
+					DEALLOCATE(theString);
+				break;
+			}
+			*dest = '\0';
+			char *tmp;
+			REALLOCATE(tmp, theString, char, length + strlen(block) + 1);
+			if (tmp)
+			{
+				theString = tmp;
+				strcpy(theString + length, block);
+			}
+			else
+			{
+				if (theString)
+					DEALLOCATE(theString);
 			}
 			DEALLOCATE(block);
 			if (theString == 0)
