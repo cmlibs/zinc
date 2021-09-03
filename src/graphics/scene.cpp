@@ -1361,7 +1361,7 @@ int cmzn_scene_compile_scene(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = cmzn_region_get_path(scene->region);
+		renderer->name_prefix = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
 		DEALLOCATE(renderer->name_prefix);
 	}
@@ -1413,7 +1413,7 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 	if (scene && scene->region)
 	{
 		return_code = 1;
-		region = ACCESS(cmzn_region)(scene->region);
+		region = scene->region->access();
 		child_region = cmzn_region_get_first_child(region);
 		while (child_region)
 		{
@@ -1424,7 +1424,7 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 			}
 			cmzn_region_reaccess_next_sibling(&child_region);
 		}
-		DEACCESS(cmzn_region)(&region);
+		cmzn_region::deaccess(region);
 	}
 	else
 	{
@@ -1778,9 +1778,9 @@ int for_each_child_scene_in_scene_tree(
 	struct cmzn_scene *child_scene;
 
 	ENTER(for_each_child_scene_in_scene_tree);
-	if (scene)
+	if ((scene) && (scene->region))
 	{
-		region = ACCESS(cmzn_region)(scene->region);
+		region = scene->region->access();
 		return_code = (*cmzn_scene_tree_iterator_function)(scene, user_data);
 		if (return_code)
 		{
@@ -1796,7 +1796,7 @@ int for_each_child_scene_in_scene_tree(
 				cmzn_region_reaccess_next_sibling(&child_region);
 			}
 		}
-		DEACCESS(cmzn_region)(&region);
+		cmzn_region::deaccess(region);
 	}
 	else
 	{
@@ -1941,9 +1941,9 @@ struct cmzn_region *cmzn_scene_get_region_internal(
 
 cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene)
 {
-	if (scene)
-		return ACCESS(cmzn_region)(scene->region);
-	return 0;
+	if ((scene) && (scene->region))
+		return scene->region->access();
+	return nullptr;
 }
 
 int cmzn_scene_modify(struct cmzn_scene *destination,
@@ -2381,7 +2381,7 @@ as a command, using the given <command_prefix>.
 	auto command_prefix = static_cast<const char *>(command_prefix_void);
 	if ((scene) && (command_prefix))
 	{
-		char *regionName = cmzn_region_get_path(scene->region);
+		char *regionName = scene->region->getPath();
 		make_valid_token(&regionName);
 		display_message(INFORMATION_MESSAGE, "%s %s", command_prefix, regionName);
 		DEALLOCATE(regionName);
@@ -2426,7 +2426,7 @@ in an easy-to-interpret matrix multiplication form.
 		if (CMZN_OK == scene->getTransformationMatrixRowMajor(transformationMatrix))
 		{
 			const char *coordinate_symbol = "xyzh";
-			char *regionName = cmzn_region_get_path(scene->region);
+			char *regionName = scene->region->getPath();
 			make_valid_token(&regionName);
 			display_message(INFORMATION_MESSAGE, "%s transformation:\n", regionName);
 			DEALLOCATE(regionName);
@@ -2726,7 +2726,7 @@ int cmzn_scene_compile_tree(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = cmzn_region_get_path(scene->region);
+		renderer->name_prefix = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
 		DEALLOCATE(renderer->name_prefix);
 	}

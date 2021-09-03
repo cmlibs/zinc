@@ -106,8 +106,8 @@ cmzn_region::~cmzn_region()
 			this->fieldDerivatives[i]->setRegionAndCacheIndexPrivate();
 
 	// GRC move to changes object?
-	REACCESS(cmzn_region)(&this->changes.child_added, NULL);
-	REACCESS(cmzn_region)(&this->changes.child_removed, NULL);
+	cmzn_region::deaccess(this->changes.child_added);
+	cmzn_region::deaccess(this->changes.child_removed);
 
 	// destroy child list
 	cmzn_region *next_child = this->first_child;
@@ -119,7 +119,7 @@ cmzn_region::~cmzn_region()
 		child->parent = NULL;
 		child->next_sibling = NULL;
 		child->previous_sibling = NULL;
-		DEACCESS(cmzn_region)(&child);
+		cmzn_region::deaccess(child);
 	}
 
 	// cease receiving field manager callbacks otherwise get problems from fields being destroyed
@@ -257,8 +257,8 @@ void cmzn_region::updateClients()
 		CMZN_CALLBACK_LIST_CALL(cmzn_region_change)(
 			this->change_callback_list, this, &changes);
 		// deaccess child pointers from message
-		REACCESS(cmzn_region)(&changes.child_added, NULL);
-		REACCESS(cmzn_region)(&changes.child_removed, NULL);
+		cmzn_region::deaccess(changes.child_added);
+		cmzn_region::deaccess(changes.child_removed);
 	}
 }
 
@@ -377,11 +377,6 @@ int cmzn_region::removeCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *func
 	return 0;
 }
 
-/**
- * Internal-only implementation of cmzn_region_find_child_by_name which does
- * not ACCESS the returned reference.
- * @see cmzn_region_find_child_by_name
- */
 cmzn_region *cmzn_region::findChildByName(const char *name) const
 {
 	for (cmzn_region *child = this->first_child; (child); child = child->next_sibling)
@@ -392,68 +387,93 @@ cmzn_region *cmzn_region::findChildByName(const char *name) const
 	return nullptr;
 }
 
-/**
- * Internal-only implementation of cmzn_region_find_subregion_at_path which
- * does not ACCESS the returned reference.
- * @see cmzn_region_find_subregion_at_path
- */
+cmzn_region *cmzn_region::createChild(const char *name)
+{
+	if (!((this->context) && (name)))
+		return nullptr;
+	cmzn_region *childRegion = nullptr;
+	// context stores all extant regions, so must ask it to create
+	cmzn_region *region = this->getContext()->createRegion();  // accessed
+	if ((CMZN_OK == region->setName(name)) &&
+		(CMZN_OK == this->appendChild(region)))
+	{
+		childRegion = region;
+	}
+	cmzn_region::deaccess(region);  // cleans up region if failed, 
+	return childRegion;
+}
+
 cmzn_region *cmzn_region::findSubregionAtPath(const char *path) const
 {
 	const cmzn_region *subregion = nullptr;
-	if (path)
+	if (!path)
+		return nullptr;
+	subregion = this;
+	char *pathCopy = duplicate_string(path);
+	char *childName = pathCopy;
+	if (childName[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
+		++childName;
+	while ((subregion) && (childName[0] != '\0'))
 	{
-		subregion = this;
-		char *path_copy = duplicate_string(path);
-		char *child_name = path_copy;
-		/* skip leading separator */
-		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
-			++child_name;
-		char *child_name_end;
-		while (subregion && (child_name_end =
-			strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR)))
-		{
-			*child_name_end = '\0';
-			subregion = subregion->findChildByName(child_name);
-			child_name = child_name_end + 1;
-		}
-		/* already found the subregion if there was a single trailing separator */
-		if (subregion && (child_name[0] != '\0'))
-			subregion = subregion->findChildByName(child_name);
-		DEALLOCATE(path_copy);
+		char *childNameEnd = strchr(childName, CMZN_REGION_PATH_SEPARATOR_CHAR);
+		if (childNameEnd)
+			*childNameEnd = '\0';
+		if (0 == strcmp(childName, CMZN_REGION_PATH_PARENT_NAME))
+			subregion = subregion->parent;
+		else
+			subregion = subregion->findChildByName(childName);
+		if (childNameEnd)
+			childName = childNameEnd + 1;
+		else
+			break;
 	}
-	return const_cast<cmzn_region*>(subregion);
+	DEALLOCATE(pathCopy);
+	return const_cast<cmzn_region *>(subregion);
 }
 
 cmzn_region *cmzn_region::createSubregion(const char *path)
 {
 	if (!path)
 		return nullptr;
-	// Fails if a subregion exists at that path already
-	cmzn_region *region = this->findSubregionAtPath(path);
-	if (region)
-		return 0;
-	region = this->access();
-	char *path_copy = duplicate_string(path);
-	char *child_name = path_copy;
-	if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
-		child_name++;
-	while (region && child_name && (child_name[0] != '\0'))
+	cmzn_region *subregion = this;
+	char *pathCopy = duplicate_string(path);
+	char *childName = pathCopy;
+	if (childName[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
+		++childName;
+	bool created = false;
+	while ((subregion) && (childName[0] != '\0'))
 	{
-		char *child_name_end = strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR);
-		if (child_name_end)
-			*child_name_end = '\0';
-		cmzn_region *child_region = cmzn_region_find_child_by_name(region, child_name);
-		if (!child_region)
-			child_region = cmzn_region_create_child(region, child_name);
-		REACCESS(cmzn_region)(&region, child_region);
-		DEACCESS(cmzn_region)(&child_region);
-		if (child_name_end)
-			child_name = child_name_end + 1;
+		char *childNameEnd = strchr(childName, CMZN_REGION_PATH_SEPARATOR_CHAR);
+		if (childNameEnd)
+			*childNameEnd = '\0';
+		if (0 == strcmp(childName, CMZN_REGION_PATH_PARENT_NAME))
+		{
+			subregion = subregion->parent;
+			if (!subregion)
+				break;  // failed as no parent
+		}
 		else
-			child_name = (char *)0;
+		{
+			cmzn_region *childRegion = subregion->findChildByName(childName);
+			if (childRegion)
+			{
+				subregion = childRegion;
+			}
+			else
+			{
+				subregion = subregion->createChild(childName);
+				created = true;
+			}
+		}
+		if (childNameEnd)
+			childName = childNameEnd + 1;
+		else
+			break;
 	}
-	DEALLOCATE(path_copy);
-	return region;
+	DEALLOCATE(pathCopy);
+	if (!created)
+		return nullptr;  // failed to create or subregion already exists
+	return subregion;
 }
 
 /**
@@ -596,62 +616,77 @@ int cmzn_region::setName(const char *name)
 char *cmzn_region::getPath() const
 {
 	char *path = nullptr;
-	int error = 0;
-	const cmzn_region* parent = this->parent;
-	if (parent)
+	if (this->parent)
 	{
-		if ((path = parent->getPath()))
+		int error = 0;
+		const cmzn_region *region = this;
+		while (region->parent)
 		{
-			append_string(&path, this->name, &error);
-		}
-		else
-		{
-			DEALLOCATE(path);
-			error = 1;
+			if (path)
+			{
+				append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+			}
+			append_string(&path, region->name, &error, /*prefix*/true);
+			region = region->parent;
 		}
 	}
-	append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error);
+	else
+	{
+		path = duplicate_string("");
+	}
 	return path;
 }
 
-/**
- * Returns the relative path name to this region from other_region. Path name
- * always begins and ends with the CMZN_REGION_PATH_SEPARATOR_CHAR '/'.
- *
- * @param region  The region whose path is requested.
- * @param other_region  The region the path is relative to.
- * @return  On success: allocated string containing relative region path; on
- * failure: NULL, including case when region is not within other_region.
- */
-
-char *cmzn_region::getRelativePath(cmzn_region *other_region) const
+char *cmzn_region::getRelativePath(const cmzn_region *baseRegion) const
 {
-	char *path = nullptr;
-	if (other_region)
+	if (!baseRegion)
+		return nullptr;
+	char *pathUp = nullptr;
+	int error = 0;
+	const cmzn_region *commonBaseRegion = baseRegion;
+	while (!commonBaseRegion->containsSubregion(this))
 	{
-		int error = 0;
-		if (this != other_region)
+		if (!commonBaseRegion->parent)
 		{
-			cmzn_region* parent = this->parent;
-			if (parent)
-			{
-				if ((path = parent->getRelativePath(other_region)))
-				{
-					append_string(&path, this->name, &error);
-				}
-				else
-				{
-					error = 1;
-				}
-			}
-			else
-			{
-				error = 1;
-			}
+			DEALLOCATE(pathUp);
+			return nullptr;
 		}
-		append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error);
+		if (pathUp)
+		{
+			append_string(&pathUp, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+		}
+		append_string(&pathUp, CMZN_REGION_PATH_PARENT_NAME, &error, /*prefix*/true);
+		commonBaseRegion = commonBaseRegion->parent;
 	}
-	return (path);
+	char *path = nullptr;
+	const cmzn_region *region = this;
+	while (region != commonBaseRegion)
+	{
+		if (path)
+		{
+			append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+		}
+		append_string(&path, region->name, &error, /*prefix*/true);
+		region = region->parent;
+	}
+	if (path)
+	{
+		if (pathUp)
+		{
+			append_string(&path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+			append_string(&path, pathUp, &error, /*prefix*/true);
+			DEALLOCATE(pathUp);
+		}
+	}
+	else if (pathUp)
+	{
+		path = pathUp;
+	}
+	else
+	{
+		path = duplicate_string("");
+	}
+	return path;
 }
 
 int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_child)
@@ -684,11 +719,11 @@ int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_chil
 		ref_child->previous_sibling = new_child;
 		if (new_child->previous_sibling)
 		{
-			new_child->previous_sibling->next_sibling = ACCESS(cmzn_region)(new_child);
+			new_child->previous_sibling->next_sibling = new_child->access();
 		}
 		else
 		{
-			this->first_child = ACCESS(cmzn_region)(new_child);
+			this->first_child = new_child->access();
 		}
 	}
 	else
@@ -700,24 +735,24 @@ int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_chil
 			{
 				last_child = last_child->next_sibling;
 			}
-			last_child->next_sibling = ACCESS(cmzn_region)(new_child);
+			last_child->next_sibling = new_child->access();
 			new_child->previous_sibling = last_child;
 		}
 		else
 		{
-			this->first_child = ACCESS(cmzn_region)(new_child);
+			this->first_child = new_child->access();
 		}
 	}
 	if (!this->changes.children_changed)
 	{
 		this->changes.children_changed = 1;
-		this->changes.child_added = ACCESS(cmzn_region)(new_child);
+		this->changes.child_added = new_child->access();
 	}
 	else
 	{
 		/* multiple changes */
-		REACCESS(cmzn_region)(&this->changes.child_added, NULL);
-		REACCESS(cmzn_region)(&this->changes.child_removed, NULL);
+		cmzn_region::deaccess(this->changes.child_added);
+		cmzn_region::deaccess(this->changes.child_removed);
 	}
 	if (delta_change_level != 0)
 	{
@@ -752,25 +787,25 @@ int cmzn_region::removeChild(cmzn_region *old_child)
 	if (!this->changes.children_changed)
 	{
 		this->changes.children_changed = 1;
-		this->changes.child_removed = ACCESS(cmzn_region)(old_child);
+		this->changes.child_removed = old_child->access();
 	}
 	else
 	{
 		/* multiple changes */
-		REACCESS(cmzn_region)(&this->changes.child_added, NULL);
-		REACCESS(cmzn_region)(&this->changes.child_removed, NULL);
+		cmzn_region::deaccess(this->changes.child_added);
+		cmzn_region::deaccess(this->changes.child_removed);
 	}
 	if (delta_change_level != 0)
 	{
 		old_child->treeChange(delta_change_level);
 	}
 	this->updateClients();
-	DEACCESS(cmzn_region)(&old_child);
+	cmzn_region::deaccess(old_child);
 	this->endChange();
 	return CMZN_OK;
 }
 
-bool cmzn_region::containsSubregion(cmzn_region *subregion) const
+bool cmzn_region::containsSubregion(const cmzn_region *subregion) const
 {
 	while (subregion)
 	{
@@ -849,27 +884,23 @@ cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region)
 	return nullptr;
 }
 
-struct cmzn_region *cmzn_region_create_child(struct cmzn_region *parent_region,
+struct cmzn_region *cmzn_region_create_child(struct cmzn_region *region,
 	const char *name)
 {
-	if (!((parent_region) && (parent_region->getContext()) && (name)))
+	if (!region)
 		return nullptr;
-	cmzn_region *region = parent_region->getContext()->createRegion();
-	if (cmzn_region_set_name(region, name) &&
-		cmzn_region_append_child(parent_region, region))
-	{
-		return region;
-	}
-	cmzn_region_destroy(&region);
-	return nullptr;
+	cmzn_region *childRegion = region->createChild(name);
+	if (childRegion)
+		childRegion->access();
+	return childRegion;
 }
 
 struct cmzn_region *cmzn_region_create_subregion(
-	struct cmzn_region *top_region, const char *path)
+	struct cmzn_region *region, const char *path)
 {
-	if (!top_region)
+	if (!region)
 		return nullptr;
-	cmzn_region *subregion = top_region->createSubregion(path);
+	cmzn_region *subregion = region->createSubregion(path);
 	if (subregion)
 		subregion->access();
 	return subregion;
@@ -1012,10 +1043,10 @@ char *cmzn_region_get_path(struct cmzn_region *region)
 }
 
 char *cmzn_region_get_relative_path(struct cmzn_region *region,
-	struct cmzn_region *other_region)
+	struct cmzn_region *base_region)
 {
 	if (region)
-		return region->getRelativePath(other_region);
+		return region->getRelativePath(base_region);
 	return nullptr;
 }
 
@@ -1029,29 +1060,55 @@ struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region)
 	return parent;
 }
 
+cmzn_region_id cmzn_region_get_root(cmzn_region_id region)
+{
+	if (!region)
+		return nullptr;
+	return region->getRoot()->access();
+}
+
 struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region)
 {
-	return (region && region->getFirstChild()) ?
-		ACCESS(cmzn_region)(region->getFirstChild()) : NULL;
+	if (region)
+	{
+		cmzn_region *childRegion = region->getFirstChild();
+		if (childRegion)
+			return childRegion->access();
+	}
+	return nullptr;
 }
 
 struct cmzn_region *cmzn_region_get_next_sibling(struct cmzn_region *region)
 {
-	return (region && region->getNextSibling()) ?
-		ACCESS(cmzn_region)(region->getNextSibling()) : NULL;
+	if (region)
+	{
+		cmzn_region *siblingRegion = region->getNextSibling();
+		if (siblingRegion)
+			return siblingRegion->access();
+	}
+	return nullptr;
 }
 
 struct cmzn_region *cmzn_region_get_previous_sibling(struct cmzn_region *region)
 {
-	return (region && region->getPreviousSibling()) ?
-		ACCESS(cmzn_region)(region->getPreviousSibling()) : NULL;
+	if (region)
+	{
+		cmzn_region *siblingRegion = region->getPreviousSibling();
+		if (siblingRegion)
+			return siblingRegion->access();
+	}
+	return nullptr;
 }
 
 void cmzn_region_reaccess_next_sibling(struct cmzn_region **region_address)
 {
 	if (region_address && (*region_address))
 	{
-		REACCESS(cmzn_region)(region_address, (*region_address)->getNextSibling());
+		cmzn_region *siblingRegion = (*region_address)->getNextSibling();
+		if (siblingRegion)
+			siblingRegion->access();
+		cmzn_region::deaccess(*region_address);
+		*region_address = siblingRegion;
 	}
 }
 
@@ -1094,7 +1151,7 @@ struct cmzn_region *cmzn_region_find_child_by_name(
 	{
 		cmzn_region *child = region->findChildByName(name);
 		if (child)
-			return ACCESS(cmzn_region)(child);
+			return child->access();
 	}
 	return nullptr;
 }
@@ -1132,18 +1189,6 @@ int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
 			return_code = 1;
 	}
 	return (return_code);
-}
-
-struct cmzn_region *cmzn_region_get_root(struct cmzn_region *region)
-{
-	if (!region)
-		return nullptr;
-	cmzn_region *root = region;
-	while (root->getParent())
-	{
-		root = root->getParent();
-	}
-	return ACCESS(cmzn_region)(root);
 }
 
 bool cmzn_region_is_root(struct cmzn_region *region)
@@ -1322,8 +1367,8 @@ bool cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_r
 	// check FE_regions
 	if (!FE_region_can_merge((target_region) ? target_region->get_FE_region() : nullptr, source_region->get_FE_region()))
 	{
-		char *target_path = cmzn_region_get_path(target_region);
-		char *source_path = cmzn_region_get_path(source_region);
+		char *source_path = source_region->getPath();
+		char *target_path = target_region->getPath();
 		display_message(ERROR_MESSAGE,
 			"Cannot merge source region %s into %s", source_path, target_path);
 		DEALLOCATE(source_path);
@@ -1374,8 +1419,8 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 			cmzn_field_group_id target_group = cmzn_field_cast_group(target_field);
 			if (target_field && (!target_group))
 			{
-				char *target_path = cmzn_region_get_path(target_region);
-				char *source_path = cmzn_region_get_path(source_region);
+				char *source_path = source_region->getPath();
+				char *target_path = target_region->getPath();
 				display_message(ERROR_MESSAGE,
 					"Cannot merge group %s from source region %s into field using same name in %s", name, source_path, target_path);
 				DEALLOCATE(source_path);
@@ -1487,8 +1532,8 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 
 	if (!FE_region_merge(target_region->get_FE_region(), source_region->get_FE_region()))
 	{
-		char *target_path = cmzn_region_get_path(target_region);
-		char *source_path = cmzn_region_get_path(source_region);
+		char *source_path = source_region->getPath();
+		char *target_path = target_region->getPath();
 		display_message(ERROR_MESSAGE,
 			"Could not merge source_region region %s into %s", source_path, target_path);
 		DEALLOCATE(source_path);

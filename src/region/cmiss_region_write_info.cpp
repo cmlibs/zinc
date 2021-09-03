@@ -92,7 +92,7 @@ DESCRIPTION :
 	{
 		if (write_info->region)
 		{
-			DEACCESS(cmzn_region)(&(write_info->region));
+			cmzn_region::deaccess(write_info->region);
 		}
 		if (write_info->path)
 		{
@@ -154,7 +154,7 @@ DESCRIPTION :
 		{
 			if (NULL != (write_info = CREATE(cmzn_region_write_info)()))
 			{
-				write_info->region = ACCESS(cmzn_region)(region);
+				write_info->region = region->access();
 				write_info->status = write_status;
 				write_info->path = duplicate_string(path);
 				if (!(write_info->path && ADD_OBJECT_TO_LIST(cmzn_region_write_info)(

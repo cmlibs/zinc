@@ -139,9 +139,9 @@ void SceneviewerJsonIO::ioSceneEntries(Json::Value &sceneviewerSettings)
 		OpenCMISS::Zinc::Region region = scene.getRegion();
 		if (region.isValid())
 		{
-			char * region_path = cmzn_region_get_path(region.getId());
-			sceneviewerSettings["Scene"] = region_path;
-			DEALLOCATE(region_path);
+			char *regionPath = region.getPath();
+			sceneviewerSettings["Scene"] = regionPath;
+			DEALLOCATE(regionPath);
 		}
 	}
 	else
@@ -149,19 +149,12 @@ void SceneviewerJsonIO::ioSceneEntries(Json::Value &sceneviewerSettings)
 		if (sceneviewerSettings["Scene"].isString())
 		{
 			OpenCMISS::Zinc::Scene scene = sceneviewer.getScene();
-			OpenCMISS::Zinc::Region region = scene.getRegion();
-			if (region.isValid())
+			OpenCMISS::Zinc::Region rootRegion = scene.getRegion().getRoot();
+			if (rootRegion.isValid())
 			{
-				cmzn_region *root_region = cmzn_region_get_root(region.getId());
-				cmzn_region *target_region = cmzn_region_find_subregion_at_path(
-					root_region, sceneviewerSettings["Scene"].asCString());
-				cmzn_scene_id target_scene = cmzn_region_get_scene(target_region);
-				cmzn_sceneviewer_set_scene(sceneviewer.getId(), target_scene);
-				cmzn_scene_destroy(&target_scene);
-				cmzn_region_destroy(&root_region);
-				cmzn_region_destroy(&target_region);
+				OpenCMISS::Zinc::Region region = rootRegion.findSubregionAtPath(sceneviewerSettings["Scene"].asCString());
+				this->sceneviewer.setScene(region.getScene());
 			}
-
 		}
 	}
 }

@@ -95,18 +95,20 @@ LAST MODIFIED : 1 June 1990
 DESCRIPTION :
 ==============================================================================*/
 
-int append_string(char **string1,const char *string2,int *error);
-/*******************************************************************************
-LAST MODIFIED : 1 September 1998
-
-DESCRIPTION :
-Concatenates <string2> on to the end of <*string1> by reallocating <*string1> to
-fit. <*string1> may start off as NULL or an existing allocated string.
-If <*error> is 1, nothing is done; if an error occurs, <*error> is set to 1 and
-<*string1> is deallocated. Repeated calls to this function after an error has
-occurred thus do not add to the string, and do not result in further errors.
-It is up to the calling function to deallocate the returned string.
-==============================================================================*/
+/**
+ * Reallocate string at address and append string1. Handles previous errors so
+ * repeated calls to this function after an error has occurred do not add to
+ * the string, and do not result in further errors.
+ * It is up to the calling function to deallocate *stringAddress.
+ * @param stringAddress  Pointer to string to reallocate/append. Pointed to
+ * string can be nullptr. String is deallocated on error.
+ * @param string1  String to append.
+ * @param error  If error is 1, nothing is done. If error occurs *error is set
+ * to 1 and *string1 is deallocated.
+ * @param prefix  Option to append string1 before *stringAddress.
+ * @return  1 if no error, otherwise 0.
+*/
+int append_string(char **stringAddress, const char *string1, int *error, bool prefix=false);
 
 int check_suffix(char **string, const char *suffix);
 /*******************************************************************************

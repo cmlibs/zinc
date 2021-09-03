@@ -408,7 +408,7 @@ public:
 
 	virtual void list_type_specific() const
 	{
-		char *region_name = cmzn_region_get_path(matchRegion);
+		char *region_name = matchRegion->getPath();
 		display_message(INFORMATION_MESSAGE, "match_region_path %s", region_name);
 		DEALLOCATE(region_name);
 	}

@@ -106,7 +106,7 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 		ALLOCATE(fieldmodule, struct cmzn_fieldmodule, sizeof(struct cmzn_fieldmodule));
 		if (fieldmodule)
 		{
-			fieldmodule->region = ACCESS(cmzn_region)(region);
+			fieldmodule->region = region->access();
 			fieldmodule->field_name = (char *)NULL;
 			fieldmodule->replace_field = (Computed_field *)NULL;
 			fieldmodule->coordinate_system.type = RECTANGULAR_CARTESIAN;
@@ -139,7 +139,7 @@ int cmzn_fieldmodule_destroy(
 		fieldmodule->access_count--;
 		if (0 == fieldmodule->access_count)
 		{
-			DEACCESS(cmzn_region)(&fieldmodule->region);
+			cmzn_region::deaccess(fieldmodule->region);
 			DEALLOCATE(fieldmodule->field_name)
 			REACCESS(Computed_field)(&fieldmodule->replace_field, NULL);
 			DEALLOCATE(*fieldmodule_address);
@@ -211,9 +211,9 @@ struct cmzn_region *cmzn_fieldmodule_get_region_internal(
 struct cmzn_region *cmzn_fieldmodule_get_region(
 	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (fieldmodule)
-		return ACCESS(cmzn_region)(fieldmodule->region);
-	return NULL;
+	if ((fieldmodule) && (fieldmodule->region))
+		return fieldmodule->region->access();
+	return nullptr;
 }
 
 bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,

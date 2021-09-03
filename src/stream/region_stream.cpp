@@ -224,7 +224,7 @@ int cmzn_region_read(cmzn_region_id region,
 					return_code = CMZN_ERROR_GENERAL;
 			}
 		}
-		DEACCESS(cmzn_region)(&temp_region);
+		cmzn_region::deaccess(temp_region);
 		cmzn_region_end_hierarchical_change(region);
 		DESTROY(IO_stream_package)(&io_stream_package);
 	}

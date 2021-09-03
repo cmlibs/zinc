@@ -309,7 +309,7 @@ cmzn_field_change_detail *Computed_field_group::extract_change_detail()
 #ifdef DEBUG_CODE
 	{
 		cmzn_region *region = Computed_field_get_region(field);
-		char *path = cmzn_region_get_path(region);
+		char *path = region->getPath();
 		display_message(INFORMATION_MESSAGE, "Group %s%s change local %d non-local %d\n", path, field->name,
 			prior_change_detail->getLocalChange(), prior_change_detail->getNonLocalChange());
 		DEALLOCATE(path);
@@ -399,7 +399,7 @@ int Computed_field_group::list()
 		display_message(INFORMATION_MESSAGE, "    Region : ");
 		if (region)
 		{
-			char *path = cmzn_region_get_path(region);
+			char *path = region->getPath();
 			display_message(INFORMATION_MESSAGE, "%s", path);
 			DEALLOCATE(path);
 		}

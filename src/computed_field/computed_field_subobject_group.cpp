@@ -51,12 +51,12 @@ public:
 	Computed_field_sub_group_object_package(cmzn_region *root_region)
 		: root_region(root_region)
 	{
-		ACCESS(cmzn_region)(root_region);
+		root_region->access();
 	}
 	
 	~Computed_field_sub_group_object_package()
 	{
-		DEACCESS(cmzn_region)(&root_region);
+		cmzn_region::deaccess(root_region);
 	}
 };
 

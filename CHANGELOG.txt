@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.5.0
+Add support for relative paths in region find/create subregion; add get path, relative path, root.
+
 v3.4.0
 Fix crash in manager cleanup when change caching left active.
 Fix defining fields from model files and respecting unmanaged status while change caching active.

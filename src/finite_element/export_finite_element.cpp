@@ -2075,11 +2075,9 @@ static int write_cmzn_region(ostream *output_file,
 			if (!group || (region != root_region))
 			{
 				char *region_path = region->getRelativePath(root_region);
-				size_t len = strlen(region_path);
-				if ((1 < len) && (region_path[len - 1] == CMZN_REGION_PATH_SEPARATOR_CHAR))
-				{
-					region_path[len - 1] = '\0';
-				}
+				int error = 0;
+				// add leading '/' (required esp. for root region)
+				append_string(&region_path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
 				(*output_file) << "Region: " << region_path << "\n";
 				DEALLOCATE(region_path);
 			}
