@@ -94,7 +94,7 @@ endif()
 if (ZINC_RELEASE)
     set(Zinc_DEVELOPER_VERSION "")
 else()
-    set(Zinc_DEVELOPER_VERSION ".dev0")
+    set(Zinc_DEVELOPER_VERSION ".dev1")
 endif()
 
 set(USE_MSAA TRUE)
