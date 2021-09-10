@@ -28,6 +28,7 @@ class Field_location_time;
 
 class Field_location
 {
+
 public:
 	// enumeration of all derived types 
 	enum Type
@@ -50,6 +51,12 @@ protected:
 		type(type_in),
 		time(0.0)
 	{}
+
+	inline bool operator==(const Field_location& source) const
+	{
+		return (this->type == source.type)
+			&& (this->time == source.time);
+	}
 
 public:
 
@@ -104,6 +111,29 @@ public:
 	{
 		for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
 			xi[i] = 0.0;
+	}
+
+	/** @return  True if xi has same dimension and coordinates */
+	inline bool sameXi(int element_dimension_in, const FE_value *xi_in) const
+	{
+		if (this->element_dimension != element_dimension_in)
+		{
+			return false;
+		}
+		for (int i = 0; i < element_dimension_in; ++i)
+		{
+			if (this->xi[i] != xi_in[i])
+				return false;
+		}
+		return true;
+	}
+
+	inline bool operator==(const Field_location_element_xi& source) const
+	{
+		return Field_location::operator==(source)
+			&& (this->element == source.element)
+			&& (this->sameXi(source.element_dimension, source.xi))
+			&& (this->top_level_element == source.top_level_element);
 	}
 
 	/** Set element and optional top level element to inherit fields from, at default xi.
@@ -199,6 +229,28 @@ public:
 		delete[] this->values;
 	}
 
+	/** @return  True if xi has same dimension and coordinates */
+	inline bool sameValues(int number_of_values_in, const FE_value* values_in) const
+	{
+		if (this->number_of_values != number_of_values_in)
+		{
+			return false;
+		}
+		for (int i = 0; i < number_of_values_in; ++i)
+		{
+			if (this->values[i] != values_in[i])
+				return false;
+		}
+		return true;
+	}
+
+	inline bool operator==(const Field_location_field_values& source) const
+	{
+		return Field_location::operator==(source)
+			&& (this->field == source.field)
+			&& (this->sameValues(source.number_of_values, source.values));
+	}
+
 	/** Set field and values to evaluate at.
 	 * @param field_in  Client must ensure exists while pointer held.
 	 * @param number_of_values  Size of values_in, equal to number of field components. Client must ensure correct.
@@ -244,6 +296,13 @@ public:
 	{
 	}
 
+	inline bool operator==(const Field_location_node& source) const
+	{
+		return Field_location::operator==(source)
+			&& (this->node == source.node)
+			&& (this->host_element == source.host_element);
+	}
+
 	cmzn_node *get_node() const
 	{
 		return node;
@@ -286,6 +345,11 @@ public:
 	Field_location_time():
 		Field_location(TYPE_TIME)
 	{
+	}
+
+	inline bool operator==(const Field_location_time& source) const
+	{
+		return Field_location::operator==(source);
 	}
 };
 

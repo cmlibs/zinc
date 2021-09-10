@@ -17,7 +17,9 @@
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "description_io/field_json_io.hpp"
 #include "general/debug.h"
+#include "opencmiss/zinc/changemanager.hpp"
 #include "opencmiss/zinc/fieldalias.hpp"
+#include "opencmiss/zinc/fieldapply.hpp"
 #include "opencmiss/zinc/fieldarithmeticoperators.hpp"
 #include "opencmiss/zinc/fieldcomposite.hpp"
 #include "opencmiss/zinc/fieldconditional.hpp"
@@ -28,6 +30,7 @@
 #include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/fieldlogicaloperators.hpp"
 #include "opencmiss/zinc/fieldmatrixoperators.hpp"
+#include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/fieldtime.hpp"
 #include "opencmiss/zinc/fieldtrigonometry.hpp"
 #include "opencmiss/zinc/fieldvectoroperators.hpp"
@@ -35,8 +38,9 @@
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldcache.hpp"
 #include "opencmiss/zinc/region.hpp"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <vector>
 
 /*
  * header not yet supported:
@@ -44,9 +48,7 @@
  * fieldimage
  * fieldimageprocessing
  *
- *
  */
-
 OpenCMISS::Zinc::Field *getSourceFields(Json::Value &typeSettings, unsigned int *count,
 	FieldmoduleJsonImport *jsonImport)
 {
@@ -70,6 +72,131 @@ OpenCMISS::Zinc::Field *getSourceFields(Json::Value &typeSettings, unsigned int 
 	return sourceFields;
 }
 
+/* Deserialise apply/argument fields */
+OpenCMISS::Zinc::Field importApplyField(enum cmzn_field_type type,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
+	FieldmoduleJsonImport *jsonImport)
+{
+	OpenCMISS::Zinc::Field field;
+	switch (type)
+	{
+	case CMZN_FIELD_TYPE_APPLY:
+	{
+		// FieldApply is uniquely able to use source fields from another region
+		OpenCMISS::Zinc::Region region = jsonImport->getRegion();
+		OpenCMISS::Zinc::Region sourceRegion;
+		OpenCMISS::Zinc::Fieldmodule sourceFieldmodule;
+		if (typeSettings["SourceRegionPath"].isString())
+		{
+			// relative path from this region
+			const char *sourceRegionPath = typeSettings["SourceRegionPath"].asCString();
+			sourceRegion = region.findSubregionAtPath(sourceRegionPath);
+			if (!sourceRegion.isValid())
+			{
+				sourceRegion = region.createSubregion(sourceRegionPath);
+			}
+			if (sourceRegion.isValid())
+			{
+				sourceFieldmodule = sourceRegion.getFieldmodule();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to get region at relative path %s", sourceRegionPath);
+				return field;
+			}
+		}
+		OpenCMISS::Zinc::ChangeManager<OpenCMISS::Zinc::Fieldmodule> changeFields(sourceFieldmodule.isValid() ? sourceFieldmodule : fieldmodule);
+		OpenCMISS::Zinc::Field evaluateField;
+		if (typeSettings["SourceFields"].isArray() &&
+			typeSettings["SourceFields"].size() == 1)
+		{
+			const char *evaluateFieldName = typeSettings["SourceFields"][0].asCString();
+			if (sourceRegion.isValid())
+			{
+				// number of components is needed to verify source field or create a placeholder if it does not yet exist
+				const int numberOfComponents = (typeSettings["NumberOfComponents"].isInt()) ?
+					typeSettings["NumberOfComponents"].asInt() : 0;
+				evaluateField = sourceFieldmodule.findFieldByName(evaluateFieldName);
+				if (evaluateField.isValid())
+				{
+					if (evaluateField.getNumberOfComponents() != numberOfComponents)
+					{
+						display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply source field %s has wrong number of components, %d expected",
+							evaluateFieldName, numberOfComponents);
+						return field;
+					}
+				}
+				else
+				{
+					// create a temporary constant field with the number of components
+					std::vector<double> zero(numberOfComponents, 0.0);
+					evaluateField = sourceFieldmodule.createFieldConstant(numberOfComponents, zero.data());
+					evaluateField.setName(evaluateFieldName);
+				}
+			}
+			else
+			{
+				evaluateField = jsonImport->getFieldByName(evaluateFieldName);
+			}
+		}
+		std::vector<OpenCMISS::Zinc::Field> bindArgumentFields;
+		std::vector<OpenCMISS::Zinc::Field> bindSourceFields;
+		if (typeSettings["Bindings"].isArray() &&
+			typeSettings["Bindings"].size() > 0)
+		{
+			unsigned int numberOfBindings = typeSettings["Bindings"].size();
+			for (unsigned int i = 0; i < numberOfBindings; ++i)
+			{
+				const Json::Value& bindingSettings = typeSettings["Bindings"][i];
+				if (bindingSettings.isObject())
+				{
+					const char *sourceFieldName = bindingSettings["BindSourceField"].asCString();
+					OpenCMISS::Zinc::Field sourceField = jsonImport->getFieldByName(sourceFieldName);
+					OpenCMISS::Zinc::Field argumentField;
+					const char *argumentFieldName = bindingSettings["BindArgumentField"].asCString();
+					if (sourceRegion.isValid())
+					{
+						argumentField = sourceFieldmodule.findFieldByName(argumentFieldName);
+						if (!argumentField.isValid())
+						{
+							argumentField = sourceFieldmodule.createFieldArgumentReal(sourceField.getNumberOfComponents());
+							argumentField.setName(argumentFieldName);
+						}
+					}
+					else
+					{
+						argumentField = jsonImport->getFieldByName(argumentFieldName);
+					}
+					bindArgumentFields.push_back(argumentField);
+					bindSourceFields.push_back(sourceField);
+				}
+			}
+		}
+		OpenCMISS::Zinc::FieldApply fieldApply = fieldmodule.createFieldApply(evaluateField);
+		size_t numberOfBindings = bindArgumentFields.size();
+		for (size_t i = 0; i < numberOfBindings; ++i)
+		{
+			if (CMZN_OK != fieldApply.setBindArgumentSourceField(bindArgumentFields[i], bindSourceFields[i]))
+			{
+				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to set bind source field %d", i + 1);
+				return field;
+			}
+		}
+		field = fieldApply;
+	}	break;
+	case CMZN_FIELD_TYPE_ARGUMENT_REAL:
+		if (typeSettings["NumberOfComponents"].isInt())
+		{
+			const int numberOfComponents = typeSettings["NumberOfComponents"].asInt();
+			field = fieldmodule.createFieldArgumentReal(numberOfComponents);
+		}
+		break;
+	default:
+		break;
+	}
+	return field;
+}
+
 /* Deserialise field with one source field */
 OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
@@ -83,9 +210,6 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 	{
 		switch (type)
 		{
-			case CMZN_FIELD_TYPE_ALIAS:
-				field = fieldmodule.createFieldAlias(sourcefields[0]);
-				break;
 			case CMZN_FIELD_TYPE_LOG:
 				field = fieldmodule.createFieldLog(sourcefields[0]);
 				break;
@@ -532,7 +656,7 @@ OpenCMISS::Zinc::Field importGenericMultiComponentField(enum cmzn_field_type typ
  * Get the json object describing the derived field settings, it will also return
  * the field type in argument.
  */
-Json::Value getDerviedFieldValue(Json::Value &fieldSettings, enum cmzn_field_type *type)
+Json::Value getDerivedFieldValue(Json::Value &fieldSettings, enum cmzn_field_type *type)
 {
 	Json::Value typeSettings;
 	Json::Value::Members members = fieldSettings.getMemberNames();
@@ -540,10 +664,16 @@ Json::Value getDerviedFieldValue(Json::Value &fieldSettings, enum cmzn_field_typ
 	*type = CMZN_FIELD_TYPE_INVALID;
 	while (it != members.end() && (*type == CMZN_FIELD_TYPE_INVALID))
 	{
-
-		*type = cmzn_field_type_enum_from_class_name((*it).c_str());
+		const char *typeName = (*it).c_str();
+		*type = cmzn_field_type_enum_from_class_name(typeName);
 		if (*type != CMZN_FIELD_TYPE_INVALID)
 		{
+			typeSettings = fieldSettings[(*it)];
+		}
+		else if (0 == strcmp(typeName, "FieldAlias"))
+		{
+			// replaced with FieldApply
+			*type = CMZN_FIELD_TYPE_APPLY;
 			typeSettings = fieldSettings[(*it)];
 		}
 		++it;
@@ -579,10 +709,13 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 {
 	OpenCMISS::Zinc::Field field(0);
 	enum cmzn_field_type type = CMZN_FIELD_TYPE_INVALID;
-	Json::Value typeSettings = getDerviedFieldValue(fieldSettings, &type);
+	Json::Value typeSettings = getDerivedFieldValue(fieldSettings, &type);
 	switch (type)
 	{
-		case CMZN_FIELD_TYPE_ALIAS:
+		case CMZN_FIELD_TYPE_APPLY:
+		case CMZN_FIELD_TYPE_ARGUMENT_REAL:
+			field = importApplyField(type, fieldmodule, typeSettings, jsonImport);
+			break;
 		case CMZN_FIELD_TYPE_LOG:
 		case CMZN_FIELD_TYPE_SQRT:
 		case CMZN_FIELD_TYPE_EXP:
@@ -724,6 +857,39 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 	{
 		case CMZN_FIELD_TYPE_INVALID:
 			break;
+		case CMZN_FIELD_TYPE_APPLY:
+		{
+			OpenCMISS::Zinc::FieldApply fieldApply = this->field.castApply();
+			// store number of components for cases where source field does not exist on import
+			typeSettings["NumberOfComponents"] = field.getNumberOfComponents();
+			// write region path if in another region
+			OpenCMISS::Zinc::Region region = this->fieldmodule.getRegion();
+			OpenCMISS::Zinc::Field evaluateField = fieldApply.getSourceField(1);
+			OpenCMISS::Zinc::Region sourceRegion = evaluateField.getFieldmodule().getRegion();
+			if (!(sourceRegion == region))
+			{
+				char *sourceRegionPath = sourceRegion.getRelativePath(region);
+				typeSettings["SourceRegionPath"] = sourceRegionPath;
+				DEALLOCATE(sourceRegionPath);
+			}
+			const int numberOfBindings = fieldApply.getNumberOfBindings();
+			for (int i = 0; i < numberOfBindings; i++)
+			{
+				OpenCMISS::Zinc::Field argumentField = fieldApply.getBindArgumentField(1 + i);
+				OpenCMISS::Zinc::Field sourceField = fieldApply.getBindArgumentSourceField(argumentField);
+				Json::Value bindingSettings;
+				char *argumentName = argumentField.getName();
+				bindingSettings["BindArgumentField"].append(argumentName);
+				DEALLOCATE(argumentName);
+				char *sourceName = sourceField.getName();
+				bindingSettings["BindSourceField"].append(sourceName);
+				DEALLOCATE(sourceName);
+				typeSettings["Bindings"].append(bindingSettings);
+			}
+		}	break;
+		case CMZN_FIELD_TYPE_ARGUMENT_REAL:
+			typeSettings["NumberOfComponents"] = field.getNumberOfComponents();
+			break;
 		case CMZN_FIELD_TYPE_COMPONENT:
 		{
 			OpenCMISS::Zinc::FieldComponent fieldComponent = field.castComponent();
@@ -813,11 +979,11 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 		{
-			OpenCMISS::Zinc::Mesh mesh = field.castFindMeshLocation().getMesh();
+			OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation = this->field.castFindMeshLocation();
+			OpenCMISS::Zinc::Mesh mesh = fieldFindMeshLocation.getMesh();
 			char *meshName = mesh.getName();
-			OpenCMISS::Zinc::Mesh searchMesh = field.castFindMeshLocation().getSearchMesh();
+			OpenCMISS::Zinc::Mesh searchMesh = fieldFindMeshLocation.getSearchMesh();
 			char *searchMeshName = searchMesh.getName();
-			OpenCMISS::Zinc::FieldFindMeshLocation fieldFindMeshLocation = field.castFindMeshLocation();
 			char *searchModeName = fieldFindMeshLocation.SearchModeEnumToString(fieldFindMeshLocation.getSearchMode());
 			typeSettings["Mesh"] = meshName;
 			typeSettings["SearchMesh"] = searchMeshName;

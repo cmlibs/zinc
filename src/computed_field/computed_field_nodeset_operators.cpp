@@ -135,7 +135,7 @@ public:
 			}
 			cmzn_field_stored_mesh_location_destroy(&storedMeshLocation);
 		}
-		return this->field->setOptionalSourceField(2, elementMapField);
+		return this->field->setSourceField(1, elementMapField);
 	}
 
 protected:

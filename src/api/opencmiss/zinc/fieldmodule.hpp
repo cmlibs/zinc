@@ -24,6 +24,8 @@ namespace Zinc
 {
 
 class FieldAlias;
+class FieldApply;
+class FieldArgumentReal;
 class FieldAdd;
 class FieldPower;
 class FieldMultiply;
@@ -251,6 +253,10 @@ public:
 	inline Optimisation createOptimisation();
 
 	inline FieldAlias createFieldAlias(const Field& sourceField);
+
+	inline FieldApply createFieldApply(const Field& sourceField);
+
+	inline FieldArgumentReal createFieldArgumentReal(int numberOfComponents);
 
 	inline FieldAdd createFieldAdd(const Field& sourceField1, const Field& sourceField2);
 

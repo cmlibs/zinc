@@ -15,6 +15,7 @@
 
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
+#include "opencmiss/zinc/region.hpp"
 #include <string>
 #include "jsoncpp/json.h"
 
@@ -41,10 +42,17 @@ public:
 	 */
 	OpenCMISS::Zinc::Field getFieldByName(const char *field_name);
 
+	/** Get the region currently being read or written */
+	OpenCMISS::Zinc::Region getRegion() const
+	{
+		return this->fieldmodule.getRegion();
+	}
+
 	/* deserialise field definition into the fieldmodule */
 	OpenCMISS::Zinc::Field importField(Json::Value &fieldSettings);
 
 	void setManaged(Json::Value &fieldSettings);
+
 };
 
 /*

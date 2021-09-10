@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/timesequence.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-#include "computed_field/computed_field_alias.h"
+#include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
@@ -75,7 +75,7 @@ cmzn_fieldmoduleevent::~cmzn_fieldmoduleevent()
 	if (managerMessage)
 		MANAGER_MESSAGE_DEACCESS(Computed_field)(&(this->managerMessage));
 	FE_region_changes::deaccess(this->feRegionChanges);
-	cmzn_region_destroy(&this->region);
+	cmzn_region::deaccess(this->region);
 }
 
 void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)

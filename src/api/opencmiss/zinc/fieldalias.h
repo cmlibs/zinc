@@ -26,7 +26,9 @@ extern "C" {
 /**
  * Creates a zinc field which is an alias for another field, possibly from
  * another region.
- * This is the main mechanism for reusing field definitions from other regions.
+ * Deprecated. Internally creates an apply field which is equivalent.
+ * @deprecated
+ * @see cmzn_fieldmodule_create_field_apply
  *
  * @param field_module  Region field module which will own new field.
  * @param original_field  The field which the new field will be an alias for. Can

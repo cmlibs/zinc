@@ -343,11 +343,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_field)
 {
 	if (object_address)
 	{
-		if (new_object)
-			new_object->access();
-		if (*object_address)
-			cmzn_field::deaccess(*object_address);
-		*object_address = new_object;
+		cmzn_field::reaccess(*object_address, new_object);
 		return 1;
 	}
 	display_message(ERROR_MESSAGE, "REACCESS(cmzn_field).  Invalid argument");
@@ -828,8 +824,8 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
 		return_code = ADD_OBJECT_TO_MANAGER(cmzn_field)(field,manager);
 		if (return_code)
 		{
-			/* notify field types which need to know when they are managed */
-			field->core->field_is_managed();
+			// notify field types which need to perform extra tasks once added to region
+			field->core->fieldAddedToRegion();
 		}
 	}
 	else
@@ -1087,7 +1083,7 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	for (int i = 0; i < field->number_of_source_fields; ++i)
 	{
-		if (!cmzn_field_is_defined_at_location(getSourceField(i), &cache))
+		if (!this->getSourceField(i)->core->is_defined_at_location(cache))
 			return false;
 	}
 	return true;
@@ -2674,49 +2670,49 @@ int Computed_field_core::get_domain( struct LIST(cmzn_field) *domain_field_list 
 	return return_code;
 }
 
-void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
+int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
 {
-	if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
-		ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
-	this->manager_change_status |= change;
-}
-
-int cmzn_field::setOptionalSourceField(int index, cmzn_field *sourceField)
-{
-	if ((index == this->number_of_source_fields) ||
-		(index == (this->number_of_source_fields + 1)))
+	if ((index < 0) || (index > this->number_of_source_fields) ||
+		(index == this->number_of_source_fields) && (!sourceField))
 	{
-		if (sourceField)
-		{
-			if (index > this->number_of_source_fields)
-			{
-				cmzn_field **tmp;
-				REALLOCATE(tmp, this->source_fields, cmzn_field *, index);
-				if (!tmp)
-					return CMZN_ERROR_MEMORY;
-				tmp[index - 1] = ACCESS(cmzn_field)(sourceField);
-				this->source_fields = tmp;
-				++(this->number_of_source_fields);
-				this->setChanged();
-			}
-			else if (sourceField != this->source_fields[index - 1])
-			{
-				REACCESS(cmzn_field)(&(this->source_fields[index - 1]), sourceField);
-				this->setChanged();
-			}
-		}
-		else
-		{
-			if (index == this->number_of_source_fields)
-			{
-				DEACCESS(cmzn_field)(&(this->source_fields[index - 1]));
-				--(this->number_of_source_fields);
-				this->setChanged();
-			}
-		}
-		return CMZN_OK;
+		display_message(ERROR_MESSAGE, "cmzn_field::setSourceField  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	return CMZN_ERROR_ARGUMENT;
+	bool changed = false;
+	if (sourceField)
+	{
+		if (index == this->number_of_source_fields)
+		{
+			cmzn_field **tmp;
+			REALLOCATE(tmp, this->source_fields, cmzn_field *, index + 1);
+			if (!tmp)
+				return CMZN_ERROR_MEMORY;
+			tmp[index] = sourceField->access();
+			this->source_fields = tmp;
+			++(this->number_of_source_fields);
+			changed = true;
+		}
+		else if (sourceField != this->source_fields[index])
+		{
+			cmzn_field::reaccess(this->source_fields[index], sourceField);
+			changed = true;
+		}
+	}
+	else
+	{
+		cmzn_field::deaccess(this->source_fields[index]);
+		--(this->number_of_source_fields);
+		for (int i = index; i < this->number_of_source_fields; ++i)
+		{
+			this->source_fields[i] = this->source_fields[i + 1];
+		}
+		changed = true;
+	}
+	if (changed && notifyChange)
+	{
+		this->setChanged();
+	}
+	return CMZN_OK;
 }
 
 int Computed_field_core::check_dependency()
@@ -3159,7 +3155,7 @@ const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 struct cmzn_region *Computed_field_get_region(struct cmzn_field *field)
 {
 	if (field)
-		return MANAGER_GET_OWNER(cmzn_field)(field->manager);
+		return field->getRegion();
 	return 0;
 }
 
@@ -3302,8 +3298,11 @@ public:
 			case CMZN_FIELD_TYPE_INVALID:
 				enum_string = "INVALID";
 				break;
-			case CMZN_FIELD_TYPE_ALIAS:
-				enum_string = "ALIAS";
+			case CMZN_FIELD_TYPE_APPLY:
+				enum_string = "APPLY";
+				break;
+			case CMZN_FIELD_TYPE_ARGUMENT_REAL:
+				enum_string = "ARGUMENT_REAL";
 				break;
 			case CMZN_FIELD_TYPE_ADD:
 				enum_string = "ADD";
@@ -3514,8 +3513,11 @@ public:
 			case CMZN_FIELD_TYPE_INVALID:
 				class_name = "Invalid";
 				break;
-			case CMZN_FIELD_TYPE_ALIAS:
-				class_name = "FieldAlias";
+			case CMZN_FIELD_TYPE_APPLY:
+				class_name = "FieldApply";
+				break;
+			case CMZN_FIELD_TYPE_ARGUMENT_REAL:
+				class_name = "FieldArgumentReal";
 				break;
 			case CMZN_FIELD_TYPE_ADD:
 				class_name = "FieldAdd";

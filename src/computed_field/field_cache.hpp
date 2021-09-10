@@ -20,6 +20,7 @@
 #include "general/debug.h"
 #include "region/cmiss_region.hpp"
 #include "computed_field/field_location.hpp"
+#include <map>
 #include <vector>
 
 struct Computed_field_find_element_xi_cache;
@@ -63,11 +64,17 @@ public:
 	/** override to clear type-specific buffer information & call this */
 	virtual void clear();
 
-	cmzn_fieldcache *getOrCreatePrivateExtraCache(cmzn_region *region);
+	/** Return shared extraCache for evaluating fields in the given region, for use by Apply field */
+	cmzn_fieldcache *getOrCreateSharedExternalExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region);
 
+	/** Return private extraCache for evaluating fields at different locations and different time. */
+	cmzn_fieldcache *getOrCreatePrivateExtraCache(cmzn_fieldcache& parentCache);
+
+	/** Return shared extraCache for evaluating at different locations but the same time.
+	 * Hence can share finite element evaluation caches from fieldCache. */
 	cmzn_fieldcache *getOrCreateSharedExtraCache(cmzn_fieldcache& parentCache);
 
-	/** can use after calling getOrCreatePrivateExtraCache or getOrCreateSharedExtraCache*/
+	/** can use after calling getOrCreate~ExtraCache method */
 	cmzn_fieldcache *getExtraCache()
 	{
 		return this->extraCache;
@@ -275,6 +282,8 @@ private:
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;
 
+typedef std::map<cmzn_region*, cmzn_fieldcache*> RegionFieldcacheMap;
+
 struct cmzn_fieldcache
 {
 private:
@@ -292,21 +301,8 @@ private:
 	bool assignInCache;
 	cmzn_fieldcache *parentCache;  // non-accessed parent cache if this is its sharedWorkingCache; finite element evaluation caches are shared with parent
 	cmzn_fieldcache *sharedWorkingCache;  // optional working cache shared by fields evaluating at the same time value
+	RegionFieldcacheMap sharedExternalWorkingCacheMap;
 	int access_count;
-
-	/** call whenever location changes to increment location counter */
-	void locationChanged()
-	{
-		++(this->locationCounter);
-		this->modifyCounter = this->region->getFieldModifyCounter();
-		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
-		// Logic assumes counter will overflow back to a negative value to trigger reset
-		if (this->locationCounter < 0)
-		{
-			this->locationCounter = 0;
-			this->resetValueCacheEvaluationCounters();
-		}
-	}
 
 public:
 
@@ -337,6 +333,52 @@ public:
 	inline bool hasRegionModifications() const
 	{
 		return this->modifyCounter != this->region->getFieldModifyCounter();
+	}
+
+	/** call whenever location changes to increment location counter
+	 * Can be called externally - e.g. by Computed_field_apply::evaluate */
+	void locationChanged()
+	{
+		++(this->locationCounter);
+		this->modifyCounter = this->region->getFieldModifyCounter();
+		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
+		// Logic assumes counter will overflow back to a negative value to trigger reset
+		if (this->locationCounter < 0)
+		{
+			this->locationCounter = 0;
+			this->resetValueCacheEvaluationCounters();
+		}
+	}
+
+	/** @return  True if location unchanged, otherwise false. */
+	bool isSameLocation(const cmzn_fieldcache &source) const
+	{
+		Field_location::Type sourceType = source.location->get_type();
+		if (sourceType != this->location->get_type())
+			return false;
+		switch (sourceType)
+		{
+		case Field_location::TYPE_ELEMENT_XI:
+		{
+			return this->location_element_xi == source.location_element_xi;
+		} break;
+		case Field_location::TYPE_FIELD_VALUES:
+		{
+			return this->location_field_values == source.location_field_values;
+		} break;
+		case Field_location::TYPE_NODE:
+		{
+			return this->location_node == source.location_node;
+		} break;
+		case Field_location::TYPE_TIME:
+		{
+			return this->location_time == source.location_time;
+		} break;
+		case Field_location::TYPE_INVALID:
+		{
+		} break;
+		}
+		return false;
 	}
 
 	/** Copy location from another field cache */
@@ -515,6 +557,10 @@ public:
 		return this->parentCache;
 	}
 
+	/** Get a shared fieldcache for evaluating fields in the supplied region.
+	 * @return  Non-accessed field cache */
+	cmzn_fieldcache *getOrCreateSharedExternalWorkingCache(cmzn_region *region);
+
 	/** @return  Non-accessed field cache */
 	cmzn_fieldcache *getOrCreateSharedWorkingCache()
 	{
@@ -528,16 +574,20 @@ public:
 
 };
 
-/** Return private extraCache for evaluating fields at different locations and different time. */
-inline cmzn_fieldcache *FieldValueCache::getOrCreatePrivateExtraCache(cmzn_region *region)
+inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExternalExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region)
 {
 	if (!this->extraCache)
-		this->extraCache = new cmzn_fieldcache(region);
+		this->extraCache = parentCache.getOrCreateSharedExternalWorkingCache(region)->access();
 	return this->extraCache;
 }
 
-/** Return shared extraCache for evaluating at different locations but the same time.
- * Hence can share finite element evaluation caches from fieldCache. */
+inline cmzn_fieldcache *FieldValueCache::getOrCreatePrivateExtraCache(cmzn_fieldcache& parentCache)
+{
+	if (!this->extraCache)
+		this->extraCache = new cmzn_fieldcache(parentCache.getRegion());
+	return this->extraCache;
+}
+
 inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExtraCache(cmzn_fieldcache& fieldCache)
 {
 	if (!this->extraCache)

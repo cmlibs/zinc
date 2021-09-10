@@ -67,7 +67,7 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_n
 			{
 				if ((0 == strcmp(fieldJson["Name"].asCString(), field_name)))
 				{
-					 field = this->importField(fieldJson);
+					field = this->importField(fieldJson);
 					break;
 				}
 			}

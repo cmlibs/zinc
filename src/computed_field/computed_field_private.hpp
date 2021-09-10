@@ -217,6 +217,9 @@ public:
 	/** only call when field member set! */
 	inline void endChange() const;
 
+	/** Get source field at index. Not bounds checked!
+	 * @param index  Index from 0 to number_of_source_fields - 1
+	 * @return  Non-accessed source field */
 	inline cmzn_field_id getSourceField(int index) const;
 
 	/**
@@ -353,7 +356,7 @@ public:
 		struct cmzn_field **texture_coordinate_field);
 
 	/* override if field type needs to be informed when it has been added to region */
-	virtual void field_is_managed(void)
+	virtual void fieldAddedToRegion(void)
 	{
 	}
 
@@ -408,22 +411,21 @@ public:
 
 	/** clones and clears type-specific change detail, if any.
 	 * override for classes with type-specific change detail e.g. group fields
-	 * @return  change detail prior to clearing, or NULL if none.
+	 * @return  change detail prior to clearing, or nullptr if none.
 	 */
 	virtual cmzn_field_change_detail *extract_change_detail()
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	virtual const cmzn_field_change_detail *get_change_detail() const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	/** override for hierarchical fields to merge changes from sub-region fields */
-	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(cmzn_field) *message)
+	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(cmzn_field) *)
 	{
-		USE_PARAMETER(message);
 	}
 
 	/** override for fields wrapping other objects with coordinate system, e.g. FE_field */
@@ -521,6 +523,15 @@ public:
 	}
 
 	static void deaccess(cmzn_field*& field);
+
+	static void reaccess(cmzn_field*& field, cmzn_field *newField)
+	{
+		if (newField)
+			newField->access();
+		if (field)
+			cmzn_field::deaccess(field);
+		field = newField;
+	}
 
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.
@@ -636,19 +647,28 @@ public:
 	 * @param change  A change status flag, one of OBJECT_NOT_IDENTIFIER, DEPENDENCY
 	 * or PARTIAL.
 	 */
-	void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
+	inline void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
 
 	/**
-	 * Enlarges or shrinks source fields array to fit optional source field.
-	 * Must be the last source field expected for field type.
-	 * To be used with care by certain field types only.
+	 * Set the source field at the index in the field. Capable of adding one
+	 * source to the end of the list.
+	 * To be used with care by certain field types only!
+	 * Caller must ensure this is a source field permitted to be changed, usually
+	 * an optional source field added after the compulsory one.
+	 * Not to be exposed directly in the public API.
 	 *
-	 * @param index  Index of optional source field, starting at 1. Must be equal
-	 * or one greater than the number of source fields.
-	 * @param sourceField  The source field to set, or nullptr to clear.
+	 * @param index  Index of source field, starting at 0. Must be either
+	 * a valid source field index or equal to the current number of source fields
+	 * to add a new source field.
+	 * @param sourceField  The source field to set, or nullptr to clear. If
+	 * clearing and the index is not the last, the following fields are moved
+	 * down in the array.
+	 * @param notifyChange  Optionally set to false to not record change to field
+	 * nor notify clients. Use to reduce messages when making another change
+	 * immediately afterwards.
 	 * @return  CMZN_OK or other status code on failure.
 	 */
-	int setOptionalSourceField(int index, cmzn_field *sourceField);
+	int setSourceField(int index, cmzn_field *sourceField, bool notifyChange=true);
 
 	/** Return owning field manager. Must check not nullptr before use as
 	 * can be cleared during clean-up. */
@@ -656,6 +676,9 @@ public:
 	{
 		return this->manager;
 	}
+
+	/** @return  Non-accessed owning region */
+	inline cmzn_region *getRegion() const;
 
 }; /* struct cmzn_field */
 
@@ -713,6 +736,8 @@ typedef cmzn_set<cmzn_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
+PROTOTYPE_MANAGER_OWNER_FUNCTIONS(cmzn_field, struct cmzn_region);
+
 inline const FieldValueCache *cmzn_field::evaluate(cmzn_fieldcache& cache)
 {
 	FieldValueCache *valueCache = this->getValueCache(cache);
@@ -754,6 +779,11 @@ inline const RealFieldValueCache *cmzn_field::evaluateDerivativeTree(cmzn_fieldc
 		thisFieldDerivative = thisFieldDerivative->getLowerDerivative();
 	} while (thisFieldDerivative);
 	return RealFieldValueCache::cast(this->evaluate(cache));
+}
+
+inline cmzn_region *cmzn_field::getRegion() const
+{
+	return MANAGER_GET_OWNER(cmzn_field)(this->manager);
 }
 
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
@@ -896,6 +926,13 @@ inline void cmzn_field::setChanged()
 		this->manager->owner->setFieldModify();
 		MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
 	}
+}
+
+inline void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
+{
+	if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
+		ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
+	this->manager_change_status |= change;
 }
 
 /**

@@ -70,7 +70,7 @@ private:
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
-		valueCache->getOrCreatePrivateExtraCache(Computed_field_get_region(field));
+		valueCache->getOrCreatePrivateExtraCache(fieldCache);
 		return valueCache;
 	}
 

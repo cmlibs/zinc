@@ -12,13 +12,13 @@
 #define CMZN_FIELDALIASID_H__
 
 /**
- * @brief A specialised field type creating a local alias
+ * @brief Deprecated. A specialised field type creating a local alias
+ * @deprecated
+ * @see cmzn_field_apply
  *
- * A specialised field type creating a local alias for a field from another
- * region. Currently only non-spatially-varying fields can be successfully used
- * from an alias field.
+ * Deprecated. Equivalent to apply field without argument binding.
  */
 struct cmzn_field_alias;
 typedef struct cmzn_field_alias *cmzn_field_alias_id;
 
-#endif /* CMZN_FIELD_ALIAS_ID_H */
+#endif /* CMZN_FIELDALIASID_H__ */

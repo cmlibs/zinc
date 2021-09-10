@@ -19,6 +19,8 @@ namespace Zinc
 
 class Differentialoperator;
 class Element;
+class FieldApply;
+class FieldArgumentReal;
 class FieldComponent;
 class FieldConstant;
 class FieldEdgeDiscontinuity;
@@ -281,6 +283,8 @@ public:
 	inline int smooth(const Fieldsmoothing& fieldsmoothing);
 
 	// casting functions: must check isValid()
+	inline FieldApply castApply();
+	inline FieldArgumentReal castArgumentReal();
 	inline FieldComponent castComponent();
 	inline FieldConstant castConstant();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();

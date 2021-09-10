@@ -73,11 +73,11 @@ private:
 		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
 	}
 
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
+
 	int list();
 
 	char* get_command_string();
-
-	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 };
 
 bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)

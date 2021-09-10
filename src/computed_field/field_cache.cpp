@@ -141,15 +141,21 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	delete[] indexed_location_element_xi;
 	this->indexed_location_element_xi = 0;
 	this->number_of_indexed_location_element_xi = 0;
-	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	for (ValueCacheVector::iterator iter = this->valueCaches.begin(); iter != this->valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
 	if (this->sharedWorkingCache)
+	{
 		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
+	}
+	for (RegionFieldcacheMap::iterator iter = this->sharedExternalWorkingCacheMap.begin(); iter != this->sharedExternalWorkingCacheMap.end(); ++iter)
+	{
+		cmzn_fieldcache::deaccess(iter->second);  // should be the last reference as value caches destroyed above
+	}
 	this->region->removeFieldcache(this);
-	cmzn_region_destroy(&region);
+	cmzn_region::deaccess(this->region);
 }
 
 cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn)
@@ -262,9 +268,21 @@ int cmzn_fieldcache::setFieldReal(cmzn_field *field, int numberOfValues, const d
 	return CMZN_OK;
 }
 
+cmzn_fieldcache *cmzn_fieldcache::getOrCreateSharedExternalWorkingCache(cmzn_region *regionIn)
+{
+	RegionFieldcacheMap::iterator iter = this->sharedExternalWorkingCacheMap.find(regionIn);
+	if (iter != this->sharedExternalWorkingCacheMap.end())
+	{
+		return iter->second;
+	}
+	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn, this);
+	this->sharedExternalWorkingCacheMap[regionIn] = fieldcache;
+	return fieldcache;
+}
+
 void cmzn_fieldcache::removeDerivativeCaches(int derivativeCacheIndex)
 {
-	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	for (ValueCacheVector::iterator iter = this->valueCaches.begin(); iter != this->valueCaches.end(); ++iter)
 	{
 		RealFieldValueCache *realValueCache = dynamic_cast<RealFieldValueCache *>(*iter);
 		if (realValueCache)

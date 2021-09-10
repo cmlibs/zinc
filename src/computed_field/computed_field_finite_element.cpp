@@ -2542,7 +2542,7 @@ public:
 	int setConditionalField(cmzn_field *conditionalField)
 	{
 		if ((!conditionalField) || Computed_field_is_scalar(conditionalField, 0))
-			return this->field->setOptionalSourceField(2, conditionalField);
+			return this->field->setSourceField(1, conditionalField);
 		return CMZN_ERROR_ARGUMENT;
 	}
 
