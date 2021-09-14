@@ -67,9 +67,6 @@ public:
 	/** Return shared extraCache for evaluating fields in the given region, for use by Apply field */
 	cmzn_fieldcache *getOrCreateSharedExternalExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region);
 
-	/** Return private extraCache for evaluating fields at different locations and different time. */
-	cmzn_fieldcache *getOrCreatePrivateExtraCache(cmzn_fieldcache& parentCache);
-
 	/** Return shared extraCache for evaluating at different locations but the same time.
 	 * Hence can share finite element evaluation caches from fieldCache. */
 	cmzn_fieldcache *getOrCreateSharedExtraCache(cmzn_fieldcache& parentCache);
@@ -307,7 +304,7 @@ private:
 public:
 
 	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
-	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = 0);
+	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
 
 	~cmzn_fieldcache();
 
@@ -578,13 +575,6 @@ inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExternalExtraCache(cmz
 {
 	if (!this->extraCache)
 		this->extraCache = parentCache.getOrCreateSharedExternalWorkingCache(region)->access();
-	return this->extraCache;
-}
-
-inline cmzn_fieldcache *FieldValueCache::getOrCreatePrivateExtraCache(cmzn_fieldcache& parentCache)
-{
-	if (!this->extraCache)
-		this->extraCache = new cmzn_fieldcache(parentCache.getRegion());
 	return this->extraCache;
 }
 

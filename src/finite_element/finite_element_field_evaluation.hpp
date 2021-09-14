@@ -44,9 +44,7 @@ class FE_element_field_evaluation
 	cmzn_element *element;
 	// the element the field was inherited from
 	cmzn_element *field_element;
-	// whether or not these values depend on time
-	int time_dependent;
-	// if the values are time dependent, the time at which they were calculated
+	// the time at which the parameters were calculated; clients use 0.0 if not time dependent
 	FE_value time;
 	// number of sub-elements in each xi-direction of element for each component.
 	// If NULL (for a component) then field is not grid based for that component.
@@ -133,15 +131,12 @@ public:
 	 * Must be called before calling calculate_values() again. */
 	void clear();
 
-	/** Determine if existing values are valid to use for element and time.
-	 * @param time_in  If values are time dependent, match against this time.
-	 * @param field_element_in  Optional field element to inherit from; 0 to ignore
-	 */
-	bool is_for_element_and_time(cmzn_element *element_in, FE_value time_in, cmzn_element *field_element_in) const
+	/** Determine if existing values are valid to use for element.
+	 * @param field_element_in  Optional field element to inherit from, nullptr to ignore. */
+	bool isForElement(cmzn_element *element_in, cmzn_element *field_element_in) const
 	{
 		return (element_in == this->element)
-			&& ((!field_element_in) || (field_element_in = this->field_element))
-			&& ((!this->time_dependent) || (time_in == this->time));
+			&& ((!field_element_in) || (field_element_in == this->field_element));
 	}
 
 	static inline int get_number_of_mesh_derivatives(int derivative_order, int dimension)

@@ -76,16 +76,25 @@ Private functions
 struct FE_node_field
 {
 	/* the field which this accesses values and derivatives for */
-	struct FE_field *field;
+	FE_field *field;
 	/* an array with <number_of_components> node field templates */
 	FE_node_field_template *components;
 	/* the time dependence of all components below this point,
 	   if it is non-NULL then every value storage must be an array of
 	   values that matches this fe_time_sequence */
-	struct FE_time_sequence *time_sequence;
+
+private:
+	FE_time_sequence *timeSequence;
 	/* the number of structures that point to this node field.  The node field
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
+
+public:
+
+	int getAccessCount() const
+	{
+		return this->access_count;
+	}
 
 	const FE_node_field_template *getComponent(int componentIndex) const
 	{
@@ -127,6 +136,19 @@ struct FE_node_field
 	{
 		REACCESS(FE_field)(&this->field, fieldIn);
 	}
+
+	FE_time_sequence *getTimeSequence() const
+	{
+		return this->timeSequence;
+	}
+
+	/** Set the fe_time_sequence for this object.  If this node field is being
+	 * accessed more than once it will fail as there will be other Node_field_infos
+	 * and therefore nodes that would then have mismatched node_fields and values_storage.
+	 * Should only be doing this if the Node_field_info that this belongs to is only
+	 * being used by one node otherwise you would have to update the values_storage
+	 * for all nodes using the Node_field_info. */
+	int setTimeSequence(FE_time_sequence *timeSequence);
 
 	/** @return  True if field is multi component with all components defined identically */
 	bool isHomogeneousMultiComponent() const

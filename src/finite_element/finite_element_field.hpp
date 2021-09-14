@@ -104,6 +104,10 @@ private:
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
 	Value_storage *values_storage;
+	// set to true if field defined with time variation anywhere, currently limited to nodes
+	// for efficiency, set when fields defined with time sequence on any node e.g. template
+	// node, so will be false positive if not merged, which is unlikely.
+	bool timeDependent;
 
 	// field definition and data on FE_mesh[dimension - 1]
 	// Future: limit to being defined on a single mesh; requires change to current usage
@@ -122,28 +126,7 @@ private:
 protected:
 
 	// used only by FE_field_identifier pseudo class
-	FE_field() :
-		name(nullptr),
-		fe_region(nullptr),
-		cm_field_type(CM_GENERAL_FIELD),
-		fe_field_type(GENERAL_FE_FIELD),
-		indexer_field(nullptr),
-		number_of_indexed_values(0),
-		number_of_components(0),
-		component_names(nullptr),
-		number_of_values(0),
-		value_type(UNKNOWN_VALUE),
-		element_xi_host_mesh(nullptr),
-		values_storage(nullptr),
-		fe_field_parameters(nullptr),
-		number_of_wrappers(0),
-		access_count(0)
-	{
-		embeddedNodeFields[0] = nullptr;
-		embeddedNodeFields[1] = nullptr;
-		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
-			this->meshFieldData[d] = nullptr;
-	}
+	FE_field();
 
 	FE_field(const char *nameIn, struct FE_region *fe_regionIn);
 
@@ -235,8 +218,23 @@ public:
 	/** Writes a text description of field to console/logger */
 	void list() const;
 
-	/** Returns true if field varies with time on any nodes */
-	bool hasMultipleTimes();
+	/** Check if field varies with time.
+	 * Note: Can return true if time dependence was temporary or not fully merged */
+	bool isTimeDependent() const
+	{
+		return this->timeDependent;
+	}
+
+	/** Set time dependence. Can only unset by calling checkTimeDependent() */
+	void setTimeDependent()
+	{
+		this->timeDependent = true;
+	}
+
+	/** Definitively checks if field is time-varying on any nodes and updates timeDependent flag.
+	 * Fairly expensive; call isTimeDependent() if speed is critical.
+	 * @return  true if field varies with time on any nodes */
+	bool checkTimeDependent();
 
 	/**
 	 * Copies the field definition from source to destination, except for name,

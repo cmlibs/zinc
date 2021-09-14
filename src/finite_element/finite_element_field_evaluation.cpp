@@ -36,7 +36,6 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	field(nullptr),
 	element(nullptr),
 	field_element(nullptr),
-	time_dependent(0),
 	time(0.0),
 	component_number_in_xi(nullptr),
 	destroy_standard_basis_arguments(false),
@@ -227,7 +226,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 			// and field_element to ensure field values are still valid for
 			// a given line or face. */
 			this->field_element = fieldElement->access();
-			this->time_dependent = 0;
 			this->time = time;
 			this->number_of_components = number_of_components;
 		} break;
@@ -276,7 +274,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				this->field = fieldIn->access();
 				this->element = element->access();
 				this->field_element = fieldElement->access();
-				this->time_dependent = fieldIn->hasMultipleTimes();
 				this->time = time;
 				this->destroy_standard_basis_arguments = fieldElementDimension > elementDimension;
 				this->number_of_components = number_of_components;

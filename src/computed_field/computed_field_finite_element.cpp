@@ -66,15 +66,122 @@ namespace {
 
 typedef std::map<cmzn_element *, FE_element_field_evaluation *> FE_element_field_evaluation_map;
 
+const int maxCachedTimes = 3;
+
+class TimeElementFieldEvaluationMap
+{
+	FE_field *feField;
+	FE_value time;
+	FE_element_field_evaluation_map elementFieldEvaluationMap;
+	FE_element_field_evaluation *elementFieldEvaluation;  // evalution object for latest element
+
+public:
+
+	TimeElementFieldEvaluationMap(FE_field *feFieldIn, FE_value timeIn) :
+		feField(feFieldIn),
+		time(timeIn),
+		elementFieldEvaluation(nullptr)
+	{
+	}
+
+	~TimeElementFieldEvaluationMap()
+	{
+		this->clear();
+	}
+
+	void clear()
+	{
+		for (FE_element_field_evaluation_map::iterator iter = this->elementFieldEvaluationMap.begin();
+			iter != this->elementFieldEvaluationMap.end(); ++iter)
+		{
+			FE_element_field_evaluation::deaccess(iter->second);
+		}
+		this->elementFieldEvaluationMap.clear();
+		// Following was a pointer to an object just destroyed, so must clear
+		this->elementFieldEvaluation = nullptr;
+	}
+
+	inline FE_value getTime() const
+	{
+		return this->time;
+	}
+
+	/** Get or create the FE_element_field_evaluation for evaluating field in
+	 * element at time, inherited from optional topLevelElement. Uses existing
+	 * values in cache if nothing changed. Caller must have ensured time match
+	 * with this object and that arguments are valid.
+	 * @return  Non-accessed FE_element_field_evaluation* or nullptr if failed.
+	 */
+	FE_element_field_evaluation *getElementFieldEvaluation(
+		cmzn_element *element, cmzn_element *topLevelElement)
+	{
+		// can't trust cached element field values if between manager begin/end change
+		// and this field has been modified.
+		const bool fieldChanged = FE_field_has_cached_changes(this->feField);
+		// ensure we have FE_element_field_evaluation calculated for element
+		// with derivatives_calculated if requested
+		if ((!this->elementFieldEvaluation) || fieldChanged ||
+			(!this->elementFieldEvaluation->isForElement(element, topLevelElement)))
+		{
+			bool needUpdate = false;
+			bool addToCache = false;
+			FE_element_field_evaluation_map::iterator iter = this->elementFieldEvaluationMap.find(element);
+			if (iter == this->elementFieldEvaluationMap.end())
+			{
+				this->elementFieldEvaluation = FE_element_field_evaluation::create();
+				addToCache = true;
+				needUpdate = true;
+			}
+			else
+			{
+				this->elementFieldEvaluation = iter->second;
+				if (fieldChanged || (!this->elementFieldEvaluation->isForElement(element, topLevelElement)))
+				{
+					this->elementFieldEvaluation->clear();
+					needUpdate = true;
+				}
+			}
+			if ((this->elementFieldEvaluation) && needUpdate)
+			{
+				if (this->elementFieldEvaluation->calculate_values(this->feField, element, this->time, topLevelElement))
+				{
+					if (addToCache)
+					{
+						// Set a cache size limit, clearing is a simple way to only cache for recent elements
+						if (1000 < this->elementFieldEvaluationMap.size())
+						{
+							FE_element_field_evaluation* tmpElementFieldEvaluation = this->elementFieldEvaluation;
+							this->clear();
+							this->elementFieldEvaluation = tmpElementFieldEvaluation;
+						}
+						this->elementFieldEvaluationMap[element] = this->elementFieldEvaluation;
+					}
+				}
+				else
+				{
+					FE_element_field_evaluation::deaccess(this->elementFieldEvaluation);
+					if (!addToCache)
+					{
+						this->elementFieldEvaluationMap.erase(iter);
+					}
+				}
+			}
+		}
+		return this->elementFieldEvaluation;
+	}
+
+};
+
+
 /** reference counted cache of FE_element_field_evaluation for recent elements to share between field caches */
 class FE_element_field_evaluation_cache
 {
-	FE_element_field_evaluation_map element_field_evaluation_map;
-	FE_element_field_evaluation *element_field_evaluation;  // evalution object for latest element
+	FE_field *feField;
+	std::vector<TimeElementFieldEvaluationMap*> timeElementFieldEvaluationMaps;
 	int access_count;
 
-	FE_element_field_evaluation_cache() :
-		element_field_evaluation(0),
+	FE_element_field_evaluation_cache(FE_field *feFieldIn) :
+		feField(feFieldIn),
 		access_count(1)
 	{
 	}
@@ -84,20 +191,10 @@ class FE_element_field_evaluation_cache
 		this->clear();
 	}
 
-	void inline clear_map()
-	{
-		for (FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.begin();
-			iter != this->element_field_evaluation_map.end(); ++iter)
-		{
-			FE_element_field_evaluation::deaccess(iter->second);
-		}
-		this->element_field_evaluation_map.clear();
-	}
-
 public:
-	static FE_element_field_evaluation_cache *create()
+	static FE_element_field_evaluation_cache *create(FE_field *feFieldIn)
 	{
-		return new FE_element_field_evaluation_cache();
+		return new FE_element_field_evaluation_cache(feFieldIn);
 	}
 
 	FE_element_field_evaluation_cache *access()
@@ -119,84 +216,59 @@ public:
 
 	void clear()
 	{
-		this->clear_map();
-		// Following was a pointer to an object just destroyed, so must clear
-		this->element_field_evaluation = 0;
+		const int timeCount = static_cast<int>(this->timeElementFieldEvaluationMaps.size());
+		for (int i = 0; i < timeCount; ++i)
+		{
+			delete this->timeElementFieldEvaluationMaps[i];
+		}
+		this->timeElementFieldEvaluationMaps.clear();
+	}
+
+	TimeElementFieldEvaluationMap *getTimeElementFieldEvaluationMap(FE_value time)
+	{
+		TimeElementFieldEvaluationMap *timeElementFieldEvaluationMap;
+		const int timeCount = static_cast<int>(this->timeElementFieldEvaluationMaps.size());
+		for (int i = 0; i < timeCount; ++i)
+		{
+			timeElementFieldEvaluationMap = this->timeElementFieldEvaluationMaps[i];
+			if (timeElementFieldEvaluationMap->getTime() == time)
+			{
+				if (i != 0)
+				{
+					// move to the front
+					for (int j = i; j > 0; --j)
+					{
+						this->timeElementFieldEvaluationMaps[j] = this->timeElementFieldEvaluationMaps[j - 1];
+					}
+					this->timeElementFieldEvaluationMaps[0] = timeElementFieldEvaluationMap;
+				}
+				return timeElementFieldEvaluationMap;
+			}
+		}
+		if (timeCount == maxCachedTimes)
+		{
+			delete this->timeElementFieldEvaluationMaps[timeCount - 1];
+			this->timeElementFieldEvaluationMaps.resize(timeCount - 1);
+		}
+		timeElementFieldEvaluationMap = new TimeElementFieldEvaluationMap(this->feField, time);
+		this->timeElementFieldEvaluationMaps.insert(this->timeElementFieldEvaluationMaps.begin(), timeElementFieldEvaluationMap);
+		return timeElementFieldEvaluationMap;
 	}
 
 	/**
 	 * Establishes the FE_element_field_evaluation necessary for evaluating field in
 	 * element at time, inherited from optional top_level_element. Uses existing
 	 * values in cache if nothing changed.
-	 * @param calculate_derivatives  Controls whether basis functions for
-	 * derivatives are also evaluated.
-	 * @param differential_order  Optional order to differentiate monomials by.
-	 * @param differential_xi_indices  Which xi indices to differentiate.
+	 * @param  Time to get parameters at. If FE_field is not time-dependent, this
+	 * is ignored and time 0.0 is used.
 	 * @return  Non-accessed FE_element_field_evaluation* or 0 if failed.
 	 */
-	FE_element_field_evaluation *get_element_field_evaluation(
-		FE_field *fe_field, cmzn_element *element, FE_value time,
-		cmzn_element *top_level_element)
+	inline FE_element_field_evaluation *getElementFieldEvaluation(cmzn_element *element, FE_value time,
+		cmzn_element *topLevelElement)
 	{
-		//if (!(fe_field) || (!element))
-		//{
-		//	display_message(ERROR_MESSAGE,
-		//		"FE_element_field_evaluation_cache::get_element_field_evaluation.  Invalid arguments.");
-		//	return 0;
-		//}
-		// can't trust cached element field values if between manager begin/end change
-		// and this field has been modified.
-		const bool field_changed = FE_field_has_cached_changes(fe_field);
-		// ensure we have FE_element_field_evaluation calculated for element
-		// with derivatives_calculated if requested
-		if ((!this->element_field_evaluation) || field_changed || 
-			(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
-		{
-			bool need_update = false;
-			bool add_to_cache = false;
-
-			FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.find(element);
-			if (iter == this->element_field_evaluation_map.end())
-			{
-				this->element_field_evaluation = FE_element_field_evaluation::create();
-				add_to_cache = true;
-				need_update = true;
-			}
-			else
-			{
-				this->element_field_evaluation = iter->second;
-				if (field_changed || (!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
-				{
-					need_update = true;
-					this->element_field_evaluation->clear();
-				}
-			}
-			if ((this->element_field_evaluation) && need_update)
-			{
-				if (this->element_field_evaluation->calculate_values(fe_field, element,
-					time, top_level_element))
-				{
-					if (add_to_cache)
-					{
-						// Set a cache size limit, clearing is a simple way to only cache for recent elements
-						if (1000 < this->element_field_evaluation_map.size())
-							this->clear_map();
-						this->element_field_evaluation_map[element] = this->element_field_evaluation;
-					}
-				}
-				else if (add_to_cache)
-				{
-					FE_element_field_evaluation::deaccess(this->element_field_evaluation);
-				}
-				else
-				{
-					// clear to ensure marked as not valid
-					this->element_field_evaluation->clear();
-					this->element_field_evaluation = 0;
-				}
-			}
-		}
-		return this->element_field_evaluation;
+		const FE_value useTime = this->feField->isTimeDependent() ? time : 0.0;
+		TimeElementFieldEvaluationMap *timeElementFieldEvaluationMap = this->getTimeElementFieldEvaluationMap(useTime);
+		return timeElementFieldEvaluationMap->getElementFieldEvaluation(element, topLevelElement);
 	}
 
 };
@@ -241,10 +313,10 @@ public:
 	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
 	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
-	FiniteElementRealFieldValueCache(int componentCount, FiniteElementRealFieldValueCache *parentValueCache) :
-		MultiTypeRealFieldValueCache(componentCount),
+	FiniteElementRealFieldValueCache(FE_field *feField, FiniteElementRealFieldValueCache *parentValueCache) :
+		MultiTypeRealFieldValueCache(feField->getNumberOfComponents()),
 		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
-			: FE_element_field_evaluation_cache::create())
+			: FE_element_field_evaluation_cache::create(feField))
 	{
 	}
 
@@ -277,10 +349,10 @@ public:
 	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
 	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
-	FiniteElementStringFieldValueCache(FiniteElementStringFieldValueCache *parentValueCache) :
+	FiniteElementStringFieldValueCache(FE_field *feField, FiniteElementStringFieldValueCache *parentValueCache) :
 		StringFieldValueCache(),
 		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
-			: FE_element_field_evaluation_cache::create())
+			: FE_element_field_evaluation_cache::create(feField))
 	{
 	}
 
@@ -371,14 +443,14 @@ private:
 				return new MeshLocationFieldValueCache();
 			case STRING_VALUE:
 			case URL_VALUE:
-				return new FiniteElementStringFieldValueCache(static_cast<FiniteElementStringFieldValueCache *>(parentValueCache));
+				return new FiniteElementStringFieldValueCache(this->fe_field, static_cast<FiniteElementStringFieldValueCache *>(parentValueCache));
 			default:
 				break;
 		}
 		// Future: have common finite element field cache in some circumstances
 		// note they must not be shared with time lookup fields as only a single time is cached
 		// and performance will be poor.
-		return new FiniteElementRealFieldValueCache(field->number_of_components, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
+		return new FiniteElementRealFieldValueCache(this->fe_field, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -636,7 +708,7 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 
 int Computed_field_finite_element::has_multiple_times()
 {
-	return this->fe_field->hasMultipleTimes();
+	return this->fe_field->checkTimeDependent();
 }
 
 int Computed_field_finite_element::has_numerical_components()
@@ -761,8 +833,8 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				const FE_value* xi = element_xi_location->get_xi();
 
 				FE_element_field_evaluation *element_field_evaluation =
-					feStringValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, element, time, top_level_element);
+					feStringValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+						element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					return_code = element_field_evaluation->evaluate_as_string(
@@ -785,8 +857,8 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				const FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
 				FE_element_field_evaluation *element_field_evaluation =
-					feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, element, time, top_level_element);
+					feValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+						element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					/* component number -1 = calculate all components */
@@ -906,8 +978,8 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
 		FE_element_field_evaluation *element_field_evaluation =
-			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
+			feValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+				element_xi_location->get_element(), element_xi_location->get_time(),
 				element_xi_location->get_top_level_element());
 		if (!element_field_evaluation)
 			return 0;
@@ -2447,7 +2519,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_node_value::has_multiple_times()
 {
-	return this->fe_field->hasMultipleTimes();
+	return this->fe_field->checkTimeDependent();
 }
 
 } //namespace
@@ -4187,7 +4259,7 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 				const FE_node_field *node_field = node->getNodeField(fe_field);
 				if (node_field)
 				{
-					time_sequence = node_field->time_sequence;
+					time_sequence = node_field->getTimeSequence();
 				}
 			}
 			else
@@ -4579,5 +4651,5 @@ FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cm
 	cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 	const FE_value time = element_xi_location->get_time();
 	const FE_value* xi = element_xi_location->get_xi();
-	return feValueCache->element_field_evaluation_cache->get_element_field_evaluation(core->fe_field, element, time, top_level_element);
+	return feValueCache->element_field_evaluation_cache->getElementFieldEvaluation(element, time, top_level_element);
 }

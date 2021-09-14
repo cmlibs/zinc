@@ -275,7 +275,8 @@ cmzn_fieldcache *cmzn_fieldcache::getOrCreateSharedExternalWorkingCache(cmzn_reg
 	{
 		return iter->second;
 	}
-	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn, this);
+	// as this is for a different region, do not set parentCache as not sharing finite element field caches
+	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn);
 	this->sharedExternalWorkingCacheMap[regionIn] = fieldcache;
 	return fieldcache;
 }

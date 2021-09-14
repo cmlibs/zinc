@@ -944,7 +944,7 @@ bool FE_nodeset::FE_field_has_multiple_times(struct FE_field *fe_field) const
 		const FE_node_field *node_field = (*iter)->getNodeField(fe_field);
 		if (node_field)
 		{
-			if (node_field->time_sequence)
+			if (node_field->getTimeSequence())
 				return true;
 			break;
 		}

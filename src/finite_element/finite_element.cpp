@@ -140,7 +140,7 @@ static bool FE_node_fields_match(struct FE_node_field *node_field_1,
 	}
 	if ((compare_field_and_time_sequence)
 		&& ((node_field_1->field != node_field_2->field)
-			|| (node_field_1->time_sequence != node_field_2->time_sequence)))
+			|| (node_field_1->getTimeSequence() != node_field_2->getTimeSequence())))
 	{
 		return false;
 	}
@@ -189,39 +189,6 @@ int FE_node_field_is_in_list(struct FE_node_field *node_field,
 	return (return_code);
 } /* FE_node_field_is_in_list */
 
-static int FE_node_field_set_FE_time_sequence(struct FE_node_field *node_field,
-	struct FE_time_sequence *time_sequence)
-/*******************************************************************************
-LAST MODIFIED : 13 December 2005
-
-DESCRIPTION :
-Sets the fe_time_sequence for this object.  If this FE_node_field is being
-accessed more than once it will fail as there will be other Node_field_infos
-and therefore nodes that would then have mismatched node_fields and values_storage.
-Should only be doing this if the Node_field_info that this belongs to is only
-being used by one node otherwise you would have to update the values_storage
-for all nodes using the Node_field_info.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_node_field_set_FE_time_sequence);
-	if (node_field && (node_field->access_count < 2))
-	{
-		REACCESS(FE_time_sequence)(&(node_field->time_sequence), time_sequence);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_set_FE_time_sequence.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_set_FE_time_sequence */
-
 static int FE_node_field_add_values_storage_size(
 	struct FE_node_field *node_field, void *values_storage_size_void)
 /*******************************************************************************
@@ -242,7 +209,7 @@ in the node, adjusted for word alignment, is added on to <*values_storage_size>.
 		if (GENERAL_FE_FIELD==field->get_FE_field_type())
 		{
 			this_values_storage_size = node_field->getTotalValuesCount()*
-				get_Value_storage_size(field->getValueType(), node_field->time_sequence);
+				get_Value_storage_size(field->getValueType(), node_field->getTimeSequence());
 			ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
 			(*values_storage_size) += this_values_storage_size;
 		}
@@ -296,7 +263,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 					values_storage = start_of_values_storage + component->getValuesOffset();
 					number_of_values = component->getTotalValuesCount();
 					free_value_storage_array(values_storage,value_type,
-						node_field->time_sequence,number_of_values);
+						node_field->getTimeSequence(),number_of_values);
 					component++;
 				}
 				else
@@ -396,7 +363,7 @@ Assumes component nodal values are consecutive and start at first component.
 					value_type = field->getValueType();
 					number_of_values = new_node_field->getTotalValuesCount();
 					if ((!add_node_field) ||
-						(old_node_field && new_node_field->time_sequence))
+						(old_node_field && new_node_field->getTimeSequence()))
 					{
 						/* source in old_values_storage according to old_node_field */
 						if (copy_data->old_values_storage && old_node_field->components)
@@ -404,7 +371,7 @@ Assumes component nodal values are consecutive and start at first component.
 							source = copy_data->old_values_storage +
 								old_node_field->components->getValuesOffset();
 							return_code = copy_value_storage_array(destination, value_type,
-								new_node_field->time_sequence, old_node_field->time_sequence,
+								new_node_field->getTimeSequence(), old_node_field->getTimeSequence(),
 								number_of_values, source, copy_data->optimised_merge);
 						}
 						else
@@ -419,16 +386,16 @@ Assumes component nodal values are consecutive and start at first component.
 						{
 							source = copy_data->add_values_storage +
 								add_node_field->components->getValuesOffset();
-							if (old_node_field && new_node_field->time_sequence)
+							if (old_node_field && new_node_field->getTimeSequence())
 							{
 								return_code = copy_time_sequence_values_storage_arrays(
-									destination, value_type, new_node_field->time_sequence,
-									add_node_field->time_sequence, number_of_values, source);
+									destination, value_type, new_node_field->getTimeSequence(),
+									add_node_field->getTimeSequence(), number_of_values, source);
 							}
 							else
 							{
 								return_code = copy_value_storage_array(destination, value_type,
-									new_node_field->time_sequence, add_node_field->time_sequence,
+									new_node_field->getTimeSequence(), add_node_field->getTimeSequence(),
 									number_of_values, source, copy_data->optimised_merge);
 							}
 						}
@@ -468,11 +435,11 @@ Assumes component nodal values are consecutive and start at first component.
 						{
 							source = copy_data->add_values_storage +
 								add_node_field->components->getValuesOffset();
-							if (old_node_field->time_sequence)
+							if (old_node_field->getTimeSequence())
 							{
 								return_code = copy_time_sequence_values_storage_arrays(
-									destination, value_type, old_node_field->time_sequence,
-									add_node_field->time_sequence, number_of_values, source);
+									destination, value_type, old_node_field->getTimeSequence(),
+									add_node_field->getTimeSequence(), number_of_values, source);
 							}
 							else
 							{
@@ -481,7 +448,7 @@ Assumes component nodal values are consecutive and start at first component.
 								FE_node_field_free_values_storage_arrays(old_node_field,
 									(void *)copy_data->old_values_storage);
 								return_code = copy_value_storage_array(destination, value_type,
-									old_node_field->time_sequence, add_node_field->time_sequence,
+									old_node_field->getTimeSequence(), add_node_field->getTimeSequence(),
 									number_of_values, source, copy_data->optimised_merge);
 							}
 						}
@@ -684,7 +651,7 @@ static int compare_FE_field(struct FE_field *field_1,struct FE_field *field_2)
 FE_node_field::FE_node_field(struct FE_field *fieldIn) :
 	field(ACCESS(FE_field)(fieldIn)),
 	components(new FE_node_field_template[fieldIn->getNumberOfComponents()]),
-	time_sequence(0),
+	timeSequence(0),
 	access_count(0)
 {
 }
@@ -693,9 +660,9 @@ FE_node_field::~FE_node_field()
 {
 	DEACCESS(FE_field)(&(this->field));
 	delete[] this->components;
-	if (this->time_sequence)
+	if (this->timeSequence)
 	{
-		DEACCESS(FE_time_sequence)(&(this->time_sequence));
+		DEACCESS(FE_time_sequence)(&(this->timeSequence));
 	}
 }
 
@@ -723,9 +690,9 @@ FE_node_field *FE_node_field::clone(const FE_node_field& source, int deltaValues
 	{
 		return 0;
 	}
-	if (source.time_sequence)
+	if (source.timeSequence)
 	{
-		node_field->time_sequence = ACCESS(FE_time_sequence)(source.time_sequence);
+		node_field->setTimeSequence(source.timeSequence);
 	}
 	if (GENERAL_FE_FIELD != source.field->get_FE_field_type())
 	{
@@ -740,6 +707,21 @@ FE_node_field *FE_node_field::clone(const FE_node_field& source, int deltaValues
 		node_field->components[c].addValuesOffset(deltaValuesOffset);
 	}
 	return node_field;
+}
+
+int FE_node_field::setTimeSequence(FE_time_sequence *timeSequence)
+{
+	if (this->access_count < 2)
+	{
+		if (timeSequence)
+		{
+			this->field->setTimeDependent();
+		}
+		REACCESS(FE_time_sequence)(&(this->timeSequence), timeSequence);
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "FE_node_field::setTimeSequence.  Invalid arguments");
+	return 0;
 }
 
 int FE_node_field::getValueMaximumVersionsCount(cmzn_node_value_label valueLabel) const
@@ -894,14 +876,14 @@ static int FE_node_field_copy_with_equivalent_field(
 				if (copy_node_field)
 				{
 					copy_node_field->setField(equivalent_field);
-					if (node_field->time_sequence)
+					if (node_field->getTimeSequence())
 					{
 						// following is not accessed:
 						FE_time_sequence *copy_time_sequence = get_FE_time_sequence_matching_FE_time_sequence(data->fe_time,
-							node_field->time_sequence);
+							node_field->getTimeSequence());
 						if (copy_time_sequence)
 						{
-							FE_node_field_set_FE_time_sequence(copy_node_field, copy_time_sequence);
+							copy_node_field->setTimeSequence(copy_time_sequence);
 						}
 						else
 						{
@@ -1330,7 +1312,7 @@ static int count_nodal_size(struct FE_node_field *node_field,
 		return 0;
 	}
 	const int valueTypeSize = get_Value_storage_size(node_field->field->getValueType(),
-		node_field->time_sequence);
+		node_field->getTimeSequence());
 	*(static_cast<int *>(values_size_void)) += node_field->getTotalValuesCount()*valueTypeSize;
 	return 1;
 }
@@ -1381,22 +1363,21 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 		if (return_code)
 		{
 			/* if the new node_field is a time based node field merge it in */
-			if (node_field->time_sequence)
+			if (node_field->getTimeSequence())
 			{
-				if (existing_node_field->time_sequence)
+				if (existing_node_field->getTimeSequence())
 				{
 					// Merge time sequences in new node field
 					FE_time_sequence *merged_time_sequence = FE_region_get_FE_time_sequence_merging_two_time_series(
-						field->get_FE_region(), node_field->time_sequence, existing_node_field->time_sequence);
+						field->get_FE_region(), node_field->getTimeSequence(), existing_node_field->getTimeSequence());
 					if (merged_time_sequence)
 					{
-						if (compare_FE_time_sequence(merged_time_sequence, existing_node_field->time_sequence))
+						if (compare_FE_time_sequence(merged_time_sequence, existing_node_field->getTimeSequence()))
 						{
 							/* Time sequences are different */
 							merge_data->requires_merged_storage = 1;
 							FE_node_field *new_node_field = FE_node_field::clone(*existing_node_field);
-							REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
-								merged_time_sequence);
+							new_node_field->setTimeSequence(merged_time_sequence);
 							if (!(REMOVE_OBJECT_FROM_LIST(FE_node_field)(existing_node_field, merge_data->list)
 								&& ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field, merge_data->list)))
 							{
@@ -1427,7 +1408,7 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 			}
 			else
 			{
-				if (existing_node_field->time_sequence)
+				if (existing_node_field->getTimeSequence())
 				{
 					// Not implemented. Values storage size will change.
 					display_message(ERROR_MESSAGE, "merge_FE_node_field_into_list.  "
@@ -1445,8 +1426,8 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 		FE_node_field *new_node_field = FE_node_field::create(field);
 		if (new_node_field)
 		{
-			FE_node_field_set_FE_time_sequence(new_node_field, node_field->time_sequence);
-			const int valueTypeSize = get_Value_storage_size(node_field->field->getValueType(), node_field->time_sequence);
+			new_node_field->setTimeSequence(node_field->getTimeSequence());
+			const int valueTypeSize = get_Value_storage_size(node_field->field->getValueType(), node_field->getTimeSequence());
 			int new_values_storage_size = 0;
 			for (int c = 0; c < componentCount; ++c)
 			{
@@ -1495,7 +1476,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 		const FE_node_field *node_field = node->getNodeField(field);
 		if (node_field)
 		{
-			const int valueTypeSize = get_Value_storage_size(node_field->field->getValueType(), node_field->time_sequence);
+			const int valueTypeSize = get_Value_storage_size(node_field->field->getValueType(), node_field->getTimeSequence());
 			const int componentCount = field->getNumberOfComponents();
 			display_message(INFORMATION_MESSAGE,"  %s",field->getName());
 			const char *type_string;
@@ -1521,14 +1502,14 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 				return_code=0;
 			}
 			display_message(INFORMATION_MESSAGE, ", #Components=%d\n", componentCount);
-			const int number_of_times = (node_field->time_sequence) ?
-				FE_time_sequence_get_number_of_times(node_field->time_sequence) : 1;
+			const int number_of_times = (node_field->getTimeSequence()) ?
+				FE_time_sequence_get_number_of_times(node_field->getTimeSequence()) : 1;
 			FE_value time;
 			for (int time_index = 0; return_code && (time_index < number_of_times); ++time_index)
 			{
-				if (node_field->time_sequence)
+				if (node_field->getTimeSequence())
 				{
-					FE_time_sequence_get_time_for_index(node_field->time_sequence,
+					FE_time_sequence_get_time_for_index(node_field->getTimeSequence(),
 						time_index, &time);
 					display_message(INFORMATION_MESSAGE,"   Time: %g\n", time);
 				}
@@ -1640,7 +1621,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 									display_message(INFORMATION_MESSAGE, "(%d)", v + 1);
 								}
 								display_message(INFORMATION_MESSAGE, "=");
-								if (node_field->time_sequence)
+								if (node_field->getTimeSequence())
 								{
 									switch (field->getValueType())
 									{
@@ -1661,7 +1642,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 									} break;
 									}/* switch*/
 								}
-								else /* (node_field->time_sequence) */
+								else /* (node_field->getTimeSequence()) */
 								{
 									switch (field->getValueType())
 									{
@@ -1717,7 +1698,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 											"Can't display that Value_type yet. Write the code!");
 									} break;
 									}/* switch*/
-								} /* (node_field->time_sequence) */
+								} /* (node_field->getTimeSequence()) */
 								values_storage += valueTypeSize;
 								if (v < (versionsCount - 1))
 								{
@@ -1865,8 +1846,8 @@ int global_to_element_map_values(FE_field *field, int componentNumber,
 					}
 					node_field_info = node->fields;
 					nft = node_field->getComponent(componentNumber);
-					if ((node_field->time_sequence != time_sequence) &&
-						(time_sequence = node_field->time_sequence))
+					if ((node_field->getTimeSequence() != time_sequence) &&
+						(time_sequence = node_field->getTimeSequence()))
 					{
 						FE_time_sequence_get_interpolation_for_time(time_sequence,
 							time, &time_index_one, &time_index_two, &time_xi);
@@ -2065,9 +2046,9 @@ int find_FE_nodal_values_storage_dest(cmzn_node *node, FE_field *field,
 		display_message(ERROR_MESSAGE, "find_FE_nodal_values_storage_dest.  Node has no values storage");
 		return CMZN_ERROR_GENERAL;
 	}
-	const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->time_sequence);
+	const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->getTimeSequence());
 	valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
-	time_sequence = node_field->time_sequence;
+	time_sequence = node_field->getTimeSequence();
 	return CMZN_OK;
 }
 
@@ -2417,20 +2398,20 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 		{
 			if (existing_node_field_info->usedOnce())
 			{
-				if (node_field->access_count > 1)
+				if (node_field->getAccessCount() > 1)
 				{
 					/* Need to copy this node_field */
 					node_field_copy = FE_node_field::clone(*node_field);
 					REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field,
 						existing_node_field_info->node_field_list);
 					/* Update the time sequence */
-					FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
+					node_field_copy->setTimeSequence(new_node_field->getTimeSequence());
 					ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy,
 						existing_node_field_info->node_field_list);
 				}
 				else
 				{
-					FE_node_field_set_FE_time_sequence(node_field, new_node_field->time_sequence);
+					node_field->setTimeSequence(new_node_field->getTimeSequence());
 				}
 				/* Should check there isn't a node_field equivalent to this modified one
 					already in the list, and if there is use that instead */
@@ -2448,7 +2429,7 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 						node_field_copy = FE_node_field::clone(*node_field);
 						REMOVE_OBJECT_FROM_LIST(FE_node_field)(node_field, node_field_list);
 						/* Update the time sequence */
-						FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
+						node_field_copy->setTimeSequence(new_node_field->getTimeSequence());
 						ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy, node_field_list);
 						/* create the new node information, number_of_values has not changed */
 						struct FE_node_field_info *new_node_field_info = fe_nodeset->get_FE_node_field_info(
@@ -2508,7 +2489,7 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 	const int valueTypeSize = get_Value_storage_size(value_type, time_sequence);
 	if (time_sequence)
 	{
-		FE_node_field_set_FE_time_sequence(node_field, time_sequence);
+		node_field->setTimeSequence(time_sequence);
 	}
 	int new_values_storage_size = 0;
 	int number_of_values = 0;
@@ -2527,8 +2508,8 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 		field, node_field_info->node_field_list);
 	if (existing_node_field)
 	{
-		FE_time_sequence *existing_time_sequence = (existing_node_field->time_sequence) ?
-			ACCESS(FE_time_sequence)(existing_node_field->time_sequence) : 0;
+		FE_time_sequence *existing_time_sequence = (existing_node_field->getTimeSequence()) ?
+			ACCESS(FE_time_sequence)(existing_node_field->getTimeSequence()) : 0;
 		/* Check node fields are consistent or we are only adding times */
 		/* Need to copy node field list in case it is modified  */
 		struct LIST(FE_node_field) *new_node_field_list = CREATE_LIST(FE_node_field)();
@@ -2558,7 +2539,7 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 					Value_storage *storage;
 					storage = node->values_storage + existing_node_field->getComponent(0)->getValuesOffset();
 					enum FE_time_sequence_mapping time_sequence_mapping =
-						FE_time_sequences_mapping(existing_time_sequence, new_node_field->time_sequence);
+						FE_time_sequences_mapping(existing_time_sequence, new_node_field->getTimeSequence());
 					switch (time_sequence_mapping)
 					{
 						case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
@@ -2569,7 +2550,7 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 						case FE_TIME_SEQUENCE_MAPPING_APPEND:
 						{
 							const int previous_number_of_times = FE_time_sequence_get_number_of_times(existing_time_sequence);
-							const int new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->time_sequence);
+							const int new_number_of_times = FE_time_sequence_get_number_of_times(new_node_field->getTimeSequence());
 							for (int i = 0; i < number_of_values; ++i)
 							{
 								reallocate_time_values_storage_array(value_type,
@@ -2589,9 +2570,9 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 							for (int i = 0; (i < number_of_values) && return_code; ++i)
 							{
 								if (!(allocate_time_values_storage_array(value_type,
-										new_node_field->time_sequence,(Value_storage *)&temp_storage,/*initialise_storage*/1) &&
+										new_node_field->getTimeSequence(),(Value_storage *)&temp_storage,/*initialise_storage*/1) &&
 									copy_time_sequence_values_storage_array(storage, value_type,
-										existing_time_sequence, new_node_field->time_sequence, (Value_storage *)&temp_storage)))
+										existing_time_sequence, new_node_field->getTimeSequence(), (Value_storage *)&temp_storage)))
 								{
 									display_message(ERROR_MESSAGE, "define_FE_field_at_node.  Failed to copy time array");
 									return_code = 0;
@@ -2891,7 +2872,7 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 				exclusion_data.value_exclusion_start = node_field->getComponent(0)->getValuesOffset();
 				exclusion_data.value_exclusion_length = field_number_of_values *
 					get_Value_storage_size(node_field->field->getValueType(),
-						node_field->time_sequence);
+						node_field->getTimeSequence());
 				/* adjust size for proper word alignment in memory */
 				ADJUST_VALUE_STORAGE_SIZE(exclusion_data.value_exclusion_length);
 			}
@@ -3321,13 +3302,13 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_parameters(
 		}
 		int time_index_one = 0, time_index_two = 0;
 		FE_value time_xi = 0.0;
-		if (node_field->time_sequence)
+		if (node_field->getTimeSequence())
 		{
-			FE_time_sequence_get_interpolation_for_time(node_field->time_sequence,
+			FE_time_sequence_get_interpolation_for_time(node_field->getTimeSequence(),
 				time, &time_index_one, &time_index_two, &time_xi);
 		}
 		const FE_value one_minus_time_xi = 1.0 - time_xi;
-		const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->time_sequence);
+		const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->getTimeSequence());
 		int componentsFound = 0;
 		for (int c = componentStart; c < componentLimit; ++c)
 		{
@@ -3340,7 +3321,7 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_parameters(
 			else
 			{
 				Value_storage *valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
-				if (node_field->time_sequence)
+				if (node_field->getTimeSequence())
 				{
 					const VALUE_TYPE *timeValues = *((VALUE_TYPE **)valuesStorage);
 					*valueOut = timeValues[time_index_one]*one_minus_time_xi + timeValues[time_index_two]*time_xi;
@@ -3453,13 +3434,13 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_parameters(
 	const int componentLimit = (componentNumber < 0) ? field->getNumberOfComponents() : componentNumber + 1;
 	const VALUE_TYPE *valueIn = valuesIn;
 	int time_index = 0;
-	if ((node_field->time_sequence) && !FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+	if ((node_field->getTimeSequence()) && !FE_time_sequence_get_index_for_time(node_field->getTimeSequence(), time, &time_index))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_node_set_field_parameters<VALUE_TYPE>.  "
 			"Node %d field %s has no parameters at time %g", node->getIdentifier(), field->getName(), time);
 		return CMZN_ERROR_ARGUMENT;
 	}
-	const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->time_sequence);
+	const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->getTimeSequence());
 	int componentsFound = 0;
 	for (int c = componentStart; c < componentLimit; ++c)
 	{
@@ -3468,7 +3449,7 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_parameters(
 		if (valueIndex >= 0)
 		{
 			Value_storage *valuesStorage = node->values_storage + nft->getValuesOffset() + valueIndex*valueTypeSize;
-			if (node_field->time_sequence)
+			if (node_field->getTimeSequence())
 			{
 				VALUE_TYPE *timeValues = *((VALUE_TYPE **)valuesStorage);
 				timeValues[time_index] = *valueIn;
@@ -4232,14 +4213,14 @@ template <typename VALUE_TYPE> int cmzn_node_get_field_component_values(
 		return CMZN_ERROR_ARGUMENT;
 	}
 	VALUE_TYPE *dest = valuesOut;
-	if (node_field->time_sequence)
+	if (node_field->getTimeSequence())
 	{
 		int time_index_one, time_index_two;
 		FE_value time_xi = 0.0;
-		FE_time_sequence_get_interpolation_for_time(node_field->time_sequence, time, &time_index_one,
+		FE_time_sequence_get_interpolation_for_time(node_field->getTimeSequence(), time, &time_index_one,
 			&time_index_two, &time_xi);
 		const FE_value one_minus_time_xi = 1.0 - time_xi;
-		const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->time_sequence);
+		const int valueTypeSize = get_Value_storage_size(field->getValueType(), node_field->getTimeSequence());
 		const Value_storage *value_storage = node->values_storage + nft.getValuesOffset();
 		for (int j = 0; j < totalValuesCount; ++j)
 		{
@@ -4295,10 +4276,10 @@ template <typename VALUE_TYPE> int cmzn_node_add_field_component_values(
 		return CMZN_ERROR_ARGUMENT;
 	}
 	const VALUE_TYPE *source = valuesIn;
-	if (node_field->time_sequence)
+	if (node_field->getTimeSequence())
 	{
 		int time_index = 0;
-		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+		if (!FE_time_sequence_get_index_for_time(node_field->getTimeSequence(), time, &time_index))
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
@@ -4356,10 +4337,10 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 		return CMZN_ERROR_ARGUMENT;
 	}
 	const VALUE_TYPE *source = valuesIn;
-	if (node_field->time_sequence)
+	if (node_field->getTimeSequence())
 	{
 		int time_index = 0;
-		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
+		if (!FE_time_sequence_get_index_for_time(node_field->getTimeSequence(), time, &time_index))
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_node_set_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
@@ -4472,7 +4453,7 @@ int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *no
 			field->getName(), node->getIdentifier());
 		return CMZN_ERROR_NOT_FOUND;
 	}
-	if (node_field->time_sequence)
+	if (node_field->getTimeSequence())
 	{
 		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d is time-varying; case is not implemented",
 			field->getName(), node->getIdentifier());

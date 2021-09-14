@@ -113,27 +113,52 @@ public:
 		return true;
 	}
 
-	/** @return  Non-accessed bound source field or nullptr if none */
-	cmzn_field *getBoundSourceField() const
-	{
-		if (sourceCounts[this->currentIndex] > 0)
-		{
-			return sourceFields[this->currentIndex];
-		}
-		return nullptr;
-	}
+	/** Get bound source field and the field cache to evaluate it in.
+	 * @param argumentField  The argument field being evaluated.
+	 * @param cache  The cache the argument field is being evaluated in.
+	 * @param sourceCache  On successful return with a sourceField, set to the non-accessed
+	 * sourceCache to evaluate the source field in, updated to the current location.
+	 * @return  Non-accessed bound source field or nullptr if none */
+	cmzn_field *getBoundSourceField(cmzn_field *argumentField, cmzn_fieldcache& cache, cmzn_fieldcache* &sourceCache);
 
-	/** @return  Non-accessed field cache for bound source field or nullptr if none */
-	cmzn_fieldcache *getBoundSourceCache() const
+private:
+
+	inline cmzn_field *getBoundSourceFieldPrivate(cmzn_fieldcache* &sourceCache)
 	{
 		if (sourceCounts[this->currentIndex] > 0)
 		{
-			return sourceCaches[this->currentIndex];
+			sourceCache = this->sourceCaches[this->currentIndex];
+			return this->sourceFields[this->currentIndex];
 		}
 		return nullptr;
 	}
 
 };
+
+cmzn_field *ArgumentRealFieldValueCache::getBoundSourceField(cmzn_field *argumentField, cmzn_fieldcache& cache, cmzn_fieldcache* &sourceCache)
+{
+	cmzn_field *sourceField = this->getBoundSourceFieldPrivate(sourceCache);
+	if (!sourceField)
+	{
+		// try to inherit from parent/ancestor cache (which must be for same region)
+		cmzn_fieldcache *parentCache = cache.getParentCache();
+		while (parentCache)
+		{
+			ArgumentRealFieldValueCache *argumentRealValueCache = ArgumentRealFieldValueCache::cast(argumentField->getValueCache(*parentCache));
+			sourceField = argumentRealValueCache->getBoundSourceFieldPrivate(sourceCache);
+			if (sourceField)
+				break;
+			parentCache = parentCache->getParentCache();
+		}
+	}
+	// use shared extra cache if location has changed in sourceCache
+	if ((sourceField) && (!sourceCache->isSameLocation(cache)))
+	{
+		sourceCache = sourceCache->getOrCreateSharedWorkingCache();
+		sourceCache->copyLocation(cache);
+	}
+	return sourceField;
+}
 
 } // namespace
 
@@ -556,10 +581,11 @@ FieldValueCache *Computed_field_argument_real::createValueCache(cmzn_fieldcache&
 int Computed_field_argument_real::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	ArgumentRealFieldValueCache &valueCache = ArgumentRealFieldValueCache::cast(inValueCache);
-	cmzn_field *sourceField = valueCache.getBoundSourceField();
+	cmzn_fieldcache *sourceCache = nullptr;
+	cmzn_field *sourceField = valueCache.getBoundSourceField(this->field, cache, sourceCache);
 	if (sourceField)
 	{
-		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(*(valueCache.getBoundSourceCache())));
+		const RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(*sourceCache));
 		if (sourceValueCache)
 		{
 			valueCache.copyValues(*sourceValueCache);
@@ -572,10 +598,11 @@ int Computed_field_argument_real::evaluate(cmzn_fieldcache& cache, FieldValueCac
 int Computed_field_argument_real::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
 	ArgumentRealFieldValueCache &valueCache = ArgumentRealFieldValueCache::cast(inValueCache);
-	cmzn_field *sourceField = valueCache.getBoundSourceField();
+	cmzn_fieldcache *sourceCache = nullptr;
+	cmzn_field *sourceField = valueCache.getBoundSourceField(this->field, cache, sourceCache);
 	if (sourceField)
 	{
-		const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(*(valueCache.getBoundSourceCache()), fieldDerivative);
+		const DerivativeValueCache *sourceDerivativeCache = sourceField->evaluateDerivative(*sourceCache, fieldDerivative);
 		if (sourceDerivativeCache)
 		{
 			DerivativeValueCache& derivativeValueCache = *(valueCache.getDerivativeValueCache(fieldDerivative));
@@ -589,10 +616,11 @@ int Computed_field_argument_real::evaluateDerivative(cmzn_fieldcache& cache, Rea
 bool Computed_field_argument_real::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	ArgumentRealFieldValueCache& valueCache = ArgumentRealFieldValueCache::cast(*(this->field->getValueCache(cache)));
-	cmzn_field *sourceField = valueCache.getBoundSourceField();
+	cmzn_fieldcache *sourceCache = nullptr;
+	cmzn_field *sourceField = valueCache.getBoundSourceField(this->field, cache, sourceCache);
 	if (sourceField)
 	{
-		return sourceField->core->is_defined_at_location(cache);
+		return sourceField->core->is_defined_at_location(*sourceCache);
 	}
 	return false;
 }
@@ -600,13 +628,13 @@ bool Computed_field_argument_real::is_defined_at_location(cmzn_fieldcache& cache
 enum FieldAssignmentResult Computed_field_argument_real::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	ArgumentRealFieldValueCache& argumentValueCache = ArgumentRealFieldValueCache::cast(valueCache);
-	cmzn_field *sourceField = argumentValueCache.getBoundSourceField();
+	cmzn_fieldcache *sourceCache = nullptr;
+	cmzn_field *sourceField = argumentValueCache.getBoundSourceField(this->field, cache, sourceCache);
 	if (sourceField)
 	{
-		cmzn_fieldcache& sourceCache = *(argumentValueCache.getBoundSourceCache());
-		RealFieldValueCache& sourceValueCache = RealFieldValueCache::cast(*(sourceField->getValueCache(sourceCache)));
+		RealFieldValueCache& sourceValueCache = RealFieldValueCache::cast(*(sourceField->getValueCache(*sourceCache)));
 		sourceValueCache.setValues(valueCache.values);
-		return sourceField->assign(sourceCache, sourceValueCache);
+		return sourceField->assign(*sourceCache, sourceValueCache);
 	}
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }

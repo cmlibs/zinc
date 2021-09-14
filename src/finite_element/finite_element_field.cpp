@@ -84,20 +84,46 @@ Global functions
 ----------------
 */
 
-FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
-	name(duplicate_string(nameIn)),
-	fe_region(fe_regionIn),
+FE_field::FE_field() :
+	name(nullptr),
+	fe_region(nullptr),
+	cm_field_type(CM_GENERAL_FIELD),
 	fe_field_type(GENERAL_FE_FIELD),
 	indexer_field(nullptr),
 	number_of_indexed_values(0),
+	number_of_components(0),
+	component_names(nullptr),
+	number_of_values(0),
+	value_type(UNKNOWN_VALUE),
+	element_xi_host_mesh(nullptr),
+	values_storage(nullptr),
+	timeDependent(false),
+	fe_field_parameters(nullptr),
+	number_of_wrappers(0),
+	access_count(0)
+{
+	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+		this->meshFieldData[d] = nullptr;
+	for (int i = 0; i < 2; ++i)
+		this->embeddedNodeFields[i] = nullptr;
+}
+
+FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
+	name(duplicate_string(nameIn)),
+	fe_region(fe_regionIn),
 	cm_field_type(CM_GENERAL_FIELD),
+	fe_field_type(GENERAL_FE_FIELD),
+	indexer_field(nullptr),
+	number_of_indexed_values(0),
 	number_of_components(0),  // GRC really?
 	component_names(nullptr),  // not allocated until we have custom names
 	coordinate_system(),
 	number_of_values(0),
-	values_storage(nullptr),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
+	values_storage(nullptr),
+	timeDependent(false),
 	fe_field_parameters(nullptr),
 	number_of_wrappers(0),
 	access_count(1)
@@ -455,9 +481,10 @@ int list_FE_field(struct FE_field *field, void *)
 	return 0;
 }
 
-bool FE_field::hasMultipleTimes()
+bool FE_field::checkTimeDependent()
 {
-	return FE_region_FE_field_has_multiple_times(this->fe_region, this);
+	this->timeDependent = FE_region_FE_field_has_multiple_times(this->fe_region, this);
+	return this->timeDependent;
 }
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_field)
@@ -626,15 +653,6 @@ int FE_field::copyProperties(FE_field *source)
 		this->component_names=component_names;
 		this->coordinate_system = source->coordinate_system;
 		this->value_type=source->value_type;
-		/*
-		if (hostMesh)
-			hostMesh->access();
-		if (this->element_xi_host_mesh)
-		{
-			FE_mesh::deaccess(this->element_xi_host_mesh);
-		}
-		this->element_xi_host_mesh = hostMesh;
-		*/
 		if (hostMesh)
 			this->setElementXiHostMesh(hostMesh);
 		/* replace old values_storage with new */
@@ -647,6 +665,8 @@ int FE_field::copyProperties(FE_field *source)
 		}
 		this->number_of_values=source->number_of_values;
 		this->values_storage= new_values_storage;
+		if (source->checkTimeDependent())
+			this->setTimeDependent();
 	}
 	else
 	{

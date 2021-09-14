@@ -16,8 +16,10 @@
 #include <opencmiss/zinc/fieldapply.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldassignment.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
+#include <opencmiss/zinc/fieldtime.hpp>
 #include <opencmiss/zinc/node.hpp>
 
 #include "zinctestsetupcpp.hpp"
@@ -100,12 +102,24 @@ TEST(ZincFieldApply, importEmbeddingMap)
 		Nodeset nodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 		Nodetemplate nodetemplate = nodes.createNodetemplate();
 		EXPECT_EQ(RESULT_OK, nodetemplate.defineField(childCoordinates));
-		const double childCoordinatesIn[2][3] = { { 1.0, 0.0, 0.0 }, { 0.0, 0.6, 1.0 } };
+		const double times[2] = { 0.0, 1.0 };
+		Timesequence timesequence = zinc.fm.getMatchingTimesequence(2, times);
+		EXPECT_TRUE(timesequence.isValid());
+		EXPECT_EQ(RESULT_OK, nodetemplate.setTimesequence(childCoordinates, timesequence));
+		const double childCoordinatesIn[2][2][3] =
+		{
+			{ { 1.0, 0.0, 0.0 }, { 0.9, 0.2, 0.1 } },
+			{ { 0.0, 0.6, 1.0 }, { 0.5, 0.6, 0.3 } }
+		};
 		for (int n = 0; n < 2; ++n)
 		{
 			Node node = nodes.createNode(n + 1, nodetemplate);
 			EXPECT_EQ(RESULT_OK, childFieldcache.setNode(node));
-			EXPECT_EQ(RESULT_OK, childCoordinates.assignReal(childFieldcache, 3, childCoordinatesIn[n]));
+			for (int t = 0; t < 2; ++t)
+			{
+				EXPECT_EQ(RESULT_OK, childFieldcache.setTime(times[t]));
+				EXPECT_EQ(RESULT_OK, childCoordinates.assignReal(childFieldcache, 3, childCoordinatesIn[n][t]));
+			}
 		}
 		Elementbasis elementbasis = childFm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
 		Elementtemplate childElementtemplate = childMesh1d.createElementtemplate();
@@ -128,6 +142,7 @@ TEST(ZincFieldApply, importEmbeddingMap)
 	EXPECT_EQ(0, hostCoordinates.getNumberOfBindings());
 	const double childXi = 0.3;
 	EXPECT_EQ(RESULT_OK, childFieldcache.setMeshLocation(childElement, 1, &childXi));
+	EXPECT_EQ(RESULT_OK, childFieldcache.setTime(0.0));
 	// test can't evaluate until argument bindings are made
 	EXPECT_FALSE(hostCoordinates.getBindArgumentSourceField(coordinatesArgument).isValid());
 	const double TOL = 1.0E-12;
@@ -183,8 +198,104 @@ TEST(ZincFieldApply, importEmbeddingMap)
 	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element, 3, scaleXi));
 	EXPECT_EQ(RESULT_OK, pressure.evaluateReal(fieldcache, 1, &pressureOut));
 	EXPECT_NEAR(90654.545454545456, pressureOut, PTOL);
+
+	// test time lookup which forces an extra cache
+	const double half = 0.5;
+	FieldConstant time05 = zinc.fm.createFieldConstant(1, &half);
+	EXPECT_TRUE(time05.isValid());
+	Field timeCoordinates = zinc.fm.createFieldTimeLookup(coordinatesArgument, time05);
+	EXPECT_TRUE(timeCoordinates.isValid());
+	FieldApply hostTimeCoordinates = childFm.createFieldApply(timeCoordinates);
+	EXPECT_TRUE(hostTimeCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, hostTimeCoordinates.setName("hostTimeCoordinates"));
+	EXPECT_EQ(RESULT_OK, hostTimeCoordinates.setBindArgumentSourceField(coordinatesArgument, childCoordinates));
+	EXPECT_EQ(RESULT_OK, childFieldcache.setMeshLocation(childElement, 1, &childXi));
+	EXPECT_EQ(RESULT_OK, hostTimeCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_NEAR(0.74, coordinatesOut[0], TOL);
+	EXPECT_NEAR(0.25, coordinatesOut[1], TOL);
+	EXPECT_NEAR(0.23, coordinatesOut[2], TOL);
+	// compare against actual answers calculated directly in child field cache
+	EXPECT_EQ(RESULT_OK, childFieldcache.setMeshLocation(childElement, 1, &childXi));
+	EXPECT_EQ(RESULT_OK, childFieldcache.setTime(0.5));
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_NEAR(0.74, coordinatesOut[0], TOL);
+	EXPECT_NEAR(0.25, coordinatesOut[1], TOL);
+	EXPECT_NEAR(0.23, coordinatesOut[2], TOL);
+	// since the problem is all set up, test caching of recent time values
+	EXPECT_EQ(RESULT_OK, childFieldcache.setTime(0.0));
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_NEAR(0.7, coordinatesOut[0], TOL);
+	EXPECT_NEAR(0.18, coordinatesOut[1], TOL);
+	EXPECT_NEAR(0.3, coordinatesOut[2], TOL);
+	EXPECT_EQ(RESULT_OK, childFieldcache.setTime(0.8));
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_NEAR(0.764, coordinatesOut[0], TOL);
+	EXPECT_NEAR(0.292, coordinatesOut[1], TOL);
+	EXPECT_NEAR(0.188, coordinatesOut[2], TOL);
+	EXPECT_EQ(RESULT_OK, childFieldcache.setTime(0.2));
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_NEAR(0.716, coordinatesOut[0], TOL);
+	EXPECT_NEAR(0.208, coordinatesOut[1], TOL);
+	EXPECT_NEAR(0.272, coordinatesOut[2], TOL);
 	// test removing binding
 	EXPECT_EQ(RESULT_OK, hostCoordinates.setBindArgumentSourceField(coordinatesArgument, Field()));
 	EXPECT_FALSE(hostCoordinates.getBindArgumentSourceField(coordinatesArgument).isValid());
 	EXPECT_EQ(0, hostCoordinates.getNumberOfBindings());
 }
+
+// Test assign to values in another region through apply
+TEST(ZincFieldApply, assign)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldArgumentReal argument = zinc.fm.createFieldArgumentReal(3);
+	EXPECT_TRUE(argument.isValid());
+	FieldComponent component = zinc.fm.createFieldComponent(argument, 2);
+	EXPECT_TRUE(component.isValid());
+
+	Region childRegion = zinc.root_region.createChild("child");
+	Fieldmodule childFm = childRegion.getFieldmodule();
+	EXPECT_TRUE(childFm.isValid());
+	Fieldcache childFieldcache = childFm.createFieldcache();
+	EXPECT_TRUE(childFieldcache.isValid());
+
+	FieldFiniteElement childCoordinates;
+	const double coordinatesIn[3] = { 1.1, 2.2, 3.3 };
+	Node node1;
+	{
+		ChangeManager<Fieldmodule> changeField(childFm);
+		childCoordinates = childFm.createFieldFiniteElement(3);
+		EXPECT_TRUE(childCoordinates.isValid());
+		Nodeset nodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+		Nodetemplate nodetemplate = nodes.createNodetemplate();
+		EXPECT_EQ(RESULT_OK, nodetemplate.defineField(childCoordinates));
+		node1 = nodes.createNode(1, nodetemplate);
+		EXPECT_EQ(RESULT_OK, childFieldcache.setNode(node1));
+		EXPECT_EQ(RESULT_OK, childCoordinates.assignReal(childFieldcache, 3, coordinatesIn));
+	}
+
+	EXPECT_EQ(RESULT_OK, childFieldcache.setNode(node1));
+	double coordinatesOut[3];
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	for (int i = 0; i < 3; ++i)
+		EXPECT_DOUBLE_EQ(coordinatesIn[i], coordinatesOut[i]);
+
+	FieldApply hostComponent = childFm.createFieldApply(component);
+	EXPECT_TRUE(hostComponent.isValid());
+	EXPECT_EQ(RESULT_OK, hostComponent.setBindArgumentSourceField(argument, childCoordinates));
+
+	double y;
+	EXPECT_EQ(RESULT_OK, hostComponent.evaluateReal(childFieldcache, 1, &y));
+	EXPECT_DOUBLE_EQ(coordinatesIn[1], y);
+
+	const double newY = 1.234;
+	EXPECT_EQ(RESULT_OK, hostComponent.assignReal(childFieldcache, 1, &newY));
+	EXPECT_EQ(RESULT_OK, childCoordinates.evaluateReal(childFieldcache, 3, coordinatesOut));
+	EXPECT_DOUBLE_EQ(coordinatesIn[0], coordinatesOut[0]);
+	EXPECT_DOUBLE_EQ(newY, coordinatesOut[1]);
+	EXPECT_DOUBLE_EQ(coordinatesIn[2], coordinatesOut[2]);
+
+	EXPECT_EQ(RESULT_OK, hostComponent.evaluateReal(childFieldcache, 1, &y));
+	EXPECT_DOUBLE_EQ(newY, y);
+}
+
