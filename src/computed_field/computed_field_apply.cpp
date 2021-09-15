@@ -63,6 +63,17 @@ public:
 
 	virtual void clear()
 	{
+		if (this->sourceFields[this->currentIndex] != 0)
+		{
+			display_message(ERROR_MESSAGE, "ArgumentRealFieldValueCache::clear.  Called while fields are bound. Possible concurrency issue?");
+		}
+		this->sourceFields.resize(1);
+		this->sourceCaches.resize(1);
+		this->sourceCounts.resize(1);
+		this->currentIndex = 0;
+		this->sourceFields[this->currentIndex] = nullptr;
+		this->sourceCaches[this->currentIndex] = nullptr;
+		this->sourceCounts[this->currentIndex] = 0;
 		RealFieldValueCache::clear();
 	}
 
@@ -89,7 +100,12 @@ public:
 			}
 		}
 		this->sourceFields[this->currentIndex] = sourceFieldIn;
-		this->sourceCaches[this->currentIndex] = sourceCacheIn;
+		// fields depending on arguments must be evaluated in the shared extra cache
+		// check gives a small performance hit, but only when bound source field changes
+		if (sourceFieldIn->dependsOnArgument())
+			this->sourceCaches[this->currentIndex] = sourceCacheIn->getSharedWorkingCache();
+		else
+			this->sourceCaches[this->currentIndex] = sourceCacheIn;
 		this->sourceCounts[this->currentIndex] = 1;
 		return true;
 	}
@@ -109,7 +125,7 @@ public:
 			}
 			return false;
 		}
-		display_message(ERROR_MESSAGE, "ArgumentRealFieldValueCache.unbindSource:  Too many calls to unbindSource");
+		display_message(ERROR_MESSAGE, "ArgumentRealFieldValueCache::unbindSource:  Too many calls to unbindSource");
 		return true;
 	}
 
@@ -138,26 +154,24 @@ private:
 cmzn_field *ArgumentRealFieldValueCache::getBoundSourceField(cmzn_field *argumentField, cmzn_fieldcache& cache, cmzn_fieldcache* &sourceCache)
 {
 	cmzn_field *sourceField = this->getBoundSourceFieldPrivate(sourceCache);
-	if (!sourceField)
+	if (sourceField)
+		return sourceField;
+	// try to inherit from parent/ancestor cache (which must be for same region)
+	cmzn_fieldcache *parentCache = cache.getParentCache();
+	while (parentCache)
 	{
-		// try to inherit from parent/ancestor cache (which must be for same region)
-		cmzn_fieldcache *parentCache = cache.getParentCache();
-		while (parentCache)
+		ArgumentRealFieldValueCache *argumentRealValueCache = ArgumentRealFieldValueCache::cast(argumentField->getValueCache(*parentCache));
+		sourceField = argumentRealValueCache->getBoundSourceFieldPrivate(sourceCache);
+		if (sourceField)
 		{
-			ArgumentRealFieldValueCache *argumentRealValueCache = ArgumentRealFieldValueCache::cast(argumentField->getValueCache(*parentCache));
-			sourceField = argumentRealValueCache->getBoundSourceFieldPrivate(sourceCache);
-			if (sourceField)
-				break;
-			parentCache = parentCache->getParentCache();
+			// location must have changed as evaluating on a different cache: do same for source field
+			sourceCache = sourceCache->getOrCreateSharedWorkingCache();
+			sourceCache->copyLocation(cache);
+			return sourceField;
 		}
+		parentCache = parentCache->getParentCache();
 	}
-	// use shared extra cache if location has changed in sourceCache
-	if ((sourceField) && (!sourceCache->isSameLocation(cache)))
-	{
-		sourceCache = sourceCache->getOrCreateSharedWorkingCache();
-		sourceCache->copyLocation(cache);
-	}
-	return sourceField;
+	return nullptr;
 }
 
 } // namespace
@@ -507,6 +521,7 @@ int Computed_field_apply::setBindArgumentSourceField(cmzn_field *argumentField, 
 		display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Argument field is invalid, or not from evaluate field's region");
 		return CMZN_ERROR_ARGUMENT;
 	}
+	const int sourceFieldCount = this->field->number_of_source_fields;
 	if (sourceField)
 	{
 		if (sourceField->getManager() != this->field->getManager())
@@ -519,15 +534,34 @@ int Computed_field_apply::setBindArgumentSourceField(cmzn_field *argumentField, 
 			display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Source field number of components does not match argument field");
 			return CMZN_ERROR_ARGUMENT;
 		}
-		if (sourceField->dependsOnField(this->field))
+		if (sourceField->dependsOnField(evaluateField))
 		{
-			display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Cannot set a source field which depends on the apply field");
+			display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Cannot set a source field which depends on the evaluate or apply field");
 			return CMZN_ERROR_ARGUMENT;
+		}
+		if (sourceField->dependsOnField(argumentField))
+		{
+			display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Cannot set a source field which depends on the argument field");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		// following only detects dependence cycles over 2 arguments
+		for (int i = 1; i < sourceFieldCount; i += 2)
+		{
+			cmzn_field *otherArgumentField = this->getSourceField(i);
+			if (otherArgumentField != argumentField)
+			{
+				cmzn_field *otherSourceField = this->getSourceField(i + 1);
+				if (sourceField->dependsOnField(otherArgumentField) &&
+					otherSourceField->dependsOnField(argumentField))
+				{
+					display_message(ERROR_MESSAGE, "FieldApply setBindArgumentSourceField.  Dependence cycle detected over bound fields");
+					return CMZN_ERROR_ARGUMENT;
+				}
+			}
 		}
 	}
 	// first try to find argument in existing bindings
 	int result = CMZN_OK;
-	const int sourceFieldCount = this->field->number_of_source_fields;
 	int i = 1;
 	for (; i < sourceFieldCount; i += 2)
 	{

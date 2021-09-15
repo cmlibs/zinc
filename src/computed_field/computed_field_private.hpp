@@ -576,10 +576,29 @@ public:
 	 * Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
 	inline const RealFieldValueCache *evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
+	/** Apply field needs to know if a field depends on an argument.
+	 * @return  true if this field is a function of an argument field directly
+	 * or indirectly, otherwise false.
+	 */
+	bool dependsOnArgument() const
+	{
+		if (0 == this->number_of_source_fields)
+		{
+			// using fact that Argument fields have no source fields to minimise virtual function call:
+			return this->core->get_type() == CMZN_FIELD_TYPE_ARGUMENT_REAL;
+		}
+		for (int i = 0; i < this->number_of_source_fields; ++i)
+		{
+			if (this->source_fields[i]->dependsOnArgument())
+				return true;
+		}
+		return false;
+	}
+
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
 	 */
-	bool dependsOnField(cmzn_field *otherField)
+	bool dependsOnField(cmzn_field *otherField) const
 	{
 		if (this == otherField)
 			return true;

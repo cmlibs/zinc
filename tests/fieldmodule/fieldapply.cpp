@@ -162,6 +162,13 @@ TEST(ZincFieldApply, importEmbeddingMap)
 	EXPECT_FALSE(hostCoordinates.getBindArgumentField(0).isValid());
 	EXPECT_EQ(coordinatesArgument, hostCoordinates.getBindArgumentField(1));
 	EXPECT_FALSE(hostCoordinates.getBindArgumentField(2).isValid());
+	// test dependencies
+	EXPECT_TRUE(hostCoordinates.dependsOnField(embeddedCoordinates));
+	EXPECT_TRUE(embeddedCoordinates.dependsOnField(coordinatesArgument));
+	EXPECT_TRUE(hostCoordinates.dependsOnField(coordinatesArgument));
+	EXPECT_TRUE(hostCoordinates.dependsOnField(childCoordinates));
+	EXPECT_FALSE(coordinatesArgument.dependsOnField(childCoordinates));
+	EXPECT_FALSE(embeddedCoordinates.dependsOnField(childCoordinates));
 	// have another host field to inspect if findMeshLocation result is cached
 	FieldApply hostPressure = childFm.createFieldApply(embeddedPressure);
 	EXPECT_TRUE(hostPressure.isValid());
@@ -297,5 +304,113 @@ TEST(ZincFieldApply, assign)
 
 	EXPECT_EQ(RESULT_OK, hostComponent.evaluateReal(childFieldcache, 1, &y));
 	EXPECT_DOUBLE_EQ(newY, y);
+}
+
+// Test evaluation results when rebinding same argument to different sources
+TEST(ZincFieldApply, rebinding)
+{
+	ZincTestSetupCpp zinc;
+
+	const double valueOne = 1.0;
+	FieldConstant one = zinc.fm.createFieldConstant(1, &valueOne);
+	EXPECT_TRUE(one.isValid());
+	EXPECT_EQ(RESULT_OK, one.setName("one"));
+	const double valueTwo = 2.0;
+	FieldConstant two = zinc.fm.createFieldConstant(1, &valueTwo);
+	EXPECT_TRUE(two.isValid());
+	EXPECT_EQ(RESULT_OK, two.setName("two"));
+	FieldArgumentReal argument = zinc.fm.createFieldArgumentReal(1);
+	EXPECT_TRUE(argument.isValid());
+	EXPECT_EQ(RESULT_OK, argument.setName("argument"));
+	FieldApply applyOne = zinc.fm.createFieldApply(argument);
+	EXPECT_TRUE(applyOne.isValid());
+	EXPECT_EQ(RESULT_OK, applyOne.setName("applyOne"));
+	EXPECT_EQ(RESULT_OK, applyOne.setBindArgumentSourceField(argument, one));
+	FieldApply applyTwo = zinc.fm.createFieldApply(argument);
+	EXPECT_TRUE(applyTwo.isValid());
+	EXPECT_EQ(RESULT_OK, applyTwo.setName("applyTwo"));
+	EXPECT_EQ(RESULT_OK, applyTwo.setBindArgumentSourceField(argument, two));
+	FieldAdd addArgumentApplyOne = zinc.fm.createFieldAdd(argument, applyOne);
+	EXPECT_TRUE(addArgumentApplyOne.isValid());
+	EXPECT_EQ(RESULT_OK, addArgumentApplyOne.setName("addArgumentApplyOne"));
+	FieldApply applyAddArgumentApplyOne = zinc.fm.createFieldApply(addArgumentApplyOne);
+	EXPECT_TRUE(applyAddArgumentApplyOne.isValid());
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyOne.setName("applyAddArgumentApplyOne"));
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyOne.setBindArgumentSourceField(argument, one));
+	FieldAdd addArgumentApplyTwo = zinc.fm.createFieldAdd(argument, applyTwo);
+	EXPECT_TRUE(addArgumentApplyTwo.isValid());
+	EXPECT_EQ(RESULT_OK, addArgumentApplyTwo.setName("addArgumentApplyTwo"));
+	FieldApply applyAddArgumentApplyTwo = zinc.fm.createFieldApply(addArgumentApplyTwo);
+	EXPECT_TRUE(applyAddArgumentApplyTwo.isValid());
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyTwo.setName("applyAddArgumentApplyTwo"));
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyTwo.setBindArgumentSourceField(argument, one));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double valueOut;
+	// check that values for one binding are not accepted for a different binding
+	EXPECT_EQ(RESULT_OK, applyOne.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_DOUBLE_EQ(1.0, valueOut);
+	EXPECT_EQ(RESULT_OK, applyTwo.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_DOUBLE_EQ(2.0, valueOut);
+	// check rebinding of argument with the same source
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyOne.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_DOUBLE_EQ(2.0, valueOut);
+	// check rebinding of argument with a different source
+	EXPECT_EQ(RESULT_OK, applyAddArgumentApplyTwo.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_DOUBLE_EQ(3.0, valueOut);
+}
+
+// Test can't make infinite cycle of multiple bindings, but otherwise
+// can bind source fields that are functions of other arguments
+TEST(ZincFieldApply, cycleBindings)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldArgumentReal argument1 = zinc.fm.createFieldArgumentReal(3);
+	EXPECT_TRUE(argument1.isValid());
+	FieldArgumentReal argument2 = zinc.fm.createFieldArgumentReal(3);
+	EXPECT_TRUE(argument2.isValid());
+	FieldAdd addArguments = zinc.fm.createFieldAdd(argument1, argument2);
+	EXPECT_TRUE(addArguments.isValid());
+	FieldMultiply squaredArgument1 = zinc.fm.createFieldMultiply(argument1, argument1);
+	EXPECT_TRUE(squaredArgument1.isValid());
+	EXPECT_EQ(RESULT_OK, squaredArgument1.setName("squaredArgument1"));
+	FieldMultiply squaredArgument2 = zinc.fm.createFieldMultiply(argument2, argument2);
+	EXPECT_TRUE(squaredArgument2.isValid());
+	EXPECT_EQ(RESULT_OK, squaredArgument2.setName("squaredArgument2"));
+	FieldAdd doubleAddArguments = zinc.fm.createFieldAdd(addArguments, addArguments);
+	EXPECT_TRUE(addArguments.isValid());
+
+	FieldApply applyAddArguments = zinc.fm.createFieldApply(addArguments);
+	EXPECT_TRUE(applyAddArguments.isValid());
+	EXPECT_TRUE(applyAddArguments.dependsOnField(addArguments));
+	EXPECT_TRUE(applyAddArguments.dependsOnField(argument1));
+	EXPECT_TRUE(applyAddArguments.dependsOnField(argument2));
+	EXPECT_FALSE(applyAddArguments.dependsOnField(squaredArgument1));
+	EXPECT_FALSE(applyAddArguments.dependsOnField(squaredArgument2));
+	EXPECT_FALSE(applyAddArguments.dependsOnField(doubleAddArguments));
+	// test some invalid bindings on a dummy apply field
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument1, applyAddArguments));  // source field depends on apply field
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument1, doubleAddArguments));  // source field depends on evaluate field
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument2, addArguments));  // source field depends on evaluate field
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument1, squaredArgument1));  // source field depends on argument
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument2, squaredArgument2));  // source field depends on argument
+	EXPECT_EQ(RESULT_OK, applyAddArguments.setBindArgumentSourceField(argument1, squaredArgument2));  // OK = eliminates argument1, so apply only depends on argument2
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, applyAddArguments.setBindArgumentSourceField(argument2, squaredArgument1));  // NOT OK = infinite recursion between the arguments
+	const double constantValues[3] = { 1.0, 2.0, 3.0 };
+	FieldConstant constants = zinc.fm.createFieldConstant(3, constantValues);
+	EXPECT_TRUE(constants.isValid());
+	EXPECT_EQ(RESULT_OK, constants.setName("constants"));
+	EXPECT_EQ(RESULT_OK, applyAddArguments.setBindArgumentSourceField(argument2, constants));  // OK
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double valuesOut[3];
+	EXPECT_EQ(RESULT_OK, applyAddArguments.evaluateReal(fieldcache, 3, valuesOut));
+	const double TOL = 1.0E-12;
+	EXPECT_NEAR(2.0, valuesOut[0], TOL);
+	EXPECT_NEAR(6.0, valuesOut[1], TOL);
+	EXPECT_NEAR(12.0, valuesOut[2], TOL);
 }
 

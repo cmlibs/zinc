@@ -89,7 +89,9 @@ ZINC_API cmzn_field_id cmzn_field_apply_get_bind_argument_source_field(
  * @param source_field  The source field to bind to the argument field within
  * this apply field, or pass null/invalid field to clear. Must be from the same
  * region as the apply field and match the argument in value type and number of
- * components. The source field must not be a function of the apply field.
+ * components. The source field cannot depend on the apply field, its evaluate
+ * field or the argument field, directly or indirectly including through other
+ * argument bindings, to avoid infinite evaluation cycles.
  * @return  Result OK on success, ERROR_ARGUMENT if invalid apply, argument or
  * source field, otherwise some other error.
  */

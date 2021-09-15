@@ -558,6 +558,12 @@ public:
 	 * @return  Non-accessed field cache */
 	cmzn_fieldcache *getOrCreateSharedExternalWorkingCache(cmzn_region *region);
 
+	/** @return  Non-accessed field cache, or nullptr if none */
+	cmzn_fieldcache *getSharedWorkingCache() const
+	{
+		return this->sharedWorkingCache;
+	}
+
 	/** @return  Non-accessed field cache */
 	cmzn_fieldcache *getOrCreateSharedWorkingCache()
 	{

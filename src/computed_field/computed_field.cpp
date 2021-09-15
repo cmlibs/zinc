@@ -1402,6 +1402,16 @@ int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id cache,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+bool cmzn_field_depends_on_field(cmzn_field_id field,
+	cmzn_field_id other_field)
+{
+	if ((field) && (other_field))
+	{
+		return field->dependsOnField(other_field);
+	}
+	return false;
+}
+
 // Internal function
 // Note this also returns false for undefined. Not ready to expose in
 // external API until this is deemed reasonable.
