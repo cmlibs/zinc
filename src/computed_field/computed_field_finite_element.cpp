@@ -661,30 +661,16 @@ Copy the type specific data used by this type.
 	return (core);
 } /* Computed_field_finite_element::copy */
 
+// compare basic definition required to be able to merge fields
 int Computed_field_finite_element::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compare the type specific data
-==============================================================================*/
 {
-	Computed_field_finite_element* other;
-	int return_code;
-
-	ENTER(Computed_field_finite_element::compare);
-	if (field && (other = dynamic_cast<Computed_field_finite_element*>(other_core)))
+	Computed_field_finite_element* other = dynamic_cast<Computed_field_finite_element*>(other_core);
+	if ((other) && this->fe_field->compareBasicDefinition(other->fe_field))
 	{
-		return_code = (fe_field == other->fe_field);
+		return 1;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_finite_element::compare */
+	return 0;
+}
 
 bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cache)
 {

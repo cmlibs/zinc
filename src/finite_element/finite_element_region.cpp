@@ -455,12 +455,12 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 			if (merged_fe_field)
 			{
 				/* no change needs to be noted if fields are exactly the same */
-				if (!FE_fields_match_exact(merged_fe_field, fe_field))
+				if (!merged_fe_field->compareFullDefinition(fe_field))
 				{
-					/* can only change fundamentals -- number of components, value type
-						 if merged_fe_field is not accessed by any other objects */
+					// can only change basic definition -- number of components, value type
+					// if merged_fe_field is not accessed by any other objects
 					if ((1 == merged_fe_field->getAccessCount()) ||
-						FE_fields_match_fundamental(merged_fe_field, fe_field))
+						merged_fe_field->compareBasicDefinition(fe_field))
 					{
 						if (merged_fe_field->copyProperties(fe_field))
 						{

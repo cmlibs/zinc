@@ -213,7 +213,7 @@ void Computed_field_apply::otherRegionFieldChange(
 			apply_field_core->getEvaluateField());
 		if (change & MANAGER_CHANGE_RESULT(cmzn_field))
 		{
-			Computed_field_dependency_changed(field);
+			field->dependencyChanged();
 		}
 	}
 	else
@@ -736,9 +736,9 @@ int cmzn_field_apply_destroy(cmzn_field_apply_id *apply_address)
 cmzn_field_id cmzn_field_apply_get_bind_argument_field(
 	cmzn_field_apply_id apply_field, int bind_index)
 {
-	Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
-	if (applyCore)
+	if (apply_field)
 	{
+		Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
 		cmzn_field *argumentField = applyCore->getBindArgumentField(bind_index - 1);
 		if (argumentField)
 			return argumentField->access();
@@ -749,9 +749,9 @@ cmzn_field_id cmzn_field_apply_get_bind_argument_field(
 cmzn_field_id cmzn_field_apply_get_bind_argument_source_field(
 	cmzn_field_apply_id apply_field, cmzn_field_id argument_field)
 {
-	Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
-	if (applyCore)
+	if (apply_field)
 	{
+		Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
 		cmzn_field *sourceField = applyCore->getBindArgumentSourceField(argument_field);
 		if (sourceField)
 			return sourceField->access();
@@ -763,9 +763,9 @@ int cmzn_field_apply_set_bind_argument_source_field(
 	cmzn_field_apply_id apply_field, cmzn_field_id argument_field,
 	cmzn_field_id source_field)
 {
-	Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
-	if (applyCore)
+	if (apply_field)
 	{
+		Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
 		return applyCore->setBindArgumentSourceField(argument_field, source_field);
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -773,9 +773,9 @@ int cmzn_field_apply_set_bind_argument_source_field(
 
 int cmzn_field_apply_get_number_of_bindings(cmzn_field_apply_id apply_field)
 {
-	Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
-	if (applyCore)
+	if (apply_field)
 	{
+		Computed_field_apply *applyCore = Computed_field_apply::coreCast(apply_field);
 		return applyCore->getNumberOfBindings();
 	}
 	return -1;

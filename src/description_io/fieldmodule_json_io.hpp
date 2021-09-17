@@ -16,8 +16,8 @@
 #include "opencmiss/zinc/field.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/region.hpp"
-#include <string>
 #include "jsoncpp/json.h"
+#include <string>
 
 /*
  * Class to import attributes into field module.
@@ -49,9 +49,9 @@ public:
 	}
 
 	/* deserialise field definition into the fieldmodule */
-	OpenCMISS::Zinc::Field importField(Json::Value &fieldSettings);
+	OpenCMISS::Zinc::Field importField(const Json::Value &fieldSettings);
 
-	void setManaged(Json::Value &fieldSettings);
+	void setManaged(const Json::Value &fieldSettings);
 
 };
 

@@ -57,9 +57,6 @@ enum FE_field_type
 struct FE_field
 {
 	friend struct FE_region;
-	friend bool FE_fields_match_fundamental(struct FE_field *field1,
-		struct FE_field *field2);
-	friend bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
 	friend int set_FE_field_number_of_components(struct FE_field *field,
 		int number_of_components);
 	friend int set_FE_field_type_constant(struct FE_field *field);
@@ -165,6 +162,15 @@ public:
 	{
 		return this->access_count;
 	}
+
+	/** @return  true if this field and other field have matching basic definition i.e.
+	 * type, number of components etc. Does not compare name, coordinate system etc.
+	 * @see compareFullDefinition */
+	bool compareBasicDefinition(const FE_field* otherField) const;
+
+	/** @return  true if this field and other field definitions are identical in all
+	 * properties. */
+	bool compareFullDefinition(const FE_field* otherField) const;
 
 	FE_region *get_FE_region() const
 	{
@@ -424,31 +430,9 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_field,name,const char *);
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_field);
 
 /**
- * Returns true if <field1> and <field2> have the same fundamental definition,
- * namely they:
- * 1. Have the same value type
- * 2. Have the same fe field type (general, indexed etc.)
- * 3. Have the same number of components
- * 4. Have the same coordinate system
- * If so, they can be merged without affecting the rest of the model.
- * Other attributes such as cm field type (field, coordinate, anatomical) are
- * not considered fundamental. The name is also not compared.
- * Must ensure this function fits with FE_fields_match_exact.
- */
-bool FE_fields_match_fundamental(struct FE_field *field1,
-	struct FE_field *field2);
-
-/**
- * Returns true if <field1> and <field2> have exactly the same definition,
- * comparing all attributes.
- * @see FE_fields_match_fundamental
- */
-bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
-
-/**
  * List iterator function which fetches a field with the same name as <field>
  * from <field_list>. Returns 1 (true) if there is either no such field in the
- * list or the two fields return true for FE_fields_match_fundamental(),
+ * list or the two fields return true for FE_fields::compareBasicDefinition(),
  * otherwise returns 0 (false).
  */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);

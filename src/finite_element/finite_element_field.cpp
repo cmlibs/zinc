@@ -178,6 +178,56 @@ FE_field *FE_field::create(const char *nameIn, FE_region *fe_regionIn)
 	return nullptr;
 }
 
+bool FE_field::compareBasicDefinition(const FE_field* otherField) const
+{
+	if ((this->value_type != otherField->value_type)
+		|| (this->fe_field_type != otherField->fe_field_type)
+		|| (this->number_of_components != otherField->number_of_components))
+	{
+		return false;
+	}
+	if (ELEMENT_XI_VALUE == this->value_type)
+	{
+		// may need to improve if multiple meshes allowed in future:
+		if ((otherField->element_xi_host_mesh) && ((!this->element_xi_host_mesh) ||
+			(this->element_xi_host_mesh->getDimension() != otherField->element_xi_host_mesh->getDimension())))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool FE_field::compareFullDefinition(const FE_field* otherField) const
+{
+	if (!((otherField) && this->compareBasicDefinition(otherField)))
+	{
+		return false;
+	}
+	if ((0 == strcmp(this->name, otherField->name)) &&
+		((INDEXED_FE_FIELD != this->fe_field_type) ||
+			(this->indexer_field->compareFullDefinition(otherField->indexer_field) &&
+				(this->number_of_indexed_values == otherField->number_of_indexed_values))) &&
+		(this->cm_field_type == otherField->cm_field_type) &&
+		Coordinate_systems_match(&(this->coordinate_system), &(otherField->coordinate_system)))
+	{
+		// check component names match
+		for (int i = this->number_of_components; i <= 0; --i)
+		{
+			char *component_name1 = get_automatic_component_name(this->component_names, i);
+			char *component_name2 = get_automatic_component_name(otherField->component_names, i);
+			bool matching = (component_name1) && (component_name2) &&
+				(0 == strcmp(component_name1, component_name2));
+			DEALLOCATE(component_name2);
+			DEALLOCATE(component_name1);
+			if (!matching)
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 int FE_field::setName(const char *nameIn)
 {
 	if (nameIn)
@@ -696,91 +746,13 @@ int FE_field::copyProperties(FE_field *source)
 	return (return_code);
 }
 
-bool FE_fields_match_fundamental(struct FE_field *field1,
-	struct FE_field *field2)
-{
-	if (!(field1 && field2))
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_fields_match_fundamental.  Missing field(s)");
-		return false;
-	}
-	if (!((field1->value_type == field2->value_type)
-		&& (field1->fe_field_type == field2->fe_field_type)
-		&& (field1->number_of_components == field2->number_of_components)
-		&& (0 != Coordinate_systems_match(&(field1->coordinate_system),
-			&(field2->coordinate_system)))))
-		return false;
-	if (ELEMENT_XI_VALUE == field1->value_type)
-	{
-		if (!field1->element_xi_host_mesh)
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_fields_match_fundamental.  Source element xi field %s does not have a host mesh", field1->name);
-			return false;
-		}
-		// This will need to be improved once multiple meshes or meshes from different regions are allowed:
-		if (field1->element_xi_host_mesh->getDimension() != field2->element_xi_host_mesh->getDimension())
-			return false;
-	}
-	return true;
-}
-
-bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
-{
-	if (field1 && field2)
-	{
-		// does not match until proven so
-		if ((0 == strcmp(field1->name, field2->name)) &&
-			(field1->fe_field_type == field2->fe_field_type) &&
-			((INDEXED_FE_FIELD != field1->fe_field_type) ||
-				(field1->indexer_field && field2->indexer_field &&
-					(0 == strcmp(field1->indexer_field->name,
-						field2->indexer_field->name)) &&
-					FE_fields_match_fundamental(field1->indexer_field,
-						field2->indexer_field) &&
-					(field1->number_of_indexed_values ==
-						field2->number_of_indexed_values))) &&
-			(field1->cm_field_type == field2->cm_field_type) &&
-			Coordinate_systems_match(&(field1->coordinate_system),
-				&(field2->coordinate_system)) &&
-			(field1->value_type == field2->value_type) &&
-			(field1->number_of_components == field2->number_of_components))
-		{
-			// matches until disproven
-			// check component names match
-			for (int i = field1->number_of_components; i <= 0; --i)
-			{
-				char *component_name1 = get_automatic_component_name(field1->component_names, i);
-				char *component_name2 = get_automatic_component_name(field2->component_names, i);
-				bool matching = (component_name1) && (component_name2) &&
-					(0 == strcmp(component_name1, component_name2));
-				DEALLOCATE(component_name2);
-				DEALLOCATE(component_name1);
-				if (!matching)
-					return false;
-			}
-			return true;
-		}
-	}
-	else
-		display_message(ERROR_MESSAGE, "FE_fields_match_exact.  Missing field(s)");
-	return false;
-}
-
-/**
- * List iterator function which fetches a field with the same name as <field>
- * from <field_list>. Returns 1 (true) if there is either no such field in the
- * list or the two fields return true for FE_fields_match_fundamental(),
- * otherwise returns 0 (false).
- */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void)
 {
 	struct LIST(FE_field) *field_list = reinterpret_cast<struct LIST(FE_field) *>(field_list_void);
 	if (field && field_list)
 	{
 		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->getName(), field_list);
-		if ((!(other_field)) || FE_fields_match_fundamental(field, other_field))
+		if ((!(other_field)) || field->compareBasicDefinition(other_field))
 			return 1;
 	}
 	else

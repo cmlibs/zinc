@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/changemanager.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/elementbasis.hpp>
@@ -250,15 +251,44 @@ TEST(ZincFieldApply, importEmbeddingMap)
 	EXPECT_EQ(0, hostCoordinates.getNumberOfBindings());
 }
 
+// check the region/field structure of ZincFieldApply assign test
+void checkZincFieldApply_assign(Region& root)
+{
+	Fieldmodule fieldmodule = root.getFieldmodule();
+	FieldArgumentReal argument = fieldmodule.findFieldByName("argument").castArgumentReal();
+	EXPECT_TRUE(argument.isValid());
+	EXPECT_EQ(3, argument.getNumberOfComponents());
+	FieldComponent component = fieldmodule.findFieldByName("component").castComponent();
+	EXPECT_TRUE(component.isValid());
+	EXPECT_EQ(1, component.getNumberOfComponents());
+	Region child = root.findChildByName("child");
+	Fieldmodule childFm = child.getFieldmodule();
+	FieldFiniteElement childCoordinates = childFm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(childCoordinates.isValid());
+	EXPECT_EQ(3, childCoordinates.getNumberOfComponents());
+	EXPECT_TRUE(childCoordinates.isTypeCoordinate());
+	FieldApply hostComponent = childFm.findFieldByName("hostComponent").castApply();
+	EXPECT_TRUE(hostComponent.isValid());
+	EXPECT_EQ(1, hostComponent.getNumberOfComponents());
+	EXPECT_EQ(3, hostComponent.getNumberOfSourceFields());
+	EXPECT_EQ(component, hostComponent.getSourceField(1));
+	EXPECT_EQ(1, hostComponent.getNumberOfBindings());
+	EXPECT_EQ(argument, hostComponent.getBindArgumentField(1));
+	EXPECT_EQ(childCoordinates, hostComponent.getBindArgumentSourceField(argument));
+}
+
 // Test assign to values in another region through apply
+// Also tests serialisation
 TEST(ZincFieldApply, assign)
 {
 	ZincTestSetupCpp zinc;
 
 	FieldArgumentReal argument = zinc.fm.createFieldArgumentReal(3);
 	EXPECT_TRUE(argument.isValid());
+	EXPECT_EQ(RESULT_OK, argument.setName("argument"));
 	FieldComponent component = zinc.fm.createFieldComponent(argument, 2);
 	EXPECT_TRUE(component.isValid());
+	EXPECT_EQ(RESULT_OK, component.setName("component"));
 
 	Region childRegion = zinc.root_region.createChild("child");
 	Fieldmodule childFm = childRegion.getFieldmodule();
@@ -273,6 +303,8 @@ TEST(ZincFieldApply, assign)
 		ChangeManager<Fieldmodule> changeField(childFm);
 		childCoordinates = childFm.createFieldFiniteElement(3);
 		EXPECT_TRUE(childCoordinates.isValid());
+		EXPECT_EQ(RESULT_OK, childCoordinates.setName("coordinates"));
+		EXPECT_EQ(RESULT_OK, childCoordinates.setTypeCoordinate(true));
 		Nodeset nodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 		Nodetemplate nodetemplate = nodes.createNodetemplate();
 		EXPECT_EQ(RESULT_OK, nodetemplate.defineField(childCoordinates));
@@ -289,6 +321,7 @@ TEST(ZincFieldApply, assign)
 
 	FieldApply hostComponent = childFm.createFieldApply(component);
 	EXPECT_TRUE(hostComponent.isValid());
+	EXPECT_EQ(RESULT_OK, hostComponent.setName("hostComponent"));
 	EXPECT_EQ(RESULT_OK, hostComponent.setBindArgumentSourceField(argument, childCoordinates));
 
 	double y;
@@ -304,6 +337,109 @@ TEST(ZincFieldApply, assign)
 
 	EXPECT_EQ(RESULT_OK, hostComponent.evaluateReal(childFieldcache, 1, &y));
 	EXPECT_DOUBLE_EQ(newY, y);
+	checkZincFieldApply_assign(zinc.root_region);
+
+	// test writing field descriptions and reading into new region trees in different orders
+	char *rootDescription = zinc.fm.writeDescription();
+	char *childDescription = childFm.writeDescription();
+
+	// test reading root then child descriptions
+	Region root1 = zinc.context.createRegion();
+	EXPECT_EQ(RESULT_OK, root1.setName("root1")); // for debugging purposes
+	Fieldmodule fieldmodule1 = root1.getFieldmodule();
+	EXPECT_EQ(RESULT_OK, fieldmodule1.readDescription(rootDescription));
+	Region child1 = root1.createChild("child");
+	Fieldmodule child1Fm = child1.getFieldmodule();
+	EXPECT_EQ(RESULT_OK, child1Fm.readDescription(childDescription));
+	checkZincFieldApply_assign(root1);
+
+	// test reading child then root descriptions & look for placeholder evaluate and automatic argument
+	Region root2 = zinc.context.createRegion();
+	EXPECT_EQ(RESULT_OK, root2.setName("root2")); // for debugging purposes
+	Region child2 = root2.createChild("child");
+	Fieldmodule child2Fm = child2.getFieldmodule();
+	EXPECT_EQ(RESULT_OK, child2Fm.readDescription(childDescription));
+	Fieldmodule fieldmodule2 = root2.getFieldmodule();
+	// see if a dummy constant component field has been created
+	FieldConstant component2 = fieldmodule2.findFieldByName("component").castConstant();
+	EXPECT_TRUE(component2.isValid());
+	// see if an argument real has been automatically made
+	FieldArgumentReal argument2 = fieldmodule2.findFieldByName("argument").castArgumentReal();
+	EXPECT_TRUE(argument2.isValid());
+	EXPECT_EQ(RESULT_OK, fieldmodule2.readDescription(rootDescription));
+	checkZincFieldApply_assign(root2);
+
+	cmzn_deallocate(childDescription);
+	cmzn_deallocate(rootDescription);
+}
+
+// Set up apply of a finite element field in a sibling region
+// Serialise it and ensure reading EX file over other region can re-establish the
+// finite element field.
+// A bit academic as can't yet apply a finite element field properly, but
+// can evaluate it if you give a target domain location (for now).
+TEST(ZincFieldApply, serialiseSibling)
+{
+	ZincTestSetupCpp zinc;
+
+	Region child1 = zinc.root_region.createChild("child1");
+	Fieldmodule child1Fm = child1.getFieldmodule();
+	EXPECT_TRUE(child1Fm.isValid());
+
+	EXPECT_EQ(CMZN_OK, child1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	Mesh mesh3d = child1Fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Element element = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	FieldFiniteElement coordinates = child1Fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+
+	Region child2 = zinc.root_region.createChild("child2");
+	Fieldmodule child2Fm = child2.getFieldmodule();
+	EXPECT_TRUE(child2Fm.isValid());
+
+	FieldApply applyCoordinates = child2Fm.createFieldApply(coordinates);
+	EXPECT_EQ(RESULT_OK, applyCoordinates.setName("applyCoordinates"));
+	EXPECT_TRUE(applyCoordinates.isValid());
+
+	// try to evaluate at a child1 mesh location
+	// note this is not promised to work in future
+	Fieldcache fieldcache2 = child2Fm.createFieldcache();
+	EXPECT_TRUE(fieldcache2.isValid());
+	const double xi[3] = { 0.2, 0.8, 0.3 };
+	const double TOL = 1.0E-12;
+	EXPECT_EQ(RESULT_OK, fieldcache2.setMeshLocation(element, 3, xi));
+	double coordinatesOut[3];
+	EXPECT_EQ(RESULT_OK, applyCoordinates.evaluateReal(fieldcache2, 3, coordinatesOut));
+	for (int i = 0; i < 3; ++i)
+		EXPECT_NEAR(xi[i], coordinatesOut[i], TOL);
+
+	// test writing field descriptions for child2 and re-reading to automatically create child1 and field
+	// then read EX file to overwrite dummy evaluate field.
+	char *child2Description = child2Fm.writeDescription();
+
+	// test reading root then child descriptions
+	Region rootb = zinc.context.createRegion();
+	EXPECT_EQ(RESULT_OK, rootb.setName("rootb")); // for debugging purposes
+
+	Region childb2 = rootb.createChild("child2");
+	Fieldmodule childb2Fm = childb2.getFieldmodule();
+	EXPECT_EQ(RESULT_OK, childb2Fm.readDescription(child2Description));
+	// check child1 has been created and dummy coordinates field:
+	Region childb1 = rootb.findChildByName("child1");
+	EXPECT_TRUE(childb1.isValid());
+	Fieldmodule childb1Fm = childb1.getFieldmodule();
+	FieldConstant coordinatesbConstant = childb1Fm.findFieldByName("coordinates").castConstant();
+	EXPECT_TRUE(coordinatesbConstant.isValid());
+	EXPECT_EQ(3, coordinatesbConstant.getNumberOfComponents());
+	EXPECT_EQ(CMZN_OK, childb1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	// constant handle should be defunct
+	EXPECT_FALSE(coordinatesbConstant.castConstant().isValid());
+	FieldFiniteElement coordinatesb = childb1Fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinatesb.isValid());
+	EXPECT_EQ(coordinatesbConstant, coordinatesb);
+
+	cmzn_deallocate(child2Description);
 }
 
 // Test evaluation results when rebinding same argument to different sources

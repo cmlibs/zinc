@@ -49,7 +49,7 @@
  * fieldimageprocessing
  *
  */
-OpenCMISS::Zinc::Field *getSourceFields(Json::Value &typeSettings, unsigned int *count,
+OpenCMISS::Zinc::Field *getSourceFields(const Json::Value &typeSettings, unsigned int *count,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int numberOfSourceFields = 0;
@@ -84,101 +84,96 @@ OpenCMISS::Zinc::Field importApplyField(enum cmzn_field_type type,
 	{
 		// FieldApply is uniquely able to use source fields from another region
 		OpenCMISS::Zinc::Region region = jsonImport->getRegion();
-		OpenCMISS::Zinc::Region sourceRegion;
-		OpenCMISS::Zinc::Fieldmodule sourceFieldmodule;
-		if (typeSettings["SourceRegionPath"].isString())
+		// Following are only valid if evaluate and argument fields are from a different region
+		OpenCMISS::Zinc::Region evaluateRegion;
+		OpenCMISS::Zinc::Fieldmodule evaluateFieldmodule;
+		if (typeSettings["EvaluateRegionPath"].isString())
 		{
 			// relative path from this region
-			const char *sourceRegionPath = typeSettings["SourceRegionPath"].asCString();
-			sourceRegion = region.findSubregionAtPath(sourceRegionPath);
-			if (!sourceRegion.isValid())
+			const char *evaluateRegionPath = typeSettings["EvaluateRegionPath"].asCString();
+			evaluateRegion = region.findSubregionAtPath(evaluateRegionPath);
+			if (!evaluateRegion.isValid())
 			{
-				sourceRegion = region.createSubregion(sourceRegionPath);
+				evaluateRegion = region.createSubregion(evaluateRegionPath);
 			}
-			if (sourceRegion.isValid())
+			if (evaluateRegion.isValid())
 			{
-				sourceFieldmodule = sourceRegion.getFieldmodule();
+				evaluateFieldmodule = evaluateRegion.getFieldmodule();
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to get region at relative path %s", sourceRegionPath);
+				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to get region at relative path %s", evaluateRegionPath);
 				return field;
 			}
 		}
-		OpenCMISS::Zinc::ChangeManager<OpenCMISS::Zinc::Fieldmodule> changeFields(sourceFieldmodule.isValid() ? sourceFieldmodule : fieldmodule);
+		// cache change messages as may not be active in evaluateRegion
+		OpenCMISS::Zinc::ChangeManager<OpenCMISS::Zinc::Fieldmodule> changeFields(evaluateFieldmodule.isValid() ? evaluateFieldmodule : fieldmodule);
 		OpenCMISS::Zinc::Field evaluateField;
-		if (typeSettings["SourceFields"].isArray() &&
-			typeSettings["SourceFields"].size() == 1)
+		const Json::ArrayIndex sourceFieldsCount = typeSettings["SourceFields"].isArray() ? typeSettings["SourceFields"].size() : 0;
+		// must be an odd number of source fields: evaluate field followed by bound argument-source field pairs
+		if ((sourceFieldsCount % 2) == 0)
 		{
-			const char *evaluateFieldName = typeSettings["SourceFields"][0].asCString();
-			if (sourceRegion.isValid())
+			return field;
+		}
+		const char *evaluateFieldName = typeSettings["SourceFields"][0].asCString();
+		if (evaluateRegion.isValid())
+		{
+			// number of components is needed to verify source field or create a placeholder if it does not yet exist
+			const int numberOfComponents = (typeSettings["NumberOfComponents"].isInt()) ?
+				typeSettings["NumberOfComponents"].asInt() : 0;
+			evaluateField = evaluateFieldmodule.findFieldByName(evaluateFieldName);
+			if (evaluateField.isValid())
 			{
-				// number of components is needed to verify source field or create a placeholder if it does not yet exist
-				const int numberOfComponents = (typeSettings["NumberOfComponents"].isInt()) ?
-					typeSettings["NumberOfComponents"].asInt() : 0;
-				evaluateField = sourceFieldmodule.findFieldByName(evaluateFieldName);
-				if (evaluateField.isValid())
+				if (evaluateField.getNumberOfComponents() != numberOfComponents)
 				{
-					if (evaluateField.getNumberOfComponents() != numberOfComponents)
-					{
-						display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply source field %s has wrong number of components, %d expected",
-							evaluateFieldName, numberOfComponents);
-						return field;
-					}
-				}
-				else
-				{
-					// create a temporary constant field with the number of components
-					std::vector<double> zero(numberOfComponents, 0.0);
-					evaluateField = sourceFieldmodule.createFieldConstant(numberOfComponents, zero.data());
-					evaluateField.setName(evaluateFieldName);
+					display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply evaluate field %s has wrong number of components, %d expected",
+						evaluateFieldName, numberOfComponents);
+					return field;
 				}
 			}
 			else
 			{
-				evaluateField = jsonImport->getFieldByName(evaluateFieldName);
+				// create a temporary constant field with the number of components
+				std::vector<double> zero(numberOfComponents, 0.0);
+				evaluateField = evaluateFieldmodule.createFieldConstant(numberOfComponents, zero.data());
+				evaluateField.setName(evaluateFieldName);
 			}
 		}
-		std::vector<OpenCMISS::Zinc::Field> bindArgumentFields;
-		std::vector<OpenCMISS::Zinc::Field> bindSourceFields;
-		if (typeSettings["Bindings"].isArray() &&
-			typeSettings["Bindings"].size() > 0)
+		else
 		{
-			unsigned int numberOfBindings = typeSettings["Bindings"].size();
-			for (unsigned int i = 0; i < numberOfBindings; ++i)
-			{
-				const Json::Value& bindingSettings = typeSettings["Bindings"][i];
-				if (bindingSettings.isObject())
-				{
-					const char *sourceFieldName = bindingSettings["BindSourceField"].asCString();
-					OpenCMISS::Zinc::Field sourceField = jsonImport->getFieldByName(sourceFieldName);
-					OpenCMISS::Zinc::Field argumentField;
-					const char *argumentFieldName = bindingSettings["BindArgumentField"].asCString();
-					if (sourceRegion.isValid())
-					{
-						argumentField = sourceFieldmodule.findFieldByName(argumentFieldName);
-						if (!argumentField.isValid())
-						{
-							argumentField = sourceFieldmodule.createFieldArgumentReal(sourceField.getNumberOfComponents());
-							argumentField.setName(argumentFieldName);
-						}
-					}
-					else
-					{
-						argumentField = jsonImport->getFieldByName(argumentFieldName);
-					}
-					bindArgumentFields.push_back(argumentField);
-					bindSourceFields.push_back(sourceField);
-				}
-			}
+			evaluateField = jsonImport->getFieldByName(evaluateFieldName);
 		}
 		OpenCMISS::Zinc::FieldApply fieldApply = fieldmodule.createFieldApply(evaluateField);
-		size_t numberOfBindings = bindArgumentFields.size();
-		for (size_t i = 0; i < numberOfBindings; ++i)
+		if (!fieldApply.isValid())
 		{
-			if (CMZN_OK != fieldApply.setBindArgumentSourceField(bindArgumentFields[i], bindSourceFields[i]))
+			display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  Failed to create FieldApply with evaluate field %s", evaluateFieldName);
+			return field;
+		}
+		for (Json::ArrayIndex i = 1; i < sourceFieldsCount; i += 2)
+		{
+			const char *argumentFieldName = typeSettings["SourceFields"][i].asCString();
+			const char *sourceFieldName = typeSettings["SourceFields"][i + 1].asCString();
+			// source field needs to exist in this region
+			OpenCMISS::Zinc::Field sourceField = jsonImport->getFieldByName(sourceFieldName);
+			OpenCMISS::Zinc::Field argumentField;
+			if (evaluateRegion.isValid())
 			{
-				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to set bind source field %d", i + 1);
+				argumentField = evaluateFieldmodule.findFieldByName(argumentFieldName);
+				if (!argumentField.isValid())
+				{
+					// create an ArgumentReal field with the number of components in source field
+					const int numberOfComponents = sourceField.getNumberOfComponents();
+					argumentField = evaluateFieldmodule.createFieldArgumentReal(numberOfComponents);
+					argumentField.setName(argumentFieldName);
+				}
+			}
+			else
+			{
+				argumentField = jsonImport->getFieldByName(argumentFieldName);
+			}
+			if (CMZN_OK != fieldApply.setBindArgumentSourceField(argumentField, sourceField))
+			{
+				display_message(ERROR_MESSAGE, "Fieldmodule readDescription.  FieldApply failed to set bind argument source field %d", (i + 1)/2);
 				return field;
 			}
 		}
@@ -199,7 +194,7 @@ OpenCMISS::Zinc::Field importApplyField(enum cmzn_field_type type,
 
 /* Deserialise field with one source field */
 OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -292,7 +287,7 @@ OpenCMISS::Zinc::Field importGenericOneSourcesField(enum cmzn_field_type type,
 
 /* Deserialise field with two source fields */
 OpenCMISS::Zinc::Field importGenericTwoSourcesField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -385,7 +380,7 @@ OpenCMISS::Zinc::Field importGenericTwoSourcesField(enum cmzn_field_type type,
 
 /* Deserialise field with three source fields */
 OpenCMISS::Zinc::Field importGenericThreeSourcesField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -410,7 +405,7 @@ OpenCMISS::Zinc::Field importGenericThreeSourcesField(enum cmzn_field_type type,
 
 /* Deserialise component and concatenate fields */
 OpenCMISS::Zinc::Field importCompositeField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -455,7 +450,7 @@ OpenCMISS::Zinc::Field importCompositeField(enum cmzn_field_type type,
 
 /* Deserialise constant fields */
 OpenCMISS::Zinc::Field importConstantField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings)
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings)
 {
 	OpenCMISS::Zinc::Field field(0);
 
@@ -488,7 +483,7 @@ OpenCMISS::Zinc::Field importConstantField(enum cmzn_field_type type,
 
 /* Deserialise derivative fields */
 OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -521,12 +516,29 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 
 /* Deserialise finite element fields */
 OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
-	OpenCMISS::Zinc::Field field(0);
+	OpenCMISS::Zinc::Field field;
 	switch (type)
 	{
+		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
+			if (typeSettings["NumberOfComponents"].isInt())
+			{
+				const int numberOfComponents = typeSettings["NumberOfComponents"].asInt();
+				OpenCMISS::Zinc::FieldFiniteElement fieldFiniteElement = fieldmodule.createFieldFiniteElement(numberOfComponents);
+				if (fieldSettings["IsTypeCoordinate"].isBool())
+					fieldFiniteElement.setTypeCoordinate(fieldSettings["IsTypeCoordinate"].asBool());
+				if (typeSettings["ComponentNames"].isArray())
+				{
+					unsigned int numberOfComponentNames = typeSettings["ComponentNames"].size();
+					for (unsigned int i = 0; i < numberOfComponentNames; i++)
+					{
+						fieldFiniteElement.setComponentName(i + 1, typeSettings["ComponentNames"][i].asCString());
+					}
+				}
+				field = fieldFiniteElement;
+			} break;
 		case CMZN_FIELD_TYPE_EMBEDDED:
 			field = importGenericTwoSourcesField(type, fieldmodule, typeSettings, jsonImport);
 			break;
@@ -629,7 +641,7 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 
 /* Deserialise field with varying number of fields */
 OpenCMISS::Zinc::Field importGenericMultiComponentField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	unsigned int sourcesCount = 0;
@@ -656,7 +668,7 @@ OpenCMISS::Zinc::Field importGenericMultiComponentField(enum cmzn_field_type typ
  * Get the json object describing the derived field settings, it will also return
  * the field type in argument.
  */
-Json::Value getDerivedFieldValue(Json::Value &fieldSettings, enum cmzn_field_type *type)
+const Json::Value getDerivedFieldValue(const Json::Value &fieldSettings, enum cmzn_field_type *type)
 {
 	Json::Value typeSettings;
 	Json::Value::Members members = fieldSettings.getMemberNames();
@@ -682,7 +694,7 @@ Json::Value getDerivedFieldValue(Json::Value &fieldSettings, enum cmzn_field_typ
 }
 
 OpenCMISS::Zinc::Field importTimeValueField(enum cmzn_field_type type,
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &typeSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	OpenCMISS::Zinc::Field field(0);
@@ -704,12 +716,12 @@ OpenCMISS::Zinc::Field importTimeValueField(enum cmzn_field_type type,
 
 /* Deserialise type specifc field */
 OpenCMISS::Zinc::Field importTypeSpecificField(
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport)
 {
 	OpenCMISS::Zinc::Field field(0);
 	enum cmzn_field_type type = CMZN_FIELD_TYPE_INVALID;
-	Json::Value typeSettings = getDerivedFieldValue(fieldSettings, &type);
+	const Json::Value typeSettings = getDerivedFieldValue(fieldSettings, &type);
 	switch (type)
 	{
 		case CMZN_FIELD_TYPE_APPLY:
@@ -777,6 +789,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_DERIVATIVE:
 			field = importDerivativeField(type, fieldmodule, typeSettings, jsonImport);
 			break;
+		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
 		case CMZN_FIELD_TYPE_EMBEDDED:
 		case CMZN_FIELD_TYPE_STORED_STRING:
 		case CMZN_FIELD_TYPE_IS_EXTERIOR:
@@ -785,7 +798,7 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_NODE_VALUE:
 		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
 		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
-			field = importFiniteElementField(type, fieldmodule, typeSettings, jsonImport);
+			field = importFiniteElementField(type, fieldmodule, fieldSettings, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_CROSS_PRODUCT:
 			field = importGenericMultiComponentField(type, fieldmodule, typeSettings, jsonImport);
@@ -865,26 +878,12 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			// write region path if in another region
 			OpenCMISS::Zinc::Region region = this->fieldmodule.getRegion();
 			OpenCMISS::Zinc::Field evaluateField = fieldApply.getSourceField(1);
-			OpenCMISS::Zinc::Region sourceRegion = evaluateField.getFieldmodule().getRegion();
-			if (!(sourceRegion == region))
+			OpenCMISS::Zinc::Region evaluateRegion = evaluateField.getFieldmodule().getRegion();
+			if (!(evaluateRegion == region))
 			{
-				char *sourceRegionPath = sourceRegion.getRelativePath(region);
-				typeSettings["SourceRegionPath"] = sourceRegionPath;
-				DEALLOCATE(sourceRegionPath);
-			}
-			const int numberOfBindings = fieldApply.getNumberOfBindings();
-			for (int i = 0; i < numberOfBindings; i++)
-			{
-				OpenCMISS::Zinc::Field argumentField = fieldApply.getBindArgumentField(1 + i);
-				OpenCMISS::Zinc::Field sourceField = fieldApply.getBindArgumentSourceField(argumentField);
-				Json::Value bindingSettings;
-				char *argumentName = argumentField.getName();
-				bindingSettings["BindArgumentField"].append(argumentName);
-				DEALLOCATE(argumentName);
-				char *sourceName = sourceField.getName();
-				bindingSettings["BindSourceField"].append(sourceName);
-				DEALLOCATE(sourceName);
-				typeSettings["Bindings"].append(bindingSettings);
+				char *evaluateRegionPath = evaluateRegion.getRelativePath(region);
+				typeSettings["EvaluateRegionPath"] = evaluateRegionPath;
+				DEALLOCATE(evaluateRegionPath);
 			}
 		}	break;
 		case CMZN_FIELD_TYPE_ARGUMENT_REAL:
@@ -966,7 +965,15 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_FINITE_ELEMENT:
 		{
-			ioFiniteElementEntries(fieldSettings, typeSettings);
+			const int numberOfComponents = field.getNumberOfComponents();
+			fieldSettings["IsTypeCoordinate"] = field.isTypeCoordinate();
+			typeSettings["NumberOfComponents"] = numberOfComponents;
+			for (int i = 0; i < numberOfComponents; i++)
+			{
+				char *name = field.getComponentName(1 + i);
+				typeSettings["ComponentNames"].append(name);
+				DEALLOCATE(name);
+			}
 		} break;
 		case CMZN_FIELD_TYPE_TIME_VALUE:
 		{
@@ -1003,57 +1010,35 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 	DEALLOCATE(className);
 }
 
-void FieldJsonIO::ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value &typeSettings)
+void FieldJsonIO::exportEntries(Json::Value &fieldSettings)
 {
-	if (mode == IO_MODE_EXPORT)
-	{
-		int numberOfComponents = field.getNumberOfComponents();
-		fieldSettings["IsTypeCoordinate"] = field.isTypeCoordinate();
-		typeSettings["NumberOfComponents"] = numberOfComponents;
-		for (int i = 0; i < numberOfComponents; i++)
-		{
-			char *name = field.getComponentName(1 + i);
-			typeSettings["ComponentNames"].append(name);
-			DEALLOCATE(name);
-		}
-	}
-	else
-	{
-		if (fieldSettings["IsTypeCoordinate"].isBool())
-			field.setTypeCoordinate(fieldSettings["IsTypeCoordinate"].asBool());
-		if (typeSettings["ComponentNames"].isArray())
-		{
-			unsigned int numberOfComponents = typeSettings["ComponentNames"].size();
-			for (unsigned int i = 0; i < numberOfComponents; i++)
-			{
-				field.setComponentName(i+1, typeSettings["ComponentNames"][i].asCString());
-			}
-		}
-	}
+	char *name = this->field.getName();
+	fieldSettings["Name"] = name;
+	DEALLOCATE(name);
+	fieldSettings["IsManaged"] = this->field.isManaged();
+	exportTypeSpecificParameters(fieldSettings);
 }
 
-void FieldJsonIO::ioEntries(Json::Value &fieldSettings)
+bool FieldJsonIO::importEntries(const Json::Value &fieldSettings)
 {
-	if (mode == IO_MODE_EXPORT)
+	if (fieldSettings["CoordinateSystemType"].isString())
+		this->field.setCoordinateSystemType(this->field.CoordinateSystemTypeEnumFromString(
+			fieldSettings["CoordinateSystemType"].asCString()));
+	if (fieldSettings["CoordinateSystemFocus"].isDouble())
+		this->field.setCoordinateSystemFocus(fieldSettings["CoordinateSystemFocus"].asDouble());
+	this->field.setManaged(true);
+	if (fieldSettings["Name"].isString())
 	{
-		char *name = field.getName();
-		fieldSettings["Name"] = name;
-		DEALLOCATE(name);
-		fieldSettings["IsManaged"] = field.isManaged();
-		exportTypeSpecificParameters(fieldSettings);
-	}
-	else
-	{
-		if (fieldSettings["Name"].isString())
+		const char *fieldName = fieldSettings["Name"].asCString();
+		OpenCMISS::Zinc::Field existingField = fieldmodule.findFieldByName(fieldName);
+		if (existingField.isValid())
 		{
-			field.setName(fieldSettings["Name"].asCString());
+			return false;
 		}
-		if (fieldSettings["CoordinateSystemType"].isString())
-			field.setCoordinateSystemType(field.CoordinateSystemTypeEnumFromString(
-				fieldSettings["CoordinateSystemType"].asCString()));
-		if (fieldSettings["CoordinateSystemFocus"].isDouble())
-			field.setCoordinateSystemFocus(fieldSettings["CoordinateSystemFocus"].asDouble());
-
-		field.setManaged(true);
+		else
+		{
+			this->field.setName(fieldName);
+		}
 	}
+	return true;
 }

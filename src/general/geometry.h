@@ -240,15 +240,12 @@ any) for the given coordinate_system. eg "rectangular_cartesian" or
 function.
 ==============================================================================*/
 
-int Coordinate_systems_match(struct Coordinate_system *coordinate_system1,
-	struct Coordinate_system *coordinate_system2);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Returns true if the two coordinate systems are the same - includes comparing
-focus for prolate and oblate spheroidal systems.
-==============================================================================*/
+/**
+ * @return  true if the two coordinate systems are the same - includes comparing
+ * focus for prolate and oblate spheroidal systems.
+ */
+int Coordinate_systems_match(const Coordinate_system *coordinate_system1,
+	const Coordinate_system *coordinate_system2);
 
 int convert_Coordinate_system(
   struct Coordinate_system *source_coordinate_system,

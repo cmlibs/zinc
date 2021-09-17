@@ -371,7 +371,7 @@ void Computed_field_group::propagate_hierarchical_field_changes(
 						if (subregion_group_change != CMZN_FIELD_GROUP_CHANGE_NONE)
 						{
 							this->change_detail.changeMergeNonlocal(subregion_group_change);
-							Computed_field_dependency_changed(field);
+							this->field->dependencyChanged();
 						}
 					}
 					else
@@ -993,7 +993,7 @@ int Computed_field_group::remove_empty_subgroups()
 		}
 	}
 	if (this->change_detail.getChangeSummary() != CMZN_FIELD_GROUP_CHANGE_NONE)
-		Computed_field_dependency_changed(this->field);
+		this->field->dependencyChanged();
 	return 1;
 }
 

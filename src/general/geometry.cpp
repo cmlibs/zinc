@@ -761,15 +761,8 @@ function.
 	return (coordinate_system_string);
 } /* Coordinate_system_string */
 
-int Coordinate_systems_match(struct Coordinate_system *coordinate_system1,
-	struct Coordinate_system *coordinate_system2)
-/*******************************************************************************
-LAST MODIFIED : 21 June 2000
-
-DESCRIPTION :
-Returns true if the two coordinate systems are the same - includes comparing
-focus for prolate and oblate spheroidal systems.
-==============================================================================*/
+int Coordinate_systems_match(const Coordinate_system *coordinate_system1,
+	const Coordinate_system *coordinate_system2)
 {
 	int return_code;
 

@@ -538,6 +538,39 @@ public:
 	 */
 	void clearCaches();
 
+	cmzn_field_value_type getValueType() const
+	{
+		return this->core->get_value_type();
+	}
+
+	/** @return  true if this field and other field have matching basic definition,
+	 * value type, number of components. Does not compare name, coordinate system etc. */
+	bool compareBasicDefinition(const cmzn_field& otherField) const
+	{
+		return (this->number_of_components == otherField.number_of_components)
+			&& (this->getValueType() == otherField.getValueType());
+	}
+
+	/** @return  true if this field and other field have matching full definition,
+	 * excluding name, coordinate system */
+	bool compareFullDefinition(const cmzn_field& otherField) const;
+
+	/**
+	 * Copy the functional definition of source field to this field.
+	 * Fails if source depends on this field or is from another region.
+	 * Fails if changing number of components while this field is in use.
+	 * Note this copies the definition only; finite element fields defined on nodes
+	 * and elements are not affected.
+	 * Does not copy name of field.
+	 *
+	 * @source  Field to copy functional definition from.
+	 * @return  Result OK on success, ERROR_ARGUMENT if fails because source
+	 * depends on this field or is from another region, ERROR_INCOMPATIBLE_DATA if
+	 * attempting to change number of components while field is in use, otherwise
+	 * any other error.
+	 */
+	int copyDefinition(const cmzn_field& source);
+
 	inline FieldValueCache *getValueCache(cmzn_fieldcache& fieldCache)
 	{
 		FieldValueCache *valueCache = fieldCache.getValueCache(this->cache_index);
@@ -667,6 +700,13 @@ public:
 	 * or PARTIAL.
 	 */
 	inline void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
+
+	/**
+	 * Record that external global objects this field depends on have change such
+	 * that this field should evaluate to different values.
+	 * Notify clients if not caching changes.
+	 */
+	inline void dependencyChanged();
 
 	/**
 	 * Set the source field at the index in the field. Capable of adding one
@@ -978,13 +1018,9 @@ inline int Computed_field_changed(struct cmzn_field *field)
  *
  * @param field  The field whose dependencies have changed.
  */
-inline int Computed_field_dependency_changed(struct cmzn_field *field)
+inline void cmzn_field::dependencyChanged()
 {
-	if (field)
-		return MANAGED_OBJECT_CHANGE(cmzn_field)(field,
-			MANAGER_CHANGE_FULL_RESULT(cmzn_field));
-	display_message(ERROR_MESSAGE, "Computed_field_dependency_changed.  Invalid argument(s)");
-	return 0;
+	MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 }
 
 Computed_field_simple_package *Computed_field_package_get_simple_package(
@@ -1006,16 +1042,6 @@ DESCRIPTION :
 Sets the string that will be printed for the computed fields name.
 This may be different from the name when it contains characters invalid for
 using as an identifier in the manager, such as spaces or punctuation.
-==============================================================================*/
-
-int Computed_field_contents_match(struct cmzn_field *field,
-	void *other_computed_field_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if contents of <field> other than
-its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
 
 /***************************************************************************//**

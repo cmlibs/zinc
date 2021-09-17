@@ -191,7 +191,9 @@ void cmzn_region::Computed_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message, void *region_void)
 {
 	cmzn_region *region = (cmzn_region *)region_void;
-	if (message && region)
+	// avoid if region is being destroyed (access_count == 0)
+	// otherwise cmzn_fieldmoduleevent will access and destroy region again
+	if (message && region && (region->access_count > 0))
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
 		// clear active field caches for changed fields
@@ -1603,9 +1605,15 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 			field_name, region->getFieldManager());
 		if (existing_wrapper && !Computed_field_wraps_fe_field(existing_wrapper, (void *)fe_field))
 		{
-			existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_wraps_fe_field, (void *)fe_field,
-				region->getFieldManager());
+			// can switch from constant to finite element to replace temporary evaluate field for apply field
+			if ((existing_wrapper->core->get_type() != CMZN_FIELD_TYPE_CONSTANT) ||
+				(existing_wrapper->number_of_components != fe_field->getNumberOfComponents()) ||
+				(fe_field->getValueType() != FE_VALUE_VALUE))
+			{
+				existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_wraps_fe_field, (void *)fe_field,
+					region->getFieldManager());
+			}
 			update_wrapper = true;
 		}
 		if (update_wrapper)

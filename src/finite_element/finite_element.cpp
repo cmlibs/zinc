@@ -870,7 +870,7 @@ static int FE_node_field_copy_with_equivalent_field(
 			node_field->field->getName(), data->fe_field_list);
 		if (equivalent_field)
 		{
-			if (FE_fields_match_exact(node_field->field, equivalent_field))
+			if (node_field->field->compareFullDefinition(equivalent_field))
 			{
 				struct FE_node_field *copy_node_field = FE_node_field::clone(*node_field);
 				if (copy_node_field)
@@ -4102,7 +4102,7 @@ Checks first that the FE_fields match.
 			FE_node_field_has_field_with_name, (void *)node_field->field->getName(),
 			node_field_list)))
 		{
-			if (FE_fields_match_exact(node_field->field, other_node_field->field))
+			if (node_field->field->compareFullDefinition(other_node_field->field))
 			{
 				if (FE_node_fields_match(node_field, other_node_field,
 					/*compare_field_and_time_sequence*/false, /*compare_component_value*/false))
