@@ -11,6 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_derivatives.h"
@@ -133,9 +134,8 @@ OpenCMISS::Zinc::Field importApplyField(enum cmzn_field_type type,
 			}
 			else
 			{
-				// create a temporary constant field with the number of components
-				std::vector<double> zero(numberOfComponents, 0.0);
-				evaluateField = evaluateFieldmodule.createFieldConstant(numberOfComponents, zero.data());
+				// create a dummy real field with the number of components
+				evaluateField = OpenCMISS::Zinc::Field(cmzn_fieldmodule_create_field_dummy_real(evaluateFieldmodule.getId(), numberOfComponents));
 				evaluateField.setName(evaluateFieldName);
 			}
 		}
@@ -1019,7 +1019,7 @@ void FieldJsonIO::exportEntries(Json::Value &fieldSettings)
 	exportTypeSpecificParameters(fieldSettings);
 }
 
-bool FieldJsonIO::importEntries(const Json::Value &fieldSettings)
+void FieldJsonIO::importEntries(const Json::Value &fieldSettings)
 {
 	if (fieldSettings["CoordinateSystemType"].isString())
 		this->field.setCoordinateSystemType(this->field.CoordinateSystemTypeEnumFromString(
@@ -1029,16 +1029,6 @@ bool FieldJsonIO::importEntries(const Json::Value &fieldSettings)
 	this->field.setManaged(true);
 	if (fieldSettings["Name"].isString())
 	{
-		const char *fieldName = fieldSettings["Name"].asCString();
-		OpenCMISS::Zinc::Field existingField = fieldmodule.findFieldByName(fieldName);
-		if (existingField.isValid())
-		{
-			return false;
-		}
-		else
-		{
-			this->field.setName(fieldName);
-		}
+		this->field.setName(fieldSettings["Name"].asCString());
 	}
-	return true;
 }

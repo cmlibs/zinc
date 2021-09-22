@@ -73,7 +73,14 @@ DESCRIPTION :
 		this->parameters.focus = focusIn;
 	}
 
+	Coordinate_system_type getType() const
+	{
+		return this->type;
+	}
+
 }; /* struct Coordinate_system */
+
+bool operator==(const Coordinate_system& cs1, const Coordinate_system& cs2);
 
 enum Projection_type
 /*******************************************************************************
@@ -215,15 +222,6 @@ LAST MODIFIED : 8 September 1998
 DESCRIPTION :
 For transforming from oblate spheroidal to cartesian coordinates.
 ???DB.  What are the formulae.
-==============================================================================*/
-
-enum Coordinate_system_type get_coordinate_system_type(
-	struct Coordinate_system *coordinate_system);
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Returns the type of the coordinate system passed to it.
 ==============================================================================*/
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Coordinate_system_type);

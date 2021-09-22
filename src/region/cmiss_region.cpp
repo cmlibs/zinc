@@ -17,6 +17,7 @@
 #include "opencmiss/zinc/nodeset.h"
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_derivative.hpp"
@@ -1366,6 +1367,46 @@ bool cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_r
 	if (!source_region)
 		return false;
 
+	if (target_region)
+	{
+		// check fields
+		bool fieldsOK = true;
+		cmzn_fielditerator *iter = source_region->createFielditerator();
+		cmzn_field *field = nullptr;
+		while ((field = iter->next_non_access()))
+		{
+			cmzn_field *existingField = target_region->findFieldByName(field->getName());
+			if (existingField)
+			{
+				if (existingField->hasAutomaticName())
+				{
+					// will be renamed to make way for new field if not compatible
+				}
+				else if (existingField->compareFullDefinition(*field))
+				{
+					// found the matching field
+				}
+				else if (existingField->compareBasicDefinition(*field) &&
+					cmzn_field_is_dummy_real(existingField))
+				{
+					// dummy_real will have incoming field merged into it
+				}
+				else
+				{
+					fieldsOK = false;
+					char *target_path = target_region->getPath();
+					display_message(ERROR_MESSAGE, "Cannot merge incompatible field %s into region %s%s", field->getName(), CMZN_REGION_PATH_SEPARATOR_STRING, target_path);
+					DEALLOCATE(target_path);
+				}
+			}
+		}
+		cmzn_fielditerator::deaccess(iter);
+		if (!fieldsOK)
+		{
+			return false;
+		}
+	}
+
 	// check FE_regions
 	if (!FE_region_can_merge((target_region) ? target_region->get_FE_region() : nullptr, source_region->get_FE_region()))
 	{
@@ -1586,6 +1627,7 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 
 /**
  * Ensures there is an up-to-date computed field wrapper for <fe_field>.
+ * Assume field manager change cache is active while this is called.
  * @param fe_field  Field to wrap.
  * @param fieldmodule_void  Field module to contain wrapped FE_field.
  */
@@ -1594,48 +1636,74 @@ static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 {
 	cmzn_fieldmodule *fieldmodule = reinterpret_cast<cmzn_fieldmodule*>(fieldmodule_void);
 	if (change & (CHANGE_LOG_OBJECT_ADDED(FE_field) |
-		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
+		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |  // don't expect identifier change any more
 		CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)))
 	{
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
-		const char *field_name = fe_field->getName();
-		bool update_wrapper = (0 != (change & (CHANGE_LOG_OBJECT_ADDED(FE_field) |
-			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))));
-		cmzn_field *existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			field_name, region->getFieldManager());
-		if (existing_wrapper && !Computed_field_wraps_fe_field(existing_wrapper, (void *)fe_field))
+		const char *fieldName = fe_field->getName();
+		cmzn_field *existingField = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+			fieldName, region->getFieldManager());
+		bool updateWrapper = false;
+		if (existingField)
 		{
-			// can switch from constant to finite element to replace temporary evaluate field for apply field
-			if ((existing_wrapper->core->get_type() != CMZN_FIELD_TYPE_CONSTANT) ||
-				(existing_wrapper->number_of_components != fe_field->getNumberOfComponents()) ||
-				(fe_field->getValueType() != FE_VALUE_VALUE))
+			if (Computed_field_wraps_fe_field(existingField, (void *)fe_field))
 			{
-				existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_wraps_fe_field, (void *)fe_field,
-					region->getFieldManager());
+				// only need to ensure coordinate system is correct and propagate change
+				existingField->setCoordinateSystem(fe_field->getCoordinateSystem());
+				if (change & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))
+				{
+					existingField->setChanged();
+				}
+				else if (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field))
+				{
+					existingField->setChangedRelated();
+				}
 			}
-			update_wrapper = true;
-		}
-		if (update_wrapper)
-		{
-			if (existing_wrapper)
+			else if (existingField->hasAutomaticName())
 			{
-				cmzn_fieldmodule_set_replace_field(fieldmodule, existing_wrapper);
+				// rename the existing automatically named field, so new field can use its name
+				existingField->setNameAutomatic();
+				existingField = nullptr;
+				updateWrapper = true;
+			}
+			else if (cmzn_field_is_dummy_real(existingField) &&
+				(existingField->getNumberOfComponents() == fe_field->getNumberOfComponents()) &&
+				(fe_field->getValueType() == FE_VALUE_VALUE))
+			{
+				// can replace dummy_real with real-valued finite element, replaces apply field's temporary evaluate field
+				updateWrapper = true;
 			}
 			else
 			{
-				cmzn_fieldmodule_set_field_name(fieldmodule, field_name);
-				cmzn_fieldmodule_set_coordinate_system(fieldmodule, fe_field->getCoordinateSystem());
+				display_message(ERROR_MESSAGE, "Cannot create finite element field %s as another field is already using that name", fieldName);
 			}
-			cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element_wrapper(fieldmodule, fe_field);
+		}
+		else if (change & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field))
+		{
+			// don't expect FE_field identifier change except through field wrapper
+			display_message(ERROR_MESSAGE, "FE_field_to_Computed_field_change  Unexpected renaming of finite element field %s", fieldName);
+		}
+		else
+		{
+			// add new wrapper
+			updateWrapper = true;
+		}
+		if (updateWrapper)
+		{
+			cmzn_field *field = cmzn_fieldmodule_create_field_finite_element_wrapper(fieldmodule, fe_field, (existingField) ? nullptr : fieldName);
 			if (field)
 			{
-				// use managed status of existing_wrapper -- new wrappers are managed by default
-				cmzn_field_set_managed(field, (existing_wrapper) ? cmzn_field_is_managed(existing_wrapper) : true);
-				if (strcmp(field_name, field->getName()))
+				if (existingField)
 				{
-					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
-						field_name, field->getName());
+					if (CMZN_OK != existingField->copyDefinition(*field))
+					{
+						display_message(WARNING_MESSAGE, "Failed to copy definition of finite element field %s over existing field using that name.",
+							fieldName, field->getName());
+					}
+				}
+				else
+				{
+					cmzn_field_set_managed(field, true);
 				}
 				cmzn_field::deaccess(field);
 			}

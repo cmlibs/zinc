@@ -1125,9 +1125,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 
@@ -1949,7 +1949,7 @@ public:
 	{
 		if (field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 
@@ -2231,9 +2231,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 

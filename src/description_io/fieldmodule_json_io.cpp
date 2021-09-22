@@ -11,6 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "description_io/field_json_io.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
@@ -24,35 +25,31 @@
 OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)
 {
 	OpenCMISS::Zinc::Field field = importTypeSpecificField(fieldmodule, fieldSettings, this);
-	bool nameSet = FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).importEntries(fieldSettings);
-	if (!nameSet)
+	const char *fieldName = fieldSettings["Name"].asCString();
+	OpenCMISS::Zinc::Field existingField = this->fieldmodule.findFieldByName(fieldName);
+	if (existingField.isValid())
 	{
-		const char *fieldName = fieldSettings["Name"].asCString();
-		OpenCMISS::Zinc::Field existingField = this->fieldmodule.findFieldByName(fieldName);
 		if (existingField.getId()->compareFullDefinition(*(field.getId())))
 		{
 			field = existingField;
 		}
-		else if (existingField.getId()->compareBasicDefinition(*(field.getId())))
+		else if (existingField.getId()->hasAutomaticName())
 		{
-			OpenCMISS::Zinc::FieldConstant fieldConstant = existingField.castConstant();
-			if (fieldConstant.isValid())
+			// rename the existing automatically named field, so new field can use its name
+			existingField.getId()->setNameAutomatic();
+		}
+		else if (cmzn_field_is_dummy_real(existingField.getId()))
+		{
+			// can only replace definition of a dummy real field create for apply evaluator field
+			// copy new definition to existing field. Fails if new definition is incompatible
+			const int copyResult = existingField.getId()->copyDefinition(*(field.getId()));
+			if (copyResult == CMZN_OK)
 			{
-				// copy new definition to existing field; can fail if new definition is incompatible
-				const int copyResult = existingField.getId()->copyDefinition(*(field.getId()));
-				if (copyResult == CMZN_OK)
-				{
-					field = existingField;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Failed to copy over existing field %s", fieldName);
-					field = OpenCMISS::Zinc::Field();
-				}
+				field = existingField;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Cannot merge field %s over non-constant existing field", fieldName);
+				display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Failed to define field %s over temporary dummy real field as defined differently", fieldName);
 				field = OpenCMISS::Zinc::Field();
 			}
 		}
@@ -61,6 +58,10 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fie
 			display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Field %s is incompatible with existing field", fieldName);
 			field = OpenCMISS::Zinc::Field();
 		}
+	}
+	if (field.isValid())
+	{
+		FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).importEntries(fieldSettings);
 	}
 	return field;
 }

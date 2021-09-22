@@ -179,35 +179,6 @@ DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_field)
 
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_field)
 
-int Computed_field_set_coordinate_system_from_sources(
-	struct cmzn_field *field)
-{
-	int return_code;
-	struct Coordinate_system *coordinate_system_ptr;
-
-	ENTER(Computed_field_set_coordinate_system_from_sources);
-	if (field)
-	{
-		return_code = 1;
-		if (field->number_of_source_fields > 0)
-		{
-			coordinate_system_ptr =
-				Computed_field_get_coordinate_system(field->source_fields[0]);
-			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_coordinate_system_from_sources.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_coordinate_system_from_sources */
-
 /*
 Global functions
 ----------------
@@ -215,6 +186,7 @@ Global functions
 
 cmzn_field::cmzn_field() :
 	name(nullptr),
+	automaticName(false),
 	cache_index(0),
 	command_string(nullptr),  // by default the name and the command_string are the same
 	number_of_components(0),
@@ -258,16 +230,18 @@ cmzn_field::~cmzn_field()
 
 cmzn_field *cmzn_field::create(const char *nameIn)
 {
-	char *nameCopy = duplicate_string(nameIn);
-	if (nameCopy)
+	cmzn_field *field = new cmzn_field();
+	if (nameIn)
 	{
-		cmzn_field *field = new cmzn_field();
-		field->name = nameCopy;
+		field->name = duplicate_string(nameIn);
 		field->command_string = field->name;  // current default
-		return field;
+		if (!field->name)
+		{
+			display_message(ERROR_MESSAGE, "cmzn_field::create.  Could not copy name.");
+			cmzn_field::deaccess(field);
+		}
 	}
-	display_message(ERROR_MESSAGE, "cmzn_field::create.  Could not copy name.");
-	return nullptr;
+	return field;
 }
 
 void cmzn_field::deaccess(cmzn_field*& field)
@@ -483,23 +457,26 @@ DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_field,cmzn_fielditerator)
 DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_field, struct cmzn_region)
 
 char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(cmzn_field) *manager, const char *stem_name,
-	const char *separator, int first_number)
+	struct MANAGER(cmzn_field) *manager, const char *part1,
+	const char *part2, int startNumber)
 {
-	char *field_name = NULL;
-	ALLOCATE(field_name, char, strlen(stem_name) + strlen(separator) + 20);
-	int number = first_number;
-	if (number < 0)
-	{
-		number = NUMBER_IN_MANAGER(cmzn_field)(manager) + 1;
-	}
+	const size_t len = strlen(part1) + strlen(part2);
+	char *fieldName = nullptr;
+	ALLOCATE(fieldName, char, len + 20);
+	if (!fieldName)
+		return nullptr;
+	sprintf(fieldName, "%s%s", part1, part2);
+	int number = (startNumber < 0) ? NUMBER_IN_MANAGER(cmzn_field)(manager) + 1 : startNumber;
 	do
 	{
-		sprintf(field_name, "%s%s%d", stem_name, separator, number);
-		number++;
+		if (number != 0)
+		{
+			sprintf(fieldName + len, "%d", number);
+		}
+		++number;
 	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(field_name, manager));
-	return field_name;
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(fieldName, manager));
+	return fieldName;
 }
 
 cmzn_fielditerator_id Computed_field_manager_create_iterator(
@@ -535,24 +512,19 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
 	struct MANAGER(cmzn_field) *manager)
 {
 	int return_code;
-
-	ENTER(Computed_field_add_to_manager_private);
 	if (field && manager && (!field->manager))
 	{
-		if (field->name[0] != 0)
+		if (field->name)
 		{
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(field->name, manager))
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field,name)(field->getName(), manager))
 			{
-				char *unique_name = Computed_field_manager_get_unique_field_name(manager, field->name, "_", 1);
-				cmzn_field_set_name(field, unique_name);
-				DEALLOCATE(unique_name);
+				display_message(ERROR_MESSAGE, "Field create.  Field of name \"%s\" already exists", field->getName());
+				return 0;
 			}
 		}
 		else
 		{
-			char *unique_name = Computed_field_manager_get_unique_field_name(manager);
-			cmzn_field_set_name(field, unique_name);
-			DEALLOCATE(unique_name);
+			field->setNameAutomatic(manager);
 		}
 		return_code = ADD_OBJECT_TO_MANAGER(cmzn_field)(field,manager);
 		if (return_code)
@@ -567,8 +539,6 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
 			"Computed_field_add_to_manager_private.  Invalid argument(s).");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return return_code;
 }
 
@@ -577,7 +547,7 @@ cmzn_field *Computed_field_create_generic(
 	int number_of_components,
 	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
-	Computed_field_core *field_core)
+	Computed_field_core *field_core, const char *name)
 {
 	cmzn_field *field = nullptr;
 	if ((NULL != fieldmodule) && (0 < number_of_components) &&
@@ -610,10 +580,7 @@ cmzn_field *Computed_field_create_generic(
 		}
 		if (return_code)
 		{
-			char *field_name = cmzn_fieldmodule_get_field_name(fieldmodule);
-			field = cmzn_field::create((field_name) ? field_name : "");
-			if (field_name)
-				DEALLOCATE(field_name);
+			field = cmzn_field::create(name);
 			if (field)
 			{
 				field->number_of_components = number_of_components;
@@ -663,44 +630,11 @@ cmzn_field *Computed_field_create_generic(
 					// only some field types implement the following, e.g. set default
 					// coordinate system of new field to that of a source field:
 					field_core->inherit_source_field_attributes();
-					// default coordinate system can also be overridden:
-					if (cmzn_fieldmodule_coordinate_system_is_set(fieldmodule))
+					if (!region->addField(field))
 					{
-						struct Coordinate_system coordinate_system =
-							cmzn_fieldmodule_get_coordinate_system(fieldmodule);
-						Computed_field_set_coordinate_system(field, &coordinate_system);
-					}
-
-					cmzn_field *replace_field =
-						cmzn_fieldmodule_get_replace_field(fieldmodule);
-					if (replace_field)
-					{
-						if (replace_field->core->not_in_use() ||
-							(replace_field->core->get_type_string() == field_core->get_type_string()))
-						{
-							/* copy definition to existing field. Can fail if new definition is incompatible */
-							if (CMZN_OK != replace_field->copyDefinition(*field))
-							{
-								return_code = 0;
-							}
-							REACCESS(cmzn_field)(&field, replace_field);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Computed_field_create_generic.  "
-								"Cannot change type of field '%s' while its objects are in use",
-								replace_field->name);
-							return_code = 0;
-						}
-					}
-					else
-					{
-						if (!region->addField(field))
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_create_generic.  Unable to add field to region");
-							return_code = 0;
-						}
+						display_message(ERROR_MESSAGE,
+							"Computed_field_create_generic.  Unable to add field to region");
+						return_code = 0;
 					}
 				}
 				if (!return_code)
@@ -714,13 +648,6 @@ cmzn_field *Computed_field_create_generic(
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_generic.  Invalid argument(s)");
-	}
-	if (fieldmodule)
-	{
-		// replace_field, name etc. must not be used for further field creates, so clear
-		cmzn_fieldmodule_set_replace_field(fieldmodule, nullptr);
-		cmzn_fieldmodule_set_field_name(fieldmodule, nullptr);
-		cmzn_fieldmodule_clear_coordinate_system(fieldmodule);
 	}
 	return (field);
 }
@@ -860,8 +787,7 @@ int cmzn_field::copyDefinition(const cmzn_field& source)
 			return_code = CMZN_ERROR_GENERAL;
 		}
 		// notify of change and clean up old source fields
-		MANAGED_OBJECT_CHANGE(cmzn_field)(this,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
+		this->setChanged();
 		if (oldSourceFields)
 		{
 			for (int i = 0; i < oldNumberOfSourceFields; ++i)
@@ -894,6 +820,128 @@ cmzn_fieldparameters *cmzn_field::getFieldparameters()
 		return this->fieldparameters->access();
 	this->fieldparameters = cmzn_fieldparameters::create(this);
 	return this->fieldparameters;
+}
+
+void cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
+{
+	if (!(this->coordinate_system == coordinateSystemIn))
+	{
+		this->coordinate_system = coordinateSystemIn;
+		if (notifyChange)
+			this->setChanged();
+	}
+}
+
+int cmzn_field::setName(const char *nameIn)
+{
+	if (!nameIn)
+	{
+		display_message(ERROR_MESSAGE, "Field setName.  Missing name");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if ((this->name) && (0 == strcmp(this->name, nameIn)))
+	{
+		// no change, but clear automaticName as it has been explicitly set
+		this->automaticName = false;
+		return CMZN_OK;
+	}
+	int returnCode = CMZN_OK;
+	cmzn_set_cmzn_field *managerFieldList = nullptr;
+	bool restoreObjectToLists = false;
+	if (this->manager)
+	{
+		cmzn_field *existingField = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(nameIn, this->manager);
+		if (existingField)
+		{
+			if ((!existingField->hasAutomaticName()) || (CMZN_OK != existingField->setNameAutomatic()))
+			{
+				display_message(ERROR_MESSAGE,
+					"Field setName.  Field named \"%s\" already exists in region.", nameIn);
+				return CMZN_ERROR_ALREADY_EXISTS;
+			}
+		}
+		// this temporarily removes the object from all related lists
+		managerFieldList = reinterpret_cast<cmzn_set_cmzn_field *>(this->manager->object_list);
+		restoreObjectToLists = managerFieldList->begin_identifier_change(this);
+		if (!restoreObjectToLists)
+		{
+			display_message(ERROR_MESSAGE,
+				"Field setName.  Could not safely change identifier in manager");
+			returnCode = CMZN_ERROR_GENERAL;
+		}
+	}
+	if (returnCode)
+	{
+		char *newName = duplicate_string(nameIn);
+		if (newName)
+		{
+			/* If this has previously been allocated separately destroy it */
+			if (this->command_string != this->name)
+			{
+				DEALLOCATE(this->command_string);
+			}
+			DEALLOCATE(this->name);
+			this->name = newName;
+			this->automaticName = false;  // note set to true in setNameAutomatic()
+			/* Now make them point to the same memory */
+			this->command_string = (char *)this->name;
+		}
+		else
+		{
+			returnCode = CMZN_ERROR_MEMORY;
+		}
+	}
+	if (restoreObjectToLists)
+	{
+		managerFieldList->end_identifier_change();
+	}
+	if (CMZN_OK == returnCode)
+	{
+		if (this->manager)
+		{
+			// allow core type to change nameIn of wrapped objects e.g. FE_field
+			// only do this once field is in manager otherwise complicates replacing dummy fields
+			// begin/end cache to avoid two messages if core implements set_name
+			MANAGER_BEGIN_CACHE(cmzn_field)(this->manager);
+			MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_field));
+			this->core->set_name(nameIn);
+			MANAGER_END_CACHE(cmzn_field)(this->manager);
+		}
+	}
+	return returnCode;
+}
+
+int cmzn_field::setNameAutomatic(MANAGER(cmzn_field) *fieldManager)
+{
+	if (!((this->manager) || (fieldManager)))
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	const char *oldName = this->getName() ? duplicate_string(this->getName()) : nullptr;
+	char *uniqueName = Computed_field_manager_get_unique_field_name((this->manager) ? this->manager : fieldManager);
+	const int returnCode = this->setName(uniqueName);  // will set this->automaticName = false
+	if (CMZN_OK == returnCode)
+	{
+		if (this->manager)
+		{
+			const char *regionPath = this->getRegion()->getPath();
+			display_message(WARNING_MESSAGE, "Changing automatic name of field %s to %s in region %s%s", oldName, uniqueName, CMZN_REGION_PATH_SEPARATOR_STRING, regionPath);
+			DEALLOCATE(regionPath);
+		}
+		this->automaticName = true;
+	}
+	DEALLOCATE(uniqueName);
+	if (oldName)
+		DEALLOCATE(oldName);
+	return returnCode;
+}
+
+int cmzn_field::setNameUnique(const char *part1, const char *part2, int startNumber)
+{
+	char *uniqueName = Computed_field_manager_get_unique_field_name(this->manager, part1, part2, startNumber);
+	const int returnCode = this->setName(uniqueName);
+	DEALLOCATE(uniqueName);
+	return returnCode;
 }
 
 int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
@@ -1670,58 +1718,6 @@ int cmzn_field_get_number_of_components(cmzn_field *field)
 	return 0;
 }
 
-struct Coordinate_system *Computed_field_get_coordinate_system(
-	struct cmzn_field *field)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns the coordinate system <field> is to be interpreted under. See function
-Computed_field_set_coordinate_system for further details.
-==============================================================================*/
-{
-	struct Coordinate_system *coordinate_system;
-
-	ENTER(Computed_field_get_coordinate_system);
-	if (field)
-	{
-		coordinate_system=&(field->coordinate_system);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_coordinate_system.  Invalid argument(s)");
-		coordinate_system=(struct Coordinate_system *)NULL;
-	}
-	LEAVE;
-
-	return (coordinate_system);
-} /* Computed_field_get_coordinate_system */
-
-int Computed_field_set_coordinate_system(struct cmzn_field *field,
-	const Coordinate_system *coordinate_system)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Sets the coordinate system <field> is to be interpreted under. Note the careful
-choice of words here: the coordinate system merely tells the rest of the program
-what needs to be done to transform the field values into any other coordinate
-system. It does not have to be "correct" for the values in the field, eg. you
-can describe prolate spheroidal values as RC to "open out" the heart model.
-???RC How to check the coordinate system is valid?
-==============================================================================*/
-{
-	if ((field) && (coordinate_system))
-	{
-		field->coordinate_system = *coordinate_system;
-		return 1;
-	}
-	display_message(ERROR_MESSAGE,
-		"Computed_field_set_coordinate_system.  Invalid argument(s)");
-	return 0;
-}
-
 const char *Computed_field_get_type_string(struct cmzn_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2216,7 +2212,7 @@ The number of components controls how the field is interpreted:
 		return_code=((2==field->number_of_components)||(3==field->number_of_components)||
 			(6==field->number_of_components)||(9==field->number_of_components)||
 			((3>=field->number_of_components)&&
-				(FIBRE==get_coordinate_system_type(&(field->coordinate_system)))));
+				(FIBRE == field->getCoordinateSystem().getType())));
 	}
 	else
 	{
@@ -2631,10 +2627,15 @@ int Computed_field_broadcast_field_components(
 				// use temporary field module for broadcast wrapper since needs different defaults
 				cmzn_fieldmodule *temp_field_module =
 					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(fieldmodule));
-				// wrapper field has same name stem as wrapped field
-				cmzn_fieldmodule_set_field_name(temp_field_module, (**field_to_wrap)->name);
+				// broadcast wrapper field has same name stem as wrapped field
+				cmzn_fieldmodule_begin_change(temp_field_module);
 				broadcast_wrapper = cmzn_fieldmodule_create_field_component_multiple(temp_field_module,
 					**field_to_wrap, number_of_components, source_component_indexes_in);
+				if (broadcast_wrapper)
+				{
+					broadcast_wrapper->setNameUnique((**field_to_wrap)->getName(), "_", 1);
+				}
+				cmzn_fieldmodule_end_change(temp_field_module);
 				cmzn_fieldmodule_destroy(&temp_field_module);
 				delete[] source_component_indexes_in;
 				DEACCESS(cmzn_field)(*field_to_wrap);
@@ -2805,115 +2806,20 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 
 char *cmzn_field_get_name(cmzn_field_id field)
 {
-	return duplicate_string(field->name);
+	if (field)
+	{
+		return duplicate_string(field->getName());
+	}
+	return nullptr;
 }
 
-const char *cmzn_field_get_name_internal(cmzn_field_id field)
+int cmzn_field_set_name(cmzn_field_id field, const char *name)
 {
-	return field->name;
-}
-
-int cmzn_field_set_name(struct cmzn_field *field, const char *name)
-{
-	int return_code;
-	if (field && name)
+	if (field)
 	{
-		return_code = 1;
-		cmzn_set_cmzn_field *manager_field_list = 0;
-		bool restore_changed_object_to_lists = false;
-		if (field->manager)
-		{
-			manager_field_list = reinterpret_cast<cmzn_set_cmzn_field *>(field->manager->object_list);
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(
-				name, field->manager))
-			{
-				display_message(ERROR_MESSAGE, "cmzn_field_set_name.  "
-					"Field named \"%s\" already exists in this field manager.",
-					name);
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				// this temporarily removes the object from all related lists
-				restore_changed_object_to_lists =
-					manager_field_list->begin_identifier_change(field);
-				if (!restore_changed_object_to_lists)
-				{
-					display_message(ERROR_MESSAGE, "cmzn_field_set_name.  "
-						"Could not safely change identifier in manager");
-					return_code = 0;
-				}
-			}
-		}
-		if (return_code)
-		{
-			char *new_name = duplicate_string(name);
-			if (new_name)
-			{
-				/* If this has previously been allocated separately destroy it */
-				if (field->command_string != field->name)
-				{
-					DEALLOCATE(field->command_string);
-				}
-				DEALLOCATE(field->name);
-				field->name = new_name;
-				/* Now make them point to the same memory */
-				field->command_string = (char *)field->name;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (restore_changed_object_to_lists)
-		{
-			manager_field_list->end_identifier_change();
-		}
-		if (return_code)
-		{
-			if (field->manager)
-			{
-				// begin/end cache to avoid two messages if core implements set_name
-				MANAGER_BEGIN_CACHE(cmzn_field)(field->manager);
-				MANAGED_OBJECT_CHANGE(cmzn_field)(field,
-					MANAGER_CHANGE_IDENTIFIER(cmzn_field));
-			}
-			// allow core type to change name of wrapped objects e.g. FE_field
-			field->core->set_name(name);
-			if (field->manager)
-				MANAGER_END_CACHE(cmzn_field)(field->manager);
-		}
+		return field->setName(name);
 	}
-	else
-	{
-		if (field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_field_set_name.  Invalid field name '%s'", name);
-		}
-		return_code=0;
-	}
-
-	return (return_code);
-}
-
-int cmzn_field_set_name_unique_concatentate(cmzn_field_id field, const char *first, const char *second)
-{
-	char *name;
-	const size_t len = strlen(first) + strlen(second);
-	ALLOCATE(name, char, len + 10);
-	if (!name)
-		return CMZN_RESULT_ERROR_MEMORY;
-	int number = 0;
-	sprintf(name, "%s%s", first, second);
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(name, field->manager))
-	{
-		++number;
-		sprintf(name + len, "%d", number);
-	}
-	int result = cmzn_field_set_name(field, name);
-	DEALLOCATE(name);
-	return result;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_get_number_of_source_fields(cmzn_field_id field)
@@ -2983,21 +2889,6 @@ struct cmzn_region *Computed_field_get_region(struct cmzn_field *field)
 		return field->getRegion();
 	return 0;
 }
-
-cmzn_field *Computed_field_modify_data::get_field()
-{
-	return cmzn_fieldmodule_get_replace_field(fieldmodule);
-};
-
-cmzn_region *Computed_field_modify_data::get_region()
-{
-	return cmzn_fieldmodule_get_region_internal(fieldmodule);
-};
-
-MANAGER(cmzn_field) *Computed_field_modify_data::get_field_manager()
-{
-	return this->get_region()->getFieldManager();
-};
 
 int Computed_field_does_not_depend_on_field(cmzn_field *field, void *source_field_void)
 {

@@ -300,7 +300,7 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (time_object && Time_object_set_name(time_object, parent->name))
+			if (time_object && Time_object_set_name(time_object, (parent->name) ? (parent->name) : ""))
 			{
 				return true;
 			}
@@ -341,6 +341,11 @@ private:
 	char* get_command_string();
 
 	int has_multiple_times();
+
+	virtual int set_name(const char *name)
+	{
+		return Time_object_set_name(time_object, name);
+	};
 };
 
 int Computed_field_time_value::compare(Computed_field_core *other_core)

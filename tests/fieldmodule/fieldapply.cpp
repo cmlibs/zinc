@@ -361,8 +361,9 @@ TEST(ZincFieldApply, assign)
 	EXPECT_EQ(RESULT_OK, child2Fm.readDescription(childDescription));
 	Fieldmodule fieldmodule2 = root2.getFieldmodule();
 	// see if a dummy constant component field has been created
-	FieldConstant component2 = fieldmodule2.findFieldByName("component").castConstant();
-	EXPECT_TRUE(component2.isValid());
+	Field dummyComponent = fieldmodule2.findFieldByName("component");
+	EXPECT_TRUE(dummyComponent.isValid());
+	EXPECT_FALSE(dummyComponent.castComponent().isValid());
 	// see if an argument real has been automatically made
 	FieldArgumentReal argument2 = fieldmodule2.findFieldByName("argument").castArgumentReal();
 	EXPECT_TRUE(argument2.isValid());
@@ -429,15 +430,15 @@ TEST(ZincFieldApply, serialiseSibling)
 	Region childb1 = rootb.findChildByName("child1");
 	EXPECT_TRUE(childb1.isValid());
 	Fieldmodule childb1Fm = childb1.getFieldmodule();
-	FieldConstant coordinatesbConstant = childb1Fm.findFieldByName("coordinates").castConstant();
-	EXPECT_TRUE(coordinatesbConstant.isValid());
-	EXPECT_EQ(3, coordinatesbConstant.getNumberOfComponents());
-	EXPECT_EQ(CMZN_OK, childb1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
-	// constant handle should be defunct
-	EXPECT_FALSE(coordinatesbConstant.castConstant().isValid());
-	FieldFiniteElement coordinatesb = childb1Fm.findFieldByName("coordinates").castFiniteElement();
+	Field coordinatesb = childb1Fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesb.isValid());
-	EXPECT_EQ(coordinatesbConstant, coordinatesb);
+	EXPECT_EQ(3, coordinatesb.getNumberOfComponents());
+	EXPECT_FALSE(coordinatesb.castFiniteElement().isValid());
+	EXPECT_EQ(CMZN_OK, childb1.readFile(TestResources::getLocation(TestResources::FIELDIO_EX2_CUBE_RESOURCE)));
+	// dummyCop constant handle should be defunct
+	EXPECT_TRUE(coordinatesb.castFiniteElement().isValid());
+	FieldFiniteElement coordinatesb2 = childb1Fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_EQ(coordinatesb, coordinatesb2);
 
 	cmzn_deallocate(child2Description);
 }
@@ -549,4 +550,3 @@ TEST(ZincFieldApply, cycleBindings)
 	EXPECT_NEAR(6.0, valuesOut[1], TOL);
 	EXPECT_NEAR(12.0, valuesOut[2], TOL);
 }
-

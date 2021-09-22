@@ -93,6 +93,7 @@ FE_field::FE_field() :
 	number_of_indexed_values(0),
 	number_of_components(0),
 	component_names(nullptr),
+	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
 	number_of_values(0),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
@@ -102,7 +103,6 @@ FE_field::FE_field() :
 	number_of_wrappers(0),
 	access_count(0)
 {
-	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		this->meshFieldData[d] = nullptr;
 	for (int i = 0; i < 2; ++i)
@@ -116,9 +116,9 @@ FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
 	fe_field_type(GENERAL_FE_FIELD),
 	indexer_field(nullptr),
 	number_of_indexed_values(0),
-	number_of_components(0),  // GRC really?
+	number_of_components(0),
 	component_names(nullptr),  // not allocated until we have custom names
-	coordinate_system(),
+	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
 	number_of_values(0),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
@@ -128,7 +128,6 @@ FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
 	number_of_wrappers(0),
 	access_count(1)
 {
-	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		this->meshFieldData[d] = nullptr;
 	for (int i = 0; i < 2; ++i)

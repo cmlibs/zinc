@@ -852,8 +852,8 @@ cmzn_field_id Computed_field_group::create_cad_primitive_group(cmzn_field_cad_to
 
 		cmzn_fieldmodule_id field_module =
 			cmzn_region_get_fieldmodule(region);
-		cmzn_fieldmodule_set_field_name(field_module, field_name);
 		field = cmzn_fieldmodule_create_field_cad_primitive_group_template(field_module);
+		field->setName(field_name);
 		Computed_field *cad_topology_key = reinterpret_cast<cmzn_field_id>(cad_topology_domain);
 		domain_selection_group.insert(std::pair<Computed_field *, Computed_field *>(cad_topology_key, field));
 

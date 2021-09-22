@@ -56,7 +56,7 @@ public:
 
 	/** deserialise fields definition from json format
 	 * @return  true if field successfully given name, false if failed due to existing field of name found */
-	bool importEntries(const Json::Value &typeSettings);
+	void importEntries(const Json::Value &typeSettings);
 
 	/* methods to customise output based on field type */
 	void exportTypeSpecificParameters(Json::Value &fieldSettings);

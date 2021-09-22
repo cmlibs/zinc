@@ -27,9 +27,11 @@ Global functions
 /**
  * internal-only constructor for creating wrapper field for an FE_field
  * Call only from cmzn_region::FeRegionChange
+ * @param name  Optional name for new field, or nullptr for automatic name.
  */
 cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
-	cmzn_fieldmodule *fieldmodule, struct FE_field *fe_field);
+	cmzn_fieldmodule *fieldmodule, struct FE_field *fe_field,
+	const char *name);
 
 int Computed_field_is_type_finite_element(struct Computed_field *field);
 /*******************************************************************************

@@ -366,7 +366,7 @@ void cmzn_scene::deregisterCoordinateField(cmzn_field *coordinateField)
 	if (iter == this->coordinateFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterCoordinateField.  Field %s not registered.",
-			cmzn_field_get_name_internal(coordinateField));
+			coordinateField->getName());
 	}
 	else if (1 < iter->second.second)
 	{
@@ -386,7 +386,7 @@ cmzn_field *cmzn_scene::getCoordinateFieldWrapper(cmzn_field *coordinateField)
 	if (iter == this->coordinateFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getCoordinateFieldWrapper.  Field %s not registered.",
-			cmzn_field_get_name_internal(coordinateField));
+			coordinateField->getName());
 		return 0;
 	}
 	return iter->second.first;
@@ -418,7 +418,7 @@ void cmzn_scene::deregisterVectorField(cmzn_field *vectorField, cmzn_field *coor
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterVectorField.  Vector, coordinate fields %s, %s not registered.",
-			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+			vectorField->getName(), coordinateField->getName());
 	}
 	else if (1 < iter->second.second)
 	{
@@ -439,7 +439,7 @@ cmzn_field *cmzn_scene::getVectorFieldWrapper(cmzn_field *vectorField, cmzn_fiel
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getVectorFieldWrapper.  Vector, coordinate fields %s, %s not registered.",
-			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+			vectorField->getName(), coordinateField->getName());
 		return 0;
 	}
 	return iter->second.first;
@@ -453,8 +453,8 @@ void cmzn_scene::refreshFieldWrappers()
 		iter != this->coordinateFieldWrappers.end(); ++iter)
 	{
 		cmzn_field *coordinateField = iter->first;
-		const Coordinate_system_type type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinateField));
-		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		const Coordinate_system_type type = coordinateField->getCoordinateSystem().getType();
+		const Coordinate_system_type wrapperType = (iter->second.first)->getCoordinateSystem().getType();
 		const bool typeIsNonLinear = (0 != Coordinate_system_type_is_non_linear(type));
 		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
 			(typeIsNonLinear && (iter->second.first == coordinateField)) ||
@@ -470,7 +470,7 @@ void cmzn_scene::refreshFieldWrappers()
 		cmzn_field *vectorField = iter->first.first;
 		cmzn_field *coordinateField = iter->first.second;
 		const bool needWrapper = cmzn_field_vector_needs_wrapping(vectorField);
-		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		const Coordinate_system_type wrapperType = (iter->second.first)->getCoordinateSystem().getType();
 		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
 			(needWrapper && (iter->second.first == vectorField)) ||
 			((!needWrapper) && (iter->second.first != vectorField)))

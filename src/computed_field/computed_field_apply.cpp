@@ -27,6 +27,9 @@ const char Computed_field_apply_type_string[] = "apply";
 
 const char Computed_field_argument_real_type_string[] = "argument_real";
 
+const char Computed_field_dummy_real_type_string[] = "dummy_real";
+
+
 class ArgumentRealFieldValueCache : public RealFieldValueCache
 {
 	static const int maxSourceFields = 5;
@@ -173,6 +176,75 @@ cmzn_field *ArgumentRealFieldValueCache::getBoundSourceField(cmzn_field *argumen
 	}
 	return nullptr;
 }
+
+
+/** temporary field type used when deserialising apply evaluate field until its
+ * type is known. Cannot be evaluated. */
+class Computed_field_dummy_real : public Computed_field_core
+{
+public:
+
+	Computed_field_dummy_real() :
+		Computed_field_core()
+	{
+	}
+
+	~Computed_field_dummy_real()
+	{
+	}
+
+private:
+
+	Computed_field_core* copy()
+	{
+		return new Computed_field_dummy_real();
+	};
+
+	const char* get_type_string()
+	{
+		return (Computed_field_dummy_real_type_string);
+	}
+
+	int compare(Computed_field_core* otherCore)
+	{
+		return (nullptr != dynamic_cast<Computed_field_dummy_real*>(otherCore));
+	}
+
+	virtual int evaluate(cmzn_fieldcache&, FieldValueCache&)
+	{
+		return 0;
+	}
+
+	virtual int evaluateDerivative(cmzn_fieldcache&, RealFieldValueCache&, const FieldDerivative&)
+	{
+		return 0;
+	}
+
+	/** Override as only true if source field is bound and defined at location */
+	virtual bool is_defined_at_location(cmzn_fieldcache&)
+	{
+		return false;
+	}
+
+	int list()
+	{
+		return 1;
+	}
+
+	char* get_command_string()
+	{
+		char *command_string = nullptr;
+		int error = 0;
+		append_string(&command_string, Computed_field_dummy_real_type_string, &error);
+		append_string(&command_string, " number_of_components ", &error);
+		char tmp[20];
+		sprintf(tmp, "%d", this->field->number_of_components);
+		append_string(&command_string, tmp, &error);
+		return command_string;
+	}
+
+};
+
 
 } // namespace
 
@@ -584,7 +656,7 @@ int Computed_field_apply::setBindArgumentSourceField(cmzn_field *argumentField, 
 	if (sourceField)
 	{
 		// set both argument and source fields, ensure only one notification
-		result = this->field->setSourceField(i, argumentField, /*notify*/false);
+		result = this->field->setSourceField(i, argumentField, /*notifyChange*/false);
 		if (result == CMZN_OK)
 		{
 			result = this->field->setSourceField(i + 1, sourceField);
@@ -809,4 +881,30 @@ cmzn_field_argument_real_id cmzn_field_cast_argument_real(cmzn_field_id field)
 int cmzn_field_argument_real_destroy(cmzn_field_argument_real_id *argument_real_address)
 {
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(argument_real_address));
+}
+
+// not public API
+cmzn_field_id cmzn_fieldmodule_create_field_dummy_real(
+	cmzn_fieldmodule_id fieldmodule, int number_of_components)
+{
+	cmzn_field *field = nullptr;
+	if (fieldmodule && (0 < number_of_components))
+	{
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/false, number_of_components,
+			/*number_of_source_fields*/0, nullptr,
+			/*number_of_source_values*/0, nullptr,
+			new Computed_field_dummy_real());
+	}
+	return (field);
+}
+
+// not public API
+bool cmzn_field_is_dummy_real(cmzn_field_id field)
+{
+	if (field && dynamic_cast<Computed_field_dummy_real*>(field->core))
+	{
+		return true;
+	}
+	return false;
 }

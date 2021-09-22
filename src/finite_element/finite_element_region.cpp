@@ -642,7 +642,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 					"Field named \"%s\" already exists in this FE_region.", new_name);
 				return_code = 0;
 			}
-			else
+			else if (0 != strcmp(field->getName(), new_name))
 			{
 				// this temporarily removes the object from all indexed lists
 				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(

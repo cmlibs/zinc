@@ -1442,7 +1442,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
-	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
+	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field, const char *name)
 {
 	cmzn_field *field = 0;
 	if (field_module && fe_field)
@@ -1457,10 +1457,10 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
+			/*check_source_field_regions*/true, fe_field->getNumberOfComponents(),
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_finite_element(fe_field));
+			new Computed_field_finite_element(fe_field), name);
 		if (field && field->core)
 		{
 			Computed_field_finite_element *fieldFiniteElement=
@@ -1497,20 +1497,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 	cmzn_field_id field = 0;
 	// cache changes to ensure FE_field not automatically wrapped already
 	cmzn_fieldmodule_begin_change(field_module);
-	FE_region *fe_region = cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region();
+	cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
+	FE_region *fe_region = region->get_FE_region();
 	// ensure FE_field and Computed_field have same name
-	char *field_name = cmzn_fieldmodule_get_field_name(field_module);
-	bool no_default_name = (0 == field_name);
-	if (no_default_name)
-	{
-		field_name = cmzn_fieldmodule_get_unique_field_name(field_module);
-		cmzn_fieldmodule_set_field_name(field_module, field_name);
-	}
+	char *fieldName = Computed_field_manager_get_unique_field_name(region->getFieldManager());
 	FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-		fe_region, field_name, value_type, number_of_components);
+		fe_region, fieldName, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system = cmzn_fieldmodule_get_coordinate_system(field_module);
+		Coordinate_system coordinate_system((value_type == FE_VALUE_VALUE) ? RECTANGULAR_CARTESIAN : NOT_APPLICABLE);
 		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, number_of_components,
@@ -1518,12 +1513,9 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
 		FE_field::deaccess(fe_field);
+		field->setName(fieldName);
 	}
-	DEALLOCATE(field_name);
-	if (no_default_name)
-	{
-		cmzn_fieldmodule_set_field_name(field_module, /*field_name*/0);
-	}
+	DEALLOCATE(fieldName);
 	cmzn_fieldmodule_end_change(field_module);
 	return (field);
 }
@@ -1619,23 +1611,20 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	if (field_module && mesh && (cmzn_mesh_get_region_internal(mesh) ==
 		cmzn_fieldmodule_get_region_internal(field_module)))
 	{
+		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field *field = cmzn_fieldmodule_create_field_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
 		if (field && field->core)
 		{
 			auto fieldFiniteElement = static_cast<Computed_field_finite_element*>(field->core);
-			if (CMZN_OK == fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh)))
-			{
-				fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
-				return field;
-			}
+			fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh));
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
 		}
-		display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Failed");
-		cmzn_field_destroy(&field);
+		cmzn_fieldmodule_end_change(field_module);
+		return field;
 	}
-	else
-		display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Invalid argument(s)");
-	return 0;
+	display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Invalid argument(s)");
+	return nullptr;
 }
 
 cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_field_id field)
@@ -2135,7 +2124,9 @@ public:
 	virtual void inherit_source_field_attributes()
 	{
 		if (this->field)
-			Computed_field_set_coordinate_system(this->field, &fe_field->getCoordinateSystem());
+		{
+			this->field->setCoordinateSystem(fe_field->getCoordinateSystem(), /*notifyChange*/false);
+		}
 	}
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
@@ -2587,8 +2578,10 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
-			Computed_field_set_coordinate_system_from_sources(field);
+		if (this->field)
+		{
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
+		}
 	}
 
 	/** @return non-accessed conditional field, if any */
@@ -2996,9 +2989,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 

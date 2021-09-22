@@ -31,14 +31,14 @@ cmzn_field *cmzn_field_get_coordinate_field_wrapper(
 
 	if (Computed_field_has_up_to_3_numerical_components(coordinate_field, /*dummy*/0))
 	{
-		Coordinate_system_type type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinate_field));
+		Coordinate_system_type type = coordinate_field->getCoordinateSystem().getType();
 		if (Coordinate_system_type_is_non_linear(type))
 		{
 			cmzn_fieldmodule *fieldmodule = cmzn_field_get_fieldmodule(coordinate_field);
 			cmzn_fieldmodule_begin_change(fieldmodule);
 			// default coordinate system type is RC
 			wrapper_field = cmzn_fieldmodule_create_field_coordinate_transformation(fieldmodule, coordinate_field);
-			cmzn_field_set_name_unique_concatentate(wrapper_field, cmzn_field_get_name_internal(coordinate_field), "_cmiss_rc_wrapper");
+			wrapper_field->setNameUnique(coordinate_field->getName(), "_cmiss_rc_wrapper", 0);
 			cmzn_fieldmodule_end_change(fieldmodule);
 			cmzn_fieldmodule_destroy(&fieldmodule);
 		}
@@ -57,8 +57,7 @@ cmzn_field *cmzn_field_get_coordinate_field_wrapper(
 
 bool cmzn_field_vector_needs_wrapping(cmzn_field *vector_field)
 {
-	Coordinate_system_type coordinate_system_type =
-		get_coordinate_system_type(Computed_field_get_coordinate_system(vector_field));
+	Coordinate_system_type coordinate_system_type = vector_field->getCoordinateSystem().getType();
 	if ((RECTANGULAR_CARTESIAN == coordinate_system_type) ||
 		((1 == cmzn_field_get_number_of_components(vector_field)) &&
 		(FIBRE != coordinate_system_type)))
@@ -77,8 +76,7 @@ cmzn_field *cmzn_field_get_vector_field_wrapper(
 		Computed_field_is_orientation_scale_capable(vector_field,NULL)&&
 		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL))
 	{
-		Coordinate_system_type coordinate_system_type=get_coordinate_system_type(
-			Computed_field_get_coordinate_system(vector_field));
+		Coordinate_system_type coordinate_system_type = vector_field->getCoordinateSystem().getType();
 		if (!cmzn_field_vector_needs_wrapping(vector_field))
 		{
 			/* RC fields and non-fibre scalars are already OK */
@@ -91,20 +89,26 @@ cmzn_field *cmzn_field_get_vector_field_wrapper(
 			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
 			wrapper_field = cmzn_fieldmodule_create_field_fibre_axes(field_module,
 				vector_field, coordinate_field);
-			cmzn_field_set_name_unique_concatentate(wrapper_field, cmzn_field_get_name_internal(vector_field), "_cmiss_rc_fibre_wrapper");
+			if (wrapper_field)
+			{
+				wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_fibre_wrapper", 0);
+			}
 			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{
 			/* make vector_coordinate_transformation wrapper of non-RC vector field */
 			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
-			struct Coordinate_system rc_coordinate_system;
-			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			cmzn_fieldmodule_set_coordinate_system(field_module,
-				rc_coordinate_system);
+			cmzn_fieldmodule_begin_change(field_module);
 			wrapper_field = cmzn_fieldmodule_create_field_vector_coordinate_transformation(
 				field_module, vector_field, coordinate_field);
-			cmzn_field_set_name_unique_concatentate(wrapper_field, cmzn_field_get_name_internal(vector_field), "_cmiss_rc_vector_wrapper");
+			if (wrapper_field)
+			{
+				wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_vector_wrapper", 0);
+				Coordinate_system rc_coordinate_system(RECTANGULAR_CARTESIAN);
+				wrapper_field->setCoordinateSystem(rc_coordinate_system);
+			}
+			cmzn_fieldmodule_end_change(field_module);
 			cmzn_fieldmodule_destroy(&field_module);
 		}
 	}

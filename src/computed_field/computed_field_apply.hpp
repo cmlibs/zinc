@@ -147,15 +147,6 @@ public:
 	{
 	}
 
-	virtual bool attach_to_field(cmzn_field *parent)
-	{
-		if (Computed_field_core::attach_to_field(parent))
-		{
-			return true;
-		}
-		return false;
-	}
-
 	~Computed_field_argument_real()
 	{
 	}
@@ -202,5 +193,13 @@ public:
 	}
 
 };
+
+
+// not public API - used only for deserialising Apply field
+cmzn_field_id cmzn_fieldmodule_create_field_dummy_real(
+	cmzn_fieldmodule_id fieldmodule, int number_of_components);
+
+// not public API - used only for replacing when defining other fields over it
+bool cmzn_field_is_dummy_real(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_APPLY_HPP) */

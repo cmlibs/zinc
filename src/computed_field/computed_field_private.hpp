@@ -30,61 +30,6 @@ Types used only internally to computed fields.
 #include "general/manager_private.h"
 #include "region/cmiss_region.hpp"
 
-/**
- * Argument to field modifier functions supplying region, default name,
- * coordinate system etc.
- * Previously had other parameters, but now just wraps the field module.
- */
-class Computed_field_modify_data
-{
-private:
-	cmzn_fieldmodule *fieldmodule;
-
-public:
-	Computed_field_modify_data(
-		struct cmzn_fieldmodule *fieldmodule) :
-		fieldmodule(fieldmodule)
-	{
-	}
-
-	~Computed_field_modify_data()
-	{
-	}
-
-	cmzn_fieldmodule *get_field_module()
-	{
-		return fieldmodule;
-	}
-
-	/**
-	 * Take ownership of field reference so caller does not need
-	 * to deaccess the supplied field.
-	 * Sets MANAGED attribute so it is not destroyed.
-	 *
-	 * @param new_field  Field to take ownership of.
-	 * @return  1 if field supplied, 0 if not.
-	 */
-	int update_field_and_deaccess(cmzn_field *new_field)
-	{
-		if (new_field)
-		{
-			cmzn_field_set_managed(new_field, true);
-			cmzn_field_destroy(&new_field);
-			return 1;
-		}
-		return 0;
-	}
-
-	/**
-	 * Get existing field to replace, if any.
-	 */
-	cmzn_field *get_field();
-
-	cmzn_region *get_region();
-
-	MANAGER(cmzn_field) *get_field_manager();
-};
-
 class Computed_field_type_package
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
@@ -473,6 +418,9 @@ struct cmzn_field
 {
 	/* the name/identifier of the cmzn_field */
 	const char *name;
+	// true if an automatic unique name has been given to field
+	// means can rename to make way for another field with a different definition
+	bool automaticName;
 	/* index of field values in field cache, unique in region */
 	int cache_index;
 	/* The command string is what is printed for GET_NAME.  This is usually
@@ -514,7 +462,8 @@ protected:
 
 public:
 
-	static cmzn_field *create(const char *nameIn);
+	/** @param nameIn  Optional name of new field or nullptr for none */
+	static cmzn_field *create(const char *nameIn=nullptr);
 
 	inline cmzn_field *access()
 	{
@@ -537,6 +486,11 @@ public:
 	 * this field and any field that depends on it.
 	 */
 	void clearCaches();
+
+	int getNumberOfComponents() const
+	{
+		return this->number_of_components;
+	}
 
 	cmzn_field_value_type getValueType() const
 	{
@@ -661,11 +615,6 @@ public:
 		this->fieldparameters = nullptr;
 	}
 
-	const char *getName() const
-	{
-		return this->name;
-	}
-
 	int isNumerical()
 	{
 		return core->has_numerical_components();
@@ -687,7 +636,7 @@ public:
 	}
 
 	/**
-	 * Record that field data has changed.
+	 * Record that field definition has changed.
 	 * Notify clients if not caching changes.
 	 */
 	inline void setChanged();
@@ -700,6 +649,66 @@ public:
 	 * or PARTIAL.
 	 */
 	inline void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
+
+	/**
+	 * Record that field result has changed due to related objects changing,
+	 * e.g. FE_field on nodes, elements.
+	 * Notify clients if not caching changes.
+	 */
+	inline void setChangedRelated();
+
+	const Coordinate_system& getCoordinateSystem()
+	{
+		return this->coordinate_system;
+	}
+
+	/** @param notify  Set to false to avoid change messages being sent */
+	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange=true);
+
+	/** @param index  Index from 0 to number_of_source_fields - 1
+	 * @param notify  Set to false to avoid change messages being sent */
+	void copyCoordinateSystemFromSourceField(int index, bool notifyChange=true)
+	{
+		if ((0 <= index) && (index < this->number_of_source_fields))
+		{
+			this->setCoordinateSystem(this->source_fields[index]->getCoordinateSystem(), notifyChange);
+		}
+	}
+
+	const char *getName() const
+	{
+		return this->name;
+	}
+
+	bool hasAutomaticName() const
+	{
+		return this->automaticName;
+	}
+
+	/** Set new name for field which must be unique in its manager.
+	 * Field must be managed to call this.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setName(const char *nameIn);
+
+	/** Set a standard automatic name for the field e.g. temp### that is
+	 * different to its current name and unique in its manager. Mark field as
+	 * having an automatic name, meaning it is permitted to be renamed further
+	 * if name is needed by another different field.
+	 * Field must be managed to call this.
+	 * @param fieldManager  Field manager to use if field not yet managed.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setNameAutomatic(MANAGER(cmzn_field) *fieldManager=nullptr);
+
+	/** Set new name for field that is different to its current name and
+	 * unique in its manager, name concatenates part1 and part2 and if needed a
+	 * number string starting at 1.
+	 * @param part1  First part of name.
+	 * @param part2  Second part of name, separator to number.
+	 * @param startNumber  Negative to start from number of fields in manager,
+	 * 0 to try name without number first, then start from 1, or any positive
+	 * number to try first.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setNameUnique(const char *part1, const char *part2="", int startNumber=-1);
 
 	/**
 	 * Record that external global objects this field depends on have change such
@@ -879,18 +888,19 @@ Computed field functions
 Functions used only internally to computed fields or the region that owns them.
 */
 
-/***************************************************************************//**
- * Make a 'unique' field name by appending a number onto the stem_name until no
- * field of that name is found in the manager.
+/**
+ * Make a name by concatenating part1 and part2. While there exists a field with
+ * that name, append with a number until not found, and return the string.
  *
- * @param first_number  First number to try. If negative (the default argument),
- * start with number of fields in manager + 1.
+ * @param startNumber  First number to try. If negative (the default argument),
+ * start with number of fields in manager + 1. If 0 try without a number before
+ * starting at 1.
  * @return  Allocated string containing valid field name not used by any field
  * in manager. Caller must DEALLOCATE. NULL on failure.
  */
 char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(cmzn_field) *manager, const char *stem_name="temp",
-	const char *separator="", int first_number=-1);
+	struct MANAGER(cmzn_field) *manager, const char *part1="temp",
+	const char *part2="", int startNumber =-1);
 
 /**
  * Create an iterator for the objects in the manager.
@@ -935,6 +945,8 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
  * @param source_values  Array of source values for the new field.
  * @param field_core  Field type-specific data and implementation. On success,
  * ownership of field_core object passes to the new field.
+ * @param name  Optional name for the new field. If not supplied a unique
+ * automatic name temp# is created for it.
  * @return  Newly created field, or NULL on failure.
  */
 cmzn_field *Computed_field_create_generic(
@@ -942,7 +954,7 @@ cmzn_field *Computed_field_create_generic(
 	int number_of_components,
 	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
-	Computed_field_core *field_core);
+	Computed_field_core *field_core, const char *name=nullptr);
 
 /***************************************************************************//**
  * Sets the cmzn_region object which will own this manager.
@@ -994,6 +1006,15 @@ inline void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
 	this->manager_change_status |= change;
 }
 
+inline void cmzn_field::setChangedRelated()
+{
+	if ((this->manager) && (this->manager->owner))
+	{
+		this->manager->owner->setFieldModify();
+		MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_PARTIAL_RESULT(cmzn_field));
+	}
+}
+
 /**
  * Record that field data has changed.
  * Notify clients if not caching changes.
@@ -1043,12 +1064,6 @@ Sets the string that will be printed for the computed fields name.
 This may be different from the name when it contains characters invalid for
 using as an identifier in the manager, such as spaces or punctuation.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Sets coordinate system of the <field> to that of its first source field.
- */
-int Computed_field_set_coordinate_system_from_sources(
-	struct cmzn_field *field);
 
 /**
  * Takes two ACCESSED fields <field_one> and <field_two> and compares their number
