@@ -387,9 +387,6 @@ public:
 		return this->scene;
 	}
 
-	/** Only to be called by region or context destructors */
-	void detachScene();
-
 };
 
 /*

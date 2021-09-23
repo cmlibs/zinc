@@ -123,15 +123,6 @@ cmzn_region::~cmzn_region()
 		cmzn_region::deaccess(child);
 	}
 
-	// cease receiving field manager callbacks otherwise get problems from fields being destroyed
-	// e.g. selection field accessed by scene in region
-	if (this->field_manager_callback_id)
-	{
-		MANAGER_DEREGISTER(Computed_field)(this->field_manager_callback_id, this->field_manager);
-		this->field_manager_callback_id = 0;
-	}
-
-	this->detachScene();
 	this->detachFields();
 
 	if (this->context)
@@ -166,7 +157,8 @@ void cmzn_region::detachFields()
 {
 	if (this->field_manager)
 	{
-		// following is called earlier in region destructor
+		// cease receiving field manager callbacks otherwise get problems from fields being destroyed
+		// e.g. selection field accessed by scene in region
 		if (this->field_manager_callback_id)
 		{
 			MANAGER_DEREGISTER(Computed_field)(this->field_manager_callback_id, this->field_manager);
@@ -174,6 +166,13 @@ void cmzn_region::detachFields()
 		}
 		// clear region pointer otherwise get updates when finite element fields destroyed
 		this->fe_region->clearRegionPrivate();
+		if (this->scene)
+		{
+			this->beginChange();
+			this->scene->detachFromOwner();
+			cmzn_scene::deaccess(this->scene);
+			this->endChange();
+		}
 		DESTROY(MANAGER(Computed_field))(&(this->field_manager));
 		this->field_manager = 0;
 		DEACCESS(FE_region)(&this->fe_region);
@@ -836,17 +835,6 @@ void cmzn_region::removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
 			cmzn_fieldmodulenotifier::deaccess(notifier);
 			this->notifier_list.erase(iter);
 		}
-	}
-}
-
-void cmzn_region::detachScene()
-{
-	if (this->scene)
-	{
-		this->beginChange();
-		this->scene->detachFromOwner();
-		cmzn_scene::deaccess(this->scene);
-		this->endChange();
 	}
 }
 

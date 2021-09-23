@@ -717,6 +717,14 @@ public:
 	 */
 	inline void dependencyChanged();
 
+	/** Get source field at index. Not bounds checked!
+	 * @param index  Index from 0 to number_of_source_fields - 1
+	 * @return  Non-accessed source field */
+	cmzn_field *getSourceField(int index) const
+	{
+		return this->source_fields[index];
+	}
+
 	/**
 	 * Set the source field at the index in the field. Capable of adding one
 	 * source to the end of the list.

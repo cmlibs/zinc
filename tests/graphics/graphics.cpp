@@ -1688,6 +1688,29 @@ TEST(ZincGraphics, fieldWrappers)
 	// check no issues with setting fields while removed
 	EXPECT_EQ(RESULT_OK, streamlines.setCoordinateField(rc_coordinates));
 	EXPECT_EQ(RESULT_OK, streamlines.setStreamVectorField(rc_vector));
+
+	// test rediscovering wrapper
+	points = zinc.scene.createGraphicsPoints();
+	EXPECT_TRUE(points.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(polar_coordinates));
+	// hold handle to wrapper for rediscovery
+	Field storeWrapperField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(storeWrapperField.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(rc_coordinates));
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper");
+	EXPECT_TRUE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(polar_coordinates));
+	// check have found existing wrapper
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper1");
+	EXPECT_FALSE(findField.isValid());
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(rc_coordinates));
+
+	// change wrapper field so not RC, test creating a new wrapper with suffix 1
+	EXPECT_EQ(RESULT_OK, storeWrapperField.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR));
+	EXPECT_EQ(RESULT_OK, points.setCoordinateField(polar_coordinates));
+	// check have found existing wrapper
+	findField = zinc.fm.findFieldByName("polar_coordinates_cmiss_rc_wrapper1");
+	EXPECT_TRUE(findField.isValid());
 }
 
 /* test adding to faces or lines adds part graphics to existing */

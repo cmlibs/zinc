@@ -18,11 +18,51 @@ fibre_axes out of a fibre field.
 #include "opencmiss/zinc/fieldfibres.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
+#include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_module.hpp"
 #include "general/debug.h"
 #include "general/message.h"
-#include "computed_field/computed_field_private.hpp"
+#include "general/mystring.h"
+#include <cstring>
+#include <cstdio>
+
+namespace {
+
+/** Find wrapper field in sourceField1's manager of name starting with sourceField1's name plus suffix,
+ * adding numbers starting at 1 etc, which is of the supplied type with has sourceField1 as first source field
+ * @return  Non-accessed field. */
+cmzn_field *findWrapperField(cmzn_field *sourceField1, const char *suffix, cmzn_field_type type)
+{
+	const size_t length = strlen(sourceField1->getName()) + strlen(suffix);
+	char *name = new char[length + 10];
+	sprintf(name, "%s%s", sourceField1->getName(), suffix);
+	int i = 0;
+	cmzn_field *wrapperField = nullptr;
+	while (true)
+	{
+		if (i > 0)
+		{
+			sprintf(name + length, "%d", i);
+		}
+		wrapperField = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_field, name)(name, sourceField1->getManager());
+		if (!wrapperField)
+		{
+			break;
+		}
+		if ((wrapperField->core->get_type() == type) &&
+			(wrapperField->getSourceField(0) == sourceField1) &&
+			(wrapperField->getCoordinateSystem().getType() == RECTANGULAR_CARTESIAN))
+		{
+			break;
+		}
+		++i;
+	}
+	delete[] name;
+	return wrapperField;
+}
+
+}
 
 cmzn_field *cmzn_field_get_coordinate_field_wrapper(
 	cmzn_field *coordinate_field)
@@ -34,13 +74,21 @@ cmzn_field *cmzn_field_get_coordinate_field_wrapper(
 		Coordinate_system_type type = coordinate_field->getCoordinateSystem().getType();
 		if (Coordinate_system_type_is_non_linear(type))
 		{
-			cmzn_fieldmodule *fieldmodule = cmzn_field_get_fieldmodule(coordinate_field);
-			cmzn_fieldmodule_begin_change(fieldmodule);
-			// default coordinate system type is RC
-			wrapper_field = cmzn_fieldmodule_create_field_coordinate_transformation(fieldmodule, coordinate_field);
-			wrapper_field->setNameUnique(coordinate_field->getName(), "_cmiss_rc_wrapper", 0);
-			cmzn_fieldmodule_end_change(fieldmodule);
-			cmzn_fieldmodule_destroy(&fieldmodule);
+			wrapper_field = findWrapperField(coordinate_field, "_cmiss_rc_wrapper", CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION);
+			if (wrapper_field)
+			{
+				wrapper_field->access();
+			}
+			else
+			{
+				cmzn_fieldmodule *fieldmodule = cmzn_field_get_fieldmodule(coordinate_field);
+				cmzn_fieldmodule_begin_change(fieldmodule);
+				// default coordinate system type is RC
+				wrapper_field = cmzn_fieldmodule_create_field_coordinate_transformation(fieldmodule, coordinate_field);
+				wrapper_field->setNameUnique(coordinate_field->getName(), "_cmiss_rc_wrapper", 0);
+				cmzn_fieldmodule_end_change(fieldmodule);
+				cmzn_fieldmodule_destroy(&fieldmodule);
+			}
 		}
 		else
 		{
@@ -85,31 +133,47 @@ cmzn_field *cmzn_field_get_vector_field_wrapper(
 		else if ((FIBRE == coordinate_system_type) &&
 			(3>=cmzn_field_get_number_of_components(vector_field)))
 		{
-			/* make fibre_axes wrapper from fibre field */
-			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
-			wrapper_field = cmzn_fieldmodule_create_field_fibre_axes(field_module,
-				vector_field, coordinate_field);
-			if (wrapper_field)
+			wrapper_field = findWrapperField(vector_field, "_cmiss_rc_fibre_wrapper", CMZN_FIELD_TYPE_FIBRE_AXES);
+			if ((wrapper_field) && (wrapper_field->getSourceField(1) == coordinate_field))
 			{
-				wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_fibre_wrapper", 0);
+				wrapper_field->access();
 			}
-			cmzn_fieldmodule_destroy(&field_module);
+			else
+			{
+				/* make fibre_axes wrapper from fibre field */
+				cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
+				wrapper_field = cmzn_fieldmodule_create_field_fibre_axes(field_module,
+					vector_field, coordinate_field);
+				if (wrapper_field)
+				{
+					wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_fibre_wrapper", 0);
+				}
+				cmzn_fieldmodule_destroy(&field_module);
+			}
 		}
 		else
 		{
-			/* make vector_coordinate_transformation wrapper of non-RC vector field */
-			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
-			cmzn_fieldmodule_begin_change(field_module);
-			wrapper_field = cmzn_fieldmodule_create_field_vector_coordinate_transformation(
-				field_module, vector_field, coordinate_field);
-			if (wrapper_field)
+			wrapper_field = findWrapperField(vector_field, "_cmiss_rc_vector_wrapper", CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION);
+			if ((wrapper_field) && (wrapper_field->getSourceField(1) == coordinate_field))
 			{
-				wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_vector_wrapper", 0);
-				Coordinate_system rc_coordinate_system(RECTANGULAR_CARTESIAN);
-				wrapper_field->setCoordinateSystem(rc_coordinate_system);
+				wrapper_field->access();
 			}
-			cmzn_fieldmodule_end_change(field_module);
-			cmzn_fieldmodule_destroy(&field_module);
+			else
+			{
+				/* make vector_coordinate_transformation wrapper of non-RC vector field */
+				cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
+				cmzn_fieldmodule_begin_change(field_module);
+				wrapper_field = cmzn_fieldmodule_create_field_vector_coordinate_transformation(
+					field_module, vector_field, coordinate_field);
+				if (wrapper_field)
+				{
+					wrapper_field->setNameUnique(vector_field->getName(), "_cmiss_rc_vector_wrapper", 0);
+					Coordinate_system rc_coordinate_system(RECTANGULAR_CARTESIAN);
+					wrapper_field->setCoordinateSystem(rc_coordinate_system);
+				}
+				cmzn_fieldmodule_end_change(field_module);
+				cmzn_fieldmodule_destroy(&field_module);
+			}
 		}
 	}
 	else
