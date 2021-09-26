@@ -156,7 +156,7 @@ public:
 	void set_element_xi(cmzn_element *element_in, const FE_value *xi_in, cmzn_element *top_level_element_in = 0)
 	{
 		this->element = element_in;
-		const int element_dimension_in = element_in->getDimension();
+		const int element_dimension_in = (element_in) ? element_in->getDimension() : 0;
 		bool same_xi = (this->element_dimension == element_dimension_in);
 		this->element_dimension = element_dimension_in;
 		for (int i = 0; i < element_dimension_in; ++i)

@@ -20,10 +20,6 @@
 #include "general/message.h"
 #include "graphics/quaternion.hpp"
 
-class Computed_field_matrix_operators_package : public Computed_field_type_package
-{
-};
-
 int Computed_field_get_square_matrix_size(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006

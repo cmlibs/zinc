@@ -29,10 +29,6 @@
 
 using namespace std;
 
-class Computed_field_nodeset_operators_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_nodeset_operator_type_string[] = "nodeset_operator";

@@ -20,10 +20,6 @@ Implements a number of basic component wise operations on computed fields.
 #include "general/message.h"
 #include "computed_field/computed_field_conditional.h"
 
-class Computed_field_conditional_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 char computed_field_if_type_string[] = "if";

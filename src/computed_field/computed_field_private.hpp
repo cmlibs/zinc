@@ -30,57 +30,6 @@ Types used only internally to computed fields.
 #include "general/manager_private.h"
 #include "region/cmiss_region.hpp"
 
-class Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-The base class for each computed field classes own package.
-Provides reference counting.
-==============================================================================*/
-{
-private:
-	unsigned int access_count;
-
-public:
-	void addref()
-	{
-		access_count++;
-	}
-	void removeref()
-	{
-		if (access_count > 1)
-		{
-			access_count--;
-		}
-		else
-		{
-			delete this;
-		}
-	}
-   Computed_field_type_package()
-	{
-		access_count = 0;
-	}
-
-protected:
-	virtual ~Computed_field_type_package()
-	{
-	}
-};
-
-class Computed_field_simple_package : public Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Minimum set of type-specific data for gfx define field commands.
-Contains nothing now that field manager is extracted from region, which is
-passed around as part of Computed_field_modify_data in to_be_modified argument.
-==============================================================================*/
-{
-};
-
 /**
  * Base class of type-specific field change details.
  */
@@ -373,7 +322,8 @@ public:
 	{
 	}
 
-	/** override for fields wrapping other objects with coordinate system, e.g. FE_field */
+	/** override for fields wrapping other objects with coordinate system, e.g. FE_field
+	 * to propagate back from field to internal object */
 	virtual void propagate_coordinate_system()
 	{
 	}
@@ -423,11 +373,6 @@ struct cmzn_field
 	bool automaticName;
 	/* index of field values in field cache, unique in region */
 	int cache_index;
-	/* The command string is what is printed for GET_NAME.  This is usually
-		the same as the name (and just points to it) however it is separated
-		out so that we can specify an string for the command_string which is not
-		a valid identifier (contains spaces etc.) */
-	const char *command_string;
 	int number_of_components;
 
 	struct Coordinate_system coordinate_system;
@@ -662,11 +607,11 @@ public:
 		return this->coordinate_system;
 	}
 
-	/** @param notify  Set to false to avoid change messages being sent */
+	/** @param notifyChange  Set to false to avoid change messages being sent */
 	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange=true);
 
 	/** @param index  Index from 0 to number_of_source_fields - 1
-	 * @param notify  Set to false to avoid change messages being sent */
+	 * @param notifyChange  Set to false to avoid change messages being sent */
 	void copyCoordinateSystemFromSourceField(int index, bool notifyChange=true)
 	{
 		if ((0 <= index) && (index < this->number_of_source_fields))
@@ -1051,27 +996,6 @@ inline void cmzn_field::dependencyChanged()
 {
 	MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 }
-
-Computed_field_simple_package *Computed_field_package_get_simple_package(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Returns a pointer to a sharable simple type package which just contains a
-function to access the Computed_field_package.
-==============================================================================*/
-
-int Computed_field_set_command_string(struct cmzn_field *field,
-	const char *command_string);
-/*******************************************************************************
-LAST MODIFIED : 6 September 2007
-
-DESCRIPTION :
-Sets the string that will be printed for the computed fields name.
-This may be different from the name when it contains characters invalid for
-using as an identifier in the manager, such as spaces or punctuation.
-==============================================================================*/
 
 /**
  * Takes two ACCESSED fields <field_one> and <field_two> and compares their number

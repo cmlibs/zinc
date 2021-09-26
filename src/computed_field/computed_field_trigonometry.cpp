@@ -20,10 +20,6 @@ Implements a number of basic component wise operations on computed fields.
 #include "general/message.h"
 #include "computed_field/computed_field_trigonometry.h"
 
-class Computed_field_trigonometry_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_sin_type_string[] = "sin";

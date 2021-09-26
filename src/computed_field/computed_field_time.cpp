@@ -22,12 +22,6 @@ Implements a number of basic component wise operations on computed fields.
 #include "general/message.h"
 #include "computed_field/computed_field_time.h"
 
-class Computed_field_time_package : public Computed_field_type_package
-{
-public:
-	struct cmzn_timekeeper *time_keeper;
-};
-
 namespace {
 
 char computed_field_time_lookup_type_string[] = "time_lookup";
@@ -38,6 +32,14 @@ public:
 	Computed_field_time_lookup() : Computed_field_core()
 	{
 	};
+
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
+		}
+	}
 
 private:
 	Computed_field_core *copy()
@@ -76,10 +78,7 @@ private:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
-	{
-		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
-	}
+	virtual int evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative);
 
 	int list();
 
@@ -101,6 +100,32 @@ int Computed_field_time_lookup::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		if (sourceValueCache)
 		{
 			valueCache.copyValues(*sourceValueCache);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int Computed_field_time_lookup::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
+{
+	cmzn_field *timeField = this->getSourceField(1);
+	const int timeOrder = timeField->getDerivativeTreeOrder(fieldDerivative);
+	if (timeOrder > 0)
+	{
+		return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
+	}
+	const RealFieldValueCache *timeValueCache = RealFieldValueCache::cast(timeField->evaluate(cache));
+	if (timeValueCache)
+	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
+		extraCache.copyLocation(cache);
+		extraCache.setTime(timeValueCache->values[0]);
+		const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(extraCache, fieldDerivative);
+		if (sourceDerivativeCache)
+		{
+			DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
+			derivativeCache->copyValues(*sourceDerivativeCache);
 			return 1;
 		}
 	}
@@ -167,7 +192,6 @@ Returns allocated command string for reproducing field. Includes type.
 		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
 		{
 			make_valid_token(&field_name);
-			append_string(&command_string, " ", &error);
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}

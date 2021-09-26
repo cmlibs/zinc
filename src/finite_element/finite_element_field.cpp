@@ -996,26 +996,6 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 	return (return_code);
 } /* set_FE_field_number_of_components */
 
-enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field)
-{
-	if (field)
-		return field->get_CM_field_type();
-	display_message(ERROR_MESSAGE, "get_FE_field_CM_field_type.  Invalid field");
-	return CM_GENERAL_FIELD;
-}
-
-int set_FE_field_CM_field_type(struct FE_field *field,
-	enum CM_field_type cm_field_type)
-{
-	if (field)
-	{
-		field->set_CM_field_type(cm_field_type);
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "set_FE_field_CM_field_type.  Invalid argument(s)");
-	return 0;
-}
-
 enum FE_field_type get_FE_field_FE_field_type(struct FE_field *field)
 {
 	if (field)

@@ -53,15 +53,6 @@ Module types
 ------------
 */
 
-struct Computed_field_finite_element_package : public Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-}; /* Computed_field_finite_element_package */
-
 namespace {
 
 typedef std::map<cmzn_element *, FE_element_field_evaluation *> FE_element_field_evaluation_map;
@@ -502,6 +493,8 @@ private:
 
 	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, StringFieldValueCache& valueCache);
 
+	/* Propagate the coordinate system back from field to FE_field.
+	 * Called only by field API affecting coordinate system. */
 	virtual void propagate_coordinate_system()
 	{
 		this->fe_field->setCoordinateSystem(field->coordinate_system);

@@ -509,24 +509,6 @@ Should only call this function for unmanaged fields.
 ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 ==============================================================================*/
 
-enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns the CM_field_type of the <field>.
-==============================================================================*/
-
-int set_FE_field_CM_field_type(struct FE_field *field,
-	enum CM_field_type cm_field_type);
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Sets the CM_field_type of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
-
 enum FE_field_type get_FE_field_FE_field_type(struct FE_field *field);
 /*******************************************************************************
 LAST MODIFIED : 31 August 1999

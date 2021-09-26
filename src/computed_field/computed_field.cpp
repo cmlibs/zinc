@@ -188,7 +188,6 @@ cmzn_field::cmzn_field() :
 	name(nullptr),
 	automaticName(false),
 	cache_index(0),
-	command_string(nullptr),  // by default the name and the command_string are the same
 	number_of_components(0),
 	core(nullptr),
 	source_fields(nullptr),
@@ -205,9 +204,6 @@ cmzn_field::cmzn_field() :
 
 cmzn_field::~cmzn_field()
 {
-	/* Only DEALLOCATE the command_string if it is different to the name */
-	if (this->command_string && (this->command_string != this->name))
-		DEALLOCATE(this->command_string);
 	// destroy core first as some e.g. apply need to remove callbacks
 	delete this->core;
 	this->core = nullptr;
@@ -234,7 +230,6 @@ cmzn_field *cmzn_field::create(const char *nameIn)
 	if (nameIn)
 	{
 		field->name = duplicate_string(nameIn);
-		field->command_string = field->name;  // current default
 		if (!field->name)
 		{
 			display_message(ERROR_MESSAGE, "cmzn_field::create.  Could not copy name.");
@@ -344,22 +339,10 @@ and the values are listed in an array.  See set_Computed_field_conditional
 in computed_field_set.cpp.
 ============================================================================*/
 {
-	int return_code;
-
-	ENTER(GET_NAME(cmzn_field));
-	if (object&&name_ptr)
+	int return_code = 1;
+	if (object && name_ptr)
 	{
-		if (ALLOCATE(*name_ptr,char,strlen(object->command_string)+1))
-		{
-			strcpy(*name_ptr,object->command_string);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"GET_NAME(cmzn_field).  Could not allocate space for name");
-			return_code=0;
-		}
+		*name_ptr = duplicate_string(object->getName());
 	}
 	else
 	{
@@ -367,10 +350,8 @@ in computed_field_set.cpp.
 			"GET_NAME(cmzn_field).  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* GET_NAME(cmzn_field) */
+}
 
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_field)
 
@@ -726,6 +707,12 @@ int cmzn_field::copyDefinition(const cmzn_field& source)
 			"Cannot change number of components or value type while field is in use");
 		return CMZN_ERROR_ARGUMENT;
 	}
+	if (!this->core->not_in_use())
+	{
+		display_message(ERROR_MESSAGE, "cmzn_field::copyDefinition.  "
+			"Cannot replace definition of finite element field while defined on model");
+		return CMZN_ERROR_IN_USE;
+	}
 	int return_code = CMZN_OK;
 	cmzn_field **newSourceFields = nullptr;
 	if (source.number_of_source_fields > 0)
@@ -827,8 +814,11 @@ void cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn
 	if (!(this->coordinate_system == coordinateSystemIn))
 	{
 		this->coordinate_system = coordinateSystemIn;
+		this->core->propagate_coordinate_system();
 		if (notifyChange)
+		{
 			this->setChanged();
+		}
 	}
 }
 
@@ -875,16 +865,9 @@ int cmzn_field::setName(const char *nameIn)
 		char *newName = duplicate_string(nameIn);
 		if (newName)
 		{
-			/* If this has previously been allocated separately destroy it */
-			if (this->command_string != this->name)
-			{
-				DEALLOCATE(this->command_string);
-			}
 			DEALLOCATE(this->name);
 			this->name = newName;
 			this->automaticName = false;  // note set to true in setNameAutomatic()
-			/* Now make them point to the same memory */
-			this->command_string = (char *)this->name;
 		}
 		else
 		{
@@ -1750,40 +1733,6 @@ The calling function must not deallocate the returned string.
 
 	return (return_string);
 } /* Computed_field_get_type_string */
-
-int Computed_field_set_command_string(struct cmzn_field *field,
-	const char *command_string)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2007
-
-DESCRIPTION :
-Sets the string that will be printed for the computed fields name.
-This may be different from the name when it contains characters invalid for
-using as an identifier in the manager, such as spaces or punctuation.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_command_string);
-	if (field)
-	{
-		if (field->command_string && (field->command_string != field->name))
-		{
-			DEALLOCATE(field->command_string);
-		}
-		field->command_string = duplicate_string(command_string);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Computed_field_set_command_string.  "
-			"Missing field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_command_string */
 
 int Computed_field_get_native_resolution(struct cmzn_field *field,
 	int *dimension, int **sizes,
@@ -2725,7 +2674,7 @@ int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus)
 			field->coordinate_system.parameters.focus = useFocus;
 			// copy to wrapped FE_field:
 			field->core->propagate_coordinate_system();
-			MANAGED_OBJECT_CHANGE(cmzn_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
+			field->setChanged();
 		}
 		return CMZN_OK;
 	}
@@ -2799,7 +2748,7 @@ int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 		field->coordinate_system.type = type;
 		// copy to wrapped FE_field:
 		field->core->propagate_coordinate_system();
-		MANAGED_OBJECT_CHANGE(cmzn_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_field));
+		field->setChanged();
 	}
 	return 1;
 }

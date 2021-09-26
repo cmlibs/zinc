@@ -38,12 +38,6 @@ and the nodes for 1D elements.
 
 namespace {
 
-class Computed_field_integration_package : public Computed_field_type_package
-{
-public:
-	cmzn_region *root_region;
-};
-
 struct Computed_field_element_integration_mapping
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006

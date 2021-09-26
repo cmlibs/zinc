@@ -23,10 +23,6 @@ computed fields.
 #include "general/mystring.h"
 #include "general/message.h"
 
-class Computed_field_fibres_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_fibre_axes_type_string[] = "fibre_axes";

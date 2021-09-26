@@ -44,10 +44,6 @@ this structure in set_Computed_field_component.
 	int component_no;
 }; /* struct Computed_field_component */
 
-class Computed_field_composite_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_composite_type_string[] = "composite";

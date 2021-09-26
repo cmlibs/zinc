@@ -21,11 +21,6 @@ Implements a number of basic component wise operators on computed fields.
 #include "general/message.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
 
-class Computed_field_arithmetic_operators_package : public Computed_field_type_package
-{
-	/* empty; field manager now comes from region, passed in Computed_field_modify_data */
-};
-
 namespace {
 
 const char computed_field_power_type_string[] = "power";

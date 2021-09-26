@@ -357,7 +357,8 @@ public:
 		{
 		case Field_location::TYPE_ELEMENT_XI:
 		{
-			return this->location_element_xi == source.location_element_xi;
+			// either location may be location_element_xi or an indexed_location_element_xi
+			return static_cast<Field_location_element_xi&>(*this->location) == static_cast<Field_location_element_xi&>(*source.location);
 		} break;
 		case Field_location::TYPE_FIELD_VALUES:
 		{

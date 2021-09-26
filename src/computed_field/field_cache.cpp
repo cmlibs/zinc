@@ -171,10 +171,13 @@ void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
 	{
 	case Field_location::TYPE_ELEMENT_XI:
 	{
+		// source location may be location_element_xi or an indexed_location_element_xi
+		// Future: transfer indexed locations
+		Field_location_element_xi& source_location_element_xi = static_cast<Field_location_element_xi&>(*source.location);
 		this->location_element_xi.set_element_xi(
-			source.location_element_xi.get_element(),
-			source.location_element_xi.get_xi(),
-			source.location_element_xi.get_top_level_element());
+			source_location_element_xi.get_element(),
+			source_location_element_xi.get_xi(),
+			source_location_element_xi.get_top_level_element());
 		this->location = &this->location_element_xi;
 	} break;
 	case Field_location::TYPE_FIELD_VALUES:

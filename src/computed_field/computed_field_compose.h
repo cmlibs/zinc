@@ -19,12 +19,6 @@ DESCRIPTION :
 #include "computed_field/computed_field_private.hpp"
 
 
-class Computed_field_compose_package : public Computed_field_type_package
-{
-public:
-	struct cmzn_region *root_region;
-};
-
 const char computed_field_compose_type_string[] = "compose";
 
 class Computed_field_compose : public Computed_field_core
