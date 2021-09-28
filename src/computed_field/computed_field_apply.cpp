@@ -505,7 +505,7 @@ int Computed_field_apply::check_dependency()
 
 int Computed_field_apply::list()
 {
-	display_message(INFORMATION_MESSAGE, "    Evaluate field : ");
+	display_message(INFORMATION_MESSAGE, "    evaluate field : ");
 	cmzn_region *region = this->field->getRegion();
 	cmzn_region *evaluateRegion = this->getEvaluateField()->getRegion();
 	if (evaluateRegion != region)
@@ -515,11 +515,12 @@ int Computed_field_apply::list()
 		DEALLOCATE(path);
 	}
 	display_message(INFORMATION_MESSAGE, "%s\n", this->getEvaluateField()->name);
-	for (int i = 0; i < this->numberOfBindings; ++i)
+	const int bindCount = this->getNumberOfBindings();
+	for (int i = 0; i < bindCount; ++i)
 	{
 		cmzn_field *argumentField = this->getBindArgumentField(i);
 		cmzn_field *sourceField = this->getBindArgumentSourceField(argumentField);
-		display_message(INFORMATION_MESSAGE, "    Bind argument field %s to source field %s", argumentField->name, sourceField->name);
+		display_message(INFORMATION_MESSAGE, "    bind : argument field %s = source field %s\n", argumentField->name, sourceField->name);
 	}
 	return 1;
 }
@@ -529,7 +530,7 @@ char *Computed_field_apply::get_command_string()
 	char *command_string = nullptr;
 	int error = 0;
 	append_string(&command_string, Computed_field_apply_type_string, &error);
-	append_string(&command_string, " evaluate_field ", &error);
+	append_string(&command_string, " field ", &error);
 	cmzn_region *region = this->field->getRegion();
 	cmzn_region *evaluateRegion = this->getEvaluateField()->getRegion();
 	if (evaluateRegion != region)
@@ -546,27 +547,36 @@ char *Computed_field_apply::get_command_string()
 		append_string(&command_string, fieldName, &error);
 		DEALLOCATE(fieldName);
 	}
-	for (int i = 0; i < this->numberOfBindings; ++i)
+	const int bindCount = this->getNumberOfBindings();
+	if (bindCount > 0)
 	{
 		append_string(&command_string, " bind ", &error);
-		cmzn_field *argumentField = this->getBindArgumentField(i);
-		fieldName = duplicate_string(argumentField->name);
-		make_valid_token(&fieldName);
-		append_string(&command_string, fieldName, &error);
-		DEALLOCATE(fieldName);
-		append_string(&command_string, " ", &error);
-		cmzn_field *sourceField = this->getBindArgumentSourceField(argumentField);
-		fieldName = duplicate_string(sourceField->name);
-		make_valid_token(&fieldName);
-		append_string(&command_string, fieldName, &error);
-		DEALLOCATE(fieldName);
+		for (int i = 0; i < bindCount; ++i)
+		{
+			if (i > 0)
+			{
+				append_string(&command_string, " & ", &error);
+			}
+			cmzn_field *argumentField = this->getBindArgumentField(i);
+			fieldName = duplicate_string(argumentField->name);
+			make_valid_token(&fieldName);
+			append_string(&command_string, fieldName, &error);
+			DEALLOCATE(fieldName);
+			append_string(&command_string, " & ", &error);
+			cmzn_field *sourceField = this->getBindArgumentSourceField(argumentField);
+			fieldName = duplicate_string(sourceField->name);
+			make_valid_token(&fieldName);
+			append_string(&command_string, fieldName, &error);
+			DEALLOCATE(fieldName);
+		}
 	}
 	return command_string;
 }
 
 cmzn_field *Computed_field_apply::getBindArgumentField(int bindIndex) const
 {
-	if ((0 <= bindIndex) && (bindIndex < this->numberOfBindings))
+	const int bindCount = this->getNumberOfBindings();
+	if ((0 <= bindIndex) && (bindIndex < bindCount))
 	{
 		return this->getSourceField(1 + bindIndex*2);
 	}
@@ -648,7 +658,6 @@ int Computed_field_apply::setBindArgumentSourceField(cmzn_field *argumentField, 
 				// remove binding
 				this->field->setSourceField(i + 1, nullptr);
 				this->field->setSourceField(i, nullptr);
-				--(this->numberOfBindings);
 			}
 			return CMZN_OK;
 		}
@@ -660,11 +669,7 @@ int Computed_field_apply::setBindArgumentSourceField(cmzn_field *argumentField, 
 		if (result == CMZN_OK)
 		{
 			result = this->field->setSourceField(i + 1, sourceField);
-			if (result == CMZN_OK)
-			{
-				++(this->numberOfBindings);
-			}
-			else
+			if (result != CMZN_OK)
 			{
 				this->field->setSourceField(i, nullptr);
 				this->setChanged();

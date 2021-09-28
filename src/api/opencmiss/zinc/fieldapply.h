@@ -47,6 +47,23 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_apply(
 ZINC_API cmzn_field_apply_id cmzn_field_cast_apply(cmzn_field_id field);
 
 /**
+ * Cast apply field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param apply_field  Handle to the apply field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_apply_base_cast(
+	cmzn_field_apply_id apply_field)
+{
+	return (cmzn_field_id)(apply_field);
+}
+
+/**
  * Destroys handle to the apply field (and sets it to NULL).
  * Internally this decrements the reference count.
  *
@@ -132,6 +149,23 @@ ZINC_API cmzn_field_argument_real_id cmzn_field_cast_argument_real(
 	cmzn_field_id field);
 
 /**
+ * Cast argument real field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param argument_real_field  Handle to the argument real field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_argument_real_base_cast(
+	cmzn_field_argument_real_id argument_real_field)
+{
+	return (cmzn_field_id)(argument_real_field);
+}
+
+/**
  * Destroys handle to the argument_real field (and sets it to NULL).
  * Internally this decrements the reference count.
  *
@@ -140,7 +174,6 @@ ZINC_API cmzn_field_argument_real_id cmzn_field_cast_argument_real(
  */
 ZINC_API int cmzn_field_argument_real_destroy(
 	cmzn_field_argument_real_id *argument_real_address);
-
 
 
 #ifdef __cplusplus

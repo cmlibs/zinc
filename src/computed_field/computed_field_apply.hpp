@@ -22,14 +22,12 @@ class Computed_field_apply : public Computed_field_core
 {
 private:
 	void *other_field_manager_callback_id;
-	int numberOfBindings;
 
 public:
 
 	Computed_field_apply() :
 		Computed_field_core(),
-		other_field_manager_callback_id(nullptr),
-		numberOfBindings(0)
+		other_field_manager_callback_id(nullptr)
 	{
 	}
 
@@ -132,7 +130,7 @@ public:
 
 	int getNumberOfBindings() const
 	{
-		return this->numberOfBindings;
+		return this->field->number_of_source_fields / 2;
 	}
 
 };

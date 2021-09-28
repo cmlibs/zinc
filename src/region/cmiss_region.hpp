@@ -467,7 +467,7 @@ int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
  */
 bool cmzn_region_is_root(struct cmzn_region *region);
 
-/***************************************************************************//**
+/**
  * Separates a region/path/name into the region plus region-path and remainder
  * string containing text from the first unrecognized child region name.
  *
@@ -480,20 +480,22 @@ bool cmzn_region_is_root(struct cmzn_region *region);
  *     contains body region contains heart region
  * "heart/bob/fred/" -> region heart, "heart" and "bob/fred" if region heart
  *     has no child region called bob
+ * Parent regions can be reached by ..:
+ * "../bob/coordinates" -> region ../bob, "../bob" and "cooordinates"
  *
- * @param root_region the starting region for path
- * @path string the input path
- * @param region_address on success, points to region partially matched by path
- * @param region_path_address on success, returns allocated string path to the
+ * @param baseRegion  The base region for path.
+ * @path path  The input path and additional characters.
+ * @param regionAddress on success, points to region partially matched by path
+ * @param regionPathAddress on success, returns allocated string path to the
  *   returned region, stripped of leading and trailing region path separators
- * @param remainder_address on success, returns pointer to allocated remainder
+ * @param remainderAddress on success, returns pointer to allocated remainder
  *   of path stripped of leading and trailing region path separators, or NULL
  *   if all of path was resolved
  * @return 1 on success, 0 on failure
  */
-int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
-	const char *path, struct cmzn_region **region_address,
-	char **region_path_address,	char **remainder_address);
+int cmzn_region_get_partial_region_path(cmzn_region *baseRegion,
+	const char *path, cmzn_region **regionAddress,
+	char **regionPathAddress,	char **remainderAddress);
 
 int cmzn_region_list(struct cmzn_region *region,
 	int indent, int indent_increment);

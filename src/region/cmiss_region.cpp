@@ -1187,107 +1187,93 @@ bool cmzn_region_is_root(struct cmzn_region *region)
 	return (region) && (!region->getParent());
 }
 
-int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
-	const char *path, struct cmzn_region **region_address,
-	char **region_path_address, char **remainder_address)
+int cmzn_region_get_partial_region_path(cmzn_region *baseRegion,
+	const char *path, cmzn_region **regionAddress,
+	char **regionPathAddress, char **remainderAddress)
 {
-	char *child_name, *path_copy, *child_name_end, *child_name_start;
-	int length, return_code;
-	struct cmzn_region *next_region, *region;
-
-	ENTER(cmzn_region_get_partial_region_path);
-	if (root_region && path && region_address && region_path_address &&
-		remainder_address)
+	if (!(baseRegion && path && regionAddress && regionPathAddress &&
+		remainderAddress))
 	{
-		return_code = 1;
-		region = root_region;
-		path_copy = duplicate_string(path);
-		child_name = path_copy;
-		/* skip leading separator */
-		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
+		display_message(ERROR_MESSAGE, "cmzn_region_get_partial_region_path.  Invalid argument(s)");
+		return 0;
+	}
+	int return_code = 1;
+	cmzn_region *region = baseRegion;
+	char *pathCopy = duplicate_string(path);
+	char *childName = pathCopy;
+	if (childName[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
+		++childName;
+	const char *childNameStart = childName;
+	cmzn_region *nextRegion = region;
+	while (nextRegion && (childName[0] != '\0'))
+	{
+		char *childNameEnd = strchr(childName, CMZN_REGION_PATH_SEPARATOR_CHAR);
+		if (childNameEnd)
+			*childNameEnd = '\0';
+		if (0 == strcmp(childName, CMZN_REGION_PATH_PARENT_NAME))
+			nextRegion = nextRegion->getParent();
+		else
+			nextRegion = nextRegion->findChildByName(childName);
+		if (nextRegion)
 		{
-			child_name++;
+			region = nextRegion;
+			if (childNameEnd)
+				childName = childNameEnd + 1;
+			else
+				childName = childName + strlen(childName);
 		}
-		child_name_start = child_name;
-		next_region = region;
+		if (childNameEnd)
+			*childNameEnd = CMZN_REGION_PATH_SEPARATOR_CHAR;
+	}
 
-		while (next_region && (*child_name != '\0'))
-		{
-			child_name_end = strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR);
-			if (child_name_end)
-			{
-				*child_name_end = '\0';
-			}
-			if ((next_region = region->findChildByName(child_name)))
-			{
-				region = next_region;
-				if (child_name_end)
-				{
-					child_name = child_name_end + 1;
-				}
-				else
-				{
-					child_name = child_name + strlen(child_name);
-				}
-			}
-			if (child_name_end)
-			{
-				*child_name_end = CMZN_REGION_PATH_SEPARATOR_CHAR;
-			}
-		}
+	int length = childName - childNameStart;
+	if ((length > 0) &&
+		(*(childName - 1) == CMZN_REGION_PATH_SEPARATOR_CHAR))
+	{
+		--length;
+	}
+	if (ALLOCATE(*regionPathAddress, char, length + 1))
+	{
+		strncpy(*regionPathAddress, childNameStart, length);
+		(*regionPathAddress)[length] = '\0';
+	}
+	else
+	{
+		return_code = 0;
+	}
 
-		length = child_name - child_name_start;
-		if ((length > 0) &&
-			(*(child_name - 1) == CMZN_REGION_PATH_SEPARATOR_CHAR))
+	length = static_cast<int>(strlen(childName));
+	if (length == 0)
+	{
+		*remainderAddress = nullptr;
+	}
+	else
+	{
+		if (ALLOCATE(*remainderAddress, char, length + 1))
 		{
-			length--;
-		}
-		if (ALLOCATE(*region_path_address, char, length + 1))
-		{
-			strncpy(*region_path_address, child_name_start, length);
-			(*region_path_address)[length] = '\0';
+			strncpy(*remainderAddress, childName, length);
+			(*remainderAddress)[length] = '\0';
 		}
 		else
 		{
 			return_code = 0;
 		}
-
-		length = static_cast<int>(strlen(child_name));
-		if (length == 0)
-		{
-			*remainder_address = NULL;
-		}
-		else
-		{
-			/* remove trailing '/' */
-			if (child_name[length-1] == CMZN_REGION_PATH_SEPARATOR_CHAR)
-			{
-				length--;
-			}
-			if (ALLOCATE(*remainder_address, char, length + 1))
-			{
-				strncpy(*remainder_address, child_name, length);
-				(*remainder_address)[length] = '\0';
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-
-		*region_address = region;
-		DEALLOCATE(path_copy);
+	}
+	if (return_code)
+	{
+		*regionAddress = region;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_get_partial_region_path.  Invalid argument(s)");
-		return_code = 0;
+		if (*regionAddress)
+			DEALLOCATE(*regionAddress);
+		if (*remainderAddress)
+			DEALLOCATE(remainderAddress);
+		*regionAddress = nullptr;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_region_get_partial_region_path */
+	DEALLOCATE(pathCopy);
+	return return_code;
+}
 
 int cmzn_region_list(struct cmzn_region *region,
 	int indent, int indent_increment)

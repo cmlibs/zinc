@@ -5,6 +5,8 @@ Add support for relative paths in region find/create subregion; add get path, re
 Add Apply and Argument fields which apply real-valued field expressions with argument binding, including from another region.
 Add Field dependsOnField API.
 Deprecate Alias field. Now creates an equivalent Apply field.
+Behaviour change: Automatically-named fields are automatically renamed to make way for different fields needing their names.
+Behaviour change: Model read fails if any field is incompatible with existing field of same name. Previously renamed finite element fields.
 
 v3.4.0
 Fix crash in manager cleanup when change caching left active.
