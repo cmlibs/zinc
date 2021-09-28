@@ -14,7 +14,6 @@
 #define CMZN_FIELDALIAS_H__
 
 #include "types/fieldid.h"
-#include "types/fieldaliasid.h"
 #include "types/fieldmoduleid.h"
 
 #include "opencmiss/zinc/zincsharedobject.h"

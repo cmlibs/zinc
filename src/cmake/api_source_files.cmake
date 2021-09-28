@@ -80,7 +80,6 @@ SET( API_TYPES_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementbasisid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementfieldtemplateid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementtemplateid.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldaliasid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldapplyid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldcacheid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldcompositeid.h
