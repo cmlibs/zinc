@@ -88,18 +88,18 @@ public:
 		return id;
 	}
 
-	int getNumberOfMessages()
+	int getNumberOfMessages() const
 	{
 		return cmzn_logger_get_number_of_messages(id);
 	}
 
-	MessageType getMessageTypeAtIndex(int index)
+	MessageType getMessageTypeAtIndex(int index) const
 	{
 		return static_cast<MessageType>(cmzn_logger_get_message_type_at_index(
 			id, index));
 	}
 
-	char *getMessageTextAtIndex(int index)
+	char *getMessageTextAtIndex(int index) const
 	{
 		return cmzn_logger_get_message_text_at_index(id, index);
 	}
@@ -288,7 +288,7 @@ inline Loggernotifier Logger::createLoggernotifier()
 	return Loggernotifier(cmzn_logger_create_loggernotifier(id));
 }
 
-inline Logger Context::getLogger()
+inline Logger Context::getLogger() const
 {
 	return Logger(cmzn_context_get_logger(id));
 }

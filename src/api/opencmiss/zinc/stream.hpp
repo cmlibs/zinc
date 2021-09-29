@@ -84,7 +84,7 @@ public:
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_file_id))
 	{ }
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_streamresource_file_get_name(
 			reinterpret_cast<cmzn_streamresource_file_id>(id));
@@ -104,7 +104,7 @@ public:
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_memory_id))
 	{ }
 
-	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out) const
 	{
 		return cmzn_streamresource_memory_get_buffer(
 			reinterpret_cast<cmzn_streamresource_memory_id>(id), buffer_out,
@@ -210,7 +210,7 @@ public:
 			cmzn_streaminformation_create_streamresource_memory_buffer_copy(id, buffer, buffer_length)));
 	}
 
-	DataCompressionType getResourceDataCompressionType(const Streamresource& resource)
+	DataCompressionType getResourceDataCompressionType(const Streamresource& resource) const
 	{
 		return static_cast<DataCompressionType>(
 			cmzn_streaminformation_get_resource_data_compression_type(
@@ -224,7 +224,7 @@ public:
 			static_cast<cmzn_streaminformation_data_compression_type>(dataCompressionType));
 	}
 
-	DataCompressionType getDataCompressionType()
+	DataCompressionType getDataCompressionType() const
 	{
 		return static_cast<DataCompressionType>(
 			cmzn_streaminformation_get_data_compression_type(

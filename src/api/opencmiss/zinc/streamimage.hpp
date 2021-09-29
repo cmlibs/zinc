@@ -117,7 +117,7 @@ inline int FieldImage::read(const StreaminformationImage& streaminformationImage
   return cmzn_field_image_read(getDerivedId(), streaminformationImage.getDerivedId());
 }
 
-inline int FieldImage::write(const StreaminformationImage& streaminformationImage)
+inline int FieldImage::write(const StreaminformationImage& streaminformationImage) const
 {
   return cmzn_field_image_write(getDerivedId(), streaminformationImage.getDerivedId());
 }

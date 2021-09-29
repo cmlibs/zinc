@@ -71,7 +71,7 @@ public:
 
 	inline NodesetGroup castGroup();
 
-	bool containsNode(const Node& node)
+	bool containsNode(const Node& node) const
 	{
 		return cmzn_nodeset_contains_node(id, node.getId());
 	}
@@ -106,24 +106,24 @@ public:
 		return cmzn_nodeset_destroy_nodes_conditional(id, conditionalField.getId());
 	}
 
-	Node findNodeByIdentifier(int identifier)
+	Node findNodeByIdentifier(int identifier) const
 	{
 		return Node(cmzn_nodeset_find_node_by_identifier(id, identifier));
 	}
 
 	inline Fieldmodule getFieldmodule() const;
 
-	Nodeset getMasterNodeset()
+	Nodeset getMasterNodeset() const
 	{
 		return Nodeset(cmzn_nodeset_get_master_nodeset(id));
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_nodeset_get_name(id);
 	}
 
-	int getSize()
+	int getSize() const
 	{
 		return cmzn_nodeset_get_size(id);
 	}
@@ -234,17 +234,17 @@ public:
 		return (0 != id);
 	}
 
-	Node::ChangeFlags getNodeChangeFlags(const Node& node)
+	Node::ChangeFlags getNodeChangeFlags(const Node& node) const
 	{
 		return cmzn_nodesetchanges_get_node_change_flags(id, node.getId());
 	}
 
-	int getNumberOfChanges()
+	int getNumberOfChanges() const
 	{
 		return cmzn_nodesetchanges_get_number_of_changes(id);
 	}
 
-	Node::ChangeFlags getSummaryNodeChangeFlags()
+	Node::ChangeFlags getSummaryNodeChangeFlags() const
 	{
 		return cmzn_nodesetchanges_get_summary_node_change_flags(id);
 	}

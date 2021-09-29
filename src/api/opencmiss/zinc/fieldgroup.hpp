@@ -46,12 +46,12 @@ public:
 		SUBELEMENT_HANDLING_MODE_FULL = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL
 	};
 
-	bool isEmpty()
+	bool isEmpty() const
 	{
 		return cmzn_field_group_is_empty(getDerivedId());
 	}
 
-	bool isEmptyLocal()
+	bool isEmptyLocal() const
 	{
 		return cmzn_field_group_is_empty_local(getDerivedId());
 	}
@@ -76,7 +76,7 @@ public:
 		return cmzn_field_group_add_local_region(getDerivedId());
 	}
 
-	bool containsLocalRegion()
+	bool containsLocalRegion() const
 	{
 		return cmzn_field_group_contains_local_region(getDerivedId());
 	}
@@ -97,12 +97,12 @@ public:
 		return cmzn_field_group_remove_region(getDerivedId(), region.getId());
 	}
 
-	bool containsRegion(const Region& region)
+	bool containsRegion(const Region& region) const
 	{
 		return cmzn_field_group_contains_region(getDerivedId(), region.getId());
 	}
 
-	SubelementHandlingMode getSubelementHandlingMode()
+	SubelementHandlingMode getSubelementHandlingMode() const
 	{
 		return static_cast<SubelementHandlingMode>(
 			cmzn_field_group_get_subelement_handling_mode(getDerivedId()));
@@ -120,7 +120,7 @@ public:
 			getDerivedId(), region.getId()));
 	}
 
-	FieldGroup getSubregionFieldGroup(const Region& region)
+	FieldGroup getSubregionFieldGroup(const Region& region) const
 	{
 		return FieldGroup(cmzn_field_group_get_subregion_field_group(
 			getDerivedId(), region.getId()));
@@ -132,7 +132,7 @@ public:
 			getDerivedId(), nodeset.getId()));
 	}
 
-	FieldNodeGroup getFieldNodeGroup(const Nodeset& nodeset)
+	FieldNodeGroup getFieldNodeGroup(const Nodeset& nodeset) const
 	{
 		return FieldNodeGroup(cmzn_field_group_get_field_node_group(
 			getDerivedId(), nodeset.getId()));
@@ -144,19 +144,19 @@ public:
 			getDerivedId(), mesh.getId()));
 	}
 
-	FieldElementGroup getFieldElementGroup(const Mesh& mesh)
+	FieldElementGroup getFieldElementGroup(const Mesh& mesh) const
 	{
 		return FieldElementGroup(cmzn_field_group_get_field_element_group(
 			getDerivedId(), mesh.getId()));
 	}
 
-	Field getSubobjectGroupFieldForDomainField(const Field& domainField)
+	Field getSubobjectGroupFieldForDomainField(const Field& domainField) const
 	{
 		return Field(cmzn_field_group_get_subobject_group_field_for_domain_field(
 			getDerivedId(), domainField.getId()));
 	}
 
-	FieldGroup getFirstNonEmptySubregionFieldGroup()
+	FieldGroup getFirstNonEmptySubregionFieldGroup() const
 	{
 		return FieldGroup(cmzn_field_group_get_first_non_empty_subregion_field_group(
 			getDerivedId()));

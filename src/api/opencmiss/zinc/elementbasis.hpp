@@ -81,7 +81,7 @@ public:
 		return id;
 	}
 
-	int getDimension()
+	int getDimension() const
 	{
 		return cmzn_elementbasis_get_dimension(id);
 	}
@@ -96,7 +96,7 @@ public:
 		return cmzn_elementbasis_function_type_enum_to_string(static_cast<cmzn_elementbasis_function_type>(type));
 	}
 
-	FunctionType getFunctionType(int chartComponent)
+	FunctionType getFunctionType(int chartComponent) const
 	{
 		return static_cast<FunctionType>(cmzn_elementbasis_get_function_type(id, chartComponent));
 	}
@@ -107,17 +107,17 @@ public:
 			static_cast<cmzn_elementbasis_function_type>(functionType));
 	}
 
-	int getNumberOfNodes()
+	int getNumberOfNodes() const
 	{
 		return cmzn_elementbasis_get_number_of_nodes(id);
 	}
 
-	int getNumberOfFunctions()
+	int getNumberOfFunctions() const
 	{
 		return cmzn_elementbasis_get_number_of_functions(id);
 	}
 
-	int getNumberOfFunctionsPerNode(int nodeNumber)
+	int getNumberOfFunctionsPerNode(int nodeNumber) const
 	{
 		return cmzn_elementbasis_get_number_of_functions_per_node(id, nodeNumber);
 	}

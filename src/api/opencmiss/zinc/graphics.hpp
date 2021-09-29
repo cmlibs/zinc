@@ -117,7 +117,7 @@ public:
 		return id;
 	}
 
-	Field getCoordinateField()
+	Field getCoordinateField() const
 	{
 		return Field(cmzn_graphics_get_coordinate_field(id));
 	}
@@ -127,7 +127,7 @@ public:
 		return cmzn_graphics_set_coordinate_field(id, coordinateField.getId());
 	}
 
-	Field getDataField()
+	Field getDataField() const
 	{
 		return Field(cmzn_graphics_get_data_field(id));
 	}
@@ -137,7 +137,7 @@ public:
 		return cmzn_graphics_set_data_field(id, dataField.getId());
 	}
 
-	double getRenderLineWidth()
+	double getRenderLineWidth() const
 	{
 		return cmzn_graphics_get_render_line_width(id);
 	}
@@ -147,7 +147,7 @@ public:
 		return cmzn_graphics_set_render_line_width(id, width);
 	}
 
-	double getRenderPointSize()
+	double getRenderPointSize() const
 	{
 		return cmzn_graphics_get_render_point_size(id);
 	}
@@ -167,7 +167,7 @@ public:
 		return cmzn_graphics_render_polygon_mode_enum_to_string(static_cast<cmzn_graphics_render_polygon_mode>(mode));
 	}
 
-	RenderPolygonMode getRenderPolygonMode()
+	RenderPolygonMode getRenderPolygonMode() const
 	{
 		return static_cast<RenderPolygonMode>(cmzn_graphics_get_render_polygon_mode(id));
 	}
@@ -190,7 +190,7 @@ public:
 		return cmzn_graphics_select_mode_enum_to_string(static_cast<cmzn_graphics_select_mode>(mode));
 	}
 
-	SelectMode getSelectMode()
+	SelectMode getSelectMode() const
 	{
 		return static_cast<SelectMode>(cmzn_graphics_get_select_mode(id));
 	}
@@ -200,7 +200,7 @@ public:
 		return cmzn_graphics_set_select_mode(id, static_cast<cmzn_graphics_select_mode>(selectMode));
 	}
 
-	Field getSubgroupField()
+	Field getSubgroupField() const
 	{
 		return Field(cmzn_graphics_get_subgroup_field(id));
 	}
@@ -210,7 +210,7 @@ public:
 		return cmzn_graphics_set_subgroup_field(id, subgroupField.getId());
 	}
 
-	Field getTextureCoordinateField()
+	Field getTextureCoordinateField() const
 	{
 		return Field(cmzn_graphics_get_texture_coordinate_field(id));
 	}
@@ -220,7 +220,7 @@ public:
 		return cmzn_graphics_set_texture_coordinate_field(id, textureCoordinateField.getId());
 	}
 
-	Material getMaterial()
+	Material getMaterial() const
 	{
 		return Material(cmzn_graphics_get_material(id));
 	}
@@ -230,13 +230,13 @@ public:
 		return cmzn_graphics_set_material(id, material.getId());
 	}
 
-	Graphicslineattributes getGraphicslineattributes();
+	Graphicslineattributes getGraphicslineattributes() const;
 
-	Graphicspointattributes getGraphicspointattributes();
+	Graphicspointattributes getGraphicspointattributes() const;
 
-	Graphicssamplingattributes getGraphicssamplingattributes();
+	Graphicssamplingattributes getGraphicssamplingattributes() const;
 
-	Material getSelectedMaterial()
+	Material getSelectedMaterial() const
 	{
 		return Material(cmzn_graphics_get_selected_material(id));
 	}
@@ -246,7 +246,7 @@ public:
 		return cmzn_graphics_set_selected_material(id, material.getId());
 	}
 
-	Spectrum getSpectrum()
+	Spectrum getSpectrum() const
 	{
 		return Spectrum(cmzn_graphics_get_spectrum(id));
 	}
@@ -266,12 +266,12 @@ public:
 		return cmzn_graphics_type_enum_to_string(static_cast<cmzn_graphics_type>(type));
 	}
 
-	Type getType()
+	Type getType() const
 	{
 		return static_cast<Type>(cmzn_graphics_get_type(id));
 	}
 
-	Tessellation getTessellation()
+	Tessellation getTessellation() const
 	{
 		return Tessellation(cmzn_graphics_get_tessellation(id));
 	}
@@ -281,7 +281,7 @@ public:
 		return cmzn_graphics_set_tessellation(id, tessellation.getId());
 	}
 
-	Field getTessellationField()
+	Field getTessellationField() const
 	{
 		return Field(cmzn_graphics_get_tessellation_field(id));
 	}
@@ -291,7 +291,7 @@ public:
 		return cmzn_graphics_set_tessellation_field(id, tessellationField.getId());
 	}
 
-	bool getVisibilityFlag()
+	bool getVisibilityFlag() const
 	{
 		return cmzn_graphics_get_visibility_flag(id);
 	}
@@ -301,7 +301,7 @@ public:
 		return cmzn_graphics_set_visibility_flag(id, visibilityFlag);
 	}
 
-	Scenecoordinatesystem getScenecoordinatesystem()
+	Scenecoordinatesystem getScenecoordinatesystem() const
 	{
 		return static_cast<Scenecoordinatesystem>(cmzn_graphics_get_scenecoordinatesystem(id));
 	}
@@ -312,7 +312,7 @@ public:
 			static_cast<cmzn_scenecoordinatesystem>(coordinateSystem));
 	}
 
-	Field::DomainType getFieldDomainType()
+	Field::DomainType getFieldDomainType() const
 	{
 		return static_cast<Field::DomainType>(cmzn_graphics_get_field_domain_type(id));
 	}
@@ -322,7 +322,7 @@ public:
 		return cmzn_graphics_set_field_domain_type(id, static_cast<cmzn_field_domain_type>(domainType));
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_graphics_get_name(id);
 	}
@@ -342,7 +342,7 @@ public:
 		return cmzn_graphics_boundary_mode_enum_to_string(static_cast<cmzn_graphics_boundary_mode>(mode));
 	}
 
-	BoundaryMode getBoundaryMode()
+	BoundaryMode getBoundaryMode() const
 	{
 		return static_cast<BoundaryMode>(cmzn_graphics_get_boundary_mode(this->id));
 	}
@@ -357,12 +357,12 @@ public:
 		return cmzn_graphics_set_element_face_type(id, static_cast<cmzn_element_face_type>(faceType));
 	}
 
-	Element::FaceType getElementFaceType()
+	Element::FaceType getElementFaceType() const
 	{
 		return static_cast<Element::FaceType>(cmzn_graphics_get_element_face_type(id));
 	}
 
-	bool isExterior()
+	bool isExterior() const
 	{
 		return cmzn_graphics_is_exterior(id);
 	}
@@ -405,7 +405,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(contours_id))
 	{}
 
-	Field getIsoscalarField()
+	Field getIsoscalarField() const
 	{
 		return Field(cmzn_graphics_contours_get_isoscalar_field(this->getDerivedId()));
 	}
@@ -415,7 +415,7 @@ public:
 		return cmzn_graphics_contours_set_isoscalar_field(this->getDerivedId(), field.getId());
 	}
 
-	int getListIsovalues(int valuesCount, double *valuesOut)
+	int getListIsovalues(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphics_contours_get_list_isovalues(this->getDerivedId(),
 			valuesCount, valuesOut);
@@ -427,17 +427,17 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	double getRangeFirstIsovalue()
+	double getRangeFirstIsovalue() const
 	{
 		return cmzn_graphics_contours_get_range_first_isovalue(this->getDerivedId());
 	}
 
-	double getRangeLastIsovalue()
+	double getRangeLastIsovalue() const
 	{
 		return cmzn_graphics_contours_get_range_last_isovalue(this->getDerivedId());
 	}
 
-	int getRangeNumberOfIsovalues()
+	int getRangeNumberOfIsovalues() const
 	{
 		return cmzn_graphics_contours_get_range_number_of_isovalues(this->getDerivedId());
 	}
@@ -524,7 +524,7 @@ public:
 		return cmzn_graphics_streamlines_colour_data_type_enum_to_string(static_cast<cmzn_graphics_streamlines_colour_data_type>(type));
 	}
 
-	ColourDataType getColourDataType()
+	ColourDataType getColourDataType() const
 	{
 		return static_cast<ColourDataType>(cmzn_graphics_streamlines_get_colour_data_type(this->getDerivedId()));
 	}
@@ -535,7 +535,7 @@ public:
 			static_cast<cmzn_graphics_streamlines_colour_data_type>(dataType));
 	}
 
-	Field getStreamVectorField()
+	Field getStreamVectorField() const
 	{
 		return Field(cmzn_graphics_streamlines_get_stream_vector_field(this->getDerivedId()));
 	}
@@ -555,7 +555,7 @@ public:
 		return cmzn_graphics_streamlines_track_direction_enum_to_string(static_cast<cmzn_graphics_streamlines_track_direction>(direction));
 	}
 
-	TrackDirection getTrackDirection()
+	TrackDirection getTrackDirection() const
 	{
 		return static_cast<TrackDirection>(
 			cmzn_graphics_streamlines_get_track_direction(this->getDerivedId()));
@@ -567,7 +567,7 @@ public:
 			static_cast<cmzn_graphics_streamlines_track_direction>(trackDirection));
 	}
 
-	double getTrackLength()
+	double getTrackLength() const
 	{
 		return cmzn_graphics_streamlines_get_track_length(this->getDerivedId());
 	}
@@ -664,7 +664,7 @@ public:
 		SHAPE_TYPE_SQUARE_EXTRUSION = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION
 	};
 
-	int getBaseSize(int valuesCount, double *valuesOut)
+	int getBaseSize(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicslineattributes_get_base_size(id, valuesCount, valuesOut);
 	}
@@ -674,7 +674,7 @@ public:
 		return cmzn_graphicslineattributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
-	Field getOrientationScaleField()
+	Field getOrientationScaleField() const
 	{
 		return Field(cmzn_graphicslineattributes_get_orientation_scale_field(id));
 	}
@@ -684,7 +684,7 @@ public:
 		return cmzn_graphicslineattributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
-	int getScaleFactors(int valuesCount, double *valuesOut)
+	int getScaleFactors(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicslineattributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
@@ -704,7 +704,7 @@ public:
 		return cmzn_graphicslineattributes_shape_type_enum_to_string(static_cast<cmzn_graphicslineattributes_shape_type>(type));
 	}
 
-	ShapeType getShapeType()
+	ShapeType getShapeType() const
 	{
 		return static_cast<ShapeType>(cmzn_graphicslineattributes_get_shape_type(id));
 	}
@@ -716,7 +716,7 @@ public:
 
 };
 
-inline Graphicslineattributes Graphics::getGraphicslineattributes()
+inline Graphicslineattributes Graphics::getGraphicslineattributes() const
 {
 	return Graphicslineattributes(cmzn_graphics_get_graphicslineattributes(id));
 }
@@ -758,7 +758,7 @@ public:
 		return (0 != id);
 	}
 
-	int getBaseSize(int valuesCount, double *valuesOut)
+	int getBaseSize(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicspointattributes_get_base_size(id, valuesCount, valuesOut);
 	}
@@ -768,7 +768,7 @@ public:
 		return cmzn_graphicspointattributes_set_base_size(id, valuesCount, valuesIn);
 	}
 
-	Font getFont()
+	Font getFont() const
 	{
 		return Font(cmzn_graphicspointattributes_get_font(id));
 	}
@@ -778,7 +778,7 @@ public:
 		return cmzn_graphicspointattributes_set_font(id, font.getId());
 	}
 
-	Glyph getGlyph()
+	Glyph getGlyph() const
 	{
 		return Glyph(cmzn_graphicspointattributes_get_glyph(id));
 	}
@@ -788,7 +788,7 @@ public:
 		return cmzn_graphicspointattributes_set_glyph(id, glyph.getId());
 	}
 
-	int getGlyphOffset(int valuesCount, double *valuesOut)
+	int getGlyphOffset(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicspointattributes_get_glyph_offset(id, valuesCount, valuesOut);
 	}
@@ -798,7 +798,7 @@ public:
 		return cmzn_graphicspointattributes_set_glyph_offset(id, valuesCount, valuesIn);
 	}
 
-	Glyph::RepeatMode getGlyphRepeatMode()
+	Glyph::RepeatMode getGlyphRepeatMode() const
 	{
 		return static_cast<Glyph::RepeatMode>(cmzn_graphicspointattributes_get_glyph_repeat_mode(id));
 	}
@@ -809,7 +809,7 @@ public:
 			static_cast<cmzn_glyph_repeat_mode>(glyphRepeatMode));
 	}
 
-	Glyph::ShapeType getGlyphShapeType()
+	Glyph::ShapeType getGlyphShapeType() const
 	{
 		return static_cast<Glyph::ShapeType>(cmzn_graphicspointattributes_get_glyph_shape_type(id));
 	}
@@ -820,7 +820,7 @@ public:
 			static_cast<cmzn_glyph_shape_type>(shapeType));
 	}
 
-	Field getLabelField()
+	Field getLabelField() const
 	{
 		return Field(cmzn_graphicspointattributes_get_label_field(id));
 	}
@@ -830,7 +830,7 @@ public:
 		return cmzn_graphicspointattributes_set_label_field(id, labelField.getId());
 	}
 
-	int getLabelOffset(int valuesCount, double *valuesOut)
+	int getLabelOffset(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicspointattributes_get_label_offset(id, valuesCount, valuesOut);
 	}
@@ -840,7 +840,7 @@ public:
 		return cmzn_graphicspointattributes_set_label_offset(id, valuesCount, valuesIn);
 	}
 
-	char *getLabelText(int labelNumber)
+	char *getLabelText(int labelNumber) const
 	{
 		return cmzn_graphicspointattributes_get_label_text(id, labelNumber);
 	}
@@ -850,7 +850,7 @@ public:
 		return cmzn_graphicspointattributes_set_label_text(id, labelNumber, labelText);
 	}
 
-	Field getOrientationScaleField()
+	Field getOrientationScaleField() const
 	{
 		return Field(cmzn_graphicspointattributes_get_orientation_scale_field(id));
 	}
@@ -860,7 +860,7 @@ public:
 		return cmzn_graphicspointattributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
 
-	int getScaleFactors(int valuesCount, double *valuesOut)
+	int getScaleFactors(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicspointattributes_get_scale_factors(id, valuesCount, valuesOut);
 	}
@@ -870,7 +870,7 @@ public:
 		return cmzn_graphicspointattributes_set_scale_factors(id, valuesCount, valuesIn);
 	}
 
-	Field getSignedScaleField()
+	Field getSignedScaleField() const
 	{
 		return Field(cmzn_graphicspointattributes_get_signed_scale_field(id));
 	}
@@ -882,7 +882,7 @@ public:
 
 };
 
-inline Graphicspointattributes Graphics::getGraphicspointattributes()
+inline Graphicspointattributes Graphics::getGraphicspointattributes() const
 {
 	return Graphicspointattributes(cmzn_graphics_get_graphicspointattributes(id));
 }
@@ -924,7 +924,7 @@ public:
 		return (0 != id);
 	}
 
-	Field getDensityField()
+	Field getDensityField() const
 	{
 		return Field(cmzn_graphicssamplingattributes_get_density_field(id));
 	}
@@ -934,7 +934,7 @@ public:
 		return cmzn_graphicssamplingattributes_set_density_field(id, densityField.getId());
 	}
 
-	int getLocation(int valuesCount, double *valuesOut)
+	int getLocation(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_graphicssamplingattributes_get_location(id, valuesCount, valuesOut);
 	}
@@ -944,7 +944,7 @@ public:
 		return cmzn_graphicssamplingattributes_set_location(id, valuesCount, valuesIn);
 	}
 
-	Element::PointSamplingMode getElementPointSamplingMode()
+	Element::PointSamplingMode getElementPointSamplingMode() const
 	{
 		return static_cast<Element::PointSamplingMode>(cmzn_graphicssamplingattributes_get_element_point_sampling_mode(id));
 	}
@@ -962,7 +962,7 @@ inline Glyph Glyphmodule::createStaticGlyphFromGraphics(const Graphics& graphics
 	return Glyph(cmzn_glyphmodule_create_static_glyph_from_graphics(id, graphics.getId()));
 }
 
-inline Graphicssamplingattributes Graphics::getGraphicssamplingattributes()
+inline Graphicssamplingattributes Graphics::getGraphicssamplingattributes() const
 {
 	return Graphicssamplingattributes(cmzn_graphics_get_graphicssamplingattributes(id));
 }

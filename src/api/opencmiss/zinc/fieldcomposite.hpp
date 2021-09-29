@@ -53,7 +53,7 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_component_id))
 	{	}
 
-	int getComponentIndex()
+	int getComponentIndex() const
 	{
 		return cmzn_field_component_get_component_index(getDerivedId());
 	}
@@ -63,7 +63,7 @@ public:
 		return cmzn_field_component_set_component_index(getDerivedId(), componentIndex);
 	}
 
-	int getSourceComponentIndex(int index)
+	int getSourceComponentIndex(int index) const
 	{
 		return cmzn_field_component_get_source_component_index(getDerivedId(), index);
 	}

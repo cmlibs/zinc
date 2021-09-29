@@ -78,7 +78,7 @@ public:
 		return cmzn_nodetemplate_define_field_from_node(id, field.getId(), node.getId());
 	}
 
-	Timesequence getTimesequence(const Field& field)
+	Timesequence getTimesequence(const Field& field) const
 	{
 		return Timesequence(cmzn_nodetemplate_get_timesequence(id, field.getId()));
 	}
@@ -89,7 +89,7 @@ public:
 	}
 
 	int getValueNumberOfVersions(const Field& field, int componentNumber,
-		Node::ValueLabel valueLabel)
+		Node::ValueLabel valueLabel) const
 	{
 		return cmzn_nodetemplate_get_value_number_of_versions(id, field.getId(),
 			componentNumber, static_cast<cmzn_node_value_label>(valueLabel));

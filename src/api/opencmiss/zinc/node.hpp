@@ -98,7 +98,7 @@ public:
 		return id;
 	}
 
-	int getIdentifier()
+	int getIdentifier() const
 	{
 		return cmzn_node_get_identifier(id);
 	}

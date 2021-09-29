@@ -99,7 +99,7 @@ public:
 		return id;
 	}
 
-	double getRangeMinimum()
+	double getRangeMinimum() const
 	{
 		return cmzn_spectrumcomponent_get_range_minimum(id);
 	}
@@ -109,7 +109,7 @@ public:
 		return cmzn_spectrumcomponent_set_range_minimum(id, value);
 	}
 
-	double getRangeMaximum()
+	double getRangeMaximum() const
 	{
 		return cmzn_spectrumcomponent_get_range_maximum(id);
 	}
@@ -119,7 +119,7 @@ public:
 		return cmzn_spectrumcomponent_set_range_maximum(id, value);
 	}
 
-	double getColourMinimum()
+	double getColourMinimum() const
 	{
 		return cmzn_spectrumcomponent_get_colour_minimum(id);
 	}
@@ -129,7 +129,7 @@ public:
 		return cmzn_spectrumcomponent_set_colour_minimum(id,value);
 	}
 
-	double getColourMaximum()
+	double getColourMaximum() const
 	{
 		return cmzn_spectrumcomponent_get_colour_maximum(id);
 	}
@@ -139,7 +139,7 @@ public:
 		return cmzn_spectrumcomponent_set_colour_maximum(id, value);
 	}
 
-	double getStepValue()
+	double getStepValue() const
 	{
 		return cmzn_spectrumcomponent_get_step_value(id);
 	}
@@ -149,7 +149,7 @@ public:
 		return cmzn_spectrumcomponent_set_step_value(id, value);
 	}
 
-	double getExaggeration()
+	double getExaggeration() const
 	{
 		return cmzn_spectrumcomponent_get_exaggeration(id);
 	}
@@ -159,7 +159,7 @@ public:
 		return cmzn_spectrumcomponent_set_exaggeration(id, value);
 	}
 
-	double getBandedRatio()
+	double getBandedRatio() const
 	{
 		return cmzn_spectrumcomponent_get_banded_ratio(id);
 	}
@@ -169,7 +169,7 @@ public:
 		return cmzn_spectrumcomponent_set_banded_ratio(id, value);
 	}
 
-	bool isActive()
+	bool isActive() const
 	{
 		return cmzn_spectrumcomponent_is_active(id);
 	}
@@ -179,7 +179,7 @@ public:
 		return cmzn_spectrumcomponent_set_active(id, active);
 	}
 
-	bool isColourReverse()
+	bool isColourReverse() const
 	{
 		return cmzn_spectrumcomponent_is_colour_reverse(id);
 	}
@@ -189,7 +189,7 @@ public:
 		return cmzn_spectrumcomponent_set_colour_reverse(id, reverse);
 	}
 
-	bool isExtendAbove()
+	bool isExtendAbove() const
 	{
 		return cmzn_spectrumcomponent_is_extend_above(id);
 	}
@@ -199,7 +199,7 @@ public:
 		return cmzn_spectrumcomponent_set_extend_above(id, extend_above);
 	}
 
-	bool isExtendBelow()
+	bool isExtendBelow() const
 	{
 		return cmzn_spectrumcomponent_is_extend_below(id);
 	}
@@ -209,7 +209,7 @@ public:
 		return cmzn_spectrumcomponent_set_extend_below(id, extend_below);
 	}
 
-	int getFieldComponent()
+	int getFieldComponent() const
 	{
 		return cmzn_spectrumcomponent_get_field_component(id);
 	}
@@ -220,7 +220,7 @@ public:
 			componentNumber);
 	}
 
-	bool isFixMaximum()
+	bool isFixMaximum() const
 	{
 		return cmzn_spectrumcomponent_is_fix_maximum(id);
 	}
@@ -230,7 +230,7 @@ public:
 		return cmzn_spectrumcomponent_set_fix_maximum(id, fixMaximum);
 	}
 
-	bool isFixMinimum()
+	bool isFixMinimum() const
 	{
 		return cmzn_spectrumcomponent_is_fix_minimum(id);
 	}
@@ -240,7 +240,7 @@ public:
 		return cmzn_spectrumcomponent_set_fix_minimum(id, fixMinimum);
 	}
 
-	int getNumberOfBands()
+	int getNumberOfBands() const
 	{
 		return cmzn_spectrumcomponent_get_number_of_bands(id);
 	}
@@ -250,7 +250,7 @@ public:
 		return cmzn_spectrumcomponent_set_number_of_bands(id, numberOfBands);
 	}
 
-	ScaleType getScaleType()
+	ScaleType getScaleType() const
 	{
 		return static_cast<ScaleType>(cmzn_spectrumcomponent_get_scale_type(
 			id));
@@ -262,7 +262,7 @@ public:
 			static_cast<cmzn_spectrumcomponent_scale_type>(scaleType));
 	}
 
-	ColourMappingType getColourMappingType()
+	ColourMappingType getColourMappingType() const
 	{
 		return static_cast<ColourMappingType>(cmzn_spectrumcomponent_get_colour_mapping_type(
 			id));
@@ -345,7 +345,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_spectrum_is_managed(id);
 	}
@@ -365,7 +365,7 @@ public:
 		return cmzn_spectrum_end_change(id);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_spectrum_get_name(id);
 	}
@@ -375,7 +375,7 @@ public:
 		return cmzn_spectrum_set_name(id, name);
 	}
 
-	int getNumberOfSpectrumcomponents()
+	int getNumberOfSpectrumcomponents() const
 	{
 		return cmzn_spectrum_get_number_of_spectrumcomponents(id);
 	}
@@ -390,13 +390,13 @@ public:
 		return Spectrumcomponent(cmzn_spectrum_get_first_spectrumcomponent(id));
 	}
 
-	Spectrumcomponent getNextSpectrumcomponent(const Spectrumcomponent& refComponent)
+	Spectrumcomponent getNextSpectrumcomponent(const Spectrumcomponent& refComponent) const
 	{
 		return Spectrumcomponent(
 			cmzn_spectrum_get_next_spectrumcomponent(id, refComponent.getId()));
 	}
 
-	Spectrumcomponent getPreviousSpectrumcomponent(const Spectrumcomponent& refComponent)
+	Spectrumcomponent getPreviousSpectrumcomponent(const Spectrumcomponent& refComponent) const
 	{
 		return Spectrumcomponent(
 			cmzn_spectrum_get_previous_spectrumcomponent(id, refComponent.getId()));
@@ -419,7 +419,7 @@ public:
 		return cmzn_spectrum_remove_all_spectrumcomponents(id);
 	}
 
-	bool isMaterialOverwrite()
+	bool isMaterialOverwrite() const
 	{
 		return cmzn_spectrum_is_material_overwrite(id);
 	}
@@ -551,7 +551,7 @@ public:
 		return Spectrumiterator(cmzn_spectrummodule_create_spectrumiterator(id));
 	}
 
-	Spectrum findSpectrumByName(const char *name)
+	Spectrum findSpectrumByName(const char *name) const
 	{
 		return Spectrum(cmzn_spectrummodule_find_spectrum_by_name(id, name));
 	}
@@ -566,7 +566,7 @@ public:
 		return cmzn_spectrummodule_end_change(id);
 	}
 
-	Spectrum getDefaultSpectrum()
+	Spectrum getDefaultSpectrum() const
 	{
 		return Spectrum(cmzn_spectrummodule_get_default_spectrum(id));
 	}
@@ -745,7 +745,7 @@ inline Spectrummodulenotifier Spectrummodule::createSpectrummodulenotifier()
 	return Spectrummodulenotifier(cmzn_spectrummodule_create_spectrummodulenotifier(id));
 }
 
-inline Spectrummodule Context::getSpectrummodule()
+inline Spectrummodule Context::getSpectrummodule() const
 {
 	return Spectrummodule(cmzn_context_get_spectrummodule(id));
 }

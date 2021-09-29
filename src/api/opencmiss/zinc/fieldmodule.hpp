@@ -185,7 +185,7 @@ public:
 		return cmzn_fieldmodule_define_all_faces(id);
 	}
 
-	Field findFieldByName(const char *fieldName)
+	Field findFieldByName(const char *fieldName) const
 	{
 		return Field(cmzn_fieldmodule_find_field_by_name(id, fieldName));
 	}
@@ -207,24 +207,24 @@ public:
 			id, dimension, static_cast<cmzn_elementbasis_function_type>(functionType)));
 	}
 
-	Nodeset findNodesetByFieldDomainType(Field::DomainType domainType)
+	Nodeset findNodesetByFieldDomainType(Field::DomainType domainType) const
 	{
 		return Nodeset(cmzn_fieldmodule_find_nodeset_by_field_domain_type(id,
 			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
-	Nodeset findNodesetByName(const char *nodeset_name)
+	Nodeset findNodesetByName(const char *nodeset_name) const
 	{
 		return Nodeset(cmzn_fieldmodule_find_nodeset_by_name(id,
 			nodeset_name));
 	}
 
-	Mesh findMeshByDimension(int dimension)
+	Mesh findMeshByDimension(int dimension) const
 	{
 		return Mesh(cmzn_fieldmodule_find_mesh_by_dimension(id, dimension));
 	}
 
-	Mesh findMeshByName(const char *meshName)
+	Mesh findMeshByName(const char *meshName) const
 	{
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}

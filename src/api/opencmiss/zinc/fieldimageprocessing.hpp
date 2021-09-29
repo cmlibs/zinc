@@ -66,7 +66,7 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_binary_threshold_id))
 	{	}
 
-	double getLowerThreshold()
+	double getLowerThreshold() const
 	{
 		return cmzn_field_imagefilter_binary_threshold_get_lower_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id));
@@ -79,7 +79,7 @@ public:
 			lowerThreshold);
 	}
 
-	double getUpperThreshold()
+	double getUpperThreshold() const
 	{
 		return cmzn_field_imagefilter_binary_threshold_get_upper_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id));
@@ -163,7 +163,7 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_discrete_gaussian_id))
 	{	}
 
-	double getVariance()
+	double getVariance() const
 	{
 		return cmzn_field_imagefilter_discrete_gaussian_get_variance(
 			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id));
@@ -176,7 +176,7 @@ public:
 			variance);
 	}
 
-	int getMaxKernelWidth()
+	int getMaxKernelWidth() const
 	{
 		return cmzn_field_imagefilter_discrete_gaussian_get_max_kernel_width(
 			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id));
@@ -203,7 +203,7 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_histogram_id))
 	{	}
 
-	int getComputeMinimumValues(int valuesCount, double *valuesOut)
+	int getComputeMinimumValues(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_field_imagefilter_histogram_get_compute_minimum_values(
 			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
@@ -217,7 +217,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	int getComputeMaximumValues(int valuesCount, double *valuesOut)
+	int getComputeMaximumValues(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_field_imagefilter_histogram_get_compute_maximum_values(
 			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
@@ -231,7 +231,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	int getNumberOfBins(int valuesCount, int *valuesOut)
+	int getNumberOfBins(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_field_imagefilter_histogram_get_number_of_bins(
 			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
@@ -245,7 +245,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	double getMarginalScale()
+	double getMarginalScale() const
 	{
 		return cmzn_field_imagefilter_histogram_get_marginal_scale(
 			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id));
@@ -358,7 +358,7 @@ public:
 		CONDITION_OUTSIDE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE
 	};
 
-	Condition getCondition()
+	Condition getCondition() const
 	{
 		return static_cast<Condition>(cmzn_field_imagefilter_threshold_get_condition(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id)));
@@ -371,7 +371,7 @@ public:
 			static_cast<cmzn_field_imagefilter_threshold_condition>(condition));
 	}
 
-	double getOutsideValue()
+	double getOutsideValue() const
 	{
 		return cmzn_field_imagefilter_threshold_get_outside_value(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
@@ -383,7 +383,7 @@ public:
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), outsideValue);
 	}
 
-	double getLowerThreshold()
+	double getLowerThreshold() const
 	{
 		return cmzn_field_imagefilter_threshold_get_lower_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
@@ -395,7 +395,7 @@ public:
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), lowerValue);
 	}
 
-	double getUpperThreshold()
+	double getUpperThreshold() const
 	{
 		return cmzn_field_imagefilter_threshold_get_upper_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
