@@ -36,12 +36,12 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_apply_id))
 	{ }
 
-	Field getBindArgumentField(int bindIndex)
+	Field getBindArgumentField(int bindIndex) const
 	{
 		return Field(cmzn_field_apply_get_bind_argument_field(this->getDerivedId(), bindIndex));
 	}
 
-	Field getBindArgumentSourceField(const Field& argumentField)
+	Field getBindArgumentSourceField(const Field& argumentField) const
 	{
 		return Field(cmzn_field_apply_get_bind_argument_source_field(this->getDerivedId(), argumentField.getId()));
 	}

@@ -134,7 +134,7 @@ public:
 		return cmzn_region_get_path(id);
 	}
 
-	char *getRelativePath(const Region baseRegion) const
+	char *getRelativePath(const Region& baseRegion) const
 	{
 		return cmzn_region_get_relative_path(id, baseRegion.id);
 	}
@@ -159,7 +159,7 @@ public:
 		return Region(cmzn_region_get_previous_sibling(id));
 	}
 
-	int appendChild(const Region newChild)
+	int appendChild(const Region& newChild)
 	{
 		return cmzn_region_append_child(id, newChild.id);
 	}
