@@ -37,7 +37,6 @@ foreach(DEF ${ZINC_DEFINITIONS} ${PLATFORM_DEFS})
 	add_definitions(-D${DEF})
 endforeach()
 
-get_library_path(PATH_DEF "${Zinc_BINARY_DIR}/core/$<CONFIGURATION>")
 foreach( TEST ${API_TESTS} )
 	set( CURRENT_TEST APITest_${TEST} )
 	add_executable(${CURRENT_TEST} ${${TEST}_SRC} ${TEST_RESOURCE_HEADER})
@@ -48,9 +47,9 @@ foreach( TEST ${API_TESTS} )
 	    ${CMAKE_CURRENT_BINARY_DIR}
 	)
 	add_test(NAME ${CURRENT_TEST} COMMAND ${CURRENT_TEST})
-	set_tests_properties(${CURRENT_TEST} PROPERTIES
-		TIMEOUT 30
-		ENVIRONMENT "${PATH_DEF}"
-	)
+  if(MSVC)
+      set(_TEST_PROPERTIES "PATH=$<TARGET_FILE_DIR:zinc>")
+      set_tests_properties(${CURRENT_TEST} PROPERTIES ENVIRONMENT "${_TEST_PROPERTIES}")
+  endif()
 endforeach()
 
