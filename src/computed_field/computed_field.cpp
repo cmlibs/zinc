@@ -606,11 +606,12 @@ cmzn_field *Computed_field_create_generic(
 					}
 				}
 				field->core = field_core;
+				field_core = nullptr;  // now owned by field, clear so not destroyed below
 				if (return_code)
 				{
 					// only some field types implement the following, e.g. set default
 					// coordinate system of new field to that of a source field:
-					field_core->inherit_source_field_attributes();
+					field->core->inherit_source_field_attributes();
 					if (!region->addField(field))
 					{
 						display_message(ERROR_MESSAGE,
@@ -620,7 +621,7 @@ cmzn_field *Computed_field_create_generic(
 				}
 				if (!return_code)
 				{
-					DEACCESS(cmzn_field)(&field);
+					cmzn_field::deaccess(field);
 				}
 			}
 		}
@@ -630,6 +631,7 @@ cmzn_field *Computed_field_create_generic(
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_generic.  Invalid argument(s)");
 	}
+	delete field_core;
 	return (field);
 }
 
@@ -707,7 +709,7 @@ int cmzn_field::copyDefinition(const cmzn_field& source)
 			"Cannot change number of components or value type while field is in use");
 		return CMZN_ERROR_ARGUMENT;
 	}
-	if (!this->core->not_in_use())
+	if (!(this->core->not_in_use() || this->core->compareExact(source.core)))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::copyDefinition.  "
 			"Cannot replace definition of finite element field while defined on model");

@@ -28,6 +28,7 @@ Global functions
  * internal-only constructor for creating wrapper field for an FE_field
  * Call only from cmzn_region::FeRegionChange
  * @param name  Optional name for new field, or nullptr for automatic name.
+ * If supplied and name is in use by another field, creation fails.
  */
 cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
 	cmzn_fieldmodule *fieldmodule, struct FE_field *fe_field,

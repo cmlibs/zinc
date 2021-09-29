@@ -432,7 +432,7 @@ public:
 			return Computed_field_element_group::create(this->fe_mesh);
 		};
 
-		int compare(Computed_field_core* other_field)
+		virtual int compare(Computed_field_core* other_field)
 		{
 			Computed_field_element_group* otherCore;
 			if (field && (otherCore = dynamic_cast<Computed_field_element_group*>(other_field)))
@@ -618,7 +618,7 @@ public:
 			return Computed_field_node_group::create(this->fe_nodeset);
 		};
 
-		int compare(Computed_field_core* other_field)
+		virtual int compare(Computed_field_core* other_field)
 		{
 			Computed_field_node_group* otherCore;
 			if (field && (otherCore = dynamic_cast<Computed_field_node_group*>(other_field)))

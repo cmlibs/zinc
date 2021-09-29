@@ -422,7 +422,9 @@ private:
 		return type;
 	}
 
-	int compare(Computed_field_core* other_field);
+	virtual int compare(Computed_field_core* other_field);
+
+	virtual int compareExact(Computed_field_core *other_core);
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
@@ -659,6 +661,17 @@ int Computed_field_finite_element::compare(Computed_field_core *other_core)
 {
 	Computed_field_finite_element* other = dynamic_cast<Computed_field_finite_element*>(other_core);
 	if ((other) && this->fe_field->compareBasicDefinition(other->fe_field))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+// @return  1 if internal FE_field is the same object, otherwise 0.
+int Computed_field_finite_element::compareExact(Computed_field_core *other_core)
+{
+	Computed_field_finite_element* other = dynamic_cast<Computed_field_finite_element*>(other_core);
+	if ((other) && (this->fe_field == other->fe_field))
 	{
 		return 1;
 	}

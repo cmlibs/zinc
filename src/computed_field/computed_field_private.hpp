@@ -140,7 +140,15 @@ public:
 		return 1;
 	};
 
+	/** @return  1 if core has equivalent definition */
 	virtual int compare(Computed_field_core* other) = 0;
+
+	/** @return  1 if other core has exactly same definition, e.g. wraps same FE_field
+	 * Few fields need to override this. */
+	virtual int compareExact(Computed_field_core* other)
+	{
+		return this->compare(other);
+	}
 
 	/** default implementation returns true if all source fields are defined at location.
 	 * override if different logic is needed. */
@@ -897,9 +905,11 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
  * @param number_of_source_values  Size of source_values array.
  * @param source_values  Array of source values for the new field.
  * @param field_core  Field type-specific data and implementation. On success,
- * ownership of field_core object passes to the new field.
+ * ownership of field_core object passes to the new field. On failure this is
+ * destroyed.
  * @param name  Optional name for the new field. If not supplied a unique
- * automatic name temp# is created for it.
+ * automatic name temp# is created for it. If supplied and name is in use by
+ * another field, creation fails.
  * @return  Newly created field, or NULL on failure.
  */
 cmzn_field *Computed_field_create_generic(
