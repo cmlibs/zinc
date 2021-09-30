@@ -44,10 +44,6 @@ this structure in set_Computed_field_component.
 	int component_no;
 }; /* struct Computed_field_component */
 
-class Computed_field_composite_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_composite_type_string[] = "composite";
@@ -995,8 +991,13 @@ Returned field is ACCESSed once.
 					sprintf(component_field_name, "%s.%s", field->name, component_name);
 					cmzn_region* region = Computed_field_get_region(field);
 					cmzn_fieldmodule *field_module = cmzn_fieldmodule_create(region);
-					cmzn_fieldmodule_set_field_name(field_module, component_field_name);
+					cmzn_fieldmodule_begin_change(field_module);
 					component_field = cmzn_fieldmodule_create_field_component(field_module, field, component_number + 1);
+					if (component_field)
+					{
+						component_field->setNameUnique(component_field_name, "", 0);
+					}
+					cmzn_fieldmodule_end_change(field_module);
 					cmzn_fieldmodule_destroy(&field_module);
 					DEALLOCATE(component_field_name);
 				}

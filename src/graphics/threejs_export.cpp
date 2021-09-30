@@ -306,7 +306,7 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 		if (texture)
 		{
 			/* non-accessed */
-			char *textureName = Texture_get_image_file_name(texture);
+			const char *textureName = Texture_get_image_file_name(texture);
 			if (!textureName)
 				textureName = "my_texture.png";
 			sprintf(new_string, "\t\"mapDiffuse\" : \"%s\",\n", textureName);
@@ -326,7 +326,7 @@ void Threejs_export::exportMaterial(cmzn_material_id material)
 		if (texture)
 		{
 			/* non-accessed */
-			char *textureName = Texture_get_image_file_name(texture);
+			const char *textureName = Texture_get_image_file_name(texture);
 			if (!textureName)
 				textureName = "normal_texture.png";
 			sprintf(new_string, "\t\"mapNormal\" : \"%s\",\n", textureName);

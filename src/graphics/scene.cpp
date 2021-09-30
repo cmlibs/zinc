@@ -169,10 +169,10 @@ cmzn_scene::cmzn_scene(cmzn_region *regionIn, cmzn_graphics_module *graphicsmodu
 	list_of_graphics(CREATE(LIST(cmzn_graphics))()),
 	cache(0),
 	changed(0),
+	visibility_flag(true),
 	transformationActive(false),
 	transformationMatrixColumnMajor(false),
 	transformationField(0),
-	visibility_flag(true),
 	graphics_module(graphicsmoduleIn),
 	time_notifier(0),
 	transformation_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)))()),
@@ -366,7 +366,7 @@ void cmzn_scene::deregisterCoordinateField(cmzn_field *coordinateField)
 	if (iter == this->coordinateFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterCoordinateField.  Field %s not registered.",
-			cmzn_field_get_name_internal(coordinateField));
+			coordinateField->getName());
 	}
 	else if (1 < iter->second.second)
 	{
@@ -386,7 +386,7 @@ cmzn_field *cmzn_scene::getCoordinateFieldWrapper(cmzn_field *coordinateField)
 	if (iter == this->coordinateFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getCoordinateFieldWrapper.  Field %s not registered.",
-			cmzn_field_get_name_internal(coordinateField));
+			coordinateField->getName());
 		return 0;
 	}
 	return iter->second.first;
@@ -418,7 +418,7 @@ void cmzn_scene::deregisterVectorField(cmzn_field *vectorField, cmzn_field *coor
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::deregisterVectorField.  Vector, coordinate fields %s, %s not registered.",
-			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+			vectorField->getName(), coordinateField->getName());
 	}
 	else if (1 < iter->second.second)
 	{
@@ -439,7 +439,7 @@ cmzn_field *cmzn_scene::getVectorFieldWrapper(cmzn_field *vectorField, cmzn_fiel
 	if (iter == this->vectorFieldWrappers.end())
 	{
 		display_message(ERROR_MESSAGE, "cmzn_scene::getVectorFieldWrapper.  Vector, coordinate fields %s, %s not registered.",
-			cmzn_field_get_name_internal(vectorField), cmzn_field_get_name_internal(coordinateField));
+			vectorField->getName(), coordinateField->getName());
 		return 0;
 	}
 	return iter->second.first;
@@ -453,8 +453,8 @@ void cmzn_scene::refreshFieldWrappers()
 		iter != this->coordinateFieldWrappers.end(); ++iter)
 	{
 		cmzn_field *coordinateField = iter->first;
-		const Coordinate_system_type type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinateField));
-		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		const Coordinate_system_type type = coordinateField->getCoordinateSystem().getType();
+		const Coordinate_system_type wrapperType = (iter->second.first)->getCoordinateSystem().getType();
 		const bool typeIsNonLinear = (0 != Coordinate_system_type_is_non_linear(type));
 		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
 			(typeIsNonLinear && (iter->second.first == coordinateField)) ||
@@ -470,7 +470,7 @@ void cmzn_scene::refreshFieldWrappers()
 		cmzn_field *vectorField = iter->first.first;
 		cmzn_field *coordinateField = iter->first.second;
 		const bool needWrapper = cmzn_field_vector_needs_wrapping(vectorField);
-		const Coordinate_system_type wrapperType = get_coordinate_system_type(Computed_field_get_coordinate_system(iter->second.first));
+		const Coordinate_system_type wrapperType = (iter->second.first)->getCoordinateSystem().getType();
 		if ((wrapperType != RECTANGULAR_CARTESIAN) ||
 			(needWrapper && (iter->second.first == vectorField)) ||
 			((!needWrapper) && (iter->second.first != vectorField)))
@@ -1361,7 +1361,7 @@ int cmzn_scene_compile_scene(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = cmzn_region_get_path(scene->region);
+		renderer->name_prefix = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
 		DEALLOCATE(renderer->name_prefix);
 	}
@@ -1413,7 +1413,7 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 	if (scene && scene->region)
 	{
 		return_code = 1;
-		region = ACCESS(cmzn_region)(scene->region);
+		region = scene->region->access();
 		child_region = cmzn_region_get_first_child(region);
 		while (child_region)
 		{
@@ -1424,7 +1424,7 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 			}
 			cmzn_region_reaccess_next_sibling(&child_region);
 		}
-		DEACCESS(cmzn_region)(&region);
+		cmzn_region::deaccess(region);
 	}
 	else
 	{
@@ -1778,9 +1778,9 @@ int for_each_child_scene_in_scene_tree(
 	struct cmzn_scene *child_scene;
 
 	ENTER(for_each_child_scene_in_scene_tree);
-	if (scene)
+	if ((scene) && (scene->region))
 	{
-		region = ACCESS(cmzn_region)(scene->region);
+		region = scene->region->access();
 		return_code = (*cmzn_scene_tree_iterator_function)(scene, user_data);
 		if (return_code)
 		{
@@ -1796,7 +1796,7 @@ int for_each_child_scene_in_scene_tree(
 				cmzn_region_reaccess_next_sibling(&child_region);
 			}
 		}
-		DEACCESS(cmzn_region)(&region);
+		cmzn_region::deaccess(region);
 	}
 	else
 	{
@@ -1941,9 +1941,9 @@ struct cmzn_region *cmzn_scene_get_region_internal(
 
 cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene)
 {
-	if (scene)
-		return ACCESS(cmzn_region)(scene->region);
-	return 0;
+	if ((scene) && (scene->region))
+		return scene->region->access();
+	return nullptr;
 }
 
 int cmzn_scene_modify(struct cmzn_scene *destination,
@@ -2368,89 +2368,6 @@ cmzn_scene *cmzn_scene_access(cmzn_scene_id scene)
 	return 0;
 }
 
-int list_cmzn_scene_transformation_commands(struct cmzn_scene *scene,
-	void *command_prefix_void)
-/*******************************************************************************
-LAST MODIFIED : 22 January 2002
-
-DESCRIPTION :
-Iterator function for writing the transformation in effect for <scene>
-as a command, using the given <command_prefix>.
-==============================================================================*/
-{
-	auto command_prefix = static_cast<const char *>(command_prefix_void);
-	if ((scene) && (command_prefix))
-	{
-		char *regionName = cmzn_region_get_path(scene->region);
-		make_valid_token(&regionName);
-		display_message(INFORMATION_MESSAGE, "%s %s", command_prefix, regionName);
-		DEALLOCATE(regionName);
-		if (scene->transformationField)
-		{
-			char *fieldName = cmzn_field_get_name(scene->transformationField);
-			make_valid_token(&fieldName);
-			display_message(INFORMATION_MESSAGE, " field %s", fieldName);
-			DEALLOCATE(fieldName);
-		}
-		else if (scene->isTransformationActive())
-		{
-			for (int i = 0; i < 16; ++i)
-				display_message(INFORMATION_MESSAGE, " %g", (scene->transformationMatrix)[i]);
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE, " off");
-		}
-		display_message(INFORMATION_MESSAGE, ";\n");
-		return 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "list_cmzn_scene_transformation_commands.  Invalid argument(s)");
-	}
-	return 0;
-}
-
-int list_cmzn_scene_transformation(struct cmzn_scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 26 April 1999
-
-DESCRIPTION :
-Iterator function for writing the transformation in effect for <scene>
-in an easy-to-interpret matrix multiplication form.
-==============================================================================*/
-{
-	if (scene)
-	{
-		double transformationMatrix[16];
-		if (CMZN_OK == scene->getTransformationMatrixRowMajor(transformationMatrix))
-		{
-			const char *coordinate_symbol = "xyzh";
-			char *regionName = cmzn_region_get_path(scene->region);
-			make_valid_token(&regionName);
-			display_message(INFORMATION_MESSAGE, "%s transformation:\n", regionName);
-			DEALLOCATE(regionName);
-			for (int i = 0; i < 4; ++i)
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  |%c.out| = | %13.6e %13.6e %13.6e %13.6e | . |%c.in|\n",
-					coordinate_symbol[i],
-					transformationMatrix[i*4    ],
-					transformationMatrix[i*4 + 1],
-					transformationMatrix[i*4 + 2],
-					transformationMatrix[i*4 + 3],
-					coordinate_symbol[i]);
-			}
-			return 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "list_cmzn_scene_transformation.  Invalid argument(s)");
-	}
-	return 0;
-}
-
 int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
 	cmzn_field_id coordinate_field,
@@ -2726,7 +2643,7 @@ int cmzn_scene_compile_tree(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = cmzn_region_get_path(scene->region);
+		renderer->name_prefix = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
 		DEALLOCATE(renderer->name_prefix);
 	}

@@ -22,7 +22,7 @@
 #include <string>
 
 OpenCMISS::Zinc::Field importTypeSpecificField(
-	OpenCMISS::Zinc::Fieldmodule &fieldmodule, Json::Value &fieldSettings,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings,
 	FieldmoduleJsonImport *jsonImport);
 
 class FieldJsonIO
@@ -51,13 +51,15 @@ public:
 		field(field_in), fieldmodule(fieldmodule_in), mode(mode_in)
 	{	}
 
-	/* serialise/deserialise fields definition from json format */
-	void ioEntries(Json::Value &typeSettings);
+	/* serialise fields definition to json format */
+	void exportEntries(Json::Value &typeSettings);
+
+	/** deserialise fields definition from json format
+	 * @return  true if field successfully given name, false if failed due to existing field of name found */
+	void importEntries(const Json::Value &typeSettings);
 
 	/* methods to customise output based on field type */
 	void exportTypeSpecificParameters(Json::Value &fieldSettings);
-
-	void ioFiniteElementEntries(Json::Value &fieldSettings, Json::Value &typeSettings);
 
 protected:
 

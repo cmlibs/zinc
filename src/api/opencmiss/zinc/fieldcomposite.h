@@ -82,12 +82,12 @@ ZINC_API cmzn_field_component_id cmzn_field_cast_component(cmzn_field_id field);
  * Use this function to call base-class API, e.g.:
  * cmzn_field_set_name(cmzn_field_component_base_cast(component_field), "bob");
  *
- * @param component  Handle to the component field to cast.
+ * @param component_field  Handle to the component field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE cmzn_field_id cmzn_field_component_base_cast(cmzn_field_component_id component)
+ZINC_C_INLINE cmzn_field_id cmzn_field_component_base_cast(cmzn_field_component_id component_field)
 {
-	return (cmzn_field_id)(component);
+	return (cmzn_field_id)(component_field);
 }
 
 /**

@@ -14,10 +14,10 @@ Function definitions for some general purpose string functions.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <cctype>
 
 #include "general/debug.h"
@@ -529,54 +529,43 @@ DESCRIPTION :
 	return(out_string);
 } /* remove_leading_trailing_blanks */
 
-int append_string(char **string1,const char *string2,int *error)
-/*******************************************************************************
-LAST MODIFIED : 2 December 1998
-
-DESCRIPTION :
-Concatenates <string2> on to the end of <*string1> by reallocating <*string1> to
-fit. <*string1> may start off as NULL or an existing allocated string.
-If <*error> is 1, nothing is done; if an error occurs, <*error> is set to 1 and
-<*string1> is deallocated. Repeated calls to this function after an error has
-occurred thus do not add to the string, and do not result in further errors.
-It is up to the calling function to deallocate the returned string.
-==============================================================================*/
+int append_string(char **stringAddress, const char *string1, int *error, bool prefix)
 {
-	char *new_string;
-	int current_length;
-
-	ENTER(append_string);
-	if (string1&&string2&&error)
+	if ((stringAddress) && (string1) && (error))
 	{
 		if (!(*error))
 		{
-			if (*string1)
+			const int currentLength = (*stringAddress) ? strlen(*stringAddress) : 0;
+			char *newString;
+			if (ALLOCATE(newString, char, currentLength + strlen(string1) + 1))
 			{
-				current_length=strlen(*string1);
-			}
-			else
-			{
-				current_length=0;
-			}
-			if (REALLOCATE(new_string,*string1,char,current_length+strlen(string2)+1))
-			{
-				if (*string1)
+				if (*stringAddress)
 				{
-					strcat(new_string,string2);
+					if (prefix)
+					{
+						strcpy(newString, string1);
+						strcat(newString, *stringAddress);
+					}
+					else
+					{
+						strcpy(newString, *stringAddress);
+						strcat(newString, string1);
+					}
 				}
 				else
 				{
-					strcpy(new_string,string2);
+					strcpy(newString, string1);
 				}
-				*string1=new_string;
+				DEALLOCATE(*stringAddress);
+				*stringAddress = newString;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"append_string.  Could not reallocate");
-				*error=1;
-				if (*string1)
+				display_message(ERROR_MESSAGE,"append_string.  Could not allocate");
+				*error = 1;
+				if (*stringAddress)
 				{
-					DEALLOCATE(*string1);
+					DEALLOCATE(*stringAddress);
 				}
 			}
 		}
@@ -584,12 +573,10 @@ It is up to the calling function to deallocate the returned string.
 	else
 	{
 		display_message(ERROR_MESSAGE,"append_string.  Invalid argument(s)");
-		*error=1;
+		*error = 1;
 	}
-	LEAVE;
-
-	return (!(*error));
-} /* append_string */
+	return !(*error);
+}
 
 int has_suffix(char *string)
 /*******************************************************************************

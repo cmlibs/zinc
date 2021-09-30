@@ -26,10 +26,6 @@ Module types
 ------------
 */
 
-class Computed_field_function_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_function_type_string[] = "function";

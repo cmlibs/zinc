@@ -314,7 +314,7 @@ User data structure passed to set_FE_field_conditional_FE_region.
 /**
  * Returns true if field is defined with multiple times on any node or element.
  */
-int FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
+bool FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
 	struct FE_field *fe_field);
 
 /**

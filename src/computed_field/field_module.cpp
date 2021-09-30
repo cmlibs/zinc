@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/timesequence.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
-#include "computed_field/computed_field_alias.h"
+#include "computed_field/computed_field_apply.hpp"
 #include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
@@ -75,7 +75,7 @@ cmzn_fieldmoduleevent::~cmzn_fieldmoduleevent()
 	if (managerMessage)
 		MANAGER_MESSAGE_DEACCESS(Computed_field)(&(this->managerMessage));
 	FE_region_changes::deaccess(this->feRegionChanges);
-	cmzn_region_destroy(&this->region);
+	cmzn_region::deaccess(this->region);
 }
 
 void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)
@@ -90,10 +90,6 @@ void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)
 struct cmzn_fieldmodule
 {
 	cmzn_region *region;
-	char *field_name;
-	struct Coordinate_system coordinate_system;
-	int coordinate_system_override; // true if coordinate system has been set
-	Computed_field *replace_field;
 	int access_count;
 };
 
@@ -106,11 +102,7 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 		ALLOCATE(fieldmodule, struct cmzn_fieldmodule, sizeof(struct cmzn_fieldmodule));
 		if (fieldmodule)
 		{
-			fieldmodule->region = ACCESS(cmzn_region)(region);
-			fieldmodule->field_name = (char *)NULL;
-			fieldmodule->replace_field = (Computed_field *)NULL;
-			fieldmodule->coordinate_system.type = RECTANGULAR_CARTESIAN;
-			fieldmodule->coordinate_system_override = 0;
+			fieldmodule->region = region->access();
 			fieldmodule->access_count = 1;
 		}
 	}
@@ -139,31 +131,13 @@ int cmzn_fieldmodule_destroy(
 		fieldmodule->access_count--;
 		if (0 == fieldmodule->access_count)
 		{
-			DEACCESS(cmzn_region)(&fieldmodule->region);
-			DEALLOCATE(fieldmodule->field_name)
-			REACCESS(Computed_field)(&fieldmodule->replace_field, NULL);
+			cmzn_region::deaccess(fieldmodule->region);
 			DEALLOCATE(*fieldmodule_address);
 		}
 		*fieldmodule_address = 0;
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
-}
-
-char *cmzn_fieldmodule_get_unique_field_name(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	struct MANAGER(Computed_field) *manager;
-	if (fieldmodule && (manager = fieldmodule->region->getFieldManager()))
-	{
-		return Computed_field_manager_get_unique_field_name(manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_get_unique_field_name.  Invalid argument(s)");
-	}
-	return NULL;
 }
 
 struct Computed_field *cmzn_fieldmodule_find_field_by_name(
@@ -211,9 +185,9 @@ struct cmzn_region *cmzn_fieldmodule_get_region_internal(
 struct cmzn_region *cmzn_fieldmodule_get_region(
 	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (fieldmodule)
-		return ACCESS(cmzn_region)(fieldmodule->region);
-	return NULL;
+	if ((fieldmodule) && (fieldmodule->region))
+		return fieldmodule->region->access();
+	return nullptr;
 }
 
 bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
@@ -222,127 +196,6 @@ bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
 	if (fieldmodule1 && fieldmodule2)
 		return (fieldmodule1->region == fieldmodule2->region);
 	return false;
-}
-
-int cmzn_fieldmodule_set_field_name(
-	struct cmzn_fieldmodule *fieldmodule, const char *field_name)
-{
-	int return_code = 0;
-	if (fieldmodule)
-	{
-		if (fieldmodule->field_name)
-		{
-			DEALLOCATE(fieldmodule->field_name);
-		}
-		fieldmodule->field_name = field_name ? duplicate_string(field_name) : NULL;
-		return_code = 1;
-	}
-	return (return_code);
-}
-
-char *cmzn_fieldmodule_get_field_name(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	if (fieldmodule && fieldmodule->field_name)
-	{
-		return duplicate_string(fieldmodule->field_name);
-	}
-	return NULL;
-}
-
-int cmzn_fieldmodule_set_coordinate_system(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Coordinate_system coordinate_system)
-{
-	if (fieldmodule)
-	{
-		fieldmodule->coordinate_system = coordinate_system;
-		fieldmodule->coordinate_system_override = 1;
-		return 1;
-	}
-	return 0;
-}
-
-struct Coordinate_system cmzn_fieldmodule_get_coordinate_system(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	if (fieldmodule)
-	{
-		return fieldmodule->coordinate_system;
-	}
-	// return dummy
-	struct Coordinate_system coordinate_system;
-	coordinate_system.type = RECTANGULAR_CARTESIAN;
-	return (coordinate_system);
-}
-
-int cmzn_fieldmodule_coordinate_system_is_set(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	if (fieldmodule)
-	{
-		return fieldmodule->coordinate_system_override;
-	}
-	return 0;
-}
-
-int cmzn_fieldmodule_clear_coordinate_system(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	if (fieldmodule)
-	{
-		fieldmodule->coordinate_system_override = 0;
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int cmzn_fieldmodule_set_replace_field(
-	struct cmzn_fieldmodule *fieldmodule,
-	struct Computed_field *replace_field)
-{
-	int return_code;
-
-	if (fieldmodule && ((NULL == replace_field) ||
-		(fieldmodule->region == Computed_field_get_region(replace_field))))
-	{
-		REACCESS(Computed_field)(&fieldmodule->replace_field, replace_field);
-		if (replace_field)
-		{
-			// copy settings from replace_field to be new defaults
-			char *field_name = NULL;
-			if (GET_NAME(Computed_field)(replace_field, &field_name))
-			{
-				if (fieldmodule->field_name)
-				{
-					DEALLOCATE(fieldmodule->field_name);
-				}
-				fieldmodule->field_name = field_name;
-			}
-			fieldmodule->coordinate_system = replace_field->coordinate_system;
-			fieldmodule->coordinate_system_override = 1;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_set_replace_field.  Invalid arguments");
-		return_code = 0;
-	}
-
-	return (return_code);
-}
-
-struct Computed_field *cmzn_fieldmodule_get_replace_field(
-	struct cmzn_fieldmodule *fieldmodule)
-{
-	Computed_field *replace_field = NULL;
-	if (fieldmodule)
-	{
-		replace_field = fieldmodule->replace_field;
-	}
-	return (replace_field);
 }
 
 cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
@@ -376,7 +229,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 	if (fieldmodule)
 	{
 		const char *default_xi_field_name = "xi";
-		char xi_field_name[10];
+		char xi_field_name[26];
 		strcpy(xi_field_name, default_xi_field_name);
 		int i = 2;
 		while (true)

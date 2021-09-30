@@ -41,6 +41,23 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_constant(cmzn_fieldmodule_i
 ZINC_API cmzn_field_constant_id cmzn_field_cast_constant(cmzn_field_id field);
 
 /**
+ * Cast constant field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param constant_field  Handle to the constant field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_constant_base_cast(
+	cmzn_field_constant_id constant_field)
+{
+	return (cmzn_field_id)(constant_field);
+}
+
+/**
  * Creates a string constant field with the supplied
  * string value in <string_constant>.
  *
@@ -58,6 +75,23 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_string_constant(cmzn_fieldm
  * @return  Handle to derived string constant field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_string_constant_id cmzn_field_cast_string_constant(cmzn_field_id field);
+
+/**
+ * Cast string constant field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param string_constant_field  Handle to the string constant field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_string_constant_base_cast(
+	cmzn_field_string_constant_id string_constant_field)
+{
+	return (cmzn_field_id)(string_constant_field);
+}
 
 #ifdef __cplusplus
 }

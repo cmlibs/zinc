@@ -84,25 +84,50 @@ Global functions
 ----------------
 */
 
-FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
-	name(duplicate_string(nameIn)),
-	fe_region(fe_regionIn),
+FE_field::FE_field() :
+	name(nullptr),
+	fe_region(nullptr),
+	cm_field_type(CM_GENERAL_FIELD),
 	fe_field_type(GENERAL_FE_FIELD),
 	indexer_field(nullptr),
 	number_of_indexed_values(0),
-	cm_field_type(CM_GENERAL_FIELD),
-	number_of_components(0),  // GRC really?
-	component_names(nullptr),  // not allocated until we have custom names
-	coordinate_system(),
+	number_of_components(0),
+	component_names(nullptr),
+	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
 	number_of_values(0),
-	values_storage(nullptr),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
+	values_storage(nullptr),
+	timeDependent(false),
+	fe_field_parameters(nullptr),
+	number_of_wrappers(0),
+	access_count(0)
+{
+	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
+		this->meshFieldData[d] = nullptr;
+	for (int i = 0; i < 2; ++i)
+		this->embeddedNodeFields[i] = nullptr;
+}
+
+FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
+	name(duplicate_string(nameIn)),
+	fe_region(fe_regionIn),
+	cm_field_type(CM_GENERAL_FIELD),
+	fe_field_type(GENERAL_FE_FIELD),
+	indexer_field(nullptr),
+	number_of_indexed_values(0),
+	number_of_components(0),
+	component_names(nullptr),  // not allocated until we have custom names
+	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
+	number_of_values(0),
+	value_type(UNKNOWN_VALUE),
+	element_xi_host_mesh(nullptr),
+	values_storage(nullptr),
+	timeDependent(false),
 	fe_field_parameters(nullptr),
 	number_of_wrappers(0),
 	access_count(1)
 {
-	this->coordinate_system.type = UNKNOWN_COORDINATE_SYSTEM;
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		this->meshFieldData[d] = nullptr;
 	for (int i = 0; i < 2; ++i)
@@ -150,6 +175,56 @@ FE_field *FE_field::create(const char *nameIn, FE_region *fe_regionIn)
 		return new FE_field(nameIn, fe_regionIn);
 	display_message(ERROR_MESSAGE, "FE_field::create.  Invalid argument(s)");
 	return nullptr;
+}
+
+bool FE_field::compareBasicDefinition(const FE_field* otherField) const
+{
+	if ((this->value_type != otherField->value_type)
+		|| (this->fe_field_type != otherField->fe_field_type)
+		|| (this->number_of_components != otherField->number_of_components))
+	{
+		return false;
+	}
+	if (ELEMENT_XI_VALUE == this->value_type)
+	{
+		// may need to improve if multiple meshes allowed in future:
+		if ((otherField->element_xi_host_mesh) && ((!this->element_xi_host_mesh) ||
+			(this->element_xi_host_mesh->getDimension() != otherField->element_xi_host_mesh->getDimension())))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool FE_field::compareFullDefinition(const FE_field* otherField) const
+{
+	if (!((otherField) && this->compareBasicDefinition(otherField)))
+	{
+		return false;
+	}
+	if ((0 == strcmp(this->name, otherField->name)) &&
+		((INDEXED_FE_FIELD != this->fe_field_type) ||
+			(this->indexer_field->compareFullDefinition(otherField->indexer_field) &&
+				(this->number_of_indexed_values == otherField->number_of_indexed_values))) &&
+		(this->cm_field_type == otherField->cm_field_type) &&
+		Coordinate_systems_match(&(this->coordinate_system), &(otherField->coordinate_system)))
+	{
+		// check component names match
+		for (int i = this->number_of_components; i <= 0; --i)
+		{
+			char *component_name1 = get_automatic_component_name(this->component_names, i);
+			char *component_name2 = get_automatic_component_name(otherField->component_names, i);
+			bool matching = (component_name1) && (component_name2) &&
+				(0 == strcmp(component_name1, component_name2));
+			DEALLOCATE(component_name2);
+			DEALLOCATE(component_name1);
+			if (!matching)
+				return false;
+		}
+		return true;
+	}
+	return false;
 }
 
 int FE_field::setName(const char *nameIn)
@@ -455,9 +530,10 @@ int list_FE_field(struct FE_field *field, void *)
 	return 0;
 }
 
-bool FE_field::hasMultipleTimes()
+bool FE_field::checkTimeDependent()
 {
-	return FE_region_FE_field_has_multiple_times(this->fe_region, this);
+	this->timeDependent = FE_region_FE_field_has_multiple_times(this->fe_region, this);
+	return this->timeDependent;
 }
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_field)
@@ -626,15 +702,6 @@ int FE_field::copyProperties(FE_field *source)
 		this->component_names=component_names;
 		this->coordinate_system = source->coordinate_system;
 		this->value_type=source->value_type;
-		/*
-		if (hostMesh)
-			hostMesh->access();
-		if (this->element_xi_host_mesh)
-		{
-			FE_mesh::deaccess(this->element_xi_host_mesh);
-		}
-		this->element_xi_host_mesh = hostMesh;
-		*/
 		if (hostMesh)
 			this->setElementXiHostMesh(hostMesh);
 		/* replace old values_storage with new */
@@ -647,6 +714,8 @@ int FE_field::copyProperties(FE_field *source)
 		}
 		this->number_of_values=source->number_of_values;
 		this->values_storage= new_values_storage;
+		if (source->checkTimeDependent())
+			this->setTimeDependent();
 	}
 	else
 	{
@@ -676,91 +745,13 @@ int FE_field::copyProperties(FE_field *source)
 	return (return_code);
 }
 
-bool FE_fields_match_fundamental(struct FE_field *field1,
-	struct FE_field *field2)
-{
-	if (!(field1 && field2))
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_fields_match_fundamental.  Missing field(s)");
-		return false;
-	}
-	if (!((field1->value_type == field2->value_type)
-		&& (field1->fe_field_type == field2->fe_field_type)
-		&& (field1->number_of_components == field2->number_of_components)
-		&& (0 != Coordinate_systems_match(&(field1->coordinate_system),
-			&(field2->coordinate_system)))))
-		return false;
-	if (ELEMENT_XI_VALUE == field1->value_type)
-	{
-		if (!field1->element_xi_host_mesh)
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_fields_match_fundamental.  Source element xi field %s does not have a host mesh", field1->name);
-			return false;
-		}
-		// This will need to be improved once multiple meshes or meshes from different regions are allowed:
-		if (field1->element_xi_host_mesh->getDimension() != field2->element_xi_host_mesh->getDimension())
-			return false;
-	}
-	return true;
-}
-
-bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
-{
-	if (field1 && field2)
-	{
-		// does not match until proven so
-		if ((0 == strcmp(field1->name, field2->name)) &&
-			(field1->fe_field_type == field2->fe_field_type) &&
-			((INDEXED_FE_FIELD != field1->fe_field_type) ||
-				(field1->indexer_field && field2->indexer_field &&
-					(0 == strcmp(field1->indexer_field->name,
-						field2->indexer_field->name)) &&
-					FE_fields_match_fundamental(field1->indexer_field,
-						field2->indexer_field) &&
-					(field1->number_of_indexed_values ==
-						field2->number_of_indexed_values))) &&
-			(field1->cm_field_type == field2->cm_field_type) &&
-			Coordinate_systems_match(&(field1->coordinate_system),
-				&(field2->coordinate_system)) &&
-			(field1->value_type == field2->value_type) &&
-			(field1->number_of_components == field2->number_of_components))
-		{
-			// matches until disproven
-			// check component names match
-			for (int i = field1->number_of_components; i <= 0; --i)
-			{
-				char *component_name1 = get_automatic_component_name(field1->component_names, i);
-				char *component_name2 = get_automatic_component_name(field2->component_names, i);
-				bool matching = (component_name1) && (component_name2) &&
-					(0 == strcmp(component_name1, component_name2));
-				DEALLOCATE(component_name2);
-				DEALLOCATE(component_name1);
-				if (!matching)
-					return false;
-			}
-			return true;
-		}
-	}
-	else
-		display_message(ERROR_MESSAGE, "FE_fields_match_exact.  Missing field(s)");
-	return false;
-}
-
-/**
- * List iterator function which fetches a field with the same name as <field>
- * from <field_list>. Returns 1 (true) if there is either no such field in the
- * list or the two fields return true for FE_fields_match_fundamental(),
- * otherwise returns 0 (false).
- */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void)
 {
 	struct LIST(FE_field) *field_list = reinterpret_cast<struct LIST(FE_field) *>(field_list_void);
 	if (field && field_list)
 	{
 		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->getName(), field_list);
-		if ((!(other_field)) || FE_fields_match_fundamental(field, other_field))
+		if ((!(other_field)) || field->compareBasicDefinition(other_field))
 			return 1;
 	}
 	else
@@ -1004,26 +995,6 @@ ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
 
 	return (return_code);
 } /* set_FE_field_number_of_components */
-
-enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field)
-{
-	if (field)
-		return field->get_CM_field_type();
-	display_message(ERROR_MESSAGE, "get_FE_field_CM_field_type.  Invalid field");
-	return CM_GENERAL_FIELD;
-}
-
-int set_FE_field_CM_field_type(struct FE_field *field,
-	enum CM_field_type cm_field_type)
-{
-	if (field)
-	{
-		field->set_CM_field_type(cm_field_type);
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "set_FE_field_CM_field_type.  Invalid argument(s)");
-	return 0;
-}
 
 enum FE_field_type get_FE_field_FE_field_type(struct FE_field *field)
 {

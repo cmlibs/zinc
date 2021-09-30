@@ -29,6 +29,7 @@ Global constants
 /* separator character for cmzn_region in path strings */
 #define CMZN_REGION_PATH_SEPARATOR_CHAR '/'
 #define CMZN_REGION_PATH_SEPARATOR_STRING "/"
+#define CMZN_REGION_PATH_PARENT_NAME ".."
 
 /*
 Global types
@@ -249,10 +250,25 @@ public:
 	 */
 	void FeRegionChange();
 
+	/** @return  Non-accessed region, or nullptr if not found. */
 	cmzn_region *findChildByName(const char *name) const;
 
+	/** Create child region with supplied name. Fails if name is in use.
+	 * @param name  Unique name for child in this region. Avoid / and name "..".
+	 * @return  Non-accessed region, or nullptr if failed. */
+	cmzn_region *createChild(const char *name);
+
+	/** Find subregion at relative path from this region, with special
+	 * region name ".." mapping to parent of a given region.
+	 * @param path  String ../relative/path/to/region.
+	 * @return  Non-accessed region, or nullptr if not found. */
 	cmzn_region *findSubregionAtPath(const char *path) const;
 
+	/** Create subregion at relative path from this region, with special
+	 * region name ".." mapping to parent of a given region. Fails if
+	 * subregion already exists.
+	 * @param path  String ../relative/path/to/region.
+	 * @return  Non-accessed region, or nullptr if failed. */
 	cmzn_region *createSubregion(const char *path);
 
 	cmzn_fielditerator *createFielditerator() const;
@@ -312,15 +328,28 @@ public:
 
 	int setName(const char *name);
 
+	/** @return  Non-accessed parent region or nullptr if none */
 	cmzn_region *getParent() const
 	{
 		return this->parent;
 	}
 
-	/** @return allocated string /path/to/region/ */
+	/** @return  Non-accessed root region which can be this region */
+	cmzn_region *getRoot() const
+	{
+		cmzn_region *root = const_cast<cmzn_region *>(this);
+		while (root->parent)
+		{
+			root = root->parent;
+		}
+		return root;
+	}
+
+	/** @return  Allocated string path/to/region */
 	char *getPath() const;
 
-	char *getRelativePath(cmzn_region *other_region) const;
+	/** @return  Allocated string ../../relative/path/to/region */
+	char *getRelativePath(const cmzn_region *baseRegion) const;
 
 	cmzn_region *getFirstChild() const
 	{
@@ -346,7 +375,7 @@ public:
 
 	int removeChild(cmzn_region *old_child);
 
-	bool containsSubregion(cmzn_region *subregion) const;
+	bool containsSubregion(const cmzn_region *subregion) const;
 
 	void addFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier);
 
@@ -357,9 +386,6 @@ public:
 	{
 		return this->scene;
 	}
-
-	/** Only to be called by region or context destructors */
-	void detachScene();
 
 };
 
@@ -416,27 +442,6 @@ Removes the callback calling <function> with <user_data> from <region>.
  */
 char *cmzn_region_get_root_region_path(void);
 
-/***************************************************************************//**
- * Returns the full path name from the root region to this region. Path name
- * always begins and ends with the CMZN_REGION_PATH_SEPARATOR_CHAR '/'.
- *
- * @param region  The region whose path is requested.
- * @return  On success: allocated string containing full region path.
- */
-char *cmzn_region_get_path(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Returns the relative path name to this region from other_region. Path name
- * always begins and ends with the CMZN_REGION_PATH_SEPARATOR_CHAR '/'.
- *
- * @param region  The region whose path is requested.
- * @param other_region  The region the path is relative to.
- * @return  On success: allocated string containing relative region path; on
- * failure: NULL, including case when region is not within other_region.
- */
-char *cmzn_region_get_relative_path(struct cmzn_region *region,
-	struct cmzn_region *other_region);
-
 /*******************************************************************************
  * Internal only. External API is cmzn_fieldmodule_find_field_by_name.
  * @return  Accessed handle to field of given name, or NULL if none.
@@ -458,19 +463,11 @@ int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
 	const char *path, struct cmzn_region **subregion_address);
 
 /**
- * Returns a reference to the root region of this region.
- *
- * @param region  The region.
- * @return  Accessed reference to root region, or NULL if none.
- */
-struct cmzn_region *cmzn_region_get_root(struct cmzn_region *region);
-
-/**
  * Returns true if region has no parent.
  */
 bool cmzn_region_is_root(struct cmzn_region *region);
 
-/***************************************************************************//**
+/**
  * Separates a region/path/name into the region plus region-path and remainder
  * string containing text from the first unrecognized child region name.
  *
@@ -483,20 +480,22 @@ bool cmzn_region_is_root(struct cmzn_region *region);
  *     contains body region contains heart region
  * "heart/bob/fred/" -> region heart, "heart" and "bob/fred" if region heart
  *     has no child region called bob
+ * Parent regions can be reached by ..:
+ * "../bob/coordinates" -> region ../bob, "../bob" and "cooordinates"
  *
- * @param root_region the starting region for path
- * @path string the input path
- * @param region_address on success, points to region partially matched by path
- * @param region_path_address on success, returns allocated string path to the
+ * @param baseRegion  The base region for path.
+ * @path path  The input path and additional characters.
+ * @param regionAddress on success, points to region partially matched by path
+ * @param regionPathAddress on success, returns allocated string path to the
  *   returned region, stripped of leading and trailing region path separators
- * @param remainder_address on success, returns pointer to allocated remainder
+ * @param remainderAddress on success, returns pointer to allocated remainder
  *   of path stripped of leading and trailing region path separators, or NULL
  *   if all of path was resolved
  * @return 1 on success, 0 on failure
  */
-int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
-	const char *path, struct cmzn_region **region_address,
-	char **region_path_address,	char **remainder_address);
+int cmzn_region_get_partial_region_path(cmzn_region *baseRegion,
+	const char *path, cmzn_region **regionAddress,
+	char **regionPathAddress,	char **remainderAddress);
 
 int cmzn_region_list(struct cmzn_region *region,
 	int indent, int indent_increment);

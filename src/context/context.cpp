@@ -43,9 +43,6 @@ cmzn_context::~cmzn_context()
 	for (std::list<cmzn_region*>::iterator iter = this->allRegions.begin(); iter != this->allRegions.end(); ++iter)
 	{
 		cmzn_region *region = *iter;
-		// detach scenes from all regions before destroying graphics module
-		// this also releases fields in use by graphics
-		region->detachScene();
 		region->detachFields();
 		region->clearContext();
 	}

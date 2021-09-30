@@ -530,7 +530,7 @@ that the computed field has changed.
 				core->change_required = 1;
 				if (field->manager)
 				{
-					Computed_field_dependency_changed(field);
+					field->dependencyChanged();
 				}
 			}
 		}
@@ -576,7 +576,7 @@ that the computed field has changed.
 		{
 			if (field->manager)
 			{
-				Computed_field_dependency_changed(field);
+				field->dependencyChanged();
 			}
 			core->change_required = 1;
 		}
@@ -605,7 +605,7 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 			{
 				if (field->manager)
 				{
-					Computed_field_dependency_changed(field);
+					field->dependencyChanged();
 				}
 				core->change_required = 1;
 			}

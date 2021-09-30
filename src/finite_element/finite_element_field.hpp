@@ -57,9 +57,6 @@ enum FE_field_type
 struct FE_field
 {
 	friend struct FE_region;
-	friend bool FE_fields_match_fundamental(struct FE_field *field1,
-		struct FE_field *field2);
-	friend bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
 	friend int set_FE_field_number_of_components(struct FE_field *field,
 		int number_of_components);
 	friend int set_FE_field_type_constant(struct FE_field *field);
@@ -104,6 +101,10 @@ private:
 	/* array of global values/derivatives that are stored with the field.
 	 * The actual values can be extracted using the <value_type> */
 	Value_storage *values_storage;
+	// set to true if field defined with time variation anywhere, currently limited to nodes
+	// for efficiency, set when fields defined with time sequence on any node e.g. template
+	// node, so will be false positive if not merged, which is unlikely.
+	bool timeDependent;
 
 	// field definition and data on FE_mesh[dimension - 1]
 	// Future: limit to being defined on a single mesh; requires change to current usage
@@ -122,28 +123,7 @@ private:
 protected:
 
 	// used only by FE_field_identifier pseudo class
-	FE_field() :
-		name(nullptr),
-		fe_region(nullptr),
-		cm_field_type(CM_GENERAL_FIELD),
-		fe_field_type(GENERAL_FE_FIELD),
-		indexer_field(nullptr),
-		number_of_indexed_values(0),
-		number_of_components(0),
-		component_names(nullptr),
-		number_of_values(0),
-		value_type(UNKNOWN_VALUE),
-		element_xi_host_mesh(nullptr),
-		values_storage(nullptr),
-		fe_field_parameters(nullptr),
-		number_of_wrappers(0),
-		access_count(0)
-	{
-		embeddedNodeFields[0] = nullptr;
-		embeddedNodeFields[1] = nullptr;
-		for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
-			this->meshFieldData[d] = nullptr;
-	}
+	FE_field();
 
 	FE_field(const char *nameIn, struct FE_region *fe_regionIn);
 
@@ -182,6 +162,15 @@ public:
 	{
 		return this->access_count;
 	}
+
+	/** @return  true if this field and other field have matching basic definition i.e.
+	 * type, number of components etc. Does not compare name, coordinate system etc.
+	 * @see compareFullDefinition */
+	bool compareBasicDefinition(const FE_field* otherField) const;
+
+	/** @return  true if this field and other field definitions are identical in all
+	 * properties. */
+	bool compareFullDefinition(const FE_field* otherField) const;
 
 	FE_region *get_FE_region() const
 	{
@@ -235,8 +224,23 @@ public:
 	/** Writes a text description of field to console/logger */
 	void list() const;
 
-	/** Returns true if field varies with time on any nodes */
-	bool hasMultipleTimes();
+	/** Check if field varies with time.
+	 * Note: Can return true if time dependence was temporary or not fully merged */
+	bool isTimeDependent() const
+	{
+		return this->timeDependent;
+	}
+
+	/** Set time dependence. Can only unset by calling checkTimeDependent() */
+	void setTimeDependent()
+	{
+		this->timeDependent = true;
+	}
+
+	/** Definitively checks if field is time-varying on any nodes and updates timeDependent flag.
+	 * Fairly expensive; call isTimeDependent() if speed is critical.
+	 * @return  true if field varies with time on any nodes */
+	bool checkTimeDependent();
 
 	/**
 	 * Copies the field definition from source to destination, except for name,
@@ -426,31 +430,9 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_field,name,const char *);
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_field);
 
 /**
- * Returns true if <field1> and <field2> have the same fundamental definition,
- * namely they:
- * 1. Have the same value type
- * 2. Have the same fe field type (general, indexed etc.)
- * 3. Have the same number of components
- * 4. Have the same coordinate system
- * If so, they can be merged without affecting the rest of the model.
- * Other attributes such as cm field type (field, coordinate, anatomical) are
- * not considered fundamental. The name is also not compared.
- * Must ensure this function fits with FE_fields_match_exact.
- */
-bool FE_fields_match_fundamental(struct FE_field *field1,
-	struct FE_field *field2);
-
-/**
- * Returns true if <field1> and <field2> have exactly the same definition,
- * comparing all attributes.
- * @see FE_fields_match_fundamental
- */
-bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
-
-/**
  * List iterator function which fetches a field with the same name as <field>
  * from <field_list>. Returns 1 (true) if there is either no such field in the
- * list or the two fields return true for FE_fields_match_fundamental(),
+ * list or the two fields return true for FE_fields::compareBasicDefinition(),
  * otherwise returns 0 (false).
  */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
@@ -525,24 +507,6 @@ that use them, eg. CONSTANT_FE_FIELD and INDEXED_FE_FIELD - but only if number
 of components changes. If function fails the field is left exactly as it was.
 Should only call this function for unmanaged fields.
 ELEMENT_XI_VALUE, STRING_VALUE and URL_VALUE fields may only have 1 component.
-==============================================================================*/
-
-enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns the CM_field_type of the <field>.
-==============================================================================*/
-
-int set_FE_field_CM_field_type(struct FE_field *field,
-	enum CM_field_type cm_field_type);
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Sets the CM_field_type of the <field>.
-Should only call this function for unmanaged fields.
 ==============================================================================*/
 
 enum FE_field_type get_FE_field_FE_field_type(struct FE_field *field);

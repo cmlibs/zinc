@@ -38,12 +38,6 @@ and the nodes for 1D elements.
 
 namespace {
 
-class Computed_field_integration_package : public Computed_field_type_package
-{
-public:
-	cmzn_region *root_region;
-};
-
 struct Computed_field_element_integration_mapping
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -1177,7 +1171,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
 
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		FE_element* top_level_element = element_xi_location->get_top_level_element();
@@ -1290,7 +1284,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 			return_code=0;
 		}
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		FE_node *node = node_location->get_node();
 

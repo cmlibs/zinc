@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include <opencmiss/zinc/status.h>
-#include <opencmiss/zinc/result.hpp>
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/context.h>
 #include <opencmiss/zinc/region.h>
@@ -17,10 +16,21 @@
 #include <opencmiss/zinc/field.h>
 #include <opencmiss/zinc/fieldconstant.h>
 #include <opencmiss/zinc/graphics.h>
+
+#include <opencmiss/zinc/changemanager.hpp>
+#include <opencmiss/zinc/fieldarithmeticoperators.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
+#include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldtime.hpp>
+#include <opencmiss/zinc/fieldtrigonometry.hpp>
+#include <opencmiss/zinc/fieldvectoroperators.hpp>
+#include <opencmiss/zinc/result.hpp>
+#include <opencmiss/zinc/timekeeper.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "test_resources.h"
 
 TEST(cmzn_graphics_contours, create_cast)
 {
@@ -223,3 +233,136 @@ TEST(cmzn_graphics_contours, description_io)
 	cmzn_deallocate(return_string);
 }
 
+// test accuracy of cmgui example a/analytic_isosurfaces
+// option to turn on longer test for profiling
+TEST(ZincGraphicsContours, analytic_isosurfaces)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Timekeeper timekeeper = zinc.context.getTimekeepermodule().getDefaultTimekeeper();
+	EXPECT_TRUE(timekeeper.isValid());
+	EXPECT_EQ(RESULT_OK, timekeeper.setMinimumTime(0.0));
+	EXPECT_EQ(RESULT_OK, timekeeper.setMinimumTime(20.0));
+
+	Field fun1;  // fun1 = z + 0.1*sin(magnitude(x - 0.75, y - 0.75)*t)
+	Field fun2;  // fun2 = fun1*sin(4*z)
+	{
+		ChangeManager<Fieldmodule> changeFields(zinc.fm);
+
+		const int componentIndexes[2] = { 1, 2 };
+		FieldComponent xy = zinc.fm.createFieldComponent(coordinates, 2, componentIndexes);
+		EXPECT_TRUE(xy.isValid());
+		EXPECT_EQ(RESULT_OK, xy.setName("xy"));
+		const double offsetValues[2] = { 0.75, 0.75 };
+		FieldConstant offset075 = zinc.fm.createFieldConstant(2, offsetValues);
+		EXPECT_TRUE(offset075.isValid());
+		EXPECT_EQ(RESULT_OK, offset075.setName("offset075"));
+		FieldSubtract oxy = xy - offset075;
+		EXPECT_TRUE(oxy.isValid());
+		EXPECT_EQ(RESULT_OK, oxy.setName("oxy"));
+		FieldMagnitude moxy = zinc.fm.createFieldMagnitude(oxy);
+		EXPECT_TRUE(moxy.isValid());
+		EXPECT_EQ(RESULT_OK, moxy.setName("moxy"));
+		FieldTimeValue t = zinc.fm.createFieldTimeValue(timekeeper);
+		EXPECT_TRUE(t.isValid());
+		EXPECT_EQ(RESULT_OK, t.setName("t"));
+		FieldMultiply moxyt = moxy * t;
+		EXPECT_TRUE(moxyt.isValid());
+		EXPECT_EQ(RESULT_OK, moxyt.setName("moxyt"));
+		FieldSin sin_moxyt = zinc.fm.createFieldSin(moxyt);
+		EXPECT_TRUE(sin_moxyt.isValid());
+		EXPECT_EQ(RESULT_OK, sin_moxyt.setName("sin_moxyt"));
+		const double scale01Value = 0.1;
+		FieldConstant scale01 = zinc.fm.createFieldConstant(1, &scale01Value);
+		EXPECT_TRUE(scale01.isValid());
+		EXPECT_EQ(RESULT_OK, scale01.setName("scale01"));
+		FieldMultiply ssin_moxyt = sin_moxyt * scale01;
+		EXPECT_TRUE(ssin_moxyt.isValid());
+		EXPECT_EQ(RESULT_OK, ssin_moxyt.setName("ssin_moxyt"));
+		FieldComponent z = zinc.fm.createFieldComponent(coordinates, 3);
+		EXPECT_TRUE(z.isValid());
+		EXPECT_EQ(RESULT_OK, z.setName("z"));
+		fun1 = z + ssin_moxyt;
+		EXPECT_TRUE(fun1.isValid());
+		EXPECT_EQ(RESULT_OK, fun1.setName("fun1"));
+
+		const double scale4Value = 4.0;
+		FieldConstant scale4 = zinc.fm.createFieldConstant(1, &scale4Value);
+		EXPECT_TRUE(scale4.isValid());
+		EXPECT_EQ(RESULT_OK, scale4.setName("scale4"));
+		FieldMultiply sz = z * scale4;
+		EXPECT_TRUE(sz.isValid());
+		EXPECT_EQ(RESULT_OK, sz.setName("sz"));
+		FieldSin sin_sz = zinc.fm.createFieldSin(sz);
+		EXPECT_TRUE(sin_sz.isValid());
+		EXPECT_EQ(RESULT_OK, sin_sz.setName("sin_sz"));
+		fun2 = fun1 * sin_sz;
+		EXPECT_TRUE(fun2.isValid());
+		EXPECT_EQ(RESULT_OK, fun2.setName("fun2"));
+	}
+	//char *fieldDescription = zinc.fm.writeDescription();
+	//cmzn_deallocate(fieldDescription);
+
+	GraphicsContours contours1 =  zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(contours1.isValid());
+	EXPECT_EQ(RESULT_OK, contours1.setCoordinateField(coordinates));
+	EXPECT_EQ(RESULT_OK, contours1.setIsoscalarField(fun1));
+	const double value02 = 0.2;
+	EXPECT_EQ(RESULT_OK, contours1.setListIsovalues(1, &value02));
+
+	GraphicsContours contours2 = zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(contours2.isValid());
+	EXPECT_EQ(RESULT_OK, contours2.setCoordinateField(coordinates));
+	EXPECT_EQ(RESULT_OK, contours2.setIsoscalarField(fun2));
+	const double value042 = 0.42;
+	EXPECT_EQ(RESULT_OK, contours2.setListIsovalues(1, &value042));
+
+	//char *sceneDescription = zinc.scene.writeDescription();
+	//cmzn_deallocate(sceneDescription);
+
+	Tessellation tessellation = zinc.context.getTessellationmodule().getDefaultTessellation();
+	EXPECT_TRUE(tessellation.isValid());
+	const int number6 = 6;
+	EXPECT_EQ(RESULT_OK, tessellation.setMinimumDivisions(1, &number6));
+	EXPECT_EQ(RESULT_OK, timekeeper.setTime(10.5));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	Element element5 = mesh3d.findElementByIdentifier(5);
+	EXPECT_TRUE(element5.isValid());
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double xi050505[3] = { 0.5, 0.5, 0.5 };
+	EXPECT_EQ(RESULT_OK, fieldcache.setMeshLocation(element5, 3, xi050505));
+	double valueOut;
+	const double TOL = 1.0E-10;
+	EXPECT_EQ(RESULT_OK, fun1.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_NEAR(0.57301596730940352, valueOut, TOL);
+	EXPECT_EQ(RESULT_OK, fun2.evaluateReal(fieldcache, 1, &valueOut));
+	EXPECT_NEAR(0.52104194460446962, valueOut, TOL);
+	double minimums[3];
+	double maximums[3];
+	const double GTOL = 1.0E-6;  // as graphics may be in single precision
+	EXPECT_EQ(RESULT_OK, zinc.scene.getCoordinatesRange(Scenefilter(), minimums, maximums));
+	EXPECT_NEAR(-1.0, minimums[0], GTOL);
+	EXPECT_NEAR(0.0, minimums[1], GTOL);
+	EXPECT_NEAR(0.10024128109216690, minimums[2], GTOL);
+	EXPECT_NEAR(1.8797646760940552, maximums[0], GTOL);
+	EXPECT_NEAR(1.8797646760940552, maximums[1], GTOL);
+	EXPECT_NEAR(0.60720294713973999, maximums[2], GTOL);
+
+	// Larger test does the above 20 times; with this on, at time of writing
+	// takes ~890-970ms on Windows Release running on Intel Core i9-8950HK CPU @ 2.90 GHz
+	//const int number24 = 24;
+	//EXPECT_EQ(RESULT_OK, tessellation.setMinimumDivisions(1, &number24));
+	//for (int i = 0; i <= 20; i += 1)
+	//{
+	//	const double time = i*1.0;
+	//	EXPECT_EQ(RESULT_OK, timekeeper.setTime(time));
+	//	EXPECT_EQ(RESULT_OK, zinc.scene.getCoordinatesRange(Scenefilter(), minimums, maximums));
+	//}
+}

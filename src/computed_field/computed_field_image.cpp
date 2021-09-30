@@ -33,10 +33,6 @@
 #include <math.h>
 #include "general/enumerator_conversion.hpp"
 
-class Computed_field_image_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_image_type_string[] = "image";

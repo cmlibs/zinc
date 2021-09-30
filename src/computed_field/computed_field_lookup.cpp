@@ -27,12 +27,6 @@ Defines fields for looking up values at given locations.
 #include "computed_field/computed_field_lookup.h"
 #include "graphics/quaternion.hpp"
 
-class Computed_field_lookup_package : public Computed_field_type_package
-{
-public:
-	struct cmzn_region *root_region;
-};
-
 namespace {
 
 const char computed_field_nodal_lookup_type_string[] = "nodal_lookup";

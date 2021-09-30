@@ -18,6 +18,7 @@
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/fieldtime.hpp>
 #include <opencmiss/zinc/fieldtrigonometry.hpp>
 #include <opencmiss/zinc/fieldvectoroperators.hpp>
 #include "zinctestsetupcpp.hpp"
@@ -368,4 +369,46 @@ TEST(ZincFieldMeshIntegralSquares, quadrature)
 				EXPECT_NEAR(expectedValue[1], value[1], tolerance);
 			}
 	zinc.fm.endChange();
+}
+
+// Test issue evaluating timeLookup field at indexed locations such as used
+// by mesh integral, and graphics. Was copying non-indexed location to extra cache.
+TEST(FieldMeshIntegral, timeLookup)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
+
+	Field deformed = zinc.fm.findFieldByName("deformed");
+	EXPECT_TRUE(deformed.isValid());
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Element element = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+
+	const double valueOne = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &valueOne);
+	const int numberOfPoints = 4;
+
+	FieldMeshIntegral deformedVolume = zinc.fm.createFieldMeshIntegralSquares(one, deformed, mesh3d);
+	EXPECT_TRUE(deformedVolume.isValid());
+	EXPECT_EQ(RESULT_OK, deformedVolume.setElementQuadratureRule(Element::QUADRATURE_RULE_GAUSSIAN));
+	EXPECT_EQ(RESULT_OK, deformedVolume.setNumbersOfPoints(1, &numberOfPoints));
+
+	FieldTimeLookup deformedOne = zinc.fm.createFieldTimeLookup(deformed, one);
+	EXPECT_TRUE(deformedOne.isValid());
+
+	FieldMeshIntegral deformedOneVolume = zinc.fm.createFieldMeshIntegralSquares(one, deformedOne, mesh3d);
+	EXPECT_TRUE(deformedOneVolume.isValid());
+	EXPECT_EQ(RESULT_OK, deformedOneVolume.setElementQuadratureRule(Element::QUADRATURE_RULE_GAUSSIAN));
+	EXPECT_EQ(RESULT_OK, deformedOneVolume.setNumbersOfPoints(1, &numberOfPoints));
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double volumeOut;
+	const double TOL = 1.0E-10;
+	EXPECT_EQ(RESULT_OK, deformedVolume.evaluateReal(fieldcache, 1, &volumeOut));
+	EXPECT_NEAR(1.3298844582623588, volumeOut, TOL);
+	EXPECT_EQ(RESULT_OK, deformedOneVolume.evaluateReal(fieldcache, 1, &volumeOut));
+	EXPECT_NEAR(1.3298844582623588, volumeOut, TOL);
 }

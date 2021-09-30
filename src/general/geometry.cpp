@@ -26,6 +26,20 @@ Functions for performing coordinate transformations.
 Global functions
 ----------------
 */
+
+bool operator==(const Coordinate_system& cs1, const Coordinate_system& cs2)
+{
+	if (cs1.type == cs2.type)
+	{
+		if ((cs1.type == PROLATE_SPHEROIDAL) || (cs1.type == OBLATE_SPHEROIDAL))
+		{
+			return cs1.parameters.focus == cs2.parameters.focus;
+		}
+		return true;
+	}
+	return false;
+}
+
 int linear_transformation(Linear_transformation *linear_transformation,FE_value x,
 	FE_value y,FE_value z,FE_value *result_x,FE_value *result_y,FE_value *result_z)
 /*******************************************************************************
@@ -613,33 +627,6 @@ z = focus*cosh(lambda)*cos(mu)*cos(theta)
 	return (return_code);
 } /* oblate_spheroidal_to_cartesian */
 
-enum Coordinate_system_type get_coordinate_system_type(
-	struct Coordinate_system *coordinate_system)
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Returns the type of the coordinate system passed to it.
-==============================================================================*/
-{
-	enum Coordinate_system_type coordinate_system_type;
-
-	ENTER(get_coordinate_system_type);
-	if (coordinate_system)
-	{
-		coordinate_system_type=coordinate_system->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_coordinate_system_type.  Invalid coordinate_system ");
-		coordinate_system_type=UNKNOWN_COORDINATE_SYSTEM;
-	}
-	LEAVE;
-
-	return (coordinate_system_type);
-} /* get_coordinate_system_type */
-
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Coordinate_system_type)
 /*******************************************************************************
 LAST MODIFIED : 11 February 2003
@@ -761,15 +748,8 @@ function.
 	return (coordinate_system_string);
 } /* Coordinate_system_string */
 
-int Coordinate_systems_match(struct Coordinate_system *coordinate_system1,
-	struct Coordinate_system *coordinate_system2)
-/*******************************************************************************
-LAST MODIFIED : 21 June 2000
-
-DESCRIPTION :
-Returns true if the two coordinate systems are the same - includes comparing
-focus for prolate and oblate spheroidal systems.
-==============================================================================*/
+int Coordinate_systems_match(const Coordinate_system *coordinate_system1,
+	const Coordinate_system *coordinate_system2)
 {
 	int return_code;
 

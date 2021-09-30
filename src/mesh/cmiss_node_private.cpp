@@ -80,9 +80,9 @@ public:
 		{
 			this->componentNodefieldtemplates[c] = *(node_field->getComponent(c));
 		}
-		if (node_field->time_sequence)
+		if (node_field->getTimeSequence())
 		{
-			this->setTimesequence(node_field->time_sequence);
+			this->setTimesequence(node_field->getTimeSequence());
 		}
 		return CMZN_OK;
 	}

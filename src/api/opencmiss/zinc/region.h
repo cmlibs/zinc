@@ -124,9 +124,10 @@ ZINC_API cmzn_context_id cmzn_region_get_context(cmzn_region_id region);
 ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
 
 /**
- * Sets the name of the region. Any name is valid as long as it is unique in the
- * parent region, however use of forward slash characters '/' in names is
- * discouraged since it prevent regions being found by paths.
+ * Sets the name of the region. Any name is valid as long as it is unique in
+ * the parent region, however avoid using forward slash characters '/' in names
+ * as this is used as the region path separator, and avoid name ".." which is
+ * used to identify the parent region in region paths.
  *
  * @param region  The region to be named.
  * @param name  The new name for the region.
@@ -141,6 +142,38 @@ ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
  * @return  Handle to parent region, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_get_parent(cmzn_region_id region);
+
+/**
+ * Returns the full path string from the root to this region, consisting of
+ * child region names separated by forward slash characters '/'.
+ *
+ * @param region  The region whose path is requested.
+ * @return  On success: allocated string containing full region path.
+ */
+ZINC_API char *cmzn_region_get_path(struct cmzn_region *region);
+
+/**
+ * Returns the relative path to this region from base region, a string
+ * consisting of child region names separated by forward slash characters '/'.
+ * Relative path may start with parent region names ".." to get back to the
+ * common ancestor of this and base regions.
+ *
+ * @param region  The region whose path is requested.
+ * @param base_region  The region the path is relative to.
+ * @return  Allocated string containing relative region path, or null string
+ * if regions are invalid or not in a common tree.
+ */
+ZINC_API char *cmzn_region_get_relative_path(struct cmzn_region *region,
+	struct cmzn_region *base_region);
+
+/**
+ * Get the root or top parent region for this region, which may be itself.
+ *
+ * @param region  Region to query.
+ * @return  Handle to root region which will be the region itself if it has no
+ * parents, or NULL/invalid handle if invalid argument.
+ */
+ZINC_API cmzn_region_id cmzn_region_get_root(cmzn_region_id region);
 
 /**
  * Returns a handle to the first child region of this region.
@@ -181,7 +214,7 @@ ZINC_API void cmzn_region_reaccess_next_sibling(cmzn_region_id *region_address);
 
 /**
  * Adds new_child to the end of the list of child regions of this region.
- * If the new_child is already in the region tree, it is first removed.
+ * If the new_child is already in a region tree, it is first removed.
  * Fails if new_child contains this region.
  * Fails if new_child is unnamed or the name is already used by another child of
  * this region.
@@ -240,13 +273,13 @@ ZINC_API cmzn_region_id cmzn_region_find_child_by_name(
 
 /**
  * Returns a handle to the subregion at the path relative to this region.
- * The format of the path string is CHILD_NAME/CHILD_NAME/...
- * i.e. forward slash characters '/' are used as parent/child name separators.
- * Single leading and trailing separator characters are ignored.
- * Hence, both name="" and name="/" find the region itself.
+ * This is able to find child, parent, sibling or cousin regions, or the
+ * region itself.
  *
- * @param region  Handle to the top region to search.
- * @param path  The directory-style path to the subregion.
+ * @param region  Handle to the region the path is relative to.
+ * @param path  Region path, a series of valid region names separated by
+ * forward slashes '/'. Leading and trailing separators are optional.
+ * Name ".." identifies a parent region.
  * @return  Handle to subregion, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region,
@@ -272,28 +305,31 @@ ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
 ZINC_API cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region);
 
 /**
- * Create a child region with provided name in parent region.
+ * Create a child region with provided name in region.
  * Fails if a child of that name exists already.
  *
  * @see cmzn_region_set_name
- * @param parent_region  Handle to parent region for the new region.
- * @param name  The name for the new region.
+ * @param region  Handle to region to create child in.
+ * @param name  The name for the new child region.
  * @return  Handle to new child region, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id parent_region,
+ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id region,
 	const char *name);
 
 /**
  * Create a region at the specified relative path, creating any intermediary
  * regions if required.
- * Fails if a subregion exists at that path already.
+ * This is able to create child, sibling or cousin regions.
+ * Fails if a subregion exists at that path already, or if the relative path
+ * goes above the root region.
  *
- * @param top_region  The region the path is relative to.
- * @param path  Region path, a series of valid region names separated by a
- * forward slash "/". Leading and trailing separator slashes are optional.
+ * @param region  The region the path is relative to.
+ * @param path  Region path, a series of valid region names separated by
+ * forward slashes '/'. Leading and trailing separators are optional.
+ * Name ".." identifies a parent region.
  * @return  Handle to new subregion, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
+ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id region,
 	const char *path);
 
 /**

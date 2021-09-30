@@ -19,10 +19,6 @@
 #include "general/mystring.h"
 #include "general/message.h"
 
-class Computed_field_vector_operators_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 char computed_field_normalise_type_string[] = "normalise";
