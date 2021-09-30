@@ -8,7 +8,9 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/node.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldgroup.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
@@ -40,4 +42,38 @@ TEST(FieldIO, data_and_node_group)
 	EXPECT_EQ(1, dataGroup.getSize());
 	Node datapoint = dataGroup.findNodeByIdentifier(2);
 	EXPECT_TRUE(datapoint.isValid());
+}
+
+// Test can overwrite nodes and elements with different definitions
+TEST(FieldIO, changeNodeElementDefinition)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX_TWOHERMITECUBES_NOSCALEFACTORS_RESOURCE)));
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX2_TWO_CUBES_HERMITE_NOCROSS_RESOURCE)));
+}
+
+// Test reading EX file with an empty string value
+TEST(FieldIO, exEmptyString)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EXF_EMPTY_STRING_RESOURCE)));
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node node1 = nodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodes.findNodeByIdentifier(2);
+	EXPECT_TRUE(node2.isValid());
+
+	Field name = zinc.fm.findFieldByName("name");
+	EXPECT_TRUE(name.isValid());
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	char *s;
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node1));
+	s = name.evaluateString(fieldcache);
+	EXPECT_STREQ("", s);
+	EXPECT_EQ(RESULT_OK, fieldcache.setNode(node2));
+	s = name.evaluateString(fieldcache);
+	EXPECT_STREQ("bob", s);
 }

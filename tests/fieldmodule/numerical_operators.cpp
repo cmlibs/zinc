@@ -146,6 +146,29 @@ void unary_operator_coordinate_transformation_spherical_polar_to_rc(int count, c
 	result[2] = r*sin(phi);
 }
 
+void binary_operator_matrix_multiply_aba_m020507(int count, const double *a, const double *b, double *result)
+{
+	double c[3] = { -0.2, 0.5, 0.7 };
+	// assume alternate rows of matrix are a, b, a etc. then multiply c
+	double ac = 0.0;
+	for (int i = 0; i < count; ++i)
+		ac += a[i]*c[i];
+	double bc = 0.0;
+	for (int i = 0; i < count; ++i)
+		bc += b[i]*c[i];
+	result[0] = ac;
+	result[1] = bc;
+	result[2] = ac;
+}
+
+void binary_operator_matrix_multiply_m020507_aba(int count, const double *a, const double *b, double *result)
+{
+	double c[3] = { -0.2, 0.5, 0.7 };
+	result[0] = c[0]*a[0] + c[1]*b[0] + c[2]*a[0];
+	result[1] = c[0]*a[1] + c[1]*b[1] + c[2]*a[1];
+	result[2] = c[0]*a[2] + c[1]*b[2] + c[2]*a[2];
+}
+
 void binary_operator_matrix_multiply_aba_b(int count, const double *a, const double *b, double *result)
 {
 	// assume alternate rows of matrix are a, b, a etc. then multiply b
@@ -155,8 +178,16 @@ void binary_operator_matrix_multiply_aba_b(int count, const double *a, const dou
 	double bb = 0.0;
 	for (int i = 0; i < count; ++i)
 		bb += b[i]*b[i];
-	for (int i = 0; i < count; ++i)
-		result[i] = ((i % 2) == 0) ? ab : bb;
+	result[0] = ab;
+	result[1] = bb;
+	result[2] = ab;
+}
+
+void binary_operator_matrix_multiply_a_aba(int count, const double *a, const double *b, double *result)
+{
+	result[0] = a[0]*a[0] + a[1]*b[0] + a[2]*a[0];
+	result[1] = a[0]*a[1] + a[1]*b[1] + a[2]*a[1];
+	result[2] = a[0]*a[2] + a[1]*b[2] + a[2]*a[2];
 }
 
 void binary_operator_transpose_aba_upper(int count, const double *a, const double *b, double *result)
@@ -286,18 +317,19 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		zinc.fm.createFieldComponent(fieldb, 3),
 		zinc.fm.createFieldComponent(fieldb, 1)
 	};
+	Field field_const_vector = zinc.fm.createFieldConstant(3, constants_m020507);
 	FieldIdentity fielda_spherical_polar = zinc.fm.createFieldIdentity(fielda);
 	fielda_spherical_polar.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR);
 	FieldCoordinateTransformation fieldCoordinateTransformation_spherical_polar_to_rc = zinc.fm.createFieldCoordinateTransformation(fielda_spherical_polar);
 	fieldCoordinateTransformation_spherical_polar_to_rc.setCoordinateSystemType(Field::COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN);
 	Field concatenate_fields_aba[3] = { fielda, fieldb, fielda };
 	Field field_matrix_aba = zinc.fm.createFieldConcatenate(3, concatenate_fields_aba);
-	const int field_binary_operator_count = 29;
+	const int field_binary_operator_count = 32;
 	Field_binary_operator field_binary_operators[field_binary_operator_count] =
 	{
 		// arithmetic operators
-		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
-		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		{ "add",         zinc.fm.createFieldAdd(fielda, fieldb),      binary_operator_add,      1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
+		{ "subtract",    zinc.fm.createFieldSubtract(fielda, fieldb), binary_operator_subtract, 1.0E-12, 1.0E-7,  2.5E-2,  0.0, 0.0, 0.0 },
 		{ "multiply",    zinc.fm.createFieldMultiply(fielda, fieldb), binary_operator_multiply, 1.0E-12, 1.0E-7,  2.0E-2,  0.0, 0.0, 0.0 },
 		{ "divide",      zinc.fm.createFieldDivide(fielda, fieldb),   binary_operator_divide,   1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
 		{ "power",       zinc.fm.createFieldPower(fielda, fieldb),    binary_operator_power,    1.0E-12, 1.0E-5,  2.0E-2,  0.0, 0.0, 0.0 },
@@ -315,14 +347,19 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		{ "if",          zinc.fm.createFieldIf(zinc.fm.createFieldLessThan(fieldb, zinc.fm.createFieldConstant(3, zero3)), fielda, fieldb), binary_operator_if_b_lt_zero,
 		                                                                                        1.0E-12, 5.0E-10, 4.0E-4,  0.0, 0.0, 0.0 },
 		// constant operators
-		{ "constant",    zinc.fm.createFieldConstant(3, constants_m020507), constant_operator_m020507,
-		                                                                                        1.0E-12, 1.0E-12, 1.0E-12, 0.0, 0.0, 0.0 },
+		{ "constant",    field_const_vector, constant_operator_m020507,                         1.0E-12, 1.0E-12, 1.0E-12, 0.0, 0.0, 0.0 },
 		// coordinate transformation
 		{ "coordinate_transformation_spherical_polar_to_rc", fieldCoordinateTransformation_spherical_polar_to_rc, unary_operator_coordinate_transformation_spherical_polar_to_rc,
 		                                                                                        1.0E-12, 6.0E-8,  3.0E-2,  0.0, 0.0, 0.0 },
 		// matrix operators
-		{ "matrix_multiply", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, fieldb), binary_operator_matrix_multiply_aba_b,
+		{ "matrix_multiply_matrix_constvector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, field_const_vector), binary_operator_matrix_multiply_aba_m020507,
+		                                                                                        1.0E-12, 1.0E-7,  3.0E-2,  0.0, 0.0, 0.0 },
+		{ "matrix_multiply_constvector_matrix", zinc.fm.createFieldMatrixMultiply(1, field_const_vector, field_matrix_aba), binary_operator_matrix_multiply_m020507_aba,
+		                                                                                        1.0E-12, 5.0E-8,  2.0E-2,  0.0, 0.0, 0.0 },
+		{ "matrix_multiply_matrix_vector", zinc.fm.createFieldMatrixMultiply(3, field_matrix_aba, fieldb), binary_operator_matrix_multiply_aba_b,
 		                                                                                        1.0E-12, 2.0E-7,  4.0E-2,  0.0, 0.0, 0.0 },
+		{ "matrix_multiply_vector_matrix", zinc.fm.createFieldMatrixMultiply(1, fielda, field_matrix_aba), binary_operator_matrix_multiply_a_aba,
+		                                                                                        1.0E-12, 3.0E-7,  1.0E-1,  0.0, 0.0, 0.0 },
 		{ "transpose",   zinc.fm.createFieldComponent(zinc.fm.createFieldTranspose(3, field_matrix_aba), 3, component_indexes_matrix3x3_upper), binary_operator_transpose_aba_upper,
 		                                                                                        1.0E-12, 2.0E-8,  9.0E-3,  0.0, 0.0, 0.0 },
 		// trigonometry operators
@@ -402,6 +439,7 @@ TEST(ZincField, numerical_operators_with_derivatives)
 		{
 			Field_binary_operator &op = field_binary_operators[f];
 			const char *name = op.name;
+			//std::cerr << "operator: " << name << "\n";
 			if (0 == strcmp(name, "divide"))
 			{
 				// avoid b close to zero
@@ -451,7 +489,6 @@ TEST(ZincField, numerical_operators_with_derivatives)
 			if (v_error > op.max_v_error)
 				op.max_v_error = v_error;
 
-			//std::cerr << "operator: " << name  << "\n";
 			for (int d = 0; d < 3; ++d)
 			{
 				FieldDerivative d1_field = zinc.fm.createFieldDerivative(v_field, d + 1);

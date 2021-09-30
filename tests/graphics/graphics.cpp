@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/changemanager.hpp>
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/context.h>
 #include <opencmiss/zinc/region.h>
@@ -18,9 +19,11 @@
 #include <opencmiss/zinc/graphics.h>
 #include <opencmiss/zinc/spectrum.h>
 
+#include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
+#include "opencmiss/zinc/fieldgroup.hpp"
 #include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/font.hpp"
 #include "opencmiss/zinc/graphics.hpp"
@@ -1323,11 +1326,19 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 	}
 
 	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	{
+		const char *bufferText = static_cast<const char *>(buffer);
+		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
+	}
 	free(buffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 
+	GraphicsLines lines = gr.castLines();
+	EXPECT_TRUE(lines.isValid());
+
+	EXPECT_TRUE(lines.isExterior());
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
 	EXPECT_EQ(Field::DOMAIN_TYPE_MESH1D, gr.getFieldDomainType());
 
 	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
@@ -1353,6 +1364,10 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 
 	char *return_string = zinc.scene.writeDescription();
 	EXPECT_TRUE(return_string != 0);
+	// check exterior flag migrated to boundary mode
+	EXPECT_TRUE(strstr(return_string, "\"Exterior\"") == nullptr);
+	EXPECT_TRUE(strstr(return_string, "\"BoundaryMode\"") != nullptr);
+	EXPECT_TRUE(strstr(return_string, "\"BOUNDARY\"") != nullptr);
 	cmzn_deallocate(return_string);
 }
 
@@ -1507,12 +1522,16 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	}
 
 	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	{
+		const char *bufferText = static_cast<const char *>(buffer);
+		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
+	}
 	free(buffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
 
+	EXPECT_FALSE(gr.isExterior());
 	EXPECT_EQ(Field::DOMAIN_TYPE_MESH_HIGHEST_DIMENSION, gr.getFieldDomainType());
 
 	Graphicssamplingattributes sampling = gr.getGraphicssamplingattributes();
@@ -1535,6 +1554,7 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	EXPECT_EQ(values[2], outputValues[2]);
 
 	GraphicsStreamlines streamlines = gr.castStreamlines();
+	EXPECT_TRUE(streamlines.isValid());
 	EXPECT_EQ(2.0, streamlines.getTrackLength());
 	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_MAGNITUDE, streamlines.getColourDataType());
 	EXPECT_EQ(GraphicsStreamlines::TRACK_DIRECTION_REVERSE, streamlines.getTrackDirection());
@@ -1719,4 +1739,332 @@ TEST(ZincGraphics, partialEdit)
 		EXPECT_NEAR(expectedMinimums2[i], minimums[i], tol);
 		EXPECT_NEAR(expectedMaximums2[i], maximums[i], tol);
 	}
+}
+
+TEST(ZincGraphics, boundaryMode)
+{
+	ZincTestSetupCpp zinc;
+
+	// test API for getting/setting BoundaryMode in graphics works and exterior API reflects it
+	GraphicsLines lines = zinc.scene.createGraphicsLines();
+	EXPECT_TRUE(lines.isValid());
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_ALL, lines.getBoundaryMode());
+	EXPECT_FALSE(lines.isExterior());
+	EXPECT_EQ(RESULT_OK, lines.setExterior(true));
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
+	EXPECT_TRUE(lines.isExterior());
+	EXPECT_EQ(RESULT_OK, lines.setExterior(false));
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_ALL, lines.getBoundaryMode());
+	EXPECT_FALSE(lines.isExterior());
+	EXPECT_EQ(RESULT_OK, lines.setBoundaryMode(Graphics::BOUNDARY_MODE_BOUNDARY));
+	EXPECT_EQ(Graphics::BOUNDARY_MODE_BOUNDARY, lines.getBoundaryMode());
+	EXPECT_TRUE(lines.isExterior());
+}
+
+namespace {
+
+struct BoundaryModeGroupRange
+{
+	Graphics::BoundaryMode boundaryMode;
+	const FieldGroup& group;
+	const bool hasRange;
+	const double minimums[3];
+	const double maximums[3];
+};
+
+}
+
+// Test range of graphics is valid for different boundary modes in a 3D mesh
+TEST(ZincGraphics, boundaryMode_range3d)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(6, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(24, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(33, mesh1d.getSize());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	FieldGroup group3d, group2d, noGroup;
+	{
+		ChangeManager<Fieldmodule> fieldChange(zinc.fm);
+		group3d = zinc.fm.createFieldGroup();
+		group3d.setName("subgroup3d");
+		group3d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
+		FieldElementGroup elementGroup3d = group3d.createFieldElementGroup(mesh3d);
+		MeshGroup meshGroup3d = elementGroup3d.getMeshGroup();
+		const int elementIdentifiers3d[2] = { 2, 3 };
+		for (int e = 0; e < 2; ++e)
+			meshGroup3d.addElement(mesh3d.findElementByIdentifier(elementIdentifiers3d[e]));
+		EXPECT_EQ(2, meshGroup3d.getSize());
+		FieldElementGroup elementGroup2d = group3d.getFieldElementGroup(mesh2d);
+		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		EXPECT_EQ(9, meshGroup2d.getSize());
+		FieldElementGroup elementGroup1d = group3d.getFieldElementGroup(mesh1d);
+		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		EXPECT_EQ(14, meshGroup1d.getSize());
+
+		group2d = zinc.fm.createFieldGroup();
+		group2d.setName("subgroup2d");
+		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
+		elementGroup2d = group2d.createFieldElementGroup(mesh2d);
+		meshGroup2d = elementGroup2d.getMeshGroup();
+		const int elementIdentifiers2d[6] = { 10, 12, 13, 15, 23, 24 };
+		for (int e = 0; e < 6; ++e)
+			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
+		EXPECT_EQ(6, meshGroup2d.getSize());
+		elementGroup1d = group2d.getFieldElementGroup(mesh1d);
+		meshGroup1d = elementGroup1d.getMeshGroup();
+		EXPECT_EQ(12, meshGroup1d.getSize());
+	}
+
+	Scenefilter noScenefilter;
+	const double TOL = 1.0E-6;
+
+	// test range of lines with different boundary modes
+	GraphicsLines lines = zinc.scene.createGraphicsLines();
+	EXPECT_EQ(RESULT_OK, lines.setCoordinateField(coordinates));
+	const BoundaryModeGroupRange lineBoundaryModeGroupRanges[] =
+	{
+		{ Graphics::BOUNDARY_MODE_ALL, noGroup, true, {-1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, noGroup, true, {-1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, noGroup, true, { 1.0, 1.0, 0.0 }, { 1.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_ALL, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group3d, true, { 1.0, 1.0, 0.0 }, { 1.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group3d, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_ALL, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group2d, true, { 1.0, 1.0, 0.0 }, { 1.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group2d, true, { 1.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } }
+	};
+	const int lineTestCount = sizeof(lineBoundaryModeGroupRanges) / sizeof(BoundaryModeGroupRange);
+	for (int t = 0; t < lineTestCount; ++t)
+	{
+		EXPECT_EQ(RESULT_OK, lines.setBoundaryMode(lineBoundaryModeGroupRanges[t].boundaryMode));
+		EXPECT_EQ(RESULT_OK, lines.setSubgroupField(lineBoundaryModeGroupRanges[t].group));
+		double minimums[3], maximums[3];
+		const int result = zinc.scene.getCoordinatesRange(noScenefilter, minimums, maximums);
+		if (lineBoundaryModeGroupRanges[t].hasRange)
+		{
+			EXPECT_EQ(CMZN_RESULT_OK, result);
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(lineBoundaryModeGroupRanges[t].minimums[c], minimums[c], TOL);
+				EXPECT_NEAR(lineBoundaryModeGroupRanges[t].maximums[c], maximums[c], TOL);
+			}
+		}
+		else
+		{
+			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
+		}
+	}
+	EXPECT_EQ(CMZN_RESULT_OK, zinc.scene.removeGraphics(lines));
+	EXPECT_FALSE(zinc.scene.getFirstGraphics().isValid());
+
+	// test range of surfaces with different boundary modes
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_EQ(RESULT_OK, surfaces.setCoordinateField(coordinates));
+	const BoundaryModeGroupRange surfaceBoundaryModeGroupRanges[] =
+	{
+		{ Graphics::BOUNDARY_MODE_ALL, noGroup, true, {-1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, noGroup, true, {-1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, noGroup, true, { 0.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_ALL, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group3d, true, { 0.0, 0.0, 0.0 }, { 2.0, 1.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group3d, true, { 1.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 }, },
+		{ Graphics::BOUNDARY_MODE_ALL, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group2d, true, { 1.0, 1.0, 0.0 }, { 1.0, 2.0, 1.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group2d, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group2d, true, { 1.0, 0.0, 0.0 }, { 2.0, 2.0, 1.0 } }
+	};
+	const int surfaceTestCount = sizeof(surfaceBoundaryModeGroupRanges) / sizeof(BoundaryModeGroupRange);
+	for (int t = 0; t < surfaceTestCount; ++t)
+	{
+		EXPECT_EQ(RESULT_OK, surfaces.setBoundaryMode(surfaceBoundaryModeGroupRanges[t].boundaryMode));
+		EXPECT_EQ(RESULT_OK, surfaces.setSubgroupField(surfaceBoundaryModeGroupRanges[t].group));
+		double minimums[3], maximums[3];
+		const int result = zinc.scene.getCoordinatesRange(noScenefilter, minimums, maximums);
+		if (surfaceBoundaryModeGroupRanges[t].hasRange)
+		{
+			EXPECT_EQ(CMZN_RESULT_OK, result);
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(surfaceBoundaryModeGroupRanges[t].minimums[c], minimums[c], TOL);
+				EXPECT_NEAR(surfaceBoundaryModeGroupRanges[t].maximums[c], maximums[c], TOL);
+			}
+		}
+		else
+		{
+			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
+		}
+	}
+}
+
+// Test range of graphics is valid for different boundary modes in a 2D mesh
+TEST(ZincGraphics, boundaryMode_range2d)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EXF_TRIANGLE_MESH_1371_RESOURCE)));
+
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(37, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(66, mesh1d.getSize());
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	FieldGroup group2d, noGroup;
+	{
+		group2d = zinc.fm.createFieldGroup();
+		group2d.setName("subgroup2d");
+		group2d.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
+		FieldElementGroup elementGroup2d = group2d.createFieldElementGroup(mesh2d);
+		MeshGroup meshGroup2d = elementGroup2d.getMeshGroup();
+		const int elementIdentifiers2d[18] = { 2, 3, 4, 7, 8, 11, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27 };
+		for (int e = 0; e < 18; ++e)
+			meshGroup2d.addElement(mesh2d.findElementByIdentifier(elementIdentifiers2d[e]));
+		EXPECT_EQ(18, meshGroup2d.getSize());
+		FieldElementGroup elementGroup1d = group2d.getFieldElementGroup(mesh1d);
+		MeshGroup meshGroup1d = elementGroup1d.getMeshGroup();
+		EXPECT_EQ(33, meshGroup1d.getSize());
+	}
+
+	Scenefilter noScenefilter;
+	const double TOL = 1.0E-6;
+
+	// test range of lines with different boundary modes
+	GraphicsLines lines = zinc.scene.createGraphicsLines();
+	EXPECT_EQ(RESULT_OK, lines.setCoordinateField(coordinates));
+	const BoundaryModeGroupRange lineBoundaryModeGroupRanges[] =
+	{
+		{ Graphics::BOUNDARY_MODE_ALL, noGroup, true, {-0.56112468242645264, -0.57579463720321655, 0.0}, {0.15770171582698822, 0.89119803905487061, 0.0} },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, noGroup, true, {-0.56112468242645264, -0.57579463720321655, 0.0}, {0.15770171582698822, 0.89119803905487061, 0.0} },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, noGroup, true, {-0.55195599794387817, -0.56305611133575439, 0.0}, {0.13923379778862000, 0.83955883979797363, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_ALL, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.54586583375930786, 0.0} },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group2d, true, {-0.54278731346130371, -0.21337307989597321, 0.0}, {0.12102689594030380, 0.59469604492187500, 0.0}, }
+	};
+	const int lineTestCount = sizeof(lineBoundaryModeGroupRanges) / sizeof(BoundaryModeGroupRange);
+	for (int t = 0; t < lineTestCount; ++t)
+	{
+		EXPECT_EQ(RESULT_OK, lines.setBoundaryMode(lineBoundaryModeGroupRanges[t].boundaryMode));
+		EXPECT_EQ(RESULT_OK, lines.setSubgroupField(lineBoundaryModeGroupRanges[t].group));
+		double minimums[3], maximums[3];
+		const int result = zinc.scene.getCoordinatesRange(noScenefilter, minimums, maximums);
+		if (lineBoundaryModeGroupRanges[t].hasRange)
+		{
+			EXPECT_EQ(CMZN_RESULT_OK, result);
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(lineBoundaryModeGroupRanges[t].minimums[c], minimums[c], TOL);
+				EXPECT_NEAR(lineBoundaryModeGroupRanges[t].maximums[c], maximums[c], TOL);
+			}
+		}
+		else
+		{
+			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
+		}
+	}
+	EXPECT_EQ(CMZN_RESULT_OK, zinc.scene.removeGraphics(lines));
+	EXPECT_FALSE(zinc.scene.getFirstGraphics().isValid());
+
+	// test range of surfaces with different boundary modes
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_EQ(RESULT_OK, surfaces.setCoordinateField(coordinates));
+	const BoundaryModeGroupRange surfaceBoundaryModeGroupRanges[] =
+	{
+		{ Graphics::BOUNDARY_MODE_ALL, noGroup, true, {-0.56112468242645264, -0.57579463720321655, 0.0}, {0.15770171582698822, 0.89119803905487061, 0.0} },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, noGroup, false, { 0.0, 0.0, 0.0}, { 0.0, 0.0, 0.0} },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, noGroup, true, {-0.56112468242645264, -0.57579463720321655, 0.0}, {0.15770171582698822, 0.89119803905487061, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, noGroup, false, { 0.0, 0.0, 0.0}, { 0.0, 0.0, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, noGroup, false, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+		{ Graphics::BOUNDARY_MODE_ALL, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+		{ Graphics::BOUNDARY_MODE_BOUNDARY, group2d, false, { 0.0, 0.0, 0.0}, { 0.0, 0.0, 0.0} },
+		{ Graphics::BOUNDARY_MODE_INTERIOR, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_BOUNDARY, group2d, false, { 0.0, 0.0, 0.0}, { 0.0, 0.0, 0.0} },
+		{ Graphics::BOUNDARY_MODE_SUBGROUP_INTERIOR, group2d, true, {-0.55195599794387817, -0.32647770643234253, 0.0}, {0.13923379778862000, 0.59469604492187500, 0.0} },
+	};
+	const int surfaceTestCount = sizeof(surfaceBoundaryModeGroupRanges) / sizeof(BoundaryModeGroupRange);
+	for (int t = 0; t < surfaceTestCount; ++t)
+	{
+		EXPECT_EQ(RESULT_OK, surfaces.setBoundaryMode(surfaceBoundaryModeGroupRanges[t].boundaryMode));
+		EXPECT_EQ(RESULT_OK, surfaces.setSubgroupField(surfaceBoundaryModeGroupRanges[t].group));
+		double minimums[3], maximums[3];
+		const int result = zinc.scene.getCoordinatesRange(noScenefilter, minimums, maximums);
+		if (surfaceBoundaryModeGroupRanges[t].hasRange)
+		{
+			EXPECT_EQ(CMZN_RESULT_OK, result);
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(surfaceBoundaryModeGroupRanges[t].minimums[c], minimums[c], TOL);
+				EXPECT_NEAR(surfaceBoundaryModeGroupRanges[t].maximums[c], maximums[c], TOL);
+			}
+		}
+		else
+		{
+			EXPECT_EQ(CMZN_RESULT_ERROR_NOT_FOUND, result);
+		}
+	}
+}
+
+TEST(ZincGraphics, BoundaryModeEnum)
+{
+	const char *enumNames[6] = { nullptr, "ALL", "BOUNDARY", "INTERIOR", "SUBGROUP_BOUNDARY", "SUBGROUP_INTERIOR" };
+	testEnum(6, enumNames, Graphics::BoundaryModeEnumToString, Graphics::BoundaryModeEnumFromString);
+}
+
+TEST(ZincGraphics, RenderPolygonModeEnum)
+{
+	const char *enumNames[3] = { nullptr, "SHADED", "WIREFRAME" };
+	testEnum(3, enumNames, Graphics::RenderPolygonModeEnumToString, Graphics::RenderPolygonModeEnumFromString);
+}
+
+TEST(ZincGraphics, SelectModeEnum)
+{
+	const char *enumNames[5] = { nullptr, "ON", "OFF", "DRAW_SELECTED", "DRAW_UNSELECTED" };
+	testEnum(5, enumNames, Graphics::SelectModeEnumToString, Graphics::SelectModeEnumFromString);
+}
+
+TEST(ZincGraphics, TypeEnum)
+{
+	const char *enumNames[6] = { nullptr, "POINTS", "LINES", "SURFACES", "CONTOURS", "STREAMLINES" };
+	testEnum(6, enumNames, Graphics::TypeEnumToString, Graphics::TypeEnumFromString);
+}
+
+TEST(ZincGraphicslineattributes, ShapeTypeEnum)
+{
+	const char *enumNames[5] = { nullptr, "LINE", "RIBBON", "CIRCLE_EXTRUSION", "SQUARE_EXTRUSION" };
+	testEnum(5, enumNames, Graphicslineattributes::ShapeTypeEnumToString, Graphicslineattributes::ShapeTypeEnumFromString);
+}
+
+TEST(ZincGraphicsStreamlines, ColourDataTypeEnum)
+{
+	const char *enumNames[4] = { nullptr, "FIELD", "MAGNITUDE", "TRAVEL_TIME" };
+	testEnum(4, enumNames, GraphicsStreamlines::ColourDataTypeEnumToString, GraphicsStreamlines::ColourDataTypeEnumFromString);
+}
+
+TEST(ZincGraphicsStreamlines, TrackDirectionEnum)
+{
+	const char *enumNames[3] = { nullptr, "FORWARD", "REVERSE" };
+	testEnum(3, enumNames, GraphicsStreamlines::TrackDirectionEnumToString, GraphicsStreamlines::TrackDirectionEnumFromString);
 }

@@ -700,6 +700,13 @@ TEST(ZincFieldDerivative, higher_derivatives)
 		}
 	}
 	EXPECT_EQ(RESULT_OK, zinc.fm.endChange());
+	// make first and second derivative operators to compare values match derivative fields
+	// these test evaluating all terms at once
+	Differentialoperator derivativeOperator1 = mesh.getChartDifferentialoperator(1, -1);
+	EXPECT_TRUE(derivativeOperator1.isValid());
+	Differentialoperator derivativeOperator2 = mesh.getChartDifferentialoperator(2, -1);
+	EXPECT_TRUE(derivativeOperator2.isValid());
+
 	const int pointCount = 10;
 	const double xi[pointCount][3] =
 	{
@@ -719,6 +726,7 @@ TEST(ZincFieldDerivative, higher_derivatives)
 	double expectedValues[3], values[3];
 	double derivatives1[3], expectedDerivatives1[3];
 	double derivatives2[3], expectedDerivatives2[3];
+	double allDerivatives1[9], allDerivatives2[27];
 	const double valuesTolerance = 1.0E-11;
 	const double derivatives1Tolerance = 1.0E-11;
 	const double derivatives2Tolerance = 1.0E-7;  // as currently computed by finite difference
@@ -734,6 +742,7 @@ TEST(ZincFieldDerivative, higher_derivatives)
 		for (int c = 0; c < 3; ++c)
 			EXPECT_NEAR(expectedValues[c], values[c], valuesTolerance);
 		// first derivatives
+		EXPECT_EQ(RESULT_OK, result = deformed.evaluateDerivative(derivativeOperator1, cache, 9, allDerivatives1));
 		for (int i = 0; i < 3; ++i)
 		{
 			interpolateTricubicLagrange(nodeDeformed,
@@ -742,9 +751,13 @@ TEST(ZincFieldDerivative, higher_derivatives)
 				basisValues[2][(i == 2) ? 1 : 0], expectedDerivatives1);
 			EXPECT_EQ(RESULT_OK, result = firstDerivatives[i].evaluateReal(cache, 3, derivatives1));
 			for (int c = 0; c < 3; ++c)
+			{
 				EXPECT_NEAR(expectedDerivatives1[c], derivatives1[c], derivatives1Tolerance);
+				EXPECT_EQ(derivatives1[c], allDerivatives1[c*3 + i]);
+			}
 		}
 		// second derivatives
+		EXPECT_EQ(RESULT_OK, result = deformed.evaluateDerivative(derivativeOperator2, cache, 27, allDerivatives2));
 		for (int i = 0; i < 3; ++i)
 			for (int j = 0; j < 3; ++j)
 			{
@@ -754,7 +767,10 @@ TEST(ZincFieldDerivative, higher_derivatives)
 					basisValues[2][((i == 2) ? 1 : 0) + ((j == 2) ? 1 : 0)], expectedDerivatives2);
 				EXPECT_EQ(RESULT_OK, result = secondDerivatives[i][j].evaluateReal(cache, 3, derivatives2));
 				for (int c = 0; c < 3; ++c)
+				{
 					EXPECT_NEAR(expectedDerivatives2[c], derivatives2[c], derivatives2Tolerance);
+					EXPECT_EQ(derivatives2[c], allDerivatives2[c*9 + i*3 + j]);
+				}
 			}
 	}
 }
@@ -793,14 +809,12 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 	EXPECT_TRUE(nodes.isValid());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
-	EXPECT_TRUE(dx_dX.isValid());
+	EXPECT_TRUE(cache.isValid());
 
 	double values[9];
 	EXPECT_EQ(RESULT_OK, matrix.evaluateReal(cache, 9, values));
 	for (int c = 0; c < 9; ++c)
-	{
 		EXPECT_DOUBLE_EQ(matrixValues[c], values[c]);
-	}
 	const double tolerance = 1.0E-6;
 	for (int n = 0; n < 8; ++n)
 	{
@@ -809,8 +823,6 @@ TEST(ZincFieldGradient, evaluateAtNodeFiniteDifference)
 		EXPECT_EQ(RESULT_OK, cache.setNode(node));
 		EXPECT_EQ(RESULT_OK, dx_dX.evaluateReal(cache, 9, values));
 		for (int c = 0; c < 9; ++c)
-		{
 			EXPECT_NEAR(matrixValues[c], values[c], tolerance);
-		}
 	}
 }

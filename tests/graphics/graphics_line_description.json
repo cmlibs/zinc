@@ -1,8 +1,8 @@
 {
    "Graphics" : [
       {
+         "BoundaryMode" : "BOUNDARY",
          "ElementFaceType" : "ALL",
-         "Exterior" : false,
          "FieldDomainType" : "MESH1D",
          "LineAttributes" : {
             "BaseSize" : [ 0.5, 0.5 ],

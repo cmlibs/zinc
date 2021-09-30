@@ -19,6 +19,7 @@
 #include <opencmiss/zinc/status.h>
 #include <opencmiss/zinc/stream.h>
 #include <opencmiss/zinc/streamregion.h>
+#include "zinctestsetup.hpp"
 
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/element.hpp>
@@ -30,7 +31,7 @@
 #include <opencmiss/zinc/status.hpp>
 #include <opencmiss/zinc/stream.hpp>
 #include <opencmiss/zinc/streamregion.hpp>
-#include "zinctestsetup.hpp"
+#include "utilities/testenum.hpp"
 #include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
@@ -457,4 +458,22 @@ TEST(ZincNodeset, destroyNodes)
 	}
 	EXPECT_EQ(OK, nodeset.destroyAllNodes());
 	EXPECT_EQ(0, nodeset.getSize());
+}
+
+TEST(ZincElement, FaceTypeEnum)
+{
+	const char *enumNames[10] = { nullptr, "ALL", "ANY_FACE", "NO_FACE", "XI1_0", "XI1_1", "XI2_0", "XI2_1", "XI3_0", "XI3_1" };
+	testEnum(10, enumNames, Element::FaceTypeEnumToString, Element::FaceTypeEnumFromString);
+}
+
+TEST(ZincElement, PointSamplingModeEnum)
+{
+	const char *enumNames[6] = { nullptr, "CELL_CENTRES", "CELL_CORNERS", "CELL_POISSON", "SET_LOCATION", "GAUSSIAN_QUADRATURE" };
+	testEnum(6, enumNames, Element::PointSamplingModeEnumToString, Element::PointSamplingModeEnumFromString);
+}
+
+TEST(ZincElement, ShapeTypeEnum)
+{
+	const char *enumNames[9] = { nullptr, "LINE", "SQUARE", "TRIANGLE", "CUBE", "TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23" };
+	testEnum(9, enumNames, Element::ShapeTypeEnumToString, Element::ShapeTypeEnumFromString);
 }
