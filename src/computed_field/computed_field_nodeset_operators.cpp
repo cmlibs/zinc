@@ -29,10 +29,6 @@
 
 using namespace std;
 
-class Computed_field_nodeset_operators_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_nodeset_operator_type_string[] = "nodeset_operator";
@@ -56,9 +52,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 
@@ -135,7 +131,7 @@ public:
 			}
 			cmzn_field_stored_mesh_location_destroy(&storedMeshLocation);
 		}
-		return this->field->setOptionalSourceField(2, elementMapField);
+		return this->field->setSourceField(1, elementMapField);
 	}
 
 protected:

@@ -798,7 +798,7 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMZN_GLYPH_REPEAT_MODE_NONE:
+			case CMZN_GLYPH_SHAPE_TYPE_NONE:
 				enum_string = "NONE";
 				break;
 			case CMZN_GLYPH_SHAPE_TYPE_ARROW:

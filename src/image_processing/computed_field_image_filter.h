@@ -822,11 +822,11 @@ Evaluate the templated version of this filter
 	const Field_location_field_values* coordinate_location = 0;
 	const FE_value* xi = NULL;
 
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		xi = element_xi_location->get_xi();
 	}
-	else if (coordinate_location = cache.get_location_field_values())
+	else if ((coordinate_location = cache.get_location_field_values()))
 	{
 		xi = coordinate_location->get_values();
 	}

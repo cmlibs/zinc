@@ -432,10 +432,17 @@ public:
 			return Computed_field_element_group::create(this->fe_mesh);
 		};
 
-		int compare(Computed_field_core* other_field)
+		virtual int compare(Computed_field_core* other_field)
 		{
-			if (field && dynamic_cast<Computed_field_element_group*>(other_field))
-				return 1;
+			Computed_field_element_group* otherCore;
+			if (field && (otherCore = dynamic_cast<Computed_field_element_group*>(other_field)))
+			{
+				if ((this->fe_mesh->getDimension() == otherCore->fe_mesh->getDimension()) &&
+					(this->fe_mesh->getName() == otherCore->fe_mesh->getName()))
+				{
+					return 1;
+				}
+			}
 			return 0;
 		}
 
@@ -611,10 +618,16 @@ public:
 			return Computed_field_node_group::create(this->fe_nodeset);
 		};
 
-		int compare(Computed_field_core* other_field)
+		virtual int compare(Computed_field_core* other_field)
 		{
-			if (field && dynamic_cast<Computed_field_node_group*>(other_field))
-				return 1;
+			Computed_field_node_group* otherCore;
+			if (field && (otherCore = dynamic_cast<Computed_field_node_group*>(other_field)))
+			{
+				if (this->fe_nodeset->getName() == otherCore->fe_nodeset->getName())
+				{
+					return 1;
+				}
+			}
 			return 0;
 		}
 

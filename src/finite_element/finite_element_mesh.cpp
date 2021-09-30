@@ -318,7 +318,7 @@ cmzn_element::~cmzn_element()
 
 cmzn_element *cmzn_element::getAncestorConversion(FE_mesh *ancestorMesh, FE_value *elementToAncestor)
 {
-	if (!((this) && (this->mesh) && (elementToAncestor)))
+	if (!((this->mesh) && (elementToAncestor)))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_element::getAncestorConversion.  Invalid argument(s)");
 		return nullptr;

@@ -294,8 +294,6 @@ TEST(ZincField, numerical_operators_with_derivatives)
 {
 	ZincTestSetupCpp zinc;
 
-	zinc.root_region;
-
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRICUBIC_DEFORMED_RESOURCE)));
 	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_TRIQUADRATIC_DELTA_RESOURCE)));
 

@@ -388,7 +388,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 	{
-		char *command_string, *field_name, temp_string[40];
+		char *command_string, *field_name, temp_string[60];
 		int error;
 
 		ENTER(Computed_field_threshold_image_filter::get_command_string);

@@ -36,7 +36,6 @@ FE_element_field_evaluation::FE_element_field_evaluation() :
 	field(nullptr),
 	element(nullptr),
 	field_element(nullptr),
-	time_dependent(0),
 	time(0.0),
 	component_number_in_xi(nullptr),
 	destroy_standard_basis_arguments(false),
@@ -227,7 +226,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 			// and field_element to ensure field values are still valid for
 			// a given line or face. */
 			this->field_element = fieldElement->access();
-			this->time_dependent = 0;
 			this->time = time;
 			this->number_of_components = number_of_components;
 		} break;
@@ -276,7 +274,6 @@ int FE_element_field_evaluation::calculate_values(FE_field *fieldIn,
 				this->field = fieldIn->access();
 				this->element = element->access();
 				this->field_element = fieldElement->access();
-				this->time_dependent = fieldIn->hasMultipleTimes();
 				this->time = time;
 				this->destroy_standard_basis_arguments = fieldElementDimension > elementDimension;
 				this->number_of_components = number_of_components;
@@ -815,8 +812,6 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 			case GENERAL_FE_FIELD:
 			{
 				/* calculate a value for each component */
-				Standard_basis_function *current_standard_basis_function = 0;
-				int *current_standard_basis_function_arguments = 0;
 				Standard_basis_function **standard_basis_function_ptr = this->component_standard_basis_functions;
 				int **standard_basis_function_arguments_ptr = this->component_standard_basis_function_arguments;
 				FE_value *calculated_value = values;

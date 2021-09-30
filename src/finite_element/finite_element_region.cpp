@@ -455,12 +455,12 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 			if (merged_fe_field)
 			{
 				/* no change needs to be noted if fields are exactly the same */
-				if (!FE_fields_match_exact(merged_fe_field, fe_field))
+				if (!merged_fe_field->compareFullDefinition(fe_field))
 				{
-					/* can only change fundamentals -- number of components, value type
-						 if merged_fe_field is not accessed by any other objects */
+					// can only change basic definition -- number of components, value type
+					// if merged_fe_field is not accessed by any other objects
 					if ((1 == merged_fe_field->getAccessCount()) ||
-						FE_fields_match_fundamental(merged_fe_field, fe_field))
+						merged_fe_field->compareBasicDefinition(fe_field))
 					{
 						if (merged_fe_field->copyProperties(fe_field))
 						{
@@ -642,7 +642,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 					"Field named \"%s\" already exists in this FE_region.", new_name);
 				return_code = 0;
 			}
-			else
+			else if (0 != strcmp(field->getName(), new_name))
 			{
 				// this temporarily removes the object from all indexed lists
 				if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_field,name)(
@@ -715,7 +715,7 @@ int FE_region_get_number_of_FE_fields(struct FE_region *fe_region)
 	return 0;
 }
 
-int FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
+bool FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
 	struct FE_field *fe_field)
 {
 	if (fe_region && fe_field)
@@ -724,10 +724,10 @@ int FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
 		for (int n = 0; n < 2; ++n)
 		{
 			if (fe_region->nodesets[n]->FE_field_has_multiple_times(fe_field))
-				return 1;
+				return true;
 		}
 	}
-	return 0;
+	return false;
 }
 
 struct FE_field *FE_region_get_default_coordinate_FE_field(struct FE_region *fe_region)
@@ -1154,7 +1154,11 @@ static int FE_field_merge_into_FE_region(struct FE_field *sourceField,
 	const char *fieldName = get_FE_field_name(sourceField);
 	FE_field *targetField = FE_region_get_FE_field_from_name(fe_region, fieldName);
 	if (targetField)
+	{
+		if (sourceField->checkTimeDependent())
+			targetField->setTimeDependent();
 		return 1;
+	}
 
 	if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(sourceField))
 	{

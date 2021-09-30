@@ -16,6 +16,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/create_image_processing.cpp
 	${CURRENT_TEST}/create_fibre_axes.cpp
 	${CURRENT_TEST}/elementbasis.cpp
+	${CURRENT_TEST}/fieldapply.cpp
 	${CURRENT_TEST}/fieldarithmeticoperators.cpp
 	${CURRENT_TEST}/fieldassignment.cpp
 	${CURRENT_TEST}/fieldconstant.cpp

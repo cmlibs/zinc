@@ -20,6 +20,7 @@
 #include "general/debug.h"
 #include "region/cmiss_region.hpp"
 #include "computed_field/field_location.hpp"
+#include <map>
 #include <vector>
 
 struct Computed_field_find_element_xi_cache;
@@ -63,11 +64,14 @@ public:
 	/** override to clear type-specific buffer information & call this */
 	virtual void clear();
 
-	cmzn_fieldcache *getOrCreatePrivateExtraCache(cmzn_region *region);
+	/** Return shared extraCache for evaluating fields in the given region, for use by Apply field */
+	cmzn_fieldcache *getOrCreateSharedExternalExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region);
 
+	/** Return shared extraCache for evaluating at different locations but the same time.
+	 * Hence can share finite element evaluation caches from fieldCache. */
 	cmzn_fieldcache *getOrCreateSharedExtraCache(cmzn_fieldcache& parentCache);
 
-	/** can use after calling getOrCreatePrivateExtraCache or getOrCreateSharedExtraCache*/
+	/** can use after calling getOrCreate~ExtraCache method */
 	cmzn_fieldcache *getExtraCache()
 	{
 		return this->extraCache;
@@ -239,7 +243,7 @@ public:
 	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative, const Field_location& location)
 	{
 		const int cacheIndex = fieldDerivative.getCacheIndex();
-		if (this->derivatives.size() <= cacheIndex)
+		if (static_cast<int>(this->derivatives.size()) <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
 		const int termCount = fieldDerivative.getTermCount(location);
 		DerivativeValueCache *derivativeValueCache = this->derivatives[cacheIndex];
@@ -253,7 +257,7 @@ public:
 	/** remove any derivative value cache for index */
 	void removeDerivativeValueCacheAtIndex(int derivativeCacheIndex)
 	{
-		if (derivativeCacheIndex < this->derivatives.size())
+		if (derivativeCacheIndex < static_cast<int>(this->derivatives.size()))
 		{
 			DerivativeValueCache* &derivativeValueCache = this->derivatives[derivativeCacheIndex];
 			delete derivativeValueCache;
@@ -275,6 +279,8 @@ private:
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;
 
+typedef std::map<cmzn_region*, cmzn_fieldcache*> RegionFieldcacheMap;
+
 struct cmzn_fieldcache
 {
 private:
@@ -292,26 +298,13 @@ private:
 	bool assignInCache;
 	cmzn_fieldcache *parentCache;  // non-accessed parent cache if this is its sharedWorkingCache; finite element evaluation caches are shared with parent
 	cmzn_fieldcache *sharedWorkingCache;  // optional working cache shared by fields evaluating at the same time value
+	RegionFieldcacheMap sharedExternalWorkingCacheMap;
 	int access_count;
-
-	/** call whenever location changes to increment location counter */
-	void locationChanged()
-	{
-		++(this->locationCounter);
-		this->modifyCounter = this->region->getFieldModifyCounter();
-		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
-		// Logic assumes counter will overflow back to a negative value to trigger reset
-		if (this->locationCounter < 0)
-		{
-			this->locationCounter = 0;
-			this->resetValueCacheEvaluationCounters();
-		}
-	}
 
 public:
 
 	/** @param parentCacheIn  Optional parent cache this is the sharedWorkingCache of */
-	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = 0);
+	cmzn_fieldcache(cmzn_region *regionIn, cmzn_fieldcache *parentCacheIn = nullptr);
 
 	~cmzn_fieldcache();
 
@@ -337,6 +330,53 @@ public:
 	inline bool hasRegionModifications() const
 	{
 		return this->modifyCounter != this->region->getFieldModifyCounter();
+	}
+
+	/** call whenever location changes to increment location counter
+	 * Can be called externally - e.g. by Computed_field_apply::evaluate */
+	void locationChanged()
+	{
+		++(this->locationCounter);
+		this->modifyCounter = this->region->getFieldModifyCounter();
+		// Must reset location and evaluation counters otherwise fields will not be re-evaluated
+		// Logic assumes counter will overflow back to a negative value to trigger reset
+		if (this->locationCounter < 0)
+		{
+			this->locationCounter = 0;
+			this->resetValueCacheEvaluationCounters();
+		}
+	}
+
+	/** @return  True if location unchanged, otherwise false. */
+	bool isSameLocation(const cmzn_fieldcache &source) const
+	{
+		Field_location::Type sourceType = source.location->get_type();
+		if (sourceType != this->location->get_type())
+			return false;
+		switch (sourceType)
+		{
+		case Field_location::TYPE_ELEMENT_XI:
+		{
+			// either location may be location_element_xi or an indexed_location_element_xi
+			return static_cast<Field_location_element_xi&>(*this->location) == static_cast<Field_location_element_xi&>(*source.location);
+		} break;
+		case Field_location::TYPE_FIELD_VALUES:
+		{
+			return this->location_field_values == source.location_field_values;
+		} break;
+		case Field_location::TYPE_NODE:
+		{
+			return this->location_node == source.location_node;
+		} break;
+		case Field_location::TYPE_TIME:
+		{
+			return this->location_time == source.location_time;
+		} break;
+		case Field_location::TYPE_INVALID:
+		{
+		} break;
+		}
+		return false;
 	}
 
 	/** Copy location from another field cache */
@@ -515,6 +555,16 @@ public:
 		return this->parentCache;
 	}
 
+	/** Get a shared fieldcache for evaluating fields in the supplied region.
+	 * @return  Non-accessed field cache */
+	cmzn_fieldcache *getOrCreateSharedExternalWorkingCache(cmzn_region *region);
+
+	/** @return  Non-accessed field cache, or nullptr if none */
+	cmzn_fieldcache *getSharedWorkingCache() const
+	{
+		return this->sharedWorkingCache;
+	}
+
 	/** @return  Non-accessed field cache */
 	cmzn_fieldcache *getOrCreateSharedWorkingCache()
 	{
@@ -528,16 +578,13 @@ public:
 
 };
 
-/** Return private extraCache for evaluating fields at different locations and different time. */
-inline cmzn_fieldcache *FieldValueCache::getOrCreatePrivateExtraCache(cmzn_region *region)
+inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExternalExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region)
 {
 	if (!this->extraCache)
-		this->extraCache = new cmzn_fieldcache(region);
+		this->extraCache = parentCache.getOrCreateSharedExternalWorkingCache(region)->access();
 	return this->extraCache;
 }
 
-/** Return shared extraCache for evaluating at different locations but the same time.
- * Hence can share finite element evaluation caches from fieldCache. */
 inline cmzn_fieldcache *FieldValueCache::getOrCreateSharedExtraCache(cmzn_fieldcache& fieldCache)
 {
 	if (!this->extraCache)

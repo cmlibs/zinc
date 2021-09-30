@@ -21,10 +21,6 @@ computed fields.
 #include "general/mystring.h"
 #include "general/message.h"
 
-class Computed_field_deformation_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 char computed_field_2d_strain_type_string[] = "2d_strain";

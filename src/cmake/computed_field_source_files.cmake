@@ -86,7 +86,7 @@ SET( COMPUTED_FIELD_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/minimise.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/cmiss_optimisation_private.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/optimisation.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_alias.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_apply.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_compose.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_deformation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_image.cpp
@@ -103,7 +103,7 @@ SET( COMPUTED_FIELD_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/minimise.h
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/cmiss_optimisation_private.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/minimise/optimisation.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_alias.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_apply.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_compose.h
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_deformation.h
   ${CMAKE_CURRENT_SOURCE_DIR}/computed_field/computed_field_external.h

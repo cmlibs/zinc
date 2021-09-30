@@ -169,6 +169,18 @@ ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id ca
 	const char *string_value);
 
 /**
+ * Query if field is a function of another field, meaning it is either the same
+ * or the other field is one of its source fields or any further source fields
+ * recursively.
+ *
+ * @param field  The field to query.
+ * @param other_field  The field to query for dependence on.
+ * @return  true if field depends on other field, otherwise false.
+ */
+ZINC_API bool cmzn_field_depends_on_field(cmzn_field_id field,
+	cmzn_field_id other_field);
+
+/**
  * Evaluate mesh_location field values at location specified in cache.
  *
  * @param field  The field to evaluate.

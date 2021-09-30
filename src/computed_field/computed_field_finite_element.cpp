@@ -53,28 +53,126 @@ Module types
 ------------
 */
 
-struct Computed_field_finite_element_package : public Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-}; /* Computed_field_finite_element_package */
-
 namespace {
 
 typedef std::map<cmzn_element *, FE_element_field_evaluation *> FE_element_field_evaluation_map;
 
+const int maxCachedTimes = 3;
+
+class TimeElementFieldEvaluationMap
+{
+	FE_field *feField;
+	FE_value time;
+	FE_element_field_evaluation_map elementFieldEvaluationMap;
+	FE_element_field_evaluation *elementFieldEvaluation;  // evalution object for latest element
+
+public:
+
+	TimeElementFieldEvaluationMap(FE_field *feFieldIn, FE_value timeIn) :
+		feField(feFieldIn),
+		time(timeIn),
+		elementFieldEvaluation(nullptr)
+	{
+	}
+
+	~TimeElementFieldEvaluationMap()
+	{
+		this->clear();
+	}
+
+	void clear()
+	{
+		for (FE_element_field_evaluation_map::iterator iter = this->elementFieldEvaluationMap.begin();
+			iter != this->elementFieldEvaluationMap.end(); ++iter)
+		{
+			FE_element_field_evaluation::deaccess(iter->second);
+		}
+		this->elementFieldEvaluationMap.clear();
+		// Following was a pointer to an object just destroyed, so must clear
+		this->elementFieldEvaluation = nullptr;
+	}
+
+	inline FE_value getTime() const
+	{
+		return this->time;
+	}
+
+	/** Get or create the FE_element_field_evaluation for evaluating field in
+	 * element at time, inherited from optional topLevelElement. Uses existing
+	 * values in cache if nothing changed. Caller must have ensured time match
+	 * with this object and that arguments are valid.
+	 * @return  Non-accessed FE_element_field_evaluation* or nullptr if failed.
+	 */
+	FE_element_field_evaluation *getElementFieldEvaluation(
+		cmzn_element *element, cmzn_element *topLevelElement)
+	{
+		// can't trust cached element field values if between manager begin/end change
+		// and this field has been modified.
+		const bool fieldChanged = FE_field_has_cached_changes(this->feField);
+		// ensure we have FE_element_field_evaluation calculated for element
+		// with derivatives_calculated if requested
+		if ((!this->elementFieldEvaluation) || fieldChanged ||
+			(!this->elementFieldEvaluation->isForElement(element, topLevelElement)))
+		{
+			bool needUpdate = false;
+			bool addToCache = false;
+			FE_element_field_evaluation_map::iterator iter = this->elementFieldEvaluationMap.find(element);
+			if (iter == this->elementFieldEvaluationMap.end())
+			{
+				this->elementFieldEvaluation = FE_element_field_evaluation::create();
+				addToCache = true;
+				needUpdate = true;
+			}
+			else
+			{
+				this->elementFieldEvaluation = iter->second;
+				if (fieldChanged || (!this->elementFieldEvaluation->isForElement(element, topLevelElement)))
+				{
+					this->elementFieldEvaluation->clear();
+					needUpdate = true;
+				}
+			}
+			if ((this->elementFieldEvaluation) && needUpdate)
+			{
+				if (this->elementFieldEvaluation->calculate_values(this->feField, element, this->time, topLevelElement))
+				{
+					if (addToCache)
+					{
+						// Set a cache size limit, clearing is a simple way to only cache for recent elements
+						if (1000 < this->elementFieldEvaluationMap.size())
+						{
+							FE_element_field_evaluation* tmpElementFieldEvaluation = this->elementFieldEvaluation;
+							this->clear();
+							this->elementFieldEvaluation = tmpElementFieldEvaluation;
+						}
+						this->elementFieldEvaluationMap[element] = this->elementFieldEvaluation;
+					}
+				}
+				else
+				{
+					FE_element_field_evaluation::deaccess(this->elementFieldEvaluation);
+					if (!addToCache)
+					{
+						this->elementFieldEvaluationMap.erase(iter);
+					}
+				}
+			}
+		}
+		return this->elementFieldEvaluation;
+	}
+
+};
+
+
 /** reference counted cache of FE_element_field_evaluation for recent elements to share between field caches */
 class FE_element_field_evaluation_cache
 {
-	FE_element_field_evaluation_map element_field_evaluation_map;
-	FE_element_field_evaluation *element_field_evaluation;  // evalution object for latest element
+	FE_field *feField;
+	std::vector<TimeElementFieldEvaluationMap*> timeElementFieldEvaluationMaps;
 	int access_count;
 
-	FE_element_field_evaluation_cache() :
-		element_field_evaluation(0),
+	FE_element_field_evaluation_cache(FE_field *feFieldIn) :
+		feField(feFieldIn),
 		access_count(1)
 	{
 	}
@@ -84,20 +182,10 @@ class FE_element_field_evaluation_cache
 		this->clear();
 	}
 
-	void inline clear_map()
-	{
-		for (FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.begin();
-			iter != this->element_field_evaluation_map.end(); ++iter)
-		{
-			FE_element_field_evaluation::deaccess(iter->second);
-		}
-		this->element_field_evaluation_map.clear();
-	}
-
 public:
-	static FE_element_field_evaluation_cache *create()
+	static FE_element_field_evaluation_cache *create(FE_field *feFieldIn)
 	{
-		return new FE_element_field_evaluation_cache();
+		return new FE_element_field_evaluation_cache(feFieldIn);
 	}
 
 	FE_element_field_evaluation_cache *access()
@@ -119,84 +207,59 @@ public:
 
 	void clear()
 	{
-		this->clear_map();
-		// Following was a pointer to an object just destroyed, so must clear
-		this->element_field_evaluation = 0;
+		const int timeCount = static_cast<int>(this->timeElementFieldEvaluationMaps.size());
+		for (int i = 0; i < timeCount; ++i)
+		{
+			delete this->timeElementFieldEvaluationMaps[i];
+		}
+		this->timeElementFieldEvaluationMaps.clear();
+	}
+
+	TimeElementFieldEvaluationMap *getTimeElementFieldEvaluationMap(FE_value time)
+	{
+		TimeElementFieldEvaluationMap *timeElementFieldEvaluationMap;
+		const int timeCount = static_cast<int>(this->timeElementFieldEvaluationMaps.size());
+		for (int i = 0; i < timeCount; ++i)
+		{
+			timeElementFieldEvaluationMap = this->timeElementFieldEvaluationMaps[i];
+			if (timeElementFieldEvaluationMap->getTime() == time)
+			{
+				if (i != 0)
+				{
+					// move to the front
+					for (int j = i; j > 0; --j)
+					{
+						this->timeElementFieldEvaluationMaps[j] = this->timeElementFieldEvaluationMaps[j - 1];
+					}
+					this->timeElementFieldEvaluationMaps[0] = timeElementFieldEvaluationMap;
+				}
+				return timeElementFieldEvaluationMap;
+			}
+		}
+		if (timeCount == maxCachedTimes)
+		{
+			delete this->timeElementFieldEvaluationMaps[timeCount - 1];
+			this->timeElementFieldEvaluationMaps.resize(timeCount - 1);
+		}
+		timeElementFieldEvaluationMap = new TimeElementFieldEvaluationMap(this->feField, time);
+		this->timeElementFieldEvaluationMaps.insert(this->timeElementFieldEvaluationMaps.begin(), timeElementFieldEvaluationMap);
+		return timeElementFieldEvaluationMap;
 	}
 
 	/**
 	 * Establishes the FE_element_field_evaluation necessary for evaluating field in
 	 * element at time, inherited from optional top_level_element. Uses existing
 	 * values in cache if nothing changed.
-	 * @param calculate_derivatives  Controls whether basis functions for
-	 * derivatives are also evaluated.
-	 * @param differential_order  Optional order to differentiate monomials by.
-	 * @param differential_xi_indices  Which xi indices to differentiate.
+	 * @param  Time to get parameters at. If FE_field is not time-dependent, this
+	 * is ignored and time 0.0 is used.
 	 * @return  Non-accessed FE_element_field_evaluation* or 0 if failed.
 	 */
-	FE_element_field_evaluation *get_element_field_evaluation(
-		FE_field *fe_field, cmzn_element *element, FE_value time,
-		cmzn_element *top_level_element)
+	inline FE_element_field_evaluation *getElementFieldEvaluation(cmzn_element *element, FE_value time,
+		cmzn_element *topLevelElement)
 	{
-		//if (!(fe_field) || (!element))
-		//{
-		//	display_message(ERROR_MESSAGE,
-		//		"FE_element_field_evaluation_cache::get_element_field_evaluation.  Invalid arguments.");
-		//	return 0;
-		//}
-		// can't trust cached element field values if between manager begin/end change
-		// and this field has been modified.
-		const bool field_changed = FE_field_has_cached_changes(fe_field);
-		// ensure we have FE_element_field_evaluation calculated for element
-		// with derivatives_calculated if requested
-		if ((!this->element_field_evaluation) || field_changed || 
-			(!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
-		{
-			bool need_update = false;
-			bool add_to_cache = false;
-
-			FE_element_field_evaluation_map::iterator iter = this->element_field_evaluation_map.find(element);
-			if (iter == this->element_field_evaluation_map.end())
-			{
-				this->element_field_evaluation = FE_element_field_evaluation::create();
-				add_to_cache = true;
-				need_update = true;
-			}
-			else
-			{
-				this->element_field_evaluation = iter->second;
-				if (field_changed || (!this->element_field_evaluation->is_for_element_and_time(element, time, top_level_element)))
-				{
-					need_update = true;
-					this->element_field_evaluation->clear();
-				}
-			}
-			if ((this->element_field_evaluation) && need_update)
-			{
-				if (this->element_field_evaluation->calculate_values(fe_field, element,
-					time, top_level_element))
-				{
-					if (add_to_cache)
-					{
-						// Set a cache size limit, clearing is a simple way to only cache for recent elements
-						if (1000 < this->element_field_evaluation_map.size())
-							this->clear_map();
-						this->element_field_evaluation_map[element] = this->element_field_evaluation;
-					}
-				}
-				else if (add_to_cache)
-				{
-					FE_element_field_evaluation::deaccess(this->element_field_evaluation);
-				}
-				else
-				{
-					// clear to ensure marked as not valid
-					this->element_field_evaluation->clear();
-					this->element_field_evaluation = 0;
-				}
-			}
-		}
-		return this->element_field_evaluation;
+		const FE_value useTime = this->feField->isTimeDependent() ? time : 0.0;
+		TimeElementFieldEvaluationMap *timeElementFieldEvaluationMap = this->getTimeElementFieldEvaluationMap(useTime);
+		return timeElementFieldEvaluationMap->getElementFieldEvaluation(element, topLevelElement);
 	}
 
 };
@@ -241,10 +304,10 @@ public:
 	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
 	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
-	FiniteElementRealFieldValueCache(int componentCount, FiniteElementRealFieldValueCache *parentValueCache) :
-		MultiTypeRealFieldValueCache(componentCount),
+	FiniteElementRealFieldValueCache(FE_field *feField, FiniteElementRealFieldValueCache *parentValueCache) :
+		MultiTypeRealFieldValueCache(feField->getNumberOfComponents()),
 		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
-			: FE_element_field_evaluation_cache::create())
+			: FE_element_field_evaluation_cache::create(feField))
 	{
 	}
 
@@ -277,10 +340,10 @@ public:
 	FE_element_field_evaluation_cache *element_field_evaluation_cache;
 
 	/** @param parentValueCache  Optional parentValueCache to get element_field_evaluation_cache from */
-	FiniteElementStringFieldValueCache(FiniteElementStringFieldValueCache *parentValueCache) :
+	FiniteElementStringFieldValueCache(FE_field *feField, FiniteElementStringFieldValueCache *parentValueCache) :
 		StringFieldValueCache(),
 		element_field_evaluation_cache((parentValueCache) ? parentValueCache->element_field_evaluation_cache->access()
-			: FE_element_field_evaluation_cache::create())
+			: FE_element_field_evaluation_cache::create(feField))
 	{
 	}
 
@@ -359,7 +422,9 @@ private:
 		return type;
 	}
 
-	int compare(Computed_field_core* other_field);
+	virtual int compare(Computed_field_core* other_field);
+
+	virtual int compareExact(Computed_field_core *other_core);
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& fieldCache)
 	{
@@ -371,14 +436,14 @@ private:
 				return new MeshLocationFieldValueCache();
 			case STRING_VALUE:
 			case URL_VALUE:
-				return new FiniteElementStringFieldValueCache(static_cast<FiniteElementStringFieldValueCache *>(parentValueCache));
+				return new FiniteElementStringFieldValueCache(this->fe_field, static_cast<FiniteElementStringFieldValueCache *>(parentValueCache));
 			default:
 				break;
 		}
 		// Future: have common finite element field cache in some circumstances
 		// note they must not be shared with time lookup fields as only a single time is cached
 		// and performance will be poor.
-		return new FiniteElementRealFieldValueCache(field->number_of_components, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
+		return new FiniteElementRealFieldValueCache(this->fe_field, static_cast<FiniteElementRealFieldValueCache *>(parentValueCache));
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -430,6 +495,8 @@ private:
 
 	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, StringFieldValueCache& valueCache);
 
+	/* Propagate the coordinate system back from field to FE_field.
+	 * Called only by field API affecting coordinate system. */
 	virtual void propagate_coordinate_system()
 	{
 		this->fe_field->setCoordinateSystem(field->coordinate_system);
@@ -589,40 +656,37 @@ Copy the type specific data used by this type.
 	return (core);
 } /* Computed_field_finite_element::copy */
 
+// compare basic definition required to be able to merge fields
 int Computed_field_finite_element::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compare the type specific data
-==============================================================================*/
 {
-	Computed_field_finite_element* other;
-	int return_code;
-
-	ENTER(Computed_field_finite_element::compare);
-	if (field && (other = dynamic_cast<Computed_field_finite_element*>(other_core)))
+	Computed_field_finite_element* other = dynamic_cast<Computed_field_finite_element*>(other_core);
+	if ((other) && this->fe_field->compareBasicDefinition(other->fe_field))
 	{
-		return_code = (fe_field == other->fe_field);
+		return 1;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* Computed_field_finite_element::compare */
+// @return  1 if internal FE_field is the same object, otherwise 0.
+int Computed_field_finite_element::compareExact(Computed_field_core *other_core)
+{
+	Computed_field_finite_element* other = dynamic_cast<Computed_field_finite_element*>(other_core);
+	if ((other) && (this->fe_field == other->fe_field))
+	{
+		return 1;
+	}
+	return 0;
+}
 
 bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		// true and able to be evaluated only if all components have a VALUE parameter
 		const FE_node_field *node_field = node_location->get_node()->getNodeField(this->fe_field);
@@ -636,7 +700,7 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 
 int Computed_field_finite_element::has_multiple_times()
 {
-	return this->fe_field->hasMultipleTimes();
+	return this->fe_field->checkTimeDependent();
 }
 
 int Computed_field_finite_element::has_numerical_components()
@@ -719,7 +783,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	{
 		case ELEMENT_XI_VALUE:
 		{
-			if (node_location = cache.get_location_node())
+			if ((node_location = cache.get_location_node()))
 			{
 				MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
 				// can only have 1 component; can only be evaluated at node so assume node location
@@ -742,7 +806,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 			{
 				DEALLOCATE(feStringValueCache.stringValue);
 			}
-			if (node_location = cache.get_location_node())
+			if ((node_location = cache.get_location_node()))
 			{
 				// can only have 1 component
 				feStringValueCache.stringValue = get_FE_nodal_value_as_string(node_location->get_node(),
@@ -753,7 +817,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					return_code = 0;
 				}
 			}
-			else if (element_xi_location = cache.get_location_element_xi())
+			else if ((element_xi_location = cache.get_location_element_xi()))
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
@@ -761,8 +825,8 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 				const FE_value* xi = element_xi_location->get_xi();
 
 				FE_element_field_evaluation *element_field_evaluation =
-					feStringValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, element, time, top_level_element);
+					feStringValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+						element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					return_code = element_field_evaluation->evaluate_as_string(
@@ -778,15 +842,15 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		default:
 		{
 			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-			if (element_xi_location = cache.get_location_element_xi())
+			if ((element_xi_location = cache.get_location_element_xi()))
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 				const FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
 				FE_element_field_evaluation *element_field_evaluation =
-					feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-						fe_field, element, time, top_level_element);
+					feValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+						element, time, top_level_element);
 				if (element_field_evaluation)
 				{
 					/* component number -1 = calculate all components */
@@ -825,7 +889,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					return_code = 0;
 				}
 			}
-			else if (node_location = cache.get_location_node())
+			else if ((node_location = cache.get_location_node()))
 			{
 				int result = CMZN_ERROR_GENERAL;
 				const int componentCount = field->number_of_components;
@@ -906,8 +970,8 @@ int Computed_field_finite_element::evaluateDerivative(cmzn_fieldcache& cache, Re
 	{
 		FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
 		FE_element_field_evaluation *element_field_evaluation =
-			feValueCache.element_field_evaluation_cache->get_element_field_evaluation(
-				fe_field, element_xi_location->get_element(), element_xi_location->get_time(),
+			feValueCache.element_field_evaluation_cache->getElementFieldEvaluation(
+				element_xi_location->get_element(), element_xi_location->get_time(),
 				element_xi_location->get_top_level_element());
 		if (!element_field_evaluation)
 			return 0;
@@ -1026,7 +1090,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	const Value_type value_type = this->fe_field->getValueType();
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
@@ -1137,7 +1201,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 			}
 		}
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
@@ -1384,7 +1448,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
-	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
+	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field, const char *name)
 {
 	cmzn_field *field = 0;
 	if (field_module && fe_field)
@@ -1399,10 +1463,10 @@ cmzn_field *cmzn_fieldmodule_create_field_finite_element_wrapper(
 		}
 		/* 1. make dynamic allocations for any new type-specific data */
 		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
+			/*check_source_field_regions*/true, fe_field->getNumberOfComponents(),
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_finite_element(fe_field));
+			new Computed_field_finite_element(fe_field), name);
 		if (field && field->core)
 		{
 			Computed_field_finite_element *fieldFiniteElement=
@@ -1439,20 +1503,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 	cmzn_field_id field = 0;
 	// cache changes to ensure FE_field not automatically wrapped already
 	cmzn_fieldmodule_begin_change(field_module);
-	FE_region *fe_region = cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region();
+	cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
+	FE_region *fe_region = region->get_FE_region();
 	// ensure FE_field and Computed_field have same name
-	char *field_name = cmzn_fieldmodule_get_field_name(field_module);
-	bool no_default_name = (0 == field_name);
-	if (no_default_name)
-	{
-		field_name = cmzn_fieldmodule_get_unique_field_name(field_module);
-		cmzn_fieldmodule_set_field_name(field_module, field_name);
-	}
+	char *fieldName = Computed_field_manager_get_unique_field_name(region->getFieldManager());
 	FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
-		fe_region, field_name, value_type, number_of_components);
+		fe_region, fieldName, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system = cmzn_fieldmodule_get_coordinate_system(field_module);
+		Coordinate_system coordinate_system((value_type == FE_VALUE_VALUE) ? RECTANGULAR_CARTESIAN : NOT_APPLICABLE);
 		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, number_of_components,
@@ -1460,12 +1519,9 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_finite_element(fe_field));
 		FE_field::deaccess(fe_field);
+		field->setName(fieldName);
 	}
-	DEALLOCATE(field_name);
-	if (no_default_name)
-	{
-		cmzn_fieldmodule_set_field_name(field_module, /*field_name*/0);
-	}
+	DEALLOCATE(fieldName);
 	cmzn_fieldmodule_end_change(field_module);
 	return (field);
 }
@@ -1561,23 +1617,20 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	if (field_module && mesh && (cmzn_mesh_get_region_internal(mesh) ==
 		cmzn_fieldmodule_get_region_internal(field_module)))
 	{
+		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field *field = cmzn_fieldmodule_create_field_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
 		if (field && field->core)
 		{
 			auto fieldFiniteElement = static_cast<Computed_field_finite_element*>(field->core);
-			if (CMZN_OK == fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh)))
-			{
-				fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
-				return field;
-			}
+			fieldFiniteElement->fe_field->setElementXiHostMesh(cmzn_mesh_get_FE_mesh_internal(mesh));
+			fieldFiniteElement->type = CMZN_FIELD_TYPE_STORED_MESH_LOCATION;
 		}
-		display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Failed");
-		cmzn_field_destroy(&field);
+		cmzn_fieldmodule_end_change(field_module);
+		return field;
 	}
-	else
-		display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Invalid argument(s)");
-	return 0;
+	display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_finite_element.  Invalid argument(s)");
+	return nullptr;
 }
 
 cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_field_id field)
@@ -1766,12 +1819,12 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_node_identifier(node));
@@ -1956,12 +2009,12 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(element->getAccessCount());
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = (FE_value)node->getAccessCount();
@@ -2077,7 +2130,9 @@ public:
 	virtual void inherit_source_field_attributes()
 	{
 		if (this->field)
-			Computed_field_set_coordinate_system(this->field, &fe_field->getCoordinateSystem());
+		{
+			this->field->setCoordinateSystem(fe_field->getCoordinateSystem(), /*notifyChange*/false);
+		}
 	}
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
@@ -2167,7 +2222,7 @@ Compare the type specific data
 bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	const Field_location_node *node_location;
-	if (node_location = cache.get_location_node())
+	if ((node_location = cache.get_location_node()))
 	{
 		cmzn_node *node = node_location->get_node();
 		const FE_node_field *node_field = node->getNodeField(this->fe_field);
@@ -2447,7 +2502,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_node_value::has_multiple_times()
 {
-	return this->fe_field->hasMultipleTimes();
+	return this->fe_field->checkTimeDependent();
 }
 
 } //namespace
@@ -2529,8 +2584,10 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
-			Computed_field_set_coordinate_system_from_sources(field);
+		if (this->field)
+		{
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
+		}
 	}
 
 	/** @return non-accessed conditional field, if any */
@@ -2542,7 +2599,7 @@ public:
 	int setConditionalField(cmzn_field *conditionalField)
 	{
 		if ((!conditionalField) || Computed_field_is_scalar(conditionalField, 0))
-			return this->field->setOptionalSourceField(2, conditionalField);
+			return this->field->setSourceField(1, conditionalField);
 		return CMZN_ERROR_ARGUMENT;
 	}
 
@@ -2938,9 +2995,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			Computed_field_set_coordinate_system_from_sources(field);
+			this->field->copyCoordinateSystemFromSourceField(0, /*notifyChange*/false);
 		}
 	}
 
@@ -3430,22 +3487,19 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 			display_message(ERROR_MESSAGE, "FieldFindMeshLocation evaluate.  Failed to map from search mesh to main mesh");
 			return 0;
 		}
-		if (elementToAncestor)
+		const int searchDimension = element->getDimension();
+		const int ancestorDimension = ancestorElement->getDimension();
+		FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		for (int k = 0; k < searchDimension; ++k)
+			searchXi[k] = xi[k];
+		for (int j = 0; j < ancestorDimension; ++j)
 		{
-			const int searchDimension = element->getDimension();
-			const int ancestorDimension = ancestorElement->getDimension();
-			FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			const FE_value *row = elementToAncestor + j*(1 + searchDimension);
+			xi[j] = row[0];
 			for (int k = 0; k < searchDimension; ++k)
-				searchXi[k] = xi[k];
-			for (int j = 0; j < ancestorDimension; ++j)
-			{
-				const FE_value *row = elementToAncestor + j*(1 + searchDimension);
-				xi[j] = row[0];
-				for (int k = 0; k < searchDimension; ++k)
-					xi[j] += row[1 + k]*searchXi[k];
-			}
-			element = ancestorElement;
+				xi[j] += row[1 + k]*searchXi[k];
 		}
+		element = ancestorElement;
 	}
 	meshLocationValueCache.setMeshLocation(element, xi);
 	return 1;
@@ -3888,11 +3942,11 @@ int cmzn_field_add_source_FE_field_to_list(cmzn_field *field, void *fe_field_lis
 		FE_field *fe_field = 0;
 		Computed_field_finite_element *finite_element_core;
 		Computed_field_node_value *node_value_core;
-		if (finite_element_core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		if ((finite_element_core = dynamic_cast<Computed_field_finite_element*>(field->core)))
 		{
 			fe_field = finite_element_core->fe_field;
 		}
-		else if (node_value_core = dynamic_cast<Computed_field_node_value*>(field->core))
+		else if ((node_value_core = dynamic_cast<Computed_field_node_value*>(field->core)))
 		{
 			fe_field = node_value_core->fe_field;
 		}
@@ -4187,7 +4241,7 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 				const FE_node_field *node_field = node->getNodeField(fe_field);
 				if (node_field)
 				{
-					time_sequence = node_field->time_sequence;
+					time_sequence = node_field->getTimeSequence();
 				}
 			}
 			else
@@ -4579,5 +4633,5 @@ FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cm
 	cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 	const FE_value time = element_xi_location->get_time();
 	const FE_value* xi = element_xi_location->get_xi();
-	return feValueCache->element_field_evaluation_cache->get_element_field_evaluation(core->fe_field, element, time, top_level_element);
+	return feValueCache->element_field_evaluation_cache->getElementFieldEvaluation(element, time, top_level_element);
 }

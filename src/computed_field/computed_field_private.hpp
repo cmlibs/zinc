@@ -31,112 +31,6 @@ Types used only internally to computed fields.
 #include "region/cmiss_region.hpp"
 
 /**
- * Argument to field modifier functions supplying region, default name,
- * coordinate system etc.
- * Previously had other parameters, but now just wraps the field module.
- */
-class Computed_field_modify_data
-{
-private:
-	cmzn_fieldmodule *fieldmodule;
-
-public:
-	Computed_field_modify_data(
-		struct cmzn_fieldmodule *fieldmodule) :
-		fieldmodule(fieldmodule)
-	{
-	}
-
-	~Computed_field_modify_data()
-	{
-	}
-
-	cmzn_fieldmodule *get_field_module()
-	{
-		return fieldmodule;
-	}
-
-	/**
-	 * Take ownership of field reference so caller does not need
-	 * to deaccess the supplied field.
-	 * Sets MANAGED attribute so it is not destroyed.
-	 *
-	 * @param new_field  Field to take ownership of.
-	 * @return  1 if field supplied, 0 if not.
-	 */
-	int update_field_and_deaccess(cmzn_field *new_field)
-	{
-		if (new_field)
-		{
-			cmzn_field_set_managed(new_field, true);
-			cmzn_field_destroy(&new_field);
-			return 1;
-		}
-		return 0;
-	}
-
-	/**
-	 * Get existing field to replace, if any.
-	 */
-	cmzn_field *get_field();
-
-	cmzn_region *get_region();
-
-	MANAGER(cmzn_field) *get_field_manager();
-};
-
-class Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-The base class for each computed field classes own package.
-Provides reference counting.
-==============================================================================*/
-{
-private:
-	unsigned int access_count;
-
-public:
-	void addref()
-	{
-		access_count++;
-	}
-	void removeref()
-	{
-		if (access_count > 1)
-		{
-			access_count--;
-		}
-		else
-		{
-			delete this;
-		}
-	}
-   Computed_field_type_package()
-	{
-		access_count = 0;
-	}
-
-protected:
-	virtual ~Computed_field_type_package()
-	{
-	}
-};
-
-class Computed_field_simple_package : public Computed_field_type_package
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Minimum set of type-specific data for gfx define field commands.
-Contains nothing now that field manager is extracted from region, which is
-passed around as part of Computed_field_modify_data in to_be_modified argument.
-==============================================================================*/
-{
-};
-
-/**
  * Base class of type-specific field change details.
  */
 struct cmzn_field_change_detail
@@ -217,6 +111,9 @@ public:
 	/** only call when field member set! */
 	inline void endChange() const;
 
+	/** Get source field at index. Not bounds checked!
+	 * @param index  Index from 0 to number_of_source_fields - 1
+	 * @return  Non-accessed source field */
 	inline cmzn_field_id getSourceField(int index) const;
 
 	/**
@@ -243,7 +140,15 @@ public:
 		return 1;
 	};
 
+	/** @return  1 if core has equivalent definition */
 	virtual int compare(Computed_field_core* other) = 0;
+
+	/** @return  1 if other core has exactly same definition, e.g. wraps same FE_field
+	 * Few fields need to override this. */
+	virtual int compareExact(Computed_field_core* other)
+	{
+		return this->compare(other);
+	}
 
 	/** default implementation returns true if all source fields are defined at location.
 	 * override if different logic is needed. */
@@ -353,7 +258,7 @@ public:
 		struct cmzn_field **texture_coordinate_field);
 
 	/* override if field type needs to be informed when it has been added to region */
-	virtual void field_is_managed(void)
+	virtual void fieldAddedToRegion(void)
 	{
 	}
 
@@ -408,25 +313,25 @@ public:
 
 	/** clones and clears type-specific change detail, if any.
 	 * override for classes with type-specific change detail e.g. group fields
-	 * @return  change detail prior to clearing, or NULL if none.
+	 * @return  change detail prior to clearing, or nullptr if none.
 	 */
 	virtual cmzn_field_change_detail *extract_change_detail()
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	virtual const cmzn_field_change_detail *get_change_detail() const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	/** override for hierarchical fields to merge changes from sub-region fields */
-	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(cmzn_field) *message)
+	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(cmzn_field) *)
 	{
-		USE_PARAMETER(message);
 	}
 
-	/** override for fields wrapping other objects with coordinate system, e.g. FE_field */
+	/** override for fields wrapping other objects with coordinate system, e.g. FE_field
+	 * to propagate back from field to internal object */
 	virtual void propagate_coordinate_system()
 	{
 	}
@@ -471,13 +376,11 @@ struct cmzn_field
 {
 	/* the name/identifier of the cmzn_field */
 	const char *name;
+	// true if an automatic unique name has been given to field
+	// means can rename to make way for another field with a different definition
+	bool automaticName;
 	/* index of field values in field cache, unique in region */
 	int cache_index;
-	/* The command string is what is printed for GET_NAME.  This is usually
-		the same as the name (and just points to it) however it is separated
-		out so that we can specify an string for the command_string which is not
-		a valid identifier (contains spaces etc.) */
-	const char *command_string;
 	int number_of_components;
 
 	struct Coordinate_system coordinate_system;
@@ -512,7 +415,8 @@ protected:
 
 public:
 
-	static cmzn_field *create(const char *nameIn);
+	/** @param nameIn  Optional name of new field or nullptr for none */
+	static cmzn_field *create(const char *nameIn=nullptr);
 
 	inline cmzn_field *access()
 	{
@@ -522,10 +426,57 @@ public:
 
 	static void deaccess(cmzn_field*& field);
 
+	static void reaccess(cmzn_field*& field, cmzn_field *newField)
+	{
+		if (newField)
+			newField->access();
+		if (field)
+			cmzn_field::deaccess(field);
+		field = newField;
+	}
+
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.
 	 */
 	void clearCaches();
+
+	int getNumberOfComponents() const
+	{
+		return this->number_of_components;
+	}
+
+	cmzn_field_value_type getValueType() const
+	{
+		return this->core->get_value_type();
+	}
+
+	/** @return  true if this field and other field have matching basic definition,
+	 * value type, number of components. Does not compare name, coordinate system etc. */
+	bool compareBasicDefinition(const cmzn_field& otherField) const
+	{
+		return (this->number_of_components == otherField.number_of_components)
+			&& (this->getValueType() == otherField.getValueType());
+	}
+
+	/** @return  true if this field and other field have matching full definition,
+	 * excluding name, coordinate system */
+	bool compareFullDefinition(const cmzn_field& otherField) const;
+
+	/**
+	 * Copy the functional definition of source field to this field.
+	 * Fails if source depends on this field or is from another region.
+	 * Fails if changing number of components while this field is in use.
+	 * Note this copies the definition only; finite element fields defined on nodes
+	 * and elements are not affected.
+	 * Does not copy name of field.
+	 *
+	 * @source  Field to copy functional definition from.
+	 * @return  Result OK on success, ERROR_ARGUMENT if fails because source
+	 * depends on this field or is from another region, ERROR_INCOMPATIBLE_DATA if
+	 * attempting to change number of components while field is in use, otherwise
+	 * any other error.
+	 */
+	int copyDefinition(const cmzn_field& source);
 
 	inline FieldValueCache *getValueCache(cmzn_fieldcache& fieldCache)
 	{
@@ -565,10 +516,29 @@ public:
 	 * Note: caller is responsible for ensuring field is real-valued and fieldDerivative is for this region */
 	inline const RealFieldValueCache *evaluateDerivativeTree(cmzn_fieldcache& cache, const FieldDerivative& fieldDerivative);
 
+	/** Apply field needs to know if a field depends on an argument.
+	 * @return  true if this field is a function of an argument field directly
+	 * or indirectly, otherwise false.
+	 */
+	bool dependsOnArgument() const
+	{
+		if (0 == this->number_of_source_fields)
+		{
+			// using fact that Argument fields have no source fields to minimise virtual function call:
+			return this->core->get_type() == CMZN_FIELD_TYPE_ARGUMENT_REAL;
+		}
+		for (int i = 0; i < this->number_of_source_fields; ++i)
+		{
+			if (this->source_fields[i]->dependsOnArgument())
+				return true;
+		}
+		return false;
+	}
+
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
 	 */
-	bool dependsOnField(cmzn_field *otherField)
+	bool dependsOnField(cmzn_field *otherField) const
 	{
 		if (this == otherField)
 			return true;
@@ -598,11 +568,6 @@ public:
 		this->fieldparameters = nullptr;
 	}
 
-	const char *getName() const
-	{
-		return this->name;
-	}
-
 	int isNumerical()
 	{
 		return core->has_numerical_components();
@@ -624,7 +589,7 @@ public:
 	}
 
 	/**
-	 * Record that field data has changed.
+	 * Record that field definition has changed.
 	 * Notify clients if not caching changes.
 	 */
 	inline void setChanged();
@@ -636,19 +601,103 @@ public:
 	 * @param change  A change status flag, one of OBJECT_NOT_IDENTIFIER, DEPENDENCY
 	 * or PARTIAL.
 	 */
-	void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
+	inline void setChangedPrivate(MANAGER_CHANGE(cmzn_field) change);
 
 	/**
-	 * Enlarges or shrinks source fields array to fit optional source field.
-	 * Must be the last source field expected for field type.
-	 * To be used with care by certain field types only.
+	 * Record that field result has changed due to related objects changing,
+	 * e.g. FE_field on nodes, elements.
+	 * Notify clients if not caching changes.
+	 */
+	inline void setChangedRelated();
+
+	const Coordinate_system& getCoordinateSystem()
+	{
+		return this->coordinate_system;
+	}
+
+	/** @param notifyChange  Set to false to avoid change messages being sent */
+	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange=true);
+
+	/** @param index  Index from 0 to number_of_source_fields - 1
+	 * @param notifyChange  Set to false to avoid change messages being sent */
+	void copyCoordinateSystemFromSourceField(int index, bool notifyChange=true)
+	{
+		if ((0 <= index) && (index < this->number_of_source_fields))
+		{
+			this->setCoordinateSystem(this->source_fields[index]->getCoordinateSystem(), notifyChange);
+		}
+	}
+
+	const char *getName() const
+	{
+		return this->name;
+	}
+
+	bool hasAutomaticName() const
+	{
+		return this->automaticName;
+	}
+
+	/** Set new name for field which must be unique in its manager.
+	 * Field must be managed to call this.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setName(const char *nameIn);
+
+	/** Set a standard automatic name for the field e.g. temp### that is
+	 * different to its current name and unique in its manager. Mark field as
+	 * having an automatic name, meaning it is permitted to be renamed further
+	 * if name is needed by another different field.
+	 * Field must be managed to call this.
+	 * @param fieldManager  Field manager to use if field not yet managed.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setNameAutomatic(MANAGER(cmzn_field) *fieldManager=nullptr);
+
+	/** Set new name for field that is different to its current name and
+	 * unique in its manager, name concatenates part1 and part2 and if needed a
+	 * number string starting at 1.
+	 * @param part1  First part of name.
+	 * @param part2  Second part of name, separator to number.
+	 * @param startNumber  Negative to start from number of fields in manager,
+	 * 0 to try name without number first, then start from 1, or any positive
+	 * number to try first.
+	 * @return  Result OK on success, otherwise an error code. */
+	int setNameUnique(const char *part1, const char *part2="", int startNumber=-1);
+
+	/**
+	 * Record that external global objects this field depends on have change such
+	 * that this field should evaluate to different values.
+	 * Notify clients if not caching changes.
+	 */
+	inline void dependencyChanged();
+
+	/** Get source field at index. Not bounds checked!
+	 * @param index  Index from 0 to number_of_source_fields - 1
+	 * @return  Non-accessed source field */
+	cmzn_field *getSourceField(int index) const
+	{
+		return this->source_fields[index];
+	}
+
+	/**
+	 * Set the source field at the index in the field. Capable of adding one
+	 * source to the end of the list.
+	 * To be used with care by certain field types only!
+	 * Caller must ensure this is a source field permitted to be changed, usually
+	 * an optional source field added after the compulsory one.
+	 * Not to be exposed directly in the public API.
 	 *
-	 * @param index  Index of optional source field, starting at 1. Must be equal
-	 * or one greater than the number of source fields.
-	 * @param sourceField  The source field to set, or nullptr to clear.
+	 * @param index  Index of source field, starting at 0. Must be either
+	 * a valid source field index or equal to the current number of source fields
+	 * to add a new source field.
+	 * @param sourceField  The source field to set, or nullptr to clear. If
+	 * clearing and the index is not the last, the following fields are moved
+	 * down in the array.
+	 * @param notifyChange  Optionally set to false to not record change to field
+	 * nor notify clients. Use to reduce messages when making another change
+	 * immediately afterwards.
 	 * @return  CMZN_OK or other status code on failure.
 	 */
-	int setOptionalSourceField(int index, cmzn_field *sourceField);
+	int setSourceField(int index, cmzn_field *sourceField, bool notifyChange=true);
 
 	/** Return owning field manager. Must check not nullptr before use as
 	 * can be cleared during clean-up. */
@@ -656,6 +705,9 @@ public:
 	{
 		return this->manager;
 	}
+
+	/** @return  Non-accessed owning region */
+	inline cmzn_region *getRegion() const;
 
 }; /* struct cmzn_field */
 
@@ -713,6 +765,8 @@ typedef cmzn_set<cmzn_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
+PROTOTYPE_MANAGER_OWNER_FUNCTIONS(cmzn_field, struct cmzn_region);
+
 inline const FieldValueCache *cmzn_field::evaluate(cmzn_fieldcache& cache)
 {
 	FieldValueCache *valueCache = this->getValueCache(cache);
@@ -756,6 +810,11 @@ inline const RealFieldValueCache *cmzn_field::evaluateDerivativeTree(cmzn_fieldc
 	return RealFieldValueCache::cast(this->evaluate(cache));
 }
 
+inline cmzn_region *cmzn_field::getRegion() const
+{
+	return MANAGER_GET_OWNER(cmzn_field)(this->manager);
+}
+
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
 {
 private:
@@ -790,18 +849,19 @@ Computed field functions
 Functions used only internally to computed fields or the region that owns them.
 */
 
-/***************************************************************************//**
- * Make a 'unique' field name by appending a number onto the stem_name until no
- * field of that name is found in the manager.
+/**
+ * Make a name by concatenating part1 and part2. While there exists a field with
+ * that name, append with a number until not found, and return the string.
  *
- * @param first_number  First number to try. If negative (the default argument),
- * start with number of fields in manager + 1.
+ * @param startNumber  First number to try. If negative (the default argument),
+ * start with number of fields in manager + 1. If 0 try without a number before
+ * starting at 1.
  * @return  Allocated string containing valid field name not used by any field
  * in manager. Caller must DEALLOCATE. NULL on failure.
  */
 char *Computed_field_manager_get_unique_field_name(
-	struct MANAGER(cmzn_field) *manager, const char *stem_name="temp",
-	const char *separator="", int first_number=-1);
+	struct MANAGER(cmzn_field) *manager, const char *part1="temp",
+	const char *part2="", int startNumber =-1);
 
 /**
  * Create an iterator for the objects in the manager.
@@ -845,7 +905,11 @@ int Computed_field_add_to_manager_private(struct cmzn_field *field,
  * @param number_of_source_values  Size of source_values array.
  * @param source_values  Array of source values for the new field.
  * @param field_core  Field type-specific data and implementation. On success,
- * ownership of field_core object passes to the new field.
+ * ownership of field_core object passes to the new field. On failure this is
+ * destroyed.
+ * @param name  Optional name for the new field. If not supplied a unique
+ * automatic name temp# is created for it. If supplied and name is in use by
+ * another field, creation fails.
  * @return  Newly created field, or NULL on failure.
  */
 cmzn_field *Computed_field_create_generic(
@@ -853,7 +917,7 @@ cmzn_field *Computed_field_create_generic(
 	int number_of_components,
 	int number_of_source_fields, cmzn_field **source_fields,
 	int number_of_source_values, const double *source_values,
-	Computed_field_core *field_core);
+	Computed_field_core *field_core, const char *name=nullptr);
 
 /***************************************************************************//**
  * Sets the cmzn_region object which will own this manager.
@@ -898,6 +962,22 @@ inline void cmzn_field::setChanged()
 	}
 }
 
+inline void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
+{
+	if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
+		ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
+	this->manager_change_status |= change;
+}
+
+inline void cmzn_field::setChangedRelated()
+{
+	if ((this->manager) && (this->manager->owner))
+	{
+		this->manager->owner->setFieldModify();
+		MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_PARTIAL_RESULT(cmzn_field));
+	}
+}
+
 /**
  * Record that field data has changed.
  * Notify clients if not caching changes.
@@ -922,51 +1002,10 @@ inline int Computed_field_changed(struct cmzn_field *field)
  *
  * @param field  The field whose dependencies have changed.
  */
-inline int Computed_field_dependency_changed(struct cmzn_field *field)
+inline void cmzn_field::dependencyChanged()
 {
-	if (field)
-		return MANAGED_OBJECT_CHANGE(cmzn_field)(field,
-			MANAGER_CHANGE_FULL_RESULT(cmzn_field));
-	display_message(ERROR_MESSAGE, "Computed_field_dependency_changed.  Invalid argument(s)");
-	return 0;
+	MANAGED_OBJECT_CHANGE(cmzn_field)(this, MANAGER_CHANGE_FULL_RESULT(cmzn_field));
 }
-
-Computed_field_simple_package *Computed_field_package_get_simple_package(
-	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2007
-
-DESCRIPTION :
-Returns a pointer to a sharable simple type package which just contains a
-function to access the Computed_field_package.
-==============================================================================*/
-
-int Computed_field_set_command_string(struct cmzn_field *field,
-	const char *command_string);
-/*******************************************************************************
-LAST MODIFIED : 6 September 2007
-
-DESCRIPTION :
-Sets the string that will be printed for the computed fields name.
-This may be different from the name when it contains characters invalid for
-using as an identifier in the manager, such as spaces or punctuation.
-==============================================================================*/
-
-int Computed_field_contents_match(struct cmzn_field *field,
-	void *other_computed_field_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if contents of <field> other than
-its name matches the contents of the <other_computed_field_void>.
-==============================================================================*/
-
-/***************************************************************************//**
- * Sets coordinate system of the <field> to that of its first source field.
- */
-int Computed_field_set_coordinate_system_from_sources(
-	struct cmzn_field *field);
 
 /**
  * Takes two ACCESSED fields <field_one> and <field_two> and compares their number

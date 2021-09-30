@@ -212,8 +212,8 @@ cmzn_graphics::cmzn_graphics(enum cmzn_graphics_type graphicsTypeIn) :
 	seed_node_mesh_location_field(nullptr),
 	visibility_flag(true),
 	material(nullptr),
-	secondary_material(nullptr),
 	selected_material(nullptr),
+	secondary_material(nullptr),
 	data_field(nullptr),
 	spectrum(nullptr),
 	autorange_spectrum_flag(0),
@@ -4539,8 +4539,7 @@ int cmzn_graphics_get_top_level_number_in_xi(struct cmzn_graphics *graphics,
 				// refine if tessellation field is non-linear
 				// first check if its coordinate system is non-linear (cheaper)
 				if (((tessellation_field == graphics->coordinate_field) &&
-					Coordinate_system_type_is_non_linear(get_coordinate_system_type(
-						Computed_field_get_coordinate_system(tessellation_field)))) ||
+					Coordinate_system_type_is_non_linear(tessellation_field->getCoordinateSystem().getType())) ||
 					Computed_field_is_non_linear(tessellation_field))
 				{
 					int *refinement_factors = new int[max_dimensions];

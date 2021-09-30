@@ -43,23 +43,6 @@ Computed_field_subobject_group::~Computed_field_subobject_group()
 
 namespace {
 
-class Computed_field_sub_group_object_package : public Computed_field_type_package
-{
-public:
-	cmzn_region *root_region;
-
-	Computed_field_sub_group_object_package(cmzn_region *root_region)
-		: root_region(root_region)
-	{
-		ACCESS(cmzn_region)(root_region);
-	}
-	
-	~Computed_field_sub_group_object_package()
-	{
-		DEACCESS(cmzn_region)(&root_region);
-	}
-};
-
 struct cmzn_node_field_is_true_iterator_data
 {
 	cmzn_fieldcache_id cache;

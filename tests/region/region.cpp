@@ -81,8 +81,11 @@ TEST(ZincRegion, build_tree)
 	ZincTestSetupCpp zinc;
 	int result;
 
+	EXPECT_STREQ("", zinc.root_region.getPath());
 	Region bob = zinc.root_region.createChild("bob");
 	EXPECT_TRUE(bob.isValid());
+	EXPECT_STREQ("bob", bob.getPath());
+	EXPECT_STREQ("..", zinc.root_region.getRelativePath(bob));
 
 	Region alf = bob.createChild("alf");
 	EXPECT_TRUE(alf.isValid());
@@ -96,7 +99,8 @@ TEST(ZincRegion, build_tree)
 	EXPECT_EQ(bob, zinc.root_region.getFirstChild());
 	EXPECT_EQ(Region(), bob.getNextSibling());
 	EXPECT_EQ(bob, zinc.root_region.findChildByName("bob"));
-	
+	EXPECT_EQ(bob, zinc.root_region.findSubregionAtPath("bob"));
+
 	EXPECT_EQ(alf, bob.getFirstChild());
 	EXPECT_EQ(fred, alf.getNextSibling());
 	EXPECT_EQ(Region(), fred.getNextSibling());
@@ -117,6 +121,44 @@ TEST(ZincRegion, build_tree)
 	// test can create intermediate subregions
 	Region harry = bob.createSubregion("wills/harry");
 	EXPECT_EQ(harry, zinc.root_region.findSubregionAtPath("bob/wills/harry"));
+
+	// test can create and find subregions from relative paths
+	Region tom = harry.createSubregion("../../tom");
+	EXPECT_TRUE(tom.isValid());
+	EXPECT_EQ(tom, harry.findSubregionAtPath("../../tom"));
+	EXPECT_EQ(tom, zinc.root_region.findSubregionAtPath("bob/tom"));
+	EXPECT_EQ(tom, joe.findSubregionAtPath("../tom"));
+	EXPECT_EQ(tom, joe.findSubregionAtPath("/../tom"));
+	EXPECT_EQ(tom, joe.findSubregionAtPath("../tom/"));
+	EXPECT_EQ(zinc.root_region, bob.findSubregionAtPath(".."));
+	// test finding at invalid relative paths
+	EXPECT_FALSE(bob.findSubregionAtPath(".").isValid());
+	EXPECT_FALSE(bob.findSubregionAtPath("...").isValid());
+	EXPECT_FALSE(bob.findSubregionAtPath("../..").isValid());
+	EXPECT_FALSE(harry.findSubregionAtPath("../harry/none").isValid());
+	EXPECT_FALSE(harry.createSubregion("../../tom").isValid());  // already exists so should not succeed
+
+	// test root
+	EXPECT_EQ(zinc.root_region, harry.getRoot());
+	Region independent = zinc.root_region.createRegion();
+	EXPECT_TRUE(independent.isValid());
+	EXPECT_EQ(independent, independent.getRoot());
+
+	// test paths
+	EXPECT_STREQ("bob/wills/harry", harry.getPath());
+	EXPECT_STREQ("wills/harry", harry.getRelativePath(bob));
+	EXPECT_STREQ("harry", harry.getRelativePath(bob.findChildByName("wills")));
+	EXPECT_STREQ("", harry.getRelativePath(harry));
+	EXPECT_STREQ("../wills/harry", harry.getRelativePath(fred));
+	EXPECT_STREQ("../../fred", fred.getRelativePath(harry));
+	EXPECT_STREQ("", joe.getRelativePath(joe));
+	EXPECT_STREQ("../..", bob.getRelativePath(harry));
+	EXPECT_STREQ("../../..", zinc.root_region.getRelativePath(harry));
+
+	// test invalid paths
+	EXPECT_EQ(nullptr, independent.getRelativePath(zinc.root_region));
+	EXPECT_EQ(nullptr, zinc.root_region.getRelativePath(independent));
+	EXPECT_EQ(nullptr, zinc.root_region.getRelativePath(Region()));
 
 	EXPECT_TRUE(zinc.root_region.containsSubregion(joe));
 	EXPECT_TRUE(bob.containsSubregion(fred));

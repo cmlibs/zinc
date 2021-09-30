@@ -10,38 +10,63 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <string.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_apply.hpp"
+#include "computed_field/computed_field_private.hpp"
 #include "description_io/field_json_io.hpp"
 #include "description_io/fieldmodule_json_io.hpp"
 #include "general/debug.h"
+#include "opencmiss/zinc/changemanager.hpp"
 #include "opencmiss/zinc/field.hpp"
+#include "opencmiss/zinc/fieldconstant.hpp"
 #include "opencmiss/zinc/status.h"
+#include <cstring>
 
-OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(Json::Value &fieldSettings)
+OpenCMISS::Zinc::Field FieldmoduleJsonImport::importField(const Json::Value &fieldSettings)
 {
-	OpenCMISS::Zinc::Field field(0);
-	field = fieldmodule.findFieldByName(fieldSettings["Name"].asCString());
-	if (!field.isValid())
+	OpenCMISS::Zinc::Field field = importTypeSpecificField(fieldmodule, fieldSettings, this);
+	const char *fieldName = fieldSettings["Name"].asCString();
+	OpenCMISS::Zinc::Field existingField = this->fieldmodule.findFieldByName(fieldName);
+	if (existingField.isValid())
 	{
-		field = importTypeSpecificField(fieldmodule, fieldSettings, this);
-		FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).ioEntries(fieldSettings);
+		if (existingField.getId()->compareFullDefinition(*(field.getId())))
+		{
+			field = existingField;
+		}
+		else if (existingField.getId()->hasAutomaticName())
+		{
+			// rename the existing automatically named field, so new field can use its name
+			existingField.getId()->setNameAutomatic();
+		}
+		else if (cmzn_field_is_dummy_real(existingField.getId()))
+		{
+			// can only replace definition of a dummy real field create for apply evaluator field
+			// copy new definition to existing field. Fails if new definition is incompatible
+			const int copyResult = existingField.getId()->copyDefinition(*(field.getId()));
+			if (copyResult == CMZN_OK)
+			{
+				field = existingField;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Failed to define field %s over temporary dummy real field as defined differently", fieldName);
+				field = OpenCMISS::Zinc::Field();
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Fieldmodule.readDescription:  Field %s is incompatible with existing field", fieldName);
+			field = OpenCMISS::Zinc::Field();
+		}
 	}
-
+	if (field.isValid())
+	{
+		FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_IMPORT).importEntries(fieldSettings);
+	}
 	return field;
-
-	/*
-	OpenCMISS::Zinc::Field field = fieldmodule.findFieldByName(fieldName);
-	if (!field.isValid())
-	{
-		spectrum = spectrummodule.createSpectrum();
-		spectrum.setName(spectrumName);
-	}
-	FieldJsonIO(field, fieldmodule, IO_MODE_IMPORT).ioEntries(fieldSettings);
-	*/
 }
 
-void FieldmoduleJsonImport::setManaged(Json::Value &fieldSettings)
+void FieldmoduleJsonImport::setManaged(const Json::Value &fieldSettings)
 {
 	OpenCMISS::Zinc::Field field(0);
 	field = fieldmodule.findFieldByName(fieldSettings["Name"].asCString());
@@ -67,7 +92,7 @@ OpenCMISS::Zinc::Field FieldmoduleJsonImport::getFieldByName(const char *field_n
 			{
 				if ((0 == strcmp(fieldJson["Name"].asCString(), field_name)))
 				{
-					 field = this->importField(fieldJson);
+					field = this->importField(fieldJson);
 					break;
 				}
 			}
@@ -86,7 +111,7 @@ int FieldmoduleJsonImport::import(const std::string &jsonString)
 
 	if (Json::Reader().parse(jsonString, root, true))
 	{
-		fieldmodule.beginChange();
+		OpenCMISS::Zinc::ChangeManager<OpenCMISS::Zinc::Fieldmodule> changeFields(this->fieldmodule);
 		if (root.isObject())
 		{
 			fieldsList = root["Fields"];
@@ -96,7 +121,6 @@ int FieldmoduleJsonImport::import(const std::string &jsonString)
 			}
 		}
 		return_code = CMZN_OK;
-		fieldmodule.endChange();
 	}
 
 	return return_code;
@@ -114,7 +138,7 @@ std::string FieldmoduleJsonExport::getExportString()
 		if (cmzn_field_get_type(field.getId()) != CMZN_FIELD_TYPE_INVALID)
 		{
 			Json::Value fieldSettings;
-			FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_EXPORT).ioEntries(fieldSettings);
+			FieldJsonIO(field, fieldmodule, FieldJsonIO::IO_MODE_EXPORT).exportEntries(fieldSettings);
 			root["Fields"].append(fieldSettings);
 		}
 		field = fielditerator.next();

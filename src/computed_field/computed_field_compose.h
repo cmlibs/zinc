@@ -19,12 +19,6 @@ DESCRIPTION :
 #include "computed_field/computed_field_private.hpp"
 
 
-class Computed_field_compose_package : public Computed_field_type_package
-{
-public:
-	struct cmzn_region *root_region;
-};
-
 const char computed_field_compose_type_string[] = "compose";
 
 class Computed_field_compose : public Computed_field_core
@@ -48,12 +42,9 @@ public:
 
 	virtual void inherit_source_field_attributes()
 	{
-		if (field)
+		if (this->field)
 		{
-			/* inherit coordinate system from third source field */
-			Computed_field *calculate_values_field = field->source_fields[2];
-			Computed_field_set_coordinate_system(field,
-				Computed_field_get_coordinate_system(calculate_values_field));
+			this->field->copyCoordinateSystemFromSourceField(2, /*notifyChange*/false);
 		}
 	}
 

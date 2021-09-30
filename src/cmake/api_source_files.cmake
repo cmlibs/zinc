@@ -17,6 +17,7 @@ SET( API_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/elementtemplate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/field.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldalias.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldapply.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldarithmeticoperators.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldassignment.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/fieldcache.h
@@ -79,7 +80,7 @@ SET( API_TYPES_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementbasisid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementfieldtemplateid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/elementtemplateid.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldaliasid.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldapplyid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldcacheid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldcompositeid.h
   ${CMAKE_CURRENT_SOURCE_DIR}/api/opencmiss/zinc/types/fieldconstantid.h

@@ -196,7 +196,7 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 				}
 			}
 		}
-		else if (element_xi_location = cache.get_location_element_xi())
+		else if ((element_xi_location = cache.get_location_element_xi()))
 		{
 			int dimension = element_xi_location->get_element_dimension();
 			cmzn_field_id subobject_group_field = get_element_group_field_private(dimension);
@@ -309,7 +309,7 @@ cmzn_field_change_detail *Computed_field_group::extract_change_detail()
 #ifdef DEBUG_CODE
 	{
 		cmzn_region *region = Computed_field_get_region(field);
-		char *path = cmzn_region_get_path(region);
+		char *path = region->getPath();
 		display_message(INFORMATION_MESSAGE, "Group %s%s change local %d non-local %d\n", path, field->name,
 			prior_change_detail->getLocalChange(), prior_change_detail->getNonLocalChange());
 		DEALLOCATE(path);
@@ -371,7 +371,7 @@ void Computed_field_group::propagate_hierarchical_field_changes(
 						if (subregion_group_change != CMZN_FIELD_GROUP_CHANGE_NONE)
 						{
 							this->change_detail.changeMergeNonlocal(subregion_group_change);
-							Computed_field_dependency_changed(field);
+							this->field->dependencyChanged();
 						}
 					}
 					else
@@ -399,7 +399,7 @@ int Computed_field_group::list()
 		display_message(INFORMATION_MESSAGE, "    Region : ");
 		if (region)
 		{
-			char *path = cmzn_region_get_path(region);
+			char *path = region->getPath();
 			display_message(INFORMATION_MESSAGE, "%s", path);
 			DEALLOCATE(path);
 		}
@@ -852,8 +852,8 @@ cmzn_field_id Computed_field_group::create_cad_primitive_group(cmzn_field_cad_to
 
 		cmzn_fieldmodule_id field_module =
 			cmzn_region_get_fieldmodule(region);
-		cmzn_fieldmodule_set_field_name(field_module, field_name);
 		field = cmzn_fieldmodule_create_field_cad_primitive_group_template(field_module);
+		field->setName(field_name);
 		Computed_field *cad_topology_key = reinterpret_cast<cmzn_field_id>(cad_topology_domain);
 		domain_selection_group.insert(std::pair<Computed_field *, Computed_field *>(cad_topology_key, field));
 
@@ -993,7 +993,7 @@ int Computed_field_group::remove_empty_subgroups()
 		}
 	}
 	if (this->change_detail.getChangeSummary() != CMZN_FIELD_GROUP_CHANGE_NONE)
-		Computed_field_dependency_changed(this->field);
+		this->field->dependencyChanged();
 	return 1;
 }
 

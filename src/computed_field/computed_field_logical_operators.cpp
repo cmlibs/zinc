@@ -19,10 +19,6 @@
 #include "general/message.h"
 #include "computed_field/computed_field_logical_operators.h"
 
-class Computed_field_logical_operators_package : public Computed_field_type_package
-{
-};
-
 namespace {
 
 const char computed_field_or_type_string[] = "or";

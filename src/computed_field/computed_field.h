@@ -57,86 +57,87 @@ functions are given their public names.
 /* Convert legacy object type name to use external field object type name */
 #define Computed_field cmzn_field
 
+// Enumerations of fields implemented in json field IO
+// Note enumeration is not exposed in public API so values are not API
 enum cmzn_field_type
 {
 	CMZN_FIELD_TYPE_INVALID = 0,
-	/*field alias */
-	CMZN_FIELD_TYPE_ALIAS = 1,
-	/* field arithmetic operators */
-	CMZN_FIELD_TYPE_ADD = 2,
-	CMZN_FIELD_TYPE_POWER = 3,
-	CMZN_FIELD_TYPE_MULTIPLY = 4,
-	CMZN_FIELD_TYPE_DIVIDE = 5,
-	CMZN_FIELD_TYPE_SUBTRACT = 6,
-	CMZN_FIELD_TYPE_LOG = 7,
-	CMZN_FIELD_TYPE_SQRT = 8,
-	CMZN_FIELD_TYPE_EXP = 9,
-	CMZN_FIELD_TYPE_ABS = 10,
-	/* field composite */
-	CMZN_FIELD_TYPE_IDENTITY = 11,
-	CMZN_FIELD_TYPE_COMPONENT = 12,
-	CMZN_FIELD_TYPE_CONCATENATE = 13,
-	/*field conditional */
-	CMZN_FIELD_TYPE_IF = 14,
-	/*field constant */
-	CMZN_FIELD_TYPE_CONSTANT = 15,
-	CMZN_FIELD_TYPE_STRING_CONSTANT = 16,
-	/*field coordinate transformation */
-	CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION = 17,
-	CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION = 18,
-	/*field derivatives */
-	CMZN_FIELD_TYPE_DERIVATIVE = 19,
-	CMZN_FIELD_TYPE_CURL = 20,
-	CMZN_FIELD_TYPE_DIVERGENCE = 21,
-	CMZN_FIELD_TYPE_GRADIENT = 22,
-	/*field fibre */
-	CMZN_FIELD_TYPE_FIBRE_AXES = 23,
-	/*field finite element*/
-	CMZN_FIELD_TYPE_EDGE_DISCONTINUITY = 24,
-	CMZN_FIELD_TYPE_EMBEDDED = 25,
-	CMZN_FIELD_TYPE_NODE_VALUE = 26,
-	CMZN_FIELD_TYPE_STORED_STRING = 27,
-	CMZN_FIELD_TYPE_IS_EXTERIOR = 28,
-	CMZN_FIELD_TYPE_IS_ON_FACE = 29,
-	/*field logical operators*/
-	CMZN_FIELD_TYPE_AND = 30,
-	CMZN_FIELD_TYPE_EQUAL_TO = 31,
-	CMZN_FIELD_TYPE_GREATER_THAN = 32,
-	CMZN_FIELD_TYPE_IS_DEFINED = 33,
-	CMZN_FIELD_TYPE_LESS_THAN = 34,
-	CMZN_FIELD_TYPE_OR = 35,
-	CMZN_FIELD_TYPE_NOT = 36,
-	CMZN_FIELD_TYPE_XOR = 37,
-	/*field matrix operators*/
-	CMZN_FIELD_TYPE_DETERMINANT = 38,
-	CMZN_FIELD_TYPE_EIGENVALUES = 39,
-	CMZN_FIELD_TYPE_EIGENVECTORS = 40,
-	CMZN_FIELD_TYPE_MATRIX_INVERT = 41,
-	CMZN_FIELD_TYPE_MATRIX_MULTIPLY = 42,
-	CMZN_FIELD_TYPE_PROJECTION = 43,
-	CMZN_FIELD_TYPE_TRANSPOSE = 44,
-	/*field time */
-	CMZN_FIELD_TYPE_TIME_LOOKUP = 45,
-	/* field trigonometry */
-	CMZN_FIELD_TYPE_SIN = 46,
-	CMZN_FIELD_TYPE_COS = 47,
-	CMZN_FIELD_TYPE_TAN = 48,
-	CMZN_FIELD_TYPE_ASIN = 49,
-	CMZN_FIELD_TYPE_ACOS = 50,
-	CMZN_FIELD_TYPE_ATAN = 51,
-	CMZN_FIELD_TYPE_ATAN2 = 52,
-	/*field vector operators */
-	CMZN_FIELD_TYPE_CROSS_PRODUCT = 53,
-	CMZN_FIELD_TYPE_DOT_PRODUCT = 54,
-	CMZN_FIELD_TYPE_MAGNITUDE = 55,
-	CMZN_FIELD_TYPE_NORMALISE = 56,
-	CMZN_FIELD_TYPE_SUM_COMPONENTS = 57,
-	/*field finite element */
-	CMZN_FIELD_TYPE_FINITE_ELEMENT = 58,
-	/*field time */
-	CMZN_FIELD_TYPE_TIME_VALUE = 59,
-	CMZN_FIELD_TYPE_STORED_MESH_LOCATION = 60,
-	CMZN_FIELD_TYPE_FIND_MESH_LOCATION = 61
+	// apply
+	CMZN_FIELD_TYPE_APPLY,
+	CMZN_FIELD_TYPE_ARGUMENT_REAL,
+	// arithmetic operators
+	CMZN_FIELD_TYPE_ABS,
+	CMZN_FIELD_TYPE_ADD,
+	CMZN_FIELD_TYPE_DIVIDE,
+	CMZN_FIELD_TYPE_EXP,
+	CMZN_FIELD_TYPE_LOG,
+	CMZN_FIELD_TYPE_MULTIPLY,
+	CMZN_FIELD_TYPE_POWER,
+	CMZN_FIELD_TYPE_SQRT,
+	CMZN_FIELD_TYPE_SUBTRACT,
+	// composite
+	CMZN_FIELD_TYPE_COMPONENT,
+	CMZN_FIELD_TYPE_CONCATENATE,
+	CMZN_FIELD_TYPE_IDENTITY,
+	// conditional
+	CMZN_FIELD_TYPE_IF,
+	// constant
+	CMZN_FIELD_TYPE_CONSTANT,
+	CMZN_FIELD_TYPE_STRING_CONSTANT,
+	// coordinate transformation
+	CMZN_FIELD_TYPE_COORDINATE_TRANSFORMATION,
+	CMZN_FIELD_TYPE_VECTOR_COORDINATE_TRANSFORMATION,
+	// derivatives
+	CMZN_FIELD_TYPE_CURL,
+	CMZN_FIELD_TYPE_DERIVATIVE,
+	CMZN_FIELD_TYPE_DIVERGENCE,
+	CMZN_FIELD_TYPE_GRADIENT,
+	// fibre
+	CMZN_FIELD_TYPE_FIBRE_AXES,
+	// finite element
+	CMZN_FIELD_TYPE_EDGE_DISCONTINUITY,
+	CMZN_FIELD_TYPE_EMBEDDED,
+	CMZN_FIELD_TYPE_FIND_MESH_LOCATION,
+	CMZN_FIELD_TYPE_FINITE_ELEMENT,
+	CMZN_FIELD_TYPE_IS_EXTERIOR,
+	CMZN_FIELD_TYPE_IS_ON_FACE,
+	CMZN_FIELD_TYPE_NODE_VALUE,
+	CMZN_FIELD_TYPE_STORED_MESH_LOCATION,
+	CMZN_FIELD_TYPE_STORED_STRING,
+	// logical operators
+	CMZN_FIELD_TYPE_AND,
+	CMZN_FIELD_TYPE_EQUAL_TO,
+	CMZN_FIELD_TYPE_GREATER_THAN,
+	CMZN_FIELD_TYPE_IS_DEFINED,
+	CMZN_FIELD_TYPE_LESS_THAN,
+	CMZN_FIELD_TYPE_NOT,
+	CMZN_FIELD_TYPE_OR,
+	CMZN_FIELD_TYPE_XOR,
+	// matrix operators
+	CMZN_FIELD_TYPE_DETERMINANT,
+	CMZN_FIELD_TYPE_EIGENVALUES,
+	CMZN_FIELD_TYPE_EIGENVECTORS,
+	CMZN_FIELD_TYPE_MATRIX_INVERT,
+	CMZN_FIELD_TYPE_MATRIX_MULTIPLY,
+	CMZN_FIELD_TYPE_PROJECTION,
+	CMZN_FIELD_TYPE_TRANSPOSE,
+	// time
+	CMZN_FIELD_TYPE_TIME_LOOKUP,
+	CMZN_FIELD_TYPE_TIME_VALUE,
+	// trigonometry */
+	CMZN_FIELD_TYPE_ACOS,
+	CMZN_FIELD_TYPE_ASIN,
+	CMZN_FIELD_TYPE_ATAN,
+	CMZN_FIELD_TYPE_ATAN2,
+	CMZN_FIELD_TYPE_COS,
+	CMZN_FIELD_TYPE_SIN,
+	CMZN_FIELD_TYPE_TAN,
+	// vector operators
+	CMZN_FIELD_TYPE_CROSS_PRODUCT,
+	CMZN_FIELD_TYPE_DOT_PRODUCT,
+	CMZN_FIELD_TYPE_MAGNITUDE,
+	CMZN_FIELD_TYPE_NORMALISE,
+	CMZN_FIELD_TYPE_SUM_COMPONENTS
 };
 
 
@@ -179,26 +180,6 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_field);
 
 PROTOTYPE_LIST_FUNCTIONS(cmzn_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_field,name,const char *);
-
-/**
- * Get non-allocated field name. Internal use only, for error messages etc.
- *
- * @param field  Field to get name of.
- * @return  Internal name of field. Use immediately and do not deallocate.
- */
-const char *cmzn_field_get_name_internal(cmzn_field_id field);
-
-/**
- * Set a unique name for field, concatenating first and second parts with a unique
- * number if needed. Internal use only.
- *
- * @param field  Field to set name of.
- * @param first  First part of name.
- * @param second  Second part of name.
- * @return  Standard result code.
- */
-int cmzn_field_set_name_unique_concatentate(cmzn_field_id field,
-	const char *first, const char *second);
 
 /***************************************************************************//**
  * Internal variant of public cmzn_fielditerator_next() which does not access
@@ -356,30 +337,6 @@ DESCRIPTION :
 Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
 the <field>. These parameters will be used in image processing.
 
-==============================================================================*/
-
-struct Coordinate_system *Computed_field_get_coordinate_system(
-	struct cmzn_field *field);
-/*******************************************************************************
-LAST MODIFIED : 19 January 1999
-
-DESCRIPTION :
-Returns the coordinate system <field> is to be interpreted under. See function
-Computed_field_set_coordinate_system for further details.
-==============================================================================*/
-
-int Computed_field_set_coordinate_system(struct cmzn_field *field,
-	const Coordinate_system *coordinate_system);
-/*******************************************************************************
-LAST MODIFIED : 19 January 1999
-
-DESCRIPTION :
-Sets the coordinate system <field> is to be interpreted under. Note the careful
-choice of words here: the coordinate system merely tells the rest of the program
-what needs to be done to transform the field values into any other coordinate
-system. It does not have to be "correct" for the values in the field, eg. you
-can describe prolate spheroidal values as RC to "open out" the heart model.
-<focus> must be given with prolate and oblate spheroidal coordinate systems.
 ==============================================================================*/
 
 const char *Computed_field_get_type_string(struct cmzn_field *field);
@@ -683,12 +640,6 @@ int Computed_field_get_domain( struct cmzn_field *field,
  * @return  1 if non-linear, 0 if linear.
  */
 int Computed_field_is_non_linear(struct cmzn_field *field);
-
-/**
- * @return  Allocated field name unused by any other field in field module.
- */
-char *cmzn_fieldmodule_get_unique_field_name(
-	struct cmzn_fieldmodule *fieldmodule);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

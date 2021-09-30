@@ -141,15 +141,21 @@ cmzn_fieldcache::~cmzn_fieldcache()
 	delete[] indexed_location_element_xi;
 	this->indexed_location_element_xi = 0;
 	this->number_of_indexed_location_element_xi = 0;
-	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	for (ValueCacheVector::iterator iter = this->valueCaches.begin(); iter != this->valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
 	if (this->sharedWorkingCache)
+	{
 		cmzn_fieldcache::deaccess(this->sharedWorkingCache);  // should be the last reference as value caches destroyed above
+	}
+	for (RegionFieldcacheMap::iterator iter = this->sharedExternalWorkingCacheMap.begin(); iter != this->sharedExternalWorkingCacheMap.end(); ++iter)
+	{
+		cmzn_fieldcache::deaccess(iter->second);  // should be the last reference as value caches destroyed above
+	}
 	this->region->removeFieldcache(this);
-	cmzn_region_destroy(&region);
+	cmzn_region::deaccess(this->region);
 }
 
 cmzn_fieldcache *cmzn_fieldcache::create(cmzn_region *regionIn)
@@ -165,10 +171,13 @@ void cmzn_fieldcache::copyLocation(const cmzn_fieldcache &source)
 	{
 	case Field_location::TYPE_ELEMENT_XI:
 	{
+		// source location may be location_element_xi or an indexed_location_element_xi
+		// Future: transfer indexed locations
+		Field_location_element_xi& source_location_element_xi = static_cast<Field_location_element_xi&>(*source.location);
 		this->location_element_xi.set_element_xi(
-			source.location_element_xi.get_element(),
-			source.location_element_xi.get_xi(),
-			source.location_element_xi.get_top_level_element());
+			source_location_element_xi.get_element(),
+			source_location_element_xi.get_xi(),
+			source_location_element_xi.get_top_level_element());
 		this->location = &this->location_element_xi;
 	} break;
 	case Field_location::TYPE_FIELD_VALUES:
@@ -262,9 +271,22 @@ int cmzn_fieldcache::setFieldReal(cmzn_field *field, int numberOfValues, const d
 	return CMZN_OK;
 }
 
+cmzn_fieldcache *cmzn_fieldcache::getOrCreateSharedExternalWorkingCache(cmzn_region *regionIn)
+{
+	RegionFieldcacheMap::iterator iter = this->sharedExternalWorkingCacheMap.find(regionIn);
+	if (iter != this->sharedExternalWorkingCacheMap.end())
+	{
+		return iter->second;
+	}
+	// as this is for a different region, do not set parentCache as not sharing finite element field caches
+	cmzn_fieldcache *fieldcache = new cmzn_fieldcache(regionIn);
+	this->sharedExternalWorkingCacheMap[regionIn] = fieldcache;
+	return fieldcache;
+}
+
 void cmzn_fieldcache::removeDerivativeCaches(int derivativeCacheIndex)
 {
-	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
+	for (ValueCacheVector::iterator iter = this->valueCaches.begin(); iter != this->valueCaches.end(); ++iter)
 	{
 		RealFieldValueCache *realValueCache = dynamic_cast<RealFieldValueCache *>(*iter);
 		if (realValueCache)

@@ -53,8 +53,12 @@ FE_node_field_info *FE_node_field_info::create(FE_nodeset *nodesetIn, struct LIS
 {
 	struct LIST(FE_node_field) *newNodeFieldList = CREATE_LIST(FE_node_field)();
 	if ((!newNodeFieldList) ||
-		(nodeFieldListIn) && (!COPY_LIST(FE_node_field)(newNodeFieldList, nodeFieldListIn)))
+		((nodeFieldListIn) && (!COPY_LIST(FE_node_field)(newNodeFieldList, nodeFieldListIn))))
 	{
+		if (newNodeFieldList)
+		{
+			DESTROY_LIST(FE_node_field)(&newNodeFieldList);
+		}
 		display_message(ERROR_MESSAGE, "FE_node_field_info::create.  Failed to copy node field lists");
 		return nullptr;
 	}
@@ -310,7 +314,7 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 	struct FE_node_field *new_node_field, int new_number_of_values)
 {
 	int return_code;
-	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct FE_node_field_info *existing_node_field_info, *new_node_field_info = nullptr;
 
 	if (node_field_info_address &&
 		(nullptr != (existing_node_field_info = *node_field_info_address)))
@@ -944,7 +948,7 @@ bool FE_nodeset::FE_field_has_multiple_times(struct FE_field *fe_field) const
 		const FE_node_field *node_field = (*iter)->getNodeField(fe_field);
 		if (node_field)
 		{
-			if (node_field->time_sequence)
+			if (node_field->getTimeSequence())
 				return true;
 			break;
 		}

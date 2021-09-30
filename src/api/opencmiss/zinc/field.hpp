@@ -19,6 +19,8 @@ namespace Zinc
 
 class Differentialoperator;
 class Element;
+class FieldApply;
+class FieldArgumentReal;
 class FieldComponent;
 class FieldConstant;
 class FieldEdgeDiscontinuity;
@@ -266,6 +268,11 @@ public:
 
 	inline int assignString(const Fieldcache& cache, const char *stringValue);
 
+	inline bool dependsOnField(const Field& otherField)
+	{
+		return cmzn_field_depends_on_field(this->id, otherField.id);
+	}
+
 	inline Element evaluateMeshLocation(const Fieldcache& cache, int coordinatesCount,
 		double *coordinatesOut);
 
@@ -281,6 +288,8 @@ public:
 	inline int smooth(const Fieldsmoothing& fieldsmoothing);
 
 	// casting functions: must check isValid()
+	inline FieldApply castApply();
+	inline FieldArgumentReal castArgumentReal();
 	inline FieldComponent castComponent();
 	inline FieldConstant castConstant();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();

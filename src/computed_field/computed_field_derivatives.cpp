@@ -31,10 +31,6 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #include "itkDerivativeImageFilter.h"
 #include <cmath>
 
-class Computed_field_derivatives_package : public Computed_field_type_package
-{
-};
-
 using namespace CMZN;
 
 namespace {

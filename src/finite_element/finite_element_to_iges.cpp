@@ -766,7 +766,7 @@ struct Write_iges_parameter_data_data
 int export_to_iges(char *file_name, struct cmzn_region *region,
 	char *region_path, struct cmzn_field *field)
 {
-	char *out_string, numeric_string[20], *temp_string, time_string[14];
+	char *out_string, numeric_string[24], *temp_string, time_string[60];
 	FILE *iges;
 	int count, i, global_count, length, out_length, parameter_pointer,
 		return_code;
