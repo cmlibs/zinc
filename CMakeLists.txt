@@ -19,6 +19,9 @@ endif()
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.5.0 LANGUAGES C CXX)
 
+# Set this to the development release or release candidate version.
+set(Zinc_DEVELOPER_VERSION ".dev0")
+
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
@@ -88,13 +91,6 @@ if (GIT_FOUND)
     if (_IS_DIRTY)
         set(ZINC_REVISION "${ZINC_REVISION}*")
     endif ()
-endif()
-
-# Set ZINC_RELEASE to TRUE if making a release of the Zinc library.
-if (ZINC_RELEASE)
-    set(Zinc_DEVELOPER_VERSION "")
-else()
-    set(Zinc_DEVELOPER_VERSION ".dev1")
 endif()
 
 set(USE_MSAA TRUE)
