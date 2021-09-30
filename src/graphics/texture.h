@@ -502,7 +502,7 @@ interpolated or not.  When closer than half a texel to a boundary the colour
 is constant from the half texel location to the edge. 
 ==============================================================================*/
 
-char *Texture_get_image_file_name(struct Texture *texture);
+const char *Texture_get_image_file_name(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -512,7 +512,7 @@ Note: returned file_number_pattern may be NULL if not set yet.
 User must not modify the returned value!
 ==============================================================================*/
 
-char *Texture_get_file_number_pattern(struct Texture *texture);
+const char *Texture_get_file_number_pattern(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 

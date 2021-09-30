@@ -4316,6 +4316,6 @@ bool FE_basis_modify_theta_in_xi1(struct FE_basis *basis,
 		}
 	}
 
-	delete nodeValueIndexes;
+	delete[] nodeValueIndexes;
 	return true;
 }

@@ -682,11 +682,11 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 {
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		// true and able to be evaluated only if all components have a VALUE parameter
 		const FE_node_field *node_field = node_location->get_node()->getNodeField(this->fe_field);
@@ -783,7 +783,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	{
 		case ELEMENT_XI_VALUE:
 		{
-			if (node_location = cache.get_location_node())
+			if ((node_location = cache.get_location_node()))
 			{
 				MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
 				// can only have 1 component; can only be evaluated at node so assume node location
@@ -806,7 +806,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 			{
 				DEALLOCATE(feStringValueCache.stringValue);
 			}
-			if (node_location = cache.get_location_node())
+			if ((node_location = cache.get_location_node()))
 			{
 				// can only have 1 component
 				feStringValueCache.stringValue = get_FE_nodal_value_as_string(node_location->get_node(),
@@ -817,7 +817,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					return_code = 0;
 				}
 			}
-			else if (element_xi_location = cache.get_location_element_xi())
+			else if ((element_xi_location = cache.get_location_element_xi()))
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
@@ -842,7 +842,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 		default:
 		{
 			FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
-			if (element_xi_location = cache.get_location_element_xi())
+			if ((element_xi_location = cache.get_location_element_xi()))
 			{
 				cmzn_element_id element = element_xi_location->get_element();
 				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
@@ -889,7 +889,7 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 					return_code = 0;
 				}
 			}
-			else if (node_location = cache.get_location_node())
+			else if ((node_location = cache.get_location_node()))
 			{
 				int result = CMZN_ERROR_GENERAL;
 				const int componentCount = field->number_of_components;
@@ -1090,7 +1090,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 	const Value_type value_type = this->fe_field->getValueType();
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
@@ -1201,7 +1201,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 			}
 		}
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		const int componentCount = field->number_of_components;
 		cmzn_node *node = node_location->get_node();
@@ -1819,12 +1819,12 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = static_cast<FE_value>(get_FE_node_identifier(node));
@@ -2009,12 +2009,12 @@ int Computed_field_access_count::evaluate(cmzn_fieldcache& cache,
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
-	if (element_xi_location = cache.get_location_element_xi())
+	if ((element_xi_location = cache.get_location_element_xi()))
 	{
 		FE_element* element = element_xi_location->get_element();
 		valueCache.values[0] = static_cast<FE_value>(element->getAccessCount());
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		FE_node *node = node_location->get_node();
 		valueCache.values[0] = (FE_value)node->getAccessCount();
@@ -2222,7 +2222,7 @@ Compare the type specific data
 bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	const Field_location_node *node_location;
-	if (node_location = cache.get_location_node())
+	if ((node_location = cache.get_location_node()))
 	{
 		cmzn_node *node = node_location->get_node();
 		const FE_node_field *node_field = node->getNodeField(this->fe_field);
@@ -3487,22 +3487,19 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 			display_message(ERROR_MESSAGE, "FieldFindMeshLocation evaluate.  Failed to map from search mesh to main mesh");
 			return 0;
 		}
-		if (elementToAncestor)
+		const int searchDimension = element->getDimension();
+		const int ancestorDimension = ancestorElement->getDimension();
+		FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		for (int k = 0; k < searchDimension; ++k)
+			searchXi[k] = xi[k];
+		for (int j = 0; j < ancestorDimension; ++j)
 		{
-			const int searchDimension = element->getDimension();
-			const int ancestorDimension = ancestorElement->getDimension();
-			FE_value searchXi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			const FE_value *row = elementToAncestor + j*(1 + searchDimension);
+			xi[j] = row[0];
 			for (int k = 0; k < searchDimension; ++k)
-				searchXi[k] = xi[k];
-			for (int j = 0; j < ancestorDimension; ++j)
-			{
-				const FE_value *row = elementToAncestor + j*(1 + searchDimension);
-				xi[j] = row[0];
-				for (int k = 0; k < searchDimension; ++k)
-					xi[j] += row[1 + k]*searchXi[k];
-			}
-			element = ancestorElement;
+				xi[j] += row[1 + k]*searchXi[k];
 		}
+		element = ancestorElement;
 	}
 	meshLocationValueCache.setMeshLocation(element, xi);
 	return 1;
@@ -3945,11 +3942,11 @@ int cmzn_field_add_source_FE_field_to_list(cmzn_field *field, void *fe_field_lis
 		FE_field *fe_field = 0;
 		Computed_field_finite_element *finite_element_core;
 		Computed_field_node_value *node_value_core;
-		if (finite_element_core = dynamic_cast<Computed_field_finite_element*>(field->core))
+		if ((finite_element_core = dynamic_cast<Computed_field_finite_element*>(field->core)))
 		{
 			fe_field = finite_element_core->fe_field;
 		}
-		else if (node_value_core = dynamic_cast<Computed_field_node_value*>(field->core))
+		else if ((node_value_core = dynamic_cast<Computed_field_node_value*>(field->core)))
 		{
 			fe_field = node_value_core->fe_field;
 		}

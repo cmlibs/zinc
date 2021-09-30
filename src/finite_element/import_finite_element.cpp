@@ -974,7 +974,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 			display_message(ERROR_MESSAGE, "EX Reader.  Missing xi value(s).  %s", this->getFileLocation());
 			return false;
 		}
-		if (!finite(xi[d]))
+		if (!isfinite(xi[d]))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN xi coordinates read.  %s", this->getFileLocation());
 			return false;
@@ -1419,7 +1419,7 @@ FE_field *EXReader::readField()
 			coordinate_system.type = PROLATE_SPHEROIDAL;
 			IO_stream_scan(this->input_file, " focus=");
 			if ((1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &focus)) ||
-				(!finite(focus)))
+				(!isfinite(focus)))
 			{
 				focus = 1.0;
 			}
@@ -1432,7 +1432,7 @@ FE_field *EXReader::readField()
 			coordinate_system.type = OBLATE_SPHEROIDAL;
 			IO_stream_scan(this->input_file," focus=");
 			if ((1 != IO_stream_scan(this->input_file,FE_VALUE_INPUT_STRING, &focus)) ||
-				(!finite(focus)))
+				(!isfinite(focus)))
 			{
 				focus = 1.0;
 			}
@@ -1629,7 +1629,7 @@ bool EXReader::readFieldValues()
 					for (int k = 0; k < number_of_values; ++k)
 					{
 						if (!((1 == IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &value))
-							&& finite(value)
+							&& isfinite(value)
 							&& set_FE_field_FE_value_value(field, k, value)))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real field value.  %s", this->getFileLocation());
@@ -2099,7 +2099,7 @@ cmzn_node *EXReader::readNode()
 						result = false;
 						break;
 					}
-					if (!finite(values[k]))
+					if (!isfinite(values[k]))
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
 							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
@@ -3772,7 +3772,7 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 				display_message(ERROR_MESSAGE, "EX Reader.  Error reading element/grid FE_value value.  %s", this->getFileLocation());
 				return false;
 			}
-			if (!finite(values[v]))
+			if (!isfinite(values[v]))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN element value read for element.  %s", this->getFileLocation());
 				return false;
@@ -4042,7 +4042,7 @@ cmzn_element *EXReader::readElement()
 					cmzn_element::deaccess(element);
 					return 0;
 				}
-				if (!finite(scaleFactors[sf]))
+				if (!isfinite(scaleFactors[sf]))
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN scale factor.  %s", this->getFileLocation());
 					cmzn_element::deaccess(element);

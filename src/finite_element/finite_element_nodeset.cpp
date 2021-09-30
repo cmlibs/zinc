@@ -53,8 +53,12 @@ FE_node_field_info *FE_node_field_info::create(FE_nodeset *nodesetIn, struct LIS
 {
 	struct LIST(FE_node_field) *newNodeFieldList = CREATE_LIST(FE_node_field)();
 	if ((!newNodeFieldList) ||
-		(nodeFieldListIn) && (!COPY_LIST(FE_node_field)(newNodeFieldList, nodeFieldListIn)))
+		((nodeFieldListIn) && (!COPY_LIST(FE_node_field)(newNodeFieldList, nodeFieldListIn))))
 	{
+		if (newNodeFieldList)
+		{
+			DESTROY_LIST(FE_node_field)(&newNodeFieldList);
+		}
 		display_message(ERROR_MESSAGE, "FE_node_field_info::create.  Failed to copy node field lists");
 		return nullptr;
 	}

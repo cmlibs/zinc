@@ -932,7 +932,7 @@ int cmzn_field::setNameUnique(const char *part1, const char *part2, int startNum
 int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
 {
 	if ((index < 0) || (index > this->number_of_source_fields) ||
-		(index == this->number_of_source_fields) && (!sourceField))
+		((index == this->number_of_source_fields) && (!sourceField)))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::setSourceField  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
@@ -1054,7 +1054,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 		element = element_xi_location->get_element();
 		xi = element_xi_location->get_xi();
 	}
-	else if (node_location = cache.get_location_node())
+	else if ((node_location = cache.get_location_node()))
 	{
 		node = node_location->get_node();
 		element = node_location->get_host_element();

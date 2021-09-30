@@ -4972,7 +4972,7 @@ is constant from the half texel location to the edge.
 	return (return_code);
 } /* Texture_get_pixel_values */
 
-char *Texture_get_image_file_name(struct Texture *texture)
+const char *Texture_get_image_file_name(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -4982,7 +4982,7 @@ Note: returned file_number_pattern may be NULL if not set yet.
 User must not modify the returned value!
 ==============================================================================*/
 {
-	char *image_file_name;
+	const char *image_file_name;
 
 	ENTER(Texture_get_image_file_name);
 	if (texture)
@@ -5000,7 +5000,7 @@ User must not modify the returned value!
 	return (image_file_name);
 } /* Texture_get_image_file_name */
 
-char *Texture_get_file_number_pattern(struct Texture *texture)
+const char *Texture_get_file_number_pattern(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
 
@@ -5011,7 +5011,7 @@ Note: returned file_number_pattern may be NULL if not set yet.
 User must not modify the returned value!
 ==============================================================================*/
 {
-	char *file_number_pattern;
+	const char *file_number_pattern;
 
 	ENTER(Texture_get_file_number_pattern);
 	if (texture)

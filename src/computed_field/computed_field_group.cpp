@@ -196,7 +196,7 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 				}
 			}
 		}
-		else if (element_xi_location = cache.get_location_element_xi())
+		else if ((element_xi_location = cache.get_location_element_xi()))
 		{
 			int dimension = element_xi_location->get_element_dimension();
 			cmzn_field_id subobject_group_field = get_element_group_field_private(dimension);
