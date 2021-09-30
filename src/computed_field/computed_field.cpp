@@ -190,10 +190,10 @@ cmzn_field::cmzn_field() :
 	cache_index(0),
 	number_of_components(0),
 	core(nullptr),
-	source_fields(nullptr),
 	number_of_source_fields(0),
-	source_values(nullptr),
+	source_fields(nullptr),
 	number_of_source_values(0),
+	source_values(nullptr),
 	fieldparameters(nullptr),
 	manager(nullptr),
 	manager_change_status(MANAGER_CHANGE_NONE(cmzn_field)),
@@ -1020,7 +1020,7 @@ int Computed_field_is_defined_at_node_conditional(struct cmzn_field *field,
 
 char *Computed_field_core::getComponentName(int componentNumber) const
 {
-	char name[10];
+	char name[24];
 	sprintf(name, "%d", componentNumber);
 	return duplicate_string(name);
 }

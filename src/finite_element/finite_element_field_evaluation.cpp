@@ -812,8 +812,6 @@ int FE_element_field_evaluation::evaluate_real(int component_number,
 			case GENERAL_FE_FIELD:
 			{
 				/* calculate a value for each component */
-				Standard_basis_function *current_standard_basis_function = 0;
-				int *current_standard_basis_function_arguments = 0;
 				Standard_basis_function **standard_basis_function_ptr = this->component_standard_basis_functions;
 				int **standard_basis_function_arguments_ptr = this->component_standard_basis_function_arguments;
 				FE_value *calculated_value = values;

@@ -645,7 +645,6 @@ static int *tensor_product_basis_function_numbers(int number_of_xi_coordinates,
 			memcpy(dst_labels, basis_function_numbers, temp_int_1*sizeof(int));
 		for (int fo = 0; fo < number_of_basis_functions; ++fo)
 		{
-			int *dst = dst_labels;
 			for (int i = 0; i < add_basis_number_of_xi_indices; ++i)
 			{
 				const int src_index = 2*i;

@@ -4023,7 +4023,6 @@ int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
 	if (!field_list || !fe_nodeset)
 		return 0;
 	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(field_list);
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
 	for (cmzn_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
 	{
 		FE_field *field = *field_iter;

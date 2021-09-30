@@ -229,7 +229,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldm
 	if (fieldmodule)
 	{
 		const char *default_xi_field_name = "xi";
-		char xi_field_name[10];
+		char xi_field_name[26];
 		strcpy(xi_field_name, default_xi_field_name);
 		int i = 2;
 		while (true)

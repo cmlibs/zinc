@@ -3227,7 +3227,6 @@ will work with order_independent_transparency.
 	int modified_type;
 	int dimension;
 	struct Material_order_independent_transparency *data;
-	struct cmzn_materialmodule *materialmodule;
 	cmzn_shaderprogram_id unmodified_program;
 
 	ENTER(compile_Graphical_material_for_order_independent_transparency);
@@ -3236,7 +3235,6 @@ will work with order_independent_transparency.
 			material_order_independent_data_void))
 	{
 		return_code = 1;
-		materialmodule = material->module;
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&

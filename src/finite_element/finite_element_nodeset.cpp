@@ -314,7 +314,7 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 	struct FE_node_field *new_node_field, int new_number_of_values)
 {
 	int return_code;
-	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct FE_node_field_info *existing_node_field_info, *new_node_field_info = nullptr;
 
 	if (node_field_info_address &&
 		(nullptr != (existing_node_field_info = *node_field_info_address)))

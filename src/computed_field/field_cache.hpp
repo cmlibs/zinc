@@ -243,7 +243,7 @@ public:
 	DerivativeValueCache *getOrCreateDerivativeValueCache(const FieldDerivative& fieldDerivative, const Field_location& location)
 	{
 		const int cacheIndex = fieldDerivative.getCacheIndex();
-		if (this->derivatives.size() <= cacheIndex)
+		if (static_cast<int>(this->derivatives.size()) <= cacheIndex)
 			this->derivatives.resize(cacheIndex + 1, nullptr);
 		const int termCount = fieldDerivative.getTermCount(location);
 		DerivativeValueCache *derivativeValueCache = this->derivatives[cacheIndex];
@@ -257,7 +257,7 @@ public:
 	/** remove any derivative value cache for index */
 	void removeDerivativeValueCacheAtIndex(int derivativeCacheIndex)
 	{
-		if (derivativeCacheIndex < this->derivatives.size())
+		if (derivativeCacheIndex < static_cast<int>(this->derivatives.size()))
 		{
 			DerivativeValueCache* &derivativeValueCache = this->derivatives[derivativeCacheIndex];
 			delete derivativeValueCache;
