@@ -6110,7 +6110,6 @@ graphics window on screen.
 		patch_width, patch_height;
 	double bottom = 0.0, fraction_across, fraction_down, left,
 		NDC_left = 0.0, NDC_top = 0.0, NDC_width = 0.0, NDC_height = 0.0,
-		original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height,
 		original_left, original_right, original_bottom, original_top,
 		original_near_plane, original_far_plane, right, top = 0.0,
 		viewport_left, viewport_top = 0.0, viewport_pixels_per_x = 0.0, viewport_pixels_per_y = 0.0,
@@ -6208,6 +6207,7 @@ graphics window on screen.
 					glPixelStorei(GL_PACK_ROW_LENGTH, frame_width);
 				}
 #endif
+				double original_NDC_left = 0.0, original_NDC_top = 0.0, original_NDC_width = 0.0, original_NDC_height = 0.0;
 				if ((tiles_across > 1) || (tiles_down > 1))
 				{
 					Scene_viewer_get_viewing_volume(scene_viewer,
