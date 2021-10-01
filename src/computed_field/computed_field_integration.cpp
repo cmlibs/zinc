@@ -1164,8 +1164,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int coordinate_dimension, element_dimension, i, j, k,
-		top_level_element_dimension = -1;
+	int element_dimension, i, j, k, top_level_element_dimension = -1;
 
 	int return_code = 1;
 	const Field_location_element_xi *element_xi_location;
@@ -1237,15 +1236,15 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				return_code=0;
 			}
 		}
-		coordinate_dimension =
-			cmzn_field_get_number_of_components(coordinateField);
-		if (Computed_field_is_type_xi_coordinates(coordinateField, NULL))
-		{
-			/* Unlike the xi field we only deal with top level elements of a
-				single dimension so we can match that dimension for our number
-				of coordinates */
-			coordinate_dimension = top_level_element_dimension;
-		}
+		//coordinate_dimension =
+		//	cmzn_field_get_number_of_components(coordinateField);
+		//if (Computed_field_is_type_xi_coordinates(coordinateField, NULL))
+		//{
+		//	/* Unlike the xi field we only deal with top level elements of a
+		//		single dimension so we can match that dimension for our number
+		//		of coordinates */
+		//	coordinate_dimension = top_level_element_dimension;
+		//}
 		/* 2. Calculate the field */
 		if (texture_mapping)
 		{
