@@ -41,24 +41,6 @@ Computed_field_subobject_group::~Computed_field_subobject_group()
 			this->field ? this->field->name : "?");
 }
 
-namespace {
-
-struct cmzn_node_field_is_true_iterator_data
-{
-	cmzn_fieldcache_id cache;
-	cmzn_field_id field;
-};
-
-int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
-{
-	cmzn_node_field_is_true_iterator_data *data =
-		static_cast<cmzn_node_field_is_true_iterator_data *>(data_void);
-	cmzn_fieldcache_set_node(data->cache, node);
-	return cmzn_field_evaluate_boolean(data->field, data->cache) ? 1 : 0;
-}
-
-} // anonymous namespace
-
 Computed_field_element_group *Computed_field_element_group::create(FE_mesh *fe_mesh_in)
 {
 	Computed_field_element_group *element_group = 0;

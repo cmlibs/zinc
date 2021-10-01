@@ -356,7 +356,6 @@ int Computed_field_nodeset_sum::evaluate(cmzn_fieldcache& cache, FieldValueCache
 
 int Computed_field_nodeset_sum::evaluateDerivative(cmzn_fieldcache& cache, RealFieldValueCache& inValueCache, const FieldDerivative& fieldDerivative)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
 	TermOperatorSum termSum(derivativeCache->getValueCount(), derivativeCache->values);
 	return this->evaluateDerivativeNodesetOperator(cache, inValueCache, termSum, fieldDerivative);

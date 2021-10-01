@@ -3664,7 +3664,6 @@ class cmzn_field_find_mesh_location_search_mode_conversion
 public:
 	static const char *to_string(enum cmzn_field_find_mesh_location_search_mode mode)
 	{
-		const char *enum_string = 0;
 		switch (mode)
 		{
 		case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID:
@@ -4632,6 +4631,5 @@ FE_element_field_evaluation *cmzn_field_get_cache_FE_element_field_evaluation(cm
 	cmzn_element_id element = element_xi_location->get_element();
 	cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 	const FE_value time = element_xi_location->get_time();
-	const FE_value* xi = element_xi_location->get_xi();
 	return feValueCache->element_field_evaluation_cache->getElementFieldEvaluation(element, time, top_level_element);
 }

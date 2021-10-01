@@ -1170,6 +1170,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	int return_code = 1;
 	const Field_location_element_xi *element_xi_location;
 	const Field_location_node *node_location;
+	cmzn_field *integrandField = field->source_fields[0];
+	cmzn_field *coordinateField = field->source_fields[1];
 
 	if ((element_xi_location = cache.get_location_element_xi()))
 	{
@@ -1186,8 +1188,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		else
 		{
 			if ((time != cached_time)
-				&& (Computed_field_has_multiple_times(field->source_fields[0])
-					|| Computed_field_has_multiple_times(field->source_fields[1])))
+				&& (Computed_field_has_multiple_times(integrandField)
+					|| Computed_field_has_multiple_times(coordinateField)))
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)
 					(&texture_mapping);
@@ -1235,11 +1237,9 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				return_code=0;
 			}
 		}
-		cmzn_field *integrand = field->source_fields[0];
-		cmzn_field *coordinate_field = field->source_fields[1];
 		coordinate_dimension =
-			cmzn_field_get_number_of_components(field->source_fields[1]);
-		if (Computed_field_is_type_xi_coordinates(field->source_fields[1], NULL))
+			cmzn_field_get_number_of_components(coordinateField);
+		if (Computed_field_is_type_xi_coordinates(coordinateField, NULL))
 		{
 			/* Unlike the xi field we only deal with top level elements of a
 				single dimension so we can match that dimension for our number
@@ -1263,8 +1263,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				}
 				integrate_path(top_level_element,
 					mapping->values, initial_xi, top_level_xi,
-					/*number_of_gauss_points*/2, workingCache, field->source_fields[0],
-					magnitude_coordinates, field->source_fields[1],
+					/*number_of_gauss_points*/2, workingCache, integrandField,
+					magnitude_coordinates, coordinateField,
 					valueCache.values);
 			}
 			else
@@ -1299,8 +1299,8 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		else
 		{
 			if ((time != cached_time)
-				&& (Computed_field_has_multiple_times(field->source_fields[0])
-					|| Computed_field_has_multiple_times(field->source_fields[1])))
+				&& (Computed_field_has_multiple_times(integrandField)
+					|| Computed_field_has_multiple_times(coordinateField)))
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)
 					(&texture_mapping);

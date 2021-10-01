@@ -298,7 +298,7 @@ int Computed_field_image::get_resolution(int& image_width, int& image_height, in
 	Texture_get_size(this->texture, &image_width, &image_height, &image_depth);
 	if (this->texture_is_evaluated_from_source_field())
 	{
-		cmzn_field *texture_coordinate_field = this->field->source_fields[0];
+		//cmzn_field *texture_coordinate_field = this->field->source_fields[0];
 		cmzn_field *source_field = this->field->source_fields[1];
 		int dimension;
 		int *sizes = 0;
@@ -1199,14 +1199,14 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	ZnReal hint_maximums[3];
 	ZnReal hint_resolution[3];
 	ZnReal multiplier;
-	struct Colour fail_colour = {0.0, 0.0, 0.0};
+	struct Colour fail_colour = {0.0, 0.0, 0.0, 0.0};
 	ZnReal rgba[4], fail_alpha = 0.0;
 	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct FE_element *element = NULL;
 
-	int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
+	//int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
 	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 	if (image_depth > 1)

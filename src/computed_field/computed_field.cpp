@@ -1093,7 +1093,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	// values set differently for parameter or mesh derivative applied:
 	FE_value perturbationDelta;
 	int derivativeCount;
-	FE_element_field_evaluation *parameterFieldEvaluation;
+	FE_element_field_evaluation *parameterFieldEvaluation = nullptr;
 	cmzn_fieldparameters *fieldParameters = fieldDerivative.getFieldparameters();
 	if (fieldParameters)
 	{

@@ -527,11 +527,15 @@ public:
 	{
 		GT_object *graphics_object = cmzn_graphics_get_graphics_object(
 			graphics);
-		char *graphics_name = cmzn_graphics_get_name_internal(graphics);
-		char export_name[50];
-		sprintf(export_name, "object_%d_graphics_%s", current_number, graphics_name);
-		int return_code = webgl_export.exportGraphicsObject(graphics_object, export_name);
-		DEALLOCATE(graphics_name);
+		char *graphicsName = cmzn_graphics_get_name_internal(graphics);
+		char startExportName[50];
+		sprintf(startExportName, "object_%d_graphics_", current_number);
+		char *exportName = duplicate_string(startExportName);
+		int error = 0;
+		append_string(&exportName, graphicsName, &error);
+		int return_code = webgl_export.exportGraphicsObject(graphics_object, exportName);
+		DEALLOCATE(exportName);
+		DEALLOCATE(graphicsName);
 		return return_code;
 	}
 
@@ -660,7 +664,7 @@ public:
 				}
 				else
 				{
-					char temp[20];
+					char temp[40];
 					sprintf(temp, "temp_%d.json", i+1);
 					graphics_json["URL"] = temp;
 				}
@@ -689,7 +693,7 @@ public:
 					}
 					else
 					{
-						char temp[20];
+						char temp[40];
 						sprintf(temp, "temp_%d.json", i+1);
 						graphics_json["GlyphGeometriesURL"] = temp;
 						glyph_export->setGlyphGeometriesURLName(temp);
@@ -838,12 +842,16 @@ public:
 			groupField = cmzn_graphics_get_subgroup_field(graphics);
 			if (groupField)
 				group_name = cmzn_field_get_name(groupField);
-			char *region_name = cmzn_region_get_name(region);
-			char new_file_prefix[50];
+			char *new_file_prefix = duplicate_string(file_prefix);
+			int error = 0;
+			append_string(&new_file_prefix, "_", &error);
+			const char *region_name = region->getName();
 			if (region_name)
-				sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
-			else
-				sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
+			{
+				append_string(&new_file_prefix, region_name, &error);
+				append_string(&new_file_prefix, "_", &error);
+			}
+			append_string(&new_file_prefix, graphics_name, &error);
 			const bool morphsColoursAllowed = graphics->dataFieldIsTimeDependent() && morphColours;
 			const bool graphicsIsTimeDependent = graphics->coordinateFieldIsTimeDependent()
 				|| graphics->pointGlyphScalingIsTimeDependent()
@@ -856,9 +864,8 @@ public:
 			threejs_export->beginExport();
 			threejs_export->exportMaterial(material);
 			cmzn_material_destroy(&material);
+			DEALLOCATE(new_file_prefix);
 			DEALLOCATE(graphics_name);
-			if (region_name)
-				DEALLOCATE(region_name);
 			cmzn_field_destroy(&groupField);
 			if (group_name)
 				DEALLOCATE(group_name);
@@ -1707,7 +1714,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 				if (glyph_set->font)
 					cmzn_font_compile(glyph_set->font);
 			}
-		}
+		}  /* fall through */
 		case g_POLYLINE_VERTEX_BUFFERS:
 		case g_SURFACE_VERTEX_BUFFERS:
 		case g_POINT_SET_VERTEX_BUFFERS:

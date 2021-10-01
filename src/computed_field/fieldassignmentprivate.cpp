@@ -52,7 +52,6 @@ cmzn_fieldassignment *cmzn_fieldassignment::create(cmzn_field *targetFieldIn, cm
 int cmzn_fieldassignment::assign()
 {
 	cmzn_fieldmodule *fm = cmzn_field_get_fieldmodule(this->targetField);
-	bool useGroup = false;
 	cmzn_nodeset *useNodeset = (this->nodeset) ? cmzn_nodeset_access(this->nodeset)
 		: cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	const int result = cmzn_nodeset_assign_field_from_source(useNodeset,
