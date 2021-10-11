@@ -544,8 +544,7 @@ cmzn_field *Computed_field_create_generic(
 		{
 			if (NULL != source_fields[i])
 			{
-				if (check_source_field_regions &&
-					(Computed_field_get_region(source_fields[i]) != region))
+				if (check_source_field_regions && (source_fields[i]->getRegion() != region))
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_create_generic.  Source field is from a different region");

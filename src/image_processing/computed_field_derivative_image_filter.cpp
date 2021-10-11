@@ -245,14 +245,14 @@ void Computed_field_derivative_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_derivative(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int order, int direction)
+cmzn_field *cmzn_fieldmodule_create_field_imagefilter_derivative(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, int order, int direction)
 {
-	Computed_field *field = NULL;
-	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,

@@ -961,15 +961,15 @@ int cmzn_field_nodeset_operator_set_element_map_field(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -980,15 +980,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -999,15 +999,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1018,15 +1018,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1037,15 +1037,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1056,15 +1056,15 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_region_internal(field_module) ==
-			cmzn_nodeset_get_region_internal(nodeset)))
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,

@@ -917,22 +917,28 @@ struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
 	return 0;
 }
 
-int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id fieldmodule)
 {
-	cmzn_fieldmodule_get_region_internal(field_module)->beginChangeFields();
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_fieldmodule_get_region_internal(fieldmodule)->beginChangeFields();
 	return CMZN_OK;
 }
 
-int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id fieldmodule)
 {
-	cmzn_fieldmodule_get_region_internal(field_module)->endChangeFields();
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_fieldmodule_get_region_internal(fieldmodule)->endChangeFields();
 	return CMZN_OK;
 }
 
-int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule)
 {
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
 	return FE_region_define_faces(
-		cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region());
+		cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region());
 }
 
 int cmzn_region_begin_change(struct cmzn_region *region)

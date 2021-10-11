@@ -254,14 +254,13 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_coordinate_transformation(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_coordinate_transformation(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/3,
 			/*number_of_source_fields*/1, &source_field,
@@ -516,12 +515,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_vector_coordinate_transformation(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
+cmzn_field_id cmzn_fieldmodule_create_field_vector_coordinate_transformation(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
-	Computed_field *field = NULL;
-	if (field_module && vector_field && coordinate_field&&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (vector_field) && (coordinate_field) &&
 		Computed_field_is_orientation_scale_capable(vector_field, (void *)NULL) &&
 		Computed_field_has_up_to_3_numerical_components(coordinate_field,
 			(void *)NULL))
@@ -539,11 +538,11 @@ struct Computed_field *cmzn_fieldmodule_create_field_vector_coordinate_transform
 		{
 			number_of_components = 9;
 		}
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
 
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/2, source_fields,

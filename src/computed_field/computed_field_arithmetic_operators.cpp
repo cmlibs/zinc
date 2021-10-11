@@ -197,8 +197,8 @@ cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
@@ -221,8 +221,8 @@ cmzn_field *cmzn_fieldmodule_create_field_power(cmzn_fieldmodule *field_module,
 			"cmzn_fieldmodule_create_field_power.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -528,8 +528,8 @@ cmzn_field *cmzn_fieldmodule_create_field_multiply(
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
@@ -552,8 +552,8 @@ cmzn_field *cmzn_fieldmodule_create_field_multiply(
 			"cmzn_fieldmodule_create_field_multiply.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -763,8 +763,8 @@ cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
 	if (field_module && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
@@ -787,8 +787,8 @@ cmzn_field *cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule *field_module,
 			"cmzn_fieldmodule_create_field_divide.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -1019,8 +1019,8 @@ cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmo
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
 	if (fieldmodule && source_field_one && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(fieldmodule,
@@ -1045,8 +1045,8 @@ cmzn_field *cmzn_fieldmodule_create_field_weighted_add(cmzn_fieldmodule *fieldmo
 			"cmzn_fieldmodule_create_field_weighted_add.  Invalid argument(s)");
 		field = nullptr;
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -1356,13 +1356,13 @@ Returns allocated command string for reproducing field. Includes type.
  * Sets the number of components equal to that of <source_field>.
  * Not exposed in the API as this is really just a multiply with constant
  */
-cmzn_field *cmzn_fieldmodule_create_field_scale(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_scale(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field, double *scale_factors)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1618,7 +1618,7 @@ cmzn_field *cmzn_fieldmodule_create_field_clamp_maximum(cmzn_fieldmodule *fieldm
 	cmzn_field *source_field, double *maximums)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
@@ -1874,7 +1874,7 @@ cmzn_field *cmzn_fieldmodule_create_field_clamp_minimum(cmzn_fieldmodule *fieldm
 	cmzn_field *source_field, double *minimums)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
@@ -2154,7 +2154,7 @@ cmzn_field *cmzn_fieldmodule_create_field_offset(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field, double *offsets)
 {
 	cmzn_field_id field = nullptr;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
@@ -2403,13 +2403,13 @@ Returns allocated command string for reproducing field. Includes type.
  * If function fails, field is guaranteed to be unchanged from its original state,
  * although its cache may be lost.
  */
-cmzn_field *cmzn_fieldmodule_create_field_edit_mask(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_edit_mask(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field, double *edit_mask)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2617,7 +2617,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_log(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_log(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2628,9 +2628,9 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2821,7 +2821,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2832,9 +2832,9 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -3025,7 +3025,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -3036,9 +3036,9 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -3242,7 +3242,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 /*******************************************************************************
 DESCRIPTION :
@@ -3251,9 +3251,9 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,

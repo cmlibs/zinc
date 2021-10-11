@@ -268,17 +268,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id field_module,
+cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two,
 	cmzn_field_id source_field_three)
 {
 	cmzn_field *field = nullptr;
-	if (source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_three &&
+	if ((fieldmodule) && (source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && (source_field_three) &&
+		(source_field_two->getValueType() == source_field_three->getValueType()) &&
 		((source_field_one->number_of_components == 1) ||
-		(source_field_one->number_of_components ==
-			source_field_two->number_of_components)) &&
+			(source_field_one->number_of_components ==
+				source_field_two->number_of_components)) &&
 		(source_field_two->number_of_components ==
 			source_field_three->number_of_components))
 	{
@@ -286,7 +287,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id field_module,
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		source_fields[2] = source_field_three;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_two->number_of_components,
 			/*number_of_source_fields*/3, source_fields,
