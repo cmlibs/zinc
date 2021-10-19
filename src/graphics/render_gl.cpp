@@ -925,7 +925,6 @@ public:
 
 	int Scene_tree_execute(cmzn_scene *scene)
 	{
-		printf("here you go");
 		write_output_string();
 		clear_exports_map();
 		return 1;
