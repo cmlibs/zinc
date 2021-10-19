@@ -3128,6 +3128,7 @@ int Scene_render_threejs(cmzn_scene_id scene,
 			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
 			isInline);
 		renderer->Scene_compile(scene, scenefilter);
+		renderer->Scene_tree_execute(scene);
 		delete renderer;
 
 		return CMZN_OK;
