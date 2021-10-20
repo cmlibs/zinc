@@ -662,12 +662,12 @@ public:
 					graphics_json["URL"] = temp;
 				}
 			}
-			char *group_name = export_iter->second->getGroupNameNonAccessed();
+			const char *group_name = export_iter->second->getGroupName();
 			if (group_name)
 				graphics_json["GroupName"] = group_name;
-			char *region_name = export_iter->second->getRegionNameNonAccessed();
-			if (region_name)
-				graphics_json["RegionName"] = region_name;
+			const char *region_path = export_iter->second->getRegionPath();
+			if (region_path)
+				graphics_json["RegionPath"] = region_path;
 
 			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
 			Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
@@ -849,7 +849,7 @@ public:
 			const bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
 			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
 				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name,
-				name_prefix);
+				this->region_path);
 			threejs_export->beginExport();
 			threejs_export->exportMaterial(material);
 			cmzn_material_destroy(&material);

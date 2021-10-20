@@ -67,8 +67,8 @@ Threejs_export::~Threejs_export()
 {
 	if (groupName)
 		DEALLOCATE(groupName);
-	if (regionName)
-		DEALLOCATE(regionName);
+	if (regionPath)
+		DEALLOCATE(regionPath);
 	DEALLOCATE(filename);
 }
 
