@@ -1000,7 +1000,7 @@ static int cmzn_scene_build_graphics_objects(
 	{
 		if ((cmzn_scene_get_number_of_graphics(scene) > 0))
 		{
-			graphics_to_object_data.name_prefix = renderer->name_prefix;
+			graphics_to_object_data.name_prefix = renderer->region_path;
 			graphics_to_object_data.graphics = 0;
 			graphics_to_object_data.glyph_gt_object = 0;
 			graphics_to_object_data.build_graphics = 0;
@@ -1361,9 +1361,9 @@ int cmzn_scene_compile_scene(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = scene->region->getPath();
+		renderer->region_path = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
-		DEALLOCATE(renderer->name_prefix);
+		DEALLOCATE(renderer->region_path);
 	}
 	else
 	{
@@ -2643,9 +2643,9 @@ int cmzn_scene_compile_tree(cmzn_scene *scene,
 		{
 			renderer->time = 0;
 		}
-		renderer->name_prefix = scene->region->getPath();
+		renderer->region_path = scene->region->getPath();
 		return_code = renderer->cmzn_scene_compile_members(scene);
-		DEALLOCATE(renderer->name_prefix);
+		DEALLOCATE(renderer->region_path);
 	}
 	else
 	{
@@ -3128,6 +3128,7 @@ int Scene_render_threejs(cmzn_scene_id scene,
 			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
 			isInline);
 		renderer->Scene_compile(scene, scenefilter);
+		renderer->Scene_tree_execute(scene);
 		delete renderer;
 
 		return CMZN_OK;

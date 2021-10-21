@@ -766,6 +766,80 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 }
 
+
+TEST(cmzn_scene, threejs_export_region_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	int result;
+
+	//Create a new child region, read in the file the run the
+	//export from root region scene
+	Region r1 = zinc.root_region.createChild("bob");
+	EXPECT_TRUE(r1.isValid());
+
+	Scene s1 = r1.getScene();
+	EXPECT_TRUE(s1.isValid());
+
+	Fieldmodule fm = r1.getFieldmodule();
+	EXPECT_TRUE(fm.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = r1.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	GraphicsSurfaces surfaces = s1.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+
+	Field coordinateField = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinateField.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+	//Export from root region scene
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+	EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	double double_result = 0.0;
+	EXPECT_EQ(0.0, double_result = si.getInitialTime());
+	EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+	StreamresourceMemory memeory_sr2 = si.createStreamresourceMemory();
+
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	const char *memory_buffer;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	const char *temp_char = strstr ( memory_buffer, "Surfaces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "MorphVertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "\"RegionPath\" : \"bob\"");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	temp_char = strstr ( memory_buffer, "vertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
 TEST(cmzn_scene, threejs_export_cpp)
 {
 	ZincTestSetupCpp zinc;

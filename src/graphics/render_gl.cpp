@@ -577,7 +577,6 @@ public:
 	char *file_prefix;
 	double begin_time, end_time;
 	int number_of_time_steps, current_time_frame;
-	int current_graphics_number;
 	enum cmzn_streaminformation_scene_io_data_type mode;
 	int *number_of_entries;
 	std::string **output_string;
@@ -598,7 +597,6 @@ public:
 		isInline(isInlineIn)
 	{
 		exports_map.clear();
-		current_graphics_number = 0;
 		current_time_frame = 0;
 		output_string = output_string_in;
 		morphVertices = morphVerticesIn;
@@ -636,7 +634,6 @@ public:
 		//Also a file providing metafile, only when there is graphics to be exported
 		if (size > 0)
 			size++;
-
 		return size;
 	}
 
@@ -669,9 +666,12 @@ public:
 					graphics_json["URL"] = temp;
 				}
 			}
-			char *group_name = export_iter->second->getGroupNameNonAccessed();
+			const char *group_name = export_iter->second->getGroupName();
 			if (group_name)
 				graphics_json["GroupName"] = group_name;
+			const char *region_path = export_iter->second->getRegionPath();
+			if (region_path)
+				graphics_json["RegionPath"] = region_path;
 
 			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
 			Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
@@ -758,13 +758,10 @@ public:
 
 	virtual int cmzn_scene_compile_members(cmzn_scene *scene)
 	{
-		current_graphics_number = 0;
 		if (number_of_time_steps == 0)
 		{
 			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/0);
 			cmzn_scene_execute(scene);
-			write_output_string();
-			clear_exports_map();
 		}
 		else
 		{
@@ -789,9 +786,8 @@ public:
 					current_time_frame++;
 				}
 			}
-			write_output_string();
-			clear_exports_map();
 			current_time_frame = 0;
+			//Restore the scene back to its original time
 			this->time = current_time;
 			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
 		}
@@ -827,7 +823,7 @@ public:
 		if (number_of_time_steps == 0 || current_time_frame == 0)
 		{
 			cmzn_material_id material = cmzn_graphics_get_material(graphics);
-			/* non-accessed www*/
+			/* non-accessed */
 			struct Texture *texture = Graphical_material_get_texture(
 				material);
 			double textureSizes[3] = {0.0, 0.0, 0.0};
@@ -860,7 +856,8 @@ public:
 			const bool morphsVerticesAllowed = graphicsIsTimeDependent && morphVertices;
 			const bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
 			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
-				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name);
+				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name,
+				this->region_path);
 			threejs_export->beginExport();
 			threejs_export->exportMaterial(material);
 			cmzn_material_destroy(&material);
@@ -930,18 +927,14 @@ public:
 
 	int cmzn_scene_execute(cmzn_scene *scene)
 	{
-		current_graphics_number = current_graphics_number + 1;
 		return execute_scene_threejs_output(scene, this);
 	}
 
 	int Scene_tree_execute(cmzn_scene *scene)
 	{
-		if (file_prefix)
-		{
-			set_Scene(scene);
-			return Scene_render_opengl(scene, this);
-		}
-		return 0;
+		write_output_string();
+		clear_exports_map();
+		return 1;
 	}
 
 }; /* class Render_graphics_opengl_threejs */

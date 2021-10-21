@@ -210,7 +210,7 @@ class Render_graphics_compile_members : public Render_graphics
 public:
 	Render_graphics_compile_members() :
 		time(0.0),
-		name_prefix(NULL),
+		region_path(NULL),
 		incrementalBuild(0)
 	{
 		for (int i = 0; i < 16; i++)
@@ -221,7 +221,7 @@ public:
 
 	FE_value time;
 	/** Passed from scene to graphics for compilation */
-	const char *name_prefix;
+	const char *region_path;
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
 	double world_view_matrix[16];

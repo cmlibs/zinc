@@ -67,6 +67,8 @@ Threejs_export::~Threejs_export()
 {
 	if (groupName)
 		DEALLOCATE(groupName);
+	if (regionPath)
+		DEALLOCATE(regionPath);
 	DEALLOCATE(filename);
 }
 
@@ -962,9 +964,6 @@ void Threejs_export_glyph::exportStaticGlyphs(struct GT_object *glyph)
 
 void Threejs_export_glyph::exportGlyphsLabel(struct GT_object *object)
 {
-	GT_glyphset_vertex_buffers *glyph_set = NULL;
-	if (object->primitive_lists)
-		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
 	unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 	if (number_of_vertices > 0)
