@@ -274,14 +274,17 @@ int Computed_field_nodal_lookup::check_dependency()
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_node_lookup(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field, cmzn_node_id lookup_node)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field, cmzn_node_id lookup_node)
 {
 	cmzn_field *field = nullptr;
-	if (source_field && source_field->isNumerical() && lookup_node &&
-		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
-			cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region()))
+	FE_nodeset *feNodeset = FE_node_get_FE_nodeset(lookup_node);
+	const cmzn_region *nodeRegion =
+		(feNodeset) ? FE_region_get_cmzn_region(feNodeset->get_FE_region()) : nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(lookup_node) && (nodeRegion) &&
+		(nodeRegion == cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -628,10 +631,13 @@ cmzn_field *cmzn_fieldmodule_create_field_quaternion_SLERP(
 	cmzn_node_id quaternion_SLERP_node)
 {
 	cmzn_field *field = nullptr;
-	if (source_field && (4 == source_field->number_of_components) &&
-		quaternion_SLERP_node &&
-			(FE_node_get_FE_nodeset(quaternion_SLERP_node)->get_FE_region() ==
-			cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region()))
+	FE_nodeset *feNodeset = FE_node_get_FE_nodeset(quaternion_SLERP_node);
+	const cmzn_region *nodeRegion =
+		(feNodeset) ? FE_region_get_cmzn_region(feNodeset->get_FE_region()) : nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(4 == source_field->number_of_components) &&
+		(quaternion_SLERP_node) && (nodeRegion) &&
+		(nodeRegion == cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,

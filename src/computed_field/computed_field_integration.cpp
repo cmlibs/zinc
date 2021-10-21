@@ -22,6 +22,7 @@ and the nodes for 1D elements.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
@@ -1635,8 +1636,10 @@ cmzn_field *cmzn_fieldmodule_create_field_integration(
 	int magnitude_coordinates, cmzn_field *coordinate_field)
 {
 	cmzn_field *field = nullptr;
-	if (mesh && seed_element && cmzn_mesh_contains_element(mesh, seed_element) &&
-		integrand && integrand->isNumerical() && coordinate_field &&
+	if ((fieldmodule) && (mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)) &&
+		(seed_element) && cmzn_mesh_contains_element(mesh, seed_element) &&
+		(integrand) && integrand->isNumerical() && (coordinate_field) &&
 		coordinate_field->isNumerical() && 
 		(1 == cmzn_field_get_number_of_components(integrand)))
 	{

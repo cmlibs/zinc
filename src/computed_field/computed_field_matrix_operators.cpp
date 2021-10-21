@@ -192,21 +192,21 @@ char *Computed_field_determinant::get_command_string()
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_determinant(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	cmzn_field_id field = 0;
-	if (field_module && source_field &&
+	cmzn_field_id field = nullptr;
+	if ((fieldmodule) && (source_field) &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL) &&
 		(cmzn_field_get_number_of_components(source_field) <= 9))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_determinant());
 	}
-	return (field);
+	return field;
 }
 
 namespace {
@@ -473,15 +473,14 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 	return (return_code);
 } /* Computed_field_is_type_eigenvalues_conditional */
 
-Computed_field *cmzn_fieldmodule_create_field_eigenvalues(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_eigenvalues(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field &&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/Computed_field_get_square_matrix_size(source_field),
 			/*number_of_source_fields*/1, &source_field,
@@ -659,17 +658,16 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_eigenvectors(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *eigenvalues_field)
+cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id eigenvalues_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && eigenvalues_field &&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (eigenvalues_field) &&
 		Computed_field_is_type_eigenvalues(eigenvalues_field))
 	{
 		int n = eigenvalues_field->number_of_components;
 		int number_of_components = n * n;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/1, &eigenvalues_field,
@@ -919,23 +917,20 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_matrix_invert(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_matrix_invert(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && source_field &&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			cmzn_field_get_number_of_components(source_field),
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_matrix_invert());
 	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -1390,14 +1385,14 @@ int cmzn_field_matrix_multiply_get_number_of_rows(cmzn_field_id field)
 	return number_of_rows;
 }
 
-Computed_field *cmzn_fieldmodule_create_field_matrix_multiply(
-	struct cmzn_fieldmodule *field_module,
-	int number_of_rows, struct Computed_field *source_field1,
-	struct Computed_field *source_field2)
+cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
+	cmzn_fieldmodule_id fieldmodule, int number_of_rows,
+	cmzn_field_id source_field1, cmzn_field_id source_field2)
 {
-	Computed_field *field = NULL;
-	if (field_module && (0 < number_of_rows) && source_field1 && source_field1->isNumerical() &&
-		source_field2 && source_field2->isNumerical())
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (0 < number_of_rows) &&
+		(source_field1) && source_field1->isNumerical() &&
+		(source_field2) && source_field2->isNumerical())
 	{
 		int nc1 = source_field1->number_of_components;
 		int nc2 = source_field2->number_of_components;
@@ -1411,7 +1406,7 @@ Computed_field *cmzn_fieldmodule_create_field_matrix_multiply(
 			Computed_field *source_fields[2];
 			source_fields[0] = source_field1;
 			source_fields[1] = source_field2;
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				/*number_of_components*/number_of_rows * result_number_of_columns,
 				/*number_of_source_fields*/2, source_fields,
@@ -1672,12 +1667,12 @@ enum FieldAssignmentResult Computed_field_projection::assign(cmzn_fieldcache& ca
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_projection(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field, cmzn_field_id projection_matrix_field)
 {
-	Computed_field *field = NULL;
-	if (field_module && source_field && source_field->isNumerical() &&
-		projection_matrix_field && projection_matrix_field->isNumerical())
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
+		(projection_matrix_field) && projection_matrix_field->isNumerical())
 	{
 		int number_of_components = (projection_matrix_field->number_of_components /
 			(source_field->number_of_components + 1)) - 1;
@@ -1687,7 +1682,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_projection(
 			Computed_field *source_fields[2];
 			source_fields[0] = source_field;
 			source_fields[1] = projection_matrix_field;
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				number_of_components,
 				/*number_of_source_fields*/2, source_fields,
@@ -1947,16 +1942,16 @@ int cmzn_field_transpose_get_source_number_of_rows(cmzn_field_id field)
 	return source_number_of_rows;
 }
 
-
-Computed_field *cmzn_fieldmodule_create_field_transpose(
-	struct cmzn_fieldmodule *field_module,
+cmzn_field_id cmzn_fieldmodule_create_field_transpose(
+	struct cmzn_fieldmodule *fieldmodule,
 	int source_number_of_rows, struct Computed_field *source_field)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && (0 < source_number_of_rows) && source_field && source_field->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (0 < source_number_of_rows) &&
+		(source_field) && source_field->isNumerical() &&
 		(0 == (source_field->number_of_components % source_number_of_rows)))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2144,7 +2139,7 @@ cmzn_field *cmzn_fieldmodule_create_field_quaternion_to_matrix(
 	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
 	cmzn_field *field = nullptr;
-	if (fieldmodule && source_field && source_field->isNumerical() &&
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
 		(source_field->number_of_components == 4))
 	{
 		field = Computed_field_create_generic(fieldmodule,
@@ -2335,7 +2330,7 @@ cmzn_field *cmzn_fieldmodule_create_field_matrix_to_quaternion(
 	cmzn_fieldmodule *fieldmodule, cmzn_field *source_field)
 {
 	cmzn_field *field = nullptr;
-	if (fieldmodule && source_field && source_field->isNumerical() &&
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
 		(source_field->number_of_components == 16))
 	{
 		field = Computed_field_create_generic(fieldmodule,
