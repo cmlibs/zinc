@@ -39,7 +39,7 @@ public:
 	{	}
 
 	int getNodeParameters(const Fieldcache& cache, int componentNumber,
-		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut)
+		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut) const
 	{
 		return cmzn_field_finite_element_get_node_parameters(this->getDerivedId(),
 			cache.getId(), componentNumber, static_cast<cmzn_node_value_label>(nodeValueLabel),
@@ -54,7 +54,7 @@ public:
 			versionNumber, valuesCount, valuesIn);
 	}
 
-	bool hasParametersAtLocation(const Fieldcache& cache)
+	bool hasParametersAtLocation(const Fieldcache& cache) const
 	{
 		return cmzn_field_finite_element_has_parameters_at_location(this->getDerivedId(), cache.getId());
 	}
@@ -88,7 +88,7 @@ public:
 		MEASURE_SURFACE_NORMAL = CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL
 	};
 
-	Field getConditionalField()
+	Field getConditionalField() const
 	{
 		return Field(cmzn_field_edge_discontinuity_get_conditional_field(getDerivedId()));
 	}
@@ -98,7 +98,7 @@ public:
 		return cmzn_field_edge_discontinuity_set_conditional_field(getDerivedId(), conditionalField.getId());
 	}
 
-	Measure getMeasure()
+	Measure getMeasure() const
 	{
 		return static_cast<Measure>(cmzn_field_edge_discontinuity_get_measure(getDerivedId()));
 	}

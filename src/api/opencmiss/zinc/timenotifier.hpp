@@ -155,7 +155,7 @@ public:
 		return id;
 	}
 
-	double getTime()
+	double getTime() const
 	{
 		return cmzn_timenotifier_get_time(id);
 	}
@@ -170,7 +170,7 @@ public:
 		return cmzn_timenotifier_clear_callback(id);
 	}
 
-	double getNextCallbackTime(Timekeeper::PlayDirection playDirection)
+	double getNextCallbackTime(Timekeeper::PlayDirection playDirection) const
 	{
 		return cmzn_timenotifier_get_next_callback_time(
 			id, static_cast<cmzn_timekeeper_play_direction>(playDirection));

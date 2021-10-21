@@ -66,16 +66,16 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	first_child(nullptr),
 	next_sibling(nullptr),
 	previous_sibling(nullptr),
-	fieldModifyCounter(0),
-	change_level(0),
-	hierarchical_change_level(0),
-	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
 	field_manager(CREATE(MANAGER(Computed_field))()),
 	field_manager_callback_id(MANAGER_REGISTER(Computed_field)(
 		cmzn_region::Computed_field_change, (void *)this, this->field_manager)),
 	fe_region(nullptr),
 	field_cache_size(0),
 	scene(nullptr),
+	fieldModifyCounter(0),
+	change_level(0),
+	hierarchical_change_level(0),
+	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);

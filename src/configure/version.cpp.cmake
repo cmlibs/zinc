@@ -42,17 +42,14 @@ char *cmzn_context_get_version_string(cmzn_context_id context)
 {
 	if (context)
 	{
-		char *version_string = new char[1000];
-		sprintf(version_string, "%d.%d.%d",
+		char versionString[100];
+		sprintf(versionString, "%d.%d.%d",
 			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION);
 		if (0 == strcmp(ZINC_BUILD_TYPE, "debug"))
 		{
-			sprintf(version_string, "%s.Debug",	version_string);
+			sprintf(versionString + strlen(versionString), ".Debug");
 		}
-		char *output_string = duplicate_string(version_string);
-		delete[] version_string;
-		return output_string;
+		return duplicate_string(versionString);
 	}
-
-	return 0;
+	return nullptr;
 }

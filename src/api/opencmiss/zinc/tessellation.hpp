@@ -84,7 +84,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_tessellation_is_managed(id);
 	}
@@ -94,7 +94,7 @@ public:
 		return cmzn_tessellation_set_managed(id, value);
 	}
 
-	int getCircleDivisions()
+	int getCircleDivisions() const
 	{
 		return cmzn_tessellation_get_circle_divisions(id);
 	}
@@ -104,7 +104,7 @@ public:
 		return cmzn_tessellation_set_circle_divisions(id, circleDivisions);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_tessellation_get_name(id);
 	}
@@ -114,7 +114,7 @@ public:
 		return cmzn_tessellation_set_name(id, name);
 	}
 
-	int getMinimumDivisions(int valuesCount, int *valuesOut)
+	int getMinimumDivisions(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_tessellation_get_minimum_divisions(id, valuesCount, valuesOut);
 	}
@@ -124,7 +124,7 @@ public:
 		return cmzn_tessellation_set_minimum_divisions(id, valuesCount, valuesIn);
 	}
 
-	int getRefinementFactors(int valuesCount, int *valuesOut)
+	int getRefinementFactors(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_tessellation_get_refinement_factors(id, valuesCount, valuesOut);
 	}
@@ -251,7 +251,7 @@ public:
 		return Tessellationiterator(cmzn_tessellationmodule_create_tessellationiterator(id));
 	}
 
-	Tessellation findTessellationByName(const char *name)
+	Tessellation findTessellationByName(const char *name) const
 	{
 		return Tessellation(cmzn_tessellationmodule_find_tessellation_by_name(id, name));
 	}
@@ -266,7 +266,7 @@ public:
 		return cmzn_tessellationmodule_end_change(id);
 	}
 
-	Tessellation getDefaultTessellation()
+	Tessellation getDefaultTessellation() const
 	{
 		return Tessellation(cmzn_tessellationmodule_get_default_tessellation(id));
 	}
@@ -276,7 +276,7 @@ public:
 		return cmzn_tessellationmodule_set_default_tessellation(id, tessellation.getId());
 	}
 
-	Tessellation getDefaultPointsTessellation()
+	Tessellation getDefaultPointsTessellation() const
 	{
 		return Tessellation(cmzn_tessellationmodule_get_default_points_tessellation(id));
 	}
@@ -456,7 +456,7 @@ inline Tessellationmodulenotifier Tessellationmodule::createTessellationmoduleno
 }
 
 
-inline Tessellationmodule Context::getTessellationmodule()
+inline Tessellationmodule Context::getTessellationmodule() const
 {
 	return Tessellationmodule(cmzn_context_get_tessellationmodule(id));
 }

@@ -128,30 +128,30 @@ inline int Field::assignString(const Fieldcache& cache, const char *stringValue)
 }
 
 inline Element Field::evaluateMeshLocation(const Fieldcache& cache, int coordinatesCount,
-	double *coordinatesOut)
+	double *coordinatesOut) const
 {
 	return Element(cmzn_field_evaluate_mesh_location(id,
 		cache.getId(), coordinatesCount, coordinatesOut));
 }
 
-inline int Field::evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut)
+inline int Field::evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut) const
 {
 	return cmzn_field_evaluate_real(id, cache.getId(), valuesCount, valuesOut);
 }
 
-inline char *Field::evaluateString(const Fieldcache& cache)
+inline char *Field::evaluateString(const Fieldcache& cache) const
 {
 	return cmzn_field_evaluate_string(id, cache.getId());
 }
 
 inline int Field::evaluateDerivative(const Differentialoperator& differentialOperator,
-	const Fieldcache& cache, int valuesCount, double *valuesOut)
+	const Fieldcache& cache, int valuesCount, double *valuesOut) const
 {
 	return cmzn_field_evaluate_derivative(id, differentialOperator.getId(),
 		cache.getId(), valuesCount, valuesOut);
 }
 
-inline bool Field::isDefinedAtLocation(const Fieldcache& cache)
+inline bool Field::isDefinedAtLocation(const Fieldcache& cache) const
 {
 	return cmzn_field_is_defined_at_location(id, cache.getId());
 }

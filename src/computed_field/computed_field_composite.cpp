@@ -221,7 +221,7 @@ int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	int sourceFieldNumber = -1;
-	const FE_value *sourceFieldValues;
+	const FE_value *sourceFieldValues = nullptr;
 	FE_value *targetValue = valueCache.values;
 	for (int c = 0; c < field->number_of_components; ++c)
 	{

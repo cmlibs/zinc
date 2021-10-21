@@ -1056,7 +1056,7 @@ for subsequent operations.
 				else if (coordinate_location)
 				{
 					cmzn_field* reference_field = coordinate_location->get_field();
-					FE_value time = coordinate_location->get_time();
+					//FE_value time = coordinate_location->get_time();
 					itk::ImageRegionIteratorWithIndex< ImageType >
 						generateInput( inputImage, region );
 					//Field_location_field_values pixel_location(reference_field, 

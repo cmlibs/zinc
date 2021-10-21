@@ -132,7 +132,7 @@ TEST(ZincField, automaticRenamingFiniteElement)
 	const void *buffer = nullptr;
 	unsigned int bufferLength = 0;
 	EXPECT_EQ(RESULT_OK, srm.getBuffer(&buffer, &bufferLength));
-	const char *bufferText = static_cast<const char *>(buffer);
+	//const char *bufferText = static_cast<const char *>(buffer);
 
 	Region regionb = zinc.context.createRegion();
 	Fieldmodule fmb = regionb.getFieldmodule();

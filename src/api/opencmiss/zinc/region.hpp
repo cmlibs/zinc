@@ -209,7 +209,7 @@ inline bool operator==(const Region& a, const Region& b)
 	return a.getId() == b.getId();
 }
 
-inline Region Context::getDefaultRegion()
+inline Region Context::getDefaultRegion() const
 {
 	return Region(cmzn_context_get_default_region(id));
 }

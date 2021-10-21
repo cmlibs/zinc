@@ -136,7 +136,7 @@ public:
 		return id;
 	}
 
-	int getDimension()
+	int getDimension() const
 	{
 		return cmzn_element_get_dimension(id);
 	}
@@ -146,7 +146,7 @@ public:
 		return Elementfieldtemplate(cmzn_element_get_elementfieldtemplate(this->id, field.getId(), componentNumber));
 	}
 
-	int getIdentifier()
+	int getIdentifier() const
 	{
 		return cmzn_element_get_identifier(id);
 	}
@@ -158,7 +158,7 @@ public:
 
 	inline Mesh getMesh() const;
 
-	Node getNode(const Elementfieldtemplate &eft, int localNodeIndex)
+	Node getNode(const Elementfieldtemplate &eft, int localNodeIndex) const
 	{
 		return Node(cmzn_element_get_node(this->id, eft.getId(), localNodeIndex));
 	}
@@ -174,7 +174,7 @@ public:
 		return cmzn_element_set_nodes_by_identifier(this->id, eft.getId(), identifiersCount, identifiersIn);
 	}
 
-	int getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double *valueOut)
+	int getScaleFactor(const Elementfieldtemplate &eft, int scaleFactorIndex, double *valueOut) const
 	{
 		return cmzn_element_get_scale_factor(this->id, eft.getId(), scaleFactorIndex, valueOut);
 	}
@@ -185,7 +185,7 @@ public:
 	}
 
 	int getScaleFactors(const Elementfieldtemplate &eft, int valuesCount,
-		double *valuesOut)
+		double *valuesOut) const
 	{
 		return cmzn_element_get_scale_factors(this->id, eft.getId(), valuesCount, valuesOut);
 	}
@@ -226,7 +226,7 @@ public:
 		return cmzn_element_shape_type_enum_to_string(static_cast<cmzn_element_shape_type>(type));
 	}
 
-	enum ShapeType getShapeType()
+	enum ShapeType getShapeType() const
 	{
 		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));
 	}

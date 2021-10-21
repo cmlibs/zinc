@@ -628,7 +628,6 @@ void Threejs_export::writeUVsBuffer(GLfloat *texture_buffer, unsigned int values
 {
 	if (texture_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
-		unsigned int valid_output_per_vertex = 2;
 		GLfloat *currentVertex = texture_buffer;
 		char new_string[100];
 		sprintf(new_string, "\t\"uvs\" : [[");
@@ -738,8 +737,8 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
-			else if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE ||
-					CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+			else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
+				(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
 			{
 				/* this case export the field data directly */
 				GLfloat *data_buffer = NULL;
@@ -966,7 +965,6 @@ void Threejs_export_glyph::exportGlyphsLabel(struct GT_object *object)
 	GT_glyphset_vertex_buffers *glyph_set = NULL;
 	if (object->primitive_lists)
 		glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
-	cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 	unsigned number_of_vertices = object->vertex_array->get_number_of_vertices(
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 	if (number_of_vertices > 0)
@@ -1305,8 +1303,8 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 				}
 			}
 		}
-		else if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE ||
-				CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+		else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
+			(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
 		{
 			/* this case export the field data directly */
 			GLfloat *data_buffer = NULL;
@@ -1364,7 +1362,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 			&data_buffer, &data_values_per_vertex, &data_vertex_count);
 
 		/* cannot use the index as i will be using GL_LINE for rendering on threejs */
-		FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
+		//FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
 		int totalVertices =0;
 
 		for (line_index = 0; line_index < line_count; line_index++)

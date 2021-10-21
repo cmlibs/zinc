@@ -1091,7 +1091,6 @@ int Computed_field_matrix_multiply::evaluateDerivative(cmzn_fieldcache& cache, R
 	// evaluate various cases with product rule
 	DerivativeValueCache *derivativeCache = inValueCache.getDerivativeValueCache(fieldDerivative);
 	FE_value *derivatives = derivativeCache->values;
-	const int componentCount = inValueCache.componentCount;
 	const int m = this->number_of_rows;
 	const int s = sourceField1->number_of_components / m;
 	const int n = sourceField2->number_of_components / s;

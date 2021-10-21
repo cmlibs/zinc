@@ -65,7 +65,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_shaderprogram_is_managed(id);
 	}
@@ -75,7 +75,7 @@ public:
 		return cmzn_shaderprogram_set_managed(id, value);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_shaderprogram_get_name(id);
 	}
@@ -85,7 +85,7 @@ public:
 		return cmzn_shaderprogram_set_name(id, name);
 	}
 
-	char *getVertexShader()
+	char *getVertexShader() const
 	{
 		return cmzn_shaderprogram_get_vertex_shader(id);
 	}
@@ -95,7 +95,7 @@ public:
 		return cmzn_shaderprogram_set_vertex_shader(id, vertex_shader_string);
 	}
 
-	char *getFragmentShader()
+	char *getFragmentShader() const
 	{
 		return cmzn_shaderprogram_get_fragment_shader(id);
 	}
@@ -160,7 +160,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_shaderuniforms_is_managed(id);
 	}
@@ -170,7 +170,7 @@ public:
 		return cmzn_shaderuniforms_set_managed(id, value);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_shaderuniforms_get_name(id);
 	}
@@ -185,7 +185,7 @@ public:
 		return cmzn_shaderuniforms_remove_uniform(id, name);
 	}
 
-	int getUniformReal(const char *name, int valuesCount, double *valuesOut)
+	int getUniformReal(const char *name, int valuesCount, double *valuesOut) const
 	{
 		return cmzn_shaderuniforms_get_uniform_real(id,
 			name, valuesCount, valuesOut);
@@ -203,7 +203,7 @@ public:
 			name, valuesCount, valuesIn);
 	}
 
-	int getUniformInteger(const char *name, int valuesCount, int *valuesOut)
+	int getUniformInteger(const char *name, int valuesCount, int *valuesOut) const
 	{
 		return cmzn_shaderuniforms_get_uniform_integer(id,
 			name, valuesCount, valuesOut);
@@ -282,7 +282,7 @@ public:
 		return Shaderprogram(cmzn_shadermodule_create_shaderprogram(id));
 	}
 
-	Shaderprogram findShaderprogramByName(const char *name)
+	Shaderprogram findShaderprogramByName(const char *name) const
 	{
 		return Shaderprogram(cmzn_shadermodule_find_shaderprogram_by_name(id, name));
 	}
@@ -292,14 +292,14 @@ public:
 		return Shaderuniforms(cmzn_shadermodule_create_shaderuniforms(id));
 	}
 
-	Shaderuniforms findShaderuniformsByName(const char *name)
+	Shaderuniforms findShaderuniformsByName(const char *name) const
 	{
 		return Shaderuniforms(cmzn_shadermodule_find_shaderuniforms_by_name(id, name));
 	}
 
 };
 
-inline Shadermodule Context::getShadermodule()
+inline Shadermodule Context::getShadermodule() const
 {
 	return Shadermodule(cmzn_context_get_shadermodule(id));
 }

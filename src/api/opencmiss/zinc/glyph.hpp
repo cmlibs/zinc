@@ -150,7 +150,7 @@ public:
 		return cmzn_glyph_shape_type_enum_to_string(static_cast<cmzn_glyph_shape_type>(type));
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_glyph_get_name(id);
 	}
@@ -160,7 +160,7 @@ public:
 		return cmzn_glyph_set_name(id, name);
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return (0 != cmzn_glyph_is_managed(id));
 	}
@@ -193,7 +193,7 @@ public:
 		: Glyph(reinterpret_cast<cmzn_glyph_id>(axes_id))
 	{}
 
-	double getAxisWidth() 
+	double getAxisWidth() const
 	{
 		return cmzn_glyph_axes_get_axis_width(getDerivedId());
 	}
@@ -203,7 +203,7 @@ public:
 		return cmzn_glyph_axes_set_axis_width(getDerivedId(), axisWidth);
 	}
 
-	char *getAxisLabel(int axisNumber)
+	char *getAxisLabel(int axisNumber) const
 	{
 		return cmzn_glyph_axes_get_axis_label(getDerivedId(), axisNumber);
 	}
@@ -213,7 +213,7 @@ public:
 		return cmzn_glyph_axes_set_axis_label(getDerivedId(), axisNumber, label);
 	}
 
-	Material getAxisMaterial(int axisNumber)
+	Material getAxisMaterial(int axisNumber) const
 	{
 		return Material(cmzn_glyph_axes_get_axis_material(getDerivedId(), axisNumber));
 	}
@@ -244,7 +244,7 @@ public:
 		: Glyph(reinterpret_cast<cmzn_glyph_id>(colour_bar_id))
 	{}
 
-	int getAxis(int valuesCount, double *valuesOut)
+	int getAxis(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_glyph_colour_bar_get_axis(getDerivedId(), valuesCount, valuesOut);
 	}
@@ -254,7 +254,7 @@ public:
 		return cmzn_glyph_colour_bar_set_axis(getDerivedId(), valuesCount, valuesIn);
 	}
 
-	int getCentre(int valuesCount, double *valuesOut)
+	int getCentre(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_glyph_colour_bar_get_centre(getDerivedId(), valuesCount, valuesOut);
 	}
@@ -264,7 +264,7 @@ public:
 		return cmzn_glyph_colour_bar_set_centre(getDerivedId(), valuesCount, valuesIn);
 	}
 
-	double getExtendLength() 
+	double getExtendLength() const
 	{
 		return cmzn_glyph_colour_bar_get_extend_length(getDerivedId());
 	}
@@ -274,7 +274,7 @@ public:
 		return cmzn_glyph_colour_bar_set_extend_length(getDerivedId(), extendLength);
 	}
 
-	int getLabelDivisions() 
+	int getLabelDivisions() const
 	{
 		return cmzn_glyph_colour_bar_get_label_divisions(getDerivedId());
 	}
@@ -284,7 +284,7 @@ public:
 		return cmzn_glyph_colour_bar_set_label_divisions(getDerivedId(), labelDivisions);
 	}
 
-	Material getLabelMaterial()
+	Material getLabelMaterial() const
 	{
 		return Material(cmzn_glyph_colour_bar_get_label_material(getDerivedId()));
 	}
@@ -294,7 +294,7 @@ public:
 		return cmzn_glyph_colour_bar_set_label_material(getDerivedId(), material.getId());
 	}
 
-	char *getNumberFormat()
+	char *getNumberFormat() const
 	{
 		return cmzn_glyph_colour_bar_get_number_format(getDerivedId());
 	}
@@ -304,7 +304,7 @@ public:
 		return cmzn_glyph_colour_bar_set_number_format(getDerivedId(), numberFormat);
 	}
 
-	int getSideAxis(int valuesCount, double *valuesOut)
+	int getSideAxis(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_glyph_colour_bar_get_side_axis(getDerivedId(), valuesCount, valuesOut);
 	}
@@ -314,12 +314,12 @@ public:
 		return cmzn_glyph_colour_bar_set_side_axis(getDerivedId(), valuesCount, valuesIn);
 	}
 
-	Spectrum getSpectrum()
+	Spectrum getSpectrum() const
 	{
 		return Spectrum(cmzn_glyph_colour_bar_get_spectrum(getDerivedId()));
 	}
 
-	double getTickLength() 
+	double getTickLength() const
 	{
 		return cmzn_glyph_colour_bar_get_tick_length(getDerivedId());
 	}
@@ -466,12 +466,12 @@ public:
 		return cmzn_glyphmodule_define_standard_glyphs(id);
 	}
 
-	Glyph findGlyphByName(const char *name)
+	Glyph findGlyphByName(const char *name) const
 	{
 		return Glyph(cmzn_glyphmodule_find_glyph_by_name(id, name));
 	}
 
-	Glyph findGlyphByGlyphShapeType(Glyph::ShapeType glyphShapeType)
+	Glyph findGlyphByGlyphShapeType(Glyph::ShapeType glyphShapeType) const
 	{
 		return Glyph(cmzn_glyphmodule_find_glyph_by_glyph_shape_type(id, static_cast<cmzn_glyph_shape_type>(glyphShapeType)));
 	}
@@ -647,7 +647,7 @@ inline Glyphmodulenotifier Glyphmodule::createGlyphmodulenotifier()
 	return Glyphmodulenotifier(cmzn_glyphmodule_create_glyphmodulenotifier(id));
 }
 
-inline Glyphmodule Context::getGlyphmodule()
+inline Glyphmodule Context::getGlyphmodule() const
 {
 	return Glyphmodule(cmzn_context_get_glyphmodule(id));
 }

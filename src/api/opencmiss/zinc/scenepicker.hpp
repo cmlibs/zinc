@@ -80,44 +80,44 @@ public:
 			x1, y1, x2, y2);
 	}
 
-	Element getNearestElement()
+	Element getNearestElement() const
 	{
 		return Element(cmzn_scenepicker_get_nearest_element(id));
 	}
 
-	Node getNearestNode()
+	Node getNearestNode() const
 	{
 		return Node(cmzn_scenepicker_get_nearest_node(id));
 	}
 
-	Graphics getNearestElementGraphics()
+	Graphics getNearestElementGraphics() const
 	{
 		return Graphics(cmzn_scenepicker_get_nearest_element_graphics(id));
 	}
 
-	Graphics getNearestNodeGraphics()
+	Graphics getNearestNodeGraphics() const
 	{
 		return Graphics(cmzn_scenepicker_get_nearest_node_graphics(id));
 	}
 
-	Graphics getNearestGraphics()
+	Graphics getNearestGraphics() const
 	{
 		return Graphics(cmzn_scenepicker_get_nearest_graphics(id));
 	}
 
-	int addPickedElementsToFieldGroup(const FieldGroup& fieldGroup)
+	int addPickedElementsToFieldGroup(FieldGroup& fieldGroup) const
 	{
 		return cmzn_scenepicker_add_picked_elements_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
-	int addPickedNodesToFieldGroup(const FieldGroup& fieldGroup)
+	int addPickedNodesToFieldGroup(FieldGroup& fieldGroup) const
 	{
 		return cmzn_scenepicker_add_picked_nodes_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
-	Scene getScene()
+	Scene getScene() const
 	{
 		return Scene(cmzn_scenepicker_get_scene(id));
 	}
@@ -127,7 +127,7 @@ public:
 		return cmzn_scenepicker_set_scene(id, scene.getId());
 	}
 
-	Scenefilter getScenefilter()
+	Scenefilter getScenefilter() const
 	{
 		return Scenefilter(cmzn_scenepicker_get_scenefilter(id));
 	}
@@ -137,7 +137,7 @@ public:
 		return cmzn_scenepicker_set_scenefilter(id, filter.getId());
 	}
 
-	int getPickingVolumeCentre(double *coordinateValuesOut3)
+	int getPickingVolumeCentre(double *coordinateValuesOut3) const
 	{
 		return cmzn_scenepicker_get_picking_volume_centre(id, coordinateValuesOut3);
 	}

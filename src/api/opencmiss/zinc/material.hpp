@@ -270,7 +270,7 @@ public:
 		return Materialiterator(cmzn_materialmodule_create_materialiterator(id));
 	}
 
-	Material findMaterialByName(const char *name)
+	Material findMaterialByName(const char *name) const
 	{
 		return Material(cmzn_materialmodule_find_material_by_name(id, name));
 	}
@@ -336,7 +336,7 @@ public:
 	}
 };
 
-inline Materialmodule Context::getMaterialmodule()
+inline Materialmodule Context::getMaterialmodule() const
 {
 	return Materialmodule(cmzn_context_get_materialmodule(id));
 }
