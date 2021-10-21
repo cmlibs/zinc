@@ -232,7 +232,7 @@ cmzn_field *cmzn_fieldmodule_create_field_function(
 	cmzn_field *reference_field)
 {
 	cmzn_field *field = nullptr;
-	if (source_field && result_field && reference_field &&
+	if ((fieldmodule) && (source_field) && (result_field) && (reference_field) &&
 		((source_field->number_of_components ==
 			reference_field->number_of_components) ||
 			((1 == reference_field->number_of_components) &&

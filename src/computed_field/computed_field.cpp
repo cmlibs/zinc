@@ -544,8 +544,7 @@ cmzn_field *Computed_field_create_generic(
 		{
 			if (NULL != source_fields[i])
 			{
-				if (check_source_field_regions &&
-					(Computed_field_get_region(source_fields[i]) != region))
+				if (check_source_field_regions && (source_fields[i]->getRegion() != region))
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_create_generic.  Source field is from a different region");
@@ -1093,7 +1092,7 @@ int Computed_field_core::evaluateDerivativeFiniteDifference(cmzn_fieldcache& cac
 	// values set differently for parameter or mesh derivative applied:
 	FE_value perturbationDelta;
 	int derivativeCount;
-	FE_element_field_evaluation *parameterFieldEvaluation;
+	FE_element_field_evaluation *parameterFieldEvaluation = nullptr;
 	cmzn_fieldparameters *fieldParameters = fieldDerivative.getFieldparameters();
 	if (fieldParameters)
 	{

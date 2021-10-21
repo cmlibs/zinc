@@ -1398,7 +1398,7 @@ cmzn_light_id cmzn_lightiterator_next_non_access(cmzn_lightiterator_id iterator)
 
 Colour Light_list_get_total_ambient_colour(struct LIST(cmzn_light) *light_list)
 {
-	Colour ambientColour = { 0.0, 0.0, 0.0 };
+	Colour ambientColour = { 0.0, 0.0, 0.0, 0.0 };
 	cmzn_lightiterator *iter = CREATE_LIST_ITERATOR(cmzn_light)(light_list);
 	if (!iter)
 	{

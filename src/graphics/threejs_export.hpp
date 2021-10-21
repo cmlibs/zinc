@@ -70,35 +70,40 @@ protected:
 public:
 
 	Threejs_export(const char *filename_in, int number_of_time_steps_in,
-		cmzn_streaminformation_scene_io_data_type mode_in,
-		int morphVerticesIn, int morphColoursIn, int morphNormalsIn, double *textureSizesIn,
-		const char *groupNameIn, const char *regionPathIn) :
-			number_of_time_steps(number_of_time_steps_in), filename(duplicate_string(filename_in)),
-		mode(mode_in), morphVertices(morphVerticesIn), morphColours(morphColoursIn),
-		morphNormals(morphNormalsIn)
+			cmzn_streaminformation_scene_io_data_type mode_in,
+			int morphVerticesIn, int morphColoursIn, int morphNormalsIn, 
+			double *textureSizesIn, const char *groupNameIn,
+			const char *regionPathIn) :
+		filename(duplicate_string(filename_in)),
+		mode(mode_in),
+		morphVerticesExported(false),
+		morphColoursExported(false),
+		morphNormalsExported(false),
+		morphVertices(morphVerticesIn),
+		morphColours(morphColoursIn),
+		morphNormals(morphNormalsIn),
+		number_of_time_steps(number_of_time_steps_in),
+		groupName(groupNameIn ? duplicate_string(groupNameIn) : nullptr),
+		regionPath(regionPathIn ? duplicate_string(regionPathIn) : nullptr)
 	{
 		if (textureSizesIn)
 		{
 			textureSizes[0] = textureSizesIn[0];
-		   textureSizes[1] = textureSizesIn[1];
-		   textureSizes[2] = textureSizesIn[2];
+			textureSizes[1] = textureSizesIn[1];
+			textureSizes[2] = textureSizesIn[2];
 		}
 		else
 		{
 			textureSizes[0] = 0.0;
-		   textureSizes[1] = 0.0;
-		   textureSizes[2] = 0.0;
+			textureSizes[1] = 0.0;
+			textureSizes[2] = 0.0;
 		}
-		groupName = groupNameIn ? duplicate_string(groupNameIn) : 0;
-		regionPath = regionPathIn ? duplicate_string(regionPathIn) : 0;
+		
 		verticesMorphString.clear();
 		colorsMorphString.clear();
 		normalMorphString.clear();
 		facesString.clear();
 		outputString.clear();
-		morphVerticesExported = false;
-		morphColoursExported = false;
-		morphNormalsExported = false;
 	}
 
 	virtual ~Threejs_export();

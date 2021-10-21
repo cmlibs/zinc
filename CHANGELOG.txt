@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.5.1
+Fix const usage in C++ API.
+
 v3.5.0
 Add support for relative paths in region find/create subregion; add get path, relative path, root.
 Add Apply and Argument fields which apply real-valued field expressions with argument binding, including from another region.

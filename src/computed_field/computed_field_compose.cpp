@@ -260,12 +260,11 @@ cmzn_field *cmzn_fieldmodule_create_field_compose(cmzn_fieldmodule *fieldmodule,
 	int find_nearest, int use_point_five_when_out_of_bounds)
 {
 	cmzn_field *field = nullptr;
-
-	if (texture_coordinate_field && texture_coordinate_field->isNumerical() &&
-		find_element_xi_field && find_element_xi_field->isNumerical() &&
-		calculate_values_field && calculate_values_field->isNumerical() &&
-		search_mesh &&
-		(cmzn_mesh_get_region_internal(search_mesh) ==
+	if ((fieldmodule) &&
+		(texture_coordinate_field) && texture_coordinate_field->isNumerical() &&
+		(find_element_xi_field) && find_element_xi_field->isNumerical() &&
+		(calculate_values_field) && calculate_values_field->isNumerical() &&
+		(search_mesh) && (cmzn_mesh_get_region_internal(search_mesh) ==
 			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		if (texture_coordinate_field->number_of_components ==

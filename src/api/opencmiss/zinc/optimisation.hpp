@@ -92,7 +92,7 @@ public:
 		return id;
 	}
 
-	Field getConditionalField(const Field& dependentField)
+	Field getConditionalField(const Field& dependentField) const
 	{
 		return Field(cmzn_optimisation_get_conditional_field(id, dependentField.getId()));
 	}
@@ -107,7 +107,7 @@ public:
 		return cmzn_optimisation_add_fieldassignment(this->id, fieldassignment.getId());
 	}
 
-	Method getMethod()
+	Method getMethod() const
 	{
 		return static_cast<Method>(cmzn_optimisation_get_method(id));
 	}
@@ -118,7 +118,7 @@ public:
 			static_cast<cmzn_optimisation_method>(method));
 	}
 
-	int getAttributeInteger(Attribute attribute)
+	int getAttributeInteger(Attribute attribute) const
 	{
 		return cmzn_optimisation_get_attribute_integer(id,
 			static_cast<cmzn_optimisation_attribute>(attribute));
@@ -130,7 +130,7 @@ public:
 			static_cast<cmzn_optimisation_attribute>(attribute), value);
 	}
 
-	double getAttributeReal(Attribute attribute)
+	double getAttributeReal(Attribute attribute) const
 	{
 		return cmzn_optimisation_get_attribute_real(id,
 					static_cast<cmzn_optimisation_attribute>(attribute));
@@ -142,12 +142,12 @@ public:
 			static_cast<cmzn_optimisation_attribute>(attribute), value);
 	}
 
-	Field getFirstDependentField()
+	Field getFirstDependentField() const
 	{
 		return Field(cmzn_optimisation_get_first_dependent_field(id));
 	}
 
-	Field getNextDependentField(const Field& refField)
+	Field getNextDependentField(const Field& refField) const
 	{
 		return Field(cmzn_optimisation_get_next_dependent_field(id, refField.getId()));
 	}
@@ -162,12 +162,12 @@ public:
 		return (cmzn_optimisation_remove_dependent_field(id, field.getId()));
 	}
 
-	Field getFirstIndependentField()
+	Field getFirstIndependentField() const
 	{
 		return Field(cmzn_optimisation_get_first_independent_field(id));
 	}
 
-	Field getNextIndependentField(const Field& refField)
+	Field getNextIndependentField(const Field& refField) const
 	{
 		return Field(cmzn_optimisation_get_next_independent_field(id, refField.getId()));
 	}
@@ -182,12 +182,12 @@ public:
 		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}
 
-	Field getFirstObjectiveField()
+	Field getFirstObjectiveField() const
 	{
 		return Field(cmzn_optimisation_get_first_objective_field(id));
 	}
 
-	Field getNextObjectiveField(const Field& refField)
+	Field getNextObjectiveField(const Field& refField) const
 	{
 		return Field(cmzn_optimisation_get_next_objective_field(id, refField.getId()));
 	}
@@ -202,7 +202,7 @@ public:
 		return (cmzn_optimisation_remove_objective_field(id, field.getId()));
 	}
 
-	char *getSolutionReport()
+	char *getSolutionReport() const
 	{
 		return cmzn_optimisation_get_solution_report(id);
 	}

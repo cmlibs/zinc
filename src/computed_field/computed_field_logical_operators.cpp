@@ -86,28 +86,28 @@ int Computed_field_or::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValue
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_or(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_or(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -119,8 +119,8 @@ Computed_field *cmzn_fieldmodule_create_field_or(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -223,28 +223,28 @@ int Computed_field_and::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_and(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_and(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -256,8 +256,8 @@ Computed_field *cmzn_fieldmodule_create_field_and(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -367,28 +367,28 @@ int Computed_field_xor::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValu
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_xor(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_xor(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -400,8 +400,8 @@ Computed_field *cmzn_fieldmodule_create_field_xor(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -528,28 +528,27 @@ int Computed_field_equal_to::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 
 } //namespace
 
-Computed_field *cmzn_fieldmodule_create_field_equal_to(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_equal_to(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
-	if (field_module && source_field_one && source_field_two &&
-		(cmzn_field_get_value_type(source_field_one) == cmzn_field_get_value_type(source_field_two)) &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) && (source_field_one) && (source_field_two) &&
+		(source_field_one->getValueType() == source_field_two->getValueType()) &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -561,8 +560,8 @@ Computed_field *cmzn_fieldmodule_create_field_equal_to(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 
 	return (field);
 }
@@ -666,18 +665,19 @@ int Computed_field_less_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_less_than(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
 	cmzn_field *field = NULL;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(cmzn_field)(source_field_one);
-	ACCESS(cmzn_field)(source_field_two);
-	if (field_module && source_field_one  && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -685,7 +685,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_less_than(
 		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -697,8 +697,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_less_than(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_less_than.  Invalid argument(s)");
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 	return (field);
 }
 
@@ -801,18 +801,19 @@ int Computed_field_greater_than::evaluate(cmzn_fieldcache& cache, FieldValueCach
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
 	cmzn_field *field = NULL;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(cmzn_field)(source_field_one);
-	ACCESS(cmzn_field)(source_field_two);
-	if (field_module && source_field_one  && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
-		Computed_field_broadcast_field_components(field_module,
+	cmzn_field_access(source_field_one);
+	cmzn_field_access(source_field_two);
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
+		Computed_field_broadcast_field_components(fieldmodule,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -820,7 +821,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
 		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -832,8 +833,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_greater_than.  Invalid argument(s)");
 	}
-	DEACCESS(cmzn_field)(&source_field_one);
-	DEACCESS(cmzn_field)(&source_field_two);
+	cmzn_field::deaccess(source_field_one);
+	cmzn_field::deaccess(source_field_two);
 	return (field);
 }
 
@@ -932,14 +933,19 @@ int Computed_field_is_defined::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_is_defined(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	return Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		/*number_of_components*/1,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_is_defined());
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field))
+	{
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_is_defined());
+	}
+	return field;
 }
 
 int Computed_field_get_type_is_defined(struct Computed_field *field,

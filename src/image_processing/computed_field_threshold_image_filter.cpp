@@ -559,12 +559,12 @@ int cmzn_field_imagefilter_threshold_set_upper_threshold(cmzn_field_imagefilter_
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
 	cmzn_field *field = NULL;
-	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
+	if ((fieldmodule) && (source_field) && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -576,8 +576,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_imagefilter_threshold.  Invalid argument(s)");
 	}
-
-	return (field);
+	return field;
 }
 
 int cmzn_field_get_type_threshold_image_filter(struct Computed_field *field,

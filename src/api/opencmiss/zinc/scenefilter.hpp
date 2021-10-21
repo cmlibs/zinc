@@ -69,7 +69,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_scenefilter_is_managed(id);
 	}
@@ -84,7 +84,7 @@ public:
 		return cmzn_scenefilter_evaluate_graphics(id, graphics.getId());
 	}
 
-	bool isInverse()
+	bool isInverse() const
 	{
 		return cmzn_scenefilter_is_inverse(id);
 	}
@@ -94,7 +94,7 @@ public:
 		return cmzn_scenefilter_set_inverse(id, value);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_scenefilter_get_name(id);
 	}
@@ -134,17 +134,17 @@ public:
 		return cmzn_scenefilter_operator_append_operand(getDerivedId(), operand.getId());
 	}
 
-	Scenefilter getFirstOperand()
+	Scenefilter getFirstOperand() const
 	{
 		return Scenefilter(cmzn_scenefilter_operator_get_first_operand(getDerivedId()));
 	}
 
-	Scenefilter getNextOperand(const Scenefilter& refOperand)
+	Scenefilter getNextOperand(const Scenefilter& refOperand) const
 	{
 		return Scenefilter(cmzn_scenefilter_operator_get_next_operand(getDerivedId(), refOperand.getId()));
 	}
 
-	bool isOperandActive(const Scenefilter& operand)
+	bool isOperandActive(const Scenefilter& operand) const
 	{
 		return cmzn_scenefilter_operator_is_operand_active(getDerivedId(), operand.getId());
 	}
@@ -259,7 +259,7 @@ public:
 			cmzn_scenefiltermodule_create_scenefilter_operator_or(id)));
 	}
 
-	Scenefilter findScenefilterByName(const char *name)
+	Scenefilter findScenefilterByName(const char *name) const
 	{
 		return Scenefilter(cmzn_scenefiltermodule_find_scenefilter_by_name(id, name));
 	}
@@ -274,7 +274,7 @@ public:
 		return cmzn_scenefiltermodule_end_change(id);
 	}
 
-	Scenefilter getDefaultScenefilter()
+	Scenefilter getDefaultScenefilter() const
 	{
 		return Scenefilter(cmzn_scenefiltermodule_get_default_scenefilter(id));
 	}
@@ -285,7 +285,7 @@ public:
 	}
 };
 
-inline Scenefiltermodule Context::getScenefiltermodule()
+inline Scenefiltermodule Context::getScenefiltermodule() const
 {
 	return Scenefiltermodule(cmzn_context_get_scenefiltermodule(id));
 }

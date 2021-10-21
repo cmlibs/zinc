@@ -77,7 +77,7 @@ public:
 
 	inline TimenotifierRegular createTimenotifierRegular(double updateFrequency, double timeOffset);
 
-	double getMaximumTime()
+	double getMaximumTime() const
 	{
 		return cmzn_timekeeper_get_maximum_time(id);
 	}
@@ -87,7 +87,7 @@ public:
 		return cmzn_timekeeper_set_maximum_time(id, maximumTime);
 	}
 
-	double getMinimumTime()
+	double getMinimumTime() const
 	{
 		return cmzn_timekeeper_get_minimum_time(id);
 	}
@@ -97,7 +97,7 @@ public:
 		return cmzn_timekeeper_set_minimum_time(id, minimumTime);
 	}
 
-	double getTime()
+	double getTime() const
 	{
 		return cmzn_timekeeper_get_time(id);
 	}
@@ -107,7 +107,7 @@ public:
 		return cmzn_timekeeper_set_time(id, time);
 	}
 
-	double getNextCallbackTime(PlayDirection playDirection)
+	double getNextCallbackTime(PlayDirection playDirection) const
 	{
 		return cmzn_timekeeper_get_next_callback_time(id,
 			static_cast<cmzn_timekeeper_play_direction>(playDirection));
@@ -160,7 +160,7 @@ public:
 		return id;
 	}
 
-	Timekeeper getDefaultTimekeeper()
+	Timekeeper getDefaultTimekeeper() const
 	{
 		return Timekeeper(cmzn_timekeepermodule_get_default_timekeeper(id));
 	}
@@ -177,7 +177,7 @@ public:
 
 };
 
-inline Timekeepermodule Context::getTimekeepermodule()
+inline Timekeepermodule Context::getTimekeepermodule() const
 {
 	return Timekeepermodule(cmzn_context_get_timekeepermodule(id));
 }

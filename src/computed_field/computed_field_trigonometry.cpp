@@ -168,13 +168,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_sin(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -361,13 +361,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_cos(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -554,13 +554,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_tan(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -749,13 +749,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_asin(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -944,13 +944,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_acos(
-		struct cmzn_fieldmodule *field_module,
+		struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1138,13 +1138,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_atan(
-		struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	cmzn_field *source_field)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1347,20 +1347,20 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_atan2(
-	struct cmzn_fieldmodule *field_module,
-	cmzn_field *source_field_one,
-	cmzn_field *source_field_two)
+	struct cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field_one, cmzn_field *source_field_two)
 {
-	cmzn_field *field = NULL;
-	if (source_field_one && source_field_one->isNumerical() &&
-		source_field_two && source_field_two->isNumerical() &&
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
 		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,

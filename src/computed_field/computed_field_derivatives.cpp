@@ -512,14 +512,14 @@ int cmzn_field_derivative_get_xi_index(cmzn_field_id field)
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_derivative(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id source_field, int xi_index)
 {
 	cmzn_field *field = NULL;
-	if (source_field && source_field->isNumerical() &&
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
 		(0 < xi_index) && (xi_index <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -790,18 +790,18 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_curl(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = NULL;
-	if (vector_field && vector_field->isNumerical() && (3 == vector_field->number_of_components) &&
-		coordinate_field && coordinate_field->isNumerical() && (3 == coordinate_field->number_of_components) &&
+	if ((fieldmodule) && (vector_field) && vector_field->isNumerical() && (3 == vector_field->number_of_components) &&
+		(coordinate_field) && coordinate_field->isNumerical() && (3 == coordinate_field->number_of_components) &&
 		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
 		cmzn_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			vector_field->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1079,12 +1079,12 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_divergence(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = NULL;
-	if (vector_field && vector_field->isNumerical() &&
-		coordinate_field && coordinate_field->isNumerical() &&
+	if ((fieldmodule) && (vector_field) && vector_field->isNumerical() &&
+		(coordinate_field) && coordinate_field->isNumerical() &&
 		(3 >= coordinate_field->number_of_components) &&
 		(vector_field->number_of_components ==
 			coordinate_field->number_of_components) &&
@@ -1093,7 +1093,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 		cmzn_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/2, source_fields,
@@ -1747,7 +1747,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_gradient(
 	cmzn_field_id source_field, cmzn_field_id coordinate_field)
 {
 	cmzn_field *field = 0;
-	if (source_field && source_field->isNumerical() &&
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
 		coordinate_field && coordinate_field->isNumerical() &&
 		(3 >= coordinate_field->number_of_components))
 	{

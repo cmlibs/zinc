@@ -1164,13 +1164,13 @@ int cmzn_field_imagefilter_histogram_set_marginal_scale(cmzn_field_imagefilter_h
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_histogram(
-	struct cmzn_fieldmodule *field_module,	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	Computed_field *field = NULL;
-	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, &source_field,
@@ -1182,7 +1182,6 @@ struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_histogram(
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_imagefilter_histogram.  Invalid argument(s)");
 	}
-
 	return (field);
 }
 

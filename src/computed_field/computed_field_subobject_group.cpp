@@ -41,24 +41,6 @@ Computed_field_subobject_group::~Computed_field_subobject_group()
 			this->field ? this->field->name : "?");
 }
 
-namespace {
-
-struct cmzn_node_field_is_true_iterator_data
-{
-	cmzn_fieldcache_id cache;
-	cmzn_field_id field;
-};
-
-int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
-{
-	cmzn_node_field_is_true_iterator_data *data =
-		static_cast<cmzn_node_field_is_true_iterator_data *>(data_void);
-	cmzn_fieldcache_set_node(data->cache, node);
-	return cmzn_field_evaluate_boolean(data->field, data->cache) ? 1 : 0;
-}
-
-} // anonymous namespace
-
 Computed_field_element_group *Computed_field_element_group::create(FE_mesh *fe_mesh_in)
 {
 	Computed_field_element_group *element_group = 0;
@@ -1151,17 +1133,14 @@ int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(node_group_address));
 }
 
-Computed_field *cmzn_fieldmodule_create_field_node_group(cmzn_fieldmodule_id field_module, cmzn_nodeset_id nodeset)
+cmzn_field_id cmzn_fieldmodule_create_field_node_group(cmzn_fieldmodule_id fieldmodule, cmzn_nodeset_id nodeset)
 {
-	Computed_field *field;
-
-	ENTER(cmzn_fieldmodule_create_field_node_group);
-	field = (Computed_field *)NULL;
-	if (field_module && nodeset && (cmzn_nodeset_get_region_internal(nodeset) ==
-		cmzn_fieldmodule_get_region_internal(field_module)))
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (nodeset) && (cmzn_nodeset_get_region_internal(nodeset) ==
+		cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/false, 1,
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			Computed_field_node_group::create(cmzn_nodeset_get_FE_nodeset_internal(nodeset)));
@@ -1171,10 +1150,8 @@ Computed_field *cmzn_fieldmodule_create_field_node_group(cmzn_fieldmodule_id fie
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (field);
-} /* cmzn_fieldmodule_create_field_group */
+}
 
 cmzn_field_element_group *cmzn_field_cast_element_group(cmzn_field_id field)
 {
@@ -1189,15 +1166,15 @@ cmzn_field_element_group *cmzn_field_cast_element_group(cmzn_field_id field)
 	}
 }
 
-Computed_field *cmzn_fieldmodule_create_field_element_group(cmzn_fieldmodule_id field_module,
-		cmzn_mesh_id mesh)
+cmzn_field_id cmzn_fieldmodule_create_field_element_group(cmzn_fieldmodule_id fieldmodule,
+	cmzn_mesh_id mesh)
 {
-	Computed_field *field = 0;
-	if (field_module && mesh && (cmzn_mesh_get_region_internal(mesh) ==
-		cmzn_fieldmodule_get_region_internal(field_module)))
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+		cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
-		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/false, 1,
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			Computed_field_element_group::create(cmzn_mesh_get_FE_mesh_internal(mesh)));
@@ -1237,14 +1214,13 @@ void cmzn_field_element_group_list_btree_statistics(
 
 #if defined (USE_OPENCASCADE)
 
-cmzn_field_id cmzn_fieldmodule_create_field_cad_primitive_group_template(cmzn_fieldmodule_id field_module)
+cmzn_field_id cmzn_fieldmodule_create_field_cad_primitive_group_template(cmzn_fieldmodule_id fieldmodule)
 {
-	Computed_field *field = (struct Computed_field *)NULL;
-
-	if (field_module)
+	cmzn_field *field = nullptr;
+	if (fieldmodule)
 	{
-		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/false, 1,
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_sub_group_object<cmzn_cad_identifier_id>());
@@ -1254,7 +1230,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_cad_primitive_group_template(cmzn_fi
 		display_message(ERROR_MESSAGE,
 			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
-
 	return (field);
 }
 

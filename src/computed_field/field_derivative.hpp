@@ -113,7 +113,7 @@ public:
 	/* Get the tree order for a function of maximum complexity applying to a
 	 * source field with the given tree order: if non-zero round up to the
 	 * nearest mesh order, if not total order */
-	virtual int getMaximumTreeOrder(int sourceOrder) const
+	int getMaximumTreeOrder(int sourceOrder) const
 	{
 		if (sourceOrder == 0)
 			return 0;
@@ -125,7 +125,7 @@ public:
 	/* Get the tree order for a function giving the product of two source fields
 	 * with the given tree orders: sum, but limit to the lower of mesh order or
 	 * mesh order + parameter order if both source orders are below the line */
-	virtual int getProductTreeOrder(int sourceOrder1, int sourceOrder2) const
+	int getProductTreeOrder(int sourceOrder1, int sourceOrder2) const
 	{
 		if (sourceOrder1 == 0)
 			return sourceOrder2;

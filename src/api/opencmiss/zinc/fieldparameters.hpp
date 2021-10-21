@@ -72,17 +72,17 @@ public:
 		return id;
 	}
 
-	Differentialoperator getDerivativeOperator(int order)
+	Differentialoperator getDerivativeOperator(int order) const
 	{
 		return Differentialoperator(cmzn_fieldparameters_get_derivative_operator(this->id, order));
 	}
 
-	int getElementParameterIndexes(const Element& element, int valuesCount, int *valuesOut)
+	int getElementParameterIndexes(const Element& element, int valuesCount, int *valuesOut) const
 	{
 		return cmzn_fieldparameters_get_element_parameter_indexes(this->id, element.getId(), valuesCount, valuesOut);
 	}
 
-	int getElementParameterIndexesZero(const Element& element, int valuesCount, int *valuesOut)
+	int getElementParameterIndexesZero(const Element& element, int valuesCount, int *valuesOut) const
 	{
 		return cmzn_fieldparameters_get_element_parameter_indexes_zero(this->id, element.getId(), valuesCount, valuesOut);
 	}
@@ -92,12 +92,12 @@ public:
 		return Field(cmzn_fieldparameters_get_field(this->id));
 	}
 
-	int getNumberOfElementParameters(const Element& element)
+	int getNumberOfElementParameters(const Element& element) const
 	{
 		return cmzn_fieldparameters_get_number_of_element_parameters(this->id, element.getId());
 	}
 
-	int getNumberOfParameters()
+	int getNumberOfParameters() const
 	{
 		return cmzn_fieldparameters_get_number_of_parameters(this->id);
 	}
@@ -107,7 +107,7 @@ public:
 		return cmzn_fieldparameters_add_parameters(this->id, valuesCount, valuesIn);
 	}
 
-	int getParameters(int valuesCount, double *valuesOut)
+	int getParameters(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_fieldparameters_get_parameters(this->id, valuesCount, valuesOut);
 	}
@@ -118,7 +118,7 @@ public:
 	}
 };
 
-inline Fieldparameters Field::getFieldparameters()
+inline Fieldparameters Field::getFieldparameters() const
 {
 	return Fieldparameters(cmzn_field_get_fieldparameters(this->getId()));
 }

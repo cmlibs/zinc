@@ -97,22 +97,22 @@ public:
 		WRAP_MODE_MIRROR_REPEAT = CMZN_FIELD_IMAGE_WRAP_MODE_MIRROR_REPEAT
 	};
 
-	int getWidthInPixels()
+	int getWidthInPixels() const
 	{
 		return cmzn_field_image_get_width_in_pixels(getDerivedId());
 	}
 
-	int getHeightInPixels()
+	int getHeightInPixels() const
 	{
 		return cmzn_field_image_get_height_in_pixels(getDerivedId());
 	}
 
-	int getDepthInPixels()
+	int getDepthInPixels() const
 	{
 		return cmzn_field_image_get_depth_in_pixels(getDerivedId());
 	}
 
-	int getSizeInPixels(int valuesCount, int *valuesOut)
+	int getSizeInPixels(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_field_image_get_size_in_pixels(getDerivedId(), valuesCount, valuesOut);
 	}
@@ -122,22 +122,22 @@ public:
 		return cmzn_field_image_set_size_in_pixels(getDerivedId(), valuesCount, valuesIn);
 	}
 
-	double getTextureCoordinateWidth()
+	double getTextureCoordinateWidth() const
 	{
 		return cmzn_field_image_get_texture_coordinate_width(getDerivedId());
 	}
 
-	double getTextureCoordinateHeight()
+	double getTextureCoordinateHeight() const
 	{
 		return cmzn_field_image_get_texture_coordinate_height(getDerivedId());
 	}
 
-	double getTextureCoordinateDepth()
+	double getTextureCoordinateDepth() const
 	{
 		return cmzn_field_image_get_texture_coordinate_depth(getDerivedId());
 	}
 
-	int getTextureCoordinateSizes(int valuesCount, double *valuesOut)
+	int getTextureCoordinateSizes(int valuesCount, double *valuesOut) const
 	{
 		return cmzn_field_image_get_texture_coordinate_sizes(getDerivedId(), valuesCount,
 			valuesOut);
@@ -171,9 +171,9 @@ public:
 		return cmzn_field_image_read_file(getDerivedId(), fileName);
 	}
 
-	inline int write(const StreaminformationImage& streaminformationImage);
+	inline int write(const StreaminformationImage& streaminformationImage) const;
 
-	CombineMode getCombineMode()
+	CombineMode getCombineMode() const
 	{
 		return static_cast<CombineMode>(cmzn_field_image_get_combine_mode(getDerivedId()));
 	}
@@ -184,7 +184,7 @@ public:
 			static_cast<cmzn_field_image_combine_mode>(combineMode));
 	}
 
-	Field getDomainField()
+	Field getDomainField() const
 	{
 		return Field(cmzn_field_image_get_domain_field(getDerivedId()));
 	}
@@ -194,7 +194,7 @@ public:
 		return cmzn_field_image_set_domain_field(getDerivedId(), domainField.getId());
 	}
 
-	HardwareCompressionMode getHardwareCompressionMode()
+	HardwareCompressionMode getHardwareCompressionMode() const
 	{
 		return static_cast<HardwareCompressionMode>(
 			cmzn_field_image_get_hardware_compression_mode(getDerivedId()));
@@ -206,7 +206,7 @@ public:
 			static_cast<cmzn_field_image_hardware_compression_mode>(hardwareCompressionMode));
 	}
 
-	FilterMode getFilterMode()
+	FilterMode getFilterMode() const
 	{
 		return static_cast<FilterMode>(cmzn_field_image_get_filter_mode(getDerivedId()));
 	}
@@ -217,7 +217,7 @@ public:
 			static_cast<cmzn_field_image_filter_mode>(filterMode));
 	}
 
-	WrapMode getWrapMode()
+	WrapMode getWrapMode() const
 	{
 		return static_cast<WrapMode>(cmzn_field_image_get_wrap_mode(getDerivedId()));
 	}
@@ -228,12 +228,12 @@ public:
 			static_cast<cmzn_field_image_wrap_mode>(wrapMode));
 	}
 
-	char *getProperty(const char* property)
+	char *getProperty(const char* property) const
 	{
 		return cmzn_field_image_get_property(getDerivedId(), property);
 	}
 
-	int getNumberOfBitsPerComponent()
+	int getNumberOfBitsPerComponent() const
 	{
 		return cmzn_field_image_get_number_of_bits_per_component(
 			getDerivedId());
@@ -245,7 +245,7 @@ public:
 			getDerivedId(), numberOfBits);
 	}
 
-	PixelFormat getPixelFormat()
+	PixelFormat getPixelFormat() const
 	{
 		return static_cast<PixelFormat>(cmzn_field_image_get_pixel_format(getDerivedId()));
 	}
@@ -256,7 +256,7 @@ public:
 			static_cast<cmzn_field_image_pixel_format>(imagePixelFormat));
 	}
 
-	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out)
+	int getBuffer(const void **buffer_out, unsigned int *buffer_length_out) const
 	{
 		return cmzn_field_image_get_buffer(getDerivedId(), buffer_out,
 			buffer_length_out);

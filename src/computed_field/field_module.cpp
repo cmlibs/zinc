@@ -153,7 +153,7 @@ struct Computed_field *cmzn_fieldmodule_find_field_by_name(
 			(char *)field_name, manager);
 		if (field)
 		{
-			ACCESS(Computed_field)(field);
+			field->access();
 		}
 	}
 	else

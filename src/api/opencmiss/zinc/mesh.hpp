@@ -74,7 +74,7 @@ public:
 
 	inline MeshGroup castGroup();
 
-	bool containsElement(const Element& element)
+	bool containsElement(const Element& element) const
 	{
 		return cmzn_mesh_contains_element(id, element.getId());
 	}
@@ -120,35 +120,35 @@ public:
 			conditionalField.getId());
 	}
 
-	Element findElementByIdentifier(int identifier)
+	Element findElementByIdentifier(int identifier) const
 	{
 		return Element(cmzn_mesh_find_element_by_identifier(id, identifier));
 	}
 
-	Differentialoperator getChartDifferentialoperator(int order, int term)
+	Differentialoperator getChartDifferentialoperator(int order, int term) const
 	{
 		return Differentialoperator(cmzn_mesh_get_chart_differentialoperator(
 			id, order, term));
 	}
 
-	int getDimension()
+	int getDimension() const
 	{
 		return cmzn_mesh_get_dimension(id);
 	}
 
 	inline Fieldmodule getFieldmodule() const;
 
-	Mesh getMasterMesh()
+	Mesh getMasterMesh() const
 	{
 		return Mesh(cmzn_mesh_get_master_mesh(id));
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_mesh_get_name(id);
 	}
 
-	int getSize()
+	int getSize() const
 	{
 		return cmzn_mesh_get_size(id);
 	}
@@ -258,17 +258,17 @@ public:
 		return (0 != id);
 	}
 
-	Element::ChangeFlags getElementChangeFlags(const Element& element)
+	Element::ChangeFlags getElementChangeFlags(const Element& element) const
 	{
 		return cmzn_meshchanges_get_element_change_flags(id, element.getId());
 	}
 
-	int getNumberOfChanges()
+	int getNumberOfChanges() const
 	{
 		return cmzn_meshchanges_get_number_of_changes(id);
 	}
 
-	Element::ChangeFlags getSummaryElementChangeFlags()
+	Element::ChangeFlags getSummaryElementChangeFlags() const
 	{
 		return cmzn_meshchanges_get_summary_element_change_flags(id);
 	}

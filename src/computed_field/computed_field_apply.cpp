@@ -865,7 +865,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_argument_real(
 	if (fieldmodule && (0 < number_of_components))
 	{
 		field = Computed_field_create_generic(fieldmodule,
-			/*check_source_field_regions*/false, number_of_components,
+			/*check_source_field_regions*/true, number_of_components,
 			/*number_of_source_fields*/0, nullptr,
 			/*number_of_source_values*/0, nullptr,
 			new Computed_field_argument_real());
@@ -896,7 +896,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_dummy_real(
 	if (fieldmodule && (0 < number_of_components))
 	{
 		field = Computed_field_create_generic(fieldmodule,
-			/*check_source_field_regions*/false, number_of_components,
+			/*check_source_field_regions*/true, number_of_components,
 			/*number_of_source_fields*/0, nullptr,
 			/*number_of_source_values*/0, nullptr,
 			new Computed_field_dummy_real());

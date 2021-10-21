@@ -270,14 +270,14 @@ void Computed_field_canny_edge_detection_image_filter::create_functor()
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_canny_edge_detection(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field,
 	double variance, double maximumError,
   double upperThreshold, double lowerThreshold)
 {
 	cmzn_field *field = NULL;
-	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
+	if ((fieldmodule) && (source_field) && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,

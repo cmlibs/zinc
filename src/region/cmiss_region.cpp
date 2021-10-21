@@ -66,16 +66,16 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	first_child(nullptr),
 	next_sibling(nullptr),
 	previous_sibling(nullptr),
-	fieldModifyCounter(0),
-	change_level(0),
-	hierarchical_change_level(0),
-	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
 	field_manager(CREATE(MANAGER(Computed_field))()),
 	field_manager_callback_id(MANAGER_REGISTER(Computed_field)(
 		cmzn_region::Computed_field_change, (void *)this, this->field_manager)),
 	fe_region(nullptr),
 	field_cache_size(0),
 	scene(nullptr),
+	fieldModifyCounter(0),
+	change_level(0),
+	hierarchical_change_level(0),
+	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);
@@ -917,22 +917,28 @@ struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
 	return 0;
 }
 
-int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id fieldmodule)
 {
-	cmzn_fieldmodule_get_region_internal(field_module)->beginChangeFields();
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_fieldmodule_get_region_internal(fieldmodule)->beginChangeFields();
 	return CMZN_OK;
 }
 
-int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id fieldmodule)
 {
-	cmzn_fieldmodule_get_region_internal(field_module)->endChangeFields();
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_fieldmodule_get_region_internal(fieldmodule)->endChangeFields();
 	return CMZN_OK;
 }
 
-int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id field_module)
+int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule)
 {
+	if (!fieldmodule)
+		return CMZN_ERROR_ARGUMENT;
 	return FE_region_define_faces(
-		cmzn_fieldmodule_get_region_internal(field_module)->get_FE_region());
+		cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region());
 }
 
 int cmzn_region_begin_change(struct cmzn_region *region)

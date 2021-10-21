@@ -179,13 +179,13 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_fieldcach
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_string_constant(
-	struct cmzn_fieldmodule *field_module, const char *string_value_in)
+	struct cmzn_fieldmodule *fieldmodule, const char *string_value_in)
 {
 	cmzn_field_id field = nullptr;
-	if (string_value_in)
+	if ((fieldmodule) && (string_value_in))
 	{
-		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/false, /*number_of_components*/1,
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true, /*number_of_components*/1,
 			/*number_of_source_fields*/0, nullptr,
 			/*number_of_source_values*/0, nullptr,
 			new Computed_field_string_constant(string_value_in));

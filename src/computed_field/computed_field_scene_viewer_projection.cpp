@@ -622,15 +622,15 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
-	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,
+	cmzn_fieldmodule_id fieldmodule, cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_scenecoordinatesystem from_coordinate_system,
 	enum cmzn_scenecoordinatesystem to_coordinate_system)
 {
 	cmzn_field *field = nullptr;
-	if (sceneviewer)
+	if ((fieldmodule) && (sceneviewer))
 	{
-		field = Computed_field_create_generic(field_module,
-			/*check_source_field_regions*/false,
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true,
 			/*number_of_components*/16,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,

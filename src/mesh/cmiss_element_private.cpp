@@ -1298,7 +1298,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_fieldmodule_id fieldmodule, int dimension)
 {
 	cmzn_mesh_id mesh = NULL;
-	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if ((fieldmodule) && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		FE_region *fe_region = cmzn_fieldmodule_get_region_internal(fieldmodule)->get_FE_region();
 		mesh = cmzn_mesh::create(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));

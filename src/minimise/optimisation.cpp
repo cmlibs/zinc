@@ -679,7 +679,7 @@ int Minimisation::minimise_Newton()
 		const int elementParametersCount = fieldparameters.getNumberOfElementParameters(element);
 		if (elementParametersCount <= 0)
 			continue;  // GRC handle -1 error?
-		if (elementParametersCount > elementParameterIndexes.size())
+		if (elementParametersCount > static_cast<int>(elementParameterIndexes.size()))
 		{
 			elementParameterIndexes.resize(elementParametersCount);
 			elementJacobian.resize(elementParametersCount);

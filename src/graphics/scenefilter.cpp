@@ -480,31 +480,6 @@ int cmzn_scenefilter_destroy(cmzn_scenefilter **filter_address)
 
 namespace {
 
-/***************************************************************************//**
- * Frees the memory for the scenefilter of <*scenefilter_address>.
- * Sets *scenefilter_address to NULL.
- */
-int DESTROY(cmzn_scenefilter)(struct cmzn_scenefilter **scenefilter_address)
-{
-	int return_code;
-
-	ENTER(DESTROY(cmzn_scenefilter));
-	if (scenefilter_address && (*scenefilter_address))
-	{
-		delete *scenefilter_address;
-		*scenefilter_address = NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"DESTROY(cmzn_scenefilter).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_scenefilter)
 
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_scenefilter)

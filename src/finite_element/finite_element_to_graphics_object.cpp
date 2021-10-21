@@ -2581,7 +2581,6 @@ int add_glyphset_vertex_from_FE_element(
 			cmzn_field_get_number_of_components(variable_scale_field))))) ||
 			!glyph))
 	{
-		int element_dimension = cmzn_element_get_dimension(element);
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0] = 0.0;
 		coordinates[1] = 0.0;

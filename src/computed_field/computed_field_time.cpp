@@ -242,17 +242,19 @@ global time do not matter.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_time_lookup(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field *source_field, struct Computed_field *time_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_module && source_field && time_field &&
+	if ((fieldmodule) &&
+		(source_field) && source_field->isNumerical() &&
+		(time_field) && time_field->isNumerical() &&
 		(1 == time_field->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = time_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -502,12 +504,12 @@ Always has multiple times.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_time_value(
-	struct cmzn_fieldmodule *field_module, struct cmzn_timekeeper *timekeeper)
+	struct cmzn_fieldmodule *fieldmodule, struct cmzn_timekeeper *timekeeper)
 {
-	struct Computed_field *field = NULL;
-	if (field_module && timekeeper)
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (timekeeper))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/0, NULL,

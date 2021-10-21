@@ -159,13 +159,13 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field *cmzn_fieldmodule_create_field_normalise(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field *source_field)
 {
 	cmzn_field *field = nullptr;
-	if (source_field)
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -466,29 +466,29 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_cross_product(
-	struct cmzn_fieldmodule *field_module,
-	int number_of_source_fields, struct Computed_field **source_fields)
+cmzn_field_id cmzn_fieldmodule_create_field_cross_product(
+	cmzn_fieldmodule_id fieldmodule,
+	int number_of_source_fields, cmzn_field_id *source_fields)
 {
-	Computed_field *field = NULL;
-	if ((0 < number_of_source_fields) && (number_of_source_fields <= 3) && source_fields)
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (0 < number_of_source_fields) && (number_of_source_fields <= 3) && (source_fields))
 	{
 		const int dimension = number_of_source_fields + 1;
 		int return_code = 1;
 		for (int i = 0 ; i < number_of_source_fields; i++)
 		{
-			if (!source_fields[i] ||
+			if (!((source_fields[i]) && source_fields[i]->isNumerical()) ||
 				(source_fields[i]->number_of_components != dimension))
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_fieldmodule_create_field_cross_product.  "
-					"Source field %d missing or has wrong number of components", i + 1);
+					"Source field %d missing or has wrong value type or number of components", i + 1);
 				return_code = 0;
 			}
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				/*number_of_components*/dimension,
 				/*number_of_source_fields*/number_of_source_fields, source_fields,
@@ -820,20 +820,21 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_dot_product(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_dot_product(
+	struct cmzn_fieldmodule *fieldmodule,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	struct Computed_field *field = NULL;
-	if (source_field_one && source_field_two &&
+	cmzn_field *field = NULL;
+	if ((fieldmodule) &&
+		(source_field_one) && source_field_one->isNumerical() &&
+		(source_field_two) && source_field_two->isNumerical() &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/2, source_fields,
@@ -1062,17 +1063,20 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-cmzn_field *cmzn_fieldmodule_create_field_magnitude(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_magnitude(
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	cmzn_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		/*number_of_components*/1,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_magnitude());
-	return (field);
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
+	{
+		field = Computed_field_create_generic(fieldmodule,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_magnitude());
+	}
+	return field;
 }
 
 int Computed_field_get_type_magnitude(struct Computed_field *field,
@@ -1268,12 +1272,12 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_sum_components(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
-	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical())
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, &source_field,
@@ -1441,7 +1445,7 @@ cmzn_field *cmzn_fieldmodule_create_field_cubic_texture_coordinates(
 	struct Computed_field *source_field)
 {
 	cmzn_field *field = nullptr;
-	if (source_field)
+	if ((fieldmodule) && (source_field) && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
