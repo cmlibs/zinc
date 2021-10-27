@@ -81,11 +81,18 @@ int Threejs_export::beginExport()
 
 int Threejs_export::endExport()
 {
-	outputString += verticesMorphString;
-	outputString += colorsMorphString;
-	outputString += normalMorphString;
-	outputString += facesString;
-	outputString += "}\n";
+	if (this->isValid())
+	{
+		outputString += verticesMorphString;
+		outputString += colorsMorphString;
+		outputString += normalMorphString;
+		outputString += facesString;
+		outputString += "}\n";
+	}
+	else
+	{
+		outputString.clear();
+	}
 	return 1;
 }
 

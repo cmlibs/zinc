@@ -866,6 +866,38 @@ TEST(cmzn_scene, threejs_export_empty_surface_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
 
+	//Export from root region scene
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+	//one empty and one metadata- 2 in total
+	EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	StreamresourceMemory memeory_sr2 = si.createStreamresourceMemory();
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	const char *memory_buffer;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	const char *temp_char = strstr ( memory_buffer, "Surfaces");
+	EXPECT_EQ(static_cast<char *>(0), temp_char);
+
+	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	temp_char = strstr ( memory_buffer, "materials");
+	EXPECT_EQ(static_cast<char *>(0), temp_char);
+
 	GraphicsPoints nodes = s1.createGraphicsPoints();
 	EXPECT_TRUE(nodes.isValid());
 	EXPECT_EQ(CMZN_OK, result = nodes.setCoordinateField(coordinateField));
@@ -879,29 +911,21 @@ TEST(cmzn_scene, threejs_export_empty_surface_cpp)
 	EXPECT_EQ(CMZN_OK, result = pointAttr.setGlyph(pointGlyph));
 
 	//Export from root region scene
-	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	si = zinc.scene.createStreaminformationScene();
 	EXPECT_TRUE(si.isValid());
 
 	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
 
-	//one empty and two valid - 3 in total
+	//one empty, one point graphics and one metadata- 3 in total
 	EXPECT_EQ(3, result = si.getNumberOfResourcesRequired());
 
-	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
-
-	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
-
+	memeory_sr = si.createStreamresourceMemory();
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
-
-	const char *memory_buffer;
-	unsigned int size = 0;
 
 	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	printf(memory_buffer);
-
-	const char *temp_char = strstr ( memory_buffer, "Surfaces");
+	temp_char = strstr ( memory_buffer, "Surfaces");
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "Points");
