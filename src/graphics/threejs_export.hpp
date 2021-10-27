@@ -118,7 +118,7 @@ public:
 
 	bool isValid() const
 	{
-		return (isEmpty == false);
+		return !isEmpty;
 	}
 
 	const char *getGroupName() const

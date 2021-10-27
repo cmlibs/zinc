@@ -718,7 +718,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				this->isEmpty = true;
 			}
 
-			if (this->isEmpty == false)
+			if (!this->isEmpty)
 			{
 				/* export the colour buffer */
 				if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
@@ -1312,7 +1312,7 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 			this->isEmpty = true;
 		}
 
-		if (this->isEmpty == false)
+		if (!this->isEmpty)
 		{
 			/* export the colour buffer */
 			if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)

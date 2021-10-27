@@ -107,7 +107,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 				{
 					if (file_resource)
 					{
-						if (output_string[i].empty() == false)
+						if (!output_string[i].empty())
 						{
 							char *file_name = file_resource->getFileName();
 							if (file_name)
@@ -123,7 +123,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					}
 					else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 					{
-						if (output_string[i].empty() == false)
+						if (!output_string[i].empty())
 						{
 							char *buffer_out = duplicate_string(output_string[i].c_str());
 							unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
