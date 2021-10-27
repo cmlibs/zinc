@@ -640,7 +640,7 @@ public:
 	/* this will generate the meta data string */
 	std::string get_metadata_string()
 	{
-		Json::Value root;
+		Json::Value root = Json::arrayValue;
 		int i = 1;
 		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
 			export_iter != exports_map.end(); export_iter++)

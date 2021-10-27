@@ -895,8 +895,7 @@ TEST(cmzn_scene, threejs_export_empty_surface_cpp)
 	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	temp_char = strstr ( memory_buffer, "materials");
-	EXPECT_EQ(static_cast<char *>(0), temp_char);
+	EXPECT_EQ(nullptr, memory_buffer);
 
 	GraphicsPoints nodes = s1.createGraphicsPoints();
 	EXPECT_TRUE(nodes.isValid());

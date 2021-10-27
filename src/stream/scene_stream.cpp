@@ -107,23 +107,34 @@ int cmzn_scene_write(cmzn_scene_id scene,
 				{
 					if (file_resource)
 					{
-						char *file_name = file_resource->getFileName();
-						if (file_name)
+						if (output_string[i].empty() == false)
 						{
-							FILE *export_file = fopen(file_name,"w");
-							fprintf(export_file, "%s", output_string[i].c_str());
-							fclose(export_file);
-							DEALLOCATE(file_name);
-							i++;
+							char *file_name = file_resource->getFileName();
+							if (file_name)
+							{	
+								FILE *export_file = fopen(file_name,"w");
+								fprintf(export_file, "%s", output_string[i].c_str());
+								fclose(export_file);
+								DEALLOCATE(file_name);
+							}
 						}
 						cmzn_streamresource_file_destroy(&file_resource);
+						i++;
 					}
 					else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 					{
-						char *buffer_out = duplicate_string(output_string[i].c_str());
-						unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
-						memory_resource->setBuffer(buffer_out, buffer_size);
-						cmzn_streamresource_memory_destroy(&memory_resource);
+						if (output_string[i].empty() == false)
+						{
+							char *buffer_out = duplicate_string(output_string[i].c_str());
+							unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
+							memory_resource->setBuffer(buffer_out, buffer_size);
+							cmzn_streamresource_memory_destroy(&memory_resource);
+						}
+						else
+						{
+							memory_resource->setBuffer(nullptr, 0);
+							cmzn_streamresource_memory_destroy(&memory_resource);
+						}
 						i++;
 					}
 					else
