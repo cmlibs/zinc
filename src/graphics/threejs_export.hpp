@@ -36,7 +36,7 @@ protected:
 	std::string normalMorphString;
 	std::string facesString;
 	std::string outputString;
-	int isEmpty;
+	bool isEmpty;
 
 	void writeVertexBuffer(const char *output_variable_name,
 		GLfloat *vertex_buffer, unsigned int values_per_vertex,
@@ -103,7 +103,7 @@ public:
 		normalMorphString.clear();
 		facesString.clear();
 		outputString.clear();
-		isEmpty = 0;
+		isEmpty = false;
 	}
 
 	virtual ~Threejs_export();
@@ -116,9 +116,9 @@ public:
 
 	int endExport();
 
-	int isValid() const
+	bool isValid() const
 	{
-		return (isEmpty == 0);
+		return (isEmpty == false);
 	}
 
 	const char *getGroupName() const

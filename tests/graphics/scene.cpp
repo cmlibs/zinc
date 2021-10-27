@@ -839,6 +839,75 @@ TEST(cmzn_scene, threejs_export_region_cpp)
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 }
 
+TEST(cmzn_scene, threejs_export_empty_surface_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	int result;
+
+	//Create a new child region, read in the file the run the
+	//export from root region scene
+	Region r1 = zinc.root_region.createChild("bob");
+	EXPECT_TRUE(r1.isValid());
+
+	Scene s1 = r1.getScene();
+	EXPECT_TRUE(s1.isValid());
+
+	Fieldmodule fm = r1.getFieldmodule();
+	EXPECT_TRUE(fm.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = r1.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE)));
+
+	GraphicsSurfaces surfaces = s1.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+
+	Field coordinateField = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinateField.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+	GraphicsPoints nodes = s1.createGraphicsPoints();
+	EXPECT_TRUE(nodes.isValid());
+	EXPECT_EQ(CMZN_OK, result = nodes.setCoordinateField(coordinateField));
+	EXPECT_EQ(CMZN_OK, result = nodes.setFieldDomainType(Field::DOMAIN_TYPE_NODES));
+	
+	Graphicspointattributes pointAttr = nodes.getGraphicspointattributes();
+	EXPECT_TRUE(pointAttr.isValid());
+
+	Glyph pointGlyph = zinc.context.getGlyphmodule().findGlyphByGlyphShapeType(Glyph::SHAPE_TYPE_POINT);
+	EXPECT_TRUE(pointGlyph.isValid());
+	EXPECT_EQ(CMZN_OK, result = pointAttr.setGlyph(pointGlyph));
+
+	//Export from root region scene
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
+
+	//one empty and two valid - 3 in total
+	EXPECT_EQ(3, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
+
+	const char *memory_buffer;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((const void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	printf(memory_buffer);
+
+	const char *temp_char = strstr ( memory_buffer, "Surfaces");
+	EXPECT_EQ(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "Points");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
 TEST(cmzn_scene, threejs_export_empty_vertices_cpp)
 {
 	ZincTestSetupCpp zinc;

@@ -675,7 +675,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 		{
 			/* export the vertices */
 			GLfloat *position_vertex_buffer = NULL;
-			unsigned int position_values_per_vertex, position_vertex_count;
+			unsigned int position_values_per_vertex = 0, position_vertex_count = 0;
 			if (object->vertex_array->get_float_vertex_buffer(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 				&position_vertex_buffer, &position_values_per_vertex,
@@ -683,14 +683,16 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 			{
 				if (time_step == 0)
 				{
-					if (position_vertex_count > 0) {
+					if (position_vertex_buffer && (position_values_per_vertex > 0) &&
+					(position_vertex_count > 0))
+					{
 						writeVertexBuffer("vertices",
 							position_vertex_buffer, position_values_per_vertex,
 							position_vertex_count);
 					}
 					else
 					{
-						this->isEmpty = 1;
+						this->isEmpty = true;
 					}
 				}
 				if (number_of_time_steps > 1)
@@ -704,8 +706,12 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
+			else
+			{
+				this->isEmpty = true;
+			}
 
-			if (this->isEmpty == 0)
+			if (this->isEmpty == false)
 			{
 				/* export the colour buffer */
 				if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
@@ -823,10 +829,15 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 			}
 		} break;
 		default:
+			this->isEmpty = true;
 			break;
 		}
 		object->buffer_binding = buffer_binding;
 		return 1;
+	}
+	else
+	{
+		this->isEmpty = true;
 	}
 	return 0;
 }
@@ -1105,7 +1116,7 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 	{
 		if (time_step == 0)
 		{
-			this->isEmpty = 1;
+			this->isEmpty = true;
 		}
 	}
 }
@@ -1144,6 +1155,10 @@ int Threejs_export_glyph::exportGraphicsObject(struct GT_object *object, int tim
 		}
 		object->buffer_binding = buffer_binding;
 		return 1;
+	}
+	else
+	{
+		this->isEmpty = true;
 	}
 	return 0;
 }
@@ -1270,7 +1285,7 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 				}
 				else
 				{
-					this->isEmpty = 1;
+					this->isEmpty = true;
 				}
 
 			}
@@ -1285,8 +1300,12 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 				}
 			}
 		}
+		else
+		{
+			this->isEmpty = true;
+		}
 
-		if (this->isEmpty == 0)
+		if (this->isEmpty == false)
 		{
 			/* export the colour buffer */
 			if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
@@ -1361,6 +1380,10 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 		}
 		object->buffer_binding = buffer_binding;
 		return 1;
+	}
+	else
+	{
+		this->isEmpty = true;
 	}
 	return 0;
 }
@@ -1443,7 +1466,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 			}
 			else
 			{
-				this->isEmpty = 1;
+				this->isEmpty = true;
 			}
 		}
 		if (number_of_time_steps > 1)
@@ -1462,6 +1485,10 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 		object->buffer_binding = buffer_binding;
 		DEALLOCATE(positions);
 		return 1;
+	}
+	else
+	{
+		this->isEmpty = true;
 	}
 
 	return 0;
