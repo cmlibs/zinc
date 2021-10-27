@@ -631,9 +631,8 @@ public:
 					size++;
 			}
 		}
-		//Also a file providing metafile, only when there is graphics to be exported
-		if (size > 0)
-			size++;
+		//Also a file providing metafile.
+		size++;
 		return size;
 	}
 

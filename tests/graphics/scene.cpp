@@ -948,30 +948,17 @@ TEST(cmzn_scene, threejs_export_empty_vertices_cpp)
 	Fieldmodule fm = r1.getFieldmodule();
 	EXPECT_TRUE(fm.isValid());
 
-	EXPECT_EQ(CMZN_OK, result = r1.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
-
 	GraphicsSurfaces surfaces = s1.createGraphicsSurfaces();
 	EXPECT_TRUE(surfaces.isValid());
-
-	Field coordinateField = fm.findFieldByName("coordinates");
-	EXPECT_TRUE(coordinateField.isValid());
-
-	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
 
 	//Export from root region scene
 	StreaminformationScene si = zinc.scene.createStreaminformationScene();
 	EXPECT_TRUE(si.isValid());
 
-	Scene s2 = zinc.root_region.getScene();
-	EXPECT_TRUE(s2.isValid());
-
-	GraphicsSurfaces surfaces2 = s2.createGraphicsSurfaces();
-	EXPECT_TRUE(surfaces2.isValid());
-
 	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
 
-	//one empty and two valid - 3 in total
-	EXPECT_EQ(3, result = si.getNumberOfResourcesRequired());
+	//one empty and one metadata - 2 in total
+	EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
 
 	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
 
@@ -993,26 +980,12 @@ TEST(cmzn_scene, threejs_export_empty_vertices_cpp)
 	EXPECT_EQ(CMZN_OK, result);
 
 	const char *temp_char = strstr ( memory_buffer, "Surfaces");
-	EXPECT_NE(static_cast<char *>(0), temp_char);
-
-	temp_char = strstr ( memory_buffer, "MorphVertices");
-	EXPECT_NE(static_cast<char *>(0), temp_char);
-
-	temp_char = strstr ( memory_buffer, "\"RegionPath\" : \"bob\"");
-	EXPECT_NE(static_cast<char *>(0), temp_char);
-
-	//Check for the absence of empty graphics
-	temp_char = strstr ( memory_buffer, "\"RegionPath\" : \"\"");
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
 	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
+	EXPECT_EQ(nullptr, memory_buffer);
 
-	temp_char = strstr ( memory_buffer, "vertices");
-	EXPECT_NE(static_cast<char *>(0), temp_char);
-
-	temp_char = strstr ( memory_buffer, "faces");
-	EXPECT_NE(static_cast<char *>(0), temp_char);
 }
 
 TEST(cmzn_scene, threejs_export_cpp)
