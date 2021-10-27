@@ -645,75 +645,78 @@ public:
 		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
 			export_iter != exports_map.end(); export_iter++)
 		{
-			Json::Value graphics_json;
-			graphics_json["MorphVertices"] = export_iter->second->getMorphVerticesExported();
-			graphics_json["MorphColours"] = export_iter->second->getMorphColoursExported();
-			graphics_json["MorphNormals"] = export_iter->second->getMorphNormalsExported();
-			if (isInline)
+			if (export_iter->second->isValid())
 			{
-				graphics_json["Inline"]["URL"]= export_iter->second->getExportJson();
-			}
-			else
-			{
-				if (numberOfResources > i)
-				{
-					graphics_json["URL"] = filenames[i];
-				}
-				else
-				{
-					char temp[40];
-					sprintf(temp, "temp_%d.json", i+1);
-					graphics_json["URL"] = temp;
-				}
-			}
-			const char *group_name = export_iter->second->getGroupName();
-			if (group_name)
-				graphics_json["GroupName"] = group_name;
-			const char *region_path = export_iter->second->getRegionPath();
-			if (region_path)
-				graphics_json["RegionPath"] = region_path;
-
-			Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
-			Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
-			Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(export_iter->second);
-			if (glyph_export)
-			{
-				graphics_json["Type"]="Glyph";
-				i++;
+				Json::Value graphics_json;
+				graphics_json["MorphVertices"] = export_iter->second->getMorphVerticesExported();
+				graphics_json["MorphColours"] = export_iter->second->getMorphColoursExported();
+				graphics_json["MorphNormals"] = export_iter->second->getMorphNormalsExported();
 				if (isInline)
 				{
-					graphics_json["Inline"]["GlyphGeometriesURL"] = glyph_export->getGlyphTransformationExportJson();
+					graphics_json["Inline"]["URL"]= export_iter->second->getExportJson();
 				}
 				else
 				{
 					if (numberOfResources > i)
 					{
-						graphics_json["GlyphGeometriesURL"] = filenames[i];
-						glyph_export->setGlyphGeometriesURLName(filenames[i]);
+						graphics_json["URL"] = filenames[i];
 					}
 					else
 					{
 						char temp[40];
 						sprintf(temp, "temp_%d.json", i+1);
-						graphics_json["GlyphGeometriesURL"] = temp;
-						glyph_export->setGlyphGeometriesURLName(temp);
+						graphics_json["URL"] = temp;
 					}
 				}
+				const char *group_name = export_iter->second->getGroupName();
+				if (group_name)
+					graphics_json["GroupName"] = group_name;
+				const char *region_path = export_iter->second->getRegionPath();
+				if (region_path)
+					graphics_json["RegionPath"] = region_path;
+
+				Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(export_iter->second);
+				Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(export_iter->second);
+				Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(export_iter->second);
+				if (glyph_export)
+				{
+					graphics_json["Type"]="Glyph";
+					i++;
+					if (isInline)
+					{
+						graphics_json["Inline"]["GlyphGeometriesURL"] = glyph_export->getGlyphTransformationExportJson();
+					}
+					else
+					{
+						if (numberOfResources > i)
+						{
+							graphics_json["GlyphGeometriesURL"] = filenames[i];
+							glyph_export->setGlyphGeometriesURLName(filenames[i]);
+						}
+						else
+						{
+							char temp[40];
+							sprintf(temp, "temp_%d.json", i+1);
+							graphics_json["GlyphGeometriesURL"] = temp;
+							glyph_export->setGlyphGeometriesURLName(temp);
+						}
+					}
+				}
+				else if (line_export)
+				{
+					graphics_json["Type"]="Lines";
+				}
+				else if (point_export)
+				{
+					graphics_json["Type"]="Points";
+				}
+				else
+				{
+					graphics_json["Type"]="Surfaces";
+				}
+				i++;
+				root.append(graphics_json);
 			}
-			else if (line_export)
-			{
-				graphics_json["Type"]="Lines";
-			}
-			else if (point_export)
-			{
-				graphics_json["Type"]="Points";
-			}
-			else
-			{
-				graphics_json["Type"]="Surfaces";
-			}
-			i++;
-			root.append(graphics_json);
 		}
 
 		return Json::StyledWriter().write(root);

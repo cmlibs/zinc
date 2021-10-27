@@ -219,7 +219,10 @@ ZINC_API int cmzn_streaminformation_scene_set_initial_time(
 	cmzn_streaminformation_scene_id streaminformation, double initialTime);
 
 /**
- * Get the the number of resources required to fully export the scene.
+ * Get the the number of resources required to fully export 
+ * the scene. Some of the resource outputs may not be used but 
+ * they are required in order to fully support the exports.
+ * 
  * Some formats require more than 1 resource to fully export the scene,
  * use this function to find the number of resources required.
  *

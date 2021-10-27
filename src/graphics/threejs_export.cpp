@@ -683,9 +683,15 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 			{
 				if (time_step == 0)
 				{
-					writeVertexBuffer("vertices",
-						position_vertex_buffer, position_values_per_vertex,
-						position_vertex_count);
+					if (position_vertex_count > 0) {
+						writeVertexBuffer("vertices",
+							position_vertex_buffer, position_values_per_vertex,
+							position_vertex_count);
+					}
+					else
+					{
+						this->isEmpty = 1;
+					}
 				}
 				if (number_of_time_steps > 1)
 				{
@@ -699,118 +705,121 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 			}
 
-			/* export the colour buffer */
-			if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
+			if (this->isEmpty == 0)
 			{
-				/* this case export the colour */
-				unsigned int colour_values_per_vertex, colour_vertex_count;
-				GLfloat *colour_buffer = (GLfloat *)NULL;
-				if (Graphics_object_create_colour_buffer_from_data(object,
-					&colour_buffer,
-					&colour_values_per_vertex, &colour_vertex_count)
-					&& (colour_vertex_count == position_vertex_count))
+				/* export the colour buffer */
+				if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
 				{
-					int *hex_colours = new int[colour_vertex_count];
-					GLfloat *colours = colour_buffer;
-					for (unsigned int i = 0; i < colour_vertex_count; i++)
+					/* this case export the colour */
+					unsigned int colour_values_per_vertex, colour_vertex_count;
+					GLfloat *colour_buffer = (GLfloat *)NULL;
+					if (Graphics_object_create_colour_buffer_from_data(object,
+						&colour_buffer,
+						&colour_values_per_vertex, &colour_vertex_count)
+						&& (colour_vertex_count == position_vertex_count))
 					{
-						hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
-						colours += colour_values_per_vertex;
+						int *hex_colours = new int[colour_vertex_count];
+						GLfloat *colours = colour_buffer;
+						for (unsigned int i = 0; i < colour_vertex_count; i++)
+						{
+							hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
+							colours += colour_values_per_vertex;
+						}
+						if (time_step == 0)
+						{
+							typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+							writeIntegerBuffer("colors",
+								hex_colours, 1, colour_vertex_count);
+						}
+						if (number_of_time_steps > 1)
+						{
+							if (morphColours)
+							{
+								morphColoursExported = true;
+								writeMorphIntegerBuffer("colors", &colorsMorphString,
+									hex_colours, 1, colour_vertex_count, time_step);
+							}
+						}
+						delete[] hex_colours;
+						if (colour_buffer)
+						{
+							DEALLOCATE(colour_buffer);
+						}
 					}
+				}
+				else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
+					(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
+				{
+					/* this case export the field data directly */
+					GLfloat *data_buffer = NULL;
+					unsigned int data_values_per_vertex, data_vertex_count;
+					if (object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						&data_buffer, &data_values_per_vertex, &data_vertex_count))
+					{
+						if (time_step == 0)
+						{
+							if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+							{
+								typebitmask |= THREEJS_TYPE_FACE_COLOR;
+							}
+							else
+							{
+								typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+							}
+							writeSpecialDataBuffer(object, data_buffer, data_values_per_vertex,
+								data_vertex_count);
+						}
+					}
+				}
+
+				/* export the normal buffer */
+				GLfloat *normal_buffer = NULL;
+				unsigned int normal_values_per_vertex, normal_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					&normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
+					&& (3 == normal_values_per_vertex) && (normal_vertex_count > 0))
+				{
 					if (time_step == 0)
 					{
-						typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
-						writeIntegerBuffer("colors",
-							hex_colours, 1, colour_vertex_count);
+						typebitmask |= THREEJS_TYPE_VERTEX_NORMAL;
+						writeVertexBuffer("normals",
+							normal_buffer, normal_values_per_vertex,
+							normal_vertex_count);
 					}
 					if (number_of_time_steps > 1)
 					{
-						if (morphColours)
+						if (morphNormals)
 						{
-							morphColoursExported = true;
-							writeMorphIntegerBuffer("colors", &colorsMorphString,
-								hex_colours, 1, colour_vertex_count, time_step);
+							morphNormalsExported = true;
+							writeMorphVertexBuffer("normals", &normalMorphString,
+								normal_buffer, normal_values_per_vertex,
+								normal_vertex_count, time_step);
 						}
 					}
-					delete[] hex_colours;
-					if (colour_buffer)
-					{
-						DEALLOCATE(colour_buffer);
-					}
 				}
-			}
-			else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
-				(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
-			{
-				/* this case export the field data directly */
-				GLfloat *data_buffer = NULL;
-				unsigned int data_values_per_vertex, data_vertex_count;
+
+				/* export the texture coordinates buffer */
+				GLfloat *texture_coordinate0_buffer = NULL;
+				unsigned int texture_coordinate0_values_per_vertex,
+				texture_coordinate0_vertex_count;
 				if (object->vertex_array->get_float_vertex_buffer(
-					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-					&data_buffer, &data_values_per_vertex, &data_vertex_count))
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+					&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+					&texture_coordinate0_vertex_count) && (texture_coordinate0_vertex_count > 0))
 				{
 					if (time_step == 0)
 					{
-						if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
-						{
-							typebitmask |= THREEJS_TYPE_FACE_COLOR;
-						}
-						else
-						{
-							typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
-						}
-						writeSpecialDataBuffer(object, data_buffer, data_values_per_vertex,
-							data_vertex_count);
+						typebitmask |= THREEJS_TYPE_VERTEX_TEX_COORD;
+						writeUVsBuffer(texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
+							texture_coordinate0_vertex_count);
 					}
 				}
-			}
-
-			/* export the normal buffer */
-			GLfloat *normal_buffer = NULL;
-			unsigned int normal_values_per_vertex, normal_vertex_count;
-			if (object->vertex_array->get_float_vertex_buffer(
-				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-				&normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
-				&& (3 == normal_values_per_vertex) && (normal_vertex_count > 0))
-			{
 				if (time_step == 0)
 				{
-					typebitmask |= THREEJS_TYPE_VERTEX_NORMAL;
-					writeVertexBuffer("normals",
-						normal_buffer, normal_values_per_vertex,
-						normal_vertex_count);
+					writeIndexBuffer(object, typebitmask, position_vertex_count, 0);
 				}
-				if (number_of_time_steps > 1)
-				{
-					if (morphNormals)
-					{
-						morphNormalsExported = true;
-						writeMorphVertexBuffer("normals", &normalMorphString,
-							normal_buffer, normal_values_per_vertex,
-							normal_vertex_count, time_step);
-					}
-				}
-			}
-
-			/* export the texture coordinates buffer */
-			GLfloat *texture_coordinate0_buffer = NULL;
-			unsigned int texture_coordinate0_values_per_vertex,
-			texture_coordinate0_vertex_count;
-			if (object->vertex_array->get_float_vertex_buffer(
-				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-				&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
-				&texture_coordinate0_vertex_count) && (texture_coordinate0_vertex_count > 0))
-			{
-				if (time_step == 0)
-				{
-					typebitmask |= THREEJS_TYPE_VERTEX_TEX_COORD;
-					writeUVsBuffer(texture_coordinate0_buffer, texture_coordinate0_values_per_vertex,
-						texture_coordinate0_vertex_count);
-				}
-			}
-			if (time_step == 0)
-			{
-				writeIndexBuffer(object, typebitmask, position_vertex_count, 0);
 			}
 		} break;
 		default:
@@ -1092,6 +1101,13 @@ void Threejs_export_glyph::exportGlyphsTransformation(struct GT_object *object, 
 		metadata["MorphColours"] = morphColoursExported;
 		metadata["MorphVertices"] = morphVerticesExported;
 	}
+	else
+	{
+		if (time_step == 0)
+		{
+			this->isEmpty = 1;
+		}
+	}
 }
 
 int Threejs_export_glyph::exportGraphicsObject(struct GT_object *object, int time_step)
@@ -1246,9 +1262,17 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 		{
 			if (time_step == 0)
 			{
-				writeVertexBuffer("vertices",
+				if (position_vertex_count > 0)
+				{
+					writeVertexBuffer("vertices",
 						position_vertex_buffer, position_values_per_vertex,
 						position_vertex_count);
+				}
+				else
+				{
+					this->isEmpty = 1;
+				}
+
 			}
 			if (number_of_time_steps > 1)
 			{
@@ -1262,77 +1286,79 @@ int Threejs_export_point::exportGraphicsObject(struct GT_object *object, int tim
 			}
 		}
 
-		/* export the colour buffer */
-		if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
+		if (this->isEmpty == 0)
 		{
-			/* this case export the colour */
-			unsigned int colour_values_per_vertex, colour_vertex_count;
-			GLfloat *colour_buffer = (GLfloat *)NULL;
-			if (Graphics_object_create_colour_buffer_from_data(object,
-					&colour_buffer,
-					&colour_values_per_vertex, &colour_vertex_count)
-					&& (colour_vertex_count == position_vertex_count))
+			/* export the colour buffer */
+			if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
 			{
-				int *hex_colours = new int[colour_vertex_count];
-				GLfloat *colours = colour_buffer;
-				for (unsigned int i = 0; i < colour_vertex_count; i++)
+				/* this case export the colour */
+				unsigned int colour_values_per_vertex, colour_vertex_count;
+				GLfloat *colour_buffer = (GLfloat *)NULL;
+				if (Graphics_object_create_colour_buffer_from_data(object,
+						&colour_buffer,
+						&colour_values_per_vertex, &colour_vertex_count)
+						&& (colour_vertex_count == position_vertex_count))
 				{
-					hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
-					colours += colour_values_per_vertex;
-				}
-				if (time_step == 0)
-				{
-					typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
-					writeIntegerBuffer("colors",
-							hex_colours, 1, colour_vertex_count);
-				}
-				if (number_of_time_steps > 1)
-				{
-					if (morphColours)
+					int *hex_colours = new int[colour_vertex_count];
+					GLfloat *colours = colour_buffer;
+					for (unsigned int i = 0; i < colour_vertex_count; i++)
 					{
-						morphColoursExported = true;
-						writeMorphIntegerBuffer("colors", &colorsMorphString,
-								hex_colours, 1, colour_vertex_count, time_step);
+						hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
+						colours += colour_values_per_vertex;
 					}
-				}
-				delete[] hex_colours;
-				if (colour_buffer)
-				{
-					DEALLOCATE(colour_buffer);
-				}
-			}
-		}
-		else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
-			(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
-		{
-			/* this case export the field data directly */
-			GLfloat *data_buffer = NULL;
-			unsigned int data_values_per_vertex, data_vertex_count;
-			if (object->vertex_array->get_float_vertex_buffer(
-					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-					&data_buffer, &data_values_per_vertex, &data_vertex_count))
-			{
-				if (time_step == 0)
-				{
-					if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
-					{
-						typebitmask |= THREEJS_TYPE_FACE_COLOR;
-					}
-					else
+					if (time_step == 0)
 					{
 						typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+						writeIntegerBuffer("colors",
+								hex_colours, 1, colour_vertex_count);
 					}
-					writeSpecialDataBuffer(object, data_buffer, data_values_per_vertex,
-							data_vertex_count);
+					if (number_of_time_steps > 1)
+					{
+						if (morphColours)
+						{
+							morphColoursExported = true;
+							writeMorphIntegerBuffer("colors", &colorsMorphString,
+									hex_colours, 1, colour_vertex_count, time_step);
+						}
+					}
+					delete[] hex_colours;
+					if (colour_buffer)
+					{
+						DEALLOCATE(colour_buffer);
+					}
 				}
 			}
-		}
+			else if ((mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE) ||
+				(mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE))
+			{
+				/* this case export the field data directly */
+				GLfloat *data_buffer = NULL;
+				unsigned int data_values_per_vertex, data_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						&data_buffer, &data_values_per_vertex, &data_vertex_count))
+				{
+					if (time_step == 0)
+					{
+						if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
+						{
+							typebitmask |= THREEJS_TYPE_FACE_COLOR;
+						}
+						else
+						{
+							typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+						}
+						writeSpecialDataBuffer(object, data_buffer, data_values_per_vertex,
+								data_vertex_count);
+					}
+				}
+			}
 
-		if (time_step == 0)
-		{
-			writeIndexBuffer(object, typebitmask, position_vertex_count, 0);
+			if (time_step == 0)
+			{
+				writeIndexBuffer(object, typebitmask, position_vertex_count, 0);
+			}
 		}
-
 		object->buffer_binding = buffer_binding;
 		return 1;
 	}
@@ -1362,7 +1388,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 
 		/* cannot use the index as i will be using GL_LINE for rendering on threejs */
 		//FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
-		int totalVertices =0;
+		int totalVertices = 0;
 
 		for (line_index = 0; line_index < line_count; line_index++)
 		{
@@ -1411,7 +1437,14 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 		}
 		if (time_step == 0)
 		{
-			writeVertexBuffer("vertices", 	positions, position_values_per_vertex, totalVertices);
+			if (totalVertices > 0)
+			{
+				writeVertexBuffer("vertices", 	positions, position_values_per_vertex, totalVertices);
+			}
+			else
+			{
+				this->isEmpty = 1;
+			}
 		}
 		if (number_of_time_steps > 1)
 		{

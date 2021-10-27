@@ -580,7 +580,8 @@ ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
 
 /**
  * Writes graphics data in scene to stream resource objects described in the stream
- * information object.
+ * information object. Stream resources memory may return as a null ptr in some
+ * cases.
  * @see cmzn_scene_create_streaminformation_scene
  *
  * @param scene  The scene to be written out.
