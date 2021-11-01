@@ -24,10 +24,19 @@ class Threejs_export
 {
 protected:
 
+	char *filename;
+	cmzn_streaminformation_scene_io_data_type mode;
 	bool morphVerticesExported, morphColoursExported, morphNormalsExported;
 	int morphVertices, morphColours, morphNormals;
 	int number_of_time_steps;
 	char *groupName, *regionPath;
+	double textureSizes[3];
+	std::string verticesMorphString;
+	std::string colorsMorphString;
+	std::string normalMorphString;
+	std::string facesString;
+	std::string outputString;
+	bool isEmpty;
 
 	void writeVertexBuffer(const char *output_variable_name,
 		GLfloat *vertex_buffer, unsigned int values_per_vertex,
@@ -56,16 +65,6 @@ protected:
 	/* texture coordinates export*/
 	void writeUVsBuffer(GLfloat *texture_buffer, unsigned int values_per_vertex,
 		unsigned int vertex_count);
-
-protected:
-	char *filename;
-	cmzn_streaminformation_scene_io_data_type mode;
-	std::string facesString;
-	std::string verticesMorphString;
-	std::string normalMorphString;
-	std::string colorsMorphString;
-	std::string outputString;
-	double textureSizes[3];
 
 public:
 
@@ -104,6 +103,7 @@ public:
 		normalMorphString.clear();
 		facesString.clear();
 		outputString.clear();
+		isEmpty = false;
 	}
 
 	virtual ~Threejs_export();
@@ -115,6 +115,11 @@ public:
 	int beginExport();
 
 	int endExport();
+
+	bool isValid() const
+	{
+		return !isEmpty;
+	}
 
 	const char *getGroupName() const
 	{
