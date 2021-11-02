@@ -92,53 +92,53 @@ public:
 		return id;
 	}
 
-	char* getName()
+	char* getName() const
 	{
 		return cmzn_context_get_name(id);
 	}
 
-	int getVersion(int *versionOut3)
+	int getVersion(int *versionOut3) const
 	{
 		return cmzn_context_get_version(id, versionOut3);
 	}
 
-	const char* getRevision()
+	const char* getRevision() const
 	{
 		return cmzn_context_get_revision(id);
 	}
 
-	char *getVersionString()
+	char *getVersionString() const
 	{
 		return cmzn_context_get_version_string(id);
 	}
 
 	inline Region createRegion();
 
-	inline Region getDefaultRegion();
+	inline Region getDefaultRegion() const;
 
 	inline int setDefaultRegion(const Region& region);
 
-	inline Fontmodule getFontmodule();
+	inline Fontmodule getFontmodule() const;
 
-	inline Glyphmodule getGlyphmodule();
+	inline Glyphmodule getGlyphmodule() const;
 
-	inline Lightmodule getLightmodule();
+	inline Lightmodule getLightmodule() const;
 
-	inline Logger getLogger();
+	inline Logger getLogger() const;
 
-	inline Materialmodule getMaterialmodule();
+	inline Materialmodule getMaterialmodule() const;
 
-	inline Scenefiltermodule getScenefiltermodule();
+	inline Scenefiltermodule getScenefiltermodule() const;
 
-	inline Sceneviewermodule getSceneviewermodule();
+	inline Sceneviewermodule getSceneviewermodule() const;
 
-	inline Shadermodule getShadermodule();
+	inline Shadermodule getShadermodule() const;
 
-	inline Spectrummodule getSpectrummodule();
+	inline Spectrummodule getSpectrummodule() const;
 
-	inline Tessellationmodule getTessellationmodule();
+	inline Tessellationmodule getTessellationmodule() const;
 
-	inline Timekeepermodule getTimekeepermodule();
+	inline Timekeepermodule getTimekeepermodule() const;
 
 };
 

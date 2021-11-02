@@ -564,14 +564,14 @@ inline Computed_field_image_resample *Computed_field_image_resample_core_cast(
 		reinterpret_cast<Computed_field*>(image_resample_field)->core));
 }
 
-Computed_field *cmzn_fieldmodule_create_field_image_resample(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int dimension, int *sizes)
+cmzn_field *cmzn_fieldmodule_create_field_image_resample(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, int dimension, int *sizes)
 {
-	Computed_field *field = NULL;
-	if (source_field && source_field->isNumerical() && dimension && sizes)
+	cmzn_field *field = nullptr;
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() && (dimension > 0) && (sizes))
 	{
-		Computed_field *source_texture_coordinate_field = NULL;
+		cmzn_field *source_texture_coordinate_field = nullptr;
 		int source_field_dimension = 0;
 		int *source_sizes = NULL;
 		int return_code = Computed_field_get_native_resolution(
@@ -580,7 +580,7 @@ Computed_field *cmzn_fieldmodule_create_field_image_resample(
 		DEALLOCATE(source_sizes);
 		if (return_code && (dimension == source_field_dimension))
 		{
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				source_field->number_of_components,
 				/*number_of_source_fields*/1, &source_field,

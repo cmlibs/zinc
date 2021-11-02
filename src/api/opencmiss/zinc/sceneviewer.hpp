@@ -300,7 +300,7 @@ public:
 		return cmzn_sceneviewer_set_scene(id, scene.getId());
 	}
 
-	Scene getScene()
+	Scene getScene() const
 	{
 		return Scene(cmzn_sceneviewer_get_scene(id));
 	}
@@ -310,7 +310,7 @@ public:
 		return cmzn_sceneviewer_set_scenefilter(id, scenefilter.getId());
 	}
 
-	Scenefilter getScenefilter()
+	Scenefilter getScenefilter() const
 	{
 		return Scenefilter(cmzn_sceneviewer_get_scenefilter(id));
 	}
@@ -324,7 +324,7 @@ public:
 
 	inline int processSceneviewerinput(const Sceneviewerinput& input);
 
-	int getAntialiasSampling()
+	int getAntialiasSampling() const
 	{
 		return cmzn_sceneviewer_get_antialias_sampling(id);
 	}
@@ -334,7 +334,7 @@ public:
 		return cmzn_sceneviewer_set_antialias_sampling(id, numberOfSamples);
 	}
 
-	double getBackgroundColourAlpha()
+	double getBackgroundColourAlpha() const
 	{
 		return cmzn_sceneviewer_get_background_colour_alpha(id);
 	}
@@ -354,7 +354,7 @@ public:
 		return cmzn_sceneviewer_set_background_colour_component_rgba(id, red, green, blue, alpha);
 	}
 
-	int getBackgroundColourRGB(double *valuesOut3)
+	int getBackgroundColourRGB(double *valuesOut3) const
 	{
 		return cmzn_sceneviewer_get_background_colour_rgb(id, valuesOut3);
 	}
@@ -364,7 +364,7 @@ public:
 		return cmzn_sceneviewer_set_background_colour_rgb(id, valuesIn3);
 	}
 
-	int getBackgroundColourRGBA(double *valuesOut4)
+	int getBackgroundColourRGBA(double *valuesOut4) const
 	{
 		return cmzn_sceneviewer_get_background_colour_rgba(id, valuesOut4);
 	}
@@ -374,7 +374,7 @@ public:
 		return cmzn_sceneviewer_set_background_colour_rgba(id, valuesIn4);
 	}
 
-	int getEyePosition(double *eyeValuesOut3)
+	int getEyePosition(double *eyeValuesOut3) const
 	{
 		return cmzn_sceneviewer_get_eye_position(id, eyeValuesOut3);
 	}
@@ -384,7 +384,7 @@ public:
 		return cmzn_sceneviewer_set_eye_position(id, eyeValuesIn3);
 	}
 
-	InteractMode getInteractMode()
+	InteractMode getInteractMode() const
 	{
 		return static_cast<InteractMode>(cmzn_sceneviewer_get_interact_mode(id));
 	}
@@ -395,7 +395,7 @@ public:
 			static_cast<cmzn_sceneviewer_interact_mode>(interactMode));
 	}
 
-	int getLookatPosition(double *lookatValuesOut3)
+	int getLookatPosition(double *lookatValuesOut3) const
 	{
 		return cmzn_sceneviewer_get_lookat_position(id, lookatValuesOut3);
 	}
@@ -405,7 +405,7 @@ public:
 		return cmzn_sceneviewer_set_lookat_position(id, lookatValuesIn3);
 	}
 
-	bool getPerturbLinesFlag()
+	bool getPerturbLinesFlag() const
 	{
 		return cmzn_sceneviewer_get_perturb_lines_flag(id);
 	}
@@ -415,7 +415,7 @@ public:
 		return cmzn_sceneviewer_set_perturb_lines_flag(id, value);
 	}
 
-	ProjectionMode getProjectionMode()
+	ProjectionMode getProjectionMode() const
 	{
 		return static_cast<ProjectionMode>(cmzn_sceneviewer_get_projection_mode(id));
 	}
@@ -426,7 +426,7 @@ public:
 			static_cast<cmzn_sceneviewer_projection_mode>(projectionMode));
 	}
 
-	double getTranslationRate()
+	double getTranslationRate() const
 	{
 		return cmzn_sceneviewer_get_translation_rate(id);
 	}
@@ -436,7 +436,7 @@ public:
 		return cmzn_sceneviewer_set_translation_rate(id, translationRate);
 	}
 
-	double getTumbleRate()
+	double getTumbleRate() const
 	{
 		return cmzn_sceneviewer_get_tumble_rate(id);
 	}
@@ -446,7 +446,7 @@ public:
 		return cmzn_sceneviewer_set_tumble_rate(id, tumbleRate);
 	}
 
-	double getZoomRate()
+	double getZoomRate() const
 	{
 		return cmzn_sceneviewer_get_zoom_rate(id);
 	}
@@ -456,7 +456,7 @@ public:
 		return cmzn_sceneviewer_set_zoom_rate(id, zoomRate);
 	}
 
-	int getUpVector(double *upVectorValuesOut3)
+	int getUpVector(double *upVectorValuesOut3) const
 	{
 		return cmzn_sceneviewer_get_up_vector(id, upVectorValuesOut3);
 	}
@@ -466,7 +466,7 @@ public:
 		return cmzn_sceneviewer_set_up_vector(id, upVectorValuesIn3);
 	}
 
-	int getLookatParameters(double *eyeValuesOut3, double *lookatValuesOut3, double *upVectorValuesOut3)
+	int getLookatParameters(double *eyeValuesOut3, double *lookatValuesOut3, double *upVectorValuesOut3) const
 	{
 		return cmzn_sceneviewer_get_lookat_parameters(id,
 			eyeValuesOut3, lookatValuesOut3, upVectorValuesOut3);
@@ -479,7 +479,7 @@ public:
 	}
 
 	int getViewingVolume(double *left,double *right,double *bottom,double *top,
-		double *near_plane, double *far_plane)
+		double *near_plane, double *far_plane) const
 	{
 		return cmzn_sceneviewer_get_viewing_volume(id, left, right, bottom, top,
 			near_plane, far_plane);
@@ -497,7 +497,7 @@ public:
 		return cmzn_sceneviewer_view_all(id);
 	}
 
-	TransparencyMode getTransparencyMode()
+	TransparencyMode getTransparencyMode() const
 	{
 		return static_cast<TransparencyMode>(cmzn_sceneviewer_get_transparency_mode(id));
 	}
@@ -508,7 +508,7 @@ public:
 			static_cast<cmzn_sceneviewer_transparency_mode>(transparencyMode));
 	}
 
-	int getTransparencyLayers()
+	int getTransparencyLayers() const
 	{
 		return cmzn_sceneviewer_get_transparency_layers(id);
 	}
@@ -518,7 +518,7 @@ public:
 		return cmzn_sceneviewer_set_transparency_layers(id, layers);
 	}
 
-	double getViewAngle()
+	double getViewAngle() const
 	{
 		return cmzn_sceneviewer_get_view_angle(id);
 	}
@@ -528,7 +528,7 @@ public:
 		return cmzn_sceneviewer_set_view_angle(id, viewAngle);
 	}
 
-	ViewportMode getViewportMode()
+	ViewportMode getViewportMode() const
 	{
 		return static_cast<ViewportMode>(cmzn_sceneviewer_get_viewport_mode(id));
 	}
@@ -539,12 +539,12 @@ public:
 			static_cast<cmzn_sceneviewer_viewport_mode>(viewportMode));
 	}
 
-	double getFarClippingPlane()
+	double getFarClippingPlane() const
 	{
 		return cmzn_sceneviewer_get_far_clipping_plane(id);
 	}
 
-	double getNearClippingPlane()
+	double getNearClippingPlane() const
 	{
 		return cmzn_sceneviewer_get_near_clipping_plane(id);
 	}
@@ -560,7 +560,7 @@ public:
 	}
 
 	int writeImageToFile(const char *file_name, int force_onscreen, int preferred_width,
-		int preferred_height, int preferred_antialias, int preferred_transparency_layers)
+		int preferred_height, int preferred_antialias, int preferred_transparency_layers) const
 	{
 		return cmzn_sceneviewer_write_image_to_file(id, file_name, force_onscreen, preferred_width,
 			preferred_height, preferred_antialias, preferred_transparency_layers);
@@ -571,7 +571,7 @@ public:
 		return cmzn_sceneviewer_add_light(id, light.getId());
 	}
 
-	bool hasLight(const Light& light)
+	bool hasLight(const Light& light) const
 	{
 		return cmzn_sceneviewer_has_light(id, light.getId());
 	}
@@ -581,7 +581,7 @@ public:
 		return cmzn_sceneviewer_remove_light(id, light.getId());
 	}
 
-	bool isLightingLocalViewer()
+	bool isLightingLocalViewer() const
 	{
 		return cmzn_sceneviewer_is_lighting_local_viewer(this->id);
 	}
@@ -591,7 +591,7 @@ public:
 		return cmzn_sceneviewer_set_lighting_local_viewer(this->id, value);
 	}
 
-	bool isLightingTwoSided()
+	bool isLightingTwoSided() const
 	{
 		return cmzn_sceneviewer_is_lighting_two_sided(this->id);
 	}
@@ -683,7 +683,7 @@ public:
 			static_cast<cmzn_sceneviewer_stereo_mode>(stereo_mode)));
 	}
 
-	double getDefaultBackgroundColourAlpha()
+	double getDefaultBackgroundColourAlpha() const
 	{
 		return cmzn_sceneviewermodule_get_default_background_colour_alpha(id);
 	}
@@ -693,7 +693,7 @@ public:
 		return cmzn_sceneviewermodule_set_default_background_colour_alpha(id, alpha);
 	}
 
-	int getDefaultBackgroundColourRGB(double *valuesOut3)
+	int getDefaultBackgroundColourRGB(double *valuesOut3) const
 	{
 		return cmzn_sceneviewermodule_get_default_background_colour_rgb(id, valuesOut3);
 	}
@@ -703,7 +703,7 @@ public:
 		return cmzn_sceneviewermodule_set_default_background_colour_rgb(id, valuesIn3);
 	}
 
-	int getDefaultBackgroundColourRGBA(double *valuesOut4)
+	int getDefaultBackgroundColourRGBA(double *valuesOut4) const
 	{
 		return cmzn_sceneviewermodule_get_default_background_colour_rgba(id, valuesOut4);
 	}
@@ -715,12 +715,12 @@ public:
 
 };
 
-inline Sceneviewermodule Context::getSceneviewermodule()
+inline Sceneviewermodule Context::getSceneviewermodule() const
 {
 	return Sceneviewermodule(cmzn_context_get_sceneviewermodule(id));
 }
 
-inline Sceneviewermodule Scene::getSceneviewermodule()
+inline Sceneviewermodule Scene::getSceneviewermodule() const
 {
 	return Sceneviewermodule(cmzn_scene_get_sceneviewermodule(id));
 }

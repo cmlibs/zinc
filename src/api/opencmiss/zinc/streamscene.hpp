@@ -57,7 +57,7 @@ public:
 		IO_FORMAT_DESCRIPTION = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION
 	};
 
-	Scenefilter getScenefilter()
+	Scenefilter getScenefilter() const
 	{
 		return Scenefilter(cmzn_streaminformation_scene_get_scenefilter(getDerivedId()));
 	}
@@ -67,7 +67,7 @@ public:
 		return cmzn_streaminformation_scene_set_scenefilter(getDerivedId(), scenefilter.getId());
 	}
 
-	IODataType getIODataType()
+	IODataType getIODataType() const
 	{
 		return static_cast<IODataType>(cmzn_streaminformation_scene_get_io_data_type(getDerivedId()));
 	}
@@ -78,7 +78,7 @@ public:
 			static_cast<cmzn_streaminformation_scene_io_data_type>(ioDataType));
 	}
 
-	IOFormat getIOFormat()
+	IOFormat getIOFormat() const
 	{
 		return static_cast<IOFormat>(cmzn_streaminformation_scene_get_io_format(getDerivedId()));
 	}
@@ -89,7 +89,7 @@ public:
 			static_cast<cmzn_streaminformation_scene_io_format>(ioFormat));
 	}
 
-	int getNumberOfTimeSteps()
+	int getNumberOfTimeSteps() const
 	{
 		return cmzn_streaminformation_scene_get_number_of_time_steps(getDerivedId());
 	}
@@ -99,7 +99,7 @@ public:
 		return cmzn_streaminformation_scene_set_number_of_time_steps(getDerivedId(), numberOfTimeSteps);
 	}
 
-	double getFinishTime()
+	double getFinishTime() const
 	{
 		return cmzn_streaminformation_scene_get_finish_time(getDerivedId());
 	}
@@ -109,7 +109,7 @@ public:
 		return cmzn_streaminformation_scene_set_finish_time(getDerivedId(), finishTime);
 	}
 
-	double getInitialTime()
+	double getInitialTime() const
 	{
 		return cmzn_streaminformation_scene_get_initial_time(getDerivedId());
 	}
@@ -119,7 +119,7 @@ public:
 		return cmzn_streaminformation_scene_set_initial_time(getDerivedId(), initialTime);
 	}
 
-	int getNumberOfResourcesRequired()
+	int getNumberOfResourcesRequired() const
 	{
 		return cmzn_streaminformation_scene_get_number_of_resources_required(getDerivedId());
 	}
@@ -130,7 +130,7 @@ public:
 			overwrite);
 	}
 
-	int getOutputTimeDependentVertices()
+	int getOutputTimeDependentVertices() const
 	{
 		return cmzn_streaminformation_scene_get_output_time_dependent_vertices(getDerivedId());
 	}
@@ -141,7 +141,7 @@ public:
 			outputTimeDependentVertices);
 	}
 
-	int getOutputTimeDependentColours()
+	int getOutputTimeDependentColours() const
 	{
 		return cmzn_streaminformation_scene_get_output_time_dependent_colours(getDerivedId());
 	}
@@ -152,7 +152,7 @@ public:
 			outputTimeDependentColours);
 	}
 
-	int getOutputTimeDependentNormals()
+	int getOutputTimeDependentNormals() const
 	{
 		return cmzn_streaminformation_scene_get_output_time_dependent_normals(getDerivedId());
 	}
@@ -163,7 +163,7 @@ public:
 				outputTimeDependentNormals);
 	}
 
-	int getOutputIsInline()
+	int getOutputIsInline() const
 	{
 		return cmzn_streaminformation_scene_get_output_is_inline(getDerivedId());
 	}
@@ -185,7 +185,7 @@ inline StreaminformationScene Scene::createStreaminformationScene()
 		cmzn_scene_create_streaminformation_scene(id)));
 }
 
-inline int Scene::write(const StreaminformationScene& StreaminformationScene)
+inline int Scene::write(const StreaminformationScene& StreaminformationScene) const
 {
 	return cmzn_scene_write(id, StreaminformationScene.getDerivedId());
 }

@@ -445,17 +445,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_fast_marching(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double stopping_value,
-  int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
-  const int *output_size)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_fast_marching(
+	cmzn_fieldmodule_id fieldmodule,
+	cmzn_field_id source_field, double stopping_value,
+	int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
+	const int *output_size)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = nullptr;
 	USE_PARAMETER(dimension);
-	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
+	if ((fieldmodule) && (source_field) && Computed_field_is_scalar(source_field, (void *)NULL) &&
+		(num_seed_points > 0) && (seed_points) && (seed_values) && (output_size))
 	{
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,

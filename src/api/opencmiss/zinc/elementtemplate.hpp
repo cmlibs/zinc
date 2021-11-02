@@ -70,7 +70,7 @@ public:
 		return id;
 	}
 
-	Element::ShapeType getElementShapeType()
+	Element::ShapeType getElementShapeType() const
 	{
 		return static_cast<Element::ShapeType>(cmzn_elementtemplate_get_element_shape_type(id));
 	}
@@ -81,7 +81,7 @@ public:
 			static_cast<cmzn_element_shape_type>(shapeType));
 	}
 
-	int getNumberOfNodes()
+	int getNumberOfNodes() const
 	{
 		return cmzn_elementtemplate_get_number_of_nodes(id);
 	}
@@ -126,7 +126,7 @@ public:
 			componentNumber, basisNodeIndex, nodeFunctionIndex, versionNumber);
 	}
 
-	Node getNode(int localNodeIndex)
+	Node getNode(int localNodeIndex) const
 	{
 		return Node(cmzn_elementtemplate_get_node(id, localNodeIndex));
 	}

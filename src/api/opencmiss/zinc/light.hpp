@@ -74,7 +74,7 @@ public:
 		return id;
 	}
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_light_is_managed(id);
 	}
@@ -84,7 +84,7 @@ public:
 		return cmzn_light_set_managed(id, value);
 	}
 
-	Type getType()
+	Type getType() const
 	{
 		return static_cast<Type>(cmzn_light_get_type(id));
 	}
@@ -94,7 +94,7 @@ public:
 		return cmzn_light_set_type(id, static_cast<cmzn_light_type>(type));
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_light_get_name(id);
 	}
@@ -104,7 +104,7 @@ public:
 		return cmzn_light_set_name(id, name);
 	}
 
-	double getConstantAttenuation()
+	double getConstantAttenuation() const
 	{
 		return cmzn_light_get_constant_attenuation(id);
 	}
@@ -114,7 +114,7 @@ public:
 		return cmzn_light_set_constant_attenuation(id, constantAttenuation);
 	}
 
-	double getLinearAttenuation()
+	double getLinearAttenuation() const
 	{
 		return cmzn_light_get_linear_attenuation(id);
 	}
@@ -124,7 +124,7 @@ public:
 		return cmzn_light_set_linear_attenuation(id, linearAttenuation);
 	}
 
-	double getQuadraticAttenuation()
+	double getQuadraticAttenuation() const
 	{
 		return cmzn_light_get_quadratic_attenuation(id);
 	}
@@ -134,7 +134,7 @@ public:
 		return cmzn_light_set_quadratic_attenuation(id, quadraticAttenuation);
 	}
 
-	int getColourRGB(double *valuesOut3)
+	int getColourRGB(double *valuesOut3) const
 	{
 		return cmzn_light_get_colour_rgb(id, valuesOut3);
 	}
@@ -144,7 +144,7 @@ public:
 		return cmzn_light_set_colour_rgb(id, valuesIn3);
 	}
 
-	int getDirection(double *valuesOut3)
+	int getDirection(double *valuesOut3) const
 	{
 		return cmzn_light_get_direction(id, valuesOut3);
 	}
@@ -154,7 +154,7 @@ public:
 		return cmzn_light_set_direction(id, valuesIn3);
 	}
 
-	int getPosition(double *valuesOut3)
+	int getPosition(double *valuesOut3) const
 	{
 		return cmzn_light_get_position(id, valuesOut3);
 	}
@@ -164,7 +164,7 @@ public:
 		return cmzn_light_set_position(id, valuesIn3);
 	}
 
-	double getSpotCutoff()
+	double getSpotCutoff() const
 	{
 		return cmzn_light_get_spot_cutoff(id);
 	}
@@ -174,7 +174,7 @@ public:
 		return cmzn_light_set_spot_cutoff(id, cutoff);
 	}
 
-	double getSpotExponent()
+	double getSpotExponent() const
 	{
 		return cmzn_light_get_spot_exponent(id);
 	}
@@ -301,7 +301,7 @@ public:
 		return Lightiterator(cmzn_lightmodule_create_lightiterator(id));
 	}
 
-	Light findLightByName(const char *name)
+	Light findLightByName(const char *name) const
 	{
 		return Light(cmzn_lightmodule_find_light_by_name(id, name));
 	}
@@ -316,7 +316,7 @@ public:
 		return cmzn_lightmodule_end_change(id);
 	}
 
-	Light getDefaultLight()
+	Light getDefaultLight() const
 	{
 		return Light(cmzn_lightmodule_get_default_light(id));
 	}
@@ -326,7 +326,7 @@ public:
 		return cmzn_lightmodule_set_default_light(id, light.getId());
 	}
 
-	Light getDefaultAmbientLight()
+	Light getDefaultAmbientLight() const
 	{
 		return Light(cmzn_lightmodule_get_default_ambient_light(id));
 	}
@@ -337,7 +337,7 @@ public:
 	}
 };
 
-inline Lightmodule Context::getLightmodule()
+inline Lightmodule Context::getLightmodule() const
 {
 	return Lightmodule(cmzn_context_get_lightmodule(id));
 }

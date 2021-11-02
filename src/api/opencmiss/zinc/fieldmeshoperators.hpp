@@ -36,7 +36,7 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_mesh_integral_id))
 	{	}
 
-	int getNumbersOfPoints(int valuesCount, int *valuesOut)
+	int getNumbersOfPoints(int valuesCount, int *valuesOut) const
 	{
 		return cmzn_field_mesh_integral_get_numbers_of_points(getDerivedId(),
 			valuesCount, valuesOut);
@@ -48,7 +48,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	Element::QuadratureRule getElementQuadratureRule()
+	Element::QuadratureRule getElementQuadratureRule() const
 	{
 		return static_cast<Element::QuadratureRule>(
 			cmzn_field_mesh_integral_get_element_quadrature_rule(getDerivedId()));

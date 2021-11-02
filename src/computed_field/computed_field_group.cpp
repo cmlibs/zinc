@@ -531,7 +531,7 @@ cmzn_field_group_id Computed_field_group::getSubRegionGroup(cmzn_region_id subre
 		if (iter != subregion_group_map.end())
 		{
 			subregion_group = iter->second;
-			ACCESS(Computed_field)(cmzn_field_group_base_cast(subregion_group));
+			cmzn_field_access(cmzn_field_group_base_cast(subregion_group));
 		}
 		if (!subregion_group && !subregion_group_map.empty())
 		{
@@ -1376,7 +1376,7 @@ cmzn_field *cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id fieldmodule)
 	{
 		cmzn_region_id region = cmzn_fieldmodule_get_region(fieldmodule);
 		field = Computed_field_create_generic(fieldmodule,
-			/*check_source_field_regions*/false, 1,
+			/*check_source_field_regions*/true, 1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_group(region));

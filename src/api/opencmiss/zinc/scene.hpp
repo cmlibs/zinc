@@ -87,9 +87,9 @@ public:
 		return cmzn_scene_end_change(id);
 	}
 
-	int convertToPointCloud(const Scenefilter& filter, const Nodeset& nodeset,
+	int convertToPointCloud(const Scenefilter& filter, Nodeset& nodeset,
 		const Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
-		double surfaceDensity, double surfaceDensityScaleFactor)
+		double surfaceDensity, double surfaceDensityScaleFactor) const
 	{
 		return cmzn_scene_convert_to_point_cloud(id, filter.getId(),
 			nodeset.getId(), coordinateField.getId(),
@@ -97,8 +97,8 @@ public:
 			surfaceDensity, surfaceDensityScaleFactor);
 	}
 
-	int convertPointsToNodes(const Scenefilter& filter, const Nodeset& nodeset,
-		const Field& coordinateField)
+	int convertPointsToNodes(const Scenefilter& filter, Nodeset& nodeset,
+		const Field& coordinateField) const
 	{
 		return cmzn_scene_convert_points_to_nodes(id, filter.getId(),
 			nodeset.getId(), coordinateField.getId());
@@ -149,34 +149,34 @@ public:
 	 * @param name  The name of the graphics to find.
 	 * @return  New reference to graphics of specified name, or 0 if not found.
 	 */
-	Graphics findGraphicsByName(const char *name)
+	Graphics findGraphicsByName(const char *name) const
 	{
 		return Graphics(cmzn_scene_find_graphics_by_name(id, name));
 	}
 
 	int getCoordinatesRange(const Scenefilter& filter, double *minimumValuesOut3,
-		double *maximumValuesOut3)
+		double *maximumValuesOut3) const
 	{
 		return cmzn_scene_get_coordinates_range(id, filter.getId(),
 			minimumValuesOut3, maximumValuesOut3);
 	}
 
-	Graphics getFirstGraphics()
+	Graphics getFirstGraphics() const
 	{
 		return Graphics(cmzn_scene_get_first_graphics(id));
 	}
 
-	Graphics getNextGraphics(const Graphics& refGraphics)
+	Graphics getNextGraphics(const Graphics& refGraphics) const
 	{
 		return Graphics(cmzn_scene_get_next_graphics(id, refGraphics.getId()));
 	}
 
-	Graphics getPreviousGraphics(const Graphics& refGraphics)
+	Graphics getPreviousGraphics(const Graphics& refGraphics) const
 	{
 		return Graphics(cmzn_scene_get_previous_graphics(id, refGraphics.getId()));
 	}
 
-	int getNumberOfGraphics()
+	int getNumberOfGraphics() const
 	{
 		return cmzn_scene_get_number_of_graphics(id);
 	}
@@ -186,54 +186,54 @@ public:
 		return Region(cmzn_scene_get_region(id));
 	}
 
-	inline Fontmodule getFontmodule()
+	inline Fontmodule getFontmodule() const
 	{
 		return Fontmodule(cmzn_scene_get_fontmodule(id));
 	}
 
-	inline Glyphmodule getGlyphmodule()
+	inline Glyphmodule getGlyphmodule() const
 	{
 		return Glyphmodule(cmzn_scene_get_glyphmodule(id));
 	}
 
-	inline Lightmodule getLightmodule()
+	inline Lightmodule getLightmodule() const
 	{
 		return Lightmodule(cmzn_scene_get_lightmodule(id));
 	}
 
-	inline Materialmodule getMaterialmodule()
+	inline Materialmodule getMaterialmodule() const
 	{
 		return Materialmodule(cmzn_scene_get_materialmodule(id));
 	}
 
-	inline Scenefiltermodule getScenefiltermodule()
+	inline Scenefiltermodule getScenefiltermodule() const
 	{
 		return Scenefiltermodule(cmzn_scene_get_scenefiltermodule(id));
 	}
 
-	inline Sceneviewermodule getSceneviewermodule();
+	inline Sceneviewermodule getSceneviewermodule() const;
 
-	inline Shadermodule getShadermodule()
+	inline Shadermodule getShadermodule() const
 	{
 		return Shadermodule(cmzn_scene_get_shadermodule(id));
 	}
 
-	inline Spectrummodule getSpectrummodule()
+	inline Spectrummodule getSpectrummodule() const
 	{
 		return Spectrummodule(cmzn_scene_get_spectrummodule(id));
 	}
 
-	inline Tessellationmodule getTessellationmodule()
+	inline Tessellationmodule getTessellationmodule() const
 	{
 		return Tessellationmodule(cmzn_scene_get_tessellationmodule(id));
 	}
 
-	inline Timekeepermodule getTimekeepermodule()
+	inline Timekeepermodule getTimekeepermodule() const
 	{
 		return Timekeepermodule(cmzn_scene_get_timekeepermodule(id));
 	}
 
-	Field getSelectionField()
+	Field getSelectionField() const
 	{
 		return Field(cmzn_scene_get_selection_field(id));
 	}
@@ -244,7 +244,7 @@ public:
 	}
 
 	int getSpectrumDataRange(const Scenefilter& filter, const Spectrum& spectrum,
-		int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
+		int valuesCount, double *minimumValuesOut, double *maximumValuesOut) const
 	{
 		return cmzn_scene_get_spectrum_data_range(id, filter.getId(),
 			spectrum.getId(), valuesCount, minimumValuesOut, maximumValuesOut);
@@ -280,7 +280,7 @@ public:
 		return cmzn_scene_set_transformation_matrix(this->getId(), valuesIn16);
 	}
 
-	bool getVisibilityFlag()
+	bool getVisibilityFlag() const
 	{
 		return cmzn_scene_get_visibility_flag(id);
 	}
@@ -317,7 +317,7 @@ public:
 
 	inline Scenepicker createScenepicker();
 
-	inline int write(const StreaminformationScene& streaminformationScene);
+	inline int write(const StreaminformationScene& streaminformationScene) const;
 
 	inline int read(const StreaminformationScene& streaminformationScene);
 

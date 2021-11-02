@@ -298,7 +298,7 @@ int Computed_field_image::get_resolution(int& image_width, int& image_height, in
 	Texture_get_size(this->texture, &image_width, &image_height, &image_depth);
 	if (this->texture_is_evaluated_from_source_field())
 	{
-		cmzn_field *texture_coordinate_field = this->field->source_fields[0];
+		//cmzn_field *texture_coordinate_field = this->field->source_fields[0];
 		cmzn_field *source_field = this->field->source_fields[1];
 		int dimension;
 		int *sizes = 0;
@@ -677,13 +677,13 @@ cmzn_field_image_id cmzn_field_cast_image(cmzn_field_id field)
 	}
 }
 
-cmzn_field_id cmzn_fieldmodule_create_field_image(cmzn_fieldmodule_id field_module)
+cmzn_field_id cmzn_fieldmodule_create_field_image(cmzn_fieldmodule_id fieldmodule)
 {
 	cmzn_field_id field = 0;
-	if (field_module)
+	if (fieldmodule)
 	{
-		cmzn_field_id domainField = cmzn_fieldmodule_get_or_create_xi_field(field_module);
-		field = Computed_field_create_generic(field_module,
+		cmzn_field_id domainField = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field*/false,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, &domainField,
@@ -695,13 +695,13 @@ cmzn_field_id cmzn_fieldmodule_create_field_image(cmzn_fieldmodule_id field_modu
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
-	if (field_module && source_field &&
+	if ((fieldmodule) && (source_field) &&
 		Computed_field_has_up_to_4_numerical_components(source_field, 0))
 	{
-		cmzn_fieldmodule_begin_change(field_module);
+		cmzn_fieldmodule_begin_change(fieldmodule);
 		cmzn_field_id domainField = 0;
 		int source_dimension, *source_sizes = 0;
 		Computed_field_get_native_resolution(source_field,
@@ -711,7 +711,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 		{
 			// could eventually discover domain field from source field
 			// there is API to set the domain field if this isn't correct
-			domainField = cmzn_fieldmodule_get_or_create_xi_field(field_module);
+			domainField = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
 			generatedDomainField = true;
 		}
 		if (domainField)
@@ -720,7 +720,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 			cmzn_field_id source_fields[2] = { domainField, source_field };
 			Computed_field_image *image = new Computed_field_image();
 			image->use_source_resolution = (0 != source_sizes);
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field*/true,
 				cmzn_field_get_number_of_components(source_field),
 				number_of_source_fields, source_fields,
@@ -774,7 +774,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 			cmzn_field_destroy(&domainField);
 		if (source_sizes)
 			DEALLOCATE(source_sizes);
-		cmzn_fieldmodule_end_change(field_module);
+		cmzn_fieldmodule_end_change(fieldmodule);
 	}
 	return field;
 }
@@ -1199,14 +1199,14 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	ZnReal hint_maximums[3];
 	ZnReal hint_resolution[3];
 	ZnReal multiplier;
-	struct Colour fail_colour = {0.0, 0.0, 0.0};
+	struct Colour fail_colour = {0.0, 0.0, 0.0, 0.0};
 	ZnReal rgba[4], fail_alpha = 0.0;
 	struct Computed_field_find_element_xi_cache *cache = NULL;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct FE_element *element = NULL;
 
-	int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
+	//int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
 	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 	if (image_depth > 1)
@@ -1648,7 +1648,7 @@ cmzn_field_id cmzn_field_image_get_domain_field(
 	if (image_field)
 	{
 		cmzn_field_id field = cmzn_field_image_base_cast(image_field);
-		return ACCESS(Computed_field)(field->source_fields[0]);
+		return cmzn_field_access(field->source_fields[0]);
 	}
 	return 0;
 }
@@ -1667,7 +1667,7 @@ int cmzn_field_image_set_domain_field(
 		Texture_get_dimension(image_core->texture, &textureDimension);
 		if (domainDimension >= textureDimension)
 		{
-			REACCESS(Computed_field)(&(field->source_fields[0]), domain_field);
+			cmzn_field::reaccess(field->source_fields[0], domain_field);
 			return CMZN_OK;
 		}
 	}

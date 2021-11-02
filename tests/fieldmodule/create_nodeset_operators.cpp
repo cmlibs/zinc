@@ -314,7 +314,9 @@ TEST(NodesetOperators, ElementGroupEvaluation)
 				nodesetOperators[f] = zinc.fm.createFieldNodesetMaximum(cmissNumber, useNodeset);
 			EXPECT_TRUE(nodesetOperators[f].isValid());
 			if (j >= 2)
+			{
 				EXPECT_EQ(RESULT_OK, nodesetOperators[f].setElementMapField(hostLocation));
+			}
 			++f;
 		}
 	Fieldcache fieldcache = zinc.fm.createFieldcache();

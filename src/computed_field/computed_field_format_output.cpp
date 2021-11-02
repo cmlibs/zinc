@@ -213,7 +213,7 @@ cmzn_field *cmzn_fieldmodule_create_field_format_output(
 	cmzn_field *source_field, char *format_string)
 {
 	cmzn_field_id field = nullptr;
-	if (source_field && source_field->isNumerical() && format_string)
+	if ((fieldmodule) && (source_field) && source_field->isNumerical() && (format_string))
 	{
 		if (source_field->number_of_components <= 4)
 		{

@@ -73,7 +73,7 @@ public:
 		return id;
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_font_get_name(id);
 	}
@@ -83,7 +83,7 @@ public:
 		return cmzn_font_set_name(id, name);
  	}
 
-	bool isBold()
+	bool isBold() const
 	{
 		return cmzn_font_is_bold(id);
 	}
@@ -93,7 +93,7 @@ public:
 		return cmzn_font_set_bold(id, bold);
 	}
 
-	double getDepth()
+	double getDepth() const
 	{
 		return cmzn_font_get_depth(id);
 	}
@@ -103,7 +103,7 @@ public:
 		return cmzn_font_set_depth(id, depth);
 	}
 
-	bool isItalic()
+	bool isItalic() const
 	{
 		return cmzn_font_is_italic(id);
 	}
@@ -113,7 +113,7 @@ public:
 		return cmzn_font_set_italic(id, italic);
 	}
 
-	int getPointSize()
+	int getPointSize() const
 	{
 		return cmzn_font_get_point_size(id);
 	}
@@ -123,7 +123,7 @@ public:
 		return cmzn_font_set_point_size(id, size);
 	}
 
-	RenderType getRenderType()
+	RenderType getRenderType() const
 	{
 		return static_cast<RenderType>(cmzn_font_get_render_type(id));
 	}
@@ -134,7 +134,7 @@ public:
 			static_cast<cmzn_font_render_type>(renderType));
 	}
 
-	TypefaceType getTypefaceType()
+	TypefaceType getTypefaceType() const
 	{
 		return static_cast<TypefaceType>(cmzn_font_get_typeface_type(id));
 	}
@@ -204,7 +204,7 @@ public:
 		return Font(cmzn_fontmodule_create_font(id));
 	}
 
-	Font findFontByName(const char *name)
+	Font findFontByName(const char *name) const
 	{
 		return Font(cmzn_fontmodule_find_font_by_name(id, name));
 	}
@@ -219,7 +219,7 @@ public:
 		return cmzn_fontmodule_end_change(id);
 	}
 
-	Font getDefaultFont()
+	Font getDefaultFont() const
 	{
 		return Font(cmzn_fontmodule_get_default_font(id));
 	}
@@ -230,7 +230,7 @@ public:
 	}
 };
 
-inline Fontmodule Context::getFontmodule()
+inline Fontmodule Context::getFontmodule() const
 {
 	return Fontmodule(cmzn_context_get_fontmodule(id));
 }

@@ -678,19 +678,22 @@ int Computed_field_mesh_integral_squares::evaluate(cmzn_fieldcache& cache, Field
 } // namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral(
-	cmzn_fieldmodule_id field_module, cmzn_field_id integrand_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id integrand_field,
 	cmzn_field_id coordinate_field, cmzn_mesh_id mesh)
 {
 	cmzn_field_id field = 0;
-	if (integrand_field && integrand_field->isNumerical() &&
-		coordinate_field && coordinate_field->isNumerical() && mesh)
+	if ((fieldmodule) &&
+		(integrand_field) && integrand_field->isNumerical() &&
+		(coordinate_field) && coordinate_field->isNumerical() &&
+		(mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{
 			cmzn_field_id source_fields[2] = { integrand_field, coordinate_field };
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				integrand_field->number_of_components,
 				/*number_of_source_fields*/2, source_fields,
@@ -772,19 +775,22 @@ int cmzn_field_mesh_integral_set_element_quadrature_rule(
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_mesh_integral_squares(
-	cmzn_fieldmodule_id field_module, cmzn_field_id integrand_field,
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id integrand_field,
 	cmzn_field_id coordinate_field, cmzn_mesh_id mesh)
 {
 	cmzn_field_id field = 0;
-	if (integrand_field && integrand_field->isNumerical() &&
-		coordinate_field && coordinate_field->isNumerical() && mesh)
+	if ((fieldmodule) &&
+		(integrand_field) && integrand_field->isNumerical() &&
+		(coordinate_field) && coordinate_field->isNumerical() &&
+		(mesh) && (cmzn_mesh_get_region_internal(mesh) ==
+			cmzn_fieldmodule_get_region_internal(fieldmodule)))
 	{
 		int numCoordinates = cmzn_field_get_number_of_components(coordinate_field);
 		int meshDimension = cmzn_mesh_get_dimension(mesh);
 		if ((numCoordinates >= meshDimension) && (numCoordinates <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 		{
 			cmzn_field_id source_fields[2] = { integrand_field, coordinate_field };
-			field = Computed_field_create_generic(field_module,
+			field = Computed_field_create_generic(fieldmodule,
 				/*check_source_field_regions*/true,
 				integrand_field->number_of_components,
 				/*number_of_source_fields*/2, source_fields,

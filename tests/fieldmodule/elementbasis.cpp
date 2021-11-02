@@ -105,7 +105,7 @@ TEST(ZincElementbasis, element_bases_3d)
 	int four = 4;
 	double surface_area, volume;
 	const double TOL = 1.0E-8;
-	double values[12][2];
+	//double values[12][2];
 	for (int i = 0; i < total_element_count; ++i)
 	{
 		const char *basis_name = basis_info[i].basis_name;
@@ -146,8 +146,8 @@ TEST(ZincElementbasis, element_bases_3d)
 		EXPECT_TRUE(surface_area_integral.isValid());
 		EXPECT_EQ(RESULT_OK, volume_integral.evaluateReal(fieldcache, 1, &volume));
 		EXPECT_EQ(RESULT_OK, surface_area_integral.evaluateReal(fieldcache, 1, &surface_area));
-		values[i][0] = volume;
-		values[i][1] = surface_area;
+		//values[i][0] = volume;
+		//values[i][1] = surface_area;
 		EXPECT_NEAR(basis_info[i].volume, volume, TOL);
 		EXPECT_NEAR(basis_info[i].surface_area, surface_area, TOL);
 	}
@@ -282,7 +282,9 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_2d)
 			}
 		}
 		if (c == 0)
+		{
 			EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
+		}
 	}
 }
 
@@ -435,7 +437,9 @@ TEST(ZincElementbasis, cubic_hermite_serendipity_3d)
 			}
 		}
 		if (c == 0)
+		{
 			EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
+		}
 	}
 }
 
@@ -587,7 +591,9 @@ TEST(ZincElementbasis, quadratic_hermite_lagrange_3d)
 			EXPECT_NEAR(xi[i][2]*0.8, xOut[2], 1.0E-12);
 		}
 		if (c == 0)
+		{
 			EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
+		}
 	}
 }
 

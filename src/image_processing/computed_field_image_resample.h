@@ -25,12 +25,12 @@ typedef struct cmzn_field_image_resample * cmzn_field_image_resample_id;
  * maximums are not implemented at all, which would allow a windowing, and could
  * also be overridden here.
  * 
- * @param field_module  Region field module which will own new field.
+ * @param fieldmodule  Region field module which will own new field.
  * @return  Newly created field.
  */
-Computed_field *cmzn_fieldmodule_create_field_image_resample(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int dimension, int *sizes);
+cmzn_field *cmzn_fieldmodule_create_field_image_resample(
+	cmzn_fieldmodule *fieldmodule,
+	cmzn_field *source_field, int dimension, int *sizes);
 
 ZINC_C_INLINE cmzn_field_id cmzn_field_image_resample_base_cast(
 	cmzn_field_image_resample_id image_resample)

@@ -64,12 +64,12 @@ public:
 		return id;
 	}
 
-	int getNumberOfTimes()
+	int getNumberOfTimes() const
 	{
 		return cmzn_timesequence_get_number_of_times(id);
 	}
 
-	double getTime(int timeIndex)
+	double getTime(int timeIndex) const
 	{
 		return cmzn_timesequence_get_time(id, timeIndex);
 	}

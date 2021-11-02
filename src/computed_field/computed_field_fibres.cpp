@@ -318,19 +318,19 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_fibre_axes(
-	cmzn_fieldmodule_id field_module,
+	cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id fibre_field, cmzn_field_id coordinate_field)
 {
 	Computed_field *field = NULL;
-	if (field_module && fibre_field && fibre_field->isNumerical() &&
+	if ((fieldmodule) && (fibre_field) && fibre_field->isNumerical() &&
 		(3>=fibre_field->number_of_components) &&
-		coordinate_field && coordinate_field->isNumerical() &&
+		(coordinate_field) && coordinate_field->isNumerical() &&
 		(3 >= coordinate_field->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = fibre_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_module,
+		field = Computed_field_create_generic(fieldmodule,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/9,
 			/*number_of_source_fields*/2, source_fields,

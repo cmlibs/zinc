@@ -63,13 +63,13 @@ public:
 		RECURSION_MODE_OFF = CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF
 	};
 
-	int hasAttribute(Attribute attribute)
+	int hasAttribute(Attribute attribute) const
 	{
 		return cmzn_streaminformation_region_has_attribute(getDerivedId(),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	double getAttributeReal(Attribute attribute)
+	double getAttributeReal(Attribute attribute) const
 	{
 		return cmzn_streaminformation_region_get_attribute_real(getDerivedId(),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
@@ -81,7 +81,7 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int hasResourceAttribute(const Streamresource& resource, Attribute attribute)
+	int hasResourceAttribute(const Streamresource& resource, Attribute attribute) const
 	{
 		return cmzn_streaminformation_region_has_resource_attribute(
 			getDerivedId(), resource.getId(),
@@ -89,7 +89,7 @@ public:
 	}
 
 	double getResourceAttributeReal(const Streamresource& resource,
-		Attribute attribute)
+		Attribute attribute) const
 	{
 		return cmzn_streaminformation_region_get_resource_attribute_real(
 			getDerivedId(), resource.getId(),
@@ -104,7 +104,7 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	FileFormat getFileFormat()
+	FileFormat getFileFormat() const
 	{
 		return static_cast<FileFormat>(
 			cmzn_streaminformation_region_get_file_format(getDerivedId()));
@@ -116,7 +116,7 @@ public:
 			static_cast<cmzn_streaminformation_region_file_format>(fileFormat));
 	}
 
-	Field::DomainTypes getResourceDomainTypes(const Streamresource& resource)
+	Field::DomainTypes getResourceDomainTypes(const Streamresource& resource) const
 	{
 		return static_cast<Field::DomainTypes>(
 			cmzn_streaminformation_region_get_resource_domain_types(
@@ -155,7 +155,7 @@ public:
 			resource.getId(), static_cast<cmzn_streaminformation_region_recursion_mode>(recursionMode));
 	}
 
-	char *getResourceGroupName(const Streamresource& resource)
+	char *getResourceGroupName(const Streamresource& resource) const
 	{
 		return cmzn_streaminformation_region_get_resource_group_name(getDerivedId(),
 			resource.getId());

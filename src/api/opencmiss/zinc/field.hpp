@@ -155,7 +155,7 @@ public:
 
 	inline Fieldassignment createFieldassignment(const Field& sourceField);
 
-	bool isManaged()
+	bool isManaged() const
 	{
 		return cmzn_field_is_managed(id);
 	}
@@ -165,7 +165,7 @@ public:
 		return cmzn_field_set_managed(id, value);
 	}
 
-	char *getComponentName(int componentNumber)
+	char *getComponentName(int componentNumber) const
 	{
 		return cmzn_field_get_component_name(id, componentNumber);
 	}
@@ -175,7 +175,7 @@ public:
 		return cmzn_field_set_component_name(id, componentNumber, name);
 	}
 
-	double getCoordinateSystemFocus()
+	double getCoordinateSystemFocus() const
 	{
 		return cmzn_field_get_coordinate_system_focus(id);
 	}
@@ -195,7 +195,7 @@ public:
 		return cmzn_field_coordinate_system_type_enum_to_string(static_cast<cmzn_field_coordinate_system_type>(type));
 	}
 
-	CoordinateSystemType getCoordinateSystemType()
+	CoordinateSystemType getCoordinateSystemType() const
 	{
 		return static_cast<CoordinateSystemType>(
 			cmzn_field_get_coordinate_system_type(id));
@@ -217,14 +217,14 @@ public:
 		return cmzn_field_domain_type_enum_to_string(static_cast<cmzn_field_domain_type>(type));
 	}
 
-	inline Fieldparameters getFieldparameters();
+	inline Fieldparameters getFieldparameters() const;
 
-	int getNumberOfComponents()
+	int getNumberOfComponents() const
 	{
 		return cmzn_field_get_number_of_components(id);
 	}
 
-	char *getName()
+	char *getName() const
 	{
 		return cmzn_field_get_name(id);
 	}
@@ -234,17 +234,17 @@ public:
 		return cmzn_field_set_name(id, name);
 	}
 
-	int getNumberOfSourceFields()
+	int getNumberOfSourceFields() const
 	{
 		return cmzn_field_get_number_of_source_fields(id);
 	}
 
-	Field getSourceField(int index)
+	Field getSourceField(int index) const
 	{
 		return Field(cmzn_field_get_source_field(id, index));
 	}
 
-	bool isTypeCoordinate()
+	bool isTypeCoordinate() const
 	{
 		return cmzn_field_is_type_coordinate(id);
 	}
@@ -254,7 +254,7 @@ public:
 		return cmzn_field_set_type_coordinate(id, value);
 	}
 
-	ValueType getValueType()
+	ValueType getValueType() const
 	{
 		return static_cast<ValueType>(cmzn_field_get_value_type(id));
 	}
@@ -268,22 +268,22 @@ public:
 
 	inline int assignString(const Fieldcache& cache, const char *stringValue);
 
-	inline bool dependsOnField(const Field& otherField)
+	inline bool dependsOnField(const Field& otherField) const
 	{
 		return cmzn_field_depends_on_field(this->id, otherField.id);
 	}
 
 	inline Element evaluateMeshLocation(const Fieldcache& cache, int coordinatesCount,
-		double *coordinatesOut);
+		double *coordinatesOut) const;
 
-	inline int evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut);
+	inline int evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut) const;
 
-	inline char *evaluateString(const Fieldcache& cache);
+	inline char *evaluateString(const Fieldcache& cache) const;
 
 	inline int evaluateDerivative(const Differentialoperator& differentialOperator,
-		const Fieldcache& cache, int valuesCount, double *valuesOut);
+		const Fieldcache& cache, int valuesCount, double *valuesOut) const;
 
-	inline bool isDefinedAtLocation(const Fieldcache& cache);
+	inline bool isDefinedAtLocation(const Fieldcache& cache) const;
 
 	inline int smooth(const Fieldsmoothing& fieldsmoothing);
 

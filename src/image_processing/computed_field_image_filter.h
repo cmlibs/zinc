@@ -61,7 +61,7 @@ public:
 		if (Computed_field_get_native_resolution(source_field,
 				&dimension, &sizes, &texture_coordinate_field))
 		{
-			ACCESS(Computed_field)(texture_coordinate_field);
+			cmzn_field_access(texture_coordinate_field);
 		}
 		else
 		{
@@ -103,7 +103,7 @@ public:
 		}
 		if (texture_coordinate_field)
 		{
-			DEACCESS(Computed_field)(&texture_coordinate_field);
+			cmzn_field::deaccess(texture_coordinate_field);
 		}
 	};
 
@@ -1056,7 +1056,7 @@ for subsequent operations.
 				else if (coordinate_location)
 				{
 					cmzn_field* reference_field = coordinate_location->get_field();
-					FE_value time = coordinate_location->get_time();
+					//FE_value time = coordinate_location->get_time();
 					itk::ImageRegionIteratorWithIndex< ImageType >
 						generateInput( inputImage, region );
 					//Field_location_field_values pixel_location(reference_field, 
