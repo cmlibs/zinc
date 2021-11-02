@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.6.0
+Add material module change notifier.
+
 v3.5.1
 Fix const usage in C++ API.
 

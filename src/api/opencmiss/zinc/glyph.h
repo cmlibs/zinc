@@ -763,7 +763,7 @@ ZINC_API cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_summary_glyph_change_
  * @param glyph  The glyph to query about.
  * @return  The change flags summarising the change: logical OR of
  * enum cmzn_glyph_change_flag values. Returns
- * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ * CMZN_GLYPH_CHANGE_FLAG_NONE in case of invalid arguments.
  */
 ZINC_API cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
 	cmzn_glyphmoduleevent_id event, cmzn_glyph_id glyph);

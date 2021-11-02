@@ -25,10 +25,12 @@ return to direct rendering, as described with these routines.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <iterator>
 
 #include "opencmiss/zinc/status.h"
 #include "opencmiss/zinc/zincconfigure.h"
@@ -555,18 +557,211 @@ static int Graphical_material_remove_module_if_matching(cmzn_material *material,
 	return (return_code);
 }
 
+cmzn_materialmodulenotifier_id cmzn_materialmodule_create_materialmodulenotifier(
+	cmzn_materialmodule_id materialmodule)
+{
+	return cmzn_materialmodulenotifier::create(materialmodule);
+}
+
+cmzn_materialmodulenotifier::cmzn_materialmodulenotifier(
+	cmzn_materialmodule *materialmodule) :
+	module(materialmodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	materialmodule->addNotifier(this);
+}
+
+cmzn_materialmodulenotifier::~cmzn_materialmodulenotifier()
+{
+}
+
+int cmzn_materialmodulenotifier::deaccess(cmzn_materialmodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_materialmodulenotifier::setCallback(cmzn_materialmodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_materialmodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_materialmodulenotifier::materialmoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_materialmoduleevent_id event = cmzn_materialmoduleevent::create(
+			static_cast<cmzn_materialmodule*>(0));
+		event->setChangeFlags(CMZN_MATERIAL_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_materialmoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_materialmoduleevent::cmzn_materialmoduleevent(
+	cmzn_materialmodule *materialmoduleIn) :
+	module(cmzn_materialmodule_access(materialmoduleIn)),
+	changeFlags(CMZN_MATERIAL_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_materialmoduleevent::~cmzn_materialmoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_material)(&(this->managerMessage));
+	cmzn_materialmodule_destroy(&this->module);
+}
+
+cmzn_material_change_flags cmzn_materialmoduleevent::getMaterialChangeFlags(
+	cmzn_material *material) const
+{
+	if (material && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(this->managerMessage, material);
+	return CMZN_MATERIAL_CHANGE_FLAG_NONE;
+}
+
+void cmzn_materialmoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_material) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_material)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_material) *cmzn_materialmoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_materialmoduleevent::deaccess(cmzn_materialmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_materialmodulenotifier_clear_callback(
+	cmzn_materialmodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_materialmodulenotifier_set_callback(cmzn_materialmodulenotifier_id notifier,
+	cmzn_materialmodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_materialmodulenotifier_get_callback_user_data(
+	cmzn_materialmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_materialmodulenotifier_id cmzn_materialmodulenotifier_access(
+	cmzn_materialmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_materialmodulenotifier_destroy(cmzn_materialmodulenotifier_id *notifier_address)
+{
+	return cmzn_materialmodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_materialmoduleevent_id cmzn_materialmoduleevent_access(
+	cmzn_materialmoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_materialmoduleevent_destroy(cmzn_materialmoduleevent_id *event_address)
+{
+	return cmzn_materialmoduleevent::deaccess(*event_address);
+}
+
+cmzn_material_change_flags cmzn_materialmoduleevent_get_summary_material_change_flags(
+	cmzn_materialmoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_MATERIAL_CHANGE_FLAG_NONE;
+}
+
+cmzn_material_change_flags cmzn_materialmoduleevent_get_material_change_flags(
+	cmzn_materialmoduleevent_id event, cmzn_material_id material)
+{
+	if (event)
+		return event->getMaterialChangeFlags(material);
+	return CMZN_MATERIAL_CHANGE_FLAG_NONE;
+}
+
 cmzn_materialmodule::cmzn_materialmodule() :
-	materialManager(CREATE(MANAGER(cmzn_material))()),
+	manager(CREATE(MANAGER(cmzn_material))()),
+	manager_callback_id(0),
 	defaultMaterial(nullptr),
 	defaultSelectedMaterial(nullptr),
 	defaultSurfaceMaterial(nullptr),
 	graphicsmodule(nullptr),
 	access_count(1)
 {
+	this->manager_callback_id = MANAGER_REGISTER(cmzn_material)(
+		cmzn_materialmodule::material_manager_change, (void *)this, this->manager);
 }
 
 cmzn_materialmodule::~cmzn_materialmodule()
 {
+	MANAGER_DEREGISTER(cmzn_material)(this->manager_callback_id, this->manager);
+	for (cmzn_materialmodulenotifier_list::iterator iter = this->notifier_list.begin();
+		iter != this->notifier_list.end(); ++iter)
+	{
+		cmzn_materialmodulenotifier *notifier = *iter;
+		notifier->materialmoduleDestroyed();
+		cmzn_materialmodulenotifier::deaccess(notifier);
+	}
 	if (this->defaultMaterial)
 		cmzn_material_destroy(&this->defaultMaterial);
 	if (this->defaultSelectedMaterial)
@@ -576,8 +771,37 @@ cmzn_materialmodule::~cmzn_materialmodule()
 	/* Make sure each material no longer points at this module */
 	FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 		Graphical_material_remove_module_if_matching, (void*)this,
-		materialManager);
-	DESTROY(MANAGER(cmzn_material))(&materialManager);
+		this->manager);
+	DESTROY(MANAGER(cmzn_material))(&(this->manager));
+}
+
+/**
+ * Material manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the materials in the material manager.
+ * @param materialmodule_void  Void pointer to changed materialmodule).
+ */
+void cmzn_materialmodule::material_manager_change(
+	struct MANAGER_MESSAGE(cmzn_material) *message, void *materialmodule_void)
+{
+	cmzn_materialmodule *materialmodule = static_cast<cmzn_materialmodule *>(materialmodule_void);
+	if (message && materialmodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_material)(message);
+		if (0 < materialmodule->notifier_list.size())
+		{
+			cmzn_materialmoduleevent_id event = cmzn_materialmoduleevent::create(materialmodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_materialmodulenotifier_list::iterator iter =
+				materialmodule->notifier_list.begin();
+				iter != materialmodule->notifier_list.end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_materialmoduleevent::deaccess(event);
+		}
+	}
 }
 
 cmzn_materialmodule* cmzn_materialmodule::create()
@@ -795,16 +1019,16 @@ cmzn_material* cmzn_materialmodule::createMaterial()
 {
 	cmzn_material_id material = NULL;
 	char temp_name[20];
-	int i = NUMBER_IN_MANAGER(cmzn_material)(this->materialManager);
+	int i = NUMBER_IN_MANAGER(cmzn_material)(this->manager);
 	do
 	{
 		i++;
 		sprintf(temp_name, "temp%d", i);
 	} while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(temp_name,
-		this->materialManager));
+		this->manager));
 	material = cmzn_material_create_private();
 	cmzn_material_set_name(material, temp_name);
-	if (!ADD_OBJECT_TO_MANAGER(cmzn_material)(material, this->materialManager))
+	if (!ADD_OBJECT_TO_MANAGER(cmzn_material)(material, this->manager))
 	{
 		cmzn_material_destroy(&material);
 	}
@@ -814,7 +1038,26 @@ cmzn_material* cmzn_materialmodule::createMaterial()
 
 cmzn_materialiterator* cmzn_materialmodule::createMaterialiterator()
 {
-	return CREATE_LIST_ITERATOR(cmzn_material)(this->materialManager->object_list);
+	return CREATE_LIST_ITERATOR(cmzn_material)(this->manager->object_list);
+}
+
+void cmzn_materialmodule::addNotifier(cmzn_materialmodulenotifier *notifier)
+{
+	this->notifier_list.push_back(notifier->access());
+}
+
+void cmzn_materialmodule::removeNotifier(cmzn_materialmodulenotifier *notifier)
+{
+	if (notifier)
+	{
+		cmzn_materialmodulenotifier_list::iterator iter =
+			std::find(this->notifier_list.begin(), this->notifier_list.end(), notifier);
+		if (iter != this->notifier_list.end())
+		{
+			cmzn_materialmodulenotifier::deaccess(notifier);
+			this->notifier_list.erase(iter);
+		}
+	}
 }
 
 /*
