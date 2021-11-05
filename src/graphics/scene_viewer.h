@@ -372,6 +372,7 @@ struct cmzn_sceneviewer
 	enum cmzn_sceneviewer_transparency_mode transparency_mode;
 	/* number of layers used in layered transparency mode */
 	int transparency_layers;
+	bool supports_order_independent_transparency;  // checked/set when changed to ORDER_INDEPENDENT
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
 		 position and scale of the image relative to user coordinates. In the
 		 RELATIVE_VIEWPORT and DISTORTING_RELATIVE_VIEWPORT modes, these values
@@ -479,6 +480,8 @@ struct cmzn_sceneviewer
 		enum cmzn_scenecoordinatesystem toCoordinateSystem,
 		const gtMatrix *localToWorldTransformationMatrix,
 		double *transformationMatrix16);
+
+	int setTransparencyMode(cmzn_sceneviewer_transparency_mode transparencyModeIn);
 
 	void beginChange()
 	{

@@ -81,25 +81,27 @@ void SceneviewerJsonIO::ioEnumEntries(Json::Value &sceneviewerSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		char *return_string = cmzn_sceneviewer_projection_mode_enum_to_string(
-			cmzn_sceneviewer_get_projection_mode(sceneviewer.getId()));
-		sceneviewerSettings["ProjectionMode"] = return_string;
-		DEALLOCATE(return_string);
-		return_string = cmzn_sceneviewer_transparency_mode_enum_to_string(
-			cmzn_sceneviewer_get_transparency_mode(sceneviewer.getId()));
-		sceneviewerSettings["TransparencyMode"] = return_string;
-		DEALLOCATE(return_string);
+		char *enumString;
+		enumString = this->sceneviewer.ProjectionModeEnumToString(this->sceneviewer.getProjectionMode());
+		sceneviewerSettings["ProjectionMode"] = enumString;
+		DEALLOCATE(enumString);
+		enumString = this->sceneviewer.TransparencyModeEnumToString(this->sceneviewer.getTransparencyMode());
+		sceneviewerSettings["TransparencyMode"] = enumString;
+		DEALLOCATE(enumString);
+		sceneviewerSettings["TransparencyLayers"] = this->sceneviewer.getTransparencyLayers();
 	}
 	else
 	{
 		if (sceneviewerSettings["ProjectionMode"].isString())
-			cmzn_sceneviewer_set_projection_mode(sceneviewer.getId(),
-				cmzn_sceneviewer_projection_mode_enum_from_string(
+			this->sceneviewer.setProjectionMode(
+				this->sceneviewer.ProjectionModeEnumFromString(
 					sceneviewerSettings["ProjectionMode"].asCString()));
 		if (sceneviewerSettings["TransparencyMode"].isString())
-			cmzn_sceneviewer_set_transparency_mode(sceneviewer.getId(),
-				cmzn_sceneviewer_transparency_mode_enum_from_string(
+			this->sceneviewer.setTransparencyMode(
+				this->sceneviewer.TransparencyModeEnumFromString(
 					sceneviewerSettings["TransparencyMode"].asCString()));
+		if (sceneviewerSettings["TransparencyLayers"].isInt())
+			this->sceneviewer.setTransparencyLayers(sceneviewerSettings["TransparencyLayers"].asInt());
 	}
 }
 
