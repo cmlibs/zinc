@@ -872,15 +872,16 @@ ZINC_API char *cmzn_sceneviewer_transparency_mode_enum_to_string(
  * objects. In slow transparency mode, opaque objects are rendered first, then
  * semi-transparent objects are rendered without writing the depth buffer. Hence,
  * you can even see through the first semi-transparent surface drawn.
+ * In order independent transparency mode, rendering is done from back to front
+ * with depth-peeling, up to the number of transparency layers.
  *
  * @see cmzn_sceneviewer_transparency_mode
  * @see cmzn_sceneviewer_set_transparency_mode
+ * @see cmzn_sceneviewer_set_transparency_layers
  *
  * @param sceneviewer  Handle to the scene viewer.
- *
- * @return  transparency_mode set for this sceneviewer.
- *   CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT if failed or
- *   mode is not set correctly
+ * @return  transparency_mode set for this sceneviewer, or INVALID if bad
+ * argument.
  */
 ZINC_API enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	cmzn_sceneviewer_id sceneviewer);

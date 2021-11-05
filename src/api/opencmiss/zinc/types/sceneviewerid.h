@@ -145,12 +145,12 @@ enum cmzn_sceneviewer_transparency_mode
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID = 0,
 	/*!< Unspecified scene viewer transparency mode. */
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST = 1,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST just includes
+	/*!< TRANSPARENCY_MODE_FAST just includes
 	 * transparent objects in the normal render, this causes them
 	 * to obscure other objects behind if they are drawn first.
 	 */
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW = 2,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW puts out all the
+	/*!< TRANSPARENCY_MODE_SLOW puts out all the
 	 * opaque geometry first and then ignores the depth test while
 	 * drawing all partially transparent objects, this ensures everything
 	 * is drawn but multiple layers of transparency will always draw
@@ -158,8 +158,8 @@ enum cmzn_sceneviewer_transparency_mode
 	 * may be drawn over the top of one that is supposed to be in front.
 	 */
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT = 3
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT uses
-	 * some Nvidia extensions to implement a full back to front perl pixel
+	/*!< TRANSPARENCY_MODE_ORDER_INDEPENDENT uses
+	 * some Nvidia extensions to implement a full back to front per pixel
 	 * fragment sort correctly rendering transparency with a small number
 	 * of passes, specified by "transparency layers". This uses all the
 	 * texturing resources of the current Nvidia hardware and so
