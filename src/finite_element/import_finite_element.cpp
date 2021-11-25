@@ -17,6 +17,7 @@
 #include "opencmiss/zinc/mesh.h"
 #include "opencmiss/zinc/node.h"
 #include "opencmiss/zinc/nodeset.h"
+#include "opencmiss/zinc/timesequence.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_nodeset.hpp"
@@ -356,6 +357,46 @@ class EXReader
 		}
 	};
 
+	class TimeSequence
+	{
+	public:
+		std::string name;
+		FE_time_sequence *feTimeSequence;
+		int nearestTimeIndex;
+		FE_value nearestTime;
+
+		TimeSequence(const char *nameIn, FE_time_sequence *feTimeSequenceIn, FE_import_time_index *timeIndex) :
+			name(nameIn),
+			feTimeSequence(ACCESS(FE_time_sequence)(feTimeSequenceIn)),
+			nearestTimeIndex(-1),
+			nearestTime(0.0)
+		{
+			if (timeIndex)
+			{
+				this->nearestTimeIndex = FE_time_sequence_get_nearest_time_index_for_time(this->feTimeSequence, timeIndex->time);
+				FE_time_sequence_get_time_for_index(this->feTimeSequence, this->nearestTimeIndex, &this->nearestTime);
+			}
+		}
+
+		~TimeSequence()
+		{
+			DEACCESS(FE_time_sequence)(&this->feTimeSequence);
+		}
+
+		/** @return  Non-accessed FE_time_sequence */
+		FE_time_sequence *getFeTimeSequence() const
+		{
+			return this->feTimeSequence;
+		}
+
+		/** Only valid if a timeIndex was passed into constructor */
+		FE_value getNearestTime() const
+		{
+			return this->nearestTime;
+		}
+	};
+
+	cmzn_region *rootRegion;  // root region to read into
 	int exVersion;
 	IO_stream *input_file;
 	bool useData;  // True if reading datapoints by default, otherwise nodes
@@ -376,11 +417,14 @@ class EXReader
 	std::vector<FE_field *> headerFields;  // order of fields in header
 	bool hasElementValues;  // set to true if any element field has element field values
 	std::vector<ScaleFactorSet *> scaleFactorSets;
+	std::vector<TimeSequence *> timeSequences;
+	std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence for reading one time
 	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
 
 public:
 	/** @param timeIndexIn  Optional, specifies time to define field at. */
-	EXReader(IO_stream *input_fileIn, FE_import_time_index *timeIndexIn) :
+	EXReader(cmzn_region *rootRegionIn, IO_stream *input_fileIn, FE_import_time_index *timeIndexIn) :
+		rootRegion(rootRegionIn->access()),
 		exVersion(1),
 		input_file(input_fileIn),
 		useData(false),
@@ -408,12 +452,21 @@ public:
 			DEALLOCATE(this->fileLocation);
 		this->clearGroup();
 		this->clearRegion();
+		cmzn_region::deaccess(this->rootRegion);
 	}
 
 	void clearGroup()
 	{
 		cmzn_field_group_destroy(&(this->fieldGroup));
 		this->clearSubelementGroups();
+	}
+
+	void clearTimeSequences()
+	{
+		const size_t tsCount = this->timeSequences.size();
+		for (size_t ts = 0; ts < tsCount; ++ts)
+			delete this->timeSequences[ts];
+		this->timeSequences.clear();
 	}
 
 	void clearSubelementGroups()
@@ -427,6 +480,11 @@ public:
 		cmzn_region_destroy(&(this->region));
 		cmzn_fieldmodule_destroy(&(this->fieldmodule));
 		this->fe_region = nullptr;
+	}
+
+	int getEXVersion() const
+	{
+		return this->exVersion;
 	}
 
 	cmzn_region *getRegion() const
@@ -443,6 +501,7 @@ public:
 		this->fieldmodule = cmzn_region_get_fieldmodule(this->region);
 		this->fe_region = this->region->get_FE_region();
 		this->clearGroup();
+		this->clearTimeSequences();
 		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
 			this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
 	}
@@ -605,6 +664,7 @@ public:
 	}
 
 	bool readEXVersion();
+	bool readTimeSequence();
 	bool readCommentOrDirective();
 	bool readFieldValues();
 	bool readNodeHeader();
@@ -614,6 +674,7 @@ public:
 	bool readElementIdentifier(DsLabelIdentifier &elementIdentifier);
 	bool readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber);
 	cmzn_element *readElement();
+	int read();
 
 private:
 
@@ -629,43 +690,44 @@ private:
 		this->scaleFactorSets.clear();
 		this->headerFields.clear();
 		this->hasElementValues = false;
+		this->nodeFieldTimeSequences.clear();
 	}
 
-	/*** @return  Pointer to scale factor set with name and details, or 0 if failed */
+	/*** @return  Pointer to scale factor set with name and details, or nullptr if failed */
 	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn,
 		const char *scaleFactorIdentifiersString)
 	{
 		if ((!nameIn) || (scaleFactorCountIn < 1) || (scaleFactorOffsetIn < 0))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
-			return 0;
+			return nullptr;
 		}
 		if (0 != this->findScaleFactorSet(nameIn))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", nameIn, this->getFileLocation());
-			return 0;
+			return nullptr;
 		}
 		ScaleFactorSet *sfSet = new ScaleFactorSet(nameIn, scaleFactorCountIn, scaleFactorOffsetIn);
 		if (!sfSet)
 		{
-			return 0;
+			return nullptr;
 		}
 		if (!sfSet->parseScaleFactorIdentifiers(scaleFactorIdentifiersString))
 		{
 			delete sfSet;
-			return 0;
+			return nullptr;
 		}
 		this->scaleFactorSets.push_back(sfSet);
 		return sfSet;
 	}
 
-	/*** @return  Pointer to scale factor set with name, or 0 if not found */
+	/*** @return  Pointer to scale factor set with name, or nullptr if not found */
 	ScaleFactorSet *findScaleFactorSet(const char *nameIn)
 	{
 		if (!nameIn)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
-			return 0;
+			return nullptr;
 		}
 		const size_t sfCount = this->scaleFactorSets.size();
 		for (size_t s = 0; s < sfCount; ++s)
@@ -673,7 +735,52 @@ private:
 			if (0 == this->scaleFactorSets[s]->name.compare(nameIn))
 				return this->scaleFactorSets[s];
 		}
-		return 0;
+		return nullptr;
+	}
+
+	/*** @return  Pointer to TimeSequence with name and details, or nullptr if failed */
+	TimeSequence *createTimesequence(const char *nameIn, int timesCountIn, const double *timesIn)
+	{
+		if ((!nameIn) || (timesCountIn < 1))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing time sequence name or invalid size.  %s", this->getFileLocation());
+			return nullptr;
+		}
+		if (this->findTimeSequence(nameIn))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Time sequence %s already defined in this region.  %s", nameIn, this->getFileLocation());
+			return nullptr;
+		}
+		FE_time_sequence *feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, timesCountIn, timesIn);
+		if (!feTimeSequence)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Invalid time sequence.  %s", this->getFileLocation());
+			return nullptr;
+		}
+		TimeSequence *timeSequence = new TimeSequence(nameIn, feTimeSequence, this->timeIndex);
+		if (!timeSequence)
+		{
+			return nullptr;
+		}
+		this->timeSequences.push_back(timeSequence);
+		return timeSequence;
+	}
+
+	/*** @return  Pointer to TimeSequence with name, or nullptr if not found */
+	TimeSequence *findTimeSequence(const char *nameIn)
+	{
+		if (!nameIn)
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing time sequence name.  %s", this->getFileLocation());
+			return nullptr;
+		}
+		const size_t tsCount = this->timeSequences.size();
+		for (size_t ts = 0; ts < tsCount; ++ts)
+		{
+			if (0 == this->timeSequences[ts]->name.compare(nameIn))
+				return this->timeSequences[ts];
+		}
+		return nullptr;
 	}
 
 	bool readBlankToEndOfLine();
@@ -681,7 +788,7 @@ private:
 	bool readElementXiValue(FE_field *field, cmzn_element* &element, FE_value *xi);
 	bool checkConsumeNextChar(char testChar);
 	char *readString(const char *stringDelimitersFormat = "[^ ,;=\n\r\t]");
-	FE_field *readField();
+	FE_field *readField(TimeSequence*& timeSequence);
 	bool readNodeValueLabelsVersions(FE_node_field_template& nft);
 	bool readNodeHeaderField();
 	bool createElementtemplate();
@@ -741,9 +848,9 @@ bool EXReader::readEXVersion()
 		display_message(ERROR_MESSAGE, "EX Reader.  EX Version number must be >= 2 (it is not specified for version 1).  %s", this->getFileLocation());
 		return false;
 	}
-	if (versionNumber > 2)
+	if (versionNumber > 3)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  This library cannot read EX Version %d, only version 2 may be specified.  %s",
+		display_message(ERROR_MESSAGE, "EX Reader.  This library cannot read EX Version %d, only version 2-3 may be specified.  %s",
 			versionNumber, this->getFileLocation());
 		return false;
 	}
@@ -1250,6 +1357,66 @@ bool EXReader::readCommentOrDirective()
 	return true;
 }
 
+/** reads token "Values: followed by field constants, if any constant or indexed fields */
+bool EXReader::readTimeSequence()
+{
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, "ime sequence %1[:] ", test_string))  // "T" has already been read
+	{
+		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Time sequence: token.  %s", this->getFileLocation());
+		return false;
+	}
+	KeyValueMap keyValueMap;
+	if (!this->readKeyValueMap(keyValueMap))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read key=value parameters for time sequence.  %s",
+			this->getFileLocation());
+		return false;
+	}
+	const char *name = keyValueMap.getKeyValue("name");
+	if (!name)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing name for time sequence.  %s", this->getFileLocation());
+		return false;
+	}
+	const char *sizeString = keyValueMap.getKeyValue("size");
+	if (!sizeString)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing size for time sequence.  %s", this->getFileLocation());
+		return false;
+	}
+	const int size = atoi(sizeString);
+	if (size < 1)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Non-positive size for time sequence.  %s", this->getFileLocation());
+		return false;
+	}
+	// warn about unused key-value pairs
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		keyValueMap.reportUnusedKeyValues("EX Reader.  Time sequence: ");
+	}
+	std::vector<FE_value> times(size, 0.0);
+	FE_value time;
+	for (int i = 0; i < size; ++i)
+	{
+		if (!((1 == IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &time))
+			&& std::isfinite(time)))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Error reading time sequence time value.  %s", this->getFileLocation());
+			return false;
+		}
+		times[i] = time;
+	}
+	TimeSequence *timeSequence = this->createTimesequence(name, size, times.data());
+	if (!timeSequence)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create time sequence.  %s", this->getFileLocation());
+		return false;
+	}
+	return true;
+}
+
 /**
  * Reads a field from its description in stream. Note that the same format is
  * used for node and element field headers.
@@ -1258,9 +1425,11 @@ bool EXReader::readCommentOrDirective()
  * simply merged into it using FE_region_merge_FE_field.
  * This approach is used because component names are set later and differently
  * for node and element fields.
+ * @param timeSequence.  If field header has time sequence=name, the TimeSequence
+ * of that name is returned here.
  * @return  Accessed and unmerged field, or 0 if failed.
  */
-FE_field *EXReader::readField()
+FE_field *EXReader::readField(TimeSequence*& timeSequence)
 {
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type = UNKNOWN_FE_FIELD;
@@ -1276,6 +1445,7 @@ FE_field *EXReader::readField()
 	/* read the field information */
 	IO_stream_scan(this->input_file, " %*d) ");
 	/* read the field name */
+	timeSequence = nullptr;
 	if (return_code)
 	{
 		if (IO_stream_read_string(this->input_file, "[^,]", &field_name))
@@ -1548,6 +1718,20 @@ FE_field *EXReader::readField()
 					}
 				}
 			}
+			if (this->exVersion > 2)
+			{
+				const char *timeSequenceName = keyValueMap.getKeyValue("time sequence");
+				if (timeSequenceName)
+				{
+					timeSequence = this->findTimeSequence(timeSequenceName);
+					if (!timeSequence)
+					{
+						display_message(ERROR_MESSAGE, "EX Reader.  Cannot find time sequence %s specified for field %s.  %s",
+							timeSequenceName, field_name, this->getFileLocation());
+						return_code = 0;
+					}
+				}
+			}
 			if (keyValueMap.hasUnusedKeyValues())
 			{
 				std::string prefix("EX Reader.  Field ");
@@ -1749,7 +1933,8 @@ bool EXReader::readNodeHeaderField()
 	if (!(this->nodeset && this->fe_node_template))
 		return false;
 	// first read non-merged field declaration without node-specific data
-	FE_field *field = this->readField();
+	TimeSequence *timeSequence = nullptr;
+	FE_field *field = this->readField(timeSequence);
 	if (!field)
 		return false;
 	bool result = true;
@@ -1920,13 +2105,21 @@ bool EXReader::readNodeHeaderField()
 	if (result)
 	{
 		// define field at the node
-		struct FE_time_sequence *fe_time_sequence = 0;
+		FE_time_sequence *feTimeSequence = nullptr;
+		if (timeSequence)
+		{
+			// record which field is using which time sequence so we know how many parameters are in file even if sampling one time
+			this->nodeFieldTimeSequences[field] = timeSequence;
+			feTimeSequence = timeSequence->getFeTimeSequence();
+		}
 		if (this->timeIndex)
 		{
-			if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
-				this->fe_region, 1, &(this->timeIndex->time))))
+			// if a single time index is specified and the field has a time sequence, use nearest time in sequence
+			const FE_value time = (timeSequence) ? timeSequence->getNearestTime() : this->timeIndex->time;
+			feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, 1, &time);
+			if (!feTimeSequence)
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Could not get time sequence for field %s at node.  %s",
+				display_message(ERROR_MESSAGE, "EX Reader.  Could not get single time sequence for field %s at node.  %s",
 					get_FE_field_name(field), this->getFileLocation()); 
 				result = false;
 			}
@@ -1934,7 +2127,7 @@ bool EXReader::readNodeHeaderField()
 		if (result)
 		{
 			if (define_FE_field_at_node(this->fe_node_template->get_template_node(), field,
-				componentNfts.data(), fe_time_sequence))
+				componentNfts.data(), feTimeSequence))
 			{
 				this->headerFields.push_back(field);
 			}
@@ -2053,6 +2246,22 @@ cmzn_node *EXReader::readNode()
 			result = false;
 			break;
 		}
+		FE_time_sequence *feTimeSequence = node_field->getTimeSequence();
+		FE_time_sequence *fileFeTimeSequence = feTimeSequence;
+		FE_value singleTime = (this->timeIndex) ? this->timeIndex->time : 0.0;
+		TimeSequence *timeSequence = nullptr;
+		std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeFieldTimeSequences.find(field);
+		if (iter != this->nodeFieldTimeSequences.end())
+		{
+			timeSequence = iter->second;
+			fileFeTimeSequence = timeSequence->getFeTimeSequence();
+			if (this->timeIndex)
+			{
+				// read parameters at a single time from a time sequence
+				singleTime = timeSequence->getNearestTime();
+			}
+		}
+		const int fileTimeCount = (fileFeTimeSequence) ? FE_time_sequence_get_number_of_times(fileFeTimeSequence) : 1;
 		const Value_type value_type = get_FE_field_value_type(field);
 		switch (value_type)
 		{
@@ -2086,56 +2295,72 @@ cmzn_node *EXReader::readNode()
 			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
 			std::vector<FE_value> valuesVector(maximumValuesCount);
 			FE_value *values = valuesVector.data();
-			for (int c = 0; c < componentCount; ++c)
+			for (int t = 0; t < fileTimeCount; ++t)
 			{
-				const FE_node_field_template &nft = *(node_field->getComponent(c));
-				const int valuesCount = nft.getTotalValuesCount();
-				for (int k = 0; k < valuesCount; ++k)
+				FE_value fileTime = singleTime;
+				if (fileFeTimeSequence)
 				{
-					if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+					FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+				}
+				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
+				for (int c = 0; c < componentCount; ++c)
+				{
+					const FE_node_field_template &nft = *(node_field->getComponent(c));
+					const int valuesCount = nft.getTotalValuesCount();
+					for (int k = 0; k < valuesCount; ++k)
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
-							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-						result = false;
+						if (1 != IO_stream_scan(this->input_file, FE_VALUE_INPUT_STRING, &(values[k])))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading real value for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+						if (!std::isfinite(values[k]))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+					if (!result)
+					{
 						break;
 					}
-					if (!std::isfinite(values[k]))
+					if (readThisTime)
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Infinity or NAN read for field %s at node %d.  %s",
-							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-						result = false;
-						break;
+						if (this->exVersion < 2)
+						{
+							// all derivatives / value labels had same number of versions in old format
+							const int versionsCount = nft.getVersionsCountAtIndex(0);
+							if (versionsCount > 1)
+							{
+								// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+								std::vector<FE_value> tmpValuesVector(valuesVector);
+								FE_value *tmpValues = tmpValuesVector.data();
+								const int valueLabelsCount = nft.getValueLabelsCount();
+								for (int d = 0; d < valueLabelsCount; ++d)
+								{
+									for (int v = 0; v < versionsCount; ++v)
+									{
+										values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
+									}
+								}
+							}
+						}
+						if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
+							fileTime, valuesCount, values))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
+								valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+						}
 					}
 				}
 				if (!result)
 				{
 					break;
-				}
-				if (this->exVersion < 2)
-				{
-					// all derivatives / value labels had same number of versions in old format
-					const int versionsCount = nft.getVersionsCountAtIndex(0);
-					if (versionsCount > 1)
-					{
-						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
-						std::vector<FE_value> tmpValuesVector(valuesVector);
-						FE_value *tmpValues = tmpValuesVector.data();
-						const int valueLabelsCount = nft.getValueLabelsCount();
-						for (int d = 0; d < valueLabelsCount; ++d)
-						{
-							for (int v = 0; v < versionsCount; ++v)
-							{
-								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
-							}
-						}
-					}
-				}
-				if (!cmzn_node_set_field_component_FE_value_values(node, field, c,
-					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d real values for field %s node %d.  %s",
-						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-					result = false;
 				}
 			}
 		} break;
@@ -2144,49 +2369,65 @@ cmzn_node *EXReader::readNode()
 			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
 			std::vector<int> valuesVector(maximumValuesCount);
 			int *values = valuesVector.data();
-			for (int c = 0; c < componentCount; ++c)
+			for (int t = 0; t < fileTimeCount; ++t)
 			{
-				const FE_node_field_template &nft = *(node_field->getComponent(c));
-				const int valuesCount = nft.getTotalValuesCount();
-				for (int k = 0; k < valuesCount; ++k)
+				FE_value fileTime = singleTime;
+				if (fileFeTimeSequence)
 				{
-					if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+					FE_time_sequence_get_time_for_index(fileFeTimeSequence, t, &fileTime);
+				}
+				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
+				for (int c = 0; c < componentCount; ++c)
+				{
+					const FE_node_field_template &nft = *(node_field->getComponent(c));
+					const int valuesCount = nft.getTotalValuesCount();
+					for (int k = 0; k < valuesCount; ++k)
 					{
-						display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
-							get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-						result = false;
+						if (1 != IO_stream_scan(this->input_file, "%d", &(values[k])))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Error reading int value for field %s at node %d.  %s",
+								get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+							break;
+						}
+					}
+					if (!result)
+					{
 						break;
+					}
+					if (readThisTime)
+					{
+						if (this->exVersion < 2)
+						{
+							// all derivatives / value labels had same number of versions in old format
+							const int versionsCount = nft.getVersionsCountAtIndex(0);
+							if (versionsCount > 1)
+							{
+								// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
+								std::vector<int> tmpValuesVector(valuesVector);
+								int *tmpValues = tmpValuesVector.data();
+								const int valueLabelsCount = nft.getValueLabelsCount();
+								for (int d = 0; d < valueLabelsCount; ++d)
+								{
+									for (int v = 0; v < versionsCount; ++v)
+									{
+										values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
+									}
+								}
+							}
+						}
+						if (!cmzn_node_set_field_component_int_values(node, field, c,
+							fileTime, valuesCount, values))
+						{
+							display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
+								valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
+							result = false;
+						}
 					}
 				}
 				if (!result)
 				{
 					break;
-				}
-				if (this->exVersion < 2)
-				{
-					// all derivatives / value labels had same number of versions in old format
-					const int versionsCount = nft.getVersionsCountAtIndex(0);
-					if (versionsCount > 1)
-					{
-						// before EX version 2, derivatives were nested within versions; reorder to nest versions within derivatives
-						std::vector<int> tmpValuesVector(valuesVector);
-						int *tmpValues = tmpValuesVector.data();
-						const int valueLabelsCount = nft.getValueLabelsCount();
-						for (int d = 0; d < valueLabelsCount; ++d)
-						{
-							for (int v = 0; v < versionsCount; ++v)
-							{
-								values[d*versionsCount + v] = tmpValues[d + v*valueLabelsCount];
-							}
-						}
-					}
-				}
-				if (!cmzn_node_set_field_component_int_values(node, field, c,
-					(this->timeIndex) ? this->timeIndex->time : 0.0, valuesCount, values))
-				{
-					display_message(ERROR_MESSAGE, "EX Reader.  Failed to set %d int values for field %s node %d.  %s",
-						valuesCount, get_FE_field_name(field), nodeIdentifier, this->getFileLocation());
-					result = false;
 				}
 			}
 		} break;
@@ -2701,9 +2942,15 @@ bool EXReader::readElementHeaderField()
 	if (!(this->mesh && this->nodeset && this->elementtemplate))
 		return false;
 	// first read non-merged field declaration without element-specific data
-	FE_field *field = this->readField();
+	TimeSequence *timeSequence = nullptr;
+	FE_field *field = this->readField(timeSequence);
 	if (!field)
 		return false;
+	if (timeSequence)
+	{
+		display_message(WARNING_MESSAGE, "EX Reader.  Field %s: time sequence not supported on elements.  %s",
+			field->getName(), this->getFileLocation());
+	}
 	// check field of this name isn't already in header
 	const size_t fieldCount = this->headerFields.size();
 	for (size_t f = 0; f < fieldCount; ++f)
@@ -4092,6 +4339,241 @@ cmzn_element *EXReader::readElement()
 
 /**
  * Reads region, group, field, node and element field data in EX format into
+ * the region tree.
+ * @return  true on success, false on failure.
+ */
+int EXReader::read()
+{
+	this->rootRegion->beginHierarchicalChange();
+	char first_character_in_token, test_string[5];
+	int return_code = 1;
+	while (return_code)
+	{
+		/* get first character in next token */
+		IO_stream_scan(input_file, " ");
+		int input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
+		if (1 != input_result)
+			break;
+		bool invalidToken = false;
+		switch (first_character_in_token)
+		{
+			case 'R': /* Region : </path> */
+			case 'G': /* Group name : <name> */
+			{
+				/* Use a %1[:] so that a successful read will return 1 */
+				int valid_token = 0;
+				if ('R' == first_character_in_token)
+				{
+					valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
+				}
+				else
+				{
+					valid_token = IO_stream_scan(input_file,"roup name %1[:]", test_string);
+				}
+				if (1 != valid_token)
+				{
+					display_message(ERROR_MESSAGE,
+						"EX Reader.  Truncated \'Region :\' or \'Group name :\' token in EX file.  %s", this->getFileLocation());
+					return_code = 0;
+				}
+				char *rest_of_line = (char *)NULL;
+				char *region_path = (char *)NULL;
+				if (return_code)
+				{
+					/* read the region path */
+					if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+					{
+						region_path = rest_of_line;
+						/* trim leading and trailing white space */
+						while ((' ' == *region_path) || ('\t' == *region_path))
+						{
+							region_path++;
+						}
+						char *last_character = region_path+(strlen(region_path)-1);
+						while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
+						{
+							last_character--;
+						}
+						*(last_character + 1)='\0';
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"EX Reader.  Error reading region path or group name.  %s", this->getFileLocation());
+						return_code = 0;
+					}
+				}
+				/* get or create region with path, or group with name */
+				if (return_code)
+				{
+					if ('R' == first_character_in_token)
+					{
+						if (region_path && (CMZN_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
+						{
+							/* region is the same as read_region if reading into a true region,
+							* otherwise it is the parent region of read_region group */
+							cmzn_region *region = cmzn_region_find_subregion_at_path(this->rootRegion, region_path);
+							if (!region)
+							{
+								region = cmzn_region_create_subregion(this->rootRegion, region_path);
+							}
+							if (!this->setRegion(region))
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Could not create or set region \'%s\'.  %s", region_path, this->getFileLocation());
+								return_code = 0;
+							}
+							cmzn_region_destroy(&region);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Missing \'%c\' at start of region path \'%s\'.  %s",
+								CMZN_REGION_PATH_SEPARATOR_CHAR, region_path, this->getFileLocation());
+							return_code = 0;
+						}
+					}
+					else
+					{
+						if (0 == this->getRegion())
+						{
+							if (!this->setRegion(this->rootRegion))
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Could not set root region.  %s", this->getFileLocation());
+								return_code = 0;
+							}
+						}
+						if (return_code)
+						{
+							if (!this->setFieldGroupOfName(region_path))
+							{
+								display_message(ERROR_MESSAGE,
+									"EX Reader.  Could not create group \'%s\'.  %s", region_path, this->getFileLocation());
+								return_code = 0;
+							}
+						}
+					}
+				}
+				DEALLOCATE(rest_of_line);
+			} break;
+			case 'S': /* Shape */
+			{
+				if (!this->readElementShape())
+					return_code = 0;
+			} break;
+			case '!': /* !# directive, otherwise ! Comment ignored to end of line */
+			{
+				if (!this->readCommentOrDirective())
+					return_code = 0;
+			} break;
+			case '#': /* #Scale factor sets, #Nodes, or #Fields */
+			{
+				if (this->getMesh())
+				{
+					if (!this->readElementHeader())
+						return_code = 0;
+				}
+				else if (this->getNodeset())
+				{
+					if (!this->readNodeHeader())
+						return_code = 0;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Region/Group not set before field header.  %s", this->getFileLocation());
+					return_code = 0;
+				}
+			} break;
+			case 'N': /* Node */
+			{
+				cmzn_node *node = this->readNode();
+				if (node)
+				{
+					cmzn_nodeset_group *nodesetGroup = this->getNodesetGroup();
+					if (nodesetGroup)
+						cmzn_nodeset_group_add_node(nodesetGroup, node);
+					cmzn_node::deaccess(node);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading node");
+					return_code = 0;
+				}
+			} break;
+			case 'E': /* Element or EX Version */
+			{
+				const int next_char = this->readNextNonSpaceChar();
+				if (next_char == (int)'l')
+				{
+					cmzn_element *element = this->readElement();
+					if (element)
+					{
+						cmzn_mesh_group *meshGroup = this->getMeshGroup();
+						if (meshGroup)
+							cmzn_mesh_group_add_element(meshGroup, element);
+						cmzn_element::deaccess(element);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
+						return_code = 0;
+					}
+				}
+				else if (next_char == (int)'X')
+				{
+					if (!this->readEXVersion())
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					char *temp_string = 0;
+					IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
+					display_message(ERROR_MESSAGE,
+						"Invalid token \'%c%s\' in EX node/element file.  %s",
+						first_character_in_token, temp_string ? temp_string : "", this->getFileLocation());
+					DEALLOCATE(temp_string);
+					return_code = 0;
+				}
+			} break;
+			case 'T': /* Time sequence */
+			{
+				if (this->exVersion < 3)
+				{
+					invalidToken = true;
+					break;
+				}
+				if (!this->readTimeSequence())
+					return_code = 0;
+			} break;
+			case 'V': /* Values */
+			{
+				if (!this->readFieldValues())
+					return_code = 0;
+			} break;
+			default:
+			{
+				invalidToken = true;
+			} break;
+		} /* switch (first_character_in_token) */
+		if (invalidToken)
+		{
+			char *temp_string = 0;
+			IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
+			display_message(ERROR_MESSAGE,
+				"Invalid token \'%c%s\' in EX version %d file.  %s",
+				first_character_in_token, temp_string ? temp_string : "", this->getEXVersion(), this->getFileLocation());
+			DEALLOCATE(temp_string);
+			return_code = 0;
+		}
+	}
+	this->rootRegion->endHierarchicalChange();
+	return (return_code);
+}
+
+/**
+ * Reads region, group, field, node and element field data in EX format into
  * the supplied region.
  *
  * It is good practice to read the file into a newly created region and check it
@@ -4124,219 +4606,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
 		return 0;
 	}
-
-	EXReader exReader(input_file, time_index);
+	EXReader exReader(root_region, input_file, time_index);
 	exReader.setUseDataMetaFlag(use_data != 0);
-	cmzn_region_begin_hierarchical_change(root_region);
-	char first_character_in_token, test_string[5];
-	int return_code = 1;
-	while (return_code)
-	{
-		/* get first character in next token */
-		IO_stream_scan(input_file, " ");
-		int input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
-		if (1 != input_result)
-			break;
-
-		switch (first_character_in_token)
-		{
-			case 'R': /* Region : </path> */
-			case 'G': /* Group name : <name> */
-			{
-				/* Use a %1[:] so that a successful read will return 1 */
-				int valid_token = 0;
-				if ('R' == first_character_in_token)
-				{
-					valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
-				}
-				else
-				{
-					valid_token = IO_stream_scan(input_file,"roup name %1[:]", test_string);
-				}
-				if (1 != valid_token)
-				{
-					display_message(ERROR_MESSAGE,
-						"EX Reader.  Truncated \'Region :\' or \'Group name :\' token in EX file.  %s", exReader.getFileLocation());
-					return_code = 0;
-				}
-				char *rest_of_line = (char *)NULL;
-				char *region_path = (char *)NULL;
-				if (return_code)
-				{
-					/* read the region path */
-					if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
-					{
-						region_path = rest_of_line;
-						/* trim leading and trailing white space */
-						while ((' ' == *region_path) || ('\t' == *region_path))
-						{
-							region_path++;
-						}
-						char *last_character = region_path+(strlen(region_path)-1);
-						while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
-						{
-							last_character--;
-						}
-						*(last_character + 1)='\0';
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"EX Reader.  Error reading region path or group name.  %s", exReader.getFileLocation());
-						return_code = 0;
-					}
-				}
-				/* get or create region with path, or group with name */
-				if (return_code)
-				{
-					if ('R' == first_character_in_token)
-					{
-						if (region_path && (CMZN_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
-						{
-							/* region is the same as read_region if reading into a true region,
-							* otherwise it is the parent region of read_region group */
-							cmzn_region *region = cmzn_region_find_subregion_at_path(root_region, region_path);
-							if (!region)
-								region = cmzn_region_create_subregion(root_region, region_path);
-							if (!exReader.setRegion(region))
-							{
-								display_message(ERROR_MESSAGE, "EX Reader.  Could not create or set region \'%s\'.  %s", region_path, exReader.getFileLocation());
-								return_code = 0;
-							}
-							cmzn_region_destroy(&region);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Missing \'%c\' at start of region path \'%s\'.  %s",
-								CMZN_REGION_PATH_SEPARATOR_CHAR, region_path, exReader.getFileLocation());
-							return_code = 0;
-						}
-					}
-					else
-					{
-						if (0 == exReader.getRegion())
-						{
-							if (!exReader.setRegion(root_region))
-							{
-								display_message(ERROR_MESSAGE, "EX Reader.  Could not set root region.  %s", exReader.getFileLocation());
-								return_code = 0;
-							}
-						}
-						if (return_code)
-						{
-							if (!exReader.setFieldGroupOfName(region_path))
-							{
-								display_message(ERROR_MESSAGE,
-									"EX Reader.  Could not create group \'%s\'.  %s", region_path, exReader.getFileLocation());
-								return_code = 0;
-							}
-						}
-					}
-				}
-				DEALLOCATE(rest_of_line);
-			} break;
-			case 'S': /* Shape */
-			{
-				if (!exReader.readElementShape())
-					return_code = 0;
-			} break;
-			case '!': /* !# directive, otherwise ! Comment ignored to end of line */
-			{
-				if (!exReader.readCommentOrDirective())
-					return_code = 0;
-			} break;
-			case '#': /* #Scale factor sets, #Nodes, or #Fields */
-			{
-				if (exReader.getMesh())
-				{
-					if (!exReader.readElementHeader())
-						return_code = 0;
-				}
-				else if (exReader.getNodeset())
-				{
-					if (!exReader.readNodeHeader())
-						return_code = 0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Region/Group not set before field header.  %s", exReader.getFileLocation());
-					return_code = 0;
-				}
-			} break;
-			case 'N': /* Node */
-			{
-				cmzn_node *node = exReader.readNode();
-				if (node)
-				{
-					cmzn_nodeset_group *nodesetGroup = exReader.getNodesetGroup();
-					if (nodesetGroup)
-						cmzn_nodeset_group_add_node(nodesetGroup, node);
-					cmzn_node::deaccess(node);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading node");
-					return_code = 0;
-				}
-			} break;
-			case 'E': /* Element or EX Version */
-			{
-				const int next_char = exReader.readNextNonSpaceChar();
-				if (next_char == (int)'l')
-				{
-					cmzn_element *element = exReader.readElement();
-					if (element)
-					{
-						cmzn_mesh_group *meshGroup = exReader.getMeshGroup();
-						if (meshGroup)
-							cmzn_mesh_group_add_element(meshGroup, element);
-						cmzn_element::deaccess(element);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
-						return_code = 0;
-					}
-				}
-				else if (next_char == (int)'X')
-				{
-					if (!exReader.readEXVersion())
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					char *temp_string = 0;
-					IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
-					display_message(ERROR_MESSAGE,
-						"Invalid token \'%c%s\' in EX node/element file.  %s",
-						first_character_in_token, temp_string ? temp_string : "", exReader.getFileLocation());
-					DEALLOCATE(temp_string);
-					return_code = 0;
-				}
-			} break;
-			case 'V': /* Values */
-			{
-				if (!exReader.readFieldValues())
-					return_code = 0;
-			} break;
-			default:
-			{
-				char *temp_string = 0;
-				IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
-				display_message(ERROR_MESSAGE,
-					"Invalid token \'%c%s\' in EX node/element file.  %s",
-					first_character_in_token, temp_string ? temp_string : "", exReader.getFileLocation());
-				DEALLOCATE(temp_string);
-				return_code = 0;
-			} break;
-		} /* switch (first_character_in_token) */
-	}
-	cmzn_region_end_hierarchical_change(root_region);
-	return (return_code);
+	return exReader.read();
 }
 
 /*

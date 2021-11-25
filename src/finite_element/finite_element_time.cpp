@@ -874,13 +874,6 @@ returned.
 
 struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
 	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times)
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Searches <fe_time> for a fe_time_sequence which has the time series specified.
-If no equivalent fe_time_sequence is found one is created and returned.
-==============================================================================*/
 {
 	struct FE_time_sequence *fe_time_sequence, *local_fe_time_sequence;
 
@@ -888,6 +881,15 @@ If no equivalent fe_time_sequence is found one is created and returned.
 	fe_time_sequence=(struct FE_time_sequence *)NULL;
 	if (fe_time&&fe_time->fe_time_sequence_manager&&(0 < number_of_times)&&times)
 	{
+		// check times are non-decreasing
+		for (int t = 1; t < number_of_times; ++t)
+		{
+			if (times[t] < times[t - 1])
+			{
+				display_message(ERROR_MESSAGE, "Invalid decreasing time sequence.");
+				return nullptr;
+			}
+		}
 		/* Create a FE_time_sequence into which we will poke a reference to this
 			number of times and times array so that we can look for another one the
 			same.  I really want to avoid copying the array unnecessarily but if

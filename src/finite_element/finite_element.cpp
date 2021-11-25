@@ -715,6 +715,13 @@ int FE_node_field::setTimeSequence(FE_time_sequence *timeSequence)
 	{
 		if (timeSequence)
 		{
+			const int valueTypeSize = get_Value_storage_size(this->field->getValueType(), timeSequence);
+			if (valueTypeSize == 0)
+			{
+				display_message(ERROR_MESSAGE, "FE_node_field::setTimeSequence.  Time sequence not supported for field %s value type %s",
+					this->field->getName(), Value_type_string(this->field->getValueType()));
+				return 0;
+			}
 			this->field->setTimeDependent();
 		}
 		REACCESS(FE_time_sequence)(&(this->timeSequence), timeSequence);
@@ -2486,10 +2493,19 @@ int define_FE_field_at_node(cmzn_node *node, FE_field *field,
 	int return_code = 1;
 	const int componentCount = get_FE_field_number_of_components(field);
 	Value_type value_type = field->getValueType();
-	const int valueTypeSize = get_Value_storage_size(value_type, time_sequence);
 	if (time_sequence)
 	{
-		node_field->setTimeSequence(time_sequence);
+		if (!node_field->setTimeSequence(time_sequence))
+		{
+			return 0;
+		}
+	}
+	const int valueTypeSize = get_Value_storage_size(value_type, time_sequence);
+	if (valueTypeSize == 0)
+	{
+		display_message(ERROR_MESSAGE, "define_FE_field_at_node.  Field %s has invalid value type %s",
+			field->getName(), Value_type_string(value_type));
+		return 0;
 	}
 	int new_values_storage_size = 0;
 	int number_of_values = 0;

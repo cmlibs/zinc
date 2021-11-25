@@ -44,8 +44,12 @@ enum cmzn_streaminformation_region_attribute
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,
 	/*!< Unspecified attribute */
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
-	/*!< Attribute used to specify at what time the stream resource(s) to be
-	 * reading in or writing to.*/
+	/*!< Attribute used to specify the time to read or write field parameters in
+	 * stream resource(s). Only applies to numerical fields.
+	 * Non-time-varying fields are read as defined over a time sequence with this
+	 * single time, but written without time-variation.
+	 * Time-varying field parameters are read or written at the nearest time to
+	 * this in their time sequence. */
 };
 
 /**

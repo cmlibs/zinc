@@ -137,15 +137,14 @@ If no equivalent fe_time_sequence is found one is created in <fe_time> and
 returned.
 ==============================================================================*/
 
+/**
+ * Searches <fe_time> for a fe_time_sequence which has the time series specified.
+ * If no equivalent fe_time_sequence is found one is created and returned.
+ * Fails if any times in the sequence decrease relative to the previous one.
+ * @param Non-accessed FE_time_sequence, or nullptr if failed.
+ */
 struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
 	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times);
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Searches <fe_time> for a fe_time_sequence which has the time series specified. 
-If no equivalent fe_time_sequence is found one is created and returned.
-==============================================================================*/
 
 struct FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
 	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_sequence_one,
