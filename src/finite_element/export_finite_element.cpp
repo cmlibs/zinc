@@ -188,35 +188,6 @@ int FE_field_add_to_vector_indexer_priority(struct FE_field *field, void *field_
 	return 1;
 }
 
-/**
- * Returns true if node_1 and node_2 can be written to file with the
- * same fields header. If <fieldOrderInfo> is supplied only those fields
- * listed in it are compared.
- */
-bool FE_nodes_have_same_header(struct FE_node *node_1,
-	struct FE_node *node_2, struct FE_field_order_info *fieldOrderInfo)
-{
-	if (!((node_1) && (node_2)))
-	{
-		display_message(ERROR_MESSAGE, "FE_nodes_have_same_header.  Invalid argument(s)");
-		return false;
-	}
-	if (fieldOrderInfo)
-	{
-		const int fieldsCount = get_FE_field_order_info_number_of_fields(fieldOrderInfo);
-		for (int i = 0; i < fieldsCount; ++i)
-		{
-			FE_field *field = get_FE_field_order_info_field(fieldOrderInfo, i);
-			if (!equivalent_FE_field_at_nodes(field, node_1, node_2))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	return (0 != equivalent_FE_fields_at_nodes(node_1, node_2));
-}
-
 } // anonymous namespace
 
 /** Class for writing region/field data to EX format */
@@ -237,7 +208,6 @@ class EXWriter
 	cmzn_region *region;  // not accessed
 	FE_region *feRegion;
 	cmzn_fieldmodule *fieldmodule;
-	FE_field_order_info *fieldOrderInfo;
 	std::vector<FE_field *> writableFields;  // fields in region requested to be written in indexer-priority order
 	const FE_mesh *feMesh;
 	const FE_nodeset *feNodeset;
@@ -298,7 +268,6 @@ public:
 		region(nullptr),
 		feRegion(nullptr),
 		fieldmodule(nullptr),
-		fieldOrderInfo(nullptr),
 		feMesh(nullptr),
 		feNodeset(nullptr),
 		writeIdentifiersOnly(false),
@@ -320,10 +289,6 @@ public:
 	{
 		DEALLOCATE(this->groupName);
 		this->clearHeaderCache();
-		if (this->fieldOrderInfo)
-		{
-			DESTROY(FE_field_order_info)(&this->fieldOrderInfo);
-		}
 		if (this->fieldmodule)
 		{
 			cmzn_fieldmodule_destroy(&this->fieldmodule);
@@ -385,7 +350,6 @@ private:
 	bool writeElementShape(FE_element_shape *elementShape);
 	bool writeBasis(FE_basis *basis);
 	bool elementIsToBeWritten(cmzn_element *element);
-	bool elementHasFieldsToWrite(cmzn_element *element);
 	bool elementFieldsMatchLastElement(cmzn_element *element);
 	bool writeEftScaleFactorIdentifiers(const FE_element_field_template *eft);
 	bool writeElementHeaderField(cmzn_element *element, int fieldIndex, FE_field *field);
@@ -397,6 +361,7 @@ private:
 	int writeMesh(int dimension, cmzn_field_group *group);
 
 	bool nodeIsToBeWritten(cmzn_node *node);
+	bool nodeFieldsMatchLastNode(cmzn_node *node);
 	bool writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field);
 	bool writeNodeHeader(cmzn_node *node);
 	bool writeNodeFieldValues(cmzn_node *node, FE_field *field);
@@ -1039,9 +1004,8 @@ bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *e
 }
 
 /**
- * Writes the element field information header for element. If the
- * fieldOrderInfo is supplied the header is restricted to include only
- * components/fields/bases for it.
+ * Writes the element field information header for element.
+ * Limited to the writable fields defined on this element.
  */
 bool EXWriter::writeElementHeader(cmzn_element *element)
 {
@@ -1356,82 +1320,68 @@ bool EXWriter::writeElement(cmzn_element *element)
  */
 bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 {
-	if (!((element) && ((this->writeCriterion == FE_WRITE_COMPLETE_GROUP) || (this->fieldOrderInfo))))
-	{
-		display_message(ERROR_MESSAGE,
-			"EXWriter::elementIsToBeWritten.  Invalid argument(s)");
-		return false;
-	}
 	switch (this->writeCriterion)
 	{
-		case FE_WRITE_COMPLETE_GROUP:
+	case FE_WRITE_COMPLETE_GROUP:
+	{
+	} break;
+	case FE_WRITE_WITH_ALL_LISTED_FIELDS:
+	{
+		const size_t fieldsCount = this->writableFields.size();
+		for (size_t i = 0; i < fieldsCount; ++i)
 		{
-		} break;
-		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
-		{
-			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-			for (int i = 0; i < number_of_fields; ++i)
+			if (!FE_field_is_defined_in_element(this->writableFields[i], element))
 			{
-				struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
-				if (!FE_field_is_defined_in_element(field, element))
-					return false;
+				return false;
 			}
-		} break;
-		case FE_WRITE_WITH_ANY_LISTED_FIELDS:
+		}
+	} break;
+	case FE_WRITE_WITH_ANY_LISTED_FIELDS:
+	{
+		const size_t fieldsCount = this->writableFields.size();
+		for (size_t i = 0; i < fieldsCount; ++i)
 		{
-			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-			for (int i = 0; i < number_of_fields; ++i)
+			if (FE_field_is_defined_in_element(this->writableFields[i], element))
 			{
-				struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
-				if (FE_field_is_defined_in_element(field, element))
-					return true;
+				return true;
 			}
-			return false;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"EXWriter::elementIsToBeWritten.  Unknown write criterion");
-			return false;
-		} break;
+		}
+		return false;
+	} break;
+	default:
+	{
+		display_message(ERROR_MESSAGE,
+			"EXWriter::elementIsToBeWritten.  Unknown write criterion");
+		return false;
+	} break;
 	}
 	return true;
-}
-
-/** @return true if any fields are to be written for the element. */
-bool EXWriter::elementHasFieldsToWrite(cmzn_element *element)
-{
-	if (!this->fieldOrderInfo)
-		return (0 < get_FE_element_number_of_fields(element));
-	const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-	for (int i = 0; i < number_of_fields; ++i)
-	{
-		struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
-		if (FE_field_is_defined_in_element_not_inherited(field, element))
-			return true;
-	}
-	return false;
 }
 
 /**
  * Returns true if element has matching field definition to last element whose
  * field header was output, or if there was no last element.
- * If fieldOrderInfo is supplied only those fields listed in it are compared.
+ * Limited to matching writable fields defined on this element.
  * Note that even if this returns true, need to check element nodes are
  * packed identically for fields written together.
  */
 bool EXWriter::elementFieldsMatchLastElement(cmzn_element *element)
 {
 	if (!this->headerElement)
-		return false;
-	if (!this->fieldOrderInfo)
-		return (0 != equivalent_FE_fields_in_elements(element, this->headerElement));
-	const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-	for (int f = 0; f < number_of_fields; ++f)
 	{
-		struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, f);
-		if (!equivalent_FE_field_in_elements(field, element, this->headerElement))
+		return false;
+	}
+	if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
+	{
+		return equivalent_FE_fields_in_elements(element, this->headerElement);
+	}
+	const size_t fieldsCount = this->writableFields.size();
+	for (size_t i = 0; i < fieldsCount; ++i)
+	{
+		if (!equivalent_FE_field_in_elements(this->writableFields[i], element, this->headerElement))
+		{
 			return false;
+		}
 	}
 	return true;
 }
@@ -1443,14 +1393,6 @@ bool EXWriter::elementFieldsMatchLastElement(cmzn_element *element)
  */
 bool EXWriter::writeElementExt(cmzn_element *element)
 {
-	if (!element)
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeElementExt.  Missing element");
-		return false;
-	}
-	if (!this->elementIsToBeWritten(element))
-		return true;
-
 	if (!this->writeIdentifiersOnly)
 	{
 		// work out if shape or field header have changed from last element
@@ -1462,13 +1404,9 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 		if (this->headerElement)
 		{
 			newShape = (elementShape != this->lastElementShape);
-			if (newShape)
+			if (!newShape)
 			{
-				newFieldHeader = this->elementHasFieldsToWrite(element); // reader must assume a blank, no-field template
-			}
-			else
-			{
-				newFieldHeader = !this->EXWriter::elementFieldsMatchLastElement(element);
+				newFieldHeader = !this->elementFieldsMatchLastElement(element);
 				if (!newFieldHeader)
 				{
 					ElementNodePacking *elementNodePacking = this->createElementNodePacking(element);
@@ -1491,6 +1429,54 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 	if (!this->writeElement(element))
 		return false;
 	return true;
+}
+
+int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
+{
+	int return_code = 1;
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
+	if (group)
+	{
+		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+		cmzn_mesh_destroy(&mesh);
+		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+		cmzn_field_element_group_destroy(&element_group);
+	}
+	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
+	{
+		FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
+		this->setMesh(feMesh);
+		(*this->outStream) << "!#mesh ";
+		this->writeSafeName(feMesh->getName());
+		(*this->outStream) << ", dimension=" << feMesh->getDimension();
+		if (feMesh->getFaceMesh())
+		{
+			(*this->outStream) << ", face mesh=";
+			this->writeSafeName(feMesh->getFaceMesh()->getName());
+		}
+		if (feMesh->getNodeset())
+		{
+			(*this->outStream) << ", nodeset=";
+			this->writeSafeName(feMesh->getNodeset()->getName());
+		}
+		(*this->outStream) << "\n";
+		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_element_id element = 0;
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		{
+			if (this->elementIsToBeWritten(element))
+			{
+				if (!this->writeElementExt(element))
+				{
+					return_code = 0;
+					break;
+				}
+			}
+		}
+		cmzn_elementiterator_destroy(&iter);
+		cmzn_mesh_destroy(&mesh);
+	}
+	return return_code;
 }
 
 /**
@@ -1711,19 +1697,12 @@ bool EXWriter::writeNode(cmzn_node *node)
 	return true;
 }
 
-
 /**
  * @return  True if specification of what to output, optionally including the
  * field order info, indicates the node is to be written.
  */
 bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 {
-	if (!((node) && ((this->writeCriterion == FE_WRITE_COMPLETE_GROUP) || (this->fieldOrderInfo))))
-	{
-		display_message(ERROR_MESSAGE,
-			"EXWriter::nodeIsToBeWritten.  Invalid argument(s)");
-		return false;
-	}
 	switch (this->writeCriterion)
 	{
 	case FE_WRITE_COMPLETE_GROUP:
@@ -1731,22 +1710,24 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 	} break;
 	case FE_WRITE_WITH_ALL_LISTED_FIELDS:
 	{
-		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-		for (int i = 0; i < number_of_fields; ++i)
+		const size_t fieldsCount = this->writableFields.size();
+		for (size_t i = 0; i < fieldsCount; ++i)
 		{
-			struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
-			if (!(node->getNodeField(field)))
+			if (!(node->getNodeField(this->writableFields[i])))
+			{
 				return false;
+			}
 		}
 	} break;
 	case FE_WRITE_WITH_ANY_LISTED_FIELDS:
 	{
-		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-		for (int i = 0; i < number_of_fields; ++i)
+		const size_t fieldsCount = this->writableFields.size();
+		for (size_t i = 0; i < fieldsCount; ++i)
 		{
-			struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
-			if (node->getNodeField(field))
+			if (node->getNodeField(this->writableFields[i]))
+			{
 				return true;
+			}
 		}
 		return false;
 	} break;
@@ -1760,11 +1741,36 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 	return true;
 }
 
-  /**
-  * Writes the node field information header for node. If the
-  * fieldOrderInfo is supplied the header is restricted to include only
-  * components/fields/bases for it.
-  */
+/**
+ * Returns true if node has matching field definition to last node whose
+ * field header was output, or if there was no last node.
+ * Limited to matching writable fields defined on this node.
+ */
+bool EXWriter::nodeFieldsMatchLastNode(cmzn_node *node)
+{
+	if (!this->headerNode)
+	{
+		return false;
+	}
+	if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
+	{
+		return (0 != equivalent_FE_fields_at_nodes(node, this->headerNode));
+	}
+	const size_t fieldsCount = this->writableFields.size();
+	for (size_t i = 0; i < fieldsCount; ++i)
+	{
+		if (!equivalent_FE_field_at_nodes(this->writableFields[i], node, this->headerNode))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Writes the node field information header for node.
+ * Limited to the writable fields defined on this node.
+ */
 bool EXWriter::writeNodeHeader(cmzn_node *node)
 {
 	if (!node)
@@ -1807,68 +1813,19 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
  */
 bool EXWriter::writeNodeExt(cmzn_node *node)
 {
-	if (!node)
+	if (!this->writeIdentifiersOnly)
 	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeNodeExt.  Invalid argument(s)");
-		return false;
-	}
-	if (!this->nodeIsToBeWritten(node))
-		return true;
-
-	if (!this->writeIdentifiersOnly && ((0 == this->headerNode)
-		|| !FE_nodes_have_same_header(node, this->headerNode, this->fieldOrderInfo)))
-	{
-		if (!this->writeNodeHeader(node))
-			return false;
+		if (!this->nodeFieldsMatchLastNode(node))
+		{
+			if (!this->writeNodeHeader(node))
+			{
+				return false;
+			}
+		}
 	}
 	if (!this->writeNode(node))
 		return false;
 	return true;
-}
-
-int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
-{
-	int return_code = 1;
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
-	if (group)
-	{
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-		cmzn_mesh_destroy(&mesh);
-		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
-		cmzn_field_element_group_destroy(&element_group);
-	}
-	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
-	{
-		FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
-		this->setMesh(feMesh);
-		(*this->outStream) << "!#mesh ";
-		this->writeSafeName(feMesh->getName());
-		(*this->outStream) << ", dimension=" << feMesh->getDimension();
-		if (feMesh->getFaceMesh())
-		{
-			(*this->outStream) << ", face mesh=";
-			this->writeSafeName(feMesh->getFaceMesh()->getName());
-		}
-		if (feMesh->getNodeset())
-		{
-			(*this->outStream) << ", nodeset=";
-			this->writeSafeName(feMesh->getNodeset()->getName());
-		}
-		(*this->outStream) << "\n";
-		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
-		cmzn_element_id element = 0;
-		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-		{
-			if (!this->writeElementExt(element))
-			{
-				return_code = 0;
-				break;
-			}
-		}
-		cmzn_elementiterator_destroy(&iter);
-		cmzn_mesh_destroy(&mesh);
-	}
-	return return_code;
 }
 
 int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
@@ -1898,10 +1855,13 @@ int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_gr
 		cmzn_node_id node = 0;
 		while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 		{
-			if (!this->writeNodeExt(node))
+			if (this->nodeIsToBeWritten(node))
 			{
-				return_code = 0;
-				break;
+				if (!this->writeNodeExt(node))
+				{
+					return_code = 0;
+					break;
+				}
 			}
 		}
 		cmzn_nodeiterator_destroy(&iter);
@@ -1954,17 +1914,14 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 	this->region = regionIn;
 	this->feRegion = this->region->get_FE_region();
 	this->fieldmodule = cmzn_region_get_fieldmodule(regionIn);
-	this->fieldOrderInfo = CREATE(FE_field_order_info)();
-	this->writableFields.clear();
 
+	// make a list of all fields that may be written, with indexer fields before any indexed fields using them
+	this->writableFields.clear();
 	if (this->writeFieldsMode != FE_WRITE_NO_FIELDS)
 	{
 		if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
 		{
-			// get list of all fields in default alphabetical order
-			return_code = FE_region_for_each_FE_field(this->feRegion,
-				FE_field_add_to_FE_field_order_info, (void *)this->fieldOrderInfo);
-			FE_field_order_info_prioritise_indexer_fields(this->fieldOrderInfo);
+			FE_region_for_each_FE_field(this->feRegion, FE_field_add_to_vector_indexer_priority, (void *)&this->writableFields);
 		}
 		else if (this->fieldNames.size() > 0)
 		{
@@ -1975,22 +1932,10 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 				if (feField)
 				{
 					++(this->fieldNamesCounters[i]);
-					return_code = add_FE_field_order_info_field(this->fieldOrderInfo, feField);
+					FE_field_add_to_vector_indexer_priority(feField, (void *)&this->writableFields);
 				}
 			}
 		}
-	}
-
-	// make a list of all fields that should be written, with indexer fields before any indexed fields using them
-	if (this->fieldOrderInfo)
-	{
-		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
-		for (int f = 0; f < number_of_fields; ++f)
-			FE_field_add_to_vector_indexer_priority(get_FE_field_order_info_field(this->fieldOrderInfo, f), (void *)&this->writableFields);
-	}
-	else
-	{
-		FE_region_for_each_FE_field(this->feRegion, FE_field_add_to_vector_indexer_priority, (void *)&this->writableFields);
 	}
 
 	// write region path and/or group name */
@@ -2075,7 +2020,7 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 		cmzn_field_group_destroy(&group);
 	}
 
-	DESTROY(FE_field_order_info)(&this->fieldOrderInfo);
+	this->writableFields.clear();
 	cmzn_fieldmodule_destroy(&this->fieldmodule);
 	return return_code;
 }
