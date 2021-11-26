@@ -92,6 +92,8 @@ TEST(FieldIO, ex3NodeTimesequence)
 	EXPECT_EQ(2, nodes.getSize());
 	Node node1 = nodes.findNodeByIdentifier(1);
 	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodes.findNodeByIdentifier(2);
+	EXPECT_TRUE(node2.isValid());
 
 	const double TOL = 1.0E-7;
 
@@ -164,6 +166,17 @@ TEST(FieldIO, ex3NodeTimesequence)
 		EXPECT_EQ(RESULT_OK, count.evaluateReal(fieldcache, 1, &countValue));
 		EXPECT_NEAR(expectedCounts[t], countValue, TOL);
 	}
+
+	// check group "bob" was read correctly in v3 format
+	FieldGroup bob = zinc.fm.findFieldByName("bob").castGroup();
+	EXPECT_TRUE(bob.isValid());
+	NodesetGroup bobNodes = bob.getFieldNodeGroup(nodes).getNodesetGroup();
+	EXPECT_EQ(2, bobNodes.getSize());
+	EXPECT_TRUE(bobNodes.containsNode(node1));
+	EXPECT_TRUE(bobNodes.containsNode(node2));
+	MeshGroup bobMesh1d = bob.getFieldElementGroup(mesh1d).getMeshGroup();
+	EXPECT_EQ(1, bobMesh1d.getSize());
+	EXPECT_TRUE(bobMesh1d.containsElement(element1));
 }
 
 // Test reading a single time from EX V3 file with a time sequence at nodes

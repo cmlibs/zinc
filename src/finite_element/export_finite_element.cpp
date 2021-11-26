@@ -188,19 +188,60 @@ int FE_field_add_to_vector_indexer_priority(struct FE_field *field, void *field_
 	return 1;
 }
 
+/**
+ * Returns true if node_1 and node_2 can be written to file with the
+ * same fields header. If <fieldOrderInfo> is supplied only those fields
+ * listed in it are compared.
+ */
+bool FE_nodes_have_same_header(struct FE_node *node_1,
+	struct FE_node *node_2, struct FE_field_order_info *fieldOrderInfo)
+{
+	if (!((node_1) && (node_2)))
+	{
+		display_message(ERROR_MESSAGE, "FE_nodes_have_same_header.  Invalid argument(s)");
+		return false;
+	}
+	if (fieldOrderInfo)
+	{
+		const int fieldsCount = get_FE_field_order_info_number_of_fields(fieldOrderInfo);
+		for (int i = 0; i < fieldsCount; ++i)
+		{
+			FE_field *field = get_FE_field_order_info_field(fieldOrderInfo, i);
+			if (!equivalent_FE_field_at_nodes(field, node_1, node_2))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	return (0 != equivalent_FE_fields_at_nodes(node_1, node_2));
+}
+
 } // anonymous namespace
 
+/** Class for writing region/field data to EX format */
 class EXWriter
 {
-	ostream *output_file;
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-	std::vector<FE_field*> writableFields; // fields to write, from field_order_info, otherwise field manager
-	const FE_mesh *mesh;
-	const FE_nodeset *nodeset;
-	struct FE_region *fe_region;
+	ostream *outStream;
+	cmzn_region *rootRegion;  // accessed
+	const char * groupName;
+	bool timeSet;
 	FE_value time;
-	bool writeGroupOnly;
+	cmzn_field_domain_types writeDomainTypes;  // sets which meshes, nodesets to write
+	FE_write_fields_mode writeFieldsMode;  // sets whether all/no/listed fields are written
+	std::vector<std::string> fieldNames;
+	std::vector<int> fieldNamesCounters;  // number of times a named field is written
+	FE_write_criterion writeCriterion;
+	cmzn_streaminformation_region_recursion_mode recursionMode;
+
+	cmzn_region *region;  // not accessed
+	FE_region *feRegion;
+	cmzn_fieldmodule *fieldmodule;
+	FE_field_order_info *fieldOrderInfo;
+	std::vector<FE_field *> writableFields;  // fields in region requested to be written in indexer-priority order
+	const FE_mesh *feMesh;
+	const FE_nodeset *feNodeset;
+	bool writeIdentifiersOnly;
 	// following cached to check whether last field header applies to subsequent elements
 	std::vector<FE_field *> headerFields;
 	// following caches for elements only:
@@ -213,85 +254,130 @@ class EXWriter
 
 public:
 
-	EXWriter(ostream *output_fileIn, FE_write_criterion write_criterionIn,
-			FE_field_order_info *field_order_infoIn,FE_value timeIn) :
-		output_file(output_fileIn),
-		write_criterion(write_criterionIn),
-		field_order_info(field_order_infoIn),
-		mesh(0),
-		nodeset(0),
-		fe_region(0),
+	/** Contstructor for object for writing region/field data to EX format.
+	 * @param outStreamIn  The stream to write region and field data to.
+	 * @param rootRegionIn  The root region of any data to be written. Need not be
+	 *   the true root of region hierarchy, but region paths in file are relative to
+	 *   this region.
+	 * @param groupNameIn  Optional name of group to limit output to. Actual
+	 *   group found from name in each region.
+	 * @param timeSetIn  True if output single time, false to output all times.
+	 * @param timeIn  The time to output if single time.
+	 * @param writeDomainTypesIn  Bitwise OR of cmzn_field_domain_type flags
+	 *   setting which meshes or nodesets to write.
+	 * @param writeFieldsModeIn  Controls which fields are written to file.
+	 *   If mode is FE_WRITE_LISTED_FIELDS then :
+	 * - Number/list of field_names must be supplied;
+	 * - Field names not used in a region are ignored;
+	 * - Warnings are given for any field names not used in any output region.
+	 * @param fieldNamesCountIn  The number of names in the field_names array.
+	 * @param fieldNamesIn  Array of field names.
+	 * @param writeCriterionIn  Controls which objects are written.Some modes
+	 *   limit output to nodes or objects with any or all listed fields defined.
+	 * @param recursionModeIn  Controls whether sub-regions and sub-groups are
+	 *   recursively written.
+	 */
+	EXWriter(ostream *outStreamIn, cmzn_region *rootRegionIn,
+			const char *groupNameIn, bool timeSetIn, FE_value timeIn,
+			cmzn_field_domain_types writeDomainTypesIn,
+			FE_write_fields_mode writeFieldsModeIn,
+			int fieldNamesCountIn, const char * const *fieldNamesIn,
+			FE_write_criterion writeCriterionIn,
+			cmzn_streaminformation_region_recursion_mode recursionModeIn) :
+		rootRegion(rootRegionIn->access()),
+		outStream(outStreamIn),
+		groupName((groupNameIn) ? duplicate_string(groupNameIn) : nullptr),
+		timeSet(timeSetIn),
 		time(timeIn),
-		writeGroupOnly(false),
-		lastElementShape(0),
-		headerElement(0),
-		headerElementNodePacking(0)
+		writeDomainTypes(writeDomainTypesIn),
+		writeFieldsMode(writeFieldsModeIn),
+		fieldNames(),
+		fieldNamesCounters(fieldNamesCountIn, 0),
+		writeCriterion(writeCriterionIn),
+		recursionMode(recursionModeIn),
+		region(nullptr),
+		feRegion(nullptr),
+		fieldmodule(nullptr),
+		fieldOrderInfo(nullptr),
+		feMesh(nullptr),
+		feNodeset(nullptr),
+		writeIdentifiersOnly(false),
+		lastElementShape(nullptr),
+		headerElement(nullptr),
+		headerElementNodePacking(nullptr),
+		headerNode(nullptr)
 	{
-		// make a list of all fields that should be written, with indexer fields before any indexed fields using them
-		if (this->field_order_info)
+		if (fieldNamesIn)
 		{
-			const int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
-			for (int f = 0; f < number_of_fields; ++f)
-				FE_field_add_to_vector_indexer_priority(get_FE_field_order_info_field(field_order_info, f), (void *)&this->writableFields);
-		}
-		else
-		{
-			FE_region_for_each_FE_field(this->fe_region, FE_field_add_to_vector_indexer_priority, (void *)&this->writableFields);
+			for (int i = 0; i < fieldNamesCountIn; ++i)
+			{
+				this->fieldNames.push_back(fieldNamesIn[i]);
+			}
 		}
 	}
 
 	~EXWriter()
 	{
+		DEALLOCATE(this->groupName);
 		this->clearHeaderCache();
+		if (this->fieldOrderInfo)
+		{
+			DESTROY(FE_field_order_info)(&this->fieldOrderInfo);
+		}
+		if (this->fieldmodule)
+		{
+			cmzn_fieldmodule_destroy(&this->fieldmodule);
+		}
+		cmzn_region::deaccess(this->rootRegion);
 	}
+
+	/** Write the region/tree to stream 
+	 * @param regionIn  The base region to write, can be anywhere in tree under root region */
+	int write(cmzn_region *regionIn);
+
+private:
 
 	void clearHeaderCache()
 	{
 		this->headerFields.clear();
-		this->lastElementShape = 0;
-		this->headerElement = 0;
+		this->lastElementShape = nullptr;
+		this->headerElement = nullptr;
 		delete this->headerElementNodePacking;
-		this->headerElementNodePacking = 0;
+		this->headerElementNodePacking = nullptr;
 		this->headerScalingEfts.clear();
-		this->headerNode = 0;
+		this->headerNode = nullptr;
 	}
 
 	/** Switch to writing elements from mesh */
-	void setMesh(const FE_mesh *meshIn)
+	void setMesh(const FE_mesh *feMeshIn)
 	{
-		this->mesh = meshIn;
-		this->fe_region = this->mesh->get_FE_region();
-		this->nodeset = 0;
+		this->feMesh = feMeshIn;
+		this->feNodeset = nullptr;
 		this->clearHeaderCache();
 	}
 
 	/** Switch to writing nodes from nodeset */
 	void setNodeset(const FE_nodeset *nodesetIn)
 	{
-		this->mesh = 0;
-		this->nodeset = nodesetIn;
-		this->fe_region = this->nodeset->get_FE_region();
+		this->feMesh = nullptr;
+		this->feNodeset = nodesetIn;
 		this->clearHeaderCache();
 	}
 
-	void setWriteGroupOnly()
+	void setWriteIdentifiersOnly(bool state)
 	{
-		this->writeGroupOnly = true;
+		this->writeIdentifiersOnly = state;
 	}
-
-	bool writeElementExt(cmzn_element *element);
-	bool writeNodeExt(cmzn_node *node);
 
 	/** Output name, automatically quoting if contains special characters */
 	void writeSafeName(const char *name) const
 	{
 		char *safeName = duplicate_string(name);
 		make_valid_token(&safeName);
-		(*this->output_file) << safeName;
+		(*this->outStream) << safeName;
 		DEALLOCATE(safeName);
 	}
 
-private:
 	bool writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex elementIndex, const FE_value *xi);
 	bool writeFieldHeader(int fieldIndex, struct FE_field *field);
 	bool writeFieldValues(struct FE_field *field);
@@ -307,13 +393,18 @@ private:
 	bool writeElementHeader(cmzn_element *element);
 	bool writeElementFieldComponentValues(cmzn_element *element, FE_field *field, int componentNumber);
 	bool writeElement(cmzn_element *element);
+	bool writeElementExt(cmzn_element *element);
+	int writeMesh(int dimension, cmzn_field_group *group);
 
 	bool nodeIsToBeWritten(cmzn_node *node);
 	bool writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field);
 	bool writeNodeHeader(cmzn_node *node);
 	bool writeNodeFieldValues(cmzn_node *node, FE_field *field);
 	bool writeNode(cmzn_node *node);
-
+	bool writeNodeExt(cmzn_node *node);
+	int writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group);
+	int writeRegionContent(cmzn_field_group *group);
+	int writeRegion(cmzn_region *regionIn);
 };
 
 /*
@@ -337,18 +428,18 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
 		return false;
 	}
 	DsLabelIdentifier elementIdentifier = hostMesh->getElementIdentifier(elementIndex);
-	(*this->output_file) << " " << elementIdentifier;
+	(*this->outStream) << " " << elementIdentifier;
 	for (int d = 0; d < hostMesh->getDimension(); ++d)
 	{
 		if (elementIdentifier < 0)
 		{
-			(*this->output_file) << " 0";
+			(*this->outStream) << " 0";
 		}
 		else
 		{
 			char num_string[100];
 			sprintf(num_string, " %" FE_VALUE_STRING, xi[d]);
-			(*this->output_file) << num_string;
+			(*this->outStream) << num_string;
 		}
 	}
 	return true;
@@ -365,15 +456,15 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
  */
 bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 {
-	(*this->output_file) << fieldIndex << ") " << get_FE_field_name(field);
-	(*this->output_file) << ", " << ENUMERATOR_STRING(CM_field_type)(field->get_CM_field_type());
+	(*this->outStream) << fieldIndex << ") " << get_FE_field_name(field);
+	(*this->outStream) << ", " << ENUMERATOR_STRING(CM_field_type)(field->get_CM_field_type());
 	/* optional constant/indexed, Index_field=~, #Values=# */
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	switch (fe_field_type)
 	{
 	case CONSTANT_FE_FIELD:
 	{
-		(*this->output_file) << ", constant";
+		(*this->outStream) << ", constant";
 	} break;
 	case GENERAL_FE_FIELD:
 	{
@@ -388,7 +479,7 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 			display_message(ERROR_MESSAGE, "EXWriter::writeFieldHeader.  Invalid indexed field");
 			return false;
 		}
-		(*this->output_file) <<  ", indexed, Index_field=" << get_FE_field_name(indexer_field) << ", #Values=" << number_of_indexed_values;
+		(*this->outStream) <<  ", indexed, Index_field=" << get_FE_field_name(indexer_field) << ", #Values=" << number_of_indexed_values;
 	} break;
 	default:
 	{
@@ -401,31 +492,31 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 	{
 		case CYLINDRICAL_POLAR:
 		{
-			(*this->output_file) << ", cylindrical polar";
+			(*this->outStream) << ", cylindrical polar";
 		} break;
 		case FIBRE:
 		{
-			(*this->output_file) << ", fibre";
+			(*this->outStream) << ", fibre";
 		} break;
 		case OBLATE_SPHEROIDAL:
 		{
 			char num_string[100];
 			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
-			(*this->output_file) << ", oblate spheroidal, focus=" << num_string;
+			(*this->outStream) << ", oblate spheroidal, focus=" << num_string;
 		} break;
 		case PROLATE_SPHEROIDAL:
 		{
 			char num_string[100];
 			sprintf(num_string, "%" FE_VALUE_STRING, coordinate_system.parameters.focus);
-			(*this->output_file) << ", prolate spheroidal, focus=" << num_string;
+			(*this->outStream) << ", prolate spheroidal, focus=" << num_string;
 		} break;
 		case RECTANGULAR_CARTESIAN:
 		{
-			(*this->output_file) << ", rectangular cartesian";
+			(*this->outStream) << ", rectangular cartesian";
 		} break;
 		case SPHERICAL_POLAR:
 		{
-			(*this->output_file) << ", spherical polar";
+			(*this->outStream) << ", spherical polar";
 		} break;
 		case NOT_APPLICABLE:
 		{
@@ -442,10 +533,10 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 	// In EX Versions < 2, value type was optional if coordinate system output for field
 	// Since reader always handled it if present or not, now write it always
 	Value_type valueType = get_FE_field_value_type(field);
-	(*this->output_file) << ", " << Value_type_string(valueType);
+	(*this->outStream) << ", " << Value_type_string(valueType);
 
 	const int componentCount = get_FE_field_number_of_components(field);
-	(*this->output_file) << ", #Components=" << componentCount;
+	(*this->outStream) << ", #Components=" << componentCount;
 	if (ELEMENT_XI_VALUE == valueType)
 	{
 		const FE_mesh *hostMesh = field->getElementXiHostMesh();
@@ -456,10 +547,10 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 		}
 		char *hostMeshName = duplicate_string(hostMesh->getName());
 		make_valid_token(&hostMeshName);
-		(*this->output_file) << ", host mesh=" << hostMeshName << ", host mesh dimension=" << hostMesh->getDimension();
+		(*this->outStream) << ", host mesh=" << hostMeshName << ", host mesh dimension=" << hostMesh->getDimension();
 		DEALLOCATE(hostMeshName);
 	}
-	(*this->output_file) << "\n";
+	(*this->outStream) << "\n";
 	return true;
 }
 
@@ -469,9 +560,9 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
   */
 bool EXWriter::writeFieldValues(struct FE_field *field)
 {
-	if (!(output_file && field))
+	if (!field)
 	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeFieldValues.  Missing field");
 		return false;
 	}
 	
@@ -494,7 +585,7 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 				for (int k=0;k<number_of_values;k++)
 				{
 					sprintf(num_string, "%" FE_VALUE_STRING, fieldValues[k]);
-					(*this->output_file) << " " << num_string;
+					(*this->outStream) << " " << num_string;
 				}
 			} break;
 			case INT_VALUE:
@@ -507,7 +598,7 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 				}
 				for (int k=0;k<number_of_values;k++)
 				{
-					(*this->output_file) << " " << fieldValues[k];
+					(*this->outStream) << " " << fieldValues[k];
 				}
 			} break;
 			case STRING_VALUE:
@@ -524,13 +615,13 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 					{
 						char *s = duplicate_string(fieldValues[k]);
 						make_valid_token(&s);
-						(*this->output_file) << " " << s;
+						(*this->outStream) << " " << s;
 						DEALLOCATE(s);
 					}
 					else
 					{
 						/* output empty string */
-						(*this->output_file) << " \"\"";
+						(*this->outStream) << " \"\"";
 					}
 				}
 			} break;
@@ -541,7 +632,7 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 				return false;
 			} break;
 		}
-		(*this->output_file) << "\n";
+		(*this->outStream) << "\n";
 	}
 	return true;
 }
@@ -550,11 +641,6 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
   * future: change to support having only some components constant; probably remove indexed */
 bool EXWriter::writeOptionalFieldValues()
 {
-	if (!output_file)
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeOptionalFieldValues.  Invalid argument(s)");
-		return false;
-	}
 	bool first = true;
 	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
 	{
@@ -564,7 +650,7 @@ bool EXWriter::writeOptionalFieldValues()
 		{
 			if (first)
 			{
-				(*this->output_file) << "Values:\n";
+				(*this->outStream) << "Values:\n";
 				first = false;
 			}
 			if (!this->writeFieldValues(field))
@@ -581,7 +667,7 @@ bool EXWriter::writeElementShape(FE_element_shape *elementShape)
 {
 	if (!elementShape)
 	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeElementShape.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeElementShape.  Missing element shape");
 		return false;
 	}
 	char *shape_description = FE_element_shape_get_EX_description(elementShape);
@@ -591,7 +677,7 @@ bool EXWriter::writeElementShape(FE_element_shape *elementShape)
 		return false;
 	}
 	const int dimension = get_FE_element_shape_dimension(elementShape);
-	(*this->output_file) << "Shape. Dimension=" << dimension << ", " << shape_description << "\n";
+	(*this->outStream) << "Shape. Dimension=" << dimension << ", " << shape_description << "\n";
 	DEALLOCATE(shape_description);
 	this->lastElementShape = elementShape;
 	return true;
@@ -606,7 +692,7 @@ bool EXWriter::writeBasis(FE_basis *basis)
 		display_message(ERROR_MESSAGE, "EXWriter::writeBasis.  Invalid basis");
 		return false;
 	}
-	(*this->output_file) << basis_string;
+	(*this->outStream) << basis_string;
 	DEALLOCATE(basis_string);
 	return true;
 }
@@ -616,7 +702,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 {
 	if (!this->writeFieldHeader(fieldIndex, field))
 		return false;
-	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
+	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
 	if (!meshFieldData)
 		return false;
 
@@ -627,17 +713,17 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		char *componentName = get_FE_field_component_name(field, c);
 		if (componentName)
 		{
-			(*this->output_file) << " " << componentName << ". ";
+			(*this->outStream) << " " << componentName << ". ";
 			DEALLOCATE(componentName);
 		}
 		else
 		{
-			(*this->output_file) << " " << c + 1 << ".";
+			(*this->outStream) << " " << c + 1 << ".";
 		}
 		if (fe_field_type != GENERAL_FE_FIELD)
 		{
 			// constant and indexed fields: no further component information
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 			continue;
 		}
 
@@ -652,22 +738,22 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 		switch (modifyThetaMode)
 		{
 		case FE_BASIS_MODIFY_THETA_MODE_INVALID:
-			(*this->output_file) << ", no modify";
+			(*this->outStream) << ", no modify";
 			break;
 		case FE_BASIS_MODIFY_THETA_MODE_CLOSEST_IN_XI1:
-			(*this->output_file) << ", closest in xi1";
+			(*this->outStream) << ", closest in xi1";
 			break;
 		case FE_BASIS_MODIFY_THETA_MODE_DECREASING_IN_XI1:
-			(*this->output_file) << ", decreasing in xi1";
+			(*this->outStream) << ", decreasing in xi1";
 			break;
 		case FE_BASIS_MODIFY_THETA_MODE_INCREASING_IN_XI1:
-			(*this->output_file) << ", increasing in xi1";
+			(*this->outStream) << ", increasing in xi1";
 			break;
 		case FE_BASIS_MODIFY_THETA_MODE_NON_DECREASING_IN_XI1:
-			(*this->output_file) << ", non-decreasing in xi1";
+			(*this->outStream) << ", non-decreasing in xi1";
 			break;
 		case FE_BASIS_MODIFY_THETA_MODE_NON_INCREASING_IN_XI1:
-			(*this->output_file) << ", non-increasing in xi1";
+			(*this->outStream) << ", non-increasing in xi1";
 			break;
 		}
 
@@ -679,35 +765,35 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			const int *gridNumberInXi = eft->getLegacyGridNumberInXi();
 			if (0 == gridNumberInXi)
 			{
-				(*this->output_file) << ", element based.\n";
+				(*this->outStream) << ", element based.\n";
 			}
 			else
 			{
-				(*this->output_file) << ", grid based.\n";
+				(*this->outStream) << ", grid based.\n";
 				// Future: force output in old EX format
 				//const int unitGridNumberInXi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 1, 1, 1 };
 				//if (!gridNumberInXi)
 				//	gridNumberInXi = unitGridNumberInXi;
-				(*this->output_file) << " ";
-				const int dimension = this->mesh->getDimension();
+				(*this->outStream) << " ";
+				const int dimension = this->feMesh->getDimension();
 				for (int d = 0; d < dimension; ++d)
 				{
 					if (0 < d)
-						(*this->output_file) << ", ";
-					(*this->output_file) << "#xi" << d + 1 << "=" << gridNumberInXi[d];
+						(*this->outStream) << ", ";
+					(*this->outStream) << "#xi" << d + 1 << "=" << gridNumberInXi[d];
 				}
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 			}
 			break;
 		}
 		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_FIELD:
 		{
-			(*this->output_file) << ", field based.\n";
+			(*this->outStream) << ", field based.\n";
 			break;
 		}
 		case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_NODE:
 		{
-			(*this->output_file) << ", standard node based.";
+			(*this->outStream) << ", standard node based.";
 			int scaleFactorOffset = 0;
 			// previously the scale factor set was identified by the basis, now it is explicitly named
 			if (eft->getNumberOfLocalScaleFactors() > 0)
@@ -720,13 +806,13 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 						break;
 					scaleFactorOffset += (*eftIter)->getNumberOfLocalScaleFactors();
 				}
-				(*this->output_file) << " scale factor set=scaling" << scaleFactorSetIndex;
+				(*this->outStream) << " scale factor set=scaling" << scaleFactorSetIndex;
 			}
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 
 			const int nodeCount = eft->getNumberOfLocalNodes();
 			const int packedNodeOffset = this->headerElementNodePacking->getEftNodeOffset(eft);
-			(*this->output_file) << "  #Nodes=" << nodeCount << "\n";
+			(*this->outStream) << "  #Nodes=" << nodeCount << "\n";
 			// previously there was an entry for each basis node with the parameters extracted from it
 			// now there is a separate entry for each block of parameters mapped from
 			// the same nodes with the same number of terms
@@ -736,7 +822,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			int f = 0;
 			while (f < functionCount)
 			{
-				(*this->output_file) << "  ";
+				(*this->outStream) << "  ";
 				const int termCount = eft->getFunctionNumberOfTerms(f);
 				int valueCount = 1;
 				// for compatibility with EX versions < 2 limit function values output to those
@@ -759,83 +845,83 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 				if (0 == termCount)
 				{
 					// Use node index 0 if no terms
-					(*this->output_file) << "0";
+					(*this->outStream) << "0";
 				}
 				else
 				{
 					for (int t = 0; t < termCount; ++t)
 					{
 						if (t > 0)
-							(*this->output_file) << "+";
-						(*this->output_file) << eft->getTermLocalNodeIndex(f, t) + 1 + packedNodeOffset;
+							(*this->outStream) << "+";
+						(*this->outStream) << eft->getTermLocalNodeIndex(f, t) + 1 + packedNodeOffset;
 					}
 				}
-				(*this->output_file) << ". #Values=" << valueCount << "\n";
+				(*this->outStream) << ". #Values=" << valueCount << "\n";
 				// nodal value labels(versions) e.g. d/ds1(2), or the special zero for no terms
 				// multi term example: d/ds1(2)+d/ds2
-				(*this->output_file) << "   Value labels:";
+				(*this->outStream) << "   Value labels:";
 				const int f2limit = f + valueCount;
 				for (int f2 = f; f2 < f2limit; ++f2)
 				{
-					(*this->output_file) << " ";
+					(*this->outStream) << " ";
 					if (termCount == 0)
 					{
-						(*this->output_file) << "zero";
+						(*this->outStream) << "zero";
 					}
 					else
 					{
 						for (int t = 0; t < termCount; ++t)
 						{
 							if (t > 0)
-								(*this->output_file) << "+";
+								(*this->outStream) << "+";
 							const cmzn_node_value_label nodeValueLabel = eft->getTermNodeValueLabel(f2, t);
 							const char *valueLabelName = ENUMERATOR_STRING(cmzn_node_value_label)(nodeValueLabel);
-							(*this->output_file) << valueLabelName;
+							(*this->outStream) << valueLabelName;
 							const int version = eft->getTermNodeVersion(f2, t);
 							if (version > 0)
-								(*this->output_file) << "(" << version + 1 << ")";
+								(*this->outStream) << "(" << version + 1 << ")";
 						}
 					}
 				}
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 				// New: scale factor indexes only output if there is any scaling for this EFT
 				// For compatibility with old EX Versions, output scale factor indexes are relative
 				// to the whole element template, not per EFT, so must have the appropriate offset added.
 				if (eft->getNumberOfLocalScaleFactors() > 0)
 				{
-					(*this->output_file) << "   Scale factor indices:";
+					(*this->outStream) << "   Scale factor indices:";
 					for (int f2 = f; f2 < f2limit; ++f2)
 					{
-						(*this->output_file) << " ";
+						(*this->outStream) << " ";
 						if (termCount == 0)
 						{
-							(*this->output_file) << "0"; // 0 means unscaled, still required for zero terms
+							(*this->outStream) << "0"; // 0 means unscaled, still required for zero terms
 						}
 						else
 						{
 							for (int t = 0; t < termCount; ++t)
 							{
 								if (t > 0)
-									(*this->output_file) << "+";
+									(*this->outStream) << "+";
 								const int termScaleFactorCount = eft->getTermScalingCount(f2, t);
 								if (0 == termScaleFactorCount)
 								{
-									(*this->output_file) << "0"; // 0 means unscaled
+									(*this->outStream) << "0"; // 0 means unscaled
 								}
 								else
 								{
 									for (int s = 0; s < termScaleFactorCount; ++s)
 									{
 										if (s > 0)
-											(*this->output_file) << "*";
+											(*this->outStream) << "*";
 										const int scaleFactorIndex = eft->getTermScaleFactorIndex(f2, t, s);
-										(*this->output_file) << scaleFactorOffset + scaleFactorIndex + 1;
+										(*this->outStream) << scaleFactorOffset + scaleFactorIndex + 1;
 									}
 								}
 							}
 						}
 					}
-					(*this->output_file) << "\n";
+					(*this->outStream) << "\n";
 				}
 				f = f2limit;
 			}
@@ -858,7 +944,7 @@ ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
 		FE_field *field = this->writableFields[f];
-		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
 		if (!meshFieldData)
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
@@ -873,7 +959,7 @@ ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
 			{
 				if (eft->getNumberOfLocalNodes() > 0)
 				{
-					const FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+					const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
 					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 					if (!nodeIndexes)
 					{
@@ -909,7 +995,7 @@ bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *e
 		{
 			if (s > 0)
 			{
-				(*this->output_file) << ") ";
+				(*this->outStream) << ") ";
 			}
 			const char *typeName = 0;
 			switch (scaleFactorType)
@@ -940,29 +1026,28 @@ bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *e
 				display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template scale factor type");
 				return false;
 			}
-			(*this->output_file) << typeName << "(" << identifier;
+			(*this->outStream) << typeName << "(" << identifier;
 			lastScaleFactorType = scaleFactorType;
 		}
 		else
 		{
-			(*this->output_file) << "," << identifier;
+			(*this->outStream) << "," << identifier;
 		}
 	}
-	(*this->output_file) << ")";
+	(*this->outStream) << ")";
 	return true;
 }
 
 /**
  * Writes the element field information header for element. If the
- * field_order_info is supplied the header is restricted to include only
+ * fieldOrderInfo is supplied the header is restricted to include only
  * components/fields/bases for it.
  */
 bool EXWriter::writeElementHeader(cmzn_element *element)
 {
 	if (!element)
 	{
-		display_message(ERROR_MESSAGE,
-			"EXWriter::writeElementHeader.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeElementHeader.  Missing element");
 		return false;
 	}
 
@@ -976,7 +1061,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
 		if (!meshFieldData)
 			continue; // field not defined on mesh
 		const int componentCount = get_FE_field_number_of_components(field);
@@ -992,7 +1077,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 			{
 				if (eft->getNumberOfLocalNodes() > 0)
 				{
-					const FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+					const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
 					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 					if (!nodeIndexes)
 					{
@@ -1018,19 +1103,19 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 			this->headerFields.push_back(field);
 	}
 
-	(*this->output_file) << "#Scale factor sets=" << this->headerScalingEfts.size() << "\n";
+	(*this->outStream) << "#Scale factor sets=" << this->headerScalingEfts.size() << "\n";
 	int scaleFactorSetIndex = 0;
 	for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
 	{
 		++scaleFactorSetIndex;
-		(*this->output_file) << "  scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors()
+		(*this->outStream) << "  scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors()
 			<< ", identifiers=\"";
 		if (!this->writeEftScaleFactorIdentifiers(*eftIter))
 			return false;
-		(*this->output_file) << "\"\n";
+		(*this->outStream) << "\"\n";
 	}
-	(*this->output_file) << "#Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
-	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";
+	(*this->outStream) << "#Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
+	(*this->outStream) << "#Fields=" << this->headerFields.size() << "\n";
 	int fieldIndex = 0;
 	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
 	{
@@ -1050,7 +1135,7 @@ bool EXWriter::writeElementHeader(cmzn_element *element)
 bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 	FE_field *field, int componentNumber)
 {
-	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
+	const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
 	const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(componentNumber);
 	const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
 	const int valueCount = eft->getNumberOfElementDOFs();
@@ -1076,13 +1161,13 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 		for (int v = 0; v < valueCount; ++v)
 		{
 			sprintf(tmpString, " %" FE_VALUE_STRING, values[v]);
-			(*this->output_file) << tmpString;
+			(*this->outStream) << tmpString;
 			if (0 == ((v + 1) % columnCount))
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 		}
 		// extra newline if not multiple of number_of_columns
 		if (0 != (valueCount % columnCount))
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 		break;
 	}
 	case INT_VALUE:
@@ -1096,13 +1181,13 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 		}
 		for (int v = 0; v < valueCount; ++v)
 		{
-			(*this->output_file) << " " << values[v];
+			(*this->outStream) << " " << values[v];
 			if (0 == ((v + 1) % columnCount))
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 		}
 		// extra newline if not multiple of number_of_columns
 		if (0 != (valueCount % columnCount))
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 		break;
 	}
 	default:
@@ -1138,34 +1223,34 @@ Element: 1
  */
 bool EXWriter::writeElement(cmzn_element *element)
 {
-	(*this->output_file) << "Element: " << element->getIdentifier() << "\n";
+	(*this->outStream) << "Element: " << element->getIdentifier() << "\n";
 
-	if (this->writeGroupOnly)
+	if (this->writeIdentifiersOnly)
 		return true;
 
 	// Faces: if defined
-	const FE_mesh::ElementShapeFaces *elementShapeFaces = this->mesh->getElementShapeFacesConst(element->getIndex());
+	const FE_mesh::ElementShapeFaces *elementShapeFaces = this->feMesh->getElementShapeFacesConst(element->getIndex());
 	if (!elementShapeFaces)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing ElementShapeFaces");
 		return false;
 	}
-	FE_mesh *faceMesh = this->mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->feMesh->getFaceMesh();
 	if (faceMesh)
 	{
 		const int faceCount = elementShapeFaces->getFaceCount();
 		const DsLabelIndex *faceIndexes;
 		if ((0 < faceCount) && (faceIndexes = elementShapeFaces->getElementFaces(element->getIndex())))
 		{
-			(*this->output_file) << " Faces:\n";
+			(*this->outStream) << " Faces:\n";
 			for (int i = 0; i < faceCount; ++i)
 			{
 				if (faceIndexes[i] >= 0)
-					(*this->output_file) << " " << faceMesh->getElementIdentifier(faceIndexes[i]);
+					(*this->outStream) << " " << faceMesh->getElementIdentifier(faceIndexes[i]);
 				else
-					(*this->output_file) << " -1"; // face not set; can't use 0 as it is a valid identifier
+					(*this->outStream) << " -1"; // face not set; can't use 0 as it is a valid identifier
 			}
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 		}
 	}
 
@@ -1176,7 +1261,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 		FE_field *field = *fieldIter;
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
-		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->mesh);
+		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
 		const int componentCount = get_FE_field_number_of_components(field);
 		for (int c = 0; c < componentCount; ++c)
 		{
@@ -1186,7 +1271,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 			{
 				if (firstElementBasedField)
 				{
-					(*this->output_file) << " Values :\n";
+					(*this->outStream) << " Values :\n";
 					firstElementBasedField = false;
 				}
 				if (!this->writeElementFieldComponentValues(element, field, c))
@@ -1198,32 +1283,32 @@ bool EXWriter::writeElement(cmzn_element *element)
 	// Nodes: if any
 	if (this->headerElementNodePacking->getTotalNodeCount() > 0)
 	{
-		FE_nodeset *nodeset = this->mesh->getNodeset();
-		(*this->output_file) << " Nodes:\n";
+		FE_nodeset *nodeset = this->feMesh->getNodeset();
+		(*this->outStream) << " Nodes:\n";
 		int index = 0;
 		const FE_element_field_template *eft;
 		while (0 != (eft = this->headerElementNodePacking->getFirstEftAtIndex(index)))
 		{
-			const FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+			const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
 			const int nodeCount = eft->getNumberOfLocalNodes();
 			const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
 			if (nodeIndexes)
 			{
 				for (int n = 0; n < nodeCount; ++n)
 				{
-					(*this->output_file) << " " << nodeset->getNodeIdentifier(nodeIndexes[n]);
+					(*this->outStream) << " " << nodeset->getNodeIdentifier(nodeIndexes[n]);
 				}
 			}
 			else
 			{
 				for (int n = 0; n < nodeCount; ++n)
 				{
-					(*this->output_file) << " -1";
+					(*this->outStream) << " -1";
 				}
 			}
 			++index;
 		}
-		(*this->output_file) << "\n";
+		(*this->outStream) << "\n";
 	}
 
 	// Scale factors: if any scale factor sets being output
@@ -1231,11 +1316,11 @@ bool EXWriter::writeElement(cmzn_element *element)
 	{
 		int scaleFactorNumber = 0;
 		char tmpString[100];
-		(*this->output_file) << " Scale factors:\n";
+		(*this->outStream) << " Scale factors:\n";
 		for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
 		{
 			const FE_element_field_template *eft = *eftIter;
-			FE_mesh_element_field_template_data *meshEftData = this->mesh->getElementfieldtemplateData(eft);
+			FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
 			const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
 			int result = CMZN_OK;
 			const DsLabelIndex *scaleFactorIndexes = meshEftData->getOrCreateElementScaleFactorIndexes(result, element->getIndex());
@@ -1246,19 +1331,19 @@ bool EXWriter::writeElement(cmzn_element *element)
 			for (int s = 0; s < scaleFactorCount; ++s)
 			{
 				++scaleFactorNumber;
-				sprintf(tmpString, "%" FE_VALUE_STRING, (scaleFactorIndexes) ? mesh->getScaleFactor(scaleFactorIndexes[s]) : 0.0);
-				(*this->output_file) << " " << tmpString;
+				sprintf(tmpString, "%" FE_VALUE_STRING, (scaleFactorIndexes) ? this->feMesh->getScaleFactor(scaleFactorIndexes[s]) : 0.0);
+				(*this->outStream) << " " << tmpString;
 				if ((0 < FE_VALUE_MAX_OUTPUT_COLUMNS)
 					&& (0 == (scaleFactorNumber % FE_VALUE_MAX_OUTPUT_COLUMNS)))
 				{
-					(*this->output_file) << "\n";
+					(*this->outStream) << "\n";
 				}
 			}
 			// extra new line if not multiple of FE_VALUE_MAX_OUTPUT_COLUMNS values
 			if ((FE_VALUE_MAX_OUTPUT_COLUMNS <= 0)
 				|| (0 != (scaleFactorNumber % FE_VALUE_MAX_OUTPUT_COLUMNS)))
 			{
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 			}
 		}
 	}
@@ -1271,33 +1356,33 @@ bool EXWriter::writeElement(cmzn_element *element)
  */
 bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 {
-	if (!((element) && ((this->write_criterion == FE_WRITE_COMPLETE_GROUP) || (this->field_order_info))))
+	if (!((element) && ((this->writeCriterion == FE_WRITE_COMPLETE_GROUP) || (this->fieldOrderInfo))))
 	{
 		display_message(ERROR_MESSAGE,
 			"EXWriter::elementIsToBeWritten.  Invalid argument(s)");
 		return false;
 	}
-	switch (this->write_criterion)
+	switch (this->writeCriterion)
 	{
 		case FE_WRITE_COMPLETE_GROUP:
 		{
 		} break;
 		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
 		{
-			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->field_order_info);
+			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 			for (int i = 0; i < number_of_fields; ++i)
 			{
-				struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
+				struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
 				if (!FE_field_is_defined_in_element(field, element))
 					return false;
 			}
 		} break;
 		case FE_WRITE_WITH_ANY_LISTED_FIELDS:
 		{
-			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->field_order_info);
+			const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 			for (int i = 0; i < number_of_fields; ++i)
 			{
-				struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
+				struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
 				if (FE_field_is_defined_in_element(field, element))
 					return true;
 			}
@@ -1306,7 +1391,7 @@ bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"EXWriter::elementIsToBeWritten.  Unknown write_criterion");
+				"EXWriter::elementIsToBeWritten.  Unknown write criterion");
 			return false;
 		} break;
 	}
@@ -1316,12 +1401,12 @@ bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 /** @return true if any fields are to be written for the element. */
 bool EXWriter::elementHasFieldsToWrite(cmzn_element *element)
 {
-	if (!this->field_order_info)
+	if (!this->fieldOrderInfo)
 		return (0 < get_FE_element_number_of_fields(element));
-	const int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+	const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 	for (int i = 0; i < number_of_fields; ++i)
 	{
-		struct FE_field *field = get_FE_field_order_info_field(field_order_info, i);
+		struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
 		if (FE_field_is_defined_in_element_not_inherited(field, element))
 			return true;
 	}
@@ -1331,7 +1416,7 @@ bool EXWriter::elementHasFieldsToWrite(cmzn_element *element)
 /**
  * Returns true if element has matching field definition to last element whose
  * field header was output, or if there was no last element.
- * If field_order_info is supplied only those fields listed in it are compared.
+ * If fieldOrderInfo is supplied only those fields listed in it are compared.
  * Note that even if this returns true, need to check element nodes are
  * packed identically for fields written together.
  */
@@ -1339,12 +1424,12 @@ bool EXWriter::elementFieldsMatchLastElement(cmzn_element *element)
 {
 	if (!this->headerElement)
 		return false;
-	if (!this->field_order_info)
+	if (!this->fieldOrderInfo)
 		return (0 != equivalent_FE_fields_in_elements(element, this->headerElement));
-	const int number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+	const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 	for (int f = 0; f < number_of_fields; ++f)
 	{
-		struct FE_field *field = get_FE_field_order_info_field(field_order_info, f);
+		struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, f);
 		if (!equivalent_FE_field_in_elements(field, element, this->headerElement))
 			return false;
 	}
@@ -1360,44 +1445,48 @@ bool EXWriter::writeElementExt(cmzn_element *element)
 {
 	if (!element)
 	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeElementExt.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "EXWriter::writeElementExt.  Missing element");
 		return false;
 	}
 	if (!this->elementIsToBeWritten(element))
 		return true;
-	// work out if shape or field header have changed from last element
-	FE_element_shape *elementShape = element->getElementShape();
-	if (!elementShape)
-		return false;
-	bool newShape = true;
-	bool newFieldHeader = true;
-	if (this->headerElement)
+
+	if (!this->writeIdentifiersOnly)
 	{
-		newShape = (elementShape != this->lastElementShape);
-		if (newShape)
+		// work out if shape or field header have changed from last element
+		FE_element_shape *elementShape = element->getElementShape();
+		if (!elementShape)
+			return false;
+		bool newShape = true;
+		bool newFieldHeader = true;
+		if (this->headerElement)
 		{
-			newFieldHeader = this->elementHasFieldsToWrite(element); // reader must assume a blank, no-field template
-		}
-		else
-		{
-			newFieldHeader = !this->EXWriter::elementFieldsMatchLastElement(element);
-			if (!newFieldHeader)
+			newShape = (elementShape != this->lastElementShape);
+			if (newShape)
 			{
-				ElementNodePacking *elementNodePacking = this->createElementNodePacking(element);
-				newFieldHeader = !elementNodePacking->matches(*this->headerElementNodePacking);
-				delete elementNodePacking;
+				newFieldHeader = this->elementHasFieldsToWrite(element); // reader must assume a blank, no-field template
+			}
+			else
+			{
+				newFieldHeader = !this->EXWriter::elementFieldsMatchLastElement(element);
+				if (!newFieldHeader)
+				{
+					ElementNodePacking *elementNodePacking = this->createElementNodePacking(element);
+					newFieldHeader = !elementNodePacking->matches(*this->headerElementNodePacking);
+					delete elementNodePacking;
+				}
 			}
 		}
-	}
-	if (newShape)
-	{
-		if (!this->writeElementShape(elementShape))
-			return false;
-	}
-	if (newFieldHeader)
-	{
-		if (!this->writeElementHeader(element))
-			return false;
+		if (newShape)
+		{
+			if (!this->writeElementShape(elementShape))
+				return false;
+		}
+		if (newFieldHeader)
+		{
+			if (!this->writeElementHeader(element))
+				return false;
+		}
 	}
 	if (!this->writeElement(element))
 		return false;
@@ -1429,38 +1518,38 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 		char *componentName = get_FE_field_component_name(field, c);
 		if (componentName)
 		{
-			(*this->output_file) << " " << componentName << ".";
+			(*this->outStream) << " " << componentName << ".";
 			DEALLOCATE(componentName);
 		}
 		else
 		{
-			(*this->output_file) << " " << c + 1 << ".";
+			(*this->outStream) << " " << c + 1 << ".";
 		}
 		if (fe_field_type != GENERAL_FE_FIELD)
 		{
 			// constant and indexed fields: no further component information
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 			continue;
 		}
 		const FE_node_field_template& nft = *(node_field->getComponent(c));
 		const int valuesCount = nft.getTotalValuesCount();
-		(*this->output_file) << " #Values=" << valuesCount << " (";
+		(*this->outStream) << " #Values=" << valuesCount << " (";
 		const int valueLabelsCount = nft.getValueLabelsCount();
 		for (int d = 0; d < valueLabelsCount; ++d)
 		{
 			if (d > 0)
 			{
-				(*this->output_file) << ",";
+				(*this->outStream) << ",";
 			}
 			const cmzn_node_value_label valueLabel = nft.getValueLabelAtIndex(d);
 			const int versionsCount = nft.getVersionsCountAtIndex(d);
-			(*this->output_file) << ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel);
+			(*this->outStream) << ENUMERATOR_STRING(cmzn_node_value_label)(valueLabel);
 			if (versionsCount > 1)
 			{
-				(*this->output_file) << "(" << versionsCount << ")";
+				(*this->outStream) << "(" << versionsCount << ")";
 			}
 		}
-		(*this->output_file) << ")\n";
+		(*this->outStream) << ")\n";
 	}
 	return true;
 }
@@ -1507,7 +1596,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 			{
 				return false;
 			}
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 		}
 	} break;
 	case FE_VALUE_VALUE:
@@ -1530,11 +1619,11 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 			for (int v = 0; v < valuesCount; ++v)
 			{
 				sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
-				(*this->output_file) << " " << tmpString;
+				(*this->outStream) << " " << tmpString;
 			}
 			if (valuesCount)
 			{
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 			}
 		}
 	} break;
@@ -1556,11 +1645,11 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 			}
 			for (int v = 0; v < valuesCount; ++v)
 			{
-				(*this->output_file) << " " << values[v];
+				(*this->outStream) << " " << values[v];
 			}
 			if (valuesCount)
 			{
-				(*this->output_file) << "\n";
+				(*this->outStream) << "\n";
 			}
 		}
 	} break;
@@ -1576,13 +1665,13 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				if (the_string)
 				{
 					make_valid_token(&the_string);
-					(*this->output_file) << " " << the_string;
+					(*this->outStream) << " " << the_string;
 					DEALLOCATE(the_string);
 				}
 				else
 				{
 					/* empty string */
-					(*this->output_file) << " \"\"";
+					(*this->outStream) << " \"\"";
 				}
 			}
 			else
@@ -1590,7 +1679,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				display_message(ERROR_MESSAGE,
 					"EXWriter::writeNodeFieldValues.  Could not get string");
 			}
-			(*this->output_file) << "\n";
+			(*this->outStream) << "\n";
 		}
 	} break;
 	default:
@@ -1606,9 +1695,9 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 /** Writes out a node to stream */
 bool EXWriter::writeNode(cmzn_node *node)
 {
-	(*this->output_file) << "Node: " << get_FE_node_identifier(node) << "\n";
+	(*this->outStream) << "Node: " << get_FE_node_identifier(node) << "\n";
 
-	if (this->writeGroupOnly)
+	if (this->writeIdentifiersOnly)
 		return true;
 
 	// values, if writing any general fields
@@ -1629,33 +1718,33 @@ bool EXWriter::writeNode(cmzn_node *node)
  */
 bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 {
-	if (!((node) && ((this->write_criterion == FE_WRITE_COMPLETE_GROUP) || (this->field_order_info))))
+	if (!((node) && ((this->writeCriterion == FE_WRITE_COMPLETE_GROUP) || (this->fieldOrderInfo))))
 	{
 		display_message(ERROR_MESSAGE,
 			"EXWriter::nodeIsToBeWritten.  Invalid argument(s)");
 		return false;
 	}
-	switch (this->write_criterion)
+	switch (this->writeCriterion)
 	{
 	case FE_WRITE_COMPLETE_GROUP:
 	{
 	} break;
 	case FE_WRITE_WITH_ALL_LISTED_FIELDS:
 	{
-		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->field_order_info);
+		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 		for (int i = 0; i < number_of_fields; ++i)
 		{
-			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
+			struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
 			if (!(node->getNodeField(field)))
 				return false;
 		}
 	} break;
 	case FE_WRITE_WITH_ANY_LISTED_FIELDS:
 	{
-		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->field_order_info);
+		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
 		for (int i = 0; i < number_of_fields; ++i)
 		{
-			struct FE_field *field = get_FE_field_order_info_field(this->field_order_info, i);
+			struct FE_field *field = get_FE_field_order_info_field(this->fieldOrderInfo, i);
 			if (node->getNodeField(field))
 				return true;
 		}
@@ -1664,67 +1753,16 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 	default:
 	{
 		display_message(ERROR_MESSAGE,
-			"EXWriter::nodeIsToBeWritten.  Unknown write_criterion");
+			"EXWriter::nodeIsToBeWritten.  Unknown writeCriterion");
 		return false;
 	} break;
 	}
 	return true;
 }
 
-static int FE_nodes_have_same_header(struct FE_node *node_1,
-	struct FE_node *node_2, struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Returns true if <node_1> and <node_2> can be written to file with the
-same fields header. If <field_order_info> is supplied only those fields
-listed in it are compared.
-==============================================================================*/
-{
-	int i, number_of_fields, return_code;
-	struct FE_field *field;
-
-	ENTER(FE_nodes_have_same_header);
-	if (node_1 && node_2)
-	{
-		if (field_order_info)
-		{
-			return_code = 1;
-			number_of_fields =
-				get_FE_field_order_info_number_of_fields(field_order_info);
-			for (i = 0; (i < number_of_fields) && return_code; i++)
-			{
-				if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
-					equivalent_FE_field_at_nodes(field, node_1, node_2)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = equivalent_FE_fields_at_nodes(node_1, node_2);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_nodes_have_same_header.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_nodes_have_same_header */
-
-
-
-
-
   /**
   * Writes the node field information header for node. If the
-  * field_order_info is supplied the header is restricted to include only
+  * fieldOrderInfo is supplied the header is restricted to include only
   * components/fields/bases for it.
   */
 bool EXWriter::writeNodeHeader(cmzn_node *node)
@@ -1746,7 +1784,7 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 			this->headerFields.push_back(field);
 	}
 
-	(*this->output_file) << "#Fields=" << this->headerFields.size() << "\n";
+	(*this->outStream) << "#Fields=" << this->headerFields.size() << "\n";
 	int fieldIndex = 0;
 	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
 	{
@@ -1777,8 +1815,8 @@ bool EXWriter::writeNodeExt(cmzn_node *node)
 	if (!this->nodeIsToBeWritten(node))
 		return true;
 
-	if ((0 == this->headerNode)
-		|| !FE_nodes_have_same_header(node, this->headerNode, field_order_info))
+	if (!this->writeIdentifiersOnly && ((0 == this->headerNode)
+		|| !FE_nodes_have_same_header(node, this->headerNode, this->fieldOrderInfo)))
 	{
 		if (!this->writeNodeHeader(node))
 			return false;
@@ -1788,374 +1826,294 @@ bool EXWriter::writeNodeExt(cmzn_node *node)
 	return true;
 }
 
-static int write_cmzn_region_content(ostream *output_file,
-	struct cmzn_region *region, cmzn_field_group_id group,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, int *field_names_counter,
-	FE_value time, enum FE_write_criterion write_criterion,
-	bool writeGroupOnly = false)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Writes <base_fe_region> to the <output_file>.
-If <field_order_info> is NULL, all element fields are written in the default,
-alphabetical order.
-If <field_order_info> is empty, only element identifiers are output.
-If <field_order_info> contains fields, they are written in that order.
-Additionally, the <write_criterion> controls output as follows:
-FE_WRITE_COMPLETE_GROUP = write all elements in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only elements with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only elements with any listed fields defined.
-==============================================================================*/
+int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 {
-	int return_code;
-
-	ENTER(write_cmzn_region_content);
-	if (output_file && region)
+	int return_code = 1;
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
+	if (group)
 	{
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		FE_region *fe_region = region->get_FE_region();
-		return_code = 1;
-		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
-
-		if (write_fields_mode != FE_WRITE_NO_FIELDS)
+		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+		cmzn_mesh_destroy(&mesh);
+		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+		cmzn_field_element_group_destroy(&element_group);
+	}
+	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
+	{
+		FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
+		this->setMesh(feMesh);
+		(*this->outStream) << "!#mesh ";
+		this->writeSafeName(feMesh->getName());
+		(*this->outStream) << ", dimension=" << feMesh->getDimension();
+		if (feMesh->getFaceMesh())
 		{
-			if (write_fields_mode == FE_WRITE_ALL_FIELDS)
+			(*this->outStream) << ", face mesh=";
+			this->writeSafeName(feMesh->getFaceMesh()->getName());
+		}
+		if (feMesh->getNodeset())
+		{
+			(*this->outStream) << ", nodeset=";
+			this->writeSafeName(feMesh->getNodeset()->getName());
+		}
+		(*this->outStream) << "\n";
+		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_element_id element = 0;
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		{
+			if (!this->writeElementExt(element))
 			{
-				// get list of all fields in default alphabetical order
-				return_code = FE_region_for_each_FE_field(fe_region,
-					FE_field_add_to_FE_field_order_info, (void *)field_order_info);
-				FE_field_order_info_prioritise_indexer_fields(field_order_info);
-			}
-			else if ((0 < number_of_field_names) && field_names && field_names_counter)
-			{
-				for (int i = 0; (i < number_of_field_names) && return_code; i++)
-				{
-					if (field_names[i])
-					{
-						struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
-						if (fe_field)
-						{
-							++(field_names_counter[i]);
-							return_code = add_FE_field_order_info_field(field_order_info, fe_field);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "write_cmzn_region_content.  NULL field name");
-						return_code = 0;
-					}
-				}
-			}
-			else if (0 < number_of_field_names)
-			{
-				display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Missing field names array");
 				return_code = 0;
+				break;
 			}
 		}
+		cmzn_elementiterator_destroy(&iter);
+		cmzn_mesh_destroy(&mesh);
+	}
+	return return_code;
+}
 
+int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
+{
+	int return_code = 1;
+	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule,
+		fieldDomainType);
+	// following is not actually used, but the call clears mesh and header cache
+	this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType));
+	if (group)
+	{
+		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+		cmzn_nodeset_destroy(&nodeset);
+		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+		cmzn_field_node_group_destroy(&node_group);
+	}
+	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
+	{
+		(*this->outStream) << "!#nodeset ";
+		this->writeSafeName(feNodeset->getName());
+		(*this->outStream) << "\n";
+		if (!this->writeIdentifiersOnly)
+		{
+			(*this->outStream) << "Shape. Dimension=0\n";
+		}
+		cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
+		cmzn_node_id node = 0;
+		while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
+		{
+			if (!this->writeNodeExt(node))
+			{
+				return_code = 0;
+				break;
+			}
+		}
+		cmzn_nodeiterator_destroy(&iter);
+		cmzn_nodeset_destroy(&nodeset);
+	}
+	return return_code;
+}
+
+int EXWriter::writeRegionContent(cmzn_field_group *group)
+{
+	int return_code = 1;
+	// write nodes then elements then data last since future plan is to remove the feature
+	// where the same field can be defined simultaneously on nodes & elements and also data.
+	// To migrate the first one will use the actual field name and the other will need to
+	// qualify it, and we want the qualified one to be the datapoints.
+	if (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_NODES)
+	{
+		return_code = this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_NODES, group);
+	}
+	if (return_code)
+	{
+		const int highestDimension = FE_region_get_highest_dimension(this->feRegion);
+		/* write 1-D, 2-D then 3-D so lines and faces precede elements */
+		for (int dimension = 1; dimension <= highestDimension; ++dimension)
+		{
+			if ((dimension == 1 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH1D)) ||
+				(dimension == 2 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH2D)) ||
+				(dimension == 3 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH3D)) ||
+				(dimension == highestDimension &&
+				(this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)))
+			{
+				return_code = this->writeMesh(dimension, group);
+			}
+		}
+	}
+	if (return_code && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))
+	{
+		return_code = this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS, group);
+	}
+	if (!return_code)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeRegionContents.  Failed");
+	}
+	return return_code;
+}
+
+int EXWriter::writeRegion(cmzn_region *regionIn)
+{
+	int return_code = 1;
+	this->region = regionIn;
+	this->feRegion = this->region->get_FE_region();
+	this->fieldmodule = cmzn_region_get_fieldmodule(regionIn);
+	this->fieldOrderInfo = CREATE(FE_field_order_info)();
+	this->writableFields.clear();
+
+	if (this->writeFieldsMode != FE_WRITE_NO_FIELDS)
+	{
+		if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
+		{
+			// get list of all fields in default alphabetical order
+			return_code = FE_region_for_each_FE_field(this->feRegion,
+				FE_field_add_to_FE_field_order_info, (void *)this->fieldOrderInfo);
+			FE_field_order_info_prioritise_indexer_fields(this->fieldOrderInfo);
+		}
+		else if (this->fieldNames.size() > 0)
+		{
+			size_t fieldNamesCount = this->fieldNames.size();
+			for (int i = 0; i < fieldNamesCount; ++i)
+			{
+				FE_field *feField = FE_region_get_FE_field_from_name(this->feRegion, this->fieldNames[i].c_str());
+				if (feField)
+				{
+					++(this->fieldNamesCounters[i]);
+					return_code = add_FE_field_order_info_field(this->fieldOrderInfo, feField);
+				}
+			}
+		}
+	}
+
+	// make a list of all fields that should be written, with indexer fields before any indexed fields using them
+	if (this->fieldOrderInfo)
+	{
+		const int number_of_fields = get_FE_field_order_info_number_of_fields(this->fieldOrderInfo);
+		for (int f = 0; f < number_of_fields; ++f)
+			FE_field_add_to_vector_indexer_priority(get_FE_field_order_info_field(this->fieldOrderInfo, f), (void *)&this->writableFields);
+	}
+	else
+	{
+		FE_region_for_each_FE_field(this->feRegion, FE_field_add_to_vector_indexer_priority, (void *)&this->writableFields);
+	}
+
+	// write region path and/or group name */
+	cmzn_field_group *group = nullptr;
+	if (this->groupName)
+	{
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(this->fieldmodule, this->groupName);
+		if (field)
+		{
+			group = cmzn_field_cast_group(field);
+			cmzn_field_destroy(&field);
+		}
+	}
+
+	if ((!this->groupName) || (group))
+	{
+		if ((!group) || (this->region != this->rootRegion))
+		{
+			char *region_path = this->region->getRelativePath(this->rootRegion);
+			int error = 0;
+			// add leading '/' (required esp. for root region)
+			append_string(&region_path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+			(*this->outStream) << "Region: " << region_path << "\n";
+			DEALLOCATE(region_path);
+		}
+		if (group)
+		{
+			char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
+			(*this->outStream) << "Group name: " << group_name << "\n";
+			DEALLOCATE(group_name);
+		}
+
+		// write finite element fields for this region
 		if (return_code)
 		{
-			EXWriter exWriter(output_file, write_criterion, field_order_info, time);
-			if (writeGroupOnly)
-				exWriter.setWriteGroupOnly();
-			// write nodes then elements then data last since future plan is to remove the feature
-			// where the same field can be defined simultaneously on nodes & elements and also data.
-			// To migrate the first one will use the actual field name and the other will need to
-			// qualify it, and we want the qualified one to be the datapoints.
-			if (write_nodes)
+			return_code = this->writeRegionContent(group);
+		}
+	}
+
+	if (return_code && (!this->groupName) && (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON))
+	{
+		// write group members
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+		cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
+		cmzn_field_id field = 0;
+		while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
+		{
+			cmzn_field_group_id output_group = cmzn_field_cast_group(field);
+			if (output_group)
 			{
-				FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				exWriter.setNodeset(feNodeset);
-				cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
-					CMZN_FIELD_DOMAIN_TYPE_NODES);
-				if (group)
-				{
-					cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-					cmzn_nodeset_destroy(&nodeset);
-					nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-					cmzn_field_node_group_destroy(&node_group);
-				}
-				if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
-				{
-					(*output_file) << "!#nodeset ";
-					exWriter.writeSafeName(feNodeset->getName());
-					(*output_file) << "\nShape. Dimension=0\n";
-					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
-					cmzn_node_id node = 0;
-					while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
-					{
-						if (!exWriter.writeNodeExt(node))
-						{
-							return_code = 0;
-							break;
-						}
-					}
-					cmzn_nodeiterator_destroy(&iter);
-					cmzn_nodeset_destroy(&nodeset);
-				}
-			}
-			if (write_elements)
-			{
-				const int highest_dimension = FE_region_get_highest_dimension(fe_region);
-				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-				for (int dimension = 1; dimension <= highest_dimension; dimension++)
-				{
-					if ((dimension == 1 && (write_elements & CMZN_FIELD_DOMAIN_TYPE_MESH1D)) ||
-						(dimension == 2 && (write_elements & CMZN_FIELD_DOMAIN_TYPE_MESH2D)) ||
-						(dimension == 3 && (write_elements & CMZN_FIELD_DOMAIN_TYPE_MESH3D)) ||
-						(dimension == highest_dimension &&
-						(write_elements & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)))
-					{
-						cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
-						if (group)
-						{
-							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
-							cmzn_mesh_destroy(&mesh);
-							mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
-							cmzn_field_element_group_destroy(&element_group);
-						}
-						if (mesh && (cmzn_mesh_get_size(mesh) > 0))
-						{
-							FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
-							(*output_file) << "!#mesh ";
-							exWriter.writeSafeName(feMesh->getName());
-							(*output_file) << ", dimension=" << feMesh->getDimension();
-							if (feMesh->getFaceMesh())
-							{
-								(*output_file) << ", face mesh=";
-								exWriter.writeSafeName(feMesh->getFaceMesh()->getName());
-							}
-							if (feMesh->getNodeset())
-							{
-								(*output_file) << ", nodeset=";
-								exWriter.writeSafeName(feMesh->getNodeset()->getName());
-							}
-							(*output_file) << "\n";
-							exWriter.setMesh(feMesh);
-							cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
-							cmzn_element_id element = 0;
-							while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-							{
-								if (!exWriter.writeElementExt(element))
-								{
-									return_code = 0;
-									break;
-								}
-							}
-							cmzn_elementiterator_destroy(&iter);
-							cmzn_mesh_destroy(&mesh);
-						}
-					}
-				}
-			}
-			if (write_data)
-			{
-				FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
-				exWriter.setNodeset(feNodeset);
-				cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
-					CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
-				if (group)
-				{
-					cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-					cmzn_nodeset_destroy(&nodeset);
-					nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-					cmzn_field_node_group_destroy(&node_group);
-				}
-				if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
-				{
-					(*output_file) << "!#nodeset ";
-					exWriter.writeSafeName(feNodeset->getName());
-					(*output_file) << "\nShape. Dimension=0\n";
-					cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
-					cmzn_node_id node = 0;
-					while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
-					{
-						if (!exWriter.writeNodeExt(node))
-						{
-							return_code = 0;
-							break;
-						}
-					}
-					cmzn_nodeiterator_destroy(&iter);
-					cmzn_nodeset_destroy(&nodeset);
-				}
+				char *groupName = cmzn_field_get_name(field);
+				(*this->outStream) << "Group name: " << groupName << "\n";
+				DEALLOCATE(groupName);
+
+				this->setWriteIdentifiersOnly(true);
+				return_code = this->writeRegionContent(output_group);
+				this->setWriteIdentifiersOnly(false);
+				cmzn_field_group_destroy(&output_group);
 			}
 		}
+		cmzn_fielditerator_destroy(&field_iter);
+		cmzn_fieldmodule_destroy(&field_module);
+	}
+
+	if (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
+	{
+		// write child regions
+		cmzn_region *childRegion = cmzn_region_get_first_child(region);
+		while (childRegion)
+		{
+			return_code = this->writeRegion(childRegion);
+			if (!return_code)
+			{
+				cmzn_region_destroy(&childRegion);
+				break;
+			}
+			cmzn_region_reaccess_next_sibling(&childRegion);
+		}
+	}
+	if (group)
+	{
+		cmzn_field_group_destroy(&group);
+	}
+
+	DESTROY(FE_field_order_info)(&this->fieldOrderInfo);
+	cmzn_fieldmodule_destroy(&this->fieldmodule);
+	return return_code;
+}
+
+int EXWriter::write(cmzn_region *regionIn)
+{
+	int return_code = 1;
+	(*this->outStream) << "EX Version: 3\n";
+	if (cmzn_region_contains_subregion(this->rootRegion, regionIn))
+	{
+		return_code = this->writeRegion(regionIn);
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Failed");
-			return_code = 0;
+			display_message(ERROR_MESSAGE, "EX write failed");
 		}
-		if (field_order_info)
+
+		// warn about unused field names
+		if (this->writeFieldsMode == FE_WRITE_LISTED_FIELDS)
 		{
-			DESTROY(FE_field_order_info)(&field_order_info);
+			for (size_t i = 0; i < this->fieldNames.size(); ++i)
+			{
+				if (this->fieldNamesCounters[i] == 0)
+				{
+					display_message(WARNING_MESSAGE,
+						"No field named '%s' found in any region written to EX file",
+						this->fieldNames[i].c_str());
+				}
+			}
 		}
-		cmzn_fieldmodule_destroy(&field_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_cmzn_region_content.  Invalid argument(s)");
+			"EXWriter::write.  Region is not within root region");
 		return_code = 0;
 	}
-	LEAVE;
-
-	return (return_code);
+	return return_code;
 }
-
-/***************************************************************************//**
- * Recursively writes the finite element fields in region tree to file.
- * Notes:
- * - the master region for a group must be the parent region.
- * - element_xi values currently restricted to being in the root_region.
- * 
- * @param output_file  The file to write region and field data to.
- * @param region  The region to write.
- * @param parent_region_output  Pointer to parent region if just output to same
- *   file. Caller should set to NULL on first call.
- * @param root_region  The root region of any data to be written. Need not be
- *   the true root of region hierarchy, but region paths in file are relative to
- *   this region.
- * @param write_elements  If set, write elements and element fields to file.
- * @param write_nodes  If set, write nodes and node fields to file.
- * @param write_data  If set, write data and data fields to file. May only use
- *   if write_elements and write_nodes are 0.
- * @param write_fields_mode  Controls which fields are written to file.
- *   If mode is FE_WRITE_LISTED_FIELDS then:
- *   - Number/list of field_names must be supplied;
- *   - Field names not used in a region are ignored;
- *   - Warnings are given for any field names not used in any output region.
- * @param number_of_field_names  The number of names in the field_names array.
- * @param field_names  Array of field names.
- * @param field_names_counter  Array of integers of same length as field_names
- *   incremented whenever the respective field name is matched.
- * @param write_criterion  Controls which objects are written. Some modes
- *   limit output to nodes or objects with any or all listed fields defined.
- * @param write_recursion  Controls whether sub-regions and sub-groups are
- *   recursively written.
- */
-static int write_cmzn_region(ostream *output_file,
-	struct cmzn_region *region, const char * group_name,
-	struct cmzn_region *root_region,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, int *field_names_counter,
-	FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
-{
-	int return_code;
-
-	ENTER(write_cmzn_region);
-	if (output_file && region && root_region)
-	{
-		return_code = 1;
-
-		// write region path and/or group name */
-		cmzn_field_group_id group = 0;
-		if (group_name)
-		{
-			cmzn_fieldmodule_id fieldmodule =  cmzn_region_get_fieldmodule(region);
-			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, group_name);
-			if (field)
-			{
-				group = cmzn_field_cast_group(field);
-				cmzn_field_destroy(&field);
-			}
-			cmzn_fieldmodule_destroy(&fieldmodule);
-		}
-
-		if (!group_name || group)
-		{
-			if (!group || (region != root_region))
-			{
-				char *region_path = region->getRelativePath(root_region);
-				int error = 0;
-				// add leading '/' (required esp. for root region)
-				append_string(&region_path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
-				(*output_file) << "Region: " << region_path << "\n";
-				DEALLOCATE(region_path);
-			}
-			if (group)
-			{
-				char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
-				(*output_file) << " Group name: " << group_name << "\n";
-				DEALLOCATE(group_name);
-			}
-
-			// write finite element fields for this region
-			if (return_code)
-			{
-				return_code = write_cmzn_region_content(output_file, region, group,
-					write_elements, write_nodes, write_data,
-					write_fields_mode, number_of_field_names, field_names,
-					field_names_counter, time, write_criterion);
-			}
-		}
-
-		if (return_code && !group_name && recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
-		{
-			// write group members
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-			cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
-			cmzn_field_id field = 0;
-			while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
-			{
-				cmzn_field_group_id output_group = cmzn_field_cast_group(field);
-				if (output_group)
-				{
-					char *group_name = cmzn_field_get_name(field);
-					(*output_file) << " Group name: " << group_name << "\n";
-					DEALLOCATE(group_name);
-					return_code = write_cmzn_region_content(output_file, region, output_group,
-						write_elements, write_nodes, write_data,
-						FE_WRITE_NO_FIELDS, number_of_field_names, field_names,
-						field_names_counter, time, write_criterion, /*writeGroupOnly*/true);
-					cmzn_field_group_destroy(&output_group);
-				}
-			}
-			cmzn_fielditerator_destroy(&field_iter);
-			cmzn_fieldmodule_destroy(&field_module);
-		}
-
-		if (recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
-		{
-			// write child regions
-			cmzn_region *child_region = cmzn_region_get_first_child(region);
-			while (child_region)
-			{
-				return_code = write_cmzn_region(output_file,
-					child_region, group_name, root_region,
-					write_elements, write_nodes, write_data,
-					write_fields_mode, number_of_field_names, field_names,
-					field_names_counter, time, write_criterion, recursion_mode);
-				if (!return_code)
-				{
-					cmzn_region_destroy(&child_region);
-					break;
-				}
-				cmzn_region_reaccess_next_sibling(&child_region);
-			}
-		}
-		if (group)
-		{
-			cmzn_field_group_destroy(&group);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "write_cmzn_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_cmzn_region */
 
 /*
 Global functions
@@ -2224,100 +2182,51 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_recursion)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
 
-/***************************************************************************//**
+/**
  * Writes an EX file with supplied root_region at the top level of the file.
  *
- * @param output_file  The file to write region and field data to.
- * @param region  The region to output.
- * @param group  Optional subgroup to output.
- * @param root_region  The region which will become the root region in the EX
- *   file. Need not be the true root of region hierarchy, but must contain
- *   <region>.
- * @param write_elements  If set, write elements and element fields to file.
- * @param write_nodes  If set, write nodes and node fields to file.
- * @param write_data  If set, write data and data fields to file. May only use
- *   if write_elements and write_nodes are 0.
- * @param write_fields_mode  Controls which fields are written to file.
- *   If mode is FE_WRITE_LISTED_FIELDS then:
- *   - Number/list of field_names must be supplied;
- *   - Field names not used in a region are ignored;
- *   - Warnings are given for any field names not used in any output region.
- * @param number_of_field_names  The number of names in the field_names array.
- * @param field_names  Array of field names.
- * @param time  Field values at <time> will be written out if field is time
- *    dependent. If fields are time dependent but <time> is out of range then
- *    the values at nearest time will be written out. If fields are not time
- *    dependent, this parameter is ignored.
- * @param write_criterion  Controls which objects are written. Some modes
+ * @param outStream  The file/memory stream to write region and field data to.
+ * @param rootRegion  The root region of any data to be written. Need not be
+ *   the true root of region hierarchy, but region paths in file are relative to
+ *   this region.
+ * @param region  The base region to output, in tree under root region.
+ * @param groupName  Optional name of group to limit output to.Actual
+ *   group found from name in each region.
+ * @param timeSet  True if output single time, false to output all times.
+ * @param time  The time to output if single time.
+ * @param writeDomainTypes  Bitwise OR of cmzn_field_domain_type flags
+ *   setting which meshes or nodesets to write.
+ * @param writeFieldsMode  Controls which fields are written to file.
+ *   If mode is FE_WRITE_LISTED_FIELDS then :
+ *-Number/list of field_names must be supplied;
+ *-Field names not used in a region are ignored;
+ *-Warnings are given for any field names not used in any output region.
+ * @param fieldNamesCount  The number of names in the field_names array.
+ * @param fieldNames  Array of field names.
+ * @param writeCriterion  Controls which objects are written.Some modes
  *   limit output to nodes or objects with any or all listed fields defined.
- * @param write_recursion  Controls whether sub-regions and sub-groups are
+ * @param recursionMode  Controls whether sub-regions and sub-groups are
  *   recursively written.
  */
-int write_exregion_to_stream(ostream *output_file,
-	struct cmzn_region *region, const char *group_name,
-	struct cmzn_region *root_region,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
+int write_exregion_to_stream(ostream *outStream,
+	struct cmzn_region *rootRegion,
+	struct cmzn_region *region, const char *groupName,
+	bool timeSet, FE_value time,
+	cmzn_field_domain_types writeDomainTypes,
+	FE_write_fields_mode writeFieldsMode,
+	int fieldNamesCount, const char * const *fieldNames,
+	FE_write_criterion writeCriterion,
+	cmzn_streaminformation_region_recursion_mode recursionMode)
 {
-	int return_code;
-
-	ENTER(write_exregion_to_stream);
-	if (output_file && region && root_region &&
-		((write_data || write_elements || write_nodes)) &&
-		((write_fields_mode != FE_WRITE_LISTED_FIELDS) ||
-			((0 < number_of_field_names) && field_names)))
+	int return_code = 1;
+	if (outStream && rootRegion && region &&
+		((writeFieldsMode != FE_WRITE_LISTED_FIELDS) ||
+			((0 < fieldNamesCount) && fieldNames)))
 	{
-		(*output_file) << "EX Version: 2\n";
-		if (cmzn_region_contains_subregion(root_region, region))
-		{
-			int *field_names_counter = NULL;
-			if (0 < number_of_field_names)
-			{
-				/* count number of times each field name is matched for later warning */
-				if (ALLOCATE(field_names_counter, int, number_of_field_names))
-				{
-					for (int i = 0; i < number_of_field_names; i++)
-					{
-						field_names_counter[i] = 0;
-					}
-				}
-			}
-			return_code = write_cmzn_region(output_file,
-				region, group_name, root_region,
-				write_elements, write_nodes, write_data,
-				write_fields_mode, number_of_field_names, field_names, field_names_counter,
-				time, write_criterion, recursion_mode);
-			if (field_names_counter)
-			{
-				if (write_fields_mode == FE_WRITE_LISTED_FIELDS)
-				{
-					for (int i = 0; i < number_of_field_names; i++)
-					{
-						if (field_names_counter[i] == 0)
-						{
-							display_message(WARNING_MESSAGE,
-								"No field named '%s' found in any region written to EX file",
-								field_names[i]);
-						}
-					}
-				}
-				DEALLOCATE(field_names_counter);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"write_exregion_to_stream.  Error writing region");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_exregion_to_stream.  Region is not within root region");
-			return_code = 0;
-		}
+		EXWriter exWriter(outStream, rootRegion, groupName, timeSet, time,
+			writeDomainTypes, writeFieldsMode, fieldNamesCount, fieldNames,
+			writeCriterion, recursionMode);
+		return_code = exWriter.write(region);
 	}
 	else
 	{
@@ -2325,38 +2234,36 @@ int write_exregion_to_stream(ostream *output_file,
 			"write_exregion_to_stream.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_exregion_to_stream */
+}
 
-int write_exregion_file_of_name(const char *file_name,
-	struct cmzn_region *region, const char *group_name,
-	struct cmzn_region *root_region,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
+int write_exregion_file_of_name(
+	const char *fileName,
+	struct cmzn_region *rootRegion,
+	struct cmzn_region *region, const char *groupName,
+	bool timeSet, FE_value time,
+	cmzn_field_domain_types writeDomainTypes,
+	FE_write_fields_mode writeFieldsMode,
+	int fieldNamesCount, const char * const *fieldNames,
+	FE_write_criterion writeCriterion,
+	cmzn_streaminformation_region_recursion_mode recursionMode)
 {
-	int return_code;
-
-	if (file_name)
+	int return_code = 1;
+	if (fileName)
 	{
-		ofstream output_file;
-		output_file.open(file_name, ios::out);
-		if (output_file.is_open())
+		ofstream fileStream;
+		fileStream.open(fileName, ios::out);
+		if (fileStream.is_open())
 		{
-			return_code = write_exregion_to_stream(&output_file, region, group_name, root_region,
-				write_elements, write_nodes, write_data,
-				write_fields_mode, number_of_field_names, field_names, time,
-				write_criterion, recursion_mode);
-			output_file.close();
+			return_code = write_exregion_to_stream(&fileStream, rootRegion, region, groupName,
+				timeSet, time, writeDomainTypes, writeFieldsMode, fieldNamesCount, fieldNames,
+				writeCriterion, recursionMode);
+			fileStream.close();
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Could not open for writing exregion file: %s", file_name);
+				"Could not open for writing exregion file: %s", fileName);
 			return_code = 0;
 		}
 	}
@@ -2368,33 +2275,31 @@ int write_exregion_file_of_name(const char *file_name,
 	}
 
 	return (return_code);
-} /* write_exregion_file_of_name */
+}
 
 int write_exregion_file_to_memory_block(
-	struct cmzn_region *region, const char *group_name,
-	struct cmzn_region *root_region, int write_elements,
-	int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode,
-	void **memory_block, unsigned int *memory_block_length)
+	void **memoryBlock, unsigned int *memoryBlockLength,
+	struct cmzn_region *rootRegion,
+	struct cmzn_region *region, const char *groupName,
+	bool timeSet, FE_value time,
+	cmzn_field_domain_types writeDomainTypes,
+	FE_write_fields_mode writeFieldsMode,
+	int fieldNamesCount, const char * const *fieldNames,
+	FE_write_criterion writeCriterion,
+	cmzn_streaminformation_region_recursion_mode recursionMode)
 {
-	int return_code;
-
-	ENTER(write_exregion_file_of_name);
-	if (memory_block)
+	int return_code = 1;
+	if (memoryBlock)
 	{
 		ostringstream stringStream;
 		if (stringStream)
 		{
-			return_code = write_exregion_to_stream(&stringStream, region, group_name, root_region,
-				write_elements, write_nodes, write_data,
-				write_fields_mode, number_of_field_names, field_names, time,
-				write_criterion, recursion_mode);
+			return_code = write_exregion_to_stream(&stringStream, rootRegion, region, groupName,
+				timeSet, time, writeDomainTypes, writeFieldsMode, fieldNamesCount, fieldNames,
+				writeCriterion, recursionMode);
 			string sstring = stringStream.str();
-			*memory_block_length = static_cast<unsigned int>(sstring.size());
-			*memory_block = duplicate_string(sstring.c_str());
+			*memoryBlockLength = static_cast<unsigned int>(sstring.size());
+			*memoryBlock = duplicate_string(sstring.c_str());
 		}
 		else
 		{
@@ -2409,7 +2314,5 @@ int write_exregion_file_to_memory_block(
 			"write_exregion_file_of_name.  Invalid arguments");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
 }

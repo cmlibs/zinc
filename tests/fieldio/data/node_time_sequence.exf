@@ -56,3 +56,9 @@ Shape. Dimension=1, line
 Element: 1
 Nodes:
 1 2
+Group name: bob
+!#nodeset nodes
+Node: 1
+Node: 2
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Element: 1

@@ -615,12 +615,16 @@ public:
 		this->nodeset = nodesetIn;
 		this->clearHeaderCache();
 		this->clearSubelementGroups();
-		// set default blank node template for nodeset:
-		this->fe_node_template = this->nodeset->create_FE_node_template();
-		if (0 == this->fe_node_template)
+		this->fe_node_template = nullptr;
+		if (this->exVersion < 3)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
-			return false;
+			// older versions required default blank node template for nodeset:
+			this->fe_node_template = this->nodeset->create_FE_node_template();
+			if (!this->fe_node_template)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
+				return false;
+			}
 		}
 		return true;
 	}
@@ -2195,9 +2199,9 @@ cmzn_node *EXReader::readNode()
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Node token.  %s", this->getFileLocation());
 		return 0;
 	}
-	if (!((this->nodeset) && (this->fe_node_template)))
+	if (!this->nodeset)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set or no node template found.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set.  %s", this->getFileLocation());
 		return 0;
 	}
 	DsLabelIdentifier nodeIdentifier = DS_LABEL_IDENTIFIER_INVALID;
@@ -2211,8 +2215,13 @@ cmzn_node *EXReader::readNode()
 	if (returnNode)
 	{
 		returnNode->access();
+		if (!this->fe_node_template)
+		{
+			// case of listing nodes in group without shape and field headers - return node as-is
+			return returnNode;
+		}
 	}
-	else
+	else if (this->fe_node_template)
 	{
 		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->fe_node_template);
 		if (!returnNode)
@@ -2221,6 +2230,13 @@ cmzn_node *EXReader::readNode()
 			return 0;
 		}
 	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Node not found, must be first defined with a shape and field header.  %s",
+			this->getFileLocation());
+		return nullptr;
+	}
+
 	bool result = true;
 	// fill template node if node with identifier already exists (and merge below), otherwise new node
 	FE_node *node = existingNode ? this->fe_node_template->get_template_node() : returnNode;
@@ -4084,11 +4100,12 @@ cmzn_element *EXReader::readElement()
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Element: token.  %s", this->getFileLocation());
 		return 0;
 	}
-	if (!((this->mesh) && (this->elementtemplate)))
+	if (!this->mesh)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Can't read element as no mesh set or no element template defined.  %s", this->getFileLocation());
-		return 0;
+		display_message(ERROR_MESSAGE, "EX Reader.  Can't read element as no mesh set.  %s", this->getFileLocation());
+		return nullptr;
 	}
+
 	DsLabelIdentifier elementIdentifier = DS_LABEL_IDENTIFIER_INVALID;
 	if (!this->readElementIdentifier(elementIdentifier))
 		return 0;
@@ -4103,22 +4120,30 @@ cmzn_element *EXReader::readElement()
 	cmzn_element *element = this->mesh->findElementByIdentifier(elementIdentifier);
 	if (element)
 	{
-		// existing element may have no shape if automatically created for element:xi location
-		// in this case merge will set its shape, otherwise it's an error if existing shape is changed
-		const FE_element_shape *elementShape = element->getElementShape();
-		if ((elementShape) && (this->elementtemplate->getElementShape() != elementShape))
+		if (this->elementtemplate)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Element %d redefined with different shape.  %s", elementIdentifier, this->getFileLocation());
-			return 0;
-		}
-		if (CMZN_OK != this->elementtemplate->mergeIntoElementEX(element))
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge element fields.  %s", this->getFileLocation());
-			return 0;
+			// existing element may have no shape if automatically created for element:xi location
+			// in this case merge will set its shape, otherwise it's an error if existing shape is changed
+			const FE_element_shape *elementShape = element->getElementShape();
+			if ((elementShape) && (this->elementtemplate->getElementShape() != elementShape))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Element %d redefined with different shape.  %s", elementIdentifier, this->getFileLocation());
+				return nullptr;
+			}
+			if (CMZN_OK != this->elementtemplate->mergeIntoElementEX(element))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge element fields.  %s", this->getFileLocation());
+				return nullptr;
+			}
 		}
 		element->access();
+		if (!this->elementtemplate)
+		{
+			// case of listing elements in group without shape and field headers - return element as-is
+			return element;
+		}
 	}
-	else
+	else if (this->elementtemplate)
 	{
 		element = this->elementtemplate->createElementEX(elementIdentifier);
 		if (!element)
@@ -4126,6 +4151,12 @@ cmzn_element *EXReader::readElement()
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element.  %s", this->getFileLocation());
 			return 0;
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element not found, must be first defined with a shape and field header.  %s",
+			this->getFileLocation());
+		return nullptr;
 	}
 
 	// Faces: (optional)
