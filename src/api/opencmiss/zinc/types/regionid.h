@@ -45,11 +45,13 @@ enum cmzn_streaminformation_region_attribute
 	/*!< Unspecified attribute */
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
 	/*!< Attribute used to specify the time to read or write field parameters in
-	 * stream resource(s). Only applies to numerical fields.
-	 * Non-time-varying fields are read as defined over a time sequence with this
-	 * single time, but written without time-variation.
-	 * Time-varying field parameters are read or written at the nearest time to
-	 * this in their time sequence. */
+	 * stream resource(s). Only applies to numerical fields. Note special
+	 * behaviour for read and write, and whether source field is time-varying:
+	 * Non-time-varying fields in file are upgraded on read to be defined at this
+	 * single time, but in-memory fields without time-variation are written as-is.
+	 * Time-varying field parameters are read at the nearest time present in the
+	 * source time sequence, but written at the specified time by interpolation
+	 * or using the values for the minimum/maximum time if out of range. */
 };
 
 /**

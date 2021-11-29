@@ -418,7 +418,7 @@ class EXReader
 	bool hasElementValues;  // set to true if any element field has element field values
 	std::vector<ScaleFactorSet *> scaleFactorSets;
 	std::vector<TimeSequence *> timeSequences;
-	std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence for reading one time
+	std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence for reading one time, valid only from last node header
 	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
 
 public:
@@ -447,6 +447,7 @@ public:
 
 	~EXReader()
 	{
+		this->clearTimeSequences();
 		this->clearHeaderCache();
 		if (this->fileLocation)
 			DEALLOCATE(this->fileLocation);
@@ -697,7 +698,7 @@ private:
 		this->nodeFieldTimeSequences.clear();
 	}
 
-	/*** @return  Pointer to scale factor set with name and details, or nullptr if failed */
+	/** @return  Pointer to scale factor set with name and details, or nullptr if failed */
 	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn,
 		const char *scaleFactorIdentifiersString)
 	{
@@ -725,7 +726,7 @@ private:
 		return sfSet;
 	}
 
-	/*** @return  Pointer to scale factor set with name, or nullptr if not found */
+	/** @return  Pointer to scale factor set with name, or nullptr if not found */
 	ScaleFactorSet *findScaleFactorSet(const char *nameIn)
 	{
 		if (!nameIn)
@@ -742,7 +743,7 @@ private:
 		return nullptr;
 	}
 
-	/*** @return  Pointer to TimeSequence with name and details, or nullptr if failed */
+	/** @return  Pointer to TimeSequence with name and details, or nullptr if failed */
 	TimeSequence *createTimesequence(const char *nameIn, int timesCountIn, const double *timesIn)
 	{
 		if ((!nameIn) || (timesCountIn < 1))
@@ -770,7 +771,7 @@ private:
 		return timeSequence;
 	}
 
-	/*** @return  Pointer to TimeSequence with name, or nullptr if not found */
+	/** @return  Pointer to TimeSequence with name, or nullptr if not found */
 	TimeSequence *findTimeSequence(const char *nameIn)
 	{
 		if (!nameIn)
@@ -782,7 +783,9 @@ private:
 		for (size_t ts = 0; ts < tsCount; ++ts)
 		{
 			if (0 == this->timeSequences[ts]->name.compare(nameIn))
+			{
 				return this->timeSequences[ts];
+			}
 		}
 		return nullptr;
 	}

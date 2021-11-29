@@ -193,11 +193,55 @@ int FE_field_add_to_vector_indexer_priority(struct FE_field *field, void *field_
 /** Class for writing region/field data to EX format */
 class EXWriter
 {
+	class TimeSequence
+	{
+	public:
+		std::string name;
+		FE_time_sequence *feTimeSequence;
+		int size;
+		const bool singleTimeSet;
+		const FE_value singleTime;
+
+		TimeSequence(const char *nameIn, FE_time_sequence *feTimeSequenceIn, bool singleTimeSetIn, FE_value singleTimeIn) :
+			name(nameIn),
+			feTimeSequence(ACCESS(FE_time_sequence)(feTimeSequenceIn)),
+			size(FE_time_sequence_get_number_of_times(feTimeSequenceIn)),
+			singleTimeSet(singleTimeSetIn),
+			singleTime(singleTimeIn)
+		{
+			if ((singleTimeSetIn) && (size > 0))
+			{
+				size = 1;
+			}
+		}
+
+		~TimeSequence()
+		{
+			DEACCESS(FE_time_sequence)(&this->feTimeSequence);
+		}
+
+		/** @return  Non-accessed FE_time_sequence */
+		FE_time_sequence *getFeTimeSequence() const
+		{
+			return this->feTimeSequence;
+		}
+
+		const char *getName() const
+		{
+			return this->name.c_str();
+		}
+
+		const int getSize() const
+		{
+			return this->size;
+		}
+	};
+
 	ostream *outStream;
 	cmzn_region *rootRegion;  // accessed
 	const char * groupName;
-	bool timeSet;
-	FE_value time;
+	bool singleTimeSet;
+	FE_value singleTime;
 	cmzn_field_domain_types writeDomainTypes;  // sets which meshes, nodesets to write
 	FE_write_fields_mode writeFieldsMode;  // sets whether all/no/listed fields are written
 	std::vector<std::string> fieldNames;
@@ -212,27 +256,27 @@ class EXWriter
 	const FE_mesh *feMesh;
 	const FE_nodeset *feNodeset;
 	bool writeIdentifiersOnly;
+	int timeSequenceNumber;  // incremented and used to make time sequence name unique across file
+	std::vector<TimeSequence *> timeSequences;  // time sequences defined in current region
 	// following cached to check whether last field header applies to subsequent elements
 	std::vector<FE_field *> headerFields;
-	// following caches for elements only:
 	FE_element_shape *lastElementShape;
 	cmzn_element *headerElement;
 	ElementNodePacking *headerElementNodePacking;
 	std::vector<const FE_element_field_template *> headerScalingEfts;
-	// following caches for nodes only:
 	cmzn_node *headerNode;
 
 public:
 
-	/** Contstructor for object for writing region/field data to EX format.
+	/** Constructor for object for writing region/field data to EX format.
 	 * @param outStreamIn  The stream to write region and field data to.
 	 * @param rootRegionIn  The root region of any data to be written. Need not be
 	 *   the true root of region hierarchy, but region paths in file are relative to
 	 *   this region.
 	 * @param groupNameIn  Optional name of group to limit output to. Actual
 	 *   group found from name in each region.
-	 * @param timeSetIn  True if output single time, false to output all times.
-	 * @param timeIn  The time to output if single time.
+	 * @param singleTimeSetIn  True if output single time, false to output all times.
+	 * @param singleTimeIn  The time to output if single time.
 	 * @param writeDomainTypesIn  Bitwise OR of cmzn_field_domain_type flags
 	 *   setting which meshes or nodesets to write.
 	 * @param writeFieldsModeIn  Controls which fields are written to file.
@@ -248,7 +292,7 @@ public:
 	 *   recursively written.
 	 */
 	EXWriter(ostream *outStreamIn, cmzn_region *rootRegionIn,
-			const char *groupNameIn, bool timeSetIn, FE_value timeIn,
+			const char *groupNameIn, bool singleTimeSetIn, FE_value singleTimeIn,
 			cmzn_field_domain_types writeDomainTypesIn,
 			FE_write_fields_mode writeFieldsModeIn,
 			int fieldNamesCountIn, const char * const *fieldNamesIn,
@@ -257,8 +301,8 @@ public:
 		rootRegion(rootRegionIn->access()),
 		outStream(outStreamIn),
 		groupName((groupNameIn) ? duplicate_string(groupNameIn) : nullptr),
-		timeSet(timeSetIn),
-		time(timeIn),
+		singleTimeSet(singleTimeSetIn),
+		singleTime(singleTimeIn),
 		writeDomainTypes(writeDomainTypesIn),
 		writeFieldsMode(writeFieldsModeIn),
 		fieldNames(),
@@ -271,6 +315,7 @@ public:
 		feMesh(nullptr),
 		feNodeset(nullptr),
 		writeIdentifiersOnly(false),
+		timeSequenceNumber(0),
 		lastElementShape(nullptr),
 		headerElement(nullptr),
 		headerElementNodePacking(nullptr),
@@ -287,6 +332,7 @@ public:
 
 	~EXWriter()
 	{
+		this->clearTimeSequences();
 		DEALLOCATE(this->groupName);
 		this->clearHeaderCache();
 		if (this->fieldmodule)
@@ -301,6 +347,14 @@ public:
 	int write(cmzn_region *regionIn);
 
 private:
+
+	void clearTimeSequences()
+	{
+		const size_t tsCount = this->timeSequences.size();
+		for (size_t ts = 0; ts < tsCount; ++ts)
+			delete this->timeSequences[ts];
+		this->timeSequences.clear();
+	}
 
 	void clearHeaderCache()
 	{
@@ -344,9 +398,13 @@ private:
 	}
 
 	bool writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex elementIndex, const FE_value *xi);
-	bool writeFieldHeader(int fieldIndex, struct FE_field *field);
+	bool writeFieldHeader(int fieldIndex, struct FE_field *field, TimeSequence *timeSequence=nullptr);
 	bool writeFieldValues(struct FE_field *field);
 	bool writeOptionalFieldValues();
+
+	TimeSequence *findTimeSequence(FE_time_sequence *feTimeSequence);
+	bool writeTimeSequence(FE_time_sequence *feTimeSequence);
+
 	bool writeElementShape(FE_element_shape *elementShape);
 	bool writeBasis(FE_basis *basis);
 	bool elementIsToBeWritten(cmzn_element *element);
@@ -418,8 +476,9 @@ bool EXWriter::writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex element
  * 3) fixed, field, constant, integer, #Components=3
  * 4) an_array, field, real, #Values=10, #Components=1
  * Value_type ELEMENT_XI_VALUE has optional Mesh Dimension=#.
+ * @param timeSequence  If supplied (not default nullptr) adds: , time sequence=NAME
  */
-bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
+bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field, TimeSequence *timeSequence)
 {
 	(*this->outStream) << fieldIndex << ") " << get_FE_field_name(field);
 	(*this->outStream) << ", " << ENUMERATOR_STRING(CM_field_type)(field->get_CM_field_type());
@@ -515,6 +574,12 @@ bool EXWriter::writeFieldHeader(int fieldIndex, struct FE_field *field)
 		(*this->outStream) << ", host mesh=" << hostMeshName << ", host mesh dimension=" << hostMesh->getDimension();
 		DEALLOCATE(hostMeshName);
 	}
+
+	if (timeSequence)
+	{
+		(*this->outStream) << ", time sequence=" << timeSequence->getName();
+	}
+
 	(*this->outStream) << "\n";
 	return true;
 }
@@ -624,6 +689,73 @@ bool EXWriter::writeOptionalFieldValues()
 	}
 	return true;
 }
+
+/** @return  Pointer to TimeSequence with FE_time_sequence, or nullptr if not found */
+EXWriter::TimeSequence *EXWriter::findTimeSequence(FE_time_sequence *feTimeSequence)
+{
+	const size_t tsCount = this->timeSequences.size();
+	if (this->singleTimeSet)
+	{
+		// only ever one time sequence when singleTimeSet
+		if (tsCount > 0)
+		{
+			return this->timeSequences[0];
+		}
+		return nullptr;
+	}
+	for (size_t ts = 0; ts < tsCount; ++ts)
+	{
+		if (this->timeSequences[ts]->getFeTimeSequence() == feTimeSequence)
+		{
+			return this->timeSequences[ts];
+		}
+	}
+	return nullptr;
+}
+
+/** Write/store TimeSequence with unique name. Must have called findTimeSequence unsuccessfully first */
+bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
+{
+	++this->timeSequenceNumber;
+	char name[15];
+	sprintf(name, "times%d", this->timeSequenceNumber);
+	TimeSequence *timeSequence = new TimeSequence(name, feTimeSequence, this->singleTimeSet, this->singleTime);
+	if (!timeSequence)
+	{
+		display_message(ERROR_MESSAGE, "EX Writer.  Failed to write time sequence");
+		return nullptr;
+	}
+	this->timeSequences.push_back(timeSequence);
+	const int size = timeSequence->getSize();
+	(*this->outStream) << "Time sequence: name=" << name << ", size=" << size << "\n";
+	if (size)
+	{
+		char tmpString[100];
+		if (this->singleTimeSet)
+		{
+			sprintf(tmpString, "%" FE_VALUE_STRING, this->singleTime);
+			(*this->outStream) << tmpString << "\n";
+		}
+		else
+		{
+			const int columnCount = 5;
+			FE_value time;
+			for (int i = 0; i < size; ++i)
+			{
+				FE_time_sequence_get_time_for_index(feTimeSequence, i, &time);
+				sprintf(tmpString, " %" FE_VALUE_STRING, time);
+				(*this->outStream) << tmpString;
+				if (0 == ((i + 1) % columnCount))
+					(*this->outStream) << "\n";
+			}
+			// extra newline if not multiple of number_of_columns
+			if (0 != (size % columnCount))
+				(*this->outStream) << "\n";
+		}
+	}
+	return true;
+}
+
 
 /**
  * Writes out the element shape to stream.
@@ -1487,18 +1619,20 @@ int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
  */
 bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field)
 {
-	if (!this->writeFieldHeader(fieldIndex, field))
+	const FE_node_field *nodeField = node->getNodeField(field);
+	if (!nodeField)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeNodeHeaderField.  Field is not defined at node");
+		return false;
+	}
+	FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+	TimeSequence *timeSequence = (feTimeSequence) ? this->findTimeSequence(feTimeSequence) : nullptr;
+	if (!this->writeFieldHeader(fieldIndex, field, timeSequence))
 	{
 		return false;
 	}
 	FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
 	const int componentCount = get_FE_field_number_of_components(field);
-	const FE_node_field *node_field = node->getNodeField(field);
-	if (!node_field)
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeNodeHeaderField.  Field is not defined at node");
-		return false;
-	}
 	for (int c = 0; c < componentCount; ++c)
 	{
 		char *componentName = get_FE_field_component_name(field, c);
@@ -1517,7 +1651,7 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 			(*this->outStream) << "\n";
 			continue;
 		}
-		const FE_node_field_template& nft = *(node_field->getComponent(c));
+		const FE_node_field_template& nft = *(nodeField->getComponent(c));
 		const int valuesCount = nft.getTotalValuesCount();
 		(*this->outStream) << " #Values=" << valuesCount << " (";
 		const int valueLabelsCount = nft.getValueLabelsCount();
@@ -1549,14 +1683,17 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 {
 	const int componentCount = get_FE_field_number_of_components(field);
-	const FE_node_field *node_field = node->getNodeField(field);
-	if (!node_field)
+	const FE_node_field *nodeField = node->getNodeField(field);
+	if (!nodeField)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Field %s not defined at node %d",
 			get_FE_field_name(field), get_FE_node_identifier(node));
 		return false;
 	}
-	const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+	const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
+	FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+	TimeSequence *timeSequence = (feTimeSequence) ? this->findTimeSequence(feTimeSequence) : nullptr;
+	const int timeCount = (timeSequence) ? timeSequence->getSize() : 1;
 	const enum Value_type valueType = get_FE_field_value_type(field);
 	switch (valueType)
 	{
@@ -1590,26 +1727,34 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 		char tmpString[100];
 		std::vector<FE_value> valuesVector(maximumValuesCount);
 		FE_value *values = valuesVector.data();
-		for (int c = 0; c < componentCount; ++c)
+		for (int t = 0; t < timeCount; ++t)
 		{
-			const FE_node_field_template *nft = node_field->getComponent(c);
-			const int valuesCount = nft->getTotalValuesCount();
-			// EX2 format matches internal storage with versions consecutive for each value label
-			if (CMZN_OK != cmzn_node_get_field_component_FE_value_values(node, field, c, this->time, maximumValuesCount, values))
+			FE_value time = this->singleTime;
+			if ((timeSequence) && (!this->singleTimeSet))
 			{
-				display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
-					"Failed to get FE_value values for field %s component %d at node %d",
-					get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
-				return false;
+				FE_time_sequence_get_time_for_index(feTimeSequence, t, &time);
 			}
-			for (int v = 0; v < valuesCount; ++v)
+			for (int c = 0; c < componentCount; ++c)
 			{
-				sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
-				(*this->outStream) << " " << tmpString;
-			}
-			if (valuesCount)
-			{
-				(*this->outStream) << "\n";
+				const FE_node_field_template *nft = nodeField->getComponent(c);
+				const int valuesCount = nft->getTotalValuesCount();
+				// EX2+ format matches internal storage with versions consecutive for each value label
+				if (CMZN_OK != cmzn_node_get_field_component_FE_value_values(node, field, c, time, maximumValuesCount, values))
+				{
+					display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
+						"Failed to get FE_value values for field %s component %d at node %d",
+						get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+					return false;
+				}
+				for (int v = 0; v < valuesCount; ++v)
+				{
+					sprintf(tmpString, "%" FE_VALUE_STRING, values[v]);
+					(*this->outStream) << " " << tmpString;
+				}
+				if (valuesCount)
+				{
+					(*this->outStream) << "\n";
+				}
 			}
 		}
 	} break;
@@ -1617,25 +1762,33 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 	{
 		std::vector<int> valuesVector(maximumValuesCount);
 		int *values = valuesVector.data();
-		for (int c = 0; c < componentCount; ++c)
+		for (int t = 0; t < timeCount; ++t)
 		{
-			const FE_node_field_template *nft = node_field->getComponent(c);
-			const int valuesCount = nft->getTotalValuesCount();
-			// EX2 format matches internal storage with versions consecutive for each value label
-			if (CMZN_OK != cmzn_node_get_field_component_int_values(node, field, c, this->time, maximumValuesCount, values))
+			FE_value time = this->singleTime;
+			if ((timeSequence) && (!this->singleTimeSet))
 			{
-				display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
-					"Failed to get FE_value values for field %s component %d at node %d",
-					get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
-				return false;
+				FE_time_sequence_get_time_for_index(feTimeSequence, t, &time);
 			}
-			for (int v = 0; v < valuesCount; ++v)
+			for (int c = 0; c < componentCount; ++c)
 			{
-				(*this->outStream) << " " << values[v];
-			}
-			if (valuesCount)
-			{
-				(*this->outStream) << "\n";
+				const FE_node_field_template *nft = nodeField->getComponent(c);
+				const int valuesCount = nft->getTotalValuesCount();
+				// EX2+ format matches internal storage with versions consecutive for each value label
+				if (CMZN_OK != cmzn_node_get_field_component_int_values(node, field, c, time, maximumValuesCount, values))
+				{
+					display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
+						"Failed to get FE_value values for field %s component %d at node %d",
+						get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+					return false;
+				}
+				for (int v = 0; v < valuesCount; ++v)
+				{
+					(*this->outStream) << " " << values[v];
+				}
+				if (valuesCount)
+				{
+					(*this->outStream) << "\n";
+				}
 			}
 		}
 	} break;
@@ -1786,8 +1939,22 @@ bool EXWriter::writeNodeHeader(cmzn_node *node)
 	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
-		if (node->getNodeField(field))
+		FE_node_field *nodeField = node->getNodeField(field);
+		if (nodeField)
+		{
 			this->headerFields.push_back(field);
+			FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+			if (feTimeSequence)
+			{
+				if (!this->findTimeSequence(feTimeSequence))
+				{
+					if (!this->writeTimeSequence(feTimeSequence))
+					{
+						return false;
+					}
+				}
+			}
+		}
 	}
 
 	(*this->outStream) << "#Fields=" << this->headerFields.size() << "\n";
