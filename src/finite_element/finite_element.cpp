@@ -891,6 +891,7 @@ static int FE_node_field_copy_with_equivalent_field(
 						if (copy_time_sequence)
 						{
 							copy_node_field->setTimeSequence(copy_time_sequence);
+							DEACCESS(FE_time_sequence)(&copy_time_sequence);
 						}
 						else
 						{
@@ -1397,6 +1398,7 @@ static int merge_FE_node_field_into_list(struct FE_node_field *node_field,
 						{
 							/* Can continue with the existing time_sequence */
 						}
+						DEACCESS(FE_time_sequence)(&merged_time_sequence);
 					}
 					else
 					{

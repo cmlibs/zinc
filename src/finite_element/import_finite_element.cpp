@@ -763,6 +763,7 @@ private:
 			return nullptr;
 		}
 		TimeSequence *timeSequence = new TimeSequence(nameIn, feTimeSequence, this->timeIndex);
+		DEACCESS(FE_time_sequence)(&feTimeSequence);
 		if (!timeSequence)
 		{
 			return nullptr;
@@ -2117,7 +2118,6 @@ bool EXReader::readNodeHeaderField()
 		{
 			// record which field is using which time sequence so we know how many parameters are in file even if sampling one time
 			this->nodeFieldTimeSequences[field] = timeSequence;
-			feTimeSequence = timeSequence->getFeTimeSequence();
 		}
 		if (this->timeIndex)
 		{
@@ -2130,6 +2130,10 @@ bool EXReader::readNodeHeaderField()
 					get_FE_field_name(field), this->getFileLocation()); 
 				result = false;
 			}
+		}
+		else if (timeSequence)
+		{
+			feTimeSequence = ACCESS(FE_time_sequence)(timeSequence->getFeTimeSequence());
 		}
 		if (result)
 		{
@@ -2144,6 +2148,10 @@ bool EXReader::readNodeHeaderField()
 					get_FE_field_name(field), this->getFileLocation());
 				result = false;
 			}
+		}
+		if (feTimeSequence)
+		{
+			DEACCESS(FE_time_sequence)(&feTimeSequence);
 		}
 	}
 	if (componentName)

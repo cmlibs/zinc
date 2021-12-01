@@ -86,6 +86,13 @@ namespace {
 
 void checkEx3NodeTimeSequence(Region& region)
 {
+	const double TOL = 1.0E-7;
+
+	double minimumTime, maximumTime;
+	EXPECT_EQ(RESULT_OK, region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_NEAR(0.0, minimumTime, TOL);
+	EXPECT_NEAR(5.0, maximumTime, TOL);
+
 	Fieldmodule fieldmodule = region.getFieldmodule();
 
 	Nodeset nodes = fieldmodule.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
@@ -94,8 +101,6 @@ void checkEx3NodeTimeSequence(Region& region)
 	EXPECT_TRUE(node1.isValid());
 	Node node2 = nodes.findNodeByIdentifier(2);
 	EXPECT_TRUE(node2.isValid());
-
-	const double TOL = 1.0E-7;
 
 	FieldFiniteElement coordinates = fieldmodule.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
@@ -191,15 +196,19 @@ void checkEx3NodeTimeSequenceSingleTime(Region& region, double evaluationTime,
 	double expectedCountTime, double expectedCount,
 	int expectedPressureTimeCount, double expectedPressureTime, double expectedPressure)
 {
+	const double TOL = 1.0E-7;
+	const double PTOL = 0.01;
+
+	double minimumTime, maximumTime;
+	EXPECT_EQ(RESULT_OK, region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_NEAR(expectedCountTime, minimumTime, TOL);
+	EXPECT_NEAR(expectedCoordinatesTime, maximumTime, TOL);
 	Fieldmodule fieldmodule = region.getFieldmodule();
 
 	Nodeset nodes = fieldmodule.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(2, nodes.getSize());
 	Node node1 = nodes.findNodeByIdentifier(1);
 	EXPECT_TRUE(node1.isValid());
-
-	const double TOL = 1.0E-7;
-	const double PTOL = 0.01;
 
 	FieldFiniteElement coordinates = fieldmodule.findFieldByName("coordinates").castFiniteElement();
 	EXPECT_TRUE(coordinates.isValid());
