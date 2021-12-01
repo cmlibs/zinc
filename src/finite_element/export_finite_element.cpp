@@ -298,8 +298,8 @@ public:
 			int fieldNamesCountIn, const char * const *fieldNamesIn,
 			FE_write_criterion writeCriterionIn,
 			cmzn_streaminformation_region_recursion_mode recursionModeIn) :
-		rootRegion(rootRegionIn->access()),
 		outStream(outStreamIn),
+		rootRegion(rootRegionIn->access()),
 		groupName((groupNameIn) ? duplicate_string(groupNameIn) : nullptr),
 		singleTimeSet(singleTimeSetIn),
 		singleTime(singleTimeIn),
@@ -723,7 +723,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 	if (!timeSequence)
 	{
 		display_message(ERROR_MESSAGE, "EX Writer.  Failed to write time sequence");
-		return nullptr;
+		return false;
 	}
 	this->timeSequences.push_back(timeSequence);
 	const int size = timeSequence->getSize();
@@ -2093,7 +2093,7 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 		else if (this->fieldNames.size() > 0)
 		{
 			size_t fieldNamesCount = this->fieldNames.size();
-			for (int i = 0; i < fieldNamesCount; ++i)
+			for (size_t i = 0; i < fieldNamesCount; ++i)
 			{
 				FE_field *feField = FE_region_get_FE_field_from_name(this->feRegion, this->fieldNames[i].c_str());
 				if (feField)
