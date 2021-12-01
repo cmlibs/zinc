@@ -2176,7 +2176,7 @@ Scene_viewer_render_scene_in_viewport to access this function.
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
-				else if ((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT))
+				else if (scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
 				{
 					Scene_viewer_initialise_order_independent_transparency(&rendering_data);
 

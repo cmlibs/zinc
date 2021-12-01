@@ -31,6 +31,8 @@
 #include <opencmiss/zinc/stream.h>
 #include <opencmiss/zinc/streamregion.h>
 #include <opencmiss/zinc/timekeeper.h>
+
+#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 
 #include <string>       // std::string
@@ -238,7 +240,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_destroy(&coordinatesField);
 }
 
-void TestDescriptionOutput(cmzn_region_id region, char *description)
+void TestDescriptionOutput(cmzn_region_id region, const char *description)
 {
 	cmzn_streaminformation_id si = cmzn_region_create_streaminformation_region(
 		region);
@@ -534,25 +536,12 @@ TEST(fieldmodule_description, read)
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::FIELDMODULE_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::FIELDMODULE_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	TestDescriptionOutput(root_region, (char *)buffer);
+	TestDescriptionOutput(root_region, stringBuffer);
 
-	free(buffer);
+	free(stringBuffer);
 
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);

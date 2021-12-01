@@ -8,6 +8,7 @@ SET(CURRENT_TEST spectrum)
 LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/spectrum.cpp
+    utilities/fileio.cpp
     )
 
 SET(SPECTRUM_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/spectrum_description.json")

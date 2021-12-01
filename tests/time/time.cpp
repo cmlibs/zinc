@@ -16,6 +16,7 @@
 #include <opencmiss/zinc/timekeeper.hpp>
 #include <opencmiss/zinc/timenotifier.hpp>
 
+#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -124,25 +125,12 @@ TEST(ZincTimekeeper, description_io_cpp)
 	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
 	EXPECT_TRUE(tkm.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, tkm.readDescription((char *)buffer));
-	free(buffer);
+	EXPECT_EQ(CMZN_OK, tkm.readDescription(stringBuffer));
+
+	free(stringBuffer);
 
 	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
 	EXPECT_TRUE(timekeeper.isValid());
