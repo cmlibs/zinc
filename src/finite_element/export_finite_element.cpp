@@ -231,7 +231,7 @@ class EXWriter
 			return this->name.c_str();
 		}
 
-		const int getSize() const
+		int getSize() const
 		{
 			return this->size;
 		}
@@ -717,7 +717,7 @@ EXWriter::TimeSequence *EXWriter::findTimeSequence(FE_time_sequence *feTimeSeque
 bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 {
 	++this->timeSequenceNumber;
-	char name[15];
+	char name[20];
 	sprintf(name, "times%d", this->timeSequenceNumber);
 	TimeSequence *timeSequence = new TimeSequence(name, feTimeSequence, this->singleTimeSet, this->singleTime);
 	if (!timeSequence)
