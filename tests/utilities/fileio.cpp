@@ -46,13 +46,13 @@ char *readFileToString(const char *filename)
 		return nullptr;
 	}
 	fseek(f, 0, SEEK_END);
-	long int length = ftell(f);
+	const size_t length = static_cast<size_t>(ftell(f));
 	char *stringBuffer = nullptr;
 	stringBuffer = static_cast<char *>(malloc(length + 1));  // allow for zero terminating character
 	if (stringBuffer)
 	{
 		fseek(f, 0, SEEK_SET);
-		long int readLength = fread(stringBuffer, 1, length, f);
+		const size_t readLength = fread(stringBuffer, 1, length, f);
 		stringBuffer[length] = 0;
 		if (readLength != length)
 		{
