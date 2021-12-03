@@ -14,6 +14,8 @@
 #include "graphics/render_gl.h"
 #include <string>
 #include "jsoncpp/json.h"
+#include "opencmiss/zinc/types/graphicsid.h"
+
 
 struct GT_object;
 
@@ -30,6 +32,8 @@ protected:
 	int morphVertices, morphColours, morphNormals;
 	int number_of_time_steps;
 	char *groupName, *regionPath;
+	//This is a weak pointer
+	cmzn_graphics_id graphics;
 	double textureSizes[3];
 	std::string verticesMorphString;
 	std::string colorsMorphString;
@@ -72,7 +76,7 @@ public:
 			cmzn_streaminformation_scene_io_data_type mode_in,
 			int morphVerticesIn, int morphColoursIn, int morphNormalsIn, 
 			double *textureSizesIn, const char *groupNameIn,
-			const char *regionPathIn) :
+			const char *regionPathIn, cmzn_graphics_id graphicsIn) :
 		filename(duplicate_string(filename_in)),
 		mode(mode_in),
 		morphVerticesExported(false),
@@ -83,7 +87,8 @@ public:
 		morphNormals(morphNormalsIn),
 		number_of_time_steps(number_of_time_steps_in),
 		groupName(groupNameIn ? duplicate_string(groupNameIn) : nullptr),
-		regionPath(regionPathIn ? duplicate_string(regionPathIn) : nullptr)
+		regionPath(regionPathIn ? duplicate_string(regionPathIn) : nullptr),
+		graphics(graphicsIn)
 	{
 		if (textureSizesIn)
 		{
@@ -130,11 +135,17 @@ public:
 	{
 		return regionPath;
 	}
+	
 
 	/* this return json format describing colours and transformation of the glyph */
 	Json::Value getExportJson();
 
 	std::string *getExportString();
+
+	bool isExportForGraphics(cmzn_graphics_id graphicsIn)
+	{
+		return (this->graphics == graphicsIn);
+	}
 
 	bool getMorphVerticesExported()
 	{
@@ -181,10 +192,10 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn,
-		const char* regionPathIn) :
+		const char* regionPathIn, cmzn_graphics_id graphicsIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn, regionPathIn)
+		groupNameIn, regionPathIn, graphicsIn)
 	{
 		glyphTransformationString.clear();
 		glyphGeometriesURLName = 0;
@@ -217,10 +228,11 @@ public:
 	Threejs_export_point(const char *filename_in, int number_of_time_steps_in,
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
-		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn) :
+		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
+		cmzn_graphics_id graphicsIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn, regionPathIn)
+		groupNameIn, regionPathIn, graphicsIn)
 	{
 	}
 
@@ -240,10 +252,11 @@ public:
 	Threejs_export_line(const char *filename_in, int number_of_time_steps_in,
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
-		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn) :
+		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
+		cmzn_graphics_id graphicsIn) :
 			Threejs_export_point(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn,  regionPathIn)
+		groupNameIn,  regionPathIn, graphicsIn)
 	{
 	}
 
