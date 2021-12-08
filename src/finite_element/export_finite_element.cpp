@@ -74,6 +74,45 @@ class ElementNodePacking
 
 public:
 
+	ElementNodePacking(cmzn_element *element, vector<FE_field*>& writableFields)
+	{
+		const size_t fieldCount = writableFields.size();
+		for (size_t f = 0; f < fieldCount; ++f)
+		{
+			FE_field *field = writableFields[f];
+			const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(element->getMesh());
+			if (!meshFieldData)
+			{
+				continue;  // field not defined on this mesh
+			}
+			const int componentCount = get_FE_field_number_of_components(field);
+			const FE_element_field_template *lastEft = nullptr;
+			for (int c = 0; c < componentCount; ++c)
+			{
+				const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+				if (!eft)
+				{
+					break;  // field not defined on this element
+				}
+				if (eft != lastEft)
+				{
+					if (eft->getNumberOfLocalNodes() > 0)
+					{
+						const FE_mesh_element_field_template_data *meshEftData = element->getMesh()->getElementfieldtemplateData(eft);
+						const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
+						if (!nodeIndexes)
+						{
+							display_message(WARNING_MESSAGE, "EXWriter::createElementNodePacking.  Missing node indexes");
+						}
+						this->packEftNodes(eft, nodeIndexes);
+					}
+					lastEft = eft;
+				}
+			}
+		}
+	}
+
 	/** @param  nodeIndexesIn  The node indexes for eft; can be NULL if not set */
 	void packEftNodes(const FE_element_field_template *eft, const DsLabelIndex *nodeIndexesIn)
 	{
@@ -237,6 +276,103 @@ class EXWriter
 		}
 	};
 
+	class NodeTemplate
+	{
+	public:
+		std::string name;
+		cmzn_node *headerNode;
+		std::vector<FE_field *> headerFields;
+
+		NodeTemplate(const char *nameIn, cmzn_node *headerNodeIn) :
+			name(nameIn),
+			headerNode(headerNodeIn->access())
+		{
+		}
+
+		~NodeTemplate()
+		{
+			cmzn_node::deaccess(this->headerNode);
+			this->headerFields.clear();
+		}
+
+		/**
+		 * Returns true if node has matching field definition to this template.
+		 * Limited to matching writable fields defined on this node.
+		 */
+		bool matches(cmzn_node *node, FE_write_fields_mode writeFieldsMode, vector<FE_field*>& writableFields)
+		{
+			if (writeFieldsMode == FE_WRITE_ALL_FIELDS)
+			{
+				return (0 != equivalent_FE_fields_at_nodes(node, this->headerNode));
+			}
+			const size_t fieldsCount = writableFields.size();
+			for (size_t i = 0; i < fieldsCount; ++i)
+			{
+				if (!equivalent_FE_field_at_nodes(writableFields[i], node, this->headerNode))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+	};
+	
+	class ElementTemplate
+	{
+	public:
+		std::string name;
+		cmzn_element *headerElement;
+		std::vector<FE_field *> headerFields;
+		ElementNodePacking headerElementNodePacking;
+		std::vector<const FE_element_field_template *> headerScalingEfts;
+
+		ElementTemplate(const char *nameIn, cmzn_element *headerElementIn, vector<FE_field*>& writableFields) :
+			name(nameIn),
+			headerElement(headerElementIn->access()),
+			headerElementNodePacking(headerElement, writableFields)
+		{
+		}
+
+		~ElementTemplate()
+		{
+			cmzn_element::deaccess(this->headerElement);
+		}
+
+		/**
+		 * Returns true if element has matching shape and field definition to this template.
+		 * Also matches node packing which is pessimistic; would only fail if say 2 efts
+		 * have the same nodes for one element, but different for another, all else equal.
+		 * Limited to matching writable fields defined on this element.
+		 */
+		bool matches(cmzn_element *element, FE_write_fields_mode writeFieldsMode, vector<FE_field*>& writableFields)
+		{
+			if (element->getElementShape() != this->headerElement->getElementShape())
+			{
+				return false;
+			}
+			if (writeFieldsMode == FE_WRITE_ALL_FIELDS)
+			{
+				return equivalent_FE_fields_in_elements(element, this->headerElement);
+			}
+			const size_t fieldsCount = writableFields.size();
+			for (size_t i = 0; i < fieldsCount; ++i)
+			{
+				if (!equivalent_FE_field_in_elements(writableFields[i], element, this->headerElement))
+				{
+					return false;
+				}
+			}
+			ElementNodePacking tmpElementNodePacking(element, writableFields);
+			if (!tmpElementNodePacking.matches(this->headerElementNodePacking))
+			{
+				return false;
+			}
+			return true;
+		}
+
+	};
+
 	ostream *outStream;
 	cmzn_region *rootRegion;  // accessed
 	const char * groupName;
@@ -258,13 +394,12 @@ class EXWriter
 	bool writeIdentifiersOnly;
 	int timeSequenceNumber;  // incremented and used to make time sequence name unique across file
 	std::vector<TimeSequence *> timeSequences;  // time sequences defined in current region
-	// following cached to check whether last field header applies to subsequent elements
-	std::vector<FE_field *> headerFields;
-	FE_element_shape *lastElementShape;
-	cmzn_element *headerElement;
-	ElementNodePacking *headerElementNodePacking;
-	std::vector<const FE_element_field_template *> headerScalingEfts;
-	cmzn_node *headerNode;
+	int nodeTemplateNumber;  // incremented and used to make node template name unique across file
+	std::vector<NodeTemplate*> nodeTemplates;
+	NodeTemplate *nodeTemplate;
+	int elementTemplateNumber;  // incremented and used to make element template name unique across file
+	std::vector<ElementTemplate*> elementTemplates;
+	ElementTemplate *elementTemplate;
 
 public:
 
@@ -316,10 +451,10 @@ public:
 		feNodeset(nullptr),
 		writeIdentifiersOnly(false),
 		timeSequenceNumber(0),
-		lastElementShape(nullptr),
-		headerElement(nullptr),
-		headerElementNodePacking(nullptr),
-		headerNode(nullptr)
+		nodeTemplateNumber(0),
+		nodeTemplate(nullptr),
+		elementTemplateNumber(0),
+		elementTemplate(nullptr)
 	{
 		if (fieldNamesIn)
 		{
@@ -334,7 +469,7 @@ public:
 	{
 		this->clearTimeSequences();
 		DEALLOCATE(this->groupName);
-		this->clearHeaderCache();
+		this->clearTemplates();
 		if (this->fieldmodule)
 		{
 			cmzn_fieldmodule_destroy(&this->fieldmodule);
@@ -356,15 +491,22 @@ private:
 		this->timeSequences.clear();
 	}
 
-	void clearHeaderCache()
+	void clearTemplates()
 	{
-		this->headerFields.clear();
-		this->lastElementShape = nullptr;
-		this->headerElement = nullptr;
-		delete this->headerElementNodePacking;
-		this->headerElementNodePacking = nullptr;
-		this->headerScalingEfts.clear();
-		this->headerNode = nullptr;
+		const size_t ntCount = this->nodeTemplates.size();
+		for (int nt = 0; nt < ntCount; ++nt)
+		{
+			delete this->nodeTemplates[nt];
+		}
+		this->nodeTemplates.clear();
+		this->nodeTemplate = nullptr;
+		const size_t etCount = this->elementTemplates.size();
+		for (int et = 0; et < etCount; ++et)
+		{
+			delete this->elementTemplates[et];
+		}
+		this->elementTemplates.clear();
+		this->elementTemplate = nullptr;
 	}
 
 	/** Switch to writing elements from mesh */
@@ -372,7 +514,7 @@ private:
 	{
 		this->feMesh = feMeshIn;
 		this->feNodeset = nullptr;
-		this->clearHeaderCache();
+		this->clearTemplates();
 	}
 
 	/** Switch to writing nodes from nodeset */
@@ -380,7 +522,7 @@ private:
 	{
 		this->feMesh = nullptr;
 		this->feNodeset = nodesetIn;
-		this->clearHeaderCache();
+		this->clearTemplates();
 	}
 
 	void setWriteIdentifiersOnly(bool state)
@@ -400,32 +542,28 @@ private:
 	bool writeElementXiValue(const FE_mesh *hostMesh, DsLabelIndex elementIndex, const FE_value *xi);
 	bool writeFieldHeader(int fieldIndex, struct FE_field *field, TimeSequence *timeSequence=nullptr);
 	bool writeFieldValues(struct FE_field *field);
-	bool writeOptionalFieldValues();
+	bool writeOptionalFieldValues(vector<FE_field*>& headerFields);
 
 	TimeSequence *findTimeSequence(FE_time_sequence *feTimeSequence);
 	bool writeTimeSequence(FE_time_sequence *feTimeSequence);
 
 	bool writeElementShape(FE_element_shape *elementShape);
-	bool writeBasis(FE_basis *basis);
-	bool elementIsToBeWritten(cmzn_element *element);
-	bool elementFieldsMatchLastElement(cmzn_element *element);
 	bool writeEftScaleFactorIdentifiers(const FE_element_field_template *eft);
+	bool writeBasis(FE_basis *basis);
 	bool writeElementHeaderField(cmzn_element *element, int fieldIndex, FE_field *field);
-	ElementNodePacking *createElementNodePacking(cmzn_element *element);
-	bool writeElementHeader(cmzn_element *element);
+	bool writeElementTemplate(cmzn_element *element);
 	bool writeElementFieldComponentValues(cmzn_element *element, FE_field *field, int componentNumber);
 	bool writeElement(cmzn_element *element);
-	bool writeElementExt(cmzn_element *element);
+	bool elementIsToBeWritten(cmzn_element *element);
 	int writeMesh(int dimension, cmzn_field_group *group);
 
-	bool nodeIsToBeWritten(cmzn_node *node);
-	bool nodeFieldsMatchLastNode(cmzn_node *node);
 	bool writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field);
-	bool writeNodeHeader(cmzn_node *node);
+	bool writeNodeTemplate(cmzn_node *node);
 	bool writeNodeFieldValues(cmzn_node *node, FE_field *field);
 	bool writeNode(cmzn_node *node);
-	bool writeNodeExt(cmzn_node *node);
+	bool nodeIsToBeWritten(cmzn_node *node);
 	int writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group);
+
 	int writeRegionContent(cmzn_field_group *group);
 	int writeRegion(cmzn_region *regionIn);
 };
@@ -669,10 +807,10 @@ bool EXWriter::writeFieldValues(struct FE_field *field)
 
 /** If any fields have per-field parameters, e.g. is constant or indexed, writes a Values section
   * future: change to support having only some components constant; probably remove indexed */
-bool EXWriter::writeOptionalFieldValues()
+bool EXWriter::writeOptionalFieldValues(vector<FE_field*>& headerFields)
 {
 	bool first = true;
-	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
+	for (auto fieldIter = headerFields.begin(); fieldIter != headerFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
 		const FE_field_type feFieldType = get_FE_field_FE_field_type(field);
@@ -727,7 +865,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 	}
 	this->timeSequences.push_back(timeSequence);
 	const int size = timeSequence->getSize();
-	(*this->outStream) << "Time sequence: name=" << name << ", size=" << size << "\n";
+	(*this->outStream) << "Time sequence: " << name << ", size=" << size << "\n";
 	if (size)
 	{
 		char tmpString[100];
@@ -776,7 +914,70 @@ bool EXWriter::writeElementShape(FE_element_shape *elementShape)
 	const int dimension = get_FE_element_shape_dimension(elementShape);
 	(*this->outStream) << "Shape. Dimension=" << dimension << ", " << shape_description << "\n";
 	DEALLOCATE(shape_description);
-	this->lastElementShape = elementShape;
+	return true;
+}
+
+/**
+ * Writes EFT scale factor types and identifiers. Example:
+ * global_general(11,12) node_patch(1,2,3,4)
+ */
+bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *eft)
+{
+	if (!((eft) && (eft->getNumberOfLocalScaleFactors() > 0)))
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template");
+		return false;
+	}
+	cmzn_elementfieldtemplate_scale_factor_type lastScaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
+	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
+	for (int s = 0; s < scaleFactorCount; ++s)
+	{
+		const cmzn_elementfieldtemplate_scale_factor_type scaleFactorType = eft->getScaleFactorType(s);
+		const int identifier = eft->getScaleFactorIdentifier(s);
+		if (scaleFactorType != lastScaleFactorType)
+		{
+			if (s > 0)
+			{
+				(*this->outStream) << ") ";
+			}
+			const char *typeName = 0;
+			switch (scaleFactorType)
+			{
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL:
+				typeName = "element_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH:
+				typeName = "element_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL:
+				typeName = "global_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH:
+				typeName = "global_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL:
+				typeName = "node_general";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH:
+				typeName = "node_patch";
+				break;
+			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID:
+				break;
+			}
+			if (typeName == 0)
+			{
+				display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template scale factor type");
+				return false;
+			}
+			(*this->outStream) << typeName << "(" << identifier;
+			lastScaleFactorType = scaleFactorType;
+		}
+		else
+		{
+			(*this->outStream) << "," << identifier;
+		}
+	}
+	(*this->outStream) << ")";
 	return true;
 }
 
@@ -896,7 +1097,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			if (eft->getNumberOfLocalScaleFactors() > 0)
 			{
 				int scaleFactorSetIndex = 0;
-				for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
+				for (auto eftIter = this->elementTemplate->headerScalingEfts.begin(); eftIter != this->elementTemplate->headerScalingEfts.end(); ++eftIter)
 				{
 					++scaleFactorSetIndex;
 					if (*eftIter == eft)
@@ -908,7 +1109,7 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 			(*this->outStream) << "\n";
 
 			const int nodeCount = eft->getNumberOfLocalNodes();
-			const int packedNodeOffset = this->headerElementNodePacking->getEftNodeOffset(eft);
+			const int packedNodeOffset = this->elementTemplate->headerElementNodePacking.getEftNodeOffset(eft);
 			(*this->outStream) << "  #Nodes=" << nodeCount << "\n";
 			// previously there was an entry for each basis node with the parameters extracted from it
 			// now there is a separate entry for each block of parameters mapped from
@@ -1034,197 +1235,114 @@ bool EXWriter::writeElementHeaderField(cmzn_element *element, int fieldIndex, FE
 	return true;
 }
 
-ElementNodePacking *EXWriter::createElementNodePacking(cmzn_element *element)
+/**
+ * If element has a different template from the last, write element template,
+ * defining if this is the first use.
+ */
+bool EXWriter::writeElementTemplate(cmzn_element *element)
 {
-	ElementNodePacking *elementNodePacking = new ElementNodePacking();
-	const size_t fieldCount = this->writableFields.size();
-	for (size_t f = 0; f < fieldCount; ++f)
+	if ((this->elementTemplate) && (this->elementTemplate->matches(element, this->writeFieldsMode, this->writableFields)))
 	{
-		FE_field *field = this->writableFields[f];
-		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
-		if (!meshFieldData)
-			continue;
-		const int componentCount = get_FE_field_number_of_components(field);
-		const FE_element_field_template *lastEft = 0;
-		for (int c = 0; c < componentCount; ++c)
+		return true;  // same template as last element
+	}
+	this->elementTemplate = nullptr;
+	const size_t etCount = this->elementTemplates.size();
+	for (int et = 0; et < etCount; ++et)
+	{
+		if (this->elementTemplates[et]->matches(element, this->writeFieldsMode, this->writableFields))
 		{
-			const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
-			const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
-			if (!eft)
-				break; // field not defined on this element
-			if (eft != lastEft)
-			{
-				if (eft->getNumberOfLocalNodes() > 0)
-				{
-					const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
-					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
-					if (!nodeIndexes)
-					{
-						display_message(WARNING_MESSAGE, "EXWriter::createElementNodePacking.  Missing node indexes");
-					}
-					elementNodePacking->packEftNodes(eft, nodeIndexes);
-				}
-				lastEft = eft;
-			}
+			this->elementTemplate = this->elementTemplates[et];
+			break;
 		}
 	}
-	return elementNodePacking;
-}
+	if (!this->elementTemplate)
+	{
+		// define element template
+		char name[20];
+		++this->elementTemplateNumber;
+		sprintf(name, "element%d", this->elementTemplateNumber);
+		this->elementTemplate = new ElementTemplate(name, element, this->writableFields);
+		this->elementTemplates.push_back(this->elementTemplate);
 
-/**
- * Writes EFT scale factor types and identifiers. Example:
- * global_general(11,12) node_patch(1,2,3,4)
- */
-bool EXWriter::writeEftScaleFactorIdentifiers(const FE_element_field_template *eft)
-{
-	if (!((eft) && (eft->getNumberOfLocalScaleFactors() > 0)))
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template");
-		return false;
-	}
-	cmzn_elementfieldtemplate_scale_factor_type lastScaleFactorType = CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID;
-	const int scaleFactorCount = eft->getNumberOfLocalScaleFactors();
-	for (int s = 0; s < scaleFactorCount; ++s)
-	{
-		const cmzn_elementfieldtemplate_scale_factor_type scaleFactorType = eft->getScaleFactorType(s);
-		const int identifier = eft->getScaleFactorIdentifier(s);
-		if (scaleFactorType != lastScaleFactorType)
+		// make list of fields in header, order of EFT scale factor sets
+		for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
 		{
-			if (s > 0)
+			FE_field *field = *fieldIter;
+			const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
+			if (!meshFieldData)
+				continue; // field not defined on mesh
+			const int componentCount = get_FE_field_number_of_components(field);
+			const FE_element_field_template *lastEft = 0;
+			int c = 0;
+			for (; c < componentCount; ++c)
 			{
-				(*this->outStream) << ") ";
+				const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
+				const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
+				if (!eft)
+				{
+					break; // field not defined on this element
+				}
+				if (eft != lastEft)
+				{
+					if (eft->getNumberOfLocalScaleFactors() > 0)
+					{
+						lastEft = eft;
+						auto eftIter = this->elementTemplate->headerScalingEfts.begin();
+						for (; eftIter != this->elementTemplate->headerScalingEfts.end(); ++eftIter)
+						{
+							if (*eftIter == eft)
+							{
+								break;
+							}
+						}
+						if (eftIter == this->elementTemplate->headerScalingEfts.end())
+						{
+							this->elementTemplate->headerScalingEfts.push_back(eft);
+						}
+					}
+				}
 			}
-			const char *typeName = 0;
-			switch (scaleFactorType)
+			if (c == componentCount)
 			{
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_GENERAL:
-				typeName = "element_general";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_ELEMENT_PATCH:
-				typeName = "element_patch";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_GENERAL:
-				typeName = "global_general";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_GLOBAL_PATCH:
-				typeName = "global_patch";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_GENERAL:
-				typeName = "node_general";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_NODE_PATCH:
-				typeName = "node_patch";
-				break;
-			case CMZN_ELEMENTFIELDTEMPLATE_SCALE_FACTOR_TYPE_INVALID:
-				break;
+				this->elementTemplate->headerFields.push_back(field);
 			}
-			if (typeName == 0)
+		}
+
+		(*this->outStream) << "Define element template: " << name << "\n";
+		if (!this->writeElementShape(element->getElementShape()))
+		{
+			return false;
+		}
+		(*this->outStream) << "#Scale factor sets=" << this->elementTemplate->headerScalingEfts.size() << "\n";
+		int scaleFactorSetIndex = 0;
+		for (auto eftIter = this->elementTemplate->headerScalingEfts.begin(); eftIter != this->elementTemplate->headerScalingEfts.end(); ++eftIter)
+		{
+			++scaleFactorSetIndex;
+			(*this->outStream) << "  scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors()
+				<< ", identifiers=\"";
+			if (!this->writeEftScaleFactorIdentifiers(*eftIter))
+				return false;
+			(*this->outStream) << "\"\n";
+		}
+		(*this->outStream) << "#Nodes=" << this->elementTemplate->headerElementNodePacking.getTotalNodeCount() << "\n";
+		(*this->outStream) << "#Fields=" << this->elementTemplate->headerFields.size() << "\n";
+		int fieldIndex = 0;
+		for (auto fieldIter = this->elementTemplate->headerFields.begin(); fieldIter != this->elementTemplate->headerFields.end(); ++fieldIter)
+		{
+			++fieldIndex;
+			FE_field *field = *fieldIter;
+			if (!this->writeElementHeaderField(element, fieldIndex, field))
 			{
-				display_message(ERROR_MESSAGE, "EXWriter::writeEftScaleFactorIdentifiers.  Invalid element field template scale factor type");
 				return false;
 			}
-			(*this->outStream) << typeName << "(" << identifier;
-			lastScaleFactorType = scaleFactorType;
 		}
-		else
+		if (!this->writeOptionalFieldValues(this->elementTemplate->headerFields))
 		{
-			(*this->outStream) << "," << identifier;
+			return false;
 		}
 	}
-	(*this->outStream) << ")";
-	return true;
-}
-
-/**
- * Writes the element field information header for element.
- * Limited to the writable fields defined on this element.
- */
-bool EXWriter::writeElementHeader(cmzn_element *element)
-{
-	if (!element)
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeElementHeader.  Missing element");
-		return false;
-	}
-
-	this->headerElement = element;
-	this->headerFields.clear();
-	delete this->headerElementNodePacking;
-	this->headerElementNodePacking = new ElementNodePacking();
-	this->headerScalingEfts.clear();
-
-	// make list of fields in header, order of EFT scale factor sets, node packing
-	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
-	{
-		FE_field *field = *fieldIter;
-		const FE_mesh_field_data *meshFieldData = field->getMeshFieldData(this->feMesh);
-		if (!meshFieldData)
-			continue; // field not defined on mesh
-		const int componentCount = get_FE_field_number_of_components(field);
-		const FE_element_field_template *lastEft = 0;
-		int c = 0;
-		for (; c < componentCount; ++c)
-		{
-			const FE_mesh_field_template *mft = meshFieldData->getComponentMeshfieldtemplate(c);
-			const FE_element_field_template *eft = mft->getElementfieldtemplate(element->getIndex());
-			if (!eft)
-				break; // field not defined on this element
-			if (eft != lastEft)
-			{
-				if (eft->getNumberOfLocalNodes() > 0)
-				{
-					const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
-					const DsLabelIndex *nodeIndexes = meshEftData->getElementNodeIndexes(element->getIndex());
-					if (!nodeIndexes)
-					{
-						display_message(WARNING_MESSAGE, "EXWriter::writeElementHeader.  Missing node indexes");
-					}
-					this->headerElementNodePacking->packEftNodes(eft, nodeIndexes);
-				}
-				if (eft->getNumberOfLocalScaleFactors() > 0)
-				{
-					lastEft = eft;
-					auto eftIter = this->headerScalingEfts.begin();
-					for (; eftIter != this->headerScalingEfts.end(); ++eftIter)
-					{
-						if (*eftIter == eft)
-							break;
-					}
-					if (eftIter == this->headerScalingEfts.end())
-						this->headerScalingEfts.push_back(eft);
-				}
-			}
-		}
-		if (c == componentCount)
-			this->headerFields.push_back(field);
-	}
-
-	(*this->outStream) << "#Scale factor sets=" << this->headerScalingEfts.size() << "\n";
-	int scaleFactorSetIndex = 0;
-	for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
-	{
-		++scaleFactorSetIndex;
-		(*this->outStream) << "  scaling" << scaleFactorSetIndex << ", #Scale factors=" << (*eftIter)->getNumberOfLocalScaleFactors()
-			<< ", identifiers=\"";
-		if (!this->writeEftScaleFactorIdentifiers(*eftIter))
-			return false;
-		(*this->outStream) << "\"\n";
-	}
-	(*this->outStream) << "#Nodes=" << this->headerElementNodePacking->getTotalNodeCount() << "\n";
-	(*this->outStream) << "#Fields=" << this->headerFields.size() << "\n";
-	int fieldIndex = 0;
-	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
-	{
-		++fieldIndex;
-		FE_field *field = *fieldIter;
-		if (!this->writeElementHeaderField(element, fieldIndex, field))
-			return false;
-	}
-
-	if (!this->writeOptionalFieldValues())
-	{
-		return false;
-	}
+	// activate element template
+	(*this->outStream) << "Element template: " << this->elementTemplate->name << "\n";
 	return true;
 }
 
@@ -1322,7 +1440,14 @@ bool EXWriter::writeElement(cmzn_element *element)
 	(*this->outStream) << "Element: " << element->getIdentifier() << "\n";
 
 	if (this->writeIdentifiersOnly)
+	{
 		return true;
+	}
+	if (!this->elementTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing element template");
+		return false;
+	}
 
 	// Faces: if defined
 	const FE_mesh::ElementShapeFaces *elementShapeFaces = this->feMesh->getElementShapeFacesConst(element->getIndex());
@@ -1352,7 +1477,7 @@ bool EXWriter::writeElement(cmzn_element *element)
 
 	// Values: if writing any element-based fields
 	bool firstElementBasedField = true;
-	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
+	for (auto fieldIter = this->elementTemplate->headerFields.begin(); fieldIter != this->elementTemplate->headerFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
@@ -1377,13 +1502,13 @@ bool EXWriter::writeElement(cmzn_element *element)
 	}
 
 	// Nodes: if any
-	if (this->headerElementNodePacking->getTotalNodeCount() > 0)
+	if (this->elementTemplate->headerElementNodePacking.getTotalNodeCount() > 0)
 	{
 		FE_nodeset *nodeset = this->feMesh->getNodeset();
 		(*this->outStream) << " Nodes:\n";
 		int index = 0;
 		const FE_element_field_template *eft;
-		while (0 != (eft = this->headerElementNodePacking->getFirstEftAtIndex(index)))
+		while (0 != (eft = this->elementTemplate->headerElementNodePacking.getFirstEftAtIndex(index)))
 		{
 			const FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
 			const int nodeCount = eft->getNumberOfLocalNodes();
@@ -1408,12 +1533,12 @@ bool EXWriter::writeElement(cmzn_element *element)
 	}
 
 	// Scale factors: if any scale factor sets being output
-	if (this->headerScalingEfts.size() > 0)
+	if (this->elementTemplate->headerScalingEfts.size() > 0)
 	{
 		int scaleFactorNumber = 0;
 		char tmpString[100];
 		(*this->outStream) << " Scale factors:\n";
-		for (auto eftIter = this->headerScalingEfts.begin(); eftIter != this->headerScalingEfts.end(); ++eftIter)
+		for (auto eftIter = this->elementTemplate->headerScalingEfts.begin(); eftIter != this->elementTemplate->headerScalingEfts.end(); ++eftIter)
 		{
 			const FE_element_field_template *eft = *eftIter;
 			FE_mesh_element_field_template_data *meshEftData = this->feMesh->getElementfieldtemplateData(eft);
@@ -1490,79 +1615,6 @@ bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 	return true;
 }
 
-/**
- * Returns true if element has matching field definition to last element whose
- * field header was output, or if there was no last element.
- * Limited to matching writable fields defined on this element.
- * Note that even if this returns true, need to check element nodes are
- * packed identically for fields written together.
- */
-bool EXWriter::elementFieldsMatchLastElement(cmzn_element *element)
-{
-	if (!this->headerElement)
-	{
-		return false;
-	}
-	if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
-	{
-		return equivalent_FE_fields_in_elements(element, this->headerElement);
-	}
-	const size_t fieldsCount = this->writableFields.size();
-	for (size_t i = 0; i < fieldsCount; ++i)
-	{
-		if (!equivalent_FE_field_in_elements(this->writableFields[i], element, this->headerElement))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-/**
- * Writes element to the stream. If the element template is different from the
- * header element then a new header is written out. If the element
- * has no fields, only the shape is output in the header.
- */
-bool EXWriter::writeElementExt(cmzn_element *element)
-{
-	if (!this->writeIdentifiersOnly)
-	{
-		// work out if shape or field header have changed from last element
-		FE_element_shape *elementShape = element->getElementShape();
-		if (!elementShape)
-			return false;
-		bool newShape = true;
-		bool newFieldHeader = true;
-		if (this->headerElement)
-		{
-			newShape = (elementShape != this->lastElementShape);
-			if (!newShape)
-			{
-				newFieldHeader = !this->elementFieldsMatchLastElement(element);
-				if (!newFieldHeader)
-				{
-					ElementNodePacking *elementNodePacking = this->createElementNodePacking(element);
-					newFieldHeader = !elementNodePacking->matches(*this->headerElementNodePacking);
-					delete elementNodePacking;
-				}
-			}
-		}
-		if (newShape)
-		{
-			if (!this->writeElementShape(elementShape))
-				return false;
-		}
-		if (newFieldHeader)
-		{
-			if (!this->writeElementHeader(element))
-				return false;
-		}
-	}
-	if (!this->writeElement(element))
-		return false;
-	return true;
-}
-
 int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 {
 	int return_code = 1;
@@ -1593,12 +1645,20 @@ int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 		}
 		(*this->outStream) << "\n";
 		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
-		cmzn_element_id element = 0;
-		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		cmzn_element_id element = nullptr;
+		while (nullptr != (element = cmzn_elementiterator_next_non_access(iter)))
 		{
 			if (this->elementIsToBeWritten(element))
 			{
-				if (!this->writeElementExt(element))
+				if (!this->writeIdentifiersOnly)
+				{
+					if (!this->writeElementTemplate(element))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				if (!this->writeElement(element))
 				{
 					return_code = 0;
 					break;
@@ -1671,6 +1731,77 @@ bool EXWriter::writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *f
 		}
 		(*this->outStream) << ")\n";
 	}
+	return true;
+}
+
+/**
+ * If node has a different template from the last, write node template,
+ * defining if this is the first use.
+ */
+bool EXWriter::writeNodeTemplate(cmzn_node *node)
+{
+	if ((this->nodeTemplate) && (this->nodeTemplate->matches(node, this->writeFieldsMode, this->writableFields)))
+	{
+		return true;  // same template as last node
+	}
+	this->nodeTemplate = nullptr;
+	const size_t ntCount = this->nodeTemplates.size();
+	for (int nt = 0; nt < ntCount; ++nt)
+	{
+		if (this->nodeTemplates[nt]->matches(node, this->writeFieldsMode, this->writableFields))
+		{
+			this->nodeTemplate = this->nodeTemplates[nt];
+			break;
+		}
+	}
+	if (!this->nodeTemplate)
+	{
+		// define node template
+		char name[20];
+		++this->nodeTemplateNumber;
+		sprintf(name, "node%d", this->nodeTemplateNumber);
+		this->nodeTemplate = new NodeTemplate(name, node);
+		this->nodeTemplates.push_back(this->nodeTemplate);
+
+		// make list of fields in header, write any time sequences in use before defining node template
+		for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
+		{
+			FE_field *field = *fieldIter;
+			FE_node_field *nodeField = node->getNodeField(field);
+			if (nodeField)
+			{
+				this->nodeTemplate->headerFields.push_back(field);
+				FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
+				if (feTimeSequence)
+				{
+					if (!this->findTimeSequence(feTimeSequence))
+					{
+						if (!this->writeTimeSequence(feTimeSequence))
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+		(*this->outStream) << "Define node template: " << name << "\n";
+		(*this->outStream) << "Shape. Dimension=0\n";
+		(*this->outStream) << "#Fields=" << this->nodeTemplate->headerFields.size() << "\n";
+		int fieldIndex = 0;
+		for (auto fieldIter = this->nodeTemplate->headerFields.begin(); fieldIter != this->nodeTemplate->headerFields.end(); ++fieldIter)
+		{
+			++fieldIndex;
+			FE_field *field = *fieldIter;
+			if (!this->writeNodeHeaderField(node, fieldIndex, field))
+				return false;
+		}
+		if (!this->writeOptionalFieldValues(this->nodeTemplate->headerFields))
+		{
+			return false;
+		}
+	}
+	// activate node template
+	(*this->outStream) << "Node template: " << this->nodeTemplate->name << "\n";
 	return true;
 }
 
@@ -1840,7 +1971,7 @@ bool EXWriter::writeNode(cmzn_node *node)
 		return true;
 
 	// values, if writing any general fields
-	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
+	for (auto fieldIter = this->nodeTemplate->headerFields.begin(); fieldIter != this->nodeTemplate->headerFields.end(); ++fieldIter)
 	{
 		FE_field *field = *fieldIter;
 		if ((GENERAL_FE_FIELD == get_FE_field_FE_field_type(field))
@@ -1894,114 +2025,11 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 	return true;
 }
 
-/**
- * Returns true if node has matching field definition to last node whose
- * field header was output, or if there was no last node.
- * Limited to matching writable fields defined on this node.
- */
-bool EXWriter::nodeFieldsMatchLastNode(cmzn_node *node)
-{
-	if (!this->headerNode)
-	{
-		return false;
-	}
-	if (this->writeFieldsMode == FE_WRITE_ALL_FIELDS)
-	{
-		return (0 != equivalent_FE_fields_at_nodes(node, this->headerNode));
-	}
-	const size_t fieldsCount = this->writableFields.size();
-	for (size_t i = 0; i < fieldsCount; ++i)
-	{
-		if (!equivalent_FE_field_at_nodes(this->writableFields[i], node, this->headerNode))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-/**
- * Writes the node field information header for node.
- * Limited to the writable fields defined on this node.
- */
-bool EXWriter::writeNodeHeader(cmzn_node *node)
-{
-	if (!node)
-	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeNodeHeader.  Invalid argument(s)");
-		return false;
-	}
-
-	this->headerNode = node;
-	this->headerFields.clear();
-
-	// make list of fields in header
-	for (auto fieldIter = this->writableFields.begin(); fieldIter != this->writableFields.end(); ++fieldIter)
-	{
-		FE_field *field = *fieldIter;
-		FE_node_field *nodeField = node->getNodeField(field);
-		if (nodeField)
-		{
-			this->headerFields.push_back(field);
-			FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
-			if (feTimeSequence)
-			{
-				if (!this->findTimeSequence(feTimeSequence))
-				{
-					if (!this->writeTimeSequence(feTimeSequence))
-					{
-						return false;
-					}
-				}
-			}
-		}
-	}
-
-	(*this->outStream) << "#Fields=" << this->headerFields.size() << "\n";
-	int fieldIndex = 0;
-	for (auto fieldIter = this->headerFields.begin(); fieldIter != this->headerFields.end(); ++fieldIter)
-	{
-		++fieldIndex;
-		FE_field *field = *fieldIter;
-		if (!this->writeNodeHeaderField(node, fieldIndex, field))
-			return false;
-	}
-	if (!this->writeOptionalFieldValues())
-	{
-		return false;
-	}
-	return true;
-}
-
-/**
- * Writes a node to the given file.  If the fields defined at the node are
- * different from the last node (taking into account whether a selection of fields
- * has been selected for output) then the header is written out.
- */
-bool EXWriter::writeNodeExt(cmzn_node *node)
-{
-	if (!this->writeIdentifiersOnly)
-	{
-		if (!this->nodeFieldsMatchLastNode(node))
-		{
-			if (!this->writeNodeHeader(node))
-			{
-				return false;
-			}
-		}
-	}
-	if (!this->writeNode(node))
-		return false;
-	return true;
-}
-
 int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
 {
 	int return_code = 1;
 	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule,
 		fieldDomainType);
-	// following is not actually used, but the call clears mesh and header cache
-	this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType));
 	if (group)
 	{
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
@@ -2011,20 +2039,26 @@ int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_gr
 	}
 	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 	{
+		FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
+		this->setNodeset(feNodeset);
 		(*this->outStream) << "!#nodeset ";
 		this->writeSafeName(feNodeset->getName());
 		(*this->outStream) << "\n";
-		if (!this->writeIdentifiersOnly)
-		{
-			(*this->outStream) << "Shape. Dimension=0\n";
-		}
 		cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 		cmzn_node_id node = 0;
 		while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 		{
 			if (this->nodeIsToBeWritten(node))
 			{
-				if (!this->writeNodeExt(node))
+				if (!this->writeIdentifiersOnly)
+				{
+					if (!this->writeNodeTemplate(node))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				if (!this->writeNode(node))
 				{
 					return_code = 0;
 					break;
@@ -2170,16 +2204,15 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 	if (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
 	{
 		// write child regions
-		cmzn_region *childRegion = cmzn_region_get_first_child(region);
+		cmzn_region *childRegion = region->getFirstChild();
 		while (childRegion)
 		{
 			return_code = this->writeRegion(childRegion);
 			if (!return_code)
 			{
-				cmzn_region_destroy(&childRegion);
 				break;
 			}
-			cmzn_region_reaccess_next_sibling(&childRegion);
+			childRegion = childRegion->getNextSibling();
 		}
 	}
 	if (group)

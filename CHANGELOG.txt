@@ -3,7 +3,7 @@ CHANGE LOG: OpenCMISS-Zinc Library
 v3.6.0
 Add material module change notifier.
 Add Sceneviewer enum to/from string name APIs. Serialise transparency layers.
-Read/write parameters with time sequence in EX version 3 format.
+Add EX version 3 format supporting parameters with time sequence, node and element templates.
 
 v3.5.1
 Fix const usage in C++ API.

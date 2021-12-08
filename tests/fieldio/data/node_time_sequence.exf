@@ -1,10 +1,11 @@
 EX Version: 3
 Region: /
-Time sequence: name=times1, size=6
+Time sequence: times1, size=6
 0.0 1.0 2.0 3.0 4.0 5.0
-Time sequence: name=times2, size=3
+Time sequence: times2, size=3
 0.0 1.5 3.7
 !#nodeset nodes
+Define node template: node1
 Shape. Dimension=0
 #Fields=3
 1) coordinates, coordinate, rectangular cartesian, real, #Components=3, time sequence=times1
@@ -15,6 +16,7 @@ Shape. Dimension=0
  value. #Values=1 (value)
 3) pressure, field, real, #Components=1
  value. #Values=1 (value)
+Node template: node1
 Node: 1
 0.0 6.0 0.0 0.2
 1.0 3.6 0.1 0.1
@@ -34,6 +36,7 @@ Node: 2
 2 4 6
 103325.0
 !#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
 Shape. Dimension=1, line
 #Scale factor sets=0
 #Nodes=2
@@ -64,6 +67,7 @@ Shape. Dimension=1, line
    Value labels: value
   2. #Values=1
    Value labels: value
+Element template: element1
 Element: 1
 Nodes:
 1 2

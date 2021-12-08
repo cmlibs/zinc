@@ -178,6 +178,8 @@ private:
 
 };
 
+const std::string noName;
+
 } // anonymous namespace
 
 class EXReader
@@ -365,7 +367,7 @@ class EXReader
 		int nearestTimeIndex;
 		FE_value nearestTime;
 
-		TimeSequence(const char *nameIn, FE_time_sequence *feTimeSequenceIn, FE_import_time_index *timeIndex) :
+		TimeSequence(const std::string& nameIn, FE_time_sequence *feTimeSequenceIn, FE_import_time_index *timeIndex) :
 			name(nameIn),
 			feTimeSequence(ACCESS(FE_time_sequence)(feTimeSequenceIn)),
 			nearestTimeIndex(-1),
@@ -396,6 +398,114 @@ class EXReader
 		}
 	};
 
+	class NodeTemplate
+	{
+	public:
+		FE_nodeset *nodeset;
+		std::string name;
+		FE_node_template *feNodeTemplate;
+		std::vector<FE_field *> headerFields;  // order of fields in node header
+		std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence, used for reading one time
+
+		NodeTemplate(FE_nodeset *nodesetIn, const std::string& nameIn = noName) :
+			nodeset(nodesetIn->access()),
+			name(nameIn),
+			feNodeTemplate(nodesetIn->create_FE_node_template())
+		{
+		}
+
+		~NodeTemplate()
+		{
+			cmzn::Deaccess(this->feNodeTemplate);
+			FE_nodeset::deaccess(this->nodeset);
+		}
+	};
+
+	class ElementTemplate
+	{
+	public:
+		FE_mesh *mesh;
+		std::string name;
+		cmzn_elementtemplate *elementtemplate;
+		std::vector<FE_field *> headerFields;  // order of fields in header
+		bool hasElementValues;  // set to true if any element field has element field values
+		std::vector<ScaleFactorSet *> scaleFactorSets;
+
+		ElementTemplate(FE_mesh *meshIn, const std::string& nameIn = noName) :
+			mesh(meshIn->access()),
+			name(nameIn),
+			elementtemplate(cmzn_elementtemplate::create(this->mesh)),
+			hasElementValues(false)
+		{
+		}
+
+		~ElementTemplate()
+		{
+			cmzn_elementtemplate::deaccess(this->elementtemplate);
+			const size_t sfCount = this->scaleFactorSets.size();
+			for (size_t s = 0; s < sfCount; ++s)
+			{
+				delete this->scaleFactorSets[s];
+			}
+			FE_mesh::deaccess(this->mesh);
+		}
+
+		/** @return  Non-accessed shape or nullptr if none. */
+		FE_element_shape *getElementShape() const
+		{
+			return this->elementtemplate->getElementShape();
+		}
+
+		/** @return  True on success, false on failure. */
+		bool setElementShape(FE_element_shape* elementShapeIn)
+		{
+			return CMZN_OK == this->elementtemplate->setElementShape(elementShapeIn);
+		}
+
+		/** @return  Pointer to scale factor set with name and details, or nullptr if failed */
+		ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn,
+			const char *scaleFactorIdentifiersString)
+		{
+			if ((!nameIn) || (scaleFactorCountIn < 1) || (scaleFactorOffsetIn < 0))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s");
+				return nullptr;
+			}
+			if (0 != this->findScaleFactorSet(nameIn))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s");
+				return nullptr;
+			}
+			ScaleFactorSet *sfSet = new ScaleFactorSet(nameIn, scaleFactorCountIn, scaleFactorOffsetIn);
+			if (!sfSet)
+			{
+				return nullptr;
+			}
+			if (!sfSet->parseScaleFactorIdentifiers(scaleFactorIdentifiersString))
+			{
+				delete sfSet;
+				return nullptr;
+			}
+			this->scaleFactorSets.push_back(sfSet);
+			return sfSet;
+		}
+
+		/** @return  Pointer to scale factor set with name, or nullptr if not found */
+		ScaleFactorSet *findScaleFactorSet(const char *nameIn)
+		{
+			const size_t sfCount = this->scaleFactorSets.size();
+			for (size_t s = 0; s < sfCount; ++s)
+			{
+				if (0 == this->scaleFactorSets[s]->name.compare(nameIn))
+				{
+					return this->scaleFactorSets[s];
+				}
+			}
+			return nullptr;
+		}
+
+	};
+
 	cmzn_region *rootRegion;  // root region to read into
 	int exVersion;
 	IO_stream *input_file;
@@ -410,15 +520,11 @@ class EXReader
 	cmzn_field_group *fieldGroup;  // accessed
 	cmzn_nodeset_group *nodesetGroup;  // accessed
 	cmzn_mesh_group *meshGroup;  // accessed
-	// cache of latest node and element field header:
-	FE_element_shape* elementShape;
-	FE_node_template *fe_node_template;
-	cmzn_elementtemplate *elementtemplate;
-	std::vector<FE_field *> headerFields;  // order of fields in header
-	bool hasElementValues;  // set to true if any element field has element field values
-	std::vector<ScaleFactorSet *> scaleFactorSets;
 	std::vector<TimeSequence *> timeSequences;
-	std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence for reading one time, valid only from last node header
+	std::vector<NodeTemplate*> nodeTemplates;
+	NodeTemplate *nodeTemplate;  // currently active node template, if any
+	std::vector<ElementTemplate*> elementTemplates;
+	ElementTemplate *elementTemplate;  // currently active element template, if any
 	char *fileLocation; // cache for storing stream location string for writing with errors. @see getFileLocation
 
 public:
@@ -437,10 +543,8 @@ public:
 		fieldGroup(nullptr),
 		nodesetGroup(nullptr),
 		meshGroup(nullptr),
-		elementShape(nullptr),
-		fe_node_template(nullptr),
-		elementtemplate(nullptr),
-		hasElementValues(false),
+		nodeTemplate(nullptr),
+		elementTemplate(nullptr),
 		fileLocation(nullptr)
 	{
 	}
@@ -448,7 +552,7 @@ public:
 	~EXReader()
 	{
 		this->clearTimeSequences();
-		this->clearHeaderCache();
+		this->clearTemplates();
 		if (this->fileLocation)
 			DEALLOCATE(this->fileLocation);
 		this->clearGroup();
@@ -614,18 +718,13 @@ public:
 		}
 		this->mesh = nullptr;
 		this->nodeset = nodesetIn;
-		this->clearHeaderCache();
+		this->clearTemplates();
 		this->clearSubelementGroups();
-		this->fe_node_template = nullptr;
 		if (this->exVersion < 3)
 		{
 			// older versions required default blank node template for nodeset:
-			this->fe_node_template = this->nodeset->create_FE_node_template();
-			if (!this->fe_node_template)
-			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Failed to set nodeset.  %s", this->getFileLocation());
-				return false;
-			}
+			this->nodeTemplate = new NodeTemplate(this->nodeset);
+			this->nodeTemplates.push_back(this->nodeTemplate);
 		}
 		return true;
 	}
@@ -645,7 +744,7 @@ public:
 		}
 		this->mesh = meshIn;
 		this->nodeset = this->mesh->getNodeset();
-		this->clearHeaderCache();
+		this->clearTemplates();
 		this->clearSubelementGroups();
 		return true;
 	}
@@ -673,103 +772,41 @@ public:
 	bool readCommentOrDirective();
 	bool readFieldValues();
 	bool readNodeHeader();
+	NodeTemplate *findNodeTemplateByName(const std::string& name) const;
+	bool readDefineNodeTemplate();
+	bool readNodeTemplate();
 	cmzn_node *readNode();
+	bool readNodeOrTemplate();
 	bool readElementShape();
 	bool readElementHeader();
+	ElementTemplate *findElementTemplateByName(const std::string& name) const;
+	bool readDefineElementTemplate();
+	bool readElementTemplate();
 	bool readElementIdentifier(DsLabelIdentifier &elementIdentifier);
 	bool readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber);
 	cmzn_element *readElement();
+	bool readElementOrTemplate();
+	bool readEType();
 	int read();
 
 private:
 
-	void clearHeaderCache(bool clearElementShape = true)
+	void clearTemplates()
 	{
-		cmzn::Deaccess(this->fe_node_template);
-		if (clearElementShape && (this->elementShape))
-			DEACCESS(FE_element_shape)(&(this->elementShape));
-		cmzn_elementtemplate::deaccess(this->elementtemplate);
-		const size_t sfCount = this->scaleFactorSets.size();
-		for (size_t s = 0; s < sfCount; ++s)
-			delete this->scaleFactorSets[s];
-		this->scaleFactorSets.clear();
-		this->headerFields.clear();
-		this->hasElementValues = false;
-		this->nodeFieldTimeSequences.clear();
-	}
-
-	/** @return  Pointer to scale factor set with name and details, or nullptr if failed */
-	ScaleFactorSet *createScaleFactorSet(const char *nameIn, int scaleFactorCountIn, int scaleFactorOffsetIn,
-		const char *scaleFactorIdentifiersString)
-	{
-		if ((!nameIn) || (scaleFactorCountIn < 1) || (scaleFactorOffsetIn < 0))
+		const size_t ntCount = this->nodeTemplates.size();
+		for (int nt = 0; nt < ntCount; ++nt)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
-			return nullptr;
+			delete this->nodeTemplates[nt];
 		}
-		if (0 != this->findScaleFactorSet(nameIn))
+		this->nodeTemplates.clear();
+		this->nodeTemplate = nullptr;
+		const size_t etCount = this->elementTemplates.size();
+		for (int et = 0; et < etCount; ++et)
 		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Scale factor set %s already defined.  %s", nameIn, this->getFileLocation());
-			return nullptr;
+			delete this->elementTemplates[et];
 		}
-		ScaleFactorSet *sfSet = new ScaleFactorSet(nameIn, scaleFactorCountIn, scaleFactorOffsetIn);
-		if (!sfSet)
-		{
-			return nullptr;
-		}
-		if (!sfSet->parseScaleFactorIdentifiers(scaleFactorIdentifiersString))
-		{
-			delete sfSet;
-			return nullptr;
-		}
-		this->scaleFactorSets.push_back(sfSet);
-		return sfSet;
-	}
-
-	/** @return  Pointer to scale factor set with name, or nullptr if not found */
-	ScaleFactorSet *findScaleFactorSet(const char *nameIn)
-	{
-		if (!nameIn)
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Missing scale factor set name.  %s", this->getFileLocation());
-			return nullptr;
-		}
-		const size_t sfCount = this->scaleFactorSets.size();
-		for (size_t s = 0; s < sfCount; ++s)
-		{
-			if (0 == this->scaleFactorSets[s]->name.compare(nameIn))
-				return this->scaleFactorSets[s];
-		}
-		return nullptr;
-	}
-
-	/** @return  Pointer to TimeSequence with name and details, or nullptr if failed */
-	TimeSequence *createTimesequence(const char *nameIn, int timesCountIn, const double *timesIn)
-	{
-		if ((!nameIn) || (timesCountIn < 1))
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Missing time sequence name or invalid size.  %s", this->getFileLocation());
-			return nullptr;
-		}
-		if (this->findTimeSequence(nameIn))
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Time sequence %s already defined in this region.  %s", nameIn, this->getFileLocation());
-			return nullptr;
-		}
-		FE_time_sequence *feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, timesCountIn, timesIn);
-		if (!feTimeSequence)
-		{
-			display_message(ERROR_MESSAGE, "EX Reader.  Invalid time sequence.  %s", this->getFileLocation());
-			return nullptr;
-		}
-		TimeSequence *timeSequence = new TimeSequence(nameIn, feTimeSequence, this->timeIndex);
-		DEACCESS(FE_time_sequence)(&feTimeSequence);
-		if (!timeSequence)
-		{
-			return nullptr;
-		}
-		this->timeSequences.push_back(timeSequence);
-		return timeSequence;
+		this->elementTemplates.clear();
+		this->elementTemplate = nullptr;
 	}
 
 	/** @return  Pointer to TimeSequence with name, or nullptr if not found */
@@ -799,7 +836,6 @@ private:
 	FE_field *readField(TimeSequence*& timeSequence);
 	bool readNodeValueLabelsVersions(FE_node_field_template& nft);
 	bool readNodeHeaderField();
-	bool createElementtemplate();
 	struct FE_basis *readBasis();
 	bool readElementHeaderField();
 };
@@ -831,8 +867,7 @@ bool EXReader::readBlankToEndOfLine()
 	return result;
 }
 
-/** @return  True if next char is testChar (and read the character) or false if
-  * node (and do not read the character) */
+/** Read EX Version: NUMBER from stream. E character has already been read. */
 bool EXReader::readEXVersion()
 {
 	if (this->exVersion > 1)
@@ -846,7 +881,7 @@ bool EXReader::readEXVersion()
 		return false;
 	}
 	int versionNumber;
-	if (1 != IO_stream_scan(this->input_file, " Version :%d", &versionNumber)) // "EX" has been read before getting here
+	if (1 != IO_stream_scan(this->input_file, "X Version :%d", &versionNumber)) // "E" has been read before getting here
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading EX Version: number.  %s", this->getFileLocation());
 		return false;
@@ -1374,17 +1409,19 @@ bool EXReader::readTimeSequence()
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Time sequence: token.  %s", this->getFileLocation());
 		return false;
 	}
+	char *tmpName = this->readString("[^,\n\r\t]");
+	if (!tmpName)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing name for time sequence.  %s", this->getFileLocation());
+		return false;
+	}
+	std::string name(tmpName);
+	DEALLOCATE(tmpName);
 	KeyValueMap keyValueMap;
-	if (!this->readKeyValueMap(keyValueMap))
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read key=value parameters for time sequence.  %s",
 			this->getFileLocation());
-		return false;
-	}
-	const char *name = keyValueMap.getKeyValue("name");
-	if (!name)
-	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Missing name for time sequence.  %s", this->getFileLocation());
 		return false;
 	}
 	const char *sizeString = keyValueMap.getKeyValue("size");
@@ -1396,13 +1433,22 @@ bool EXReader::readTimeSequence()
 	const int size = atoi(sizeString);
 	if (size < 1)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Non-positive size for time sequence.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Non-positive size for time sequence %s.  %s",
+			name.c_str(), this->getFileLocation());
 		return false;
 	}
 	// warn about unused key-value pairs
 	if (keyValueMap.hasUnusedKeyValues())
 	{
-		keyValueMap.reportUnusedKeyValues("EX Reader.  Time sequence: ");
+		std::string prefix("EX Reader.  Time sequence ");
+		prefix += name;
+		prefix += ": ";
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	if (this->findTimeSequence(name.c_str()))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Time sequence %s already defined in this region.  %s", name.c_str(), this->getFileLocation());
+		return false;
 	}
 	std::vector<FE_value> times(size, 0.0);
 	FE_value time;
@@ -1416,12 +1462,20 @@ bool EXReader::readTimeSequence()
 		}
 		times[i] = time;
 	}
-	TimeSequence *timeSequence = this->createTimesequence(name, size, times.data());
+	FE_time_sequence *feTimeSequence = FE_region_get_FE_time_sequence_matching_series(this->fe_region, size, times.data());
+	if (!feTimeSequence)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Invalid time sequence %s.  %s", name.c_str(), this->getFileLocation());
+		return false;
+	}
+	TimeSequence *timeSequence = new TimeSequence(name, feTimeSequence, this->timeIndex);
+	DEACCESS(FE_time_sequence)(&feTimeSequence);
 	if (!timeSequence)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create time sequence.  %s", this->getFileLocation());
 		return false;
 	}
+	this->timeSequences.push_back(timeSequence);
 	return true;
 }
 
@@ -1800,15 +1854,16 @@ bool EXReader::readFieldValues()
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Values: token.  %s", this->getFileLocation());
 		return false;
 	}
-	if (!((this->fe_node_template || this->elementtemplate)))
+	if (!((this->nodeTemplate) || (this->elementTemplate)))
 	{
 		display_message(ERROR_MESSAGE, "EXReader.  Must have a current node or element template to read field values.  %s", this->getFileLocation());
 		return false;
 	}
-	const size_t fieldCount = this->headerFields.size();
+	std::vector<FE_field*>& headerFields = (this->nodeTemplate) ? this->nodeTemplate->headerFields : this->elementTemplate->headerFields;
+	const size_t fieldCount = headerFields.size();
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
-		FE_field *field = this->headerFields[f];
+		FE_field *field = headerFields[f];
 		const int number_of_values = field->getNumberOfValues();
 		if (0 < number_of_values)
 		{
@@ -1938,13 +1993,17 @@ bool EXReader::readNodeValueLabelsVersions(FE_node_field_template& nft)
  */
 bool EXReader::readNodeHeaderField()
 {
-	if (!(this->nodeset && this->fe_node_template))
+	if (!((this->nodeset) && (this->nodeTemplate)))
+	{
 		return false;
+	}
 	// first read non-merged field declaration without node-specific data
 	TimeSequence *timeSequence = nullptr;
 	FE_field *field = this->readField(timeSequence);
 	if (!field)
+	{
 		return false;
+	}
 	bool result = true;
 	const int number_of_components = get_FE_field_number_of_components(field);
 	const FE_field_type fe_field_type = get_FE_field_FE_field_type(field);
@@ -1956,16 +2015,22 @@ bool EXReader::readNodeHeaderField()
 		IO_stream_scan(this->input_file, " ");
 		/* read the component name */
 		if (componentName)
+		{
 			DEALLOCATE(componentName);
+		}
 		if (IO_stream_read_string(this->input_file, "[^.]", &componentName))
 		{
 			trim_string_in_place(componentName);
 			if ((strlen(componentName) == 0)
 				|| (!field->setComponentName(component_number, componentName)))
+			{
 				result = false;
+			}
 		}
 		else
+		{
 			result = false;
+		}
 		if (!result)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error getting component name for field %s.  %s",
@@ -2117,7 +2182,7 @@ bool EXReader::readNodeHeaderField()
 		if (timeSequence)
 		{
 			// record which field is using which time sequence so we know how many parameters are in file even if sampling one time
-			this->nodeFieldTimeSequences[field] = timeSequence;
+			this->nodeTemplate->nodeFieldTimeSequences[field] = timeSequence;
 		}
 		if (this->timeIndex)
 		{
@@ -2137,10 +2202,10 @@ bool EXReader::readNodeHeaderField()
 		}
 		if (result)
 		{
-			if (define_FE_field_at_node(this->fe_node_template->get_template_node(), field,
+			if (define_FE_field_at_node(this->nodeTemplate->feNodeTemplate->get_template_node(), field,
 				componentNfts.data(), feTimeSequence))
 			{
-				this->headerFields.push_back(field);
+				this->nodeTemplate->headerFields.push_back(field);
 			}
 			else
 			{
@@ -2171,11 +2236,20 @@ bool EXReader::readNodeHeader()
 		display_message(ERROR_MESSAGE, "EX Reader.  Nodeset not set.  %s", this->getFileLocation());
 		return false;
 	}
-	this->clearHeaderCache();
-	this->fe_node_template = this->nodeset->create_FE_node_template();
-	if (!this->fe_node_template)
+	if (this->exVersion < 3)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create node template.  %s", this->getFileLocation());
+		this->clearTemplates();
+		this->nodeTemplate = new NodeTemplate(this->nodeset);
+		this->nodeTemplates.push_back(this->nodeTemplate);
+	}
+	else if (!this->nodeTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Define node template needed before this in EX version 3+.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->nodeTemplate->feNodeTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Invalid node template.  %s", this->getFileLocation());
 		return false;
 	}
 	int fieldCount = 0;
@@ -2195,6 +2269,133 @@ bool EXReader::readNodeHeader()
 	return true;
 }
 
+EXReader::NodeTemplate *EXReader::findNodeTemplateByName(const std::string& name) const
+{
+	const size_t ntCount = this->nodeTemplates.size();
+	for (int nt = 0; nt < ntCount; ++nt)
+	{
+		if (this->nodeTemplates[nt]->name == name)
+		{
+			return this->nodeTemplates[nt];
+		}
+	}
+	return nullptr;
+}
+
+bool EXReader::readDefineNodeTemplate()
+{
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, "efine node template %1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Truncated Define node template: token.  %s", this->getFileLocation());
+		return false;
+	}
+	char *tmpName = this->readString("[^,\n\r\t]");
+	if (!tmpName)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading node template name.  %s", this->getFileLocation());
+		return false;
+	}
+	std::string name(tmpName);
+	DEALLOCATE(tmpName);
+	// key values are anticipated for the future
+	KeyValueMap keyValueMap;
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
+	{
+		return false;
+	}
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		std::string prefix("EX Reader.  Define node template ");
+		prefix += name;
+		prefix += ": ";
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	if ((this->findNodeTemplateByName(name)))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element template %s already exists.  %s", name.c_str(), this->getFileLocation());
+		return false;
+	}
+	this->nodeTemplate = new NodeTemplate(this->nodeset, name);
+	this->nodeTemplates.push_back(this->nodeTemplate);
+
+	// Parse shape, need an S character
+	char firstChar;
+	int input_result = IO_stream_scan(this->input_file, " %c", &firstChar);
+	if ((1 != input_result) || (firstChar != 'S'))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing Shape.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->readElementShape())
+	{
+		return false;
+	}
+
+	// Parse node field header, need an # character
+	input_result = IO_stream_scan(this->input_file, " %c", &firstChar);
+	if ((1 != input_result) || (firstChar != '#'))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing #Fields.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->readNodeHeader())
+	{
+		return false;
+	}
+
+	// Optional constant field Values
+	if (1 == IO_stream_scan(this->input_file, " %1[V]", &test_string))
+	{
+		if (!this->readFieldValues())
+		{
+			return false;
+		}
+	}
+
+	this->nodeTemplate = nullptr;  // must be separately activated
+	return true;
+}
+
+bool EXReader::readNodeTemplate()
+{
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, "%1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
+		return false;
+	}
+	char *tmpName = this->readString("[^,\n\r\t]");
+	if (!tmpName)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading node template name.  %s", this->getFileLocation());
+		return false;
+	}
+	std::string name(tmpName);
+	DEALLOCATE(tmpName);
+	// key values are anticipated for the future
+	KeyValueMap keyValueMap;
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
+	{
+		return false;
+	}
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		std::string prefix("EX Reader.  Node template ");
+		prefix += name;
+		prefix += ": ";
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	this->nodeTemplate = this->findNodeTemplateByName(name);
+	if (!this->nodeTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Node template %s not found in scope of current nodeset.  %s",
+			name.c_str(), this->getFileLocation());
+		return false;
+	}
+	return true;
+}
+
 /**
  * Reads a node from stream, adding or merging into current nodeset.
  * If a node of that identifier already exists, parsed data is put into the
@@ -2205,18 +2406,14 @@ bool EXReader::readNodeHeader()
  */
 cmzn_node *EXReader::readNode()
 {
-	if (!this->fe_region)
-	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Node token.  %s", this->getFileLocation());
-		return 0;
-	}
 	if (!this->nodeset)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set.  %s", this->getFileLocation());
-		return 0;
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group/nodeset must be set before reading node.  %s", this->getFileLocation());
+		return nullptr;
 	}
+
 	DsLabelIdentifier nodeIdentifier = DS_LABEL_IDENTIFIER_INVALID;
-	if (1 != IO_stream_scan(this->input_file, "ode :%d", &nodeIdentifier))
+	if (1 != IO_stream_scan(this->input_file, ":%d", &nodeIdentifier))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading Node token or node number.  %s", this->getFileLocation());
 		return 0;
@@ -2226,59 +2423,59 @@ cmzn_node *EXReader::readNode()
 	if (returnNode)
 	{
 		returnNode->access();
-		if (!this->fe_node_template)
+		if (!this->nodeTemplate)
 		{
 			// case of listing nodes in group without shape and field headers - return node as-is
 			return returnNode;
 		}
 	}
-	else if (this->fe_node_template)
+	else if (this->nodeTemplate)
 	{
-		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->fe_node_template);
+		returnNode = this->nodeset->create_FE_node(nodeIdentifier, this->nodeTemplate->feNodeTemplate);
 		if (!returnNode)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Could not create node with number %d.  %s", nodeIdentifier, this->getFileLocation());
-			return 0;
+			return nullptr;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Node not found, must be first defined with a shape and field header.  %s",
+		display_message(ERROR_MESSAGE, "EX Reader.  Node not found, must be first defined with a template shape and field header.  %s",
 			this->getFileLocation());
 		return nullptr;
 	}
 
 	bool result = true;
 	// fill template node if node with identifier already exists (and merge below), otherwise new node
-	FE_node *node = existingNode ? this->fe_node_template->get_template_node() : returnNode;
-	const size_t fieldCount = this->headerFields.size();
+	FE_node *node = existingNode ? this->nodeTemplate->feNodeTemplate->get_template_node() : returnNode;
+	const size_t fieldCount = this->nodeTemplate->headerFields.size();
 	for (size_t f = 0; (f < fieldCount) && result; ++f)
 	{
-		FE_field *field = this->headerFields[f];
+		FE_field *field = this->nodeTemplate->headerFields[f];
 		// only GENERAL_FE_FIELD can store values at nodes
 		if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 			continue;
 		const int componentCount = get_FE_field_number_of_components(field);
-		const FE_node_field *node_field = node->getNodeField(field);
-		if (!node_field)
+		const FE_node_field *nodeField = node->getNodeField(field);
+		if (!nodeField)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader. Field %s is not defined at node.  %s", get_FE_field_name(field), this->getFileLocation());
 			result = false;
 			break;
 		}
-		const int number_of_values = node_field->getTotalValuesCount();
+		const int number_of_values = nodeField->getTotalValuesCount();
 		if (number_of_values <= 0)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  No nodal values for field %s.  %s", get_FE_field_name(field), this->getFileLocation());
 			result = false;
 			break;
 		}
-		FE_time_sequence *feTimeSequence = node_field->getTimeSequence();
+		FE_time_sequence *feTimeSequence = nodeField->getTimeSequence();
 		FE_time_sequence *fileFeTimeSequence = feTimeSequence;
 		FE_value singleTime = (this->timeIndex) ? this->timeIndex->time : 0.0;
 		TimeSequence *timeSequence = nullptr;
-		std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeFieldTimeSequences.find(field);
-		if (iter != this->nodeFieldTimeSequences.end())
+		std::map<FE_field *, TimeSequence *>::iterator iter = this->nodeTemplate->nodeFieldTimeSequences.find(field);
+		if (iter != this->nodeTemplate->nodeFieldTimeSequences.end())
 		{
 			timeSequence = iter->second;
 			fileFeTimeSequence = timeSequence->getFeTimeSequence();
@@ -2319,7 +2516,7 @@ cmzn_node *EXReader::readNode()
 		} break;
 		case FE_VALUE_VALUE:
 		{
-			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
 			std::vector<FE_value> valuesVector(maximumValuesCount);
 			FE_value *values = valuesVector.data();
 			for (int t = 0; t < fileTimeCount; ++t)
@@ -2332,7 +2529,7 @@ cmzn_node *EXReader::readNode()
 				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
 				for (int c = 0; c < componentCount; ++c)
 				{
-					const FE_node_field_template &nft = *(node_field->getComponent(c));
+					const FE_node_field_template &nft = *(nodeField->getComponent(c));
 					const int valuesCount = nft.getTotalValuesCount();
 					for (int k = 0; k < valuesCount; ++k)
 					{
@@ -2393,7 +2590,7 @@ cmzn_node *EXReader::readNode()
 		} break;
 		case INT_VALUE:
 		{
-			const int maximumValuesCount = node_field->getMaximumComponentTotalValuesCount();
+			const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
 			std::vector<int> valuesVector(maximumValuesCount);
 			int *values = valuesVector.data();
 			for (int t = 0; t < fileTimeCount; ++t)
@@ -2406,7 +2603,7 @@ cmzn_node *EXReader::readNode()
 				const bool readThisTime = (!this->timeIndex) || (fileTime == singleTime);
 				for (int c = 0; c < componentCount; ++c)
 				{
-					const FE_node_field_template &nft = *(node_field->getComponent(c));
+					const FE_node_field_template &nft = *(nodeField->getComponent(c));
 					const int valuesCount = nft.getTotalValuesCount();
 					for (int k = 0; k < valuesCount; ++k)
 					{
@@ -2502,7 +2699,7 @@ cmzn_node *EXReader::readNode()
 	}
 	if (result && existingNode && (fieldCount > 0)) // nothing to merge if no fields
 	{
-		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->fe_node_template))
+		if (CMZN_OK != this->nodeset->merge_FE_node_template(returnNode, this->nodeTemplate->feNodeTemplate))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge into existing node %d.  %s",
 				nodeIdentifier, this->getFileLocation());
@@ -2514,29 +2711,49 @@ cmzn_node *EXReader::readNode()
 	return returnNode;
 }
 
-/** Create blank element template (with no fields) for current mesh and shape.
-* Element fields can be added to this.
-* @return  True on success, false if failed. */
-bool EXReader::createElementtemplate()
+/**
+ * Reads object starting with N, either a Node or a Node template.
+ * Character N has already been read.
+ * @return  True on success, otherwise false.
+ */
+bool EXReader::readNodeOrTemplate()
 {
-	if (!(this->mesh && this->elementShape))
+	char *token;
+	if (!IO_stream_read_string(input_file, "[^:]", &token))
 	{
-		display_message(ERROR_MESSAGE, "EXReader::createElementtemplate.  No mesh and/or current shape");
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read token.  %s", this->getFileLocation());
 		return false;
 	}
-	// create blank element template of shape, with no fields
-	this->elementtemplate = cmzn_elementtemplate::create(this->mesh);
-	if (!this->elementtemplate)
+	bool result = true;
+	const bool isNode = strcmp(token, "ode") == 0;
+	const bool isNodeTemplate = strcmp(token, "ode template") == 0;
+	if (((this->exVersion < 3) && !isNode) || (!isNode && !isNodeTemplate))
 	{
-		display_message(ERROR_MESSAGE, "EXReader::createElementtemplate.  Error creating blank element template");
+		display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised token N%s.  %s", token, this->getFileLocation());
+		DEALLOCATE(token);
 		return false;
 	}
-	if (CMZN_OK != this->elementtemplate->setElementShape(this->elementShape))
+	DEALLOCATE(token);
+
+	if (isNode)
 	{
-		display_message(ERROR_MESSAGE, "EXReader::createElementtemplate.  Error setting element template shape");
-		return false;
+		cmzn_node *node = this->readNode();
+		if (node)
+		{
+			cmzn_nodeset_group *nodesetGroup = this->getNodesetGroup();
+			if (nodesetGroup)
+			{
+				cmzn_nodeset_group_add_node(nodesetGroup, node);
+			}
+			cmzn_node::deaccess(node);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
-	return true;
+	return this->readNodeTemplate();
 }
 
 /**
@@ -2544,19 +2761,13 @@ bool EXReader::createElementtemplate()
  * Assumes the starting S in Shape token has already been read.
  * From EX version 2 the nodeset or mesh must have been set first and match in
  * dimension. In earlier versions the mesh is assumed from the dimension.
- * GRC: check the above
  * If dimension is positive, on successful return, the EXReader contains an accessed
  * element shape. If dimension is 0 the element shape is NULL.
+ * For elements, set the element shape in the current ElementTemplate.
  * @return  True on success, False on failure.
  */
 bool EXReader::readElementShape()
 {
-	if (!this->fe_region)
-	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Shape token.  %s", this->getFileLocation());
-		return false;
-	}
-	this->clearHeaderCache();
 	int dimension = -1;
 	if ((1 != IO_stream_scan(this->input_file, "hape. Dimension=%d", &dimension))
 		|| (dimension < 0) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
@@ -2564,16 +2775,20 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element shape dimension.  %s", this->getFileLocation());
 		return false;
 	}
+	if ((dimension < 0) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Invalid dimension %d.  %s", dimension, this->getFileLocation());
+		return false;
+	}
 	if (this->exVersion < 2)
 	{
-		if (dimension == 0)
+		// the oldest files do not have the nodeset/mesh directives so set here
+		if ((dimension == 0) && (!this->nodeset))
 		{
-			// always set nodeset to reset node template
-			this->setNodeset((this->nodeset) ? this->nodeset :
-				FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
-					this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
+			this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
+				this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
 		}
-		else
+		else if ((dimension > 0) && ((!this->mesh) || (this->mesh->getDimension() != dimension)))
 		{
 			this->setMesh(FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension));
 		}
@@ -2582,9 +2797,9 @@ bool EXReader::readElementShape()
 	{
 		if (dimension == 0)
 		{
-			if ((!this->nodeset) || (this->mesh))
+			if ((this->mesh) || (!this->nodeset))
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  0-D shape must follow !#nodeset declaration in EX version 2+.  %s", this->getFileLocation());
+				display_message(ERROR_MESSAGE, "EX Reader.  !#nodeset not specified before 0-D Shape.  %s", this->getFileLocation());
 				return false;
 			}
 		}
@@ -2592,7 +2807,7 @@ bool EXReader::readElementShape()
 		{
 			if (!this->mesh)
 			{
-				display_message(ERROR_MESSAGE, "EX Reader.  Shape specified before !#mesh in EX version 2+.  %s", this->getFileLocation());
+				display_message(ERROR_MESSAGE, "EX Reader.  !#mesh not specified before Shape.  %s", this->getFileLocation());
 				return false;
 			}
 			if (this->mesh->getDimension() != dimension)
@@ -2602,8 +2817,30 @@ bool EXReader::readElementShape()
 			}
 		}
 	}
+	if (this->exVersion < 3)
+	{
+		this->clearTemplates();
+		if (this->mesh)
+		{
+			this->elementTemplate = new ElementTemplate(this->mesh);
+			this->elementTemplates.push_back(this->elementTemplate);
+		}
+		else if (this->nodeset)
+		{
+			this->nodeTemplate = new NodeTemplate(this->nodeset);
+			this->nodeTemplates.push_back(this->nodeTemplate);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  !#nodeset/!#mesh not set before Shape token.  %s", this->getFileLocation());
+			return false;
+		}
+	}
+	// else EX version 3 only calls this within template definition
 	if (0 == dimension)
-		return true;
+	{
+		return true;  // node template don't have a shape object
+	}
 	char *end_description, *shape_description_string, *start_description;
 	int component, *first_simplex, i, j, number_of_polygon_vertices,
 		previous_component, *temp_entry, *type, *type_entry,
@@ -2897,21 +3134,16 @@ bool EXReader::readElementShape()
 		display_message(ERROR_MESSAGE, "EX Reader.  Invalid shape description.  %s", this->getFileLocation());
 		return false;
 	}
-	this->elementShape = CREATE(FE_element_shape)(dimension, type, this->fe_region); // not accessed!
+	FE_element_shape *elementShape = CREATE(FE_element_shape)(dimension, type, this->fe_region); // not accessed!
 	DEALLOCATE(type);
-	if (!this->elementShape)
+	if (!elementShape)
 	{
 		display_message(ERROR_MESSAGE, "EXReader::readElementShape.  Error creating shape");
 		return false;
 	}
-	ACCESS(FE_element_shape)(this->elementShape);
-	// create and validate a blank, no-field element template
-	if (!this->createElementtemplate())
-		return false;
-	if (!this->elementtemplate->validate())
+	if (!this->elementTemplate->setElementShape(elementShape))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Default element field header failed validation when created for new shape.  %s",
-			this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EXReader.  Error setting element template shape.  %s", this->getFileLocation());
 		return false;
 	}
 	return true;
@@ -2966,7 +3198,7 @@ struct FE_basis *EXReader::readBasis()
  */
 bool EXReader::readElementHeaderField()
 {
-	if (!(this->mesh && this->nodeset && this->elementtemplate))
+	if (!(this->mesh && this->nodeset && this->elementTemplate))
 		return false;
 	// first read non-merged field declaration without element-specific data
 	TimeSequence *timeSequence = nullptr;
@@ -2979,11 +3211,10 @@ bool EXReader::readElementHeaderField()
 			field->getName(), this->getFileLocation());
 	}
 	// check field of this name isn't already in header
-	const size_t fieldCount = this->headerFields.size();
+	const size_t fieldCount = this->elementTemplate->headerFields.size();
 	for (size_t f = 0; f < fieldCount; ++f)
 	{
-		FE_field *tmpField = this->headerFields[f];
-		if (0 == strcmp(get_FE_field_name(tmpField), get_FE_field_name(field)))
+		if (this->elementTemplate->headerFields[f] == field)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Field %s appears more than once in header.  %s",
 				field->getName(), this->getFileLocation());
@@ -3209,7 +3440,7 @@ bool EXReader::readElementHeaderField()
 				ScaleFactorSet *sfSet = 0;
 				if (scaleFactorSetName) // EX Version 2+ only; none if not scaling
 				{
-					sfSet = this->findScaleFactorSet(scaleFactorSetName);
+					sfSet = this->elementTemplate->findScaleFactorSet(scaleFactorSetName);
 					if (!sfSet)
 					{
 						display_message(ERROR_MESSAGE, "EX Reader.  Could not find scale factor set %s.  %s", scaleFactorSetName, this->getFileLocation());
@@ -3227,7 +3458,7 @@ bool EXReader::readElementHeaderField()
 						result = false;
 						break;
 					}
-					sfSet = this->findScaleFactorSet(basisDescription);
+					sfSet = this->elementTemplate->findScaleFactorSet(basisDescription);
 					DEALLOCATE(basisDescription);
 				}
 				if (sfSet)
@@ -3282,7 +3513,7 @@ bool EXReader::readElementHeaderField()
 						const int nodeIndex = atoi(nodeIndexString);
 						if ((!isIntegerString(nodeIndexString))
 							|| (nodeIndex < 0)
-							|| (nodeIndex > this->elementtemplate->getNumberOfNodes())
+							|| (nodeIndex > this->elementTemplate->elementtemplate->getNumberOfNodes())
 							|| ((nodeIndex == 0) && (termCount > 0)))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Node index %s invalid or out of range.  %s", nodeIndexString, this->getFileLocation());
@@ -3652,7 +3883,7 @@ bool EXReader::readElementHeaderField()
 			} break;
 			case CMZN_ELEMENTFIELDTEMPLATE_PARAMETER_MAPPING_MODE_ELEMENT:
 			{
-				this->hasElementValues = true;
+				this->elementTemplate->hasElementValues = true;
 				if (elementGridBased)
 				{
 					KeyValueMap keyValueMap;
@@ -3765,10 +3996,10 @@ bool EXReader::readElementHeaderField()
 		}
 		if (homogeneous)
 		{
-			resultCode = this->elementtemplate->defineField(field, /*all components*/-1, componentEFTs[0]);
+			resultCode = this->elementTemplate->elementtemplate->defineField(field, /*all components*/-1, componentEFTs[0]);
 			if ((componentPackedNodeIndexes[0].size() > 0) && (resultCode == CMZN_OK))
 			{
-				resultCode = this->elementtemplate->addLegacyNodeIndexes(field, /*all components*/-1,
+				resultCode = this->elementTemplate->elementtemplate->addLegacyNodeIndexes(field, /*all components*/-1,
 					static_cast<int>(componentPackedNodeIndexes[0].size()), componentPackedNodeIndexes[0].data());
 			}
 		}
@@ -3776,10 +4007,10 @@ bool EXReader::readElementHeaderField()
 		{
 			for (int c = 0; c < componentCount; ++c)
 			{
-				resultCode = this->elementtemplate->defineField(field, c + 1, componentEFTs[c]);
+				resultCode = this->elementTemplate->elementtemplate->defineField(field, c + 1, componentEFTs[c]);
 				if ((componentPackedNodeIndexes[c].size() > 0) && (resultCode == CMZN_OK))
 				{
-					resultCode = this->elementtemplate->addLegacyNodeIndexes(field, c + 1,
+					resultCode = this->elementTemplate->elementtemplate->addLegacyNodeIndexes(field, c + 1,
 						static_cast<int>(componentPackedNodeIndexes[c].size()), componentPackedNodeIndexes[c].data());
 				}
 				if (resultCode != CMZN_OK)
@@ -3788,7 +4019,7 @@ bool EXReader::readElementHeaderField()
 		}
 		if (resultCode == CMZN_OK)
 		{
-			this->headerFields.push_back(field);
+			this->elementTemplate->headerFields.push_back(field);
 		}
 		else
 		{
@@ -3816,15 +4047,29 @@ bool EXReader::readElementHeaderField()
  */
 bool EXReader::readElementHeader()
 {
-	if (!(this->mesh && this->elementShape))
+	if (this->exVersion < 3)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  No mesh or element shape set.  %s", this->getFileLocation());
+		if ((!this->elementTemplate) || (!this->elementTemplate->getElementShape()))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  No element shape set.  %s", this->getFileLocation());
+			return false;
+		}
+		// start a new blank element template with the last element shape
+		FE_element_shape *lastElementShape = ACCESS(FE_element_shape)(this->elementTemplate->getElementShape());
+		this->clearTemplates();
+		this->elementTemplate = new ElementTemplate(this->mesh);
+		this->elementTemplate->setElementShape(lastElementShape);
+		this->elementTemplates.push_back(this->elementTemplate);
+		DEACCESS(FE_element_shape)(&lastElementShape);
+	}
+	else if (!this->elementTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Define element template needed before this in EX version 3+.  %s", this->getFileLocation());
 		return false;
 	}
-	this->clearHeaderCache(/*clearElementShape*/false);
-	if (!this->createElementtemplate())
+	if (!this->elementTemplate->elementtemplate)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element template.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Invalid element template.  %s", this->getFileLocation());
 		return false;
 	}
 
@@ -3891,7 +4136,7 @@ bool EXReader::readElementHeader()
 			prefix += ": ";
 			keyValueMap.reportUnusedKeyValues(prefix.c_str());
 		}
-		if (0 == this->createScaleFactorSet(scaleFactorSetName.c_str(), scaleFactorCount, scaleFactorOffset, scaleFactorIdentifiersString))
+		if (0 == this->elementTemplate->createScaleFactorSet(scaleFactorSetName.c_str(), scaleFactorCount, scaleFactorOffset, scaleFactorIdentifiersString))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to create scale factor set.  %s", this->getFileLocation());
 			return false;
@@ -3906,7 +4151,7 @@ bool EXReader::readElementHeader()
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading #Nodes.  %s", this->getFileLocation());
 		return false;
 	}
-	if (CMZN_OK != this->elementtemplate->setNumberOfNodes(nodeCount))
+	if (CMZN_OK != this->elementTemplate->elementtemplate->setNumberOfNodes(nodeCount))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to set number of nodes to %d.  %s", nodeCount, this->getFileLocation());
 		return false;
@@ -3927,7 +4172,7 @@ bool EXReader::readElementHeader()
 			return false;
 		}
 	}
-	if (!this->elementtemplate->validate())
+	if (!this->elementTemplate->elementtemplate->validate())
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Element field header failed validation.  %s", this->getFileLocation());
 		return false;
@@ -3935,11 +4180,11 @@ bool EXReader::readElementHeader()
 
 	// for all scale factor sets, convert [named] field components using them to EFTs
 	// warn if same EFT is using different scale factor sets (force use of first one)
-	const size_t sfSetCount = this->scaleFactorSets.size();
+	const size_t sfSetCount = this->elementTemplate->scaleFactorSets.size();
 	std::map<FE_element_field_template*, ScaleFactorSet*> eftSfMap;
 	for (size_t s = 0; s < sfSetCount; ++s)
 	{
-		ScaleFactorSet *sfSet = this->scaleFactorSets[s];
+		ScaleFactorSet *sfSet = this->elementTemplate->scaleFactorSets[s];
 		for (auto fieldIter = sfSet->fieldComponents.begin(); fieldIter != sfSet->fieldComponents.end(); ++fieldIter)
 		{
 			const std::string &fieldName = fieldIter->first;
@@ -3948,7 +4193,7 @@ bool EXReader::readElementHeader()
 			const size_t limit = componentNumbers.size();
 			for (size_t i = 0; i < limit; ++i)
 			{
-				FE_element_field_template *eft = this->elementtemplate->get_FE_element_template()->getElementfieldtemplate(field, componentNumbers[i]);
+				FE_element_field_template *eft = this->elementTemplate->elementtemplate->get_FE_element_template()->getElementfieldtemplate(field, componentNumbers[i]);
 				if (!eft)
 				{
 					display_message(ERROR_MESSAGE, "EX Reader.  Couldn't find element field template for field %s to assign scale factors to.  %s",
@@ -3976,6 +4221,133 @@ bool EXReader::readElementHeader()
 			display_message(WARNING_MESSAGE, "EX Reader.  Scale factor set %s is not used by any element field components: ignoring.  %s",
 				sfSet->name.c_str(), this->getFileLocation());
 		}
+	}
+	return true;
+}
+
+EXReader::ElementTemplate *EXReader::findElementTemplateByName(const std::string& name) const
+{
+	const size_t etCount = this->elementTemplates.size();
+	for (int et = 0; et < etCount; ++et)
+	{
+		if (this->elementTemplates[et]->name == name)
+		{
+			return this->elementTemplates[et];
+		}
+	}
+	return nullptr;
+}
+
+bool EXReader::readDefineElementTemplate()
+{
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, "efine element template %1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Truncated Define element template: token.  %s", this->getFileLocation());
+		return false;
+	}
+	char *tmpName = this->readString("[^,\n\r\t]");
+	if (!tmpName)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element template name.  %s", this->getFileLocation());
+		return false;
+	}
+	std::string name(tmpName);
+	DEALLOCATE(tmpName);
+	// key values are anticipated for the future
+	KeyValueMap keyValueMap;
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
+	{
+		return false;
+	}
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		std::string prefix("EX Reader.  Define element template ");
+		prefix += name;
+		prefix += ": ";
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	if ((this->findElementTemplateByName(name)))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element template %s already exists.  %s", name.c_str(), this->getFileLocation());
+		return false;
+	}
+	this->elementTemplate = new ElementTemplate(this->mesh, name);
+	this->elementTemplates.push_back(this->elementTemplate);
+
+	// Parse shape, need an S character
+	char firstChar;
+	int input_result = IO_stream_scan(this->input_file, " %c", &firstChar);
+	if ((1 != input_result) || (firstChar != 'S'))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing Shape.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->readElementShape())
+	{
+		return false;
+	}
+
+	// Parse node field header, need an # character
+	input_result = IO_stream_scan(this->input_file, " %c", &firstChar);
+	if ((1 != input_result) || (firstChar != '#'))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing #Scale factor sets.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->readElementHeader())
+	{
+		return false;
+	}
+
+	// Optional constant field Values
+	if (1 == IO_stream_scan(this->input_file, " %1[V]", &test_string))
+	{
+		if (!this->readFieldValues())
+		{
+			return false;
+		}
+	}
+
+	this->elementTemplate = nullptr;  // must be separately activated
+	return true;
+}
+
+bool EXReader::readElementTemplate()
+{
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, "%1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
+		return false;
+	}
+	char *tmpName = this->readString("[^,\n\r\t]");
+	if (!tmpName)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Error reading element template name.  %s", this->getFileLocation());
+		return false;
+	}
+	std::string name(tmpName);
+	DEALLOCATE(tmpName);
+	// key values are anticipated for the future
+	KeyValueMap keyValueMap;
+	if (!this->readKeyValueMap(keyValueMap, (int)','))
+	{
+		return false;
+	}
+	if (keyValueMap.hasUnusedKeyValues())
+	{
+		std::string prefix("EX Reader.  Element template ");
+		prefix += name;
+		prefix += ": ";
+		keyValueMap.reportUnusedKeyValues(prefix.c_str());
+	}
+	this->elementTemplate = this->findElementTemplateByName(name);
+	if (!this->elementTemplate)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element template %s not found in scope of current mesh.  %s",
+			name.c_str(), this->getFileLocation());
+		return false;
 	}
 	return true;
 }
@@ -4101,15 +4473,15 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
 cmzn_element *EXReader::readElement()
 {
 	char test_string[5];
-	if (1 != IO_stream_scan(this->input_file, "ement %1[:] ", test_string)) // "El" has already been read
+	if (1 != IO_stream_scan(this->input_file, " %1[:] ", test_string)) // "Element" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
-		return 0;
+		return nullptr;
 	}
 	if (!this->fe_region)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Element: token.  %s", this->getFileLocation());
-		return 0;
+		return nullptr;
 	}
 	if (!this->mesh)
 	{
@@ -4131,32 +4503,32 @@ cmzn_element *EXReader::readElement()
 	cmzn_element *element = this->mesh->findElementByIdentifier(elementIdentifier);
 	if (element)
 	{
-		if (this->elementtemplate)
+		if (this->elementTemplate)
 		{
 			// existing element may have no shape if automatically created for element:xi location
 			// in this case merge will set its shape, otherwise it's an error if existing shape is changed
-			const FE_element_shape *elementShape = element->getElementShape();
-			if ((elementShape) && (this->elementtemplate->getElementShape() != elementShape))
+			FE_element_shape *elementShape = element->getElementShape();
+			if ((elementShape) && (this->elementTemplate->elementtemplate->getElementShape() != elementShape))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Element %d redefined with different shape.  %s", elementIdentifier, this->getFileLocation());
 				return nullptr;
 			}
-			if (CMZN_OK != this->elementtemplate->mergeIntoElementEX(element))
+			if (CMZN_OK != this->elementTemplate->elementtemplate->mergeIntoElementEX(element))
 			{
 				display_message(ERROR_MESSAGE, "EX Reader.  Failed to merge element fields.  %s", this->getFileLocation());
 				return nullptr;
 			}
 		}
 		element->access();
-		if (!this->elementtemplate)
+		if (!this->elementTemplate)
 		{
 			// case of listing elements in group without shape and field headers - return element as-is
 			return element;
 		}
 	}
-	else if (this->elementtemplate)
+	else if (this->elementTemplate)
 	{
-		element = this->elementtemplate->createElementEX(elementIdentifier);
+		element = this->elementTemplate->elementtemplate->createElementEX(elementIdentifier);
 		if (!element)
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element.  %s", this->getFileLocation());
@@ -4226,8 +4598,8 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Values: element field values if any element-based field components
-	const size_t fieldCount = this->headerFields.size();
-	if (this->hasElementValues)
+	const size_t fieldCount = this->elementTemplate->headerFields.size();
+	if (this->elementTemplate->hasElementValues)
 	{
 		if (1 != IO_stream_scan(this->input_file, " Values %1[:] ", test_string))
 		{
@@ -4237,7 +4609,7 @@ cmzn_element *EXReader::readElement()
 		}
 		for (size_t f = 0; f < fieldCount; ++f)
 		{
-			FE_field *field = this->headerFields[f];
+			FE_field *field = this->elementTemplate->headerFields[f];
 			// only GENERAL_FE_FIELD can store values at elements
 			if (GENERAL_FE_FIELD != get_FE_field_FE_field_type(field))
 				continue;
@@ -4255,7 +4627,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Nodes: if any in element header
-	const int nodeCount = this->elementtemplate->getNumberOfNodes();
+	const int nodeCount = this->elementTemplate->elementtemplate->getNumberOfNodes();
 	if (nodeCount > 0)
 	{
 		if (1 != IO_stream_scan(this->input_file, " Nodes %1[:]", test_string))
@@ -4290,7 +4662,7 @@ cmzn_element *EXReader::readElement()
 				cmzn_element::deaccess(element);
 				return 0;
 			}
-			const int resultCode = this->elementtemplate->setNode(n + 1, node);
+			const int resultCode = this->elementTemplate->elementtemplate->setNode(n + 1, node);
 			cmzn_node_destroy(&node);
 			if (CMZN_OK != resultCode)
 			{
@@ -4299,7 +4671,7 @@ cmzn_element *EXReader::readElement()
 				return 0;
 			}
 		}
-		if (CMZN_OK != this->elementtemplate->setLegacyNodesInElement(element))
+		if (CMZN_OK != this->elementTemplate->elementtemplate->setLegacyNodesInElement(element))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Failed to set element nodes.  %s", this->getFileLocation());
 			cmzn_element::deaccess(element);
@@ -4308,7 +4680,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Scale factors: if any scale factor sets in element header
-	const size_t sfSetCount = this->scaleFactorSets.size();
+	const size_t sfSetCount = this->elementTemplate->scaleFactorSets.size();
 	if (sfSetCount > 0)
 	{
 		if (1 != IO_stream_scan(this->input_file, " Scale factors %1[:]", test_string))
@@ -4319,7 +4691,7 @@ cmzn_element *EXReader::readElement()
 		}
 		for (size_t ss = 0; ss < sfSetCount; ++ss)
 		{
-			ScaleFactorSet *sfSet = this->scaleFactorSets[ss];
+			ScaleFactorSet *sfSet = this->elementTemplate->scaleFactorSets[ss];
 			// read the values into the sfSet values cache
 			const int scaleFactorCount = sfSet->scaleFactorCount;
 			FE_value *scaleFactors = sfSet->values.data();
@@ -4380,6 +4752,52 @@ cmzn_element *EXReader::readElement()
 }
 
 /**
+ * Reads object starting with E: Element template or Element.
+ * Character E has already been read.
+ * @return  True on success, otherwise false.
+ */
+bool EXReader::readElementOrTemplate()
+{
+	char *token;
+	if (!IO_stream_read_string(input_file, "[^:]", &token))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read token.  %s", this->getFileLocation());
+		return false;
+	}
+	bool result = true;
+	const bool isElement = strcmp(token, "lement") == 0;
+	const bool isElementTemplate = strcmp(token, "lement template") == 0;
+	if (((this->exVersion < 3) && !isElement) || (!isElement && !isElementTemplate))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised token El%s.  %s", token, this->getFileLocation());
+		DEALLOCATE(token);
+		return false;
+	}
+	DEALLOCATE(token);
+
+	if (isElement)
+	{
+		cmzn_element *element = this->readElement();
+		if (element)
+		{
+			cmzn_mesh_group *meshGroup = this->getMeshGroup();
+			if (meshGroup)
+			{
+				cmzn_mesh_group_add_element(meshGroup, element);
+			}
+			cmzn_element::deaccess(element);
+			return true;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
+			return false;
+		}
+	}
+	return this->readElementTemplate();
+}
+
+/**
  * Reads region, group, field, node and element field data in EX format into
  * the region tree.
  * @return  true on success, false on failure.
@@ -4395,7 +4813,9 @@ int EXReader::read()
 		IO_stream_scan(input_file, " ");
 		int input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
 		if (1 != input_result)
-			break;
+		{
+			break;  // end of file
+		}
 		bool invalidToken = false;
 		switch (first_character_in_token)
 		{
@@ -4500,8 +4920,17 @@ int EXReader::read()
 			} break;
 			case 'S': /* Shape */
 			{
-				if (!this->readElementShape())
-					return_code = 0;
+				if (this->exVersion < 3)
+				{
+					if (!this->readElementShape())
+						return_code = 0;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Shape must be within Define %s template in EX version 3+.  %s",
+						(this->mesh) ? "element" : "node", this->getFileLocation());
+					invalidToken = true;
+				}
 			} break;
 			case '!': /* !# directive, otherwise ! Comment ignored to end of line */
 			{
@@ -4510,54 +4939,79 @@ int EXReader::read()
 			} break;
 			case '#': /* #Scale factor sets, #Nodes, or #Fields */
 			{
-				if (this->getMesh())
+				if (this->exVersion < 3)
 				{
-					if (!this->readElementHeader())
-						return_code = 0;
-				}
-				else if (this->getNodeset())
-				{
-					if (!this->readNodeHeader())
-						return_code = 0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Region/Group not set before field header.  %s", this->getFileLocation());
-					return_code = 0;
-				}
-			} break;
-			case 'N': /* Node */
-			{
-				cmzn_node *node = this->readNode();
-				if (node)
-				{
-					cmzn_nodeset_group *nodesetGroup = this->getNodesetGroup();
-					if (nodesetGroup)
-						cmzn_nodeset_group_add_node(nodesetGroup, node);
-					cmzn_node::deaccess(node);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading node");
-					return_code = 0;
-				}
-			} break;
-			case 'E': /* Element or EX Version */
-			{
-				const int next_char = this->readNextNonSpaceChar();
-				if (next_char == (int)'l')
-				{
-					cmzn_element *element = this->readElement();
-					if (element)
+					if (this->getMesh())
 					{
-						cmzn_mesh_group *meshGroup = this->getMeshGroup();
-						if (meshGroup)
-							cmzn_mesh_group_add_element(meshGroup, element);
-						cmzn_element::deaccess(element);
+						if (!this->readElementHeader())
+						{
+							return_code = 0;
+						}
+					}
+					else if (this->getNodeset())
+					{
+						if (!this->readNodeHeader())
+						{
+							return_code = 0;
+						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
+						display_message(ERROR_MESSAGE, "Region/Group not set before field header.  %s", this->getFileLocation());
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "#tokens must be within Define %s template in EX version 3+.  %s",
+						(this->mesh) ? "element" : "node", this->getFileLocation());
+					invalidToken = true;
+				}
+			} break;
+			case 'D': /* Define Node/Element Template */
+			{
+				if (this->exVersion < 3)
+				{
+					invalidToken = true;
+				}
+				else
+				{
+					if (this->getMesh())
+					{
+						if (!this->readDefineElementTemplate())
+						{
+							return_code = 0;
+						}
+					}
+					else if (this->getNodeset())
+					{
+						if (!this->readDefineNodeTemplate())
+						{
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Nodeset/Mesh not set before Define.  %s", this->getFileLocation());
+						return_code = 0;
+					}
+				}
+			} break;
+			case 'N': /* Node template or Node */
+			{
+				if (!this->readNodeOrTemplate())
+				{
+					return_code = 0;
+				}
+			} break;
+			case 'E': /* Element template, Element or EX Version */
+			{
+				// peek next char (not read)
+				const int next_char = IO_stream_peekc(this->input_file);
+				if (next_char == (int)'l')
+				{
+					if (!this->readElementOrTemplate())
+					{
 						return_code = 0;
 					}
 				}
@@ -4570,13 +5024,7 @@ int EXReader::read()
 				}
 				else
 				{
-					char *temp_string = 0;
-					IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
-					display_message(ERROR_MESSAGE,
-						"Invalid token \'%c%s\' in EX node/element file.  %s",
-						first_character_in_token, temp_string ? temp_string : "", this->getFileLocation());
-					DEALLOCATE(temp_string);
-					return_code = 0;
+					invalidToken = true;
 				}
 			} break;
 			case 'T': /* Time sequence */
@@ -4584,15 +5032,27 @@ int EXReader::read()
 				if (this->exVersion < 3)
 				{
 					invalidToken = true;
-					break;
 				}
-				if (!this->readTimeSequence())
+				else if (!this->readTimeSequence())
+				{
 					return_code = 0;
+				}
 			} break;
 			case 'V': /* Values */
 			{
-				if (!this->readFieldValues())
-					return_code = 0;
+				if (this->exVersion < 3)
+				{
+					if (!this->readFieldValues())
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Field Values must be at end of Define %s template in EX version 3+.  %s",
+						(this->mesh) ? "element" : "node", this->getFileLocation());
+					invalidToken = true;
+				}
 			} break;
 			default:
 			{

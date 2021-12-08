@@ -327,8 +327,8 @@ TEST(FieldIO, ex3NodeTimesequenceSingleTime)
 	StreamresourceFile srf = sir.createStreamresourceFile(TestResources::getLocation(TestResources::FIELDIO_EX3_NODE_TIMESEQUENCE_RESOURCE));
 	EXPECT_TRUE(srf.isValid());
 	const double evaluationTime = 1.8;
-	ASSERT_EQ(RESULT_OK, sir.setResourceAttributeReal(srf, StreaminformationRegion::ATTRIBUTE_TIME, evaluationTime));
-	EXPECT_EQ(RESULT_OK, zinc.root_region.read(sir));
+	EXPECT_EQ(RESULT_OK, sir.setResourceAttributeReal(srf, StreaminformationRegion::ATTRIBUTE_TIME, evaluationTime));
+	ASSERT_EQ(RESULT_OK, zinc.root_region.read(sir));
 
 	const double expectedCoordinatesTime = 2.0;
 	const double expectedCoordinates[3] = { 2.1, 0.2, 0.05 };

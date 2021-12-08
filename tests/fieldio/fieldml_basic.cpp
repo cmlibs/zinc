@@ -957,10 +957,10 @@ TEST(FieldIO, ex_element_grid_constant_indexed_fields)
 		TestResources::getLocation(TestResources::FIELDIO_EX_BLOCK_GRID_RESOURCE)));
 	check_ex_element_grid_constant_indexed_fields(zinc.fm);
 
-	// test writing and re-reading in EX2 format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	// test writing and re-reading in latest EX format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.exf"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.exf"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_ex_element_grid_constant_indexed_fields(testFm1);
 }
