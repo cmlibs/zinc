@@ -32,8 +32,7 @@ protected:
 	int morphVertices, morphColours, morphNormals;
 	int number_of_time_steps;
 	char *groupName, *regionPath;
-	//This is a weak pointer
-	cmzn_graphics_id graphics;
+	cmzn_graphics *graphics; // not accessed
 	double textureSizes[3];
 	std::string verticesMorphString;
 	std::string colorsMorphString;
@@ -76,7 +75,7 @@ public:
 			cmzn_streaminformation_scene_io_data_type mode_in,
 			int morphVerticesIn, int morphColoursIn, int morphNormalsIn, 
 			double *textureSizesIn, const char *groupNameIn,
-			const char *regionPathIn, cmzn_graphics_id graphicsIn) :
+			const char *regionPathIn, cmzn_graphics *graphicsIn) :
 		filename(duplicate_string(filename_in)),
 		mode(mode_in),
 		morphVerticesExported(false),
@@ -142,7 +141,7 @@ public:
 
 	std::string *getExportString();
 
-	bool isExportForGraphics(cmzn_graphics_id graphicsIn)
+	bool isExportForGraphics(cmzn_graphics *graphicsIn)
 	{
 		return (this->graphics == graphicsIn);
 	}
@@ -192,7 +191,7 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn,
-		const char* regionPathIn, cmzn_graphics_id graphicsIn) :
+		const char* regionPathIn, cmzn_graphics *graphicsIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
 		groupNameIn, regionPathIn, graphicsIn)
@@ -229,7 +228,7 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
-		cmzn_graphics_id graphicsIn) :
+		cmzn_graphics *graphicsIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
 		groupNameIn, regionPathIn, graphicsIn)
@@ -253,7 +252,7 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
-		cmzn_graphics_id graphicsIn) :
+		cmzn_graphics *graphicsIn) :
 			Threejs_export_point(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
 		groupNameIn,  regionPathIn, graphicsIn)
