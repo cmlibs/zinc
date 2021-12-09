@@ -141,22 +141,22 @@ public:
 
 	std::string *getExportString();
 
-	bool isExportForGraphics(cmzn_graphics *graphicsIn)
+	bool isExportForGraphics(cmzn_graphics *graphicsIn) const
 	{
 		return (this->graphics == graphicsIn);
 	}
 
-	bool getMorphVerticesExported()
+	bool getMorphVerticesExported() const
 	{
 		return morphVerticesExported;
 	}
 
-	bool getMorphColoursExported()
+	bool getMorphColoursExported() const
 	{
 		return morphColoursExported;
 	}
 
-	bool getMorphNormalsExported()
+	bool getMorphNormalsExported() const
 	{
 		return morphNormalsExported;
 	}
