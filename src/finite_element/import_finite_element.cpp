@@ -800,14 +800,14 @@ private:
 	void clearTemplates()
 	{
 		const size_t ntCount = this->nodeTemplates.size();
-		for (int nt = 0; nt < ntCount; ++nt)
+		for (size_t nt = 0; nt < ntCount; ++nt)
 		{
 			delete this->nodeTemplates[nt];
 		}
 		this->nodeTemplates.clear();
 		this->nodeTemplate = nullptr;
 		const size_t etCount = this->elementTemplates.size();
-		for (int et = 0; et < etCount; ++et)
+		for (size_t et = 0; et < etCount; ++et)
 		{
 			delete this->elementTemplates[et];
 		}
@@ -2278,7 +2278,7 @@ bool EXReader::readNodeHeader()
 EXReader::NodeTemplate *EXReader::findNodeTemplateByName(const std::string& name) const
 {
 	const size_t ntCount = this->nodeTemplates.size();
-	for (int nt = 0; nt < ntCount; ++nt)
+	for (size_t nt = 0; nt < ntCount; ++nt)
 	{
 		if (this->nodeTemplates[nt]->name == name)
 		{
@@ -2727,7 +2727,7 @@ bool EXReader::readNodeGroup()
 	if (!this->nodeset)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group/nodeset must be set before reading node group.  %s", this->getFileLocation());
-		return nullptr;
+		return false;
 	}
 	bool result = true;
 	cmzn_nodeset_group *nodesetGroup = this->getNodesetGroup();
@@ -2807,7 +2807,6 @@ bool EXReader::readNodeOrTemplate()
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read token.  %s", this->getFileLocation());
 		return false;
 	}
-	bool result = true;
 	const bool isNode = strcmp(token, "ode") == 0;
 	const bool isNodeGroup = strcmp(token, "ode group") == 0;
 	const bool isNodeTemplate = strcmp(token, "ode template") == 0;
@@ -4322,7 +4321,7 @@ bool EXReader::readElementHeader()
 EXReader::ElementTemplate *EXReader::findElementTemplateByName(const std::string& name) const
 {
 	const size_t etCount = this->elementTemplates.size();
-	for (int et = 0; et < etCount; ++et)
+	for (size_t et = 0; et < etCount; ++et)
 	{
 		if (this->elementTemplates[et]->name == name)
 		{
@@ -4930,7 +4929,6 @@ bool EXReader::readElementOrTemplate()
 		display_message(ERROR_MESSAGE, "EX Reader.  Failed to read token.  %s", this->getFileLocation());
 		return false;
 	}
-	bool result = true;
 	const bool isElement = strcmp(token, "lement") == 0;
 	const bool isElementGroup = strcmp(token, "lement group") == 0;
 	const bool isElementTemplate = strcmp(token, "lement template") == 0;
