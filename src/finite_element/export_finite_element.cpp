@@ -391,7 +391,6 @@ class EXWriter
 	std::vector<FE_field *> writableFields;  // fields in region requested to be written in indexer-priority order
 	const FE_mesh *feMesh;
 	const FE_nodeset *feNodeset;
-	bool writeIdentifiersOnly;
 	int timeSequenceNumber;  // incremented and used to make time sequence name unique across file
 	std::vector<TimeSequence *> timeSequences;  // time sequences defined in current region
 	int nodeTemplateNumber;  // incremented and used to make node template name unique across file
@@ -449,7 +448,6 @@ public:
 		fieldmodule(nullptr),
 		feMesh(nullptr),
 		feNodeset(nullptr),
-		writeIdentifiersOnly(false),
 		timeSequenceNumber(0),
 		nodeTemplateNumber(0),
 		nodeTemplate(nullptr),
@@ -525,11 +523,6 @@ private:
 		this->clearTemplates();
 	}
 
-	void setWriteIdentifiersOnly(bool state)
-	{
-		this->writeIdentifiersOnly = state;
-	}
-
 	/** Output name, automatically quoting if contains special characters */
 	void writeSafeName(const char *name) const
 	{
@@ -555,16 +548,21 @@ private:
 	bool writeElementFieldComponentValues(cmzn_element *element, FE_field *field, int componentNumber);
 	bool writeElement(cmzn_element *element);
 	bool elementIsToBeWritten(cmzn_element *element);
-	int writeMesh(int dimension, cmzn_field_group *group);
+	bool writeFeMesh(FE_mesh *feMeshIn);
+	bool writeMesh(int dimension, cmzn_field_group *group);
+	bool writeElementGroup(int dimension, cmzn_field_group *group);
 
 	bool writeNodeHeaderField(cmzn_node *node, int fieldIndex, FE_field *field);
 	bool writeNodeTemplate(cmzn_node *node);
 	bool writeNodeFieldValues(cmzn_node *node, FE_field *field);
 	bool writeNode(cmzn_node *node);
 	bool nodeIsToBeWritten(cmzn_node *node);
-	int writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group);
+	bool writeFeNodeset(FE_nodeset *feNodesetIn);
+	bool writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group);
+	bool writeNodeGroup(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group);
 
 	int writeRegionContent(cmzn_field_group *group);
+	bool writeGroup(cmzn_field_group *group);
 	int writeRegion(cmzn_region *regionIn);
 };
 
@@ -886,7 +884,7 @@ bool EXWriter::writeTimeSequence(FE_time_sequence *feTimeSequence)
 				if (0 == ((i + 1) % columnCount))
 					(*this->outStream) << "\n";
 			}
-			// extra newline if not multiple of number_of_columns
+			// extra newline if not multiple of columnCount
 			if (0 != (size % columnCount))
 				(*this->outStream) << "\n";
 		}
@@ -1379,7 +1377,7 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 			if (0 == ((v + 1) % columnCount))
 				(*this->outStream) << "\n";
 		}
-		// extra newline if not multiple of number_of_columns
+		// extra newline if not multiple of columnCount
 		if (0 != (valueCount % columnCount))
 			(*this->outStream) << "\n";
 		break;
@@ -1399,7 +1397,7 @@ bool EXWriter::writeElementFieldComponentValues(cmzn_element *element,
 			if (0 == ((v + 1) % columnCount))
 				(*this->outStream) << "\n";
 		}
-		// extra newline if not multiple of number_of_columns
+		// extra newline if not multiple of columnCount
 		if (0 != (valueCount % columnCount))
 			(*this->outStream) << "\n";
 		break;
@@ -1439,10 +1437,6 @@ bool EXWriter::writeElement(cmzn_element *element)
 {
 	(*this->outStream) << "Element: " << element->getIdentifier() << "\n";
 
-	if (this->writeIdentifiersOnly)
-	{
-		return true;
-	}
 	if (!this->elementTemplate)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeElement.  Missing element template");
@@ -1615,52 +1609,55 @@ bool EXWriter::elementIsToBeWritten(cmzn_element *element)
 	return true;
 }
 
-int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
+bool EXWriter::writeFeMesh(FE_mesh *feMeshIn)
 {
-	int return_code = 1;
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
+	(*this->outStream) << "!#mesh ";
+	this->writeSafeName(feMeshIn->getName());
+	(*this->outStream) << ", dimension=" << feMeshIn->getDimension();
+	if (feMeshIn->getFaceMesh())
+	{
+		(*this->outStream) << ", face mesh=";
+		this->writeSafeName(feMeshIn->getFaceMesh()->getName());
+	}
+	if (feMeshIn->getNodeset())
+	{
+		(*this->outStream) << ", nodeset=";
+		this->writeSafeName(feMeshIn->getNodeset()->getName());
+	}
+	(*this->outStream) << "\n";
+	return true;
+}
+
+bool EXWriter::writeMesh(int dimension, cmzn_field_group *group)
+{
+	bool result = true;
+	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
 	if (group)
 	{
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+		cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
 		cmzn_mesh_destroy(&mesh);
 		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
 		cmzn_field_element_group_destroy(&element_group);
 	}
 	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
 	{
-		FE_mesh *feMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
-		this->setMesh(feMesh);
-		(*this->outStream) << "!#mesh ";
-		this->writeSafeName(feMesh->getName());
-		(*this->outStream) << ", dimension=" << feMesh->getDimension();
-		if (feMesh->getFaceMesh())
-		{
-			(*this->outStream) << ", face mesh=";
-			this->writeSafeName(feMesh->getFaceMesh()->getName());
-		}
-		if (feMesh->getNodeset())
-		{
-			(*this->outStream) << ", nodeset=";
-			this->writeSafeName(feMesh->getNodeset()->getName());
-		}
-		(*this->outStream) << "\n";
-		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
-		cmzn_element_id element = nullptr;
-		while (nullptr != (element = cmzn_elementiterator_next_non_access(iter)))
+		FE_mesh *tmpFeMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
+		this->setMesh(tmpFeMesh);
+		this->writeFeMesh(tmpFeMesh);
+		cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_element *element = nullptr;
+		while (nullptr != (element = iter->nextElement()))
 		{
 			if (this->elementIsToBeWritten(element))
 			{
-				if (!this->writeIdentifiersOnly)
+				if (!this->writeElementTemplate(element))
 				{
-					if (!this->writeElementTemplate(element))
-					{
-						return_code = 0;
-						break;
-					}
+					result = false;
+					break;
 				}
 				if (!this->writeElement(element))
 				{
-					return_code = 0;
+					result = false;
 					break;
 				}
 			}
@@ -1668,7 +1665,79 @@ int EXWriter::writeMesh(int dimension, cmzn_field_group *group)
 		cmzn_elementiterator_destroy(&iter);
 		cmzn_mesh_destroy(&mesh);
 	}
-	return return_code;
+	return result;
+}
+
+/** Write mesh group element identifiers in compact form with ranges:
+ * Element group:
+ * 1,3..7,22..150,155,200..423
+ */
+bool EXWriter::writeElementGroup(int dimension, cmzn_field_group *group)
+{
+	bool result = true;
+	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
+	if (group)
+	{
+		cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+		cmzn_mesh_destroy(&mesh);
+		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+		cmzn_field_element_group_destroy(&element_group);
+	}
+	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
+	{
+		FE_mesh *tmpFeMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
+		this->writeFeMesh(tmpFeMesh);
+		(*this->outStream) << "Element group:\n";
+		cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(mesh);
+		cmzn_element *element = nullptr;
+		int stopIdentifier = -2;  // forces starting a new range
+		int startIdentifier = -2;
+		const int columnCount = 10;  // limit of numbers written on each row, will get one more if range started
+		int columns = 0;
+		while (nullptr != (element = iter->nextElement()))
+		{
+			if (this->elementIsToBeWritten(element))
+			{
+				const int identifier = element->getIdentifier();
+				if (identifier == (stopIdentifier + 1))
+				{
+					stopIdentifier = identifier;  // enlarge range
+				}
+				else
+				{
+					if (startIdentifier < stopIdentifier)
+					{
+						(*this->outStream) << ".." << stopIdentifier;
+						++columns;
+					}
+					if (columns >= columnCount)
+					{
+						(*this->outStream) << ",\n";
+						columns = 0;
+					}
+					else if (columns > 0)
+					{
+						(*this->outStream) << ",";
+					}
+					(*this->outStream) << identifier;
+					++columns;
+					startIdentifier = stopIdentifier = identifier;
+				}
+			}
+		}
+		if (startIdentifier < stopIdentifier)
+		{
+			(*this->outStream) << ".." << stopIdentifier;
+			++columns;
+		}
+		if (columns > 0)
+		{
+			(*this->outStream) << "\n";
+		}
+		cmzn_elementiterator_destroy(&iter);
+		cmzn_mesh_destroy(&mesh);
+	}
+	return result;
 }
 
 /**
@@ -1818,7 +1887,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 	if (!nodeField)
 	{
 		display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  Field %s not defined at node %d",
-			get_FE_field_name(field), get_FE_node_identifier(node));
+			get_FE_field_name(field), node->getIdentifier());
 		return false;
 	}
 	const int maximumValuesCount = nodeField->getMaximumComponentTotalValuesCount();
@@ -1874,7 +1943,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				{
 					display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
 						"Failed to get FE_value values for field %s component %d at node %d",
-						get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+						get_FE_field_name(field), c + 1, node->getIdentifier());
 					return false;
 				}
 				for (int v = 0; v < valuesCount; ++v)
@@ -1909,7 +1978,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 				{
 					display_message(ERROR_MESSAGE, "EXWriter::writeNodeFieldValues.  "
 						"Failed to get FE_value values for field %s component %d at node %d",
-						get_FE_field_name(field), c + 1, get_FE_node_identifier(node));
+						get_FE_field_name(field), c + 1, node->getIdentifier());
 					return false;
 				}
 				for (int v = 0; v < valuesCount; ++v)
@@ -1965,10 +2034,7 @@ bool EXWriter::writeNodeFieldValues(cmzn_node *node, FE_field *field)
 /** Writes out a node to stream */
 bool EXWriter::writeNode(cmzn_node *node)
 {
-	(*this->outStream) << "Node: " << get_FE_node_identifier(node) << "\n";
-
-	if (this->writeIdentifiersOnly)
-		return true;
+	(*this->outStream) << "Node: " << node->getIdentifier() << "\n";
 
 	// values, if writing any general fields
 	for (auto fieldIter = this->nodeTemplate->headerFields.begin(); fieldIter != this->nodeTemplate->headerFields.end(); ++fieldIter)
@@ -1976,7 +2042,9 @@ bool EXWriter::writeNode(cmzn_node *node)
 		FE_field *field = *fieldIter;
 		if ((GENERAL_FE_FIELD == get_FE_field_FE_field_type(field))
 			&& !this->writeNodeFieldValues(node, field))
+		{
 			return false;
+		}
 	}
 	return true;
 }
@@ -2025,42 +2093,45 @@ bool EXWriter::nodeIsToBeWritten(cmzn_node *node)
 	return true;
 }
 
-int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
+bool EXWriter::writeFeNodeset(FE_nodeset *feNodesetIn)
 {
-	int return_code = 1;
+	(*this->outStream) << "!#nodeset ";
+	this->writeSafeName(feNodesetIn->getName());
+	(*this->outStream) << "\n";
+	return true;
+}
+
+bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
+{
+	bool result = true;
 	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule,
 		fieldDomainType);
 	if (group)
 	{
-		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+		cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
 		cmzn_nodeset_destroy(&nodeset);
 		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 		cmzn_field_node_group_destroy(&node_group);
 	}
 	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 	{
-		FE_nodeset *feNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
-		this->setNodeset(feNodeset);
-		(*this->outStream) << "!#nodeset ";
-		this->writeSafeName(feNodeset->getName());
-		(*this->outStream) << "\n";
-		cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
-		cmzn_node_id node = 0;
-		while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
+		FE_nodeset *tmpFeNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
+		this->setNodeset(tmpFeNodeset);
+		this->writeFeNodeset(tmpFeNodeset);
+		cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
+		cmzn_node *node = nullptr;
+		while (0 != (node = iter->nextNode()))
 		{
 			if (this->nodeIsToBeWritten(node))
 			{
-				if (!this->writeIdentifiersOnly)
+				if (!this->writeNodeTemplate(node))
 				{
-					if (!this->writeNodeTemplate(node))
-					{
-						return_code = 0;
-						break;
-					}
+					result = false;
+					break;
 				}
 				if (!this->writeNode(node))
 				{
-					return_code = 0;
+					result = false;
 					break;
 				}
 			}
@@ -2068,7 +2139,80 @@ int EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_gr
 		cmzn_nodeiterator_destroy(&iter);
 		cmzn_nodeset_destroy(&nodeset);
 	}
-	return return_code;
+	return result;
+}
+
+/** Write group node identifiers in compact form with ranges:
+ * Node group:
+ * 1,3..7,22..150,155,200..423
+ */
+bool EXWriter::writeNodeGroup(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
+{
+	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule,
+		fieldDomainType);
+	if (group)
+	{
+		cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+		cmzn_nodeset_destroy(&nodeset);
+		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+		cmzn_field_node_group_destroy(&node_group);
+	}
+	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
+	{
+		FE_nodeset *tmpFeNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
+		this->setNodeset(tmpFeNodeset);
+		this->writeFeNodeset(tmpFeNodeset);
+		(*this->outStream) << "Node group:\n";
+		cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
+		cmzn_node *node = nullptr;
+		int stopIdentifier = -2;  // forces starting a new range
+		int startIdentifier = -2;
+		const int columnCount = 10;  // limit of numbers written on each row, will get one more if range started
+		int columns = 0;
+		while (0 != (node = iter->nextNode()))
+		{
+			if (this->nodeIsToBeWritten(node))
+			{
+				const int identifier = node->getIdentifier();
+				if (identifier == (stopIdentifier + 1))
+				{
+					stopIdentifier = identifier;  // enlarge range
+				}
+				else
+				{
+					if (startIdentifier < stopIdentifier)
+					{
+						(*this->outStream) << ".." << stopIdentifier;
+						++columns;
+					}
+					if (columns >= columnCount)
+					{
+						(*this->outStream) << ",\n";
+						columns = 0;
+					}
+					else if (columns > 0)
+					{
+						(*this->outStream) << ",";
+					}
+					(*this->outStream) << identifier;
+					++columns;
+					startIdentifier = stopIdentifier = identifier;
+				}
+			}
+		}
+		if (startIdentifier < stopIdentifier)
+		{
+			(*this->outStream) << ".." << stopIdentifier;
+			++columns;
+		}
+		if (columns > 0)
+		{
+			(*this->outStream) << "\n";
+		}
+		cmzn_nodeiterator_destroy(&iter);
+		cmzn_nodeset_destroy(&nodeset);
+	}
+	return true;
 }
 
 int EXWriter::writeRegionContent(cmzn_field_group *group)
@@ -2080,7 +2224,10 @@ int EXWriter::writeRegionContent(cmzn_field_group *group)
 	// qualify it, and we want the qualified one to be the datapoints.
 	if (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_NODES)
 	{
-		return_code = this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_NODES, group);
+		if (!this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_NODES, group))
+		{
+			return_code = 0;
+		}
 	}
 	if (return_code)
 	{
@@ -2094,19 +2241,61 @@ int EXWriter::writeRegionContent(cmzn_field_group *group)
 				(dimension == highestDimension &&
 				(this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)))
 			{
-				return_code = this->writeMesh(dimension, group);
+				if (!this->writeMesh(dimension, group))
+				{
+					return_code = 0;
+					break;
+				}
 			}
 		}
 	}
 	if (return_code && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))
 	{
-		return_code = this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS, group);
+		if (!this->writeNodeset(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS, group))
+		{
+			return_code = 0;
+		}
 	}
 	if (!return_code)
 	{
-		display_message(ERROR_MESSAGE, "EXWriter::writeRegionContents.  Failed");
+		display_message(ERROR_MESSAGE, "EXWriter::writeRegionContent.  Failed");
 	}
 	return return_code;
+}
+
+bool EXWriter::writeGroup(cmzn_field_group *group)
+{
+	bool result = true;
+	char *groupName = cmzn_field_get_name(cmzn_field_group_base_cast(group));
+	(*this->outStream) << "Group name: " << groupName << "\n";
+	DEALLOCATE(groupName);
+
+	if (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_NODES)
+	{
+		result = this->writeNodeGroup(CMZN_FIELD_DOMAIN_TYPE_NODES, group);
+	}
+	const int highestDimension = FE_region_get_highest_dimension(this->feRegion);
+	/* write 1-D, 2-D then 3-D so lines and faces precede elements */
+	for (int dimension = 1; (dimension <= highestDimension) && result; ++dimension)
+	{
+		if ((dimension == 1 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH1D)) ||
+			(dimension == 2 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH2D)) ||
+			(dimension == 3 && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH3D)) ||
+			(dimension == highestDimension &&
+			(this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)))
+		{
+			result = this->writeElementGroup(dimension, group);
+		}
+	}
+	if (result && (this->writeDomainTypes & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))
+	{
+		result = this->writeNodeGroup(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS, group);
+	}
+	if (!result)
+	{
+		display_message(ERROR_MESSAGE, "EXWriter::writeGroup.  Failed");
+	}
+	return result;
 }
 
 int EXWriter::writeRegion(cmzn_region *regionIn)
@@ -2143,7 +2332,7 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 	cmzn_field_group *group = nullptr;
 	if (this->groupName)
 	{
-		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(this->fieldmodule, this->groupName);
+		cmzn_field *field = cmzn_fieldmodule_find_field_by_name(this->fieldmodule, this->groupName);
 		if (field)
 		{
 			group = cmzn_field_cast_group(field);
@@ -2179,21 +2368,18 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 	if (return_code && (!this->groupName) && (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON))
 	{
 		// write group members
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
-		cmzn_field_id field = 0;
+		cmzn_fieldmodule *field_module = cmzn_region_get_fieldmodule(region);
+		cmzn_fielditerator *field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
+		cmzn_field *field = nullptr;
 		while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
 		{
-			cmzn_field_group_id output_group = cmzn_field_cast_group(field);
+			cmzn_field_group *output_group = cmzn_field_cast_group(field);
 			if (output_group)
 			{
-				char *groupName = cmzn_field_get_name(field);
-				(*this->outStream) << "Group name: " << groupName << "\n";
-				DEALLOCATE(groupName);
-
-				this->setWriteIdentifiersOnly(true);
-				return_code = this->writeRegionContent(output_group);
-				this->setWriteIdentifiersOnly(false);
+				if (!this->writeGroup(output_group))
+				{
+					return_code = 0;
+				}
 				cmzn_field_group_destroy(&output_group);
 			}
 		}

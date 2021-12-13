@@ -73,7 +73,8 @@ Nodes:
 1 2
 Group name: bob
 !#nodeset nodes
-Node: 1
-Node: 2
+Node group:
+1..2
 !#mesh mesh1d, dimension=1, nodeset=nodes
-Element: 1
+Element group:
+1

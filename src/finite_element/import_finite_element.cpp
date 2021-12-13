@@ -674,7 +674,9 @@ public:
 			cmzn_mesh *extMesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, this->mesh->getDimension());
 			cmzn_field_element_group_id fieldElementGroup = cmzn_field_group_get_field_element_group(this->fieldGroup, extMesh);
 			if (!fieldElementGroup)
+			{
 				fieldElementGroup = cmzn_field_group_create_field_element_group(this->fieldGroup, extMesh);
+			}
 			this->meshGroup = cmzn_field_element_group_get_mesh_group(fieldElementGroup);
 			cmzn_field_element_group_destroy(&fieldElementGroup);
 			cmzn_mesh_destroy(&extMesh);
@@ -690,7 +692,9 @@ public:
 			cmzn_nodeset *extNodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, this->nodeset->getFieldDomainType());
 			cmzn_field_node_group_id fieldNodeGroup = cmzn_field_group_get_field_node_group(this->fieldGroup, extNodeset);
 			if (!fieldNodeGroup)
+			{
 				fieldNodeGroup = cmzn_field_group_create_field_node_group(this->fieldGroup, extNodeset);
+			}
 			this->nodesetGroup = cmzn_field_node_group_get_nodeset_group(fieldNodeGroup);
 			cmzn_field_node_group_destroy(&fieldNodeGroup);
 			cmzn_nodeset_destroy(&extNodeset);
@@ -776,6 +780,7 @@ public:
 	bool readDefineNodeTemplate();
 	bool readNodeTemplate();
 	cmzn_node *readNode();
+	bool readNodeGroup();
 	bool readNodeOrTemplate();
 	bool readElementShape();
 	bool readElementHeader();
@@ -785,6 +790,7 @@ public:
 	bool readElementIdentifier(DsLabelIdentifier &elementIdentifier);
 	bool readElementFieldComponentValues(DsLabelIndex elementIndex, FE_field *field, int componentNumber);
 	cmzn_element *readElement();
+	bool readElementGroup();
 	bool readElementOrTemplate();
 	bool readEType();
 	int read();
@@ -2359,12 +2365,6 @@ bool EXReader::readDefineNodeTemplate()
 
 bool EXReader::readNodeTemplate()
 {
-	char test_string[5];
-	if (1 != IO_stream_scan(this->input_file, "%1[:] ", test_string))
-	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
-		return false;
-	}
 	char *tmpName = this->readString("[^,\n\r\t]");
 	if (!tmpName)
 	{
@@ -2413,7 +2413,7 @@ cmzn_node *EXReader::readNode()
 	}
 
 	DsLabelIdentifier nodeIdentifier = DS_LABEL_IDENTIFIER_INVALID;
-	if (1 != IO_stream_scan(this->input_file, ":%d", &nodeIdentifier))
+	if (1 != IO_stream_scan(this->input_file, " %d ", &nodeIdentifier))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Error reading Node token or node number.  %s", this->getFileLocation());
 		return 0;
@@ -2712,6 +2712,89 @@ cmzn_node *EXReader::readNode()
 }
 
 /**
+ * EX version 3 only. Only valid in a Group definition.
+ * Read group node identifiers in compact form with ranges:
+ * Node group:
+ * 1,3..7,22..150,155,200..423
+ */
+bool EXReader::readNodeGroup()
+{
+	if (!this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Node group: may only be used within a Group definition.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->nodeset)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group/nodeset must be set before reading node group.  %s", this->getFileLocation());
+		return nullptr;
+	}
+	bool result = true;
+	cmzn_nodeset_group *nodesetGroup = this->getNodesetGroup();
+	if (!nodesetGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create node group.  %s", this->getFileLocation());
+		return false;
+	}
+	DsLabelIdentifier startIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	DsLabelIdentifier stopIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	while (result)
+	{
+		if (1 != IO_stream_scan(this->input_file, " %d ", &startIdentifier))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing node identifier.  %s", this->getFileLocation());
+			result = false;
+			break;
+		}
+		stopIdentifier = startIdentifier;
+		int nextChar = IO_stream_peekc(this->input_file);
+		// optional ..stopIdentifier
+		if (nextChar == (int)'.')
+		{
+			if (1 != IO_stream_scan(this->input_file, ".. %d ", &stopIdentifier))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Malformed start..stop range.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+			if (startIdentifier > stopIdentifier)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Decreasing start..stop range.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+			nextChar = IO_stream_peekc(this->input_file);
+		}
+		for (DsLabelIdentifier nodeIdentifier = startIdentifier; nodeIdentifier <= stopIdentifier; ++nodeIdentifier)
+		{
+			cmzn_node *node = this->nodeset->findNodeByIdentifier(nodeIdentifier);
+			if (!node)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Node %d not found.  %s", nodeIdentifier, this->getFileLocation());
+				result = false;
+				break;
+			}
+			const int addResult = cmzn_nodeset_group_add_node(nodesetGroup, node);
+			if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Could not add node to group.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+		}
+		if (nextChar == (int)',')
+		{
+			IO_stream_scan(this->input_file, ",");
+		}
+		else
+		{
+			break;  // end of comma-separated ranges
+		}
+	}
+	return result;
+}
+
+/**
  * Reads object starting with N, either a Node or a Node template.
  * Character N has already been read.
  * @return  True on success, otherwise false.
@@ -2726,14 +2809,21 @@ bool EXReader::readNodeOrTemplate()
 	}
 	bool result = true;
 	const bool isNode = strcmp(token, "ode") == 0;
+	const bool isNodeGroup = strcmp(token, "ode group") == 0;
 	const bool isNodeTemplate = strcmp(token, "ode template") == 0;
-	if (((this->exVersion < 3) && !isNode) || (!isNode && !isNodeTemplate))
+	if (((this->exVersion < 3) && !isNode) || (!isNode && !isNodeGroup && !isNodeTemplate))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised token N%s.  %s", token, this->getFileLocation());
 		DEALLOCATE(token);
 		return false;
 	}
 	DEALLOCATE(token);
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, " %1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
+		return false;
+	}
 
 	if (isNode)
 	{
@@ -2752,6 +2842,10 @@ bool EXReader::readNodeOrTemplate()
 		{
 			return false;
 		}
+	}
+	else if (isNodeGroup)
+	{
+		return this->readNodeGroup();
 	}
 	return this->readNodeTemplate();
 }
@@ -3746,7 +3840,7 @@ bool EXReader::readElementHeaderField()
 					// read the scale factor indices, but only if using scaling in EX Version 2+
 					if ((scaleFactorCount > 0) || (this->exVersion < 2))
 					{
-						if (1 != IO_stream_scan(this->input_file, " Scale factor indices%1[:] ", test_string))
+						if (1 != IO_stream_scan(this->input_file, " Scale factor indices %1[:] ", test_string))
 						{
 							display_message(ERROR_MESSAGE, "EX Reader.  Missing \"Scale factor indices:\" token.  %s", this->getFileLocation());
 							result = false;
@@ -4315,12 +4409,6 @@ bool EXReader::readDefineElementTemplate()
 
 bool EXReader::readElementTemplate()
 {
-	char test_string[5];
-	if (1 != IO_stream_scan(this->input_file, "%1[:] ", test_string))
-	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
-		return false;
-	}
 	char *tmpName = this->readString("[^,\n\r\t]");
 	if (!tmpName)
 	{
@@ -4378,7 +4466,7 @@ bool EXReader::readElementIdentifier(DsLabelIdentifier &elementIdentifier)
 	}
 	else
 	{
-		if (1 != IO_stream_scan(this->input_file, " %d", &elementIdentifier))
+		if (1 != IO_stream_scan(this->input_file, " %d ", &elementIdentifier))
 		{
 			display_message(ERROR_MESSAGE, "EX Reader.  Error reading element identifier.  %s", this->getFileLocation());
 			return false;
@@ -4472,12 +4560,6 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
  */
 cmzn_element *EXReader::readElement()
 {
-	char test_string[5];
-	if (1 != IO_stream_scan(this->input_file, " %1[:] ", test_string)) // "Element" has already been read
-	{
-		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Element: token.  %s", this->getFileLocation());
-		return nullptr;
-	}
 	if (!this->fe_region)
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Element: token.  %s", this->getFileLocation());
@@ -4543,6 +4625,7 @@ cmzn_element *EXReader::readElement()
 	}
 
 	// Faces: (optional)
+	char test_string[5];
 	if (1 == IO_stream_scan(this->input_file, " Faces %1[:]", test_string))
 	{
 		const FE_element_shape *elementShape = this->mesh->getElementShape(element->getIndex());
@@ -4752,6 +4835,89 @@ cmzn_element *EXReader::readElement()
 }
 
 /**
+ * EX version 3 only. Only valid in a Group definition.
+ * Read group element identifiers in compact form with ranges:
+ * Element group:
+ * 1,3..7,22..150,155,200..423
+ */
+bool EXReader::readElementGroup()
+{
+	if (!this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element group: may only be used within a Group definition.  %s", this->getFileLocation());
+		return false;
+	}
+	if (!this->mesh)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group/mesh must be set before reading element group.  %s", this->getFileLocation());
+		return false;
+	}
+	bool result = true;
+	cmzn_mesh_group *meshGroup = this->getMeshGroup();
+	if (!meshGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Failed to create element group.  %s", this->getFileLocation());
+		return false;
+	}
+	DsLabelIdentifier startIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	DsLabelIdentifier stopIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	while (result)
+	{
+		if (1 != IO_stream_scan(this->input_file, " %d ", &startIdentifier))
+		{
+			display_message(ERROR_MESSAGE, "EX Reader.  Missing element identifier.  %s", this->getFileLocation());
+			result = false;
+			break;
+		}
+		stopIdentifier = startIdentifier;
+		int nextChar = IO_stream_peekc(this->input_file);
+		// optional ..stopIdentifier
+		if (nextChar == (int)'.')
+		{
+			if (1 != IO_stream_scan(this->input_file, ".. %d ", &stopIdentifier))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Malformed start..stop range.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+			if (startIdentifier > stopIdentifier)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Decreasing start..stop range.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+			nextChar = IO_stream_peekc(this->input_file);
+		}
+		for (DsLabelIdentifier elementIdentifier = startIdentifier; elementIdentifier <= stopIdentifier; ++elementIdentifier)
+		{
+			cmzn_element *element = this->mesh->findElementByIdentifier(elementIdentifier);
+			if (!element)
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Element %d not found.  %s", elementIdentifier, this->getFileLocation());
+				result = false;
+				break;
+			}
+			const int addResult = cmzn_mesh_group_add_element(meshGroup, element);
+			if ((addResult != CMZN_OK) && (addResult != CMZN_ERROR_ALREADY_EXISTS))
+			{
+				display_message(ERROR_MESSAGE, "EX Reader.  Could not add element to group.  %s", this->getFileLocation());
+				result = false;
+				break;
+			}
+		}
+		if (nextChar == (int)',')
+		{
+			IO_stream_scan(this->input_file, ",");
+		}
+		else
+		{
+			break;  // end of comma-separated ranges
+		}
+	}
+	return result;
+}
+
+/**
  * Reads object starting with E: Element template or Element.
  * Character E has already been read.
  * @return  True on success, otherwise false.
@@ -4766,14 +4932,21 @@ bool EXReader::readElementOrTemplate()
 	}
 	bool result = true;
 	const bool isElement = strcmp(token, "lement") == 0;
+	const bool isElementGroup = strcmp(token, "lement group") == 0;
 	const bool isElementTemplate = strcmp(token, "lement template") == 0;
-	if (((this->exVersion < 3) && !isElement) || (!isElement && !isElementTemplate))
+	if (((this->exVersion < 3) && !isElement) || (!isElement && !isElementGroup && !isElementTemplate))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised token El%s.  %s", token, this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Unrecognised token E%s.  %s", token, this->getFileLocation());
 		DEALLOCATE(token);
 		return false;
 	}
 	DEALLOCATE(token);
+	char test_string[5];
+	if (1 != IO_stream_scan(this->input_file, " %1[:] ", test_string))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Missing : separator.  %s", this->getFileLocation());
+		return false;
+	}
 
 	if (isElement)
 	{
@@ -4793,6 +4966,10 @@ bool EXReader::readElementOrTemplate()
 			display_message(ERROR_MESSAGE, "read_exregion_file.  Error reading element");
 			return false;
 		}
+	}
+	else if (isElementGroup)
+	{
+		return this->readElementGroup();
 	}
 	return this->readElementTemplate();
 }

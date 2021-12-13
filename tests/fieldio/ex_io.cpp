@@ -246,9 +246,9 @@ void checkEx3NodeTimeSequenceSingleTime(Region& region, double evaluationTime,
 	EXPECT_TRUE(pressure.isValid());
 	EXPECT_EQ(RESULT_OK, nodetemplate.defineFieldFromNode(pressure, node1));
 	Timesequence times3 = nodetemplate.getTimesequence(pressure);
-	EXPECT_EQ(expectedPressureTimeCount, times3.getNumberOfTimes());
 	if (times3.isValid())
 	{
+		EXPECT_EQ(expectedPressureTimeCount, times3.getNumberOfTimes());
 		EXPECT_NEAR(expectedPressureTime, times3.getTime(1), TOL);
 	}
 	double p;
@@ -365,3 +365,79 @@ TEST(FieldIO, ex3NodeTimesequenceSingleTime)
 		expectedCountTime, expectedCount,
 		expectedPressureTimeCount, expectedPressureTime, expectedPressure);
 }
+
+
+namespace {
+
+void checkEx3CompactGroups(Region& region)
+{
+	Fieldmodule fieldmodule = region.getFieldmodule();
+
+	const int parts[30] = { 1,1,0,1,0,1,1,0,0,1,1,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1 };
+
+	FieldGroup all = fieldmodule.findFieldByName("all").castGroup();
+	FieldGroup part = fieldmodule.findFieldByName("part").castGroup();
+	Nodeset nodes = fieldmodule.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(30, nodes.getSize());
+	NodesetGroup allNodes = all.getFieldNodeGroup(nodes).getNodesetGroup();
+	EXPECT_EQ(30, allNodes.getSize());
+	NodesetGroup partNodes = part.getFieldNodeGroup(nodes).getNodesetGroup();
+	EXPECT_EQ(20, partNodes.getSize());
+	Mesh mesh = fieldmodule.findMeshByDimension(1);
+	EXPECT_EQ(30, mesh.getSize());
+	MeshGroup allElements = all.getFieldElementGroup(mesh).getMeshGroup();
+	EXPECT_EQ(30, allElements.getSize());
+	MeshGroup partElements = part.getFieldElementGroup(mesh).getMeshGroup();
+	EXPECT_EQ(20, partElements.getSize());
+	for (int i = 1; i < 30; ++i)
+	{
+		Node node = nodes.findNodeByIdentifier(i);
+		EXPECT_TRUE(node.isValid());
+		Element element = mesh.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_TRUE(allNodes.containsNode(node));
+		EXPECT_TRUE(allElements.containsElement(element));
+		if (parts[i - 1])
+		{
+			EXPECT_TRUE(partNodes.containsNode(node));
+			EXPECT_TRUE(partElements.containsElement(element));
+		}
+		else
+		{
+			EXPECT_FALSE(partNodes.containsNode(node));
+			EXPECT_FALSE(partElements.containsElement(element));
+		}
+	}
+}
+
+}
+
+// Test reading and writing a single time from EX V3 file with a time sequence at nodes
+TEST(FieldIO, ex3CompactGroups)
+{
+	ZincTestSetupCpp zinc;
+
+	ASSERT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDIO_EX3_COMPACT_GROUPS_RESOURCE)));
+	checkEx3CompactGroups(zinc.root_region);
+
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	StreamresourceMemory srm = sir.createStreamresourceMemory();
+	EXPECT_TRUE(srm.isValid());
+	EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
+
+	const void *buffer;
+	unsigned int bufferLength;
+	EXPECT_EQ(RESULT_OK, srm.getBuffer(&buffer, &bufferLength));
+
+	Region region2 = zinc.context.createRegion();
+	StreaminformationRegion sir2 = region2.createStreaminformationRegion();
+	EXPECT_TRUE(sir2.isValid());
+	StreamresourceMemory srm2 = sir2.createStreamresourceMemoryBuffer(buffer, bufferLength);
+	EXPECT_TRUE(srm2.isValid());
+	EXPECT_EQ(RESULT_OK, region2.read(sir2));
+
+	checkEx3CompactGroups(region2);
+}
+
+
