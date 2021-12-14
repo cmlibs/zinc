@@ -474,7 +474,7 @@ void checkSceneviewerReadDescription(Sceneviewer& sv)
 
 	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PARALLEL, sv.getProjectionMode());
 
-	EXPECT_EQ(Sceneviewer::TRANSPARENCY_MODE_ORDER_INDEPENDENT, sv.getTransparencyMode());
+	EXPECT_EQ(Sceneviewer::TRANSPARENCY_MODE_SLOW, sv.getTransparencyMode());
 	EXPECT_EQ(5, sv.getTransparencyLayers());
 
 	double value;
