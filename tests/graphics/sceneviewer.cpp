@@ -531,6 +531,8 @@ TEST(ZincSceneviewer, description_io)
 	char *writeBuffer = sv.writeDescription();
 	EXPECT_TRUE(writeBuffer != 0);
 
+	sv = Sceneviewer();
+
 	std::cerr << "6.\n";
 
 	Sceneviewer sv2 = svModule.createSceneviewer(
