@@ -12,7 +12,7 @@
    "Scenefilter" : "default",
    "TranslationRate" : 2,
    "TransparencyLayers" : 5,
-   "TransparencyMode" : "ORDER_INDEPENDENT",
+   "TransparencyMode" : "SLOW",
    "TumbleRate" : 3,
    "UpVector" : [ 0, 0, 1 ],
    "ViewAngle" : 0.2999999999999999,
