@@ -2300,7 +2300,6 @@ bool EXWriter::writeGroup(cmzn_field_group *group)
 
 int EXWriter::writeRegion(cmzn_region *regionIn)
 {
-	int return_code = 1;
 	this->region = regionIn;
 	this->feRegion = this->region->get_FE_region();
 	this->fieldmodule = cmzn_region_get_fieldmodule(regionIn);
@@ -2328,7 +2327,6 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 		}
 	}
 
-	// write region path and/or group name */
 	cmzn_field_group *group = nullptr;
 	if (this->groupName)
 	{
@@ -2340,51 +2338,46 @@ int EXWriter::writeRegion(cmzn_region *regionIn)
 		}
 	}
 
-	if ((!this->groupName) || (group))
+	// write region path and define contents (limited to group if supplied)
+	char *region_path = this->region->getRelativePath(this->rootRegion);
+	int error = 0;
+	// add leading '/' (required esp. for root region)
+	append_string(&region_path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
+	(*this->outStream) << "Region: " << region_path << "\n";
+	DEALLOCATE(region_path);
+
+	int return_code = this->writeRegionContent(group);
+
+	if (return_code && ((group) || (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)))
 	{
-		if ((!group) || (this->region != this->rootRegion))
-		{
-			char *region_path = this->region->getRelativePath(this->rootRegion);
-			int error = 0;
-			// add leading '/' (required esp. for root region)
-			append_string(&region_path, CMZN_REGION_PATH_SEPARATOR_STRING, &error, /*prefix*/true);
-			(*this->outStream) << "Region: " << region_path << "\n";
-			DEALLOCATE(region_path);
-		}
 		if (group)
 		{
-			char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
-			(*this->outStream) << "Group name: " << group_name << "\n";
-			DEALLOCATE(group_name);
-		}
-
-		// write finite element fields for this region
-		if (return_code)
-		{
-			return_code = this->writeRegionContent(group);
-		}
-	}
-
-	if (return_code && (!this->groupName) && (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON))
-	{
-		// write group members
-		cmzn_fieldmodule *field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fielditerator *field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
-		cmzn_field *field = nullptr;
-		while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
-		{
-			cmzn_field_group *output_group = cmzn_field_cast_group(field);
-			if (output_group)
+			if (!this->writeGroup(group))
 			{
-				if (!this->writeGroup(output_group))
-				{
-					return_code = 0;
-				}
-				cmzn_field_group_destroy(&output_group);
+				return_code = 0;
 			}
 		}
-		cmzn_fielditerator_destroy(&field_iter);
-		cmzn_fieldmodule_destroy(&field_module);
+		else
+		{
+			// write all groups
+			cmzn_fieldmodule *field_module = cmzn_region_get_fieldmodule(region);
+			cmzn_fielditerator *field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
+			cmzn_field *field = nullptr;
+			while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
+			{
+				cmzn_field_group *output_group = cmzn_field_cast_group(field);
+				if (output_group)
+				{
+					if (!this->writeGroup(output_group))
+					{
+						return_code = 0;
+					}
+					cmzn_field_group_destroy(&output_group);
+				}
+			}
+			cmzn_fielditerator_destroy(&field_iter);
+			cmzn_fieldmodule_destroy(&field_module);
+		}
 	}
 
 	if (this->recursionMode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)

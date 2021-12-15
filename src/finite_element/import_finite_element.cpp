@@ -587,16 +587,6 @@ public:
 		this->fe_region = nullptr;
 	}
 
-	int getEXVersion() const
-	{
-		return this->exVersion;
-	}
-
-	cmzn_region *getRegion() const
-	{
-		return this->region;
-	}
-
 	bool setRegion(cmzn_region *regionIn)
 	{
 		if (!regionIn)
@@ -609,11 +599,6 @@ public:
 		this->clearTimeSequences();
 		return this->setNodeset(FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region,
 			this->useData ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES));
-	}
-
-	cmzn_field_group *getFieldGroup() const
-	{
-		return this->fieldGroup;
 	}
 
 	bool setFieldGroup(cmzn_field_group *fieldGroupIn)
@@ -1406,13 +1391,18 @@ bool EXReader::readCommentOrDirective()
 	return true;
 }
 
-/** reads token "Values: followed by field constants, if any constant or indexed fields */
+/** EX version 3+ only */
 bool EXReader::readTimeSequence()
 {
 	char test_string[5];
 	if (1 != IO_stream_scan(this->input_file, "ime sequence %1[:] ", test_string))  // "T" has already been read
 	{
 		display_message(WARNING_MESSAGE, "EX Reader.  Truncated read of Time sequence: token.  %s", this->getFileLocation());
+		return false;
+	}
+	if (this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Time sequence not allowed in group definition.  %s", this->getFileLocation());
 		return false;
 	}
 	char *tmpName = this->readString("[^,\n\r\t]");
@@ -2288,12 +2278,18 @@ EXReader::NodeTemplate *EXReader::findNodeTemplateByName(const std::string& name
 	return nullptr;
 }
 
+/** EX version 3+ only */
 bool EXReader::readDefineNodeTemplate()
 {
 	char test_string[5];
 	if (1 != IO_stream_scan(this->input_file, "efine node template %1[:] ", test_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Truncated Define node template: token.  %s", this->getFileLocation());
+		return false;
+	}
+	if (this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Define node template not allowed in group definition.  %s", this->getFileLocation());
 		return false;
 	}
 	char *tmpName = this->readString("[^,\n\r\t]");
@@ -2363,8 +2359,14 @@ bool EXReader::readDefineNodeTemplate()
 	return true;
 }
 
+/** EX version 3+ only */
 bool EXReader::readNodeTemplate()
 {
+	if (this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Node template not allowed in group definition.  %s", this->getFileLocation());
+		return false;
+	}
 	char *tmpName = this->readString("[^,\n\r\t]");
 	if (!tmpName)
 	{
@@ -2406,9 +2408,14 @@ bool EXReader::readNodeTemplate()
  */
 cmzn_node *EXReader::readNode()
 {
+	if ((this->fieldGroup) && (this->exVersion >= 3))
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Node not allowed in group definition; expecting Node group.  %s", this->getFileLocation());
+		return false;
+	}
 	if (!this->nodeset)
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group/nodeset must be set before reading node.  %s", this->getFileLocation());
+		display_message(ERROR_MESSAGE, "EX Reader.  Can't read node as no nodeset set.  %s", this->getFileLocation());
 		return nullptr;
 	}
 
@@ -4331,12 +4338,18 @@ EXReader::ElementTemplate *EXReader::findElementTemplateByName(const std::string
 	return nullptr;
 }
 
+/** EX version 3+ only */
 bool EXReader::readDefineElementTemplate()
 {
 	char test_string[5];
 	if (1 != IO_stream_scan(this->input_file, "efine element template %1[:] ", test_string))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Truncated Define element template: token.  %s", this->getFileLocation());
+		return false;
+	}
+	if (this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Define element template not allowed in group definition.  %s", this->getFileLocation());
 		return false;
 	}
 	char *tmpName = this->readString("[^,\n\r\t]");
@@ -4406,8 +4419,14 @@ bool EXReader::readDefineElementTemplate()
 	return true;
 }
 
+/** EX version 3+ only */
 bool EXReader::readElementTemplate()
 {
+	if (this->fieldGroup)
+	{
+		display_message(ERROR_MESSAGE, "EX Reader.  Element template not allowed in group definition.  %s", this->getFileLocation());
+		return false;
+	}
 	char *tmpName = this->readString("[^,\n\r\t]");
 	if (!tmpName)
 	{
@@ -4559,10 +4578,10 @@ bool EXReader::readElementFieldComponentValues(DsLabelIndex elementIndex, FE_fie
  */
 cmzn_element *EXReader::readElement()
 {
-	if (!this->fe_region)
+	if ((this->fieldGroup) && (this->exVersion >= 3))
 	{
-		display_message(ERROR_MESSAGE, "EX Reader.  Region/Group not set before Element: token.  %s", this->getFileLocation());
-		return nullptr;
+		display_message(ERROR_MESSAGE, "EX Reader.  Element not allowed in group definition; expecting Element group.  %s", this->getFileLocation());
+		return false;
 	}
 	if (!this->mesh)
 	{
@@ -5072,9 +5091,14 @@ int EXReader::read()
 					}
 					else
 					{
-						if (0 == this->getRegion())
+						if (!(this->region))
 						{
-							if (!this->setRegion(this->rootRegion))
+							if (this->exVersion >= 3)
+							{
+								display_message(ERROR_MESSAGE, "EX Reader.  Region must be set before Group name in EX version 3+.  %s", this->getFileLocation());
+								return_code = 0;
+							}
+							else if (!this->setRegion(this->rootRegion))
 							{
 								display_message(ERROR_MESSAGE, "EX Reader.  Could not set root region.  %s", this->getFileLocation());
 								return_code = 0;
@@ -5240,7 +5264,7 @@ int EXReader::read()
 			IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
 			display_message(ERROR_MESSAGE,
 				"Invalid token \'%c%s\' in EX version %d file.  %s",
-				first_character_in_token, temp_string ? temp_string : "", this->getEXVersion(), this->getFileLocation());
+				first_character_in_token, temp_string ? temp_string : "", this->exVersion, this->getFileLocation());
 			DEALLOCATE(temp_string);
 			return_code = 0;
 		}
