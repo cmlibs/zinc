@@ -338,7 +338,6 @@ int cmzn_region_write(cmzn_region_id region,
 				cmzn_streamresource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
-				int writeElements = 0, writeData = 0, writeNodes = 0;
 				cmzn_field_domain_types writeDomainTypes =
 					cmzn_streaminformation_region_get_resource_domain_types(streaminformation_region, stream);
 				if (writeDomainTypes == CMZN_FIELD_DOMAIN_TYPE_INVALID)

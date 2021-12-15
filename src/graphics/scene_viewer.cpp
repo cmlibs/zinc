@@ -2632,7 +2632,7 @@ cmzn_sceneviewermodule::~cmzn_sceneviewermodule()
 
 	// must remove pointers from orphaned scene viewers back to module
 	cmzn_sceneviewer *sv;
-	while (sv = FIRST_OBJECT_IN_LIST_THAT(Scene_viewer)(nullptr, nullptr, this->scene_viewer_list))
+	while ((sv = FIRST_OBJECT_IN_LIST_THAT(Scene_viewer)(nullptr, nullptr, this->scene_viewer_list)))
 	{
 		sv->module = nullptr;
 		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(sv, this->scene_viewer_list);

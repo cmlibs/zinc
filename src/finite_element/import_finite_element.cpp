@@ -2411,7 +2411,7 @@ cmzn_node *EXReader::readNode()
 	if ((this->fieldGroup) && (this->exVersion >= 3))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Node not allowed in group definition; expecting Node group.  %s", this->getFileLocation());
-		return false;
+		return nullptr;
 	}
 	if (!this->nodeset)
 	{
@@ -4581,7 +4581,7 @@ cmzn_element *EXReader::readElement()
 	if ((this->fieldGroup) && (this->exVersion >= 3))
 	{
 		display_message(ERROR_MESSAGE, "EX Reader.  Element not allowed in group definition; expecting Element group.  %s", this->getFileLocation());
-		return false;
+		return nullptr;
 	}
 	if (!this->mesh)
 	{

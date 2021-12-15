@@ -1245,7 +1245,7 @@ bool EXWriter::writeElementTemplate(cmzn_element *element)
 	}
 	this->elementTemplate = nullptr;
 	const size_t etCount = this->elementTemplates.size();
-	for (int et = 0; et < etCount; ++et)
+	for (size_t et = 0; et < etCount; ++et)
 	{
 		if (this->elementTemplates[et]->matches(element, this->writeFieldsMode, this->writableFields))
 		{
@@ -1815,7 +1815,7 @@ bool EXWriter::writeNodeTemplate(cmzn_node *node)
 	}
 	this->nodeTemplate = nullptr;
 	const size_t ntCount = this->nodeTemplates.size();
-	for (int nt = 0; nt < ntCount; ++nt)
+	for (size_t nt = 0; nt < ntCount; ++nt)
 	{
 		if (this->nodeTemplates[nt]->matches(node, this->writeFieldsMode, this->writableFields))
 		{
