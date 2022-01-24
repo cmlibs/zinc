@@ -1414,7 +1414,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 		unsigned int colour_values_per_vertex, colour_vertex_count;
 			GLfloat *colour_buffer = (GLfloat *)NULL;
 		int *hex_colours = nullptr, *output_hex_colours = nullptr;
-		/* export the colour buffer */
+		/* Create the hex arrays for exporting */
 		if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
 		{
 			if (Graphics_object_create_colour_buffer_from_data(object,
@@ -1451,6 +1451,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 
 		GLfloat *positions = 0;
 		ALLOCATE(positions, GLfloat, position_values_per_vertex * totalVertices);
+		//Create an expanded array to hold all hex colours
 		if (hex_colours)
 		{
 			output_hex_colours = new int[totalVertices];
