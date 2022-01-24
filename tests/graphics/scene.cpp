@@ -605,6 +605,10 @@ TEST(cmzn_scene, threejs_export_lines_cpp)
 
 	Materialmodule material_module = zinc.context.getMaterialmodule();
 	EXPECT_TRUE(material_module.isValid());
+	Spectrummodule spectrum_module = zinc.context.getSpectrummodule();
+	EXPECT_TRUE(spectrum_module.isValid());
+	Spectrum defaultSpectrum = spectrum_module.getDefaultSpectrum();
+	EXPECT_TRUE(defaultSpectrum.isValid());
 	Material material = material_module.createMaterial();
 	EXPECT_TRUE(material.isValid());
 	EXPECT_EQ(CMZN_OK, result =  material.setName("myyellow"));
@@ -624,6 +628,9 @@ TEST(cmzn_scene, threejs_export_lines_cpp)
 
 	EXPECT_EQ(CMZN_OK, result = lines.setCoordinateField(coordinateField));
 	EXPECT_EQ(CMZN_OK, result = lines.setMaterial(material));
+
+	EXPECT_EQ(CMZN_OK, result = lines.setDataField(coordinateField));
+	EXPECT_EQ(CMZN_OK, result = lines.setSpectrum(defaultSpectrum));
 
 	Graphicslineattributes lineAttr = lines.getGraphicslineattributes();
 	EXPECT_TRUE(lineAttr.isValid());
@@ -667,6 +674,9 @@ TEST(cmzn_scene, threejs_export_lines_cpp)
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer2, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer2, "colors");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer2, "materials");

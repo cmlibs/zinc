@@ -1400,21 +1400,41 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 {
 	if (object)
 	{
-		int buffer_binding = object->buffer_binding;
+		int buffer_binding = object->buffer_binding, typebitmask = 0;
 		object->buffer_binding = 1;
 		unsigned int line_index;
 		unsigned int line_count = object->vertex_array->get_number_of_vertices(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
-		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
-			data_values_per_vertex = 0, data_vertex_count = 0;
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0;
 		GLfloat *position_buffer = 0;
-		GLfloat *data_buffer = 0;
 		object->vertex_array->get_float_vertex_buffer(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 			&position_buffer, &position_values_per_vertex, &position_vertex_count);
-		object->vertex_array->get_float_vertex_buffer(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-			&data_buffer, &data_values_per_vertex, &data_vertex_count);
+		/* this case export the colour */
+		unsigned int colour_values_per_vertex, colour_vertex_count;
+			GLfloat *colour_buffer = (GLfloat *)NULL;
+		int *hex_colours = nullptr, *output_hex_colours = nullptr;
+		/* export the colour buffer */
+		if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
+		{
+			if (Graphics_object_create_colour_buffer_from_data(object,
+				&colour_buffer,
+				&colour_values_per_vertex, &colour_vertex_count)
+				&& (colour_vertex_count == position_vertex_count))
+			{
+				hex_colours = new int[colour_vertex_count];
+				GLfloat *colours = colour_buffer;
+				for (unsigned int i = 0; i < colour_vertex_count; i++)
+				{
+					hex_colours[i] = rgb_to_hex(colours[0], colours[1], colours[2]);
+					colours += colour_values_per_vertex;
+				}
+				if (colour_buffer)
+				{
+					DEALLOCATE(colour_buffer);
+				}
+			}
+		}
 
 		/* cannot use the index as i will be using GL_LINE for rendering on threejs */
 		//FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
@@ -1431,8 +1451,12 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 
 		GLfloat *positions = 0;
 		ALLOCATE(positions, GLfloat, position_values_per_vertex * totalVertices);
+		if (hex_colours)
+		{
+			output_hex_colours = new int[totalVertices];
+		}
 
-		int currentIndex = 0;
+		unsigned int currentIndex = 0, hex_count = 0;
 
 		for (line_index = 0; line_index < line_count; line_index++)
 		{
@@ -1449,6 +1473,11 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 
 			for (i = 0; i < index_count; ++i)
 			{
+				if (hex_colours && output_hex_colours)
+				{
+					output_hex_colours[hex_count] = hex_colours[index_start + i];
+					hex_count++;
+				}
 				for (unsigned int j = 0; j < position_values_per_vertex; ++j)
 				{
 					positions[currentIndex+j] = position_vertex[j];
@@ -1470,6 +1499,12 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 			if (totalVertices > 0)
 			{
 				writeVertexBuffer("vertices", 	positions, position_values_per_vertex, totalVertices);
+				if (output_hex_colours)
+				{
+					typebitmask |= THREEJS_TYPE_VERTEX_COLOR;
+					writeIntegerBuffer("colors",
+						output_hex_colours, 1, totalVertices);
+				}
 			}
 			else
 			{
@@ -1484,12 +1519,20 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 				writeMorphVertexBuffer("vertices", &verticesMorphString, positions,
 					position_values_per_vertex, totalVertices, time_step);
 			}
+			if (morphColours && output_hex_colours)
+			{
+				morphColoursExported = true;
+				writeMorphIntegerBuffer("colors", &colorsMorphString,
+					output_hex_colours, 1, totalVertices, time_step);
+			}
 		}
 		if (time_step == 0)
 		{
-			writeIndexBuffer(object, 0, totalVertices, 0);
+			writeIndexBuffer(object, typebitmask, totalVertices, 0);
 		}
 		object->buffer_binding = buffer_binding;
+		delete[] hex_colours;
+		delete[] output_hex_colours;
 		DEALLOCATE(positions);
 		return 1;
 	}
