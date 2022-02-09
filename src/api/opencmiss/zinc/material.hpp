@@ -19,6 +19,8 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Materialmodulenotifier;
+
 class Material
 {
 
@@ -78,6 +80,23 @@ public:
 		ATTRIBUTE_SHININESS = CMZN_MATERIAL_ATTRIBUTE_SHININESS,
 		ATTRIBUTE_SPECULAR = CMZN_MATERIAL_ATTRIBUTE_SPECULAR
 	};
+
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_MATERIAL_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_MATERIAL_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_MATERIAL_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_IDENTIFIER = CMZN_MATERIAL_CHANGE_FLAG_IDENTIFIER,
+		CHANGE_FLAG_DEFINITION = CMZN_MATERIAL_CHANGE_FLAG_DEFINITION,
+		CHANGE_FLAG_FULL_RESULT = CMZN_MATERIAL_CHANGE_FLAG_FULL_RESULT,
+		CHANGE_FLAG_FINAL = CMZN_MATERIAL_CHANGE_FLAG_FINAL
+	};
+
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see Materialmoduleevent::getMaterialChangeFlags
+	 */
+	typedef int ChangeFlags;
 
 	bool isManaged() const
 	{
@@ -334,7 +353,165 @@ public:
 	{
 		return cmzn_materialmodule_write_description(this->id);
 	}
+
+	inline Materialmodulenotifier createMaterialmodulenotifier();
+
 };
+
+class Materialmoduleevent
+{
+protected:
+	cmzn_materialmoduleevent_id id;
+
+public:
+
+	Materialmoduleevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Materialmoduleevent(cmzn_materialmoduleevent_id in_materialmodule_event_id) :
+		id(in_materialmodule_event_id)
+	{  }
+
+	Materialmoduleevent(const Materialmoduleevent& materialmoduleEvent) :
+		id(cmzn_materialmoduleevent_access(materialmoduleEvent.id))
+	{  }
+
+	Materialmoduleevent& operator=(const Materialmoduleevent& materialmoduleEvent)
+	{
+		cmzn_materialmoduleevent_id temp_id = cmzn_materialmoduleevent_access(materialmoduleEvent.id);
+		if (0 != id)
+			cmzn_materialmoduleevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Materialmoduleevent()
+	{
+		if (0 != id)
+		{
+			cmzn_materialmoduleevent_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_materialmoduleevent_id getId() const
+	{
+		return id;
+	}
+
+	Material::ChangeFlags getMaterialChangeFlags(const Material& material) const
+	{
+		return cmzn_materialmoduleevent_get_material_change_flags(id, material.getId());
+	}
+
+	Material::ChangeFlags getSummaryMaterialChangeFlags() const
+	{
+		return cmzn_materialmoduleevent_get_summary_material_change_flags(id);
+	}
+
+};
+
+/**
+ * @brief Base class functor for material module notifier callbacks
+ *
+ * Base class functor for material module notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Materialmoduleevent&) to handle callback.
+ * @see Materialmodulenotifier::setCallback()
+ */
+class Materialmodulecallback
+{
+	friend class Materialmodulenotifier;
+private:
+	Materialmodulecallback(const Materialmodulecallback&); // not implemented
+	Materialmodulecallback& operator=(const Materialmodulecallback&); // not implemented
+
+	static void C_callback(cmzn_materialmoduleevent_id materialmoduleevent_id, void *callbackVoid)
+	{
+		Materialmoduleevent materialmoduleevent(cmzn_materialmoduleevent_access(materialmoduleevent_id));
+		Materialmodulecallback *callback = reinterpret_cast<Materialmodulecallback *>(callbackVoid);
+		(*callback)(materialmoduleevent);
+	}
+
+	virtual void operator()(const Materialmoduleevent &materialmoduleevent) = 0;
+
+protected:
+	Materialmodulecallback()
+	{ }
+
+public:
+	virtual ~Materialmodulecallback()
+	{ }
+};
+
+class Materialmodulenotifier
+{
+protected:
+	cmzn_materialmodulenotifier_id id;
+
+public:
+
+	Materialmodulenotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Materialmodulenotifier(cmzn_materialmodulenotifier_id in_materialmodulenotifier_id) :
+		id(in_materialmodulenotifier_id)
+	{  }
+
+	Materialmodulenotifier(const Materialmodulenotifier& materialmoduleNotifier) :
+		id(cmzn_materialmodulenotifier_access(materialmoduleNotifier.id))
+	{  }
+
+	Materialmodulenotifier& operator=(const Materialmodulenotifier& materialmoduleNotifier)
+	{
+		cmzn_materialmodulenotifier_id temp_id = cmzn_materialmodulenotifier_access(materialmoduleNotifier.id);
+		if (0 != id)
+		{
+			cmzn_materialmodulenotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Materialmodulenotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_materialmodulenotifier_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_materialmodulenotifier_id getId() const
+	{
+		return id;
+	}
+
+	int setCallback(Materialmodulecallback& callback)
+	{
+		return cmzn_materialmodulenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_materialmodulenotifier_clear_callback(id);
+	}
+};
+
+inline Materialmodulenotifier Materialmodule::createMaterialmodulenotifier()
+{
+	return Materialmodulenotifier(cmzn_materialmodule_create_materialmodulenotifier(id));
+}
 
 inline Materialmodule Context::getMaterialmodule() const
 {
