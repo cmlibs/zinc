@@ -169,6 +169,31 @@ void cmzn_sceneviewer::setLightingTwoSided(bool value)
 	}
 }
 
+int cmzn_sceneviewer::setTransparencyMode(cmzn_sceneviewer_transparency_mode transparencyModeIn)
+{
+	if ((CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST != transparencyModeIn) &&
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW != transparencyModeIn) &&
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT != transparencyModeIn))
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (this->transparency_mode != transparencyModeIn)
+	{
+		if (CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT == transparencyModeIn)
+		{
+			this->supports_order_independent_transparency = order_independent_capable();
+			if (!this->supports_order_independent_transparency)
+			{
+				display_message(WARNING_MESSAGE, "Sceneviewer setTransparencyMode.  "
+					"Order-independent transparency not supported by hardware; rendering as slow transparency");
+			}
+		}
+		this->transparency_mode = transparencyModeIn;
+		this->setChangedRepaint();
+	}
+	return CMZN_OK;
+}
+
 cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_viewer *scene_viewer)
 {
 	cmzn_sceneviewerinput_id input = 0;
@@ -2142,28 +2167,27 @@ Scene_viewer_render_scene_in_viewport to access this function.
 						rendering_data.render_callstack);
 				}
 
-				switch (scene_viewer->transparency_mode)
+				if ((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW) ||
+					((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT) &&
+						!scene_viewer->supports_order_independent_transparency))
 				{
-					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
-					{
-						render_object = CREATE(Scene_viewer_render_object)(
-							Scene_viewer_slow_transparency);
-						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);
-					} break;
-					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
-					{
-						Scene_viewer_initialise_order_independent_transparency(&rendering_data);
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_slow_transparency);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+				else if ((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT))
+				{
+					Scene_viewer_initialise_order_independent_transparency(&rendering_data);
 
-						render_object = CREATE(Scene_viewer_render_object)(
-							Scene_viewer_order_independent_transparency);
-						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);
-					}
-					default:
-					{
-						/* Do nothing */
-					} break;
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_order_independent_transparency);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+				else
+				{
+					/* Do nothing */
 				}
 
 				render_object = CREATE(Scene_viewer_render_object)(
@@ -3049,6 +3073,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
 				scene_viewer->transparency_mode=CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST;
 				scene_viewer->transparency_layers=1;
+				scene_viewer->supports_order_independent_transparency = false;
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
@@ -5225,35 +5250,14 @@ enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	return CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID;
 }
 
-int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
+int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_transparency_mode transparency_mode)
 {
-	int return_code = 0;
-
-	if (scene_viewer&&((CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)))
+	if (sceneviewer)
 	{
-		return_code=1;
-		if (CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)
-		{
-			if (!order_independent_capable())
-			{
-				/* If we can't do it don't change */
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			if (scene_viewer->transparency_mode!=transparency_mode)
-			{
-				scene_viewer->transparency_mode=transparency_mode;
-				scene_viewer->setChangedRepaint();
-			}
-		}
+		return sceneviewer->setTransparencyMode(transparency_mode);
 	}
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scene_viewer)
