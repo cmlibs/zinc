@@ -1416,7 +1416,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 		{
 			/* this case export the colour */
 			unsigned int colour_values_per_vertex, colour_vertex_count;
-			GLfloat *colour_buffer = (GLfloat *)NULL;
+			GLfloat *colour_buffer = nullptr;
 			if (Graphics_object_create_colour_buffer_from_data(object,
 				&colour_buffer,
 				&colour_values_per_vertex, &colour_vertex_count)
@@ -1462,7 +1462,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 		for (line_index = 0; line_index < line_count; line_index++)
 		{
 			unsigned int i, index_start, index_count;
-			GLfloat *position_vertex = 0;
+			GLfloat *position_vertex = nullptr;
 
 			object->vertex_array->get_unsigned_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
