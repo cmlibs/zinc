@@ -1471,7 +1471,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
 				line_index, 1, &index_count);
 			position_vertex = position_buffer + position_values_per_vertex * index_start;
-
+			// the following fills out the unused vertices on the exports
 			for (i = 0; i < index_count; ++i)
 			{
 				if (hex_colours && output_hex_colours)
@@ -1491,6 +1491,11 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 						positions[currentIndex+j] = position_vertex[j];
 					}
 					currentIndex += position_values_per_vertex;
+					if (hex_colours && output_hex_colours)
+					{
+						output_hex_colours[hex_count] = hex_colours[index_start + i + 1];
+						hex_count++;
+					}
 				}
 				position_vertex += position_values_per_vertex;
 			}
