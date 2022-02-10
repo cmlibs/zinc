@@ -1493,7 +1493,7 @@ int Threejs_export_line::exportGraphicsObject(struct GT_object *object, int time
 					currentIndex += position_values_per_vertex;
 					if (hex_colours && output_hex_colours)
 					{
-						output_hex_colours[hex_count] = hex_colours[index_start + i + 1];
+						output_hex_colours[hex_count] = hex_colours[index_start + i];
 						hex_count++;
 					}
 				}
