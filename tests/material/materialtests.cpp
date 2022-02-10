@@ -14,6 +14,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "opencmiss/zinc/changemanager.hpp"
 #include "opencmiss/zinc/fieldimage.hpp"
 #include "opencmiss/zinc/material.hpp"
 
@@ -543,4 +544,111 @@ TEST(ZincMaterialiterator, iteration)
 	EXPECT_EQ(xxx, m = iter.next());
 	EXPECT_EQ(zzz, m = iter.next());
 	EXPECT_FALSE((m = iter.next()).isValid());
+}
+
+class MaterialmodulecallbackRecordChange : public Materialmodulecallback
+{
+	Materialmoduleevent lastMaterialmoduleevent;
+
+	virtual void operator()(const Materialmoduleevent &materialmoduleevent)
+	{
+		this->lastMaterialmoduleevent = materialmoduleevent;
+	}
+
+public:
+	MaterialmodulecallbackRecordChange() :
+		Materialmodulecallback()
+	{ }
+
+	void clearLastEvent()
+	{
+		this->lastMaterialmoduleevent = Materialmoduleevent();
+	}
+
+	const Materialmoduleevent &getLastEvent() const
+	{
+		return this->lastMaterialmoduleevent;
+	}
+};
+
+TEST(ZincMaterialmodulenotifier, changeCallback)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	Materialmodule mm = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(mm.isValid());
+
+	Materialmodulenotifier materialmodulenotifier = mm.createMaterialmodulenotifier();
+	EXPECT_TRUE(materialmodulenotifier.isValid());
+
+	const char *materialName = "bob";
+	MaterialmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(CMZN_OK, materialmodulenotifier.setCallback(recordChange));
+
+	Material material = mm.createMaterial();
+	EXPECT_TRUE(material.isValid());
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_ADD, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_ADD, result);
+	recordChange.clearLastEvent();
+
+	EXPECT_EQ(CMZN_OK, material.setName(materialName));
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_IDENTIFIER, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_IDENTIFIER, result);
+	recordChange.clearLastEvent();
+
+	EXPECT_EQ(CMZN_OK, material.setAttributeReal(Material::ATTRIBUTE_ALPHA, 0.5));
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION | Material::CHANGE_FLAG_FULL_RESULT, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION | Material::CHANGE_FLAG_FULL_RESULT, result);
+	recordChange.clearLastEvent();
+
+	const double diffuseColour[3] = { 0.2, 0.4, 0.6 };
+	EXPECT_EQ(CMZN_OK, material.setAttributeReal3(Material::ATTRIBUTE_DIFFUSE, diffuseColour));
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION | Material::CHANGE_FLAG_FULL_RESULT, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION | Material::CHANGE_FLAG_FULL_RESULT, result);
+	recordChange.clearLastEvent();
+
+	EXPECT_EQ(CMZN_OK, material.setManaged(true));
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION, result);
+	recordChange.clearLastEvent();
+
+	const char *materialName2 = "fred";
+	// add another material while unmanaging above material
+	{
+		ChangeManager<Materialmodule> materialChange(mm);
+
+		Material material2 = mm.createMaterial();
+		EXPECT_TRUE(material2.isValid());
+		EXPECT_EQ(CMZN_OK, material2.setName(materialName2));
+		EXPECT_EQ(CMZN_OK, material2.setManaged(true));  // so it stays around
+		EXPECT_EQ(CMZN_OK, material.setManaged(false));
+	}
+	Material material2 = mm.findMaterialByName(materialName2);
+	EXPECT_TRUE(material2.isValid());
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_ADD | Material::CHANGE_FLAG_DEFINITION, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material);
+	EXPECT_EQ(Material::CHANGE_FLAG_DEFINITION, result);
+	result = recordChange.getLastEvent().getMaterialChangeFlags(material2);
+	EXPECT_EQ(Material::CHANGE_FLAG_ADD, result);
+	recordChange.clearLastEvent();
+
+	// destroy by removing last reference
+	material = Material();
+	result = recordChange.getLastEvent().getSummaryMaterialChangeFlags();
+	EXPECT_EQ(Material::CHANGE_FLAG_REMOVE, result);
+	recordChange.clearLastEvent();
+
+	EXPECT_EQ(CMZN_OK, materialmodulenotifier.clearCallback());
 }

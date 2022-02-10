@@ -12,6 +12,7 @@
 #if !defined (MATERIAL_HPP)
 #define MATERIAL_HPP
 
+#include <list>
 #include "opencmiss/zinc/zincconfigure.h"
 #include "opencmiss/zinc/field.h"
 #include "opencmiss/zinc/fieldimage.h"
@@ -145,12 +146,115 @@ PROTOTYPE_MANAGER_FUNCTIONS(cmzn_material);
 PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_material, name, const char*);
 PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_material, name);
 
+struct cmzn_materialmodulenotifier
+{
+private:
+	cmzn_materialmodule_id module; // not accessed
+	cmzn_materialmodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_materialmodulenotifier(cmzn_materialmodule *materialmodule);
+
+	~cmzn_materialmodulenotifier();
+
+public:
+
+	/** private: external code must use cmzn_materialmodule_create_notifier */
+	static cmzn_materialmodulenotifier *create(cmzn_materialmodule *materialmodule)
+	{
+		if (materialmodule)
+			return new cmzn_materialmodulenotifier(materialmodule);
+		return 0;
+	}
+
+	cmzn_materialmodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_materialmodulenotifier* &notifier);
+
+	int setCallback(cmzn_materialmodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void materialmoduleDestroyed();
+
+	void notify(cmzn_materialmoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+struct cmzn_materialmoduleevent
+{
+private:
+	cmzn_materialmodule *module;
+	cmzn_material_change_flags changeFlags;
+	struct MANAGER_MESSAGE(cmzn_material) *managerMessage;
+	int access_count;
+
+	cmzn_materialmoduleevent(cmzn_materialmodule *materialmoduleIn);
+	~cmzn_materialmoduleevent();
+
+public:
+
+	/** @param materialmoduleIn  Owning materialmodule; can be NULL for FINAL event */
+	static cmzn_materialmoduleevent *create(cmzn_materialmodule *materialmoduleIn)
+	{
+		return new cmzn_materialmoduleevent(materialmoduleIn);
+	}
+
+	cmzn_materialmoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_materialmoduleevent* &event);
+
+	cmzn_material_change_flags getChangeFlags() const
+	{
+		return this->changeFlags;
+	}
+
+	void setChangeFlags(cmzn_material_change_flags changeFlagsIn)
+	{
+		this->changeFlags = changeFlagsIn;
+	}
+
+	cmzn_material_change_flags getMaterialChangeFlags(cmzn_material *material) const;
+
+	struct MANAGER_MESSAGE(cmzn_material) *getManagerMessage();
+
+	void setManagerMessage(struct MANAGER_MESSAGE(cmzn_material) *managerMessageIn);
+
+	cmzn_materialmodule *getMaterialmodule()
+	{
+		return this->module;
+	}
+};
+
+typedef std::list<cmzn_materialmodulenotifier *> cmzn_materialmodulenotifier_list;
+
 struct cmzn_materialmodule
 {
 
 private:
 
-	struct MANAGER(cmzn_material)* materialManager;
+	struct MANAGER(cmzn_material)* manager;
+	void *manager_callback_id;
+	cmzn_materialmodulenotifier_list notifier_list;
 	cmzn_material* defaultMaterial;
 	cmzn_material* defaultSelectedMaterial;
 	cmzn_material* defaultSurfaceMaterial;
@@ -160,6 +264,9 @@ private:
 	cmzn_materialmodule();
 
 	~cmzn_materialmodule();
+
+	static void material_manager_change(
+		struct MANAGER_MESSAGE(cmzn_material) *message, void *materialmodule_void);
 
 public:
 
@@ -188,19 +295,19 @@ public:
 
 	struct MANAGER(cmzn_material)* getManager()
 	{
-		return this->materialManager;
+		return this->manager;
 	}
 
 	struct MANAGER(cmzn_spectrum)* getSpectrumManager();
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(cmzn_material)(this->materialManager);
+		return MANAGER_BEGIN_CACHE(cmzn_material)(this->manager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(cmzn_material)(this->materialManager);
+		return MANAGER_END_CACHE(cmzn_material)(this->manager);
 	}
 
 	cmzn_material* createMaterial();
@@ -210,7 +317,7 @@ public:
 	/** @return  Non-accessed material, or nullptr if material with name not found */
 	cmzn_material* findMaterialByName(const char* name)
 	{
-		return FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(name, this->materialManager);
+		return FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(name, this->manager);
 	}
 
 	/** @return  Non-accessed material */
@@ -248,6 +355,10 @@ public:
 	{
 		REACCESS(cmzn_material)(&this->defaultSurfaceMaterial, material);
 	}
+
+	void addNotifier(cmzn_materialmodulenotifier *notifier);
+
+	void removeNotifier(cmzn_materialmodulenotifier *notifier);
 
 };
 
