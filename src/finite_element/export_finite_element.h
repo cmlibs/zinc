@@ -74,8 +74,10 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
  * @param writeDomainTypes  Bitwise OR of cmzn_field_domain_type flags controlling
  * which meshes or nodesets to write.
  * @param timeSet  True if following time is set to be output, otherwise false.
- * @param time  Time to output parameters at if timeSet is true. Nearest time in
- * time sequences is output if not an exact match.
+ * @param time  If timeSet is true, time to output parameters for fields with
+ * a time sequence. Values at that time are interpolated from time sequence or
+ * clamped to first/last value if outside its range. Non time-varying fields
+ * are written without a time sequence.
  * @see write_exregion_to_stream.
  */
 int write_exregion_file_of_name(
