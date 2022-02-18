@@ -7,7 +7,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/context.h>
@@ -503,52 +502,35 @@ TEST(ZincSceneviewer, description_io)
 {
 	ZincTestSetupCpp zinc;
 
-	std::cerr << "1.\n";
-
 	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();
 	EXPECT_TRUE(svModule.isValid());
 	Sceneviewer sv = svModule.createSceneviewer(
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
-	std::cerr << "2.\n";
-
 	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SCENEVIEWER_DESCRIPTION_JSON_RESOURCE));
 	EXPECT_TRUE(stringBuffer != nullptr);
-
-	std::cerr << "3.\n";
 
 	EXPECT_EQ(CMZN_OK, sv.readDescription(stringBuffer));
 
 	free(stringBuffer);
 
-	std::cerr << "4.\n";
-
 	checkSceneviewerReadDescription(sv);
-
-	std::cerr << "5.\n";
 
 	char *writeBuffer = sv.writeDescription();
 	EXPECT_TRUE(writeBuffer != 0);
 
 	sv = Sceneviewer();
 
-	std::cerr << "6.\n";
-
 	Sceneviewer sv2 = svModule.createSceneviewer(
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv2.isValid());
 
-	std::cerr << "7.\n";
-
 	EXPECT_EQ(CMZN_OK, sv2.readDescription(writeBuffer));
-
-	std::cerr << "8.\n";
 
 	checkSceneviewerReadDescription(sv2);
 
 	cmzn_deallocate(writeBuffer);
-	std::cerr << "9.\n";
 }
 
 TEST(ZincSceneviewer, get_set)

@@ -7,7 +7,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include <opencmiss/zinc/status.h>
 #include <opencmiss/zinc/core.h>
@@ -691,8 +690,6 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 
 	int result;
 
-	std::cerr << "1.\n";
-
 	Materialmodule material_module = zinc.context.getMaterialmodule();
 	EXPECT_TRUE(material_module.isValid());
 	Material material = material_module.createMaterial();
@@ -718,8 +715,6 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 	EXPECT_EQ(CMZN_OK, result =  image_field.setTextureCoordinateHeight(1.0));
 	EXPECT_EQ(CMZN_OK, result =  material.setTextureField(1, image_field));
 
-	std::cerr << "2.\n";
-
 	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
 
 	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
@@ -735,8 +730,6 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 	StreaminformationScene si = zinc.scene.createStreaminformationScene();
 	EXPECT_TRUE(si.isValid());
 
-	std::cerr << "3.\n";
-
 	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
 
 	EXPECT_EQ(2, result = si.getNumberOfResourcesRequired());
@@ -750,11 +743,7 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 	StreamresourceMemory memory_sr = si.createStreamresourceMemory();
 	StreamresourceMemory memory_sr2 = si.createStreamresourceMemory();
 
-	std::cerr << "4.\n";
-
 	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
-
-	std::cerr << "5.\n";
 
 	const char *memory_buffer, *memory_buffer2;
 	unsigned int size = 0;
@@ -762,20 +751,14 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 	result = memory_sr.getBuffer((const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	std::cerr << "6.\n";
-
 	const char *temp_char = strstr ( memory_buffer, "Surfaces");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	temp_char = strstr ( memory_buffer, "MorphVertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	std::cerr << "7.\n";
-
 	result = memory_sr2.getBuffer((const void**)&memory_buffer2, &size);
 	EXPECT_EQ(CMZN_OK, result);
-
-	std::cerr << "8.\n";
 
 	temp_char = strstr ( memory_buffer2, "vertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
@@ -791,8 +774,6 @@ TEST(cmzn_scene, threejs_export_texture_cpp)
 
 	temp_char = strstr ( memory_buffer2, "mapDiffuse");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
-
-	std::cerr << "9.\n";
 }
 
 TEST(cmzn_scene, threejs_export_region_cpp)
