@@ -34,7 +34,6 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/nodesandelements.cpp
 	${CURRENT_TEST}/numerical_operators.cpp
 	${CURRENT_TEST}/timesequence.cpp
-	utilities/fileio.cpp
 	)
 
 SET(FIELDMODULE_EXNODE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/nodes.exnode")

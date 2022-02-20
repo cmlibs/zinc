@@ -1658,7 +1658,7 @@ bool FE_mesh::equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelInde
 	for (std::list<FE_mesh_field_template*>::const_iterator iter = this->meshFieldTemplates.begin();
 		iter != this->meshFieldTemplates.end(); ++iter)
 	{
-		if ((*iter)->getElementEFTIndex(elementIndex1) != (*iter)->getElementEFTIndex(elementIndex2))
+		if ((*iter)->getElementEFTIndex(elementIndex1) != (*iter)->getElementEFTIndex(elementIndex1))
 			return false;
 	}
 	return true;

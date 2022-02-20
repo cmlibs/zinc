@@ -579,35 +579,29 @@ public:
 	int number_of_time_steps, current_time_frame;
 	enum cmzn_streaminformation_scene_io_data_type mode;
 	int *number_of_entries;
-	std::vector<std::string>& outputStrings;
+	std::string **output_string;
 	int morphVertices, morphColours, morphNormals, numberOfResources;
 	char **filenames;
 	int isInline;
 
-	/** @param outputStringsRef  Reference to vector of strings to fill with the output strings */
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
-			int number_of_time_steps_in, double begin_time_in,  double end_time_in,
-			enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
-			std::vector<std::string>& outputStringsRef,
-			int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
-			int numberOfFilesIn, char **filenamesIn, int isInlineIn) :
+		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
+		enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
+		std::string **output_string_in, int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
+		int numberOfFilesIn, char **filenamesIn, int isInlineIn) :
 		Render_graphics_opengl_vertex_buffer_object(),
-		file_prefix(duplicate_string(file_prefix_in)),
-		begin_time(begin_time_in),
-		end_time(end_time_in),
-		number_of_time_steps(number_of_time_steps_in),
-		current_time_frame(0),
-		mode(mode_in),
-		number_of_entries(number_of_entries_in),
-		outputStrings(outputStringsRef),
-		morphVertices(morphVerticesIn),
-		morphColours(morphColoursIn),
-		morphNormals(morphNormalsIn),
-		numberOfResources(numberOfFilesIn),
+		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
+		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
+		mode(mode_in), number_of_entries(number_of_entries_in), numberOfResources(numberOfFilesIn),
 		filenames(filenamesIn),
 		isInline(isInlineIn)
 	{
 		exports_list.clear();
+		current_time_frame = 0;
+		output_string = output_string_in;
+		morphVertices = morphVerticesIn;
+		morphColours = morphColoursIn;
+		morphNormals = morphNormalsIn;
 	}
 
 	~Render_graphics_opengl_threejs()
@@ -725,23 +719,27 @@ public:
 		return Json::StyledWriter().write(root);
 	}
 
-	int writeOutputStrings()
+	int write_output_string()
 	{
 		*number_of_entries = get_number_of_entries();
 		if (*number_of_entries > 0)
 		{
-			this->outputStrings.push_back(this->get_metadata_string());
+			*output_string = new std::string[*number_of_entries];
+			(*output_string)[0] = std::string(get_metadata_string());
 			if (isInline == 0)
 			{
+				int i = 1;
 				for (std::list<Threejs_export *>::iterator item = exports_list.begin();
 					item != exports_list.end(); item++)
 				{
 					Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(*item);
 					if (glyph_export)
 					{
-						this->outputStrings.push_back(*glyph_export->getGlyphTransformationExportString());
+						(*output_string)[i] = std::string(*glyph_export->getGlyphTransformationExportString());
+						i++;
 					}
-					this->outputStrings.push_back(*((*item)->getExportString()));
+					(*output_string)[i] = std::string(*((*item)->getExportString()));
+					i++;
 				}
 			}
 		}
@@ -940,23 +938,22 @@ public:
 
 	int Scene_tree_execute(cmzn_scene *scene)
 	{
-		this->writeOutputStrings();
+		write_output_string();
 		clear_exports_list();
 		return 1;
 	}
 
 }; /* class Render_graphics_opengl_threejs */
 
-
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	const char *file_prefix, int number_of_time_steps, double begin_time,
 	double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
-	int *number_of_entries, std::vector<std::string>& outputStringsRef,
+	int *number_of_entries, std::string **output_string,
 	int morphVertices, int morphColours, int morphNormals,
 	int numberOfFiles, char **file_names, int isInline)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
-		begin_time, end_time, mode, number_of_entries, outputStringsRef,
+		begin_time, end_time, mode, number_of_entries, output_string,
 		morphVertices, morphColours, morphNormals, numberOfFiles, file_names, isInline);
 }
 

@@ -18,7 +18,6 @@ SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/sceneviewer.cpp
     ${CURRENT_TEST}/streamlines.cpp
     ${CURRENT_TEST}/tessellation.cpp
-    utilities/fileio.cpp
     )
 
 SET(SCENEVIEWER_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/sceneviewer_description.json")

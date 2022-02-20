@@ -12,11 +12,9 @@
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/tessellation.h>
 
-#include "opencmiss/zinc/tessellation.hpp"
-
-#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include "opencmiss/zinc/tessellation.hpp"
 
 #include "test_resources.h"
 
@@ -268,12 +266,25 @@ TEST(cmzn_tessellation_api, description_io_cpp)
 	Tessellationmodule tm = zinc.context.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::TESSELLATION_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::TESSELLATION_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
 
-	EXPECT_EQ(CMZN_OK, tm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, tm.readDescription((char *)buffer));
+	free(buffer);
 
 	Tessellation tessellation = tm.findTessellationByName("default");
 	EXPECT_TRUE(tessellation.isValid());

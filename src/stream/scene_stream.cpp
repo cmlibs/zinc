@@ -9,8 +9,7 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#include <string>
-#include <vector>
+
 #include "opencmiss/zinc/streamscene.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -36,7 +35,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			int number_of_entries = 0;
-			std::vector<std::string> outputStrings;
+			std::string *output_string = 0;
 
 			cmzn_scene_id scene = streaminformation_scene->getScene();
 			if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
@@ -69,7 +68,7 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					streaminformation_scene->getInitialTime(),
 					streaminformation_scene->getFinishTime(),
 					streaminformation_scene->getIODataType(),
-					&number_of_entries, outputStrings,
+					&number_of_entries, &output_string,
 					streaminformation_scene->getOutputTimeDependentVertices(),
 					streaminformation_scene->getOutputTimeDependentColours(),
 					streaminformation_scene->getOutputTimeDependentNormals(),
@@ -87,7 +86,8 @@ int cmzn_scene_write(cmzn_scene_id scene,
 			{
 				number_of_entries = 1;
 				SceneJsonExport jsonExport(scene);
-				outputStrings.push_back(jsonExport.getExportString());
+				output_string = new std::string[number_of_entries];
+				output_string[0] = jsonExport.getExportString();
 			}
 			cmzn_scene_destroy(&scene);
 
@@ -107,13 +107,13 @@ int cmzn_scene_write(cmzn_scene_id scene,
 				{
 					if (file_resource)
 					{
-						if (!outputStrings[i].empty())
+						if (!output_string[i].empty())
 						{
 							char *file_name = file_resource->getFileName();
 							if (file_name)
 							{	
 								FILE *export_file = fopen(file_name,"w");
-								fprintf(export_file, "%s", outputStrings[i].c_str());
+								fprintf(export_file, "%s", output_string[i].c_str());
 								fclose(export_file);
 								DEALLOCATE(file_name);
 							}
@@ -123,18 +123,19 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					}
 					else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 					{
-						if (!outputStrings[i].empty())
+						if (!output_string[i].empty())
 						{
-							char *buffer_out = duplicate_string(outputStrings[i].c_str());
+							char *buffer_out = duplicate_string(output_string[i].c_str());
 							unsigned int buffer_size = static_cast<unsigned int>(strlen(buffer_out));
 							memory_resource->setBuffer(buffer_out, buffer_size);
+							cmzn_streamresource_memory_destroy(&memory_resource);
 						}
 						else
 						{
 							memory_resource->setBuffer(nullptr, 0);
+							cmzn_streamresource_memory_destroy(&memory_resource);
 						}
 						i++;
-						cmzn_streamresource_memory_destroy(&memory_resource);
 					}
 					else
 					{
@@ -147,6 +148,8 @@ int cmzn_scene_write(cmzn_scene_id scene,
 					break;
 				}
 			}
+			if (output_string)
+				delete[] output_string;
 		}
 	}
 	else

@@ -27,38 +27,39 @@ FILE : scene.cpp
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_group.hpp"
-#include "computed_field/computed_field_group_base.hpp"
-#include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "description_io/scene_json_import.hpp"
 #include "description_io/scene_json_export.hpp"
+#include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_region.h"
+#include "graphics/graphics.hpp"
+#include "graphics/graphics_module.hpp"
+#include "graphics/scene_viewer.h"
+#include "graphics/scene.hpp"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/enumerator_conversion.hpp"
-#include "general/object.h"
 #include "general/matrix_vector.h"
-#include "general/message.h"
 #include "general/mystring.h"
-#include "graphics/graphics.hpp"
-#include "graphics/graphics_module.hpp"
+#include "mesh/cmiss_node_private.hpp"
+#include "general/object.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.hpp"
-#include "graphics/render_gl.h"
 #include "graphics/render_to_finite_elements.h"
-#include "graphics/scene.hpp"
 #include "graphics/scene_picker.hpp"
-#include "graphics/scene_viewer.h"
-#include "graphics/selection.hpp"
 #include "graphics/spectrum.h"
-#include "graphics/tessellation.hpp"
-#include "mesh/cmiss_node_private.hpp"
-#include "region/cmiss_region.hpp"
 #include "time/time.h"
 #include "time/time_keeper.hpp"
+#include "general/message.h"
+#include "computed_field/computed_field_private.hpp"
+#include "computed_field/computed_field_group_base.hpp"
+#include "graphics/selection.hpp"
+#include "graphics/scene.hpp"
+#include "graphics/render_gl.h"
+#include "graphics/tessellation.hpp"
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_transformation, \
 	struct cmzn_scene *, void *);
@@ -3116,7 +3117,7 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
-	int *number_of_entries, std::vector<std::string>& outputStringsRef,
+	int *number_of_entries, std::string **output_string,
 	int morphVertices, int morphColours, int morphNormals,
 	int numberOfFiles, char **file_names, int isInline)
 {
@@ -3124,7 +3125,7 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
 			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
-			outputStringsRef, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
+			output_string, morphVertices, morphColours, morphNormals, numberOfFiles, file_names,
 			isInline);
 		renderer->Scene_compile(scene, scenefilter);
 		renderer->Scene_tree_execute(scene);

@@ -167,13 +167,6 @@ struct FE_region
 	}
 
 	cmzn_fielditerator *create_fielditerator();
-
-	/** @return  Result OK on success, or ERROR_NOT_FOUND if no time-varying parameters */
-	int getTimeRange(FE_value& minimumTime, FE_value& maximumTime) const
-	{
-		return FE_time_sequence_package_get_time_range(this->fe_time, minimumTime, maximumTime);
-	}
-
 };
 
 /*

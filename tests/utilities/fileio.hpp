@@ -21,11 +21,4 @@ public:
 	~ManageOutputFolder();
 };
 
-/** Open and read file into string buffer.
- * @param filename  The name of the file to read.
- * @return  On success, allocated zero-terminated C string buffer, or
- * nullptr if failed. Caller must pass it to free() to deallocate.
- */
-char *readFileToString(const char *filename);
-
 #endif // __ZINCTEST_UTILITIES_FILEIO_HPP__

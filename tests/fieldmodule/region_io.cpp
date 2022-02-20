@@ -110,9 +110,9 @@ TEST(region_file_output, invalid_args)
 		CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_streamresource_memory_id memory_sr = cmzn_streamresource_cast_memory(
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		sr);
-	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memory_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memeory_sr);
 
 	result = cmzn_region_write(root_region, si_region);
 	EXPECT_EQ(CMZN_OK, result);
@@ -120,15 +120,15 @@ TEST(region_file_output, invalid_args)
 	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
-	const char *regionName = "/plate";
+	const char *regionName = "plate";
 	const char *temp_char = strstr ( memory_buffer, regionName);
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
 	cmzn_streamresource_destroy(&sr);
-	sr = cmzn_streamresource_memory_base_cast(memory_sr);
+	sr = cmzn_streamresource_memory_base_cast(memeory_sr);
 	cmzn_streamresource_destroy(&sr);
 	cmzn_streaminformation_region_destroy(&si_region);
 	cmzn_streaminformation_destroy(&si);
@@ -147,14 +147,14 @@ TEST(region_file_output, invalid_args)
 	sr = cmzn_streaminformation_create_streamresource_memory(si);
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
-	memory_sr = cmzn_streamresource_cast_memory(sr);
-	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memory_sr);
+	memeory_sr = cmzn_streamresource_cast_memory(sr);
+	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memeory_sr);
 
 	cmzn_streamresource_id sr2 = cmzn_streaminformation_create_streamresource_memory(si);
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr2);
 
-	cmzn_streamresource_memory_id memory_sr2 = cmzn_streamresource_cast_memory(sr2);
-	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memory_sr2);
+	cmzn_streamresource_memory_id memeory_sr2 = cmzn_streamresource_cast_memory(sr2);
+	EXPECT_NE(static_cast<cmzn_streamresource_memory *>(0), memeory_sr2);
 
 	const char *fieldName = "temperature";
 
@@ -170,7 +170,7 @@ TEST(region_file_output, invalid_args)
 	memory_buffer = 0;
 	size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer, fieldName);
@@ -179,7 +179,7 @@ TEST(region_file_output, invalid_args)
 	temp_char = strstr ( memory_buffer, "coordinates");
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
-	result = cmzn_streamresource_memory_get_buffer(memory_sr2, (const void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr2, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	temp_char = strstr ( memory_buffer, "elevated");
@@ -189,10 +189,10 @@ TEST(region_file_output, invalid_args)
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
 	cmzn_streamresource_destroy(&sr);
-	sr = cmzn_streamresource_memory_base_cast(memory_sr);
+	sr = cmzn_streamresource_memory_base_cast(memeory_sr);
 	cmzn_streamresource_destroy(&sr);
 	cmzn_streamresource_destroy(&sr2);
-	sr2 = cmzn_streamresource_memory_base_cast(memory_sr2);
+	sr2 = cmzn_streamresource_memory_base_cast(memeory_sr2);
 	cmzn_streamresource_destroy(&sr2);
 	cmzn_streaminformation_region_destroy(&si_region);
 	cmzn_streaminformation_destroy(&si);
@@ -364,13 +364,13 @@ TEST(exdata_and_exnodes_file, invalid_args)
 
 	cmzn_streaminformation_region_destroy(&data_region_si);
 
-	cmzn_streamresource_memory_id memory_sr = cmzn_streamresource_cast_memory(
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
 
 	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	const char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
@@ -415,7 +415,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_streamresource_destroy(&data_sr);
 	cmzn_streaminformation_destroy(&data_si);
 
-	data_sr = cmzn_streamresource_memory_base_cast(memory_sr);
+	data_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
 	cmzn_streamresource_destroy(&data_sr);
 
 	cmzn_region_destroy(&new_data_region);
@@ -463,13 +463,13 @@ TEST(element_dimension_file, invalid_args)
 	result = cmzn_region_write(cube_region, output_region_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_streamresource_memory_id memory_sr = cmzn_streamresource_cast_memory(
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		output_sr);
 
 	const char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_streamresource_memory_get_buffer(memory_sr, (const void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (const void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	const char *temp_char = strstr ( memory_buffer, "Dimension=1");
@@ -484,7 +484,7 @@ TEST(element_dimension_file, invalid_args)
 	cmzn_streamresource_destroy(&output_sr);
 	cmzn_streaminformation_destroy(&output_si);
 
-	output_sr = cmzn_streamresource_memory_base_cast(memory_sr);
+	output_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
 	cmzn_streamresource_destroy(&output_sr);
 
 	output_si = cmzn_streaminformation_region_base_cast(output_region_si);

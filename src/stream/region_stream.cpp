@@ -258,8 +258,7 @@ int cmzn_region_write(cmzn_region_id region,
 	cmzn_streaminformation_region_id streaminformation_region)
 {
 	int return_code = CMZN_OK;
-	bool timeSet = false, streamTimeSet = false;
-	double time = 0.0, streamTime = 0.0;
+	double time = 0.0, stream_time = 0.0;
 
 	if (region && streaminformation_region &&
 		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
@@ -275,7 +274,6 @@ int cmzn_region_write(cmzn_region_id region,
 			if (cmzn_streaminformation_region_has_attribute(streaminformation_region,
 				CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 			{
-				timeSet = true;
 				time = cmzn_streaminformation_region_get_attribute_real(
 					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 			}
@@ -293,22 +291,20 @@ int cmzn_region_write(cmzn_region_id region,
 				if (cmzn_streaminformation_region_has_resource_attribute(
 					streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 				{
-					streamTimeSet = true;
-					streamTime = cmzn_streaminformation_region_get_resource_attribute_real(
+					stream_time = cmzn_streaminformation_region_get_resource_attribute_real(
 						streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 				}
 				else
 				{
-					streamTimeSet = timeSet;
-					streamTime = time;
+					stream_time = time;
 				}
-				enum FE_write_fields_mode writeFieldsMode = FE_WRITE_ALL_FIELDS;
+				enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
 				char **resourceFieldNames = 0, **fieldNames = 0;
 				int resourceNumberOfFieldNames = 0, numberOfFieldNames = 0;
 				resourceNumberOfFieldNames = streaminformation_region->getResourceFieldNames(stream, &resourceFieldNames);
 				if (streaminformation_region->getWriteNoField())
 				{
-					writeFieldsMode = FE_WRITE_NO_FIELDS;
+					write_fields_mode = FE_WRITE_NO_FIELDS;
 				}
 				else
 				{
@@ -322,9 +318,9 @@ int cmzn_region_write(cmzn_region_id region,
 						numberOfFieldNames = informationNumberOfFieldNames;
 						fieldNames = informationFieldNames;
 					}
-					if ((numberOfFieldNames > 0) && fieldNames)
+					if (numberOfFieldNames > 0 && fieldNames)
 					{
-						writeFieldsMode = FE_WRITE_LISTED_FIELDS;
+						write_fields_mode = FE_WRITE_LISTED_FIELDS;
 					}
 				}
 
@@ -332,18 +328,48 @@ int cmzn_region_write(cmzn_region_id region,
 					streaminformation_region->getResourceRecursionMode(stream);
 				if (local_recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID)
 					local_recursion_mode = information_recursion_mode;
-				char *groupName = streaminformation_region->getResourceGroupName(stream);
+				char *group_name = streaminformation_region->getResourceGroupName(stream);
 
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
-				cmzn_field_domain_types writeDomainTypes =
-					cmzn_streaminformation_region_get_resource_domain_types(streaminformation_region, stream);
-				if (writeDomainTypes == CMZN_FIELD_DOMAIN_TYPE_INVALID)
+				int writeElements = 0, writeData = 0, writeNodes = 0;
+				int domain_type =	cmzn_streaminformation_region_get_resource_domain_types(
+					streaminformation_region, stream);
+				if (domain_type == CMZN_FIELD_DOMAIN_TYPE_INVALID)
 				{
-					writeDomainTypes = CMZN_FIELD_DOMAIN_TYPE_NODES | CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS |
-						CMZN_FIELD_DOMAIN_TYPE_MESH1D | CMZN_FIELD_DOMAIN_TYPE_MESH2D | CMZN_FIELD_DOMAIN_TYPE_MESH3D;
+					writeElements = CMZN_FIELD_DOMAIN_TYPE_MESH1D|CMZN_FIELD_DOMAIN_TYPE_MESH2D|
+						CMZN_FIELD_DOMAIN_TYPE_MESH3D|CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
+					writeData = 1;
+					writeNodes = 1;
+				}
+				else
+				{
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_NODES)
+					{
+						writeNodes = 1;
+					}
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
+					{
+						writeData = 1;
+					}
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH1D)
+					{
+						writeElements = CMZN_FIELD_DOMAIN_TYPE_MESH1D;
+					}
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH2D)
+					{
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH2D;
+					}
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH3D)
+					{
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH3D;
+					}
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)
+					{
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
+					}
 				}
 				cmzn_streaminformation_region_file_format fileFormat = streaminformation_region->getFileFormat();
 				if (file_resource)
@@ -361,11 +387,11 @@ int cmzn_region_write(cmzn_region_id region,
 						switch (fileFormat)
 						{
 							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
-								if (!write_exregion_file_of_name(file_name,
+								if (!write_exregion_file_of_name(file_name, region, group_name,
 									cmzn_streaminformation_region_get_root_region(streaminformation_region),
-									region, groupName, streamTimeSet, streamTime, writeDomainTypes,
-									writeFieldsMode, numberOfFieldNames, fieldNames,
-									FE_WRITE_COMPLETE_GROUP, local_recursion_mode))
+									writeElements,	writeNodes, writeData,
+									write_fields_mode, numberOfFieldNames, fieldNames,
+									stream_time,	FE_WRITE_COMPLETE_GROUP, local_recursion_mode))
 								{
 									return_code = CMZN_ERROR_GENERAL;
 									display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX file %s", file_name);
@@ -392,11 +418,11 @@ int cmzn_region_write(cmzn_region_id region,
 					switch (fileFormat)
 					{
 						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
-							if (!write_exregion_file_to_memory_block(&memory_block, &buffer_size,
+							if (!write_exregion_file_to_memory_block(region, group_name,
 								cmzn_streaminformation_region_get_root_region(streaminformation_region),
-								region, groupName, streamTimeSet, streamTime, writeDomainTypes,
-								writeFieldsMode, numberOfFieldNames, fieldNames,
-								FE_WRITE_COMPLETE_GROUP, local_recursion_mode))
+								writeElements,	writeNodes, writeData,
+								write_fields_mode, numberOfFieldNames, fieldNames,
+								stream_time,	FE_WRITE_COMPLETE_GROUP, local_recursion_mode, &memory_block, &buffer_size))
 							{
 								return_code = CMZN_ERROR_GENERAL;
 								display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX format to memory block");
@@ -433,8 +459,8 @@ int cmzn_region_write(cmzn_region_id region,
 					}
 					DEALLOCATE(resourceFieldNames);
 				}
-				if (groupName)
-					DEALLOCATE(groupName);
+				if (group_name)
+					DEALLOCATE(group_name);
 			}
 			informationNumberOfFieldNames = streaminformation_region->getFieldNames(&informationFieldNames);
 			if (informationNumberOfFieldNames > 0)

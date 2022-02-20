@@ -202,16 +202,6 @@ public:
 
 	inline int write(const StreaminformationRegion& streaminformationRegion) const;
 
-	int getTimeRange(double *minimumValueOut, double *maximumValueOut)
-	{
-		return cmzn_region_get_time_range(this->id, minimumValueOut, maximumValueOut);
-	}
-
-	int getHierarchicalTimeRange(double *minimumValueOut, double *maximumValueOut)
-	{
-		return cmzn_region_get_hierarchical_time_range(this->id, minimumValueOut, maximumValueOut);
-	}
-
 };
 
 inline bool operator==(const Region& a, const Region& b)

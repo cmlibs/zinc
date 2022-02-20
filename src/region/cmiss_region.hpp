@@ -387,8 +387,6 @@ public:
 		return this->scene;
 	}
 
-	int getTimeRange(FE_value& minimumTime, FE_value& maximumTime, bool hierarchical) const;
-
 };
 
 /*

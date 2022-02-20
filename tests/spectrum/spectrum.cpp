@@ -12,14 +12,12 @@
 #include <opencmiss/zinc/core.h>
 #include <opencmiss/zinc/spectrum.h>
 
+#include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/fieldarithmeticoperators.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/spectrum.hpp"
-
-#include "utilities/fileio.hpp"
-#include "zinctestsetup.hpp"
-#include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
 
@@ -347,12 +345,25 @@ TEST(cmzn_spectrum_api, description_io_cpp)
 	Spectrummodule sm = zinc.context.getSpectrummodule();
 	EXPECT_TRUE(sm.isValid());
 
-	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SPECTRUM_DESCRIPTION_JSON_RESOURCE));
-	EXPECT_TRUE(stringBuffer != nullptr);
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::SPECTRUM_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
 
-	EXPECT_EQ(CMZN_OK, sm.readDescription(stringBuffer));
-
-	free(stringBuffer);
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, sm.readDescription((char *)buffer));
+	free(buffer);
 
 	Spectrum spectrum = sm.findSpectrumByName("default");
 	EXPECT_TRUE(spectrum.isValid());

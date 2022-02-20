@@ -426,19 +426,17 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 /**
  * Finds or creates a struct FE_time_sequence in <fe_region> with the given
  * <number_of_times> and <times>.
- * @return  On success, accessed FE_time_sequence, otherwise nullptr.
  */
-FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
-	FE_region *fe_region, int number_of_times, const FE_value *times);
+struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
+	struct FE_region *fe_region, int number_of_times, const FE_value *times);
 
 /**
  * Finds or creates a struct FE_time_sequence in <fe_region> which has the list
  * of times formed by merging the two time_sequences supplied.
- * @return  On success, accessed FE_time_sequence, otherwise nullptr.
  */
-FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
-	FE_region *fe_region, FE_time_sequence *time_sequence_one,
-	FE_time_sequence *time_sequence_two);
+struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
+	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two);
 
 /**
  * Finds or creates a struct FE_basis in <fe_region> with the given basis_type.

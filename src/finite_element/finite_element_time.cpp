@@ -41,6 +41,11 @@ DESCRIPTION :
 }; /* struct FE_time_sequence_package */
 
 struct FE_time_sequence
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
+
+DESCRIPTION :
+==============================================================================*/
 {
 	enum FE_time_sequence_type type;
 
@@ -57,69 +62,7 @@ struct FE_time_sequence
 	int manager_change_status;
 
 	int access_count;
-
-	FE_time_sequence() :
-		type(FE_TIME_SEQUENCE),
-		number_of_times(0),
-		times(nullptr),
-		self(nullptr),
-		manager(nullptr),
-		manager_change_status(MANAGER_CHANGE_NONE(FE_time_sequence)),
-		access_count(1)
-	{
-		this->self = this;
-	}
-
-	~FE_time_sequence()
-	{
-		if (this->access_count != 0)
-		{
-			display_message(ERROR_MESSAGE, "~FE_time_sequence.  Non zero access_count");
-		}
-		if (this->times)
-		{
-			DEALLOCATE(this->times);
-		}
-	}
-
-	inline FE_time_sequence *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static void deaccess(FE_time_sequence*& timesequence)
-	{
-		if (timesequence)
-		{
-			--(timesequence->access_count);
-			if (timesequence->access_count <= 0)
-			{
-				delete timesequence;
-			}
-			else if ((timesequence->manager) &&
-				((1 == timesequence->access_count) || ((2 == timesequence->access_count) &&
-				(MANAGER_CHANGE_NONE(FE_time_sequence) != timesequence->manager_change_status))))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(FE_time_sequence)(timesequence, timesequence->manager);
-			}
-			timesequence = nullptr;
-		}
-	}
-
-	/** @return Result OK and times on success, ERROR_NOT_FOUND if no range */
-	int getTimeRange(FE_value& minimumTime, FE_value& maximumTime) const
-	{
-		if (this->number_of_times > 0)
-		{
-			minimumTime = this->times[0];
-			maximumTime = this->times[this->number_of_times - 1];
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_NOT_FOUND;
-	}
-
-};
+}; /* struct FE_time_sequence */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_time_sequence);
 
@@ -298,36 +241,84 @@ Frees memory/deaccess objects in FE_time_sequence_package at <*fe_time_address>.
 	return (return_code);
 } /* DESTROY(FE_time_sequence_package) */
 
-PROTOTYPE_ACCESS_OBJECT_FUNCTION(FE_time_sequence)
-{
-	if (object)
-		return object->access();
-	return nullptr;
-}
+struct FE_time_sequence *CREATE(FE_time_sequence)(void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
 
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_time_sequence)
+DESCRIPTION :
+Creates a basic FE_time_sequence.
+==============================================================================*/
 {
-	if (object_address)
-	{
-		FE_time_sequence::deaccess(*object_address);
-		return 1;
-	}
-	return 0;
-}
+	struct FE_time_sequence *fe_time_sequence;
 
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_time_sequence)
-{
-	if (object_address)
+	ENTER(CREATE(FE_time_sequence));
+	if (ALLOCATE(fe_time_sequence,struct FE_time_sequence,1))
 	{
-		if (new_object)
-			new_object->access();
-		if (*object_address)
-			FE_time_sequence::deaccess(*object_address);
-		*object_address = new_object;
-		return 1;
+		/* initialise all members of computed_fe_time_sequence */
+		fe_time_sequence->type = FE_TIME_SEQUENCE;
+		fe_time_sequence->number_of_times = 0;
+		fe_time_sequence->times = (FE_value *)NULL;
+
+		fe_time_sequence->self = fe_time_sequence;
+
+		fe_time_sequence->manager = (struct MANAGER(FE_time_sequence) *)NULL;
+		fe_time_sequence->manager_change_status = MANAGER_CHANGE_NONE(FE_time_sequence);
+
+		fe_time_sequence->access_count=0;
 	}
-	return 0;
-}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(FE_time_sequence).  Not enough memory");
+		DEALLOCATE(fe_time_sequence);
+	}
+	LEAVE;
+
+	return (fe_time_sequence);
+} /* CREATE(FE_time_sequence) */
+
+int DESTROY(FE_time_sequence)(struct FE_time_sequence **fe_time_sequence_address)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
+
+DESCRIPTION :
+Frees memory/deaccess objects in fe_time_sequence at <*fe_time_sequence_address>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_time_sequence *fe_time_sequence;
+
+	ENTER(DESTROY(FE_time_sequence));
+	if (fe_time_sequence_address&&(fe_time_sequence= *fe_time_sequence_address))
+	{
+		if (0 >= fe_time_sequence->access_count)
+		{
+			if (fe_time_sequence->times)
+			{
+				DEALLOCATE(fe_time_sequence->times);
+			}
+			DEALLOCATE(*fe_time_sequence_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(FE_time_sequence).  Positive access_count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(FE_time_sequence).  Missing fe_time_sequence");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(FE_time_sequence) */
+
+DECLARE_OBJECT_FUNCTIONS(FE_time_sequence)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(FE_time_sequence)
 
@@ -797,59 +788,76 @@ be expanded and the unspecified times also set to <time>.
 	return (return_code);
 } /* FE_time_sequence_set_time_and_index */
 
-FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
-	FE_time_sequence_package *fe_time, FE_time_sequence *source_fe_time_sequence)
+struct FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_sequence)
+/*******************************************************************************
+LAST MODIFIED : 27 November 2002
+
+DESCRIPTION :
+Searches <fe_time> for a FE_time_sequence matching <source_fe_time_sequence>.
+If no equivalent fe_time_sequence is found one is created in <fe_time> and
+returned.
+==============================================================================*/
 {
-	FE_time_sequence *fe_time_sequence = nullptr;
-	if ((fe_time) && (fe_time->fe_time_sequence_manager) && (source_fe_time_sequence))
+	int return_code;
+	struct FE_time_sequence *fe_time_sequence;
+
+	ENTER(get_FE_time_sequence_matching_FE_time_sequence);
+	if (fe_time && fe_time->fe_time_sequence_manager && source_fe_time_sequence)
 	{
-		fe_time_sequence = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence, self)(
-			source_fe_time_sequence, fe_time->fe_time_sequence_manager);
 		/* first try to find a matching fe_time_sequence in the manager */
-		if (fe_time_sequence)
+		if (!(fe_time_sequence = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(
+			source_fe_time_sequence, fe_time->fe_time_sequence_manager)))
 		{
-			fe_time_sequence->access();
-		}
-		else
-		{
-			fe_time_sequence = new FE_time_sequence();
-			int return_code = 1;
-			switch (source_fe_time_sequence->type)
+			if (NULL != (fe_time_sequence = CREATE(FE_time_sequence)()))
 			{
-				case FE_TIME_SEQUENCE:
+				return_code = 1;
+				switch (source_fe_time_sequence->type)
 				{
-					fe_time_sequence->type = FE_TIME_SEQUENCE;
-					fe_time_sequence->number_of_times = source_fe_time_sequence->number_of_times;
-					if (ALLOCATE(fe_time_sequence->times, FE_value,
-						source_fe_time_sequence->number_of_times))
+					case FE_TIME_SEQUENCE:
 					{
-						memcpy(fe_time_sequence->times, source_fe_time_sequence->times,
-							source_fe_time_sequence->number_of_times*sizeof(FE_value));
-						if (!ADD_OBJECT_TO_MANAGER(FE_time_sequence)(fe_time_sequence,
-							fe_time->fe_time_sequence_manager))
+						fe_time_sequence->type = FE_TIME_SEQUENCE;
+						fe_time_sequence->number_of_times =
+							source_fe_time_sequence->number_of_times;
+						fe_time_sequence->times = (FE_value *)NULL;
+						if (ALLOCATE(fe_time_sequence->times, FE_value,
+							source_fe_time_sequence->number_of_times))
+						{
+							memcpy(fe_time_sequence->times, source_fe_time_sequence->times,
+								source_fe_time_sequence->number_of_times*sizeof(FE_value));
+							if (!ADD_OBJECT_TO_MANAGER(FE_time_sequence)(fe_time_sequence,
+								fe_time->fe_time_sequence_manager))
+							{
+								return_code = 0;
+							}
+						}
+						else
 						{
 							return_code = 0;
 						}
-					}
-					else
+					} break;
+					default:
 					{
+						display_message(ERROR_MESSAGE,
+							"get_FE_time_sequence_matching_FE_time_sequence.  "
+							"Unimplemented FE_time_sequence type");
 						return_code = 0;
-					}
-				} break;
-				default:
+					} break;
+				}
+				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
 						"get_FE_time_sequence_matching_FE_time_sequence.  "
-						"Unimplemented FE_time_sequence type");
-					return_code = 0;
-				} break;
+						"Could not copy contents of FE_time_sequence");
+					DESTROY(FE_time_sequence)(&fe_time_sequence);
+					fe_time_sequence = (struct FE_time_sequence *)NULL;
+				}
 			}
-			if (!return_code)
+			else
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_time_sequence_matching_FE_time_sequence.  "
-					"Could not copy contents of FE_time_sequence");
-				FE_time_sequence::deaccess(fe_time_sequence);
+					"Could not create FE_time_sequence");
 			}
 		}
 	}
@@ -857,94 +865,116 @@ FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_time_sequence_matching_FE_time_sequence.  Invalid argument(s)");
+		fe_time_sequence = (struct FE_time_sequence *)NULL;
 	}
-	return (fe_time_sequence);
-}
+	LEAVE;
 
-FE_time_sequence *get_FE_time_sequence_matching_time_series(
-	FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times)
+	return (fe_time_sequence);
+} /* get_FE_time_sequence_matching_FE_time_sequence */
+
+struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
+	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2001
+
+DESCRIPTION :
+Searches <fe_time> for a fe_time_sequence which has the time series specified.
+If no equivalent fe_time_sequence is found one is created and returned.
+==============================================================================*/
 {
-	FE_time_sequence *fe_time_sequence = nullptr;
-	if ((fe_time) && (fe_time->fe_time_sequence_manager) && (0 < number_of_times) && (times))
+	struct FE_time_sequence *fe_time_sequence, *local_fe_time_sequence;
+
+	ENTER(get_FE_time_sequence_matching_time_series);
+	fe_time_sequence=(struct FE_time_sequence *)NULL;
+	if (fe_time&&fe_time->fe_time_sequence_manager&&(0 < number_of_times)&&times)
 	{
-		// check times are non-decreasing
-		for (int t = 1; t < number_of_times; ++t)
-		{
-			if (times[t] < times[t - 1])
-			{
-				display_message(ERROR_MESSAGE, "Invalid decreasing time sequence.");
-				return nullptr;
-			}
-		}
 		/* Create a FE_time_sequence into which we will poke a reference to this
 			number of times and times array so that we can look for another one the
 			same.  I really want to avoid copying the array unnecessarily but if
 			the CREATE(FE_time_sequence) routine was changed to allocate the times array
 			by default then this would leak.*/
-		FE_time_sequence *local_fe_time_sequence = new FE_time_sequence();
+		local_fe_time_sequence = CREATE(FE_time_sequence)();
 		local_fe_time_sequence->type = FE_TIME_SEQUENCE;
 		local_fe_time_sequence->number_of_times = number_of_times;
 		local_fe_time_sequence->times = const_cast<FE_value*>(times);
 		/* search the manager for a fe_time_sequence of that name */
-		fe_time_sequence = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence, self)(
-			local_fe_time_sequence, fe_time->fe_time_sequence_manager);
-		// clear temporary members of our local one
-		local_fe_time_sequence->number_of_times = 0;
-		local_fe_time_sequence->times = nullptr;
-		if (fe_time_sequence)
+		if (NULL != (fe_time_sequence=
+			FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(local_fe_time_sequence,
+				fe_time->fe_time_sequence_manager)))
 		{
-			fe_time_sequence->access();
+			/* Found so get rid of our local one. */
+			local_fe_time_sequence->number_of_times = 0;
+			local_fe_time_sequence->times = (FE_value *)NULL;
+			DESTROY(FE_time_sequence)(&local_fe_time_sequence);
 		}
 		else
 		{
-			// finish establishing our local one correctly
+			/* Finish establishing our local one correctly. */
+			local_fe_time_sequence->times = (FE_value *)NULL;
 			if (ALLOCATE(local_fe_time_sequence->times, FE_value, number_of_times))
 			{
-				local_fe_time_sequence->number_of_times = number_of_times;
-				memcpy(local_fe_time_sequence->times, times, number_of_times * sizeof(FE_value));
+				memcpy(local_fe_time_sequence->times, times, number_of_times *
+					sizeof(FE_value));
 				if (ADD_OBJECT_TO_MANAGER(FE_time_sequence)(local_fe_time_sequence,
 					fe_time->fe_time_sequence_manager))
 				{
-					fe_time_sequence = local_fe_time_sequence->access();
+					fe_time_sequence = local_fe_time_sequence;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "get_FE_time_sequence_matching_time_series.  Unable to add object to manager");
+					display_message(ERROR_MESSAGE,
+						"get_FE_time_sequence_matching_time_series.  "
+						"Unable to add object to manager");
+					fe_time_sequence=(struct FE_time_sequence *)NULL;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "get_FE_time_sequence_matching_time_series.  Unable to allocate memory");
+				display_message(ERROR_MESSAGE,
+					"get_FE_time_sequence_matching_time_series.  "
+					"Unable to allocate memory");
+				fe_time_sequence=(struct FE_time_sequence *)NULL;
 			}
 		}
-		FE_time_sequence::deaccess(local_fe_time_sequence);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_time_sequence_matching_time_series.  Invalid argument(s)");
+		fe_time_sequence=(struct FE_time_sequence *)NULL;
 	}
-	return (fe_time_sequence);
-}
+	LEAVE;
 
-FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
-	FE_time_sequence_package *fe_time, FE_time_sequence *time_sequence_one,
-	FE_time_sequence *time_sequence_two)
+	return (fe_time_sequence);
+} /* get_FE_time_sequence_matching_time_series */
+
+struct FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2001
+
+DESCRIPTION :
+Searches <fe_time> for a fe_time_sequence which has the list of times formed
+by merging the two time_sequences supplied.
+==============================================================================*/
 {
-	FE_time_sequence *fe_time_sequence = nullptr;
-	if ((fe_time) && (fe_time->fe_time_sequence_manager) && (time_sequence_one) &&
-		(time_sequence_two))
+	int i, maximum_number_of_times, number_of_times, time_found, time_index;
+	FE_value *end_one, *end_two, *index_one, *index_two, *merged_index, *times;
+	struct FE_time_sequence *fe_time_sequence;
+#define TIME_SEQUENCE_MERGING_SMALL_COUNT (10)
+
+	ENTER(get_FE_time_sequence_merging_two_time_series);
+	fe_time_sequence=(struct FE_time_sequence *)NULL;
+	if (fe_time&&fe_time->fe_time_sequence_manager&&time_sequence_one&&
+		time_sequence_two)
 	{
 		if (time_sequence_one == time_sequence_two)
 		{
-			fe_time_sequence = time_sequence_one->access();
+			fe_time_sequence = time_sequence_one;
 		}
 		else
 		{
-			const int TIME_SEQUENCE_MERGING_SMALL_COUNT = 10;
-			int i, maximum_number_of_times, number_of_times, time_found, time_index;
-			FE_value *end_one, *end_two, *index_one, *index_two, *merged_index, *times;
-
 			/* Make a fast path if there only a few values, by checking to see if they
 				are a subset of the other sequence */
 			if (time_sequence_one->number_of_times <= time_sequence_two->number_of_times)
@@ -961,7 +991,7 @@ FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
 					}
 					if (time_found)
 					{
-						fe_time_sequence = time_sequence_two->access();
+						fe_time_sequence = time_sequence_two;
 					}
 				}
 			}
@@ -979,7 +1009,7 @@ FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
 					}
 					if (time_found)
 					{
-						fe_time_sequence = time_sequence_one->access();
+						fe_time_sequence = time_sequence_one;
 					}
 				}
 			}
@@ -1054,6 +1084,7 @@ FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
 					display_message(ERROR_MESSAGE,
 						"get_FE_time_sequence_merging_two_time_series.  "
 						"Could not ALLOCATE temporary time array.");
+					fe_time_sequence=(struct FE_time_sequence *)NULL;
 				}
 			}
 		}
@@ -1062,9 +1093,12 @@ FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
 	{
 		display_message(ERROR_MESSAGE,
 			"get_FE_time_sequence_merging_two_time_series.  Invalid argument(s)");
+		fe_time_sequence=(struct FE_time_sequence *)NULL;
 	}
+	LEAVE;
+
 	return (fe_time_sequence);
-}
+} /* get_FE_time_sequence_merging_two_time_series */
 
 enum FE_time_sequence_mapping FE_time_sequences_mapping(
 	struct FE_time_sequence *source_sequence,
@@ -1161,79 +1195,19 @@ int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
 	return (fe_time_sequence->access_count > 2);
 }
 
-namespace {
-
-struct Time_range
-{
-	int result;
-	FE_value minimumTime, maximumTime;
-};
-
-int FE_time_sequence_enlarge_time_range(FE_time_sequence *fe_time_sequence, void* time_range_void)
-{
-	Time_range *time_range = static_cast<Time_range *>(time_range_void);
-	FE_value minimumTime, maximumTime;
-	if (CMZN_OK == fe_time_sequence->getTimeRange(minimumTime, maximumTime))
-	{
-		if (CMZN_OK == time_range->result)
-		{
-			if (minimumTime < time_range->minimumTime)
-			{
-				time_range->minimumTime = minimumTime;
-			}
-			if (maximumTime > time_range->maximumTime)
-			{
-				time_range->maximumTime = maximumTime;
-			}
-		}
-		else
-		{
-			time_range->minimumTime = minimumTime;
-			time_range->maximumTime = maximumTime;
-			time_range->result = CMZN_OK;
-		}
-	}
-	return 1;
-}
-
-}
-
-int FE_time_sequence_package_get_time_range(
-	struct FE_time_sequence_package *fe_time_sequence_package,
-	FE_value& minimumTime, FE_value& maximumTime)
-{
-	if (fe_time_sequence_package)
-	{
-		Time_range time_range = { CMZN_ERROR_NOT_FOUND, 0.0, 0.0 };
-		FOR_EACH_OBJECT_IN_MANAGER(FE_time_sequence)(
-			FE_time_sequence_enlarge_time_range, &time_range,
-			fe_time_sequence_package->fe_time_sequence_manager);
-		minimumTime = time_range.minimumTime;
-		maximumTime = time_range.maximumTime;
-		return time_range.result;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
 cmzn_timesequence_id cmzn_timesequence_access(
 	cmzn_timesequence_id timesequence)
 {
 	if (timesequence)
-	{
-		return (cmzn_timesequence_id)(reinterpret_cast<FE_time_sequence *>(timesequence)->access());
-	}
-	return nullptr;
+		return (cmzn_timesequence_id)(ACCESS(FE_time_sequence)(
+			(struct FE_time_sequence *)timesequence));
+	return 0;
 }
 
 int cmzn_timesequence_destroy(cmzn_timesequence_id *timesequence_address)
 {
-	if (timesequence_address)
-	{
-		FE_time_sequence::deaccess(
-			*reinterpret_cast<FE_time_sequence **>(timesequence_address));
-		return CMZN_OK;
-	}
-	return CMZN_ERROR_ARGUMENT;
+	return DEACCESS(FE_time_sequence)(
+		(struct FE_time_sequence **)timesequence_address);
 }
 
 int cmzn_timesequence_get_number_of_times(

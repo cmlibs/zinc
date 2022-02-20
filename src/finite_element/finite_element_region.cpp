@@ -1081,26 +1081,22 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	return (return_code);
 }
 
-FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
-	FE_region *fe_region, int number_of_times, const FE_value *times)
+struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
+	struct FE_region *fe_region, int number_of_times, const FE_value *times)
 {
 	if (fe_region)
-	{
 		return get_FE_time_sequence_matching_time_series(fe_region->fe_time, number_of_times, times);
-	}
-	return nullptr;
+	return 0;
 }
 
-FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
-	FE_region *fe_region, FE_time_sequence *time_sequence_one,
-	FE_time_sequence *time_sequence_two)
+struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
+	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two)
 {
 	if (fe_region)
-	{
 		return get_FE_time_sequence_merging_two_time_series(fe_region->fe_time,
 			time_sequence_one, time_sequence_two);
-	}
-	return nullptr;
+	return 0;
 }
 
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
