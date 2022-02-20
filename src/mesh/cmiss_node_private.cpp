@@ -274,21 +274,27 @@ public:
 
 	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
 	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		if (!finite_element_field)
-			return 0;
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
-		if (!node_field)
-			return 0;
-		cmzn_timesequence_id timeSequence = node_field->getTimesequence();
-		if (timeSequence)
+		// only numerical valued fields can have a time sequence, currently all reported as real value type on the public API
+		if (CMZN_FIELD_VALUE_TYPE_REAL != field->getValueType())
 		{
-			cmzn_timesequence_access(timeSequence);
+			return nullptr;
 		}
-		return timeSequence;
+		FE_field *feField = nullptr;
+		if (!Computed_field_get_type_finite_element(field, &feField))
+		{
+			return nullptr;
+		}
+		cmzn_node_field *nodeField = getNodeField(feField);
+		if (!nodeField)
+		{
+			return nullptr;
+		}
+		cmzn_timesequence_id timesequence = nodeField->getTimesequence();
+		if (timesequence)
+		{
+			cmzn_timesequence_access(timesequence);
+		}
+		return timesequence;
 	}
 
 	int setTimesequence(cmzn_field_id field, cmzn_timesequence_id timesequence)

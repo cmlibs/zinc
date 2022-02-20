@@ -838,6 +838,39 @@ void cmzn_region::removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
 	}
 }
 
+int cmzn_region::getTimeRange(FE_value& minimumTime, FE_value& maximumTime, bool hierarchical) const
+{
+	int result = this->fe_region->getTimeRange(minimumTime, maximumTime);
+	if (hierarchical)
+	{
+		for (cmzn_region *child = this->first_child; (child); child = child->next_sibling)
+		{
+			FE_value childMinimumTime, childMaximumTime;
+			if (CMZN_OK == child->getTimeRange(childMinimumTime, childMaximumTime, true))
+			{
+				if (CMZN_OK == result)
+				{
+					if (childMinimumTime < minimumTime)
+					{
+						minimumTime = childMinimumTime;
+					}
+					if (childMaximumTime > maximumTime)
+					{
+						maximumTime = childMaximumTime;
+					}
+				}
+				else
+				{
+					minimumTime = childMinimumTime;
+					maximumTime = childMaximumTime;
+					result = CMZN_OK;
+				}
+			}
+		}
+	}
+	return result;
+}
+
 /*
 Global functions
 ----------------
@@ -896,6 +929,27 @@ struct cmzn_region *cmzn_region_create_subregion(
 		subregion->access();
 	return subregion;
 }
+
+int cmzn_region_get_time_range(cmzn_region_id region,
+	double *minimumValueOut, double *maximumValueOut)
+{
+	if ((region) && (minimumValueOut) && (minimumValueOut))
+	{
+		return region->getTimeRange(*minimumValueOut, *maximumValueOut, /*hierarchical*/false);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_region_get_hierarchical_time_range(
+	cmzn_region_id region, double *minimumValueOut, double *maximumValueOut)
+{
+	if ((region) && (minimumValueOut) && (minimumValueOut))
+	{
+		return region->getTimeRange(*minimumValueOut, *maximumValueOut, /*hierarchical*/true);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 
 int cmzn_region_clear_finite_elements(struct cmzn_region *region)
 {

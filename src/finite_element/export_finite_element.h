@@ -63,33 +63,43 @@ Global/Public functions
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_criterion);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
 
-/***************************************************************************//**
+/**
  * Opens file with supplied name, calls write_exregion_to_stream with it and closes
  * file.
  * 
+ * @param file_name  Name of file.
+ * @param rootRegion  The root region output paths are relative to.
  * @param region  The region to output nodes/elements/data from.
- * @param group  Optional subgroup to output.
- * @param root_region  The root region output paths are relative to.
- * @param file_name  Name of file. 
+ * @param groupName  Optional name of group to limit output to.
+ * @param writeDomainTypes  Bitwise OR of cmzn_field_domain_type flags controlling
+ * which meshes or nodesets to write.
+ * @param timeSet  True if following time is set to be output, otherwise false.
+ * @param time  If timeSet is true, time to output parameters for fields with
+ * a time sequence. Values at that time are interpolated from time sequence or
+ * clamped to first/last value if outside its range. Non time-varying fields
+ * are written without a time sequence.
  * @see write_exregion_to_stream.
  */
-int write_exregion_file_of_name(const char *file_name,
-	struct cmzn_region *region, const char *group_name,
-	struct cmzn_region *root_region,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode);
+int write_exregion_file_of_name(
+	const char *fileName,
+	struct cmzn_region *rootRegion,
+	struct cmzn_region *region, const char *groupName,
+	bool timeSet, FE_value time,
+	cmzn_field_domain_types writeDomainTypes,
+	FE_write_fields_mode writeFieldsMode,
+	int fieldNamesCount, const char * const *fieldNames,
+	FE_write_criterion writeCriterion,
+	cmzn_streaminformation_region_recursion_mode recursionMode);
 
 int write_exregion_file_to_memory_block(
-	struct cmzn_region *region, const char *group_name,
-	struct cmzn_region *root_region, int write_elements,
-	int write_nodes, int write_data,
-	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names, FE_value time,
-	enum FE_write_criterion write_criterion,
-	enum cmzn_streaminformation_region_recursion_mode recursion_mode,
-	void **memory_block, unsigned int *memory_block_length);
+	void **memoryBlock, unsigned int *memoryBlockLength,
+	struct cmzn_region *rootRegion,
+	struct cmzn_region *region, const char *groupName,
+	bool timeSet, FE_value time,
+	cmzn_field_domain_types writeDomainTypes,
+	FE_write_fields_mode writeFieldsMode,
+	int fieldNamesCount, const char * const *fieldNames,
+	FE_write_criterion writeCriterion,
+	cmzn_streaminformation_region_recursion_mode recursionMode);
 
 #endif /* !defined (EXPORT_FINITE_ELEMENT_H) */

@@ -385,10 +385,37 @@ ZINC_API int cmzn_region_write_file(cmzn_region_id region, const char *file_name
  * Return handle to the scene for this region, which contains
  * graphics for visualising fields in the region.
  *
- * @param cmiss_region  The region of query.
+ * @param region  The region to query.
  * @return  Handle to scene, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scene_id cmzn_region_get_scene(cmzn_region_id region);
+
+/**
+ * Get range of times present in time sequences owned by this region. Includes
+ * time sequences parameters are mapped to plus those held by the client.
+ *
+ * @param region  The region to query.
+ * @param minimumValueOut  Location to store minimum time on success.
+ * @param maximumValueOut  Location to store maximum time on success.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no time-varying
+ * parameters, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_region_get_time_range(cmzn_region_id region,
+	double *minimumValueOut, double *maximumValueOut);
+
+/**
+ * Get range of times present in time sequences owned by this region and all of
+ * its descendents. Includes time sequences parameters are mapped to plus those
+ * held by the client.
+ *
+ * @param region  The root region of tree to query.
+ * @param minimumValueOut  Location to store minimum time on success.
+ * @param maximumValueOut  Location to store maximum time on success.
+ * @return  Result OK on success, ERROR_NOT_FOUND if no time-varying
+ * parameters, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_region_get_hierarchical_time_range(cmzn_region_id region,
+	double *minimumValueOut, double *maximumValueOut);
 
 #ifdef __cplusplus
 }
