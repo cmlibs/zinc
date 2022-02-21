@@ -40,6 +40,7 @@ protected:
 	std::string facesString;
 	std::string outputString;
 	bool isEmpty;
+	unsigned int graphicsOrder;
 
 	void writeVertexBuffer(const char *output_variable_name,
 		GLfloat *vertex_buffer, unsigned int values_per_vertex,
@@ -75,7 +76,8 @@ public:
 			cmzn_streaminformation_scene_io_data_type mode_in,
 			int morphVerticesIn, int morphColoursIn, int morphNormalsIn, 
 			double *textureSizesIn, const char *groupNameIn,
-			const char *regionPathIn, cmzn_graphics *graphicsIn) :
+			const char *regionPathIn, cmzn_graphics *graphicsIn,
+			unsigned int graphicsOrderIn) :
 		filename(duplicate_string(filename_in)),
 		mode(mode_in),
 		morphVerticesExported(false),
@@ -87,7 +89,8 @@ public:
 		number_of_time_steps(number_of_time_steps_in),
 		groupName(groupNameIn ? duplicate_string(groupNameIn) : nullptr),
 		regionPath(regionPathIn ? duplicate_string(regionPathIn) : nullptr),
-		graphics(graphicsIn)
+		graphics(graphicsIn),
+		graphicsOrder(graphicsOrderIn)
 	{
 		if (textureSizesIn)
 		{
@@ -135,7 +138,6 @@ public:
 		return regionPath;
 	}
 	
-
 	/* this return json format describing colours and transformation of the glyph */
 	Json::Value getExportJson();
 
@@ -159,6 +161,11 @@ public:
 	bool getMorphNormalsExported() const
 	{
 		return morphNormalsExported;
+	}
+
+	unsigned int getGraphicsOrder() const
+	{
+		return graphicsOrder;
 	}
 
 };
@@ -191,10 +198,11 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn,
-		const char* regionPathIn, cmzn_graphics *graphicsIn) :
+		const char* regionPathIn, cmzn_graphics *graphicsIn,
+		unsigned int graphicsOrderIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn, regionPathIn, graphicsIn)
+		groupNameIn, regionPathIn, graphicsIn, graphicsOrderIn)
 	{
 		glyphTransformationString.clear();
 		glyphGeometriesURLName = 0;
@@ -228,10 +236,10 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
-		cmzn_graphics *graphicsIn) :
+		cmzn_graphics *graphicsIn, unsigned int graphicsOrderIn) :
 		Threejs_export(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn, regionPathIn, graphicsIn)
+		groupNameIn, regionPathIn, graphicsIn, graphicsOrderIn)
 	{
 	}
 
@@ -252,10 +260,10 @@ public:
 		cmzn_streaminformation_scene_io_data_type mode_in,
 		int morphVerticesIn, int morphColoursIn, int morphNormalsIn,
 		double *textureSizesIn, const char *groupNameIn, const char* regionPathIn,
-		cmzn_graphics *graphicsIn) :
+		cmzn_graphics *graphicsIn, unsigned int graphicsOrderIn) :
 			Threejs_export_point(filename_in, number_of_time_steps_in,
 		mode_in, morphVerticesIn, morphColoursIn, morphNormalsIn, textureSizesIn,
-		groupNameIn,  regionPathIn, graphicsIn)
+		groupNameIn,  regionPathIn, graphicsIn, graphicsOrderIn)
 	{
 	}
 

@@ -38,7 +38,6 @@
 #include <opencmiss/zinc/sceneviewer.hpp>
 #include <opencmiss/zinc/spectrum.hpp>
 #include <opencmiss/zinc/streamscene.hpp>
-
 #include "test_resources.h"
 #include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
@@ -790,6 +789,9 @@ TEST(cmzn_scene, threejs_export_region_cpp)
 	Scene s1 = r1.getScene();
 	EXPECT_TRUE(s1.isValid());
 
+	const double newMatrix1[16] = { 1, 2, 3, 0.1, 4, 5, 6, 0.2, 7, 8, 9, 0.3, -0.01, -0.02, -0.03, 1.0 };
+	EXPECT_EQ(RESULT_OK, result = s1.setTransformationMatrix(newMatrix1));
+
 	Fieldmodule fm = r1.getFieldmodule();
 	EXPECT_TRUE(fm.isValid());
 
@@ -836,7 +838,13 @@ TEST(cmzn_scene, threejs_export_region_cpp)
 	temp_char = strstr ( memory_buffer, "MorphVertices");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
-	temp_char = strstr ( memory_buffer, "\"RegionPath\" : \"bob\"");
+	temp_char = strstr ( memory_buffer, "Regions");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "bob");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "Transformation");
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	result = memeory_sr2.getBuffer((const void**)&memory_buffer, &size);

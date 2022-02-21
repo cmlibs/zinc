@@ -574,6 +574,7 @@ class Render_graphics_opengl_threejs : public Render_graphics_opengl_vertex_buff
 public:
 
 	std::list<Threejs_export *> exports_list;
+	std::map<char *, double *> scene_transformation_map;
 	char *file_prefix;
 	double begin_time, end_time;
 	int number_of_time_steps, current_time_frame;
@@ -583,6 +584,7 @@ public:
 	int morphVertices, morphColours, morphNormals, numberOfResources;
 	char **filenames;
 	int isInline;
+	unsigned int graphicsOrder;
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
@@ -602,6 +604,7 @@ public:
 		morphVertices = morphVerticesIn;
 		morphColours = morphColoursIn;
 		morphNormals = morphNormalsIn;
+		graphicsOrder = 0;
 	}
 
 	~Render_graphics_opengl_threejs()
@@ -634,23 +637,77 @@ public:
 		return size;
 	}
 
+	Json::Value *create_child_region_for_json_object(Json::Value *parent, std::string name)
+	{
+		if (!parent->isMember("Children"))
+		{
+			(*parent)["Children"] = Json::objectValue;
+		}
+		if (!(*parent)["Children"].isMember(name))
+		{
+			(*parent)["Children"][name] = Json::objectValue;
+		}
+		
+		return &((*parent)["Children"][name]);
+	}
+
+	//create a json object for the region path
+	Json::Value *create_region_tree_for_json_object(Json::Value *parent,
+		std::string region_string)
+	{
+		if (region_string.empty())
+		{
+			return parent;
+		}
+		else
+		{
+			std::size_t found = region_string.find("/");
+  			if (found == std::string::npos)
+			{
+				return this->create_child_region_for_json_object(parent, region_string);
+			}
+			else
+			{
+				std::string token = region_string.substr(0, found);
+				region_string.erase(0, found + 1);
+				return this->create_region_tree_for_json_object(
+					create_child_region_for_json_object(parent, token),
+					region_string);
+			}
+		}
+		return nullptr;
+	}
+
 	/* this will generate the meta data string */
 	std::string get_metadata_string()
 	{
-		Json::Value root = Json::arrayValue;
+		Json::Value root = Json::objectValue;
+		Json::Value regions = Json::objectValue;
 		int i = 1;
 		for (std::list<Threejs_export *>::iterator item = exports_list.begin();
 			item != exports_list.end(); item++)
 		{
 			if ((*item)->isValid())
 			{
-				Json::Value graphics_json;
+				Json::Value graphics_json = Json::objectValue;
 				graphics_json["MorphVertices"] = (*item)->getMorphVerticesExported();
 				graphics_json["MorphColours"] = (*item)->getMorphColoursExported();
 				graphics_json["MorphNormals"] = (*item)->getMorphNormalsExported();
+				graphics_json["Order"] = (*item)->getGraphicsOrder();
+				Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(*item);
+				Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(*item);
+				Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(*item);
+
 				if (isInline)
 				{
-					graphics_json["Inline"]["URL"]= (*item)->getExportJson();
+					if (glyph_export)
+					{
+						graphics_json["Inline"]["URL"]= glyph_export->getGlyphTransformationExportJson();
+					}
+					else
+					{
+						graphics_json["Inline"]["URL"]= (*item)->getExportJson();
+					}
 				}
 				else
 				{
@@ -668,20 +725,14 @@ public:
 				const char *group_name = (*item)->getGroupName();
 				if (group_name)
 					graphics_json["GroupName"] = group_name;
-				const char *region_path = (*item)->getRegionPath();
-				if (region_path)
-					graphics_json["RegionPath"] = region_path;
 
-				Threejs_export_glyph *glyph_export = dynamic_cast<Threejs_export_glyph*>(*item);
-				Threejs_export_line *line_export = dynamic_cast<Threejs_export_line*>(*item);
-				Threejs_export_point *point_export = dynamic_cast<Threejs_export_point*>(*item);
 				if (glyph_export)
 				{
 					graphics_json["Type"]="Glyph";
 					i++;
 					if (isInline)
 					{
-						graphics_json["Inline"]["GlyphGeometriesURL"] = glyph_export->getGlyphTransformationExportJson();
+						graphics_json["Inline"]["GlyphGeometriesURL"] = glyph_export->getExportJson();
 					}
 					else
 					{
@@ -712,10 +763,43 @@ public:
 					graphics_json["Type"]="Surfaces";
 				}
 				i++;
-				root.append(graphics_json);
+				const char *region_path = (*item)->getRegionPath();
+				if (region_path)
+				{
+					Json::Value *object = this->create_region_tree_for_json_object(
+						&regions, std::string(region_path));
+					if (object)
+					{
+						(*object)["Primitives"].append(graphics_json);
+					}
+				}
 			}
 		}
-
+		for (std::map<char *, double *>::iterator iter = scene_transformation_map.begin();
+			iter != scene_transformation_map.end(); iter++)
+		{
+			Json::Value region_json;
+			const char *region_path = iter->first;
+			if (region_path)
+			{
+				if (iter->second)
+				{
+					Json::Value transformation = Json::arrayValue;
+					for (int i = 0; i < 16; i++)
+					{
+						transformation.append(iter->second[i]);
+					}
+					Json::Value *object = this->create_region_tree_for_json_object(
+						&regions, std::string(region_path));
+					if (object)
+					{
+						(*object)["Transformation"] = transformation;
+					}
+				}
+			}
+		}
+		root["Regions"] = regions;
+		root["Version"] = "2.0";
 		return Json::StyledWriter().write(root);
 	}
 
@@ -746,17 +830,33 @@ public:
 		return 1;
 	}
 
-	void clear_exports_list()
+	void clear_export_maps()
 	{
 		while (exports_list.size() > 0)
 		{
 			delete exports_list.back();
 			exports_list.pop_back();
 		}
+		for (std::map<char *, double *>::iterator iter = scene_transformation_map.begin();
+			iter != scene_transformation_map.end(); iter++)
+		{
+			char *name = iter->first;
+			DEALLOCATE(name);
+			delete[] iter->second;
+		}
+		scene_transformation_map.clear();
 	}
 
 	virtual int cmzn_scene_compile_members(cmzn_scene *scene)
 	{
+		double *transformation = 0;
+		if (cmzn_scene_has_transformation(scene))
+		{
+			transformation = new double[16];
+			scene->getTransformationMatrixRowMajor(transformation);
+		}
+		scene_transformation_map.insert(
+			std::make_pair(duplicate_string(this->region_path), transformation));
 		if (number_of_time_steps == 0)
 		{
 			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/0);
@@ -856,7 +956,7 @@ public:
 			const bool morphNormalsAllowed = graphicsIsTimeDependent && morphNormals;
 			threejs_export = new Threejs_export_class(new_file_prefix, number_of_time_steps, mode,
 				morphsVerticesAllowed, morphsColoursAllowed, morphNormalsAllowed, &textureSizes[0], group_name,
-				this->region_path, graphics);
+				this->region_path, graphics, ++this->graphicsOrder);
 			threejs_export->beginExport();
 			threejs_export->exportMaterial(material);
 			cmzn_material_destroy(&material);
@@ -939,7 +1039,7 @@ public:
 	int Scene_tree_execute(cmzn_scene *scene)
 	{
 		write_output_string();
-		clear_exports_list();
+		clear_export_maps();
 		return 1;
 	}
 
