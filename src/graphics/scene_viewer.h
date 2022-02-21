@@ -442,6 +442,14 @@ struct cmzn_sceneviewer
 	// if false (default) infinite lighting is assumed
 	bool lightingLocalViewer;
 
+	cmzn_sceneviewer *access()
+	{
+		++this->access_count;
+		return this;
+	}
+
+	static void deaccess(cmzn_sceneviewer*& sceneviewer);
+
 	double getBackgroundColourAlpha() const
 	{
 		return this->background_colour.alpha;

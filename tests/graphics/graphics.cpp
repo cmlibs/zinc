@@ -19,15 +19,17 @@
 #include <opencmiss/zinc/graphics.h>
 #include <opencmiss/zinc/spectrum.h>
 
-#include "utilities/testenum.hpp"
-#include "zinctestsetup.hpp"
-#include "zinctestsetupcpp.hpp"
 #include "opencmiss/zinc/fieldconstant.hpp"
 #include "opencmiss/zinc/fieldgroup.hpp"
 #include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/font.hpp"
 #include "opencmiss/zinc/graphics.hpp"
 #include "opencmiss/zinc/result.hpp"
+
+#include "utilities/testenum.hpp"
+#include "utilities/fileio.hpp"
+#include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
 
@@ -1104,25 +1106,12 @@ TEST(cmzn_graphics, point_description_io)
 	labelField.setName("my_label");
 	EXPECT_TRUE(labelField.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_POINTS_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_POINTS_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
-	free(buffer);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
+
+	free(stringBuffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
@@ -1309,28 +1298,12 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 	orientationScaleField.setName("my_orientation_field");
 	EXPECT_TRUE(orientationScaleField.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_LINE_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_LINE_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	{
-		const char *bufferText = static_cast<const char *>(buffer);
-		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
-	}
-	free(buffer);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
+
+	free(stringBuffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 
@@ -1505,28 +1478,12 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 	densityField.setName("my_density");
 	EXPECT_TRUE(densityField.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_STREAMLINES_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::GRAPHICS_STREAMLINES_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	{
-		const char *bufferText = static_cast<const char *>(buffer);
-		EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(bufferText, true));
-	}
-	free(buffer);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription(stringBuffer, true));
+
+	free(stringBuffer);
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());

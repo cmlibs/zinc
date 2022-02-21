@@ -128,7 +128,7 @@ TEST(ZincField, automaticRenamingFiniteElement)
 	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
 	StreamresourceMemory srm = sir.createStreamresourceMemory();
 	EXPECT_TRUE(srm.isValid());
-	zinc.root_region.write(sir);
+	EXPECT_EQ(RESULT_OK, zinc.root_region.write(sir));
 	const void *buffer = nullptr;
 	unsigned int bufferLength = 0;
 	EXPECT_EQ(RESULT_OK, srm.getBuffer(&buffer, &bufferLength));

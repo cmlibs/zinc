@@ -957,10 +957,10 @@ TEST(FieldIO, ex_element_grid_constant_indexed_fields)
 		TestResources::getLocation(TestResources::FIELDIO_EX_BLOCK_GRID_RESOURCE)));
 	check_ex_element_grid_constant_indexed_fields(zinc.fm);
 
-	// test writing and re-reading in EX2 format
-	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	// test writing and re-reading in latest EX format
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/block_grid.exf"));
 	Region testRegion1 = zinc.root_region.createChild("test1");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.ex2"));
+	EXPECT_EQ(RESULT_OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/block_grid.exf"));
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_ex_element_grid_constant_indexed_fields(testFm1);
 }
@@ -1364,16 +1364,17 @@ TEST(FieldIO, variableNodeVersionsWithTime2d)
 	sir.setResourceDomainTypes(srf, Field::DOMAIN_TYPE_MESH1D | Field::DOMAIN_TYPE_MESH2D);
 	EXPECT_EQ(RESULT_OK, result = zinc.root_region.write(sir));
 
-	Region testRegion1 = zinc.root_region.createChild("test1");
-	sir = testRegion1.createStreaminformationRegion();
+	Region region2 = zinc.context.createRegion();
+	sir = region2.createStreaminformationRegion();
 	StreamresourceFile srf_nodes_time0 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time0.ex2");
-	sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
+	// time is now stored in EX3 file, no need to specify on read
+	//sir.setResourceAttributeReal(srf_nodes_time0, StreaminformationRegion::ATTRIBUTE_TIME, 0.0);
 	StreamresourceFile srf_nodes_time1 = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_nodes_time1.ex2");
-	sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
+	//sir.setResourceAttributeReal(srf_nodes_time1, StreaminformationRegion::ATTRIBUTE_TIME, 1.0);
 	StreamresourceFile srf_elements = sir.createStreamresourceFile(FIELDML_OUTPUT_FOLDER "/variable_node_versions_elements.ex2");
-	EXPECT_EQ(RESULT_OK, result = testRegion1.read(sir));
-	Fieldmodule testFm1 = testRegion1.getFieldmodule();
-	checkVariableNodeVersionsWithTime2d(testFm1);
+	EXPECT_EQ(RESULT_OK, result = region2.read(sir));
+	Fieldmodule fm2 = region2.getFieldmodule();
+	checkVariableNodeVersionsWithTime2d(fm2);
 }
 
 namespace {

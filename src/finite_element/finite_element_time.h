@@ -99,22 +99,6 @@ DESCRIPTION :
 Frees memory/deaccess objects in FE_time_sequence_package at <*field_address>.
 ==============================================================================*/
 
-struct FE_time_sequence *CREATE(FE_time_sequence)(void);
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Creates a basic FE_time_sequence.
-==============================================================================*/
-
-int DESTROY(FE_time_sequence)(struct FE_time_sequence **fe_time_sequence_address);
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Frees memory/deaccess objects in FE_time_sequence at <*field_address>.
-==============================================================================*/
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_time_sequence_package);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_time_sequence);
@@ -126,37 +110,28 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(FE_time_sequence,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(FE_time_sequence);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,name,const char *);
 
-struct FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
-	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_sequence);
-/*******************************************************************************
-LAST MODIFIED : 27 November 2002
+/** Find or create a new time sequence in fe_time which matches the source time
+ * sequence, which is expected to be from a different time sequence package.
+ * @param fe_time  Time sequence package to own returned time sequence.
+ * @param source_fe_time_sequence  A time sequence which may be from a
+ * different package.
+ * @return  Accessed new or existing time sequence or nullptr if failed. */
+FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
+	FE_time_sequence_package *fe_time, FE_time_sequence *source_fe_time_sequence);
 
-DESCRIPTION :
-Searches <fe_time> for a FE_time_sequence matching <source_fe_time_sequence>.
-If no equivalent fe_time_sequence is found one is created in <fe_time> and
-returned.
-==============================================================================*/
+/** Finds or creates in time sequence package a time sequence with the times
+ * specified.
+ * Fails if any times in the sequence decrease relative to the previous one.
+ * @param  Accessed new or existing time sequence or nullptr if failed. */
+FE_time_sequence *get_FE_time_sequence_matching_time_series(
+	FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times);
 
-struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
-	struct FE_time_sequence_package *fe_time, int number_of_times, const FE_value *times);
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Searches <fe_time> for a fe_time_sequence which has the time series specified. 
-If no equivalent fe_time_sequence is found one is created and returned.
-==============================================================================*/
-
-struct FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
-	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_sequence_one,
-	struct FE_time_sequence *time_sequence_two);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
-
-DESCRIPTION :
-Searches <fe_time> for a fe_time_sequence which has the list of times formed
-by merging the two time_sequences supplied.
-==============================================================================*/
+/** Finds or creates a time sequence with merged set of times from those
+ * supplied.
+ * @return  Accessed new or existing merged time sequence */
+FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
+	FE_time_sequence_package *fe_time, FE_time_sequence *time_sequence_one,
+	FE_time_sequence *time_sequence_two);
 
 int FE_time_sequence_get_number_of_times(
 	struct FE_time_sequence *fe_time_sequence);
@@ -246,5 +221,10 @@ Returns true if <fe_time_sequence_package> contains the <fe_time_sequence>.
  * not be modified, or 0 if it is not in use.
  */
 int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence);
+
+/** @return  Result OK on success, or ERROR_NOT_FOUND if no time-varying parameters */
+int FE_time_sequence_package_get_time_range(
+	struct FE_time_sequence_package *fe_time_sequence_package,
+	FE_value& minimumTime, FE_value& maximumTime);
 
 #endif /* !defined (FINITE_ELEMENT_TIME_H) */
