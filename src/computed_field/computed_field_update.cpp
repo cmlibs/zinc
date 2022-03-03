@@ -42,13 +42,11 @@ int cmzn_nodeset_assign_field_from_source(
 		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 		{
-			// element_xi fields used to allow locations in multiple meshes, but are now
-			// restricted to a single host mesh. This must be discovered if necessary.
-			// This only happens when read from legacy EX format or created in Cmgui.
-			const int result = cmzn_field_discover_element_xi_host_mesh_from_source(destination_field, source_field);
-			if (CMZN_OK != result)
+			if (cmzn_field_get_host_FE_mesh(destination_field) != cmzn_field_get_host_FE_mesh(source_field))
 			{
-				return result;
+				display_message(ERROR_MESSAGE, "Field assignment:  "
+					"destination and source fields have mesh location values in different host meshes");
+				return CMZN_ERROR_ARGUMENT;
 			}
 		}
 		const int componentCount = cmzn_field_get_number_of_components(destination_field);

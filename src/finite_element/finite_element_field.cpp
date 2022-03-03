@@ -188,8 +188,8 @@ bool FE_field::compareBasicDefinition(const FE_field* otherField) const
 	if (ELEMENT_XI_VALUE == this->value_type)
 	{
 		// may need to improve if multiple meshes allowed in future:
-		if ((otherField->element_xi_host_mesh) && ((!this->element_xi_host_mesh) ||
-			(this->element_xi_host_mesh->getDimension() != otherField->element_xi_host_mesh->getDimension())))
+		if ((!this->element_xi_host_mesh) || (!otherField->element_xi_host_mesh) ||
+			(this->element_xi_host_mesh->getDimension() != otherField->element_xi_host_mesh->getDimension()))
 		{
 			return false;
 		}
@@ -745,19 +745,26 @@ int FE_field::copyProperties(FE_field *source)
 	return (return_code);
 }
 
-int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void)
+int FE_field_can_be_merged(struct FE_field *field, void *field_list_void)
 {
 	struct LIST(FE_field) *field_list = reinterpret_cast<struct LIST(FE_field) *>(field_list_void);
 	if (field && field_list)
 	{
+		if ((field->getValueType() == ELEMENT_XI_VALUE) && (nullptr == field->getElementXiHostMesh()))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_field_can_be_merged.  Cannot merge legacy element_xi valued field without host mesh");
+			return 0;
+		}
 		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->getName(), field_list);
 		if ((!(other_field)) || field->compareBasicDefinition(other_field))
+		{
 			return 1;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_can_be_merged_into_list.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_field_can_be_merged.  Invalid argument(s)");
 	}
 	return 0;
 }

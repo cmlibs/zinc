@@ -1199,7 +1199,7 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 	if (target_fe_region)
 	{
 		// check fields of the same name have compatible definitions
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged_into_list,
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
 			(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
 		{
 			display_message(ERROR_MESSAGE,

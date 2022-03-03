@@ -19,6 +19,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/computed_field_conditional.h"
+#include "computed_field/computed_field_finite_element.h"
 
 namespace {
 
@@ -38,10 +39,9 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (cmzn_field_get_value_type(parent->source_fields[1]) ==
-				cmzn_field_get_value_type(parent->source_fields[2]))
+			this->value_type = parent->source_fields[1]->getValueType();
+			if (this->value_type == parent->source_fields[2]->getValueType())
 			{
-				value_type = cmzn_field_get_value_type(parent->source_fields[1]);
 				return true;
 			}
 		}
@@ -72,8 +72,7 @@ private:
 			return new StringFieldValueCache();
 		else if (value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 			return new MeshLocationFieldValueCache();
-
-		return 0;
+		return nullptr;
 	}
 
 	int compare(Computed_field_core* other_field)
@@ -95,6 +94,12 @@ private:
 	int list();
 
 	char* get_command_string();
+
+	/** Field has value type of source field 2, 3 */
+	virtual cmzn_field_value_type get_value_type() const
+	{
+		return this->value_type;
+	}
 };
 
 int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -143,6 +148,16 @@ int Computed_field_if::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValue
 		}
 		else if (this->value_type == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
 		{
+			// can only be scalar
+			MeshLocationFieldValueCache &valueCache = MeshLocationFieldValueCache::cast(inValueCache);
+			const MeshLocationFieldValueCache *useSourceCache = evaluateField2 ?
+				MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache)) :
+				MeshLocationFieldValueCache::cast(getSourceField(2)->evaluate(cache));
+			if (useSourceCache)
+			{
+				valueCache.setMeshLocation(useSourceCache->element, useSourceCache->xi);
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -281,7 +296,10 @@ cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id fieldmodule,
 			(source_field_one->number_of_components ==
 				source_field_two->number_of_components)) &&
 		(source_field_two->number_of_components ==
-			source_field_three->number_of_components))
+			source_field_three->number_of_components) &&
+		((source_field_two->getValueType() != CMZN_FIELD_VALUE_TYPE_MESH_LOCATION) ||
+			(cmzn_field_get_host_FE_mesh(source_field_two) ==
+			cmzn_field_get_host_FE_mesh(source_field_three))))
 	{
 		cmzn_field *source_fields[3];
 		source_fields[0] = source_field_one;

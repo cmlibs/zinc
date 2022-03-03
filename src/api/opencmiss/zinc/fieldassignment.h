@@ -23,7 +23,9 @@ extern "C" {
 
 /**
  * Create a field assignment object for assigning values of the target field,
- * from values of the source field.
+ * from values of the source field. Target and source fields must match in
+ * value type and number of components, and mesh location value type fields
+ * must be for the same host mesh.
  *
  * @param targetField  The target field to assign to.
  * @param sourceField  The source field to assign values from.

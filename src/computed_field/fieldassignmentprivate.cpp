@@ -15,6 +15,7 @@
 #include "opencmiss/zinc/nodeset.h"
 #include "computed_field/fieldassignmentprivate.hpp"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_update.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "general/debug.h"
@@ -41,7 +42,9 @@ cmzn_fieldassignment *cmzn_fieldassignment::create(cmzn_field *targetFieldIn, cm
 	if ((Computed_field_get_region(sourceFieldIn) == Computed_field_get_region(targetFieldIn))
 		&& (cmzn_field_get_value_type(sourceFieldIn) == cmzn_field_get_value_type(targetFieldIn))
 		&& (cmzn_field_get_number_of_components(sourceFieldIn)
-			== cmzn_field_get_number_of_components(targetFieldIn)))
+			== cmzn_field_get_number_of_components(targetFieldIn))
+		&& ((cmzn_field_get_value_type(sourceFieldIn) != CMZN_FIELD_VALUE_TYPE_MESH_LOCATION)
+			|| (cmzn_field_get_host_FE_mesh(sourceFieldIn) == cmzn_field_get_host_FE_mesh(targetFieldIn))))
 	{
 		return new cmzn_fieldassignment(targetFieldIn, sourceFieldIn);
 	}
