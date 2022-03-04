@@ -24,7 +24,7 @@ extern "C" {
  * Creates a conditional field returning component values from source field two
  * if the condition source field one is true, otherwise source field three.
  * The field has the value type and number of components from source fields two
- * and three, which much match. Source fields two and three of mesh location
+ * and three, which must match. Source fields two and three of mesh location
  * value type must have matching host mesh.
  * For real value type, the condition field may be a vector of same length as
  * the other two source fields, in which case the condition is applied per-
