@@ -994,7 +994,7 @@ bool EXReader::readElementXiValue(FE_field *field, cmzn_element* &element, FE_va
 		display_message(ERROR_MESSAGE, "EXReader::readElementXiValue.  Invalid argument(s)");
 		return false;
 	}
-	// const_cast is dirty, but mesh is constant as far as field is concerned,
+	// mesh is constant as far as field is concerned,
 	// however this function can create blank elements in mesh
 	FE_mesh *hostMesh = field->getElementXiHostMesh();
 	DsLabelIdentifier elementIdentifier;

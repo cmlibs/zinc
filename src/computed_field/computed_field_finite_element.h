@@ -180,11 +180,7 @@ char *cmzn_field_edge_discontinuity_measure_enum_to_string(
 	enum cmzn_field_edge_discontinuity_measure measure);
 
 /** @return  Host mesh for find or stored mesh location fields. For time being must check if none. */
-FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field_id field);
-
-/** Discover and set destination host mesh from source field, or check it matches if already set.
-  * @return  Result OK on success, any other value on failure. */
-int cmzn_field_discover_element_xi_host_mesh_from_source(cmzn_field *destination_field, cmzn_field * source_field);
+FE_mesh *cmzn_field_get_host_FE_mesh(cmzn_field *field);
 
 class FE_element_field_evaluation;
 
