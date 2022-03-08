@@ -89,35 +89,4 @@ public:
 	std::string getExportString();
 };
 
-
-/**
- *  The following functions are declared here as including graphics/scene_viewer.h
- *  compilation errors.
- */
-/**
- * Function to convert projection_mode enum to string.
- */
-char *cmzn_sceneviewer_projection_mode_enum_to_string(
-	enum cmzn_sceneviewer_projection_mode mode);
-
-/**
- * Function to convert string to projection_mode enum.
- */
-enum cmzn_sceneviewer_projection_mode
-	cmzn_sceneviewer_projection_mode_enum_from_string(const char *name);
-
-/**
- * Function to convert transparency_mode enum to string.
- */
-char *cmzn_sceneviewer_transparency_mode_enum_to_string(
-	enum cmzn_sceneviewer_transparency_mode mode);
-
-/**
- * Function to convert string to transparency_mode enum.
- */
-enum cmzn_sceneviewer_transparency_mode
-	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *name);
-
-
-
 #endif

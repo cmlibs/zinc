@@ -9,13 +9,14 @@
 #include <gtest/gtest.h>
 
 #include <opencmiss/zinc/core.h>
-
 #include <opencmiss/zinc/timekeeper.h>
 #include <opencmiss/zinc/timenotifier.h>
 
+#include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include <opencmiss/zinc/timekeeper.hpp>
 #include <opencmiss/zinc/timenotifier.hpp>
 
+#include "utilities/fileio.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -124,25 +125,12 @@ TEST(ZincTimekeeper, description_io_cpp)
 	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
 	EXPECT_TRUE(tkm.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-		fseek (f, 0, SEEK_END);
-		length = ftell (f);
-		fseek (f, 0, SEEK_SET);
-		buffer = malloc (length);
-		if (buffer)
-		{
-			fread (buffer, 1, length, f);
-		}
-		fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, tkm.readDescription((char *)buffer));
-	free(buffer);
+	EXPECT_EQ(CMZN_OK, tkm.readDescription(stringBuffer));
+
+	free(stringBuffer);
 
 	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
 	EXPECT_TRUE(timekeeper.isValid());
@@ -218,4 +206,123 @@ TEST(ZincTimekeeper, getNextCallback)
 	ASSERT_DOUBLE_EQ(-5.07, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
 	ASSERT_DOUBLE_EQ(-5.03, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
 
+}
+
+TEST(ZincTimeSequence, invalidArguments)
+{
+	ZincTestSetupCpp zinc;
+
+	// check can't ask for a decreasing time sequence
+	double invalidTimes[2] = { 1.0, 0.0 };
+	Timesequence invalidTimesequence = zinc.fm.getMatchingTimesequence(2, invalidTimes);
+	EXPECT_FALSE(invalidTimesequence.isValid());
+	invalidTimesequence = zinc.fm.getMatchingTimesequence(0, invalidTimes);
+	EXPECT_FALSE(invalidTimesequence.isValid());
+	invalidTimesequence = zinc.fm.getMatchingTimesequence(2, nullptr);
+	EXPECT_FALSE(invalidTimesequence.isValid());
+}
+
+TEST(ZincRegion, timeRange)
+{
+	ZincTestSetupCpp zinc;
+	Region childRegion = zinc.root_region.createChild("child");
+
+	double minimumTime, maximumTime;
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+
+	double times[2] = { 1.5, 3.1 };
+	Timesequence timesequence = zinc.fm.getMatchingTimesequence(2, times);
+	EXPECT_TRUE(timesequence.isValid());
+
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(times[0], minimumTime);
+	EXPECT_DOUBLE_EQ(times[1], maximumTime);
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(times[0], minimumTime);
+	EXPECT_DOUBLE_EQ(times[1], maximumTime);
+
+	// test clearing only handle to timesequence removes it
+	timesequence = Timesequence();
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+
+	Fieldmodule childFm = childRegion.getFieldmodule();
+	double childTimes[3] = { 1.1, 2.2, 3.3 };
+	Timesequence childTimesequence = childFm.getMatchingTimesequence(3, childTimes);
+	EXPECT_TRUE(childTimesequence.isValid());
+
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_OK, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+
+	// define time sequence on a field at a node
+	FieldFiniteElement b = childFm.createFieldFiniteElement(1);
+	EXPECT_TRUE(b.isValid());
+	EXPECT_EQ(CMZN_OK, b.setName("b"));
+	Nodeset childNodes = childFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodetemplate childNodetemplate = childNodes.createNodetemplate();
+	EXPECT_EQ(CMZN_OK, childNodetemplate.defineField(b));
+	EXPECT_EQ(CMZN_OK, childNodetemplate.setTimesequence(b, childTimesequence));
+	Node node1 = childNodes.createNode(1, childNodetemplate);
+	EXPECT_TRUE(node1.isValid());
+	childNodetemplate = Nodetemplate();
+
+	// now clearing timesequence shouldn't affect time
+	childTimesequence = Timesequence();
+	EXPECT_EQ(CMZN_ERROR_NOT_FOUND, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_EQ(CMZN_OK, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+
+	// now have time sequence in root and child regions
+	timesequence = zinc.fm.getMatchingTimesequence(2, times);
+	EXPECT_TRUE(timesequence.isValid());
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(times[0], minimumTime);
+	EXPECT_DOUBLE_EQ(times[1], maximumTime);
+	EXPECT_EQ(CMZN_OK, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+
+	// change the root time sequence and see how it affects range
+	double newTimes[2] = { 0.0, 55.0 };
+	timesequence = zinc.fm.getMatchingTimesequence(2, newTimes);
+	EXPECT_TRUE(timesequence.isValid());
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(newTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(newTimes[1], maximumTime);
+	EXPECT_EQ(CMZN_OK, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(newTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(newTimes[1], maximumTime);
+
+	// add an additional timesequence and check the range
+	double times2[2] = { -1.0, 101.3 };
+	Timesequence timesequence2 = zinc.fm.getMatchingTimesequence(2, times2);
+	EXPECT_TRUE(timesequence2.isValid());
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(times2[0], minimumTime);
+	EXPECT_DOUBLE_EQ(times2[1], maximumTime);
+	EXPECT_EQ(CMZN_OK, childRegion.getTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(childTimes[0], minimumTime);
+	EXPECT_DOUBLE_EQ(childTimes[2], maximumTime);
+	EXPECT_EQ(CMZN_OK, zinc.root_region.getHierarchicalTimeRange(&minimumTime, &maximumTime));
+	EXPECT_DOUBLE_EQ(times2[0], minimumTime);
+	EXPECT_DOUBLE_EQ(times2[1], maximumTime);
 }

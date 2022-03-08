@@ -39,7 +39,6 @@
 #include "graphics/graphics.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
-#include "graphics/spectrum.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/render_gl.h"
 
@@ -1962,7 +1961,7 @@ void cmzn_glyphmodulenotifier::glyphmoduleDestroyed()
 	{
 		cmzn_glyphmoduleevent_id event = cmzn_glyphmoduleevent::create(
 			static_cast<cmzn_glyphmodule*>(0));
-		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		event->setChangeFlags(CMZN_GLYPH_CHANGE_FLAG_FINAL);
 		(this->function)(event, this->user_data);
 		cmzn_glyphmoduleevent::deaccess(event);
 		this->clearCallback();
@@ -1972,7 +1971,7 @@ void cmzn_glyphmodulenotifier::glyphmoduleDestroyed()
 cmzn_glyphmoduleevent::cmzn_glyphmoduleevent(
 	cmzn_glyphmodule *glyphmoduleIn) :
 	module(cmzn_glyphmodule_access(glyphmoduleIn)),
-	changeFlags(CMZN_TESSELLATION_CHANGE_FLAG_NONE),
+	changeFlags(CMZN_GLYPH_CHANGE_FLAG_NONE),
 	managerMessage(0),
 	access_count(1)
 {
@@ -1990,7 +1989,7 @@ cmzn_glyph_change_flags cmzn_glyphmoduleevent::getGlyphChangeFlags(
 {
 	if (glyph && this->managerMessage)
 		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_glyph)(this->managerMessage, glyph);
-	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+	return CMZN_GLYPH_CHANGE_FLAG_NONE;
 }
 
 void cmzn_glyphmoduleevent::setManagerMessage(
@@ -2075,7 +2074,7 @@ cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_summary_glyph_change_flags(
 {
 	if (event)
 		return event->getChangeFlags();
-	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+	return CMZN_GLYPH_CHANGE_FLAG_NONE;
 }
 
 cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
@@ -2083,7 +2082,7 @@ cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
 {
 	if (event)
 		return event->getGlyphChangeFlags(glyph);
-	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+	return CMZN_GLYPH_CHANGE_FLAG_NONE;
 }
 
 cmzn_glyphmodule::cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn) :

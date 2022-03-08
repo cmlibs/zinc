@@ -427,7 +427,7 @@ ZINC_API cmzn_materialiterator_id cmzn_materialiterator_access(
  * Destroys this handle to the material iterator and sets it to NULL.
  *
  * @param iterator_address  Address of handle to material_iterator to destroy.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_materialiterator_destroy(cmzn_materialiterator_id *iterator_address);
 
@@ -440,6 +440,119 @@ ZINC_API int cmzn_materialiterator_destroy(cmzn_materialiterator_id *iterator_ad
  * @return  Handle to the next material, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_material_id cmzn_materialiterator_next(cmzn_materialiterator_id iterator);
+
+/**
+ * Create a notifier for getting callbacks for changes to the materials in the
+ * material module.
+ *
+ * @param materialmodule  Handle to the material module to get notifications for.
+ * @return  Handle to new material module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_materialmodulenotifier_id cmzn_materialmodule_create_materialmodulenotifier(
+	cmzn_materialmodule_id materialmodule);
+
+/**
+ * Returns a new handle to the material module notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The material module notifier to obtain a new handle to.
+ * @return  New handle to material module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_materialmodulenotifier_id cmzn_materialmodulenotifier_access(
+	cmzn_materialmodulenotifier_id notifier);
+
+/**
+ * Destroys handle to the material module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of material module notifier handle to destroy.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_materialmodulenotifier_destroy(
+	cmzn_materialmodulenotifier_id *notifier_address);
+
+/**
+ * Stop and clear material module callback. This will stop the callback and also
+ * remove the callback function from the materialmodule notifier.
+ *
+ * @param notifier  Handle to the materialmodule notifier.
+ * @return Result OK on success, any other error on failure.
+ */
+ZINC_API int cmzn_materialmodulenotifier_clear_callback(
+	cmzn_materialmodulenotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the materialmodule notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_materialmodulenotifier_callback_function
+ * @param notifier  Handle to the materialmodule notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Result OK on success, any other error on failure.
+ */
+ZINC_API int cmzn_materialmodulenotifier_set_callback(
+	cmzn_materialmodulenotifier_id notifier,
+	cmzn_materialmodulenotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ *
+ * @see cmzn_materialmodulenotifier_set_callback
+ * @param notifier  Handle to the material module notifier.
+ * @return  User data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_materialmodulenotifier_get_callback_user_data(
+	cmzn_materialmodulenotifier_id notifier);
+
+/**
+ * Returns a new handle to the materialmodule event with reference count
+ & incremented.
+ *
+ * @param event  The material module event to obtain a new handle to.
+ * @return  New handle to event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_materialmoduleevent_id cmzn_materialmoduleevent_access(
+	cmzn_materialmoduleevent_id event);
+
+/**
+ * Destroys this handle to the materialmodule event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event passed to the user callback function.
+ *
+ * @param event_address  Address of material module event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_materialmoduleevent_destroy(
+	cmzn_materialmoduleevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how materials in the material module have
+ * changed.
+ *
+ * @see cmzn_material_change_flag
+ * @param event  Handle to the material module event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_material_change_flag values.
+ */
+ZINC_API cmzn_material_change_flags
+	cmzn_materialmoduleevent_get_summary_material_change_flags(
+		cmzn_materialmoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the material has changed.
+ * @see cmzn_material_change_flag
+ *
+ * @param event  Handle to the material module event to query.
+ * @param material  The material to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_material_change_flag values. Returns
+ * CMZN_MATERIAL_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_material_change_flags
+	cmzn_materialmoduleevent_get_material_change_flags(
+		cmzn_materialmoduleevent_id event, cmzn_material_id material);
 
 #ifdef __cplusplus
 }

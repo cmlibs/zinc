@@ -11,6 +11,7 @@
    "ProjectionMode" : "PARALLEL",
    "Scenefilter" : "default",
    "TranslationRate" : 2,
+   "TransparencyLayers" : 5,
    "TransparencyMode" : "SLOW",
    "TumbleRate" : 3,
    "UpVector" : [ 0, 0, 1 ],

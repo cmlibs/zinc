@@ -81,6 +81,25 @@ Module functions
 ----------------
 */
 
+void cmzn_sceneviewer::deaccess(cmzn_sceneviewer*& sceneviewer)
+{
+	if (sceneviewer)
+	{
+		--(sceneviewer->access_count);
+		if (sceneviewer->access_count <= 0)
+		{
+			DESTROY(Scene_viewer)(&sceneviewer);
+		}
+		else if ((sceneviewer->access_count == 1) && (sceneviewer->module))
+		{
+			REMOVE_OBJECT_FROM_LIST(Scene_viewer)(sceneviewer,
+				sceneviewer->module->scene_viewer_list);
+			sceneviewer->module = nullptr;
+		}
+		sceneviewer = nullptr;
+	}
+}
+
 int cmzn_sceneviewer::setBackgroundColourAlpha(double alpha)
 {
 	this->background_colour.alpha = alpha;
@@ -167,6 +186,31 @@ void cmzn_sceneviewer::setLightingTwoSided(bool value)
 		this->lightingTwoSided = value;
 		this->setChangedRepaint();
 	}
+}
+
+int cmzn_sceneviewer::setTransparencyMode(cmzn_sceneviewer_transparency_mode transparencyModeIn)
+{
+	if ((CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST != transparencyModeIn) &&
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW != transparencyModeIn) &&
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT != transparencyModeIn))
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (this->transparency_mode != transparencyModeIn)
+	{
+		if (CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT == transparencyModeIn)
+		{
+			this->supports_order_independent_transparency = order_independent_capable();
+			if (!this->supports_order_independent_transparency)
+			{
+				display_message(WARNING_MESSAGE, "Sceneviewer setTransparencyMode.  "
+					"Order-independent transparency not supported by hardware; rendering as slow transparency");
+			}
+		}
+		this->transparency_mode = transparencyModeIn;
+		this->setChangedRepaint();
+	}
+	return CMZN_OK;
 }
 
 cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_viewer *scene_viewer)
@@ -2142,28 +2186,27 @@ Scene_viewer_render_scene_in_viewport to access this function.
 						rendering_data.render_callstack);
 				}
 
-				switch (scene_viewer->transparency_mode)
+				if ((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW) ||
+					((scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT) &&
+						!scene_viewer->supports_order_independent_transparency))
 				{
-					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
-					{
-						render_object = CREATE(Scene_viewer_render_object)(
-							Scene_viewer_slow_transparency);
-						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);
-					} break;
-					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
-					{
-						Scene_viewer_initialise_order_independent_transparency(&rendering_data);
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_slow_transparency);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+				else if (scene_viewer->transparency_mode == CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
+				{
+					Scene_viewer_initialise_order_independent_transparency(&rendering_data);
 
-						render_object = CREATE(Scene_viewer_render_object)(
-							Scene_viewer_order_independent_transparency);
-						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-							rendering_data.render_callstack);
-					}
-					default:
-					{
-						/* Do nothing */
-					} break;
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_order_independent_transparency);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+				else
+				{
+					/* Do nothing */
 				}
 
 				render_object = CREATE(Scene_viewer_render_object)(
@@ -2557,25 +2600,6 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 void cmzn_sceneviewermodule_light_manager_callback(
 	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void);
 
-static int Scene_viewer_destroy_from_module(
-	struct Scene_viewer *scene_viewer, void *module_void)
-{
-	int return_code;
-	struct cmzn_sceneviewermodule *module;
-
-	if (scene_viewer && (module = (struct cmzn_sceneviewermodule *)module_void))
-	{
-		/* destroy function will also remove scene viewer from module.
-		* Removing the pointer to module here to prevent the list being modified.
-		*/
-		scene_viewer->module = 0;
-		cmzn_sceneviewer_destroy(&scene_viewer);
-	}
-	return_code = 1;
-
-	return (return_code);
-}
-
 cmzn_sceneviewermodule::cmzn_sceneviewermodule(struct Colour *background_colourIn,
 		cmzn_lightmodule *lightmoduleIn, struct cmzn_light *default_lightIn,
 		struct cmzn_light *default_ambient_lightIn,
@@ -2606,13 +2630,13 @@ cmzn_sceneviewermodule::~cmzn_sceneviewermodule()
 	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))
 		(&this->destroy_callback_list);
 
-	// Destroy the scene viewers in the list as they are not accessed or
-	// deaccessed by the list (so not destroyed when delisted). The owners of
-	// these scene viewers should by virtue of having destroyed the command data
-	// and therefore this module no longer reference these scene viewers or
-	// they should register for destroy callbacks.
-	FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_module,
-		this, this->scene_viewer_list);
+	// must remove pointers from orphaned scene viewers back to module
+	cmzn_sceneviewer *sv;
+	while ((sv = FIRST_OBJECT_IN_LIST_THAT(Scene_viewer)(nullptr, nullptr, this->scene_viewer_list)))
+	{
+		sv->module = nullptr;
+		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(sv, this->scene_viewer_list);
+	}
 	DESTROY(LIST(Scene_viewer))(&this->scene_viewer_list);
 	DESTROY(Graphics_buffer_package)(&this->graphics_buffer_package);
 
@@ -2869,22 +2893,17 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
+/**
+ * If any of light_manager or scene_manager are supplied, the scene_viewer will
+ * automatically redraw in response to changes of objects from these managers
+ * that are in use by the scene_viewer. Redraws are performed in idle time so
+ * that multiple redraws are avoided.
+ */
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct cmzn_light *default_light,
 	struct cmzn_light *default_ambient_light,
 	cmzn_scenefilter_id filter)
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Creates a Scene_viewer in the widget <parent> to display <scene>.
-Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager or scene_manager
-are supplied, the scene_viewer will automatically redraw in response to changes
-of objects from these managers that are in use by the scene_viewer. Redraws are
-performed in idle time so that multiple redraws are avoided.
-==============================================================================*/
 {
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
@@ -3049,6 +3068,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
 				scene_viewer->transparency_mode=CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST;
 				scene_viewer->transparency_layers=1;
+				scene_viewer->supports_order_independent_transparency = false;
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
@@ -3158,28 +3178,22 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 } /* DESTROY(Scene_viewer) */
 
 struct Scene_viewer *ACCESS(Scene_viewer)(struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	//Do nothing as the scene viewer removes itself from the package list
-	return(scene_viewer);
-}
-
-cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id scene_viewer)
 {
 	if (scene_viewer)
-		++(scene_viewer->access_count);
-	return scene_viewer;
+	{
+		return scene_viewer->access();
+	}
+	return nullptr;
 }
 
 int DEACCESS(Scene_viewer)(struct Scene_viewer **scene_viewer_address)
 {
-	//Do nothing as the scene viewer removes itself from the package list
-	*scene_viewer_address = (struct Scene_viewer *)NULL;
-	return(1);
+	if (scene_viewer_address)
+	{
+		cmzn_sceneviewer::deaccess(*scene_viewer_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 DECLARE_LIST_FUNCTIONS(Scene_viewer)
@@ -3203,8 +3217,7 @@ struct Scene_viewer *create_Scene_viewer_from_module(
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the module list */
-			ADD_OBJECT_TO_LIST(Scene_viewer)(cmzn_sceneviewer_access(scene_viewer),
-				sceneviewermodule->scene_viewer_list);
+			ADD_OBJECT_TO_LIST(Scene_viewer)(scene_viewer, sceneviewermodule->scene_viewer_list);
 		}
 		scene_viewer->module = sceneviewermodule;
 	}
@@ -4549,6 +4562,23 @@ exact plane isn't defined as a clip plane.
 	return (return_code);
 } /* Scene_viewer_remove_clip_plane */
 
+cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id scene_viewer)
+{
+	if (scene_viewer)
+		++(scene_viewer->access_count);
+	return scene_viewer;
+}
+
+int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *sceneviewer_address)
+{
+	if (sceneviewer_address)
+	{
+		cmzn_sceneviewer::deaccess(*sceneviewer_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 	cmzn_sceneviewer_id sceneviewer)
 {
@@ -5225,35 +5255,14 @@ enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	return CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID;
 }
 
-int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
+int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_transparency_mode transparency_mode)
 {
-	int return_code = 0;
-
-	if (scene_viewer&&((CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)))
+	if (sceneviewer)
 	{
-		return_code=1;
-		if (CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)
-		{
-			if (!order_independent_capable())
-			{
-				/* If we can't do it don't change */
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			if (scene_viewer->transparency_mode!=transparency_mode)
-			{
-				scene_viewer->transparency_mode=transparency_mode;
-				scene_viewer->setChangedRepaint();
-			}
-		}
+		return sceneviewer->setTransparencyMode(transparency_mode);
 	}
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scene_viewer)
@@ -6858,48 +6867,6 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 	}
 
 	return return_code;
-}
-
-int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *scene_viewer_id_address)
-/*******************************************************************************
-LAST MODIFIED : 4 September 2007
-
-DESCRIPTION :
-Closes the scene_viewer.
-==============================================================================*/
-{
-	/* The normal destroy will call the Scene_viewer_module callback
-		to remove it from the module */
-	int return_code = 0;
-	cmzn_sceneviewer_id sceneviewer = 0;
-	if (scene_viewer_id_address &&
-		(0 != (sceneviewer = (cmzn_sceneviewer_id)(*scene_viewer_id_address))))
-	{
-		sceneviewer->access_count--;
-		if ((sceneviewer->access_count == 1) && sceneviewer->module)
-		{
-			REMOVE_OBJECT_FROM_LIST(Scene_viewer)(sceneviewer,
-				sceneviewer->module->scene_viewer_list);
-			sceneviewer->module = 0;
-			sceneviewer->access_count--;
-		}
-		if (sceneviewer->access_count <= 0)
-		{
-			return_code = DESTROY(Scene_viewer)(scene_viewer_id_address);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*scene_viewer_id_address = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewerinput_destroy.  Invalid argument(s)");
-	}
-
-	return (return_code);
 }
 
 double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id sceneviewer)

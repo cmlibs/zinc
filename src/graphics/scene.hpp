@@ -14,6 +14,7 @@ FILE : scene.h
 #include <list>
 #include <map>
 #include <string>
+#include <vector>
 #include "opencmiss/zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "general/manager.h"
@@ -525,11 +526,13 @@ enum cmzn_streaminformation_scene_io_data_type
 char *cmzn_streaminformation_scene_io_data_type_enum_to_string(
 	enum cmzn_streaminformation_scene_io_data_type mode);
 
+/** @param outputStringsRef  Reference to vector of strings to fill with the output strings.
+ * Client must ensure this exists through the lifetime of the returned object. */
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *filename,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
-	int *number_of_entries, std::string **output_string,
+	int *number_of_entries, std::vector<std::string>& outputStringsRef,
 	int morphColours, int morphNormals, int morphVertices,
 	int numberOfFiles, char **file_names, int isInline);
 

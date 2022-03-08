@@ -434,8 +434,9 @@ PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_field);
  * from <field_list>. Returns 1 (true) if there is either no such field in the
  * list or the two fields return true for FE_fields::compareBasicDefinition(),
  * otherwise returns 0 (false).
+ * Also returns 0 if field has mesh location value type but no host mesh.
  */
-int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
+int FE_field_can_be_merged(struct FE_field *field, void *field_list_void);
 
 /**
  * Return true if any basis functions used by the field is non-linear i.e.

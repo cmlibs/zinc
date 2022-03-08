@@ -257,6 +257,30 @@ ZINC_API int cmzn_sceneviewer_set_viewport_size(cmzn_sceneviewer_id sceneviewer,
 	int width, int height);
 
 /**
+ * Convert enumeration name string into value if it exactly matches name for a
+ * member of the enum.
+ * @see cmzn_sceneviewer_projection_mode_enum_to_string
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_sceneviewer_projection_mode
+	cmzn_sceneviewer_projection_mode_enum_from_string(const char *name);
+
+/**
+ * Return allocated string representing the enumerated value.
+ * The name contains only the unique part of the enumeration, e.g.
+ * "PERSPECTIVE", not "PROJECTION_MODE_PERSPECTIVE".
+ * INVALID or undefined values return a null string.
+ *
+ * @param mode  Enumerated value to convert into string.
+ * @return  On success, allocated string containing the enumerated value name
+ * which caller must free with cmzn_deallocate, or null string on failure.
+ */
+ZINC_API char *cmzn_sceneviewer_projection_mode_enum_to_string(
+	enum cmzn_sceneviewer_projection_mode mode);
+
+/**
  * Gets the projection mode - parallel/perspective - of the scene viewer.
  *
  * @param sceneviewer  The scene viewer to query.
@@ -819,20 +843,45 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewe
 ZINC_API int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address);
 
 /**
+ * Convert enumeration name string into value if it exactly matches name for a
+ * member of the enum.
+ * @see cmzn_sceneviewer_transparency_mode_enum_to_string
+ *
+ * @param name  Enumeration name string.
+ * @return  Enumeration value or INVALID if not found.
+ */
+ZINC_API enum cmzn_sceneviewer_transparency_mode
+	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *name);
+
+/**
+ * Return allocated string representing the enumerated value.
+ * The name contains only the unique part of the enumeration, e.g.
+ * "ORDER_INDEPENDENT", not "TRANSPARENCY_MODE_ORDER_INDEPENDENT".
+ * INVALID or undefined values return a null string.
+ *
+ * @param mode  Enumerated value to convert into string.
+ * @return  On success, allocated string containing the enumerated value name
+ * which caller must free with cmzn_deallocate, or null string on failure.
+ */
+ZINC_API char *cmzn_sceneviewer_transparency_mode_enum_to_string(
+	enum cmzn_sceneviewer_transparency_mode mode);
+
+/**
  * Get the transparency_mode of the scene viewer. In fast transparency mode,
  * the scene is drawn as it is, with depth buffer writing even for semi-transparent
  * objects. In slow transparency mode, opaque objects are rendered first, then
  * semi-transparent objects are rendered without writing the depth buffer. Hence,
  * you can even see through the first semi-transparent surface drawn.
+ * In order independent transparency mode, rendering is done from back to front
+ * with depth-peeling, up to the number of transparency layers.
  *
  * @see cmzn_sceneviewer_transparency_mode
  * @see cmzn_sceneviewer_set_transparency_mode
+ * @see cmzn_sceneviewer_set_transparency_layers
  *
  * @param sceneviewer  Handle to the scene viewer.
- *
- * @return  transparency_mode set for this sceneviewer.
- *   CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT if failed or
- *   mode is not set correctly
+ * @return  transparency_mode set for this sceneviewer, or INVALID if bad
+ * argument.
  */
 ZINC_API enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	cmzn_sceneviewer_id sceneviewer);

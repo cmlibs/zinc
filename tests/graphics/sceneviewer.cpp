@@ -16,6 +16,8 @@
 #include <opencmiss/zinc/light.hpp>
 #include <opencmiss/zinc/sceneviewer.hpp>
 
+#include "utilities/fileio.hpp"
+#include "utilities/testenum.hpp"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -472,6 +474,7 @@ void checkSceneviewerReadDescription(Sceneviewer& sv)
 	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PARALLEL, sv.getProjectionMode());
 
 	EXPECT_EQ(Sceneviewer::TRANSPARENCY_MODE_SLOW, sv.getTransparencyMode());
+	EXPECT_EQ(5, sv.getTransparencyLayers());
 
 	double value;
 	EXPECT_DOUBLE_EQ(0.3, value = sv.getViewAngle());
@@ -505,31 +508,19 @@ TEST(ZincSceneviewer, description_io)
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
-	void *buffer = 0;
-	long length;
-	FILE * f = fopen (TestResources::getLocation(TestResources::SCENEVIEWER_DESCRIPTION_JSON_RESOURCE), "rb");
-	if (f)
-	{
-	  fseek (f, 0, SEEK_END);
-	  length = ftell (f);
-	  fseek (f, 0, SEEK_SET);
-	  buffer = malloc (length);
-	  if (buffer)
-	  {
-	    fread (buffer, 1, length, f);
-	  }
-	  fclose (f);
-	}
+	char *stringBuffer = readFileToString(TestResources::getLocation(TestResources::SCENEVIEWER_DESCRIPTION_JSON_RESOURCE));
+	EXPECT_TRUE(stringBuffer != nullptr);
 
-	EXPECT_TRUE(buffer != 0);
-	EXPECT_EQ(CMZN_OK, sv.readDescription((char *)buffer));
+	EXPECT_EQ(CMZN_OK, sv.readDescription(stringBuffer));
 
-	free(buffer);
+	free(stringBuffer);
 
 	checkSceneviewerReadDescription(sv);
 
 	char *writeBuffer = sv.writeDescription();
 	EXPECT_TRUE(writeBuffer != 0);
+
+	sv = Sceneviewer();
 
 	Sceneviewer sv2 = svModule.createSceneviewer(
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
@@ -717,4 +708,16 @@ TEST(ZincSceneviewermodule, defaultBackgroundColour)
 	EXPECT_DOUBLE_EQ(newColour4[1], colour4[1]);
 	EXPECT_DOUBLE_EQ(newColour4[2], colour4[2]);
 	EXPECT_DOUBLE_EQ(newColour4[3], colour4[3]);
+}
+
+TEST(ZincSceneviewer, ProjectionModeEnum)
+{
+	const char *enumNames[3] = { nullptr, "PARALLEL", "PERSPECTIVE" };
+	testEnum(3, enumNames, Sceneviewer::ProjectionModeEnumToString, Sceneviewer::ProjectionModeEnumFromString);
+}
+
+TEST(ZincSceneviewer, TransparencyModeEnum)
+{
+	const char *enumNames[4] = { nullptr, "FAST", "SLOW", "ORDER_INDEPENDENT" };
+	testEnum(4, enumNames, Sceneviewer::TransparencyModeEnumToString, Sceneviewer::TransparencyModeEnumFromString);
 }

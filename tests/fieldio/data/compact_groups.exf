@@ -1,0 +1,90 @@
+EX Version: 3
+Region: /
+!#nodeset nodes
+Define node template: node1
+Shape. Dimension=0
+#Fields=0
+Node template: node1
+Node: 1
+Node: 2
+Node: 3
+Node: 4
+Node: 5
+Node: 6
+Node: 7
+Node: 8
+Node: 9
+Node: 10
+Node: 11
+Node: 12
+Node: 13
+Node: 14
+Node: 15
+Node: 16
+Node: 17
+Node: 18
+Node: 19
+Node: 20
+Node: 21
+Node: 22
+Node: 23
+Node: 24
+Node: 25
+Node: 26
+Node: 27
+Node: 28
+Node: 29
+Node: 30
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Define element template: element1
+Shape. Dimension=1, line
+#Scale factor sets=0
+#Nodes=0
+#Fields=0
+Element template: element1
+Element: 1
+Element: 2
+Element: 3
+Element: 4
+Element: 5
+Element: 6
+Element: 7
+Element: 8
+Element: 9
+Element: 10
+Element: 11
+Element: 12
+Element: 13
+Element: 14
+Element: 15
+Element: 16
+Element: 17
+Element: 18
+Element: 19
+Element: 20
+Element: 21
+Element: 22
+Element: 23
+Element: 24
+Element: 25
+Element: 26
+Element: 27
+Element: 28
+Element: 29
+Element: 30
+Group name: all
+!#nodeset nodes
+Node group:
+1..30
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Element group:
+1..30
+Group name: part
+!#nodeset nodes
+Node group:
+1..2,4,6..7,10..14,16..18,20,
+22,24,26..28,30
+!#mesh mesh1d, dimension=1, nodeset=nodes
+Element group:
+1..2,4,6..7,10..14,16..18,20,
+22,24,26..28,30

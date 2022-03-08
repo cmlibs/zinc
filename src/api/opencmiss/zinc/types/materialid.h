@@ -89,4 +89,51 @@ enum cmzn_material_attribute
 		*/
 };
 
+/**
+ * Bit flags summarising changes to a material or materials in the material module.
+ */
+enum cmzn_material_change_flag
+{
+	CMZN_MATERIAL_CHANGE_FLAG_NONE = 0,
+	/*!< material(s) not changed */
+	CMZN_MATERIAL_CHANGE_FLAG_ADD = 1,
+	/*!< one or more materials added */
+	CMZN_MATERIAL_CHANGE_FLAG_REMOVE = 2,
+	/*!< one or more materials removed */
+	CMZN_MATERIAL_CHANGE_FLAG_IDENTIFIER = 4,
+	/*!< material identifier changed */
+	CMZN_MATERIAL_CHANGE_FLAG_DEFINITION = 8,
+	/*!< change to material attributes other than identifier. */
+	CMZN_MATERIAL_CHANGE_FLAG_FULL_RESULT = 16,
+	/*!< all resultant values of material changed. */
+	CMZN_MATERIAL_CHANGE_FLAG_FINAL = 32768
+	/*!< final notification: owning material module i.e. material module
+	 * has been destroyed */
+};
+
+/**
+ * Type for passing logical OR of #cmzn_material_change_flag
+ */
+typedef int cmzn_material_change_flags;
+
+/**
+ * @brief Manages individual user notification of changes with a material module.
+ *
+ * Manages individual user notification of changes with a material module.
+ */
+struct cmzn_materialmodulenotifier;
+typedef struct cmzn_materialmodulenotifier *cmzn_materialmodulenotifier_id;
+
+/**
+ * @brief Information about changes to materials in the material module.
+ *
+ * Information about changes to materials in the material module,
+ * sent with each callback from the materialmodule notifier.
+ */
+struct cmzn_materialmoduleevent;
+typedef struct cmzn_materialmoduleevent *cmzn_materialmoduleevent_id;
+
+typedef void(*cmzn_materialmodulenotifier_callback_function)(
+	cmzn_materialmoduleevent_id event, void *client_data);
+
 #endif

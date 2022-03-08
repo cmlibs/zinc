@@ -1081,22 +1081,26 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	return (return_code);
 }
 
-struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
-	struct FE_region *fe_region, int number_of_times, const FE_value *times)
+FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
+	FE_region *fe_region, int number_of_times, const FE_value *times)
 {
 	if (fe_region)
+	{
 		return get_FE_time_sequence_matching_time_series(fe_region->fe_time, number_of_times, times);
-	return 0;
+	}
+	return nullptr;
 }
 
-struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
-	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
-	struct FE_time_sequence *time_sequence_two)
+FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
+	FE_region *fe_region, FE_time_sequence *time_sequence_one,
+	FE_time_sequence *time_sequence_two)
 {
 	if (fe_region)
+	{
 		return get_FE_time_sequence_merging_two_time_series(fe_region->fe_time,
 			time_sequence_one, time_sequence_two);
-	return 0;
+	}
+	return nullptr;
 }
 
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
@@ -1195,7 +1199,7 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 	if (target_fe_region)
 	{
 		// check fields of the same name have compatible definitions
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged_into_list,
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
 			(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
 		{
 			display_message(ERROR_MESSAGE,

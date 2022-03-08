@@ -415,6 +415,16 @@ public:
 		return cmzn_sceneviewer_set_perturb_lines_flag(id, value);
 	}
 
+	static ProjectionMode ProjectionModeEnumFromString(const char *name)
+	{
+		return static_cast<ProjectionMode>(cmzn_sceneviewer_projection_mode_enum_from_string(name));
+	}
+
+	static char *ProjectionModeEnumToString(ProjectionMode mode)
+	{
+		return cmzn_sceneviewer_projection_mode_enum_to_string(static_cast<cmzn_sceneviewer_projection_mode>(mode));
+	}
+
 	ProjectionMode getProjectionMode() const
 	{
 		return static_cast<ProjectionMode>(cmzn_sceneviewer_get_projection_mode(id));
@@ -495,6 +505,16 @@ public:
 	int viewAll()
 	{
 		return cmzn_sceneviewer_view_all(id);
+	}
+
+	static TransparencyMode TransparencyModeEnumFromString(const char *name)
+	{
+		return static_cast<TransparencyMode>(cmzn_sceneviewer_transparency_mode_enum_from_string(name));
+	}
+
+	static char *TransparencyModeEnumToString(TransparencyMode mode)
+	{
+		return cmzn_sceneviewer_transparency_mode_enum_to_string(static_cast<cmzn_sceneviewer_transparency_mode>(mode));
 	}
 
 	TransparencyMode getTransparencyMode() const

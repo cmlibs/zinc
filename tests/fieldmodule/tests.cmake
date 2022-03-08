@@ -19,6 +19,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldapply.cpp
 	${CURRENT_TEST}/fieldarithmeticoperators.cpp
 	${CURRENT_TEST}/fieldassignment.cpp
+	${CURRENT_TEST}/fieldconditional.cpp
 	${CURRENT_TEST}/fieldconstant.cpp
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp
@@ -34,6 +35,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/nodesandelements.cpp
 	${CURRENT_TEST}/numerical_operators.cpp
 	${CURRENT_TEST}/timesequence.cpp
+	utilities/fileio.cpp
 	)
 
 SET(FIELDMODULE_EXNODE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/nodes.exnode")

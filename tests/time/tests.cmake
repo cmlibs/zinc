@@ -8,6 +8,7 @@ SET(CURRENT_TEST time)
 LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/time.cpp
+    utilities/fileio.cpp
     )
 
 SET(TIMEKEEPER_DESCRIPTION_JSON_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/timekeeper_description.json")

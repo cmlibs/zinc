@@ -219,7 +219,6 @@ cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 		return NULL;
 	FE_time_sequence *fe_timesequence = FE_region_get_FE_time_sequence_matching_series(
 		fieldmodule->region->get_FE_region(), number_of_times, times);
-	ACCESS(FE_time_sequence)(fe_timesequence);
 	return reinterpret_cast<cmzn_timesequence_id>(fe_timesequence);
 }
 
