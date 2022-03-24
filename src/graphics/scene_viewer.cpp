@@ -100,6 +100,11 @@ void cmzn_sceneviewer::deaccess(cmzn_sceneviewer*& sceneviewer)
 	}
 }
 
+void cmzn_sceneviewer::setRenderTimeout(double timeout)
+{
+    this->render_timeout = timeout;
+}
+
 int cmzn_sceneviewer::setBackgroundColourAlpha(double alpha)
 {
 	this->background_colour.alpha = alpha;
@@ -2115,7 +2120,7 @@ Scene_viewer_render_scene_in_viewport to access this function.
 			rendering_data.renderer->NDC_height = NDC_height;
 			rendering_data.renderer->NDC_left = NDC_left;
 			rendering_data.renderer->NDC_top = NDC_top;
-			GraphicsIncrementalBuild incrementalBuild;
+            GraphicsIncrementalBuild incrementalBuild(scene_viewer->render_timeout);
 			rendering_data.renderer->setIncrementalBuild(&incrementalBuild);
 			rendering_data.renderer->Scene_compile(scene_viewer->scene, scene_viewer->filter);
 
@@ -3089,6 +3094,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 				scene_viewer->clear_twice_flag = 1;
 #endif /* defined (WIN32_SYSTEM) */
 				scene_viewer->frame_count = 0;
+                scene_viewer->render_timeout = 1.0;
 
 				scene_viewer->scene = 0;
 				Scene_viewer_awaken(scene_viewer);
@@ -4577,6 +4583,34 @@ int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *sceneviewer_address)
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_sceneviewer_get_render_timeout(cmzn_sceneviewer_id sceneviewer)
+{
+    double render_timeout = 0.0;
+    if (sceneviewer)
+    {
+        render_timeout = sceneviewer->getRenderTimeout();
+    }
+    else
+    {
+        display_message(ERROR_MESSAGE,
+            "Scene_viewer_get_render_timeout.  Invalid argument(s)");
+    }
+
+    return render_timeout;
+}
+
+int cmzn_sceneviewer_set_render_timeout(cmzn_sceneviewer_id sceneviewer, double timeout)
+{
+    int result = CMZN_ERROR_ARGUMENT;
+    if (sceneviewer)
+    {
+        sceneviewer->setRenderTimeout(timeout);
+        result = CMZN_OK;
+    }
+
+    return result;
 }
 
 enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(

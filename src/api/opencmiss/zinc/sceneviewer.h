@@ -50,6 +50,9 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id scenevi
  */
 ZINC_API int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *sceneviewer_address);
 
+ZINC_API double cmzn_sceneviewer_get_render_timeout(cmzn_sceneviewer_id sceneviewer);
+ZINC_API int cmzn_sceneviewer_set_render_timeout(cmzn_sceneviewer_id sceneviewer, double timeout);
+
 /**
  * Gets the mouse and keyboard interaction mode of the scene viewer.
  * @see cmzn_sceneviewer_interact_mode
