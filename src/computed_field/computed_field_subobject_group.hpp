@@ -289,7 +289,7 @@ public:
 
 	};
 
-	class Computed_field_element_group : public Computed_field_subobject_group
+	class Computed_field_element_group : public Computed_field_subobject_group, public FE_mesh_group
 	{
 	private:
 		FE_mesh *fe_mesh;
@@ -301,10 +301,12 @@ public:
 			fe_mesh(fe_mesh_in->access()),
 			labelsGroup(cmzn::Access(labelsGroupIn))
 		{
+			this->fe_mesh->addGroup(this);
 		}
 
 		~Computed_field_element_group()
 		{
+			this->fe_mesh->removeGroup(this);
 			cmzn::Deaccess(this->labelsGroup);
 			FE_mesh::deaccess(this->fe_mesh);
 		}
@@ -403,6 +405,15 @@ public:
 		/** ensure parent element's faces are not in element group */
 		int removeElementFaces(cmzn_element_id parent);
 
+		/** notification from parent FE_mesh that all elements have been destroyed: clear this group */
+		virtual void destroyedAllElements();
+
+		/** notification from parent FE_mesh that an element has been destroyed: remove from this group */
+		virtual void destroyedElement(DsLabelIndex destroyedElementIndex);
+
+		/** notification from parent FE_mesh that a group of elements has been destroyed: remove from this group */
+		virtual void destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup);
+
 	private:
 
 		/** Adds faces and nodes of element to related subobject groups.
@@ -464,8 +475,6 @@ public:
 			this->field->setChanged();
 		}
 
-		virtual int check_dependency();
-
 		bool isElementCompatible(cmzn_element_id element)
 		{
 			return this->fe_mesh->containsElement(element);
@@ -491,7 +500,7 @@ public:
 		}
 	};
 
-	class Computed_field_node_group : public Computed_field_subobject_group
+	class Computed_field_node_group : public Computed_field_subobject_group, public FE_nodeset_group
 	{
 	private:
 		FE_nodeset *fe_nodeset;
@@ -503,10 +512,12 @@ public:
 			fe_nodeset(fe_nodeset_in->access()),
 			labelsGroup(cmzn::Access(labelsGroupIn))
 		{
+			this->fe_nodeset->addGroup(this);
 		}
 
 		~Computed_field_node_group()
 		{
+			this->fe_nodeset->removeGroup(this);
 			cmzn::Deaccess(this->labelsGroup);
 			FE_nodeset::deaccess(this->fe_nodeset);
 		}
@@ -611,6 +622,15 @@ public:
 			return this->fe_nodeset->createLabelsGroup();
 		}
 
+		/** notification from parent FE_nodeset that all nodes have been destroyed: clear this group */
+		virtual void destroyedAllNodes();
+
+		/** notification from parent FE_nodeset that a node has been destroyed: remove from this group */
+		virtual void destroyedNode(DsLabelIndex destroyedNodeIndex);
+
+		/** notification from parent FE_nodeset that a group of nodes has been destroyed: remove from this group */
+		virtual void destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup);
+
 	private:
 
 		Computed_field_core* copy()
@@ -653,8 +673,6 @@ public:
 		{
 			return !(reinterpret_cast<FE_nodeset*>(fe_nodeset_void)->containsNode(node));
 		}
-
-		virtual int check_dependency();
 
 		bool isNodeCompatible(cmzn_node_id node)
 		{

@@ -127,6 +127,7 @@ ZINC_API cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
 /**
  * Destroy all nodes in nodeset, also removing them from any related groups.
  * Any nodes in use by elements are prevented from being destroyed.
+ * All affected node iterators for the nodeset or groups are invalidated.
  * All handles to the destroyed nodes become invalid.
  *
  * @param nodeset  Handle to nodeset to destroy nodes from.
@@ -139,6 +140,7 @@ ZINC_API int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset);
 /**
  * Destroy the node if it is in the nodeset and not in use by elements.
  * Removes node from any related groups it is in.
+ * All affected node iterators for the nodeset or groups are invalidated.
  * All handles to the destroyed node become invalid.
  *
  * @param nodeset  Handle to the nodeset whose node is to be destroyed.
@@ -153,6 +155,7 @@ ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id nod
  * Destroy all nodes in the nodeset for which the conditional field is true i.e.
  * non-zero valued. These nodes are removed from any related groups they are in.
  * Nodes are only removed if not in use by elements in region.
+ * All affected node iterators for the nodeset or groups are invalidated.
  * All handles to destroyed nodes become invalid.
  * Note that group and node_group fields are valid conditional fields.
  *

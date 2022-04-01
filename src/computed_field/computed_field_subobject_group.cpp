@@ -621,6 +621,36 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 	return return_code;
 }
 
+void Computed_field_element_group::destroyedAllElements()
+{
+	this->labelsGroup->clear();
+	this->invalidateIterators();
+	change_detail.changeRemove();
+	this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+}
+
+void Computed_field_element_group::destroyedElement(DsLabelIndex destroyedElementIndex)
+{
+	if (this->labelsGroup->hasIndex(destroyedElementIndex))
+	{
+		this->labelsGroup->setIndex(destroyedElementIndex, false);
+		this->invalidateIterators();
+		change_detail.changeRemove();
+		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+	}
+}
+
+void Computed_field_element_group::destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup)
+{
+	const int numberRemoved = this->labelsGroup->removeGroup(destroyedElementLabelsGroup);
+	if (numberRemoved > 0)
+	{
+		this->invalidateIterators();
+		change_detail.changeRemove();
+		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+	}
+}
+
 int Computed_field_element_group::removeElementFacesRecursive(
 	Computed_field_element_group& parentElementGroup, DsLabelIndex parentIndex)
 {
@@ -694,50 +724,6 @@ int Computed_field_element_group::evaluate(cmzn_fieldcache& cache, FieldValueCac
 	}
 	return 0;
 };
-
-/** remove elements that have been removed from master mesh */
-int Computed_field_element_group::check_dependency()
-{
-	if (field)
-	{
-		DsLabelsChangeLog *elementChangeLog = this->fe_mesh->getChangeLog();
-		if (elementChangeLog)
-		{
-			const int changeSummary = elementChangeLog->getChangeSummary();
-			if (changeSummary & DS_LABEL_CHANGE_TYPE_REMOVE)
-			{
-				const int oldSize = this->labelsGroup->getSize();
-				if (0 < oldSize)
-				{
-					// special handling for zero mesh size because labels will have been cleared
-					// plus more efficient to clear group
-					if (0 == this->fe_mesh->getSize())
-					{
-						this->labelsGroup->clear();
-					}
-					else
-					{
-						DsLabelIndex index = -1; // DS_LABEL_INDEX_INVALID
-						while (this->labelsGroup->incrementIndex(index))
-						{
-							if (this->fe_mesh->getElementIdentifier(index) == DS_LABEL_IDENTIFIER_INVALID)
-								this->labelsGroup->setIndex(index, false);
-						}
-					}
-					const int newSize = this->labelsGroup->getSize();
-					if (newSize != oldSize)
-					{
-						this->invalidateIterators();
-						change_detail.changeRemove();
-						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
-					}
-				}
-			}
-		}
-		return field->manager_change_status;
-	}
-	return MANAGER_CHANGE_NONE(Computed_field);
-}
 
 Computed_field_element_group *Computed_field_element_group::getConditionalElementGroup(
 	cmzn_field *conditionalField, bool &isEmptyGroup) const
@@ -1038,6 +1024,36 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 	return return_code;
 };
 
+void Computed_field_node_group::destroyedAllNodes()
+{
+	this->labelsGroup->clear();
+	this->invalidateIterators();
+	change_detail.changeRemove();
+	this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+}
+
+void Computed_field_node_group::destroyedNode(DsLabelIndex destroyedNodeIndex)
+{
+	if (this->labelsGroup->hasIndex(destroyedNodeIndex))
+	{
+		this->labelsGroup->setIndex(destroyedNodeIndex, false);
+		this->invalidateIterators();
+		change_detail.changeRemove();
+		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+	}
+}
+
+void Computed_field_node_group::destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup)
+{
+	const int numberRemoved = this->labelsGroup->removeGroup(destroyedNodeLabelsGroup);
+	if (numberRemoved > 0)
+	{
+		this->invalidateIterators();
+		change_detail.changeRemove();
+		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+	}
+}
+
 int Computed_field_node_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	const Field_location_node *node_location = cache.get_location_node();
@@ -1050,50 +1066,6 @@ int Computed_field_node_group::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	}
 	return 0;
 };
-
-/** remove nodes that have been removed from master nodeset */
-int Computed_field_node_group::check_dependency()
-{
-	if (field)
-	{
-		DsLabelsChangeLog *nodeChangeLog = this->fe_nodeset->getChangeLog();
-		if (nodeChangeLog)
-		{
-			const int changeSummary = nodeChangeLog->getChangeSummary();
-			if (changeSummary & DS_LABEL_CHANGE_TYPE_REMOVE)
-			{
-				const int oldSize = this->labelsGroup->getSize();
-				if (0 < oldSize)
-				{
-					// special handling for zero nodeset size because labels will have been cleared
-					// plus more efficient to clear group
-					if (0 == this->fe_nodeset->getSize())
-					{
-						this->labelsGroup->clear();
-					}
-					else
-					{
-						DsLabelIndex index = -1; // DS_LABEL_INDEX_INVALID
-						while (this->labelsGroup->incrementIndex(index))
-						{
-							if (this->fe_nodeset->getNodeIdentifier(index) == DS_LABEL_IDENTIFIER_INVALID)
-								this->labelsGroup->setIndex(index, false);
-						}
-					}
-					const int newSize = this->labelsGroup->getSize();
-					if (newSize != oldSize)
-					{
-						this->invalidateIterators();
-						change_detail.changeRemove();
-						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
-					}
-				}
-			}
-		}
-		return field->manager_change_status;
-	}
-	return MANAGER_CHANGE_NONE(Computed_field);
-}
 
 Computed_field_node_group *Computed_field_node_group::getConditionalNodeGroup(
 	cmzn_field *conditionalField, bool &isEmptyGroup) const

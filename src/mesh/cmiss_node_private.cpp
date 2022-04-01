@@ -670,7 +670,6 @@ public:
 		return CMZN_ERROR_GENERAL;
 	}
 
-
 	cmzn_node_id findNodeByIdentifier(int identifier) const
 	{
 		cmzn_node_id node = 0;

@@ -346,6 +346,18 @@ public:
 	}
 };
 
+/** Abstract base class for an object holding nodes owned by an FE_nodeset.
+ * Interface for notifying when nodes are destroyed */
+class FE_nodeset_group
+{
+public:
+	virtual void destroyedAllNodes() = 0;
+
+	virtual void destroyedNode(DsLabelIndex destroyedNodeIndex) = 0;
+
+	virtual void destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup) = 0;
+};
+
 /**
  * A set of nodes/datapoints in the FE_region.
  */
@@ -372,6 +384,12 @@ class FE_nodeset
 	// list of node iterators to invalidate when nodeset destroyed
 	cmzn_nodeiterator *activeNodeIterators;
 
+	// list of objects containing groups of nodes owned by this FE_nodeset
+	// to notify when nodes are destroyed
+	std::list<FE_nodeset_group *> groups;
+	// when nodes are destroyed, store their indexes to notify groups
+	DsLabelsGroup *destroyedNodeLabelsGroup;
+
 	int access_count;
 
 	FE_nodeset(FE_region *fe_region);
@@ -380,7 +398,11 @@ class FE_nodeset
 
 	void createChangeLog();
 
-	int remove_FE_node_private(cmzn_node *node);
+	void beginDestroyNodes();
+
+	void destroyNodePrivate(DsLabelIndex nodeIndex);
+
+	int endDestroyNodes();
 
 	struct Merge_FE_node_external_data;
 	int merge_FE_node_external(cmzn_node *node,
@@ -555,6 +577,18 @@ public:
 	int merge_FE_node_template(struct cmzn_node *destination, FE_node_template *fe_node_template);
 
 	int undefineFieldAtNode(struct cmzn_node *node, struct FE_field *fe_field);
+
+	/** Add group for notification when nodes destroyed */
+	void addGroup(FE_nodeset_group *group)
+	{
+		this->groups.push_back(group);
+	}
+
+	/** Add group for notification when nodes destroyed */
+	void removeGroup(FE_nodeset_group *group)
+	{
+		this->groups.remove(group);
+	}
 
 	int destroyNode(struct cmzn_node *node);
 

@@ -177,6 +177,7 @@ ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
 
 /**
  * Destroy all elements in mesh, also removing them from any related groups.
+ * All affected element iterators for the mesh or groups are invalidated.
  * All handles to the destroyed element become invalid.
  *
  * @param mesh  Handle to mesh to destroy elements from.
@@ -187,6 +188,7 @@ ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
 /**
  * Destroy the element if it is in the mesh. Removes element from any related
  * groups it is in. All handles to the destroyed element become invalid.
+ * All affected element iterators for the mesh or groups are invalidated.
  *
  * @param mesh  Handle to the mesh whose element is to be destroyed.
  * @param element  The element to destroy.
@@ -199,6 +201,7 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * Destroy all elements in the mesh for which the conditional field is true i.e.
  * non-zero valued in element. These elements are removed from any related
  * groups they are in. All handles to removed elements become invalid.
+ * All affected element iterators for the mesh or groups are invalidated.
  * Results are undefined if conditional field is not constant over element.
  * Note that group and element_group fields are valid conditional fields.
  *

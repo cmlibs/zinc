@@ -707,6 +707,18 @@ public:
 
 };
 
+/** Abstract base class for an object holding elements owned by an FE_mesh.
+ * Interface for notifying when elements are destroyed */
+class FE_mesh_group
+{
+public:
+	virtual void destroyedAllElements() = 0;
+
+	virtual void destroyedElement(DsLabelIndex destroyedElementIndex) = 0;
+
+	virtual void destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup) = 0;
+};
+
 /**
  * A set of elements in the FE_region.
  */
@@ -856,6 +868,12 @@ private:
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
+	// list of objects containing groups of elements owned by this FE_mesh
+	// to notify when elements are destroyed
+	std::list<FE_mesh_group *> groups;
+	// when elements are destroyed, store their indexes to notify groups
+	DsLabelsGroup *destroyedElementLabelsGroup;
+
 	mutable int access_count;
 
 private:
@@ -868,7 +886,13 @@ private:
 
 	int findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex);
 
-	int removeElementPrivate(DsLabelIndex elementIndex);
+	void cleanupElementPrivate(DsLabelIndex elementIndex);
+
+	void beginDestroyElements();
+
+	void destroyElementPrivate(DsLabelIndex elementIndex);
+
+	int endDestroyElements();
 
 	/** @param  elementIndex  Valid element index >= 0. Not checked.
 	  * @return  Index of ElementShapeFaces for element in mesh, starting at 0.
@@ -893,8 +917,6 @@ private:
 	bool setElementShapeFromElementTemplate(DsLabelIndex elementIndex, FE_element_template *element_template);
 
 	bool mergeFieldsFromElementTemplate(DsLabelIndex elementIndex, FE_element_template *elementTemplate);
-
-	void destroyElementPrivate(DsLabelIndex elementIndex);
 
 	DsLabelIndex createElement(DsLabelIdentifier identifier);
 
@@ -1325,6 +1347,18 @@ public:
 	void end_define_faces();
 
 	int define_faces();
+
+	/** Add group for notification when elements destroyed */
+	void addGroup(FE_mesh_group *group)
+	{
+		this->groups.push_back(group);
+	}
+
+	/** Add group for notification when elements destroyed */
+	void removeGroup(FE_mesh_group *group)
+	{
+		this->groups.remove(group);
+	}
 
 	int destroyElement(cmzn_element *element);
 

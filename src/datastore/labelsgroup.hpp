@@ -85,9 +85,16 @@ public:
 		return values.getBool(/*index*/index);
 	}
 
+	/** Remove indexes from group which are in otherGroup.
+	 * @param otherGroup  A labels group for the same underlying set.
+	 * @return  Number of indexes removed.
+	 */
+	int removeGroup(DsLabelsGroup& otherGroup);
+
 	/**
-	 * Ensure index is in the group.
+	 * Set whether index is in the group.
 	 * Be careful that index is for this labels.
+	 * @param inGroup  Boolean new status of index: true=in, false=out.
 	 * @return  CMZN_OK on success, CMZN_ALREADY_EXISTS if adding when already added,
 	 * CMZN_ERROR_NOT_FOUND if removing when already removed, any other error code on failure.
 	 */
