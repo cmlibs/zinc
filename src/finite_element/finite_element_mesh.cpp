@@ -3138,7 +3138,6 @@ int FE_mesh::destroyElement(cmzn_element *element)
  */
 int FE_mesh::destroyAllElements()
 {
-	int return_code = CMZN_OK;
 	FE_region_begin_change(fe_region);
 	this->beginDestroyElements();
 	// can't use an iterator as invalidated when element removed
@@ -3160,7 +3159,7 @@ int FE_mesh::destroyAllElements()
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	}
 	FE_region_end_change(fe_region);
-	return (this->labels.getSize() > 0) ? CMZN_ERROR_IN_USE : CMZN_OK;
+	return (this->labels.getSize() > 0) ? CMZN_ERROR_GENERAL : CMZN_OK;
 }
 
 /**
@@ -3185,7 +3184,7 @@ int FE_mesh::destroyElementsInGroup(DsLabelsGroup& labelsGroup)
 		this->fe_region->FE_field_all_change(CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 	}
 	FE_region_end_change(this->fe_region);
-	return (numberDestroyed < labelsGroup.getSize()) ? CMZN_ERROR_IN_USE : CMZN_OK;
+	return (numberDestroyed < labelsGroup.getSize()) ? CMZN_ERROR_GENERAL : CMZN_OK;
 }
 
 FieldDerivative *FE_mesh::getHigherFieldDerivative(const FieldDerivative& fieldDerivative)

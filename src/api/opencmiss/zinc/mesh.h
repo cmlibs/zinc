@@ -181,7 +181,7 @@ ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
  * All handles to the destroyed element become invalid.
  *
  * @param mesh  Handle to mesh to destroy elements from.
- * @return  Status CMZN_OK if all elements destroyed, any other value if failed.
+ * @return  Result OK if all elements destroyed, or any other error if failed.
  */
 ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
 
@@ -192,8 +192,7 @@ ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
  *
  * @param mesh  Handle to the mesh whose element is to be destroyed.
  * @param element  The element to destroy.
- * @return  Status CMZN_OK if element is successfully destroyed, any other
- * value if failed.
+ * @return  Result OK if element destroyed, or any other error if failed.
  */
 ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element);
 
@@ -203,12 +202,13 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * groups they are in. All handles to removed elements become invalid.
  * All affected element iterators for the mesh or groups are invalidated.
  * Results are undefined if conditional field is not constant over element.
- * Note that group and element_group fields are valid conditional fields.
+ * Note that group and element group fields are valid conditional fields.
  *
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be destroyed.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Result OK if all elements passing condition are destroyed, or any
+ * other error if failed.
  */
 ZINC_API int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
 	cmzn_field_id conditional_field);
