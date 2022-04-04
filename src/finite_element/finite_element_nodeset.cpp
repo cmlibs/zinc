@@ -951,7 +951,6 @@ int FE_nodeset::destroyNodesInGroup(DsLabelsGroup& labelsGroup)
 {
 	FE_region_begin_change(this->fe_region);
 	this->beginDestroyNodes();
-	DsLabelsGroup *destroyedNodeLabelsGroup = this->createLabelsGroup();
 	// can't use an iterator as invalidated when node removed
 	DsLabelIndex nodeIndex = -1; // DS_LABEL_INDEX_INVALID
 	while (labelsGroup.incrementIndex(nodeIndex))

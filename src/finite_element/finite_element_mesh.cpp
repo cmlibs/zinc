@@ -3141,7 +3141,6 @@ int FE_mesh::destroyAllElements()
 	FE_region_begin_change(fe_region);
 	this->beginDestroyElements();
 	// can't use an iterator as invalidated when element removed
-	const int oldSize = this->getSize();
 	const DsLabelIndex indexLimit = this->labels.getIndexSize();
 	const bool contiguous = this->labels.isContiguous();
 	for (DsLabelIndex elementIndex = 0; elementIndex < indexLimit; ++elementIndex)
