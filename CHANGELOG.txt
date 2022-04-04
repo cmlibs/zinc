@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.7.0
+Fix groups not immediately removing destoyed nodes or elements within begin/end change.
+
 v3.6.0
 Add material module change notifier.
 Add Sceneviewer enum to/from string name APIs. Serialise transparency layers.
