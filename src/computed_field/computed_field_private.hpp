@@ -615,8 +615,20 @@ public:
 		return this->coordinate_system;
 	}
 
-	/** @param notifyChange  Set to false to avoid change messages being sent */
-	void setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange=true);
+	/** Checks non-numerical fields are only able to have coordinate system type NOT_APPLICABLE.
+	 * @param notifyChange  Set to false to avoid change messages being sent.
+	 * @return  Result OK, or ERROR_ARGUMENT if invalid coordinate system for field. */
+	int setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange=true);
+
+	FE_value getCoordinateSystemFocus() const;
+
+	int setCoordinateSystemFocus(FE_value focus);
+
+	cmzn_field_coordinate_system_type getCoordinateSystemType() const;
+
+	/** @return  Result OK on success, or ERROR_ARGUMENT if coordinate system type
+	 * not valid for field e.g. non-numeric field may only have NOT_APPLICABLE set. */
+	int setCoordinateSystemType(cmzn_field_coordinate_system_type coordinateSystemType);
 
 	/** @param index  Index from 0 to number_of_source_fields - 1
 	 * @param notifyChange  Set to false to avoid change messages being sent */

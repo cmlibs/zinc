@@ -2,6 +2,7 @@ CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.7.0
 Fix groups not immediately removing destoyed nodes or elements within begin/end change.
+Fix enforce non-numeric fields have NOT_APPLICABLE coordinate system type.
 
 v3.6.0
 Add material module change notifier.

@@ -1511,7 +1511,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 		fe_region, fieldName, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system((value_type == FE_VALUE_VALUE) ? RECTANGULAR_CARTESIAN : NOT_APPLICABLE);
+		Coordinate_system coordinate_system(Value_type_is_non_numeric(value_type) ? NOT_APPLICABLE : RECTANGULAR_CARTESIAN);
 		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true, number_of_components,
