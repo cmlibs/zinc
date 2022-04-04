@@ -50,7 +50,32 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id scenevi
  */
 ZINC_API int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *sceneviewer_address);
 
+/**
+ * Get the target time limit for incrementally building graphics primitives
+ * from model structures before rendering in render scene.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Real-valued render timeout in units of seconds >= 0.0,
+ * or negative if disabled.
+ */
 ZINC_API double cmzn_sceneviewer_get_render_timeout(cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Set the target time limit for incrementally building graphics primitives
+ * from model structures before rendering in render scene. This is approximate:
+ * accuracy depends on the granularity with which the build can be interupted,
+ * either by a whole graphics or by element. When the timeout is reached, the
+ * graphics are rendered as-is and a new redraw is scheduled. This allows some
+ * user update and interaction while a long rebuild is in progress.
+ * The default render timeout is 1.0 seconds.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param timeout  Real-valued render timeout in units of seconds.
+ * 0.0 gives minimum rebuild time which is likely to perform poorly.
+ * A negative value disables incremental build forcing a full rebuild every
+ * time which can cause user delays but guarantees build completion.
+ * @return  Result OK on success, or ERROR_ARGUMENT if invalid sceneviewer.
+ */
 ZINC_API int cmzn_sceneviewer_set_render_timeout(cmzn_sceneviewer_id sceneviewer, double timeout);
 
 /**

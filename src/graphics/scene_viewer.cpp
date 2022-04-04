@@ -102,7 +102,13 @@ void cmzn_sceneviewer::deaccess(cmzn_sceneviewer*& sceneviewer)
 
 void cmzn_sceneviewer::setRenderTimeout(double timeout)
 {
-    this->render_timeout = timeout;
+	if (timeout != this->render_timeout)
+	{
+		this->render_timeout = timeout;
+		// this does not require a repaint, but a client may want to
+		// update this setting in a dialog
+		this->setChangedTransformOnly();
+	}
 }
 
 int cmzn_sceneviewer::setBackgroundColourAlpha(double alpha)
@@ -2120,8 +2126,12 @@ Scene_viewer_render_scene_in_viewport to access this function.
 			rendering_data.renderer->NDC_height = NDC_height;
 			rendering_data.renderer->NDC_left = NDC_left;
 			rendering_data.renderer->NDC_top = NDC_top;
-            GraphicsIncrementalBuild incrementalBuild(scene_viewer->render_timeout);
-			rendering_data.renderer->setIncrementalBuild(&incrementalBuild);
+			GraphicsIncrementalBuild *incrementalBuild = nullptr;
+			if (scene_viewer->render_timeout >= 0.0)
+			{
+				incrementalBuild = new GraphicsIncrementalBuild(scene_viewer->render_timeout);
+			}
+			rendering_data.renderer->setIncrementalBuild(incrementalBuild);
 			rendering_data.renderer->Scene_compile(scene_viewer->scene, scene_viewer->filter);
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
@@ -2359,9 +2369,15 @@ Scene_viewer_render_scene_in_viewport to access this function.
 			DESTROY(LIST(Scene_viewer_render_object))(&rendering_data.render_callstack);
 			delete rendering_data.renderer;
 
-			if (incrementalBuild.isMoreWorkToDo())
-				// request another redraw to build some more graphics
-				scene_viewer->scene->setChanged();
+			if (incrementalBuild)
+			{
+				if (incrementalBuild->isMoreWorkToDo())
+				{
+					// request another redraw to build some more graphics
+					scene_viewer->scene->setChanged();
+				}
+				delete incrementalBuild;
+			}
 		}
 		scene_viewer->frame_count++;
 	}
@@ -3094,7 +3110,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 				scene_viewer->clear_twice_flag = 1;
 #endif /* defined (WIN32_SYSTEM) */
 				scene_viewer->frame_count = 0;
-                scene_viewer->render_timeout = 1.0;
+				scene_viewer->render_timeout = 1.0;
 
 				scene_viewer->scene = 0;
 				Scene_viewer_awaken(scene_viewer);
@@ -4587,30 +4603,23 @@ int cmzn_sceneviewer_destroy(cmzn_sceneviewer_id *sceneviewer_address)
 
 double cmzn_sceneviewer_get_render_timeout(cmzn_sceneviewer_id sceneviewer)
 {
-    double render_timeout = 0.0;
-    if (sceneviewer)
-    {
-        render_timeout = sceneviewer->getRenderTimeout();
-    }
-    else
-    {
-        display_message(ERROR_MESSAGE,
-            "Scene_viewer_get_render_timeout.  Invalid argument(s)");
-    }
-
-    return render_timeout;
+	if (sceneviewer)
+	{
+		return sceneviewer->getRenderTimeout();
+	}
+	display_message(ERROR_MESSAGE, "cmzn_sceneviewer_get_render_timeout.  Invalid argument(s)");
+	return 0.0;
 }
 
 int cmzn_sceneviewer_set_render_timeout(cmzn_sceneviewer_id sceneviewer, double timeout)
 {
-    int result = CMZN_ERROR_ARGUMENT;
-    if (sceneviewer)
-    {
-        sceneviewer->setRenderTimeout(timeout);
-        result = CMZN_OK;
-    }
-
-    return result;
+	if (sceneviewer)
+	{
+		sceneviewer->setRenderTimeout(timeout);
+		return CMZN_OK;
+	}
+	display_message(ERROR_MESSAGE, "cmzn_sceneviewer_set_render_timeout.  Invalid argument(s)");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(

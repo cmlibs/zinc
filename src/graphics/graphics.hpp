@@ -285,6 +285,7 @@ struct cmzn_graphics_range
 class GraphicsIncrementalBuild
 {
 private:
+	double buildTimeout; // timeout in seconds for incremental build
 	clock_t startClock; // process clock ticks when this object created
 	clock_t clockLimit; // limit on work to do in incremental build, in clock units
 	bool moreWorkToDo; // set once increment done, but more work to do i.e. another increment needed
@@ -292,17 +293,18 @@ private:
 public:
 
 	/**
-	 * @param timeLimitIn  Target duration of incremental update, in seconds.
+	 * @param renderTimeoutIn  Target duration of incremental build update, in seconds >= 0.0.
 	 */
-	GraphicsIncrementalBuild(double timeLimitIn = 1.0) :
+	GraphicsIncrementalBuild(double buildTimeoutIn = 1.0) :
+		buildTimeout(buildTimeoutIn),
 		startClock(clock()),
-		clockLimit(static_cast<clock_t>(timeLimitIn*CLOCKS_PER_SEC)),
+		clockLimit(static_cast<clock_t>(buildTimeoutIn*CLOCKS_PER_SEC)),
 		moreWorkToDo(false)
 	{
-		if (timeLimitIn <= 0.0)
+		if (buildTimeoutIn < 0.0)
+		{
 			clockLimit = 0;
-		else if (clockLimit == 0)
-			clockLimit = 1; // ensure at least 1 clock unit
+		}
 	}
 
 	~GraphicsIncrementalBuild()
