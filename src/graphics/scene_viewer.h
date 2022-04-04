@@ -442,8 +442,8 @@ struct cmzn_sceneviewer
 	// if false (default) infinite lighting is assumed
 	bool lightingLocalViewer;
 
-    // Target duration of incremental graphics update
-    double render_timeout;
+	// Target duration of incremental graphics update
+	double render_timeout;
 
 	cmzn_sceneviewer *access()
 	{
@@ -482,12 +482,13 @@ struct cmzn_sceneviewer
 
 	void setLightingTwoSided(bool value);
 
-    double getRenderTimeout() const
-    {
-        return this->render_timeout;
-    }
+	double getRenderTimeout() const
+	{
+		return this->render_timeout;
+	}
 
-    void setRenderTimeout(double timeout);
+	/** @param timeout  Render timeout in seconds or negative to disable incremental build */
+	void setRenderTimeout(double timeout);
 
 	/**
 	 * @param  localToWorldTransformationMatrix  Optional.
