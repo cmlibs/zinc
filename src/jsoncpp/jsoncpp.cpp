@@ -1112,8 +1112,6 @@ class BatchAllocator {
 public:
   BatchAllocator(unsigned int objectsPerPage = 255)
       : freeHead_(0), objectsPerPage_(objectsPerPage) {
-    //      printf( "Size: %d => %s\n", sizeof(AllocatedType),
-    // typeid(AllocatedType).name() );
     assert(sizeof(AllocatedType) * objectPerAllocation >=
            sizeof(AllocatedType*)); // We must be able to store a slist in the
                                     // object free space.

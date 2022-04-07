@@ -1323,9 +1323,9 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 				cmzn_graphics_compile_visible_graphics, (void *)renderer,
 				scene->list_of_graphics);
 		}
-
 		/* check whether scene contents need building */
 		return_code = cmzn_scene_build_graphics_objects(scene, renderer);
+
 		/* call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,

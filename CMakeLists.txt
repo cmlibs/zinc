@@ -34,19 +34,13 @@ endif ()
 include(MacroDefinitions)
 include(FunctionDefinitions)
 include(OCMiscFunctions)
-
-set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp glew nglib png MagickCore ITKStatistics ITKIOGDCM)
-if(TARGET opencmissdependencies)
-    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
-    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
-endif()
-
 include(OCMultiConfigEnvironment)
 
 option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests." ON)
 option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
 option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
+option(ZINC_USE_OSMESA "Use OSMesa for software rendering." OFF)
 
 # Optional libraries
 option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
@@ -56,6 +50,24 @@ endif()
 option(ZINC_USE_NETGEN "Use Netgen" YES)
 # option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
 set(ZINC_USE_ITK YES)
+
+set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp png ITKStatistics ITKIOGDCM)
+if (ZINC_USE_IMAGEMAGICK)
+    list(APPEND DEPENDENT_LIBS MagickCore)
+endif()
+if (ZINC_USE_NETGEN)
+    list(APPEND DEPENDENT_LIBS nglib)
+endif()
+if (ZINC_USE_OSMESA)
+    list(APPEND DEPENDENT_LIBS GLEW::glew-osmesa)
+else()
+    list(APPEND DEPENDENT_LIBS GLEW::GLEW)
+endif()
+
+if(TARGET opencmissdependencies)
+    set(OPENCMISSDEPENDENCIES_TARGET opencmissdependencies)
+    #set(DEPENDENT_LIBS ${OPENCMISSDEPENDENCIES_TARGET})
+endif()
 
 if(NOT OPENCMISS_HAVE_MULTICONFIG_ENV)
     set(_PARAM_ANNOTATION "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
@@ -145,9 +157,12 @@ SET_PLATFORM_DEFINES( )
 SET_OPERATING_SYSTEM_DEFINES( ) # <-- mostly set automatically by cmake just adding WIN32_SYSTEM to be used instead of WIN32
 SET_GRAPHICS_DEFINES( )
 
-if(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+if(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS AND NOT ZINC_USE_OSMESA)
     find_package(OpenGL REQUIRED )
-    set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENGL_LIBRARIES} )
+    list(APPEND DEPENDENT_LIBS ${OPENGL_LIBRARIES})
+elseif(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS AND ZINC_USE_OSMESA)
+    find_package(OSMesa REQUIRED)
+    list(APPEND DEPENDENT_LIBS ${OSMesa_LIBRARIES} ${OSMesa_GLU_LIBRARIES})
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
