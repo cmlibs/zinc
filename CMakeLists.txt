@@ -51,7 +51,12 @@ option(ZINC_USE_NETGEN "Use Netgen" YES)
 # option(ZINC_USE_ITK "Use ITK" YES) # Not really an option until image fields are worked on
 set(ZINC_USE_ITK YES)
 
-set(DEPENDENT_LIBS zlib bz2 xml2 fieldml-core fieldml-io ftgl optpp png ITKStatistics ITKIOGDCM)
+set(DEPENDENT_LIBS bz2 xml2 fieldml-core fieldml-io ftgl optpp png ITKStatistics ITKIOGDCM)
+if (TARGET zlibstatic)
+    list(APPEND DEPENDENT_LIBS zlibstatic)
+else()
+    list(APPEND DEPENDENT_LIBS zlib)
+endif()
 if (ZINC_USE_IMAGEMAGICK)
     list(APPEND DEPENDENT_LIBS MagickCore)
 endif()
@@ -84,7 +89,7 @@ if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
 endif()
 
 if (NOT DEFINED ZINC_PACKAGE_CONFIG_DIR)
-    set(ZINC_PACKAGE_CONFIG_DIR "lib/cmake")
+    set(ZINC_PACKAGE_CONFIG_DIR "share/cmake/ZINC")
 endif ()
 set(ZINC_PACKAGE_CONFIG_DIR "${ZINC_PACKAGE_CONFIG_DIR}" CACHE STRING "Path for CMake package configuration files (relative to CMAKE_INSTALL_PREFIX or an absolute path).")
 
