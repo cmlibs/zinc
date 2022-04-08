@@ -295,15 +295,15 @@ public:
 		return cmzn_sceneviewer_render_scene(id);
 	}
 
-    double getRenderTimeout()
-    {
-        return cmzn_sceneviewer_get_render_timeout(id);
-    }
+	double getRenderTimeout()
+	{
+		return cmzn_sceneviewer_get_render_timeout(id);
+	}
 
-    int setRenderTimeout(double timeout)
-    {
-        return cmzn_sceneviewer_set_render_timeout(id, timeout);
-    }
+	int setRenderTimeout(double timeout)
+	{
+		return cmzn_sceneviewer_set_render_timeout(id, timeout);
+	}
 
 	int setScene(const Scene& scene)
 	{
