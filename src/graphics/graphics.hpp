@@ -293,7 +293,7 @@ private:
 public:
 
 	/**
-	 * @param renderTimeoutIn  Target duration of incremental build update, in seconds >= 0.0.
+	 * @param buildTimeoutIn  Target duration of incremental build update, in seconds >= 0.0.
 	 */
 	GraphicsIncrementalBuild(double buildTimeoutIn = 1.0) :
 		buildTimeout(buildTimeoutIn),

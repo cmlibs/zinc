@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.7.0
+Add Sceneviewer incremental graphics build render timeout API.
+
 v3.6.0
 Add material module change notifier.
 Add Sceneviewer enum to/from string name APIs. Serialise transparency layers.
