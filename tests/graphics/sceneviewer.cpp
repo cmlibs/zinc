@@ -583,6 +583,13 @@ TEST(ZincSceneviewer, get_set)
 	ASSERT_DOUBLE_EQ(0.1, value = sv.getNearClippingPlane());
 	EXPECT_EQ(OK, sv.setNearClippingPlane(100.0));
 	ASSERT_DOUBLE_EQ(100.0, value = sv.getNearClippingPlane());
+
+	ASSERT_DOUBLE_EQ(1.0, value = sv.getRenderTimeout());
+	EXPECT_EQ(OK, sv.setRenderTimeout(0.1));
+	ASSERT_DOUBLE_EQ(0.1, value = sv.getRenderTimeout());
+	// negative timeout disables incremental build
+	EXPECT_EQ(OK, sv.setRenderTimeout(-1.0));
+	ASSERT_DOUBLE_EQ(-1.0, value = sv.getRenderTimeout());
 }
 
 class mySceneviewercallback : public Sceneviewercallback

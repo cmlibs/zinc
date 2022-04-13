@@ -1,6 +1,7 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.7.0
+Add Sceneviewer incremental graphics build render timeout API.
 Fix groups not immediately removing destoyed nodes or elements within begin/end change.
 Fix enforce non-numeric fields have NOT_APPLICABLE coordinate system type.
 

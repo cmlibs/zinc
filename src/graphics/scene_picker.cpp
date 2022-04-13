@@ -127,7 +127,7 @@ int cmzn_scenepicker::pickObjects()
 		// Minimal incremental build to avoid locking up with big graphics
 		// This means can only pick what's visible now
 		// Keeping Scene_compile to ensure all objects correctly built for OpenGL
-		GraphicsIncrementalBuild incrementalBuild(0);
+		GraphicsIncrementalBuild incrementalBuild(0.0);
 		renderer->setIncrementalBuild(&incrementalBuild);
 		renderer->picking = 1;
 		if (renderer->Scene_compile(top_scene, filter))
