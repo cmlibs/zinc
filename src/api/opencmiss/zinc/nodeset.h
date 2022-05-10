@@ -133,7 +133,7 @@ ZINC_API cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
  * @param nodeset  Handle to nodeset to destroy nodes from.
  * @return  Result OK if all nodes destroyed, ERROR_IN_USE if partial success
  * with some nodes not destroyed due to being in use by elements, or any other
- * error if more serious failure.
+ * error code if more serious failure.
  */
 ZINC_API int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset);
 
@@ -146,7 +146,7 @@ ZINC_API int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset);
  * @param nodeset  Handle to the nodeset whose node is to be destroyed.
  * @param node  The node to destroy.
  * @return  Result OK if node destroyed, ERROR_IN_USE if it could not be
- * destroyed due to being in use by elements, or any other error if more
+ * destroyed due to being in use by elements, or any other error code if more
  * serious failure.
  */
 ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id node);
@@ -164,7 +164,7 @@ ZINC_API int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id nod
  * is to be destroyed.
  * @return  Result OK if all nodes passing condition destroyed, ERROR_IN_USE if
  * partial success with some nodes not destroyed due to being in use by
- * elements, or any other error if more serious failure.
+ * elements, or any other error code if more serious failure.
  */
 ZINC_API int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
 	cmzn_field_id conditional_field);
@@ -264,7 +264,7 @@ ZINC_C_INLINE cmzn_nodeset_id cmzn_nodeset_group_base_cast(
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to add. Must be from the group's master nodeset.
  * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if node was
- * already in group but otherwise successful, or any other value on more
+ * already in group but otherwise successful, or any other error code if more
  * serious failure.
  */
 ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
@@ -296,8 +296,8 @@ ZINC_API int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_g
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to remove.
  * @return  Status CMZN_OK on success, CMZN_ERROR_NOT_FOUND if node
- * was not in the group but otherwise successful, or any other value
- * on more serious failure.
+ * was not in the group but otherwise successful, or any other error code
+ * if more serious failure.
  */
 ZINC_API int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);

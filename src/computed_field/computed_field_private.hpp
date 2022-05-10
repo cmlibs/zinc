@@ -976,9 +976,15 @@ inline void cmzn_field::setChanged()
 
 inline void cmzn_field::setChangedPrivate(MANAGER_CHANGE(cmzn_field) change)
 {
-	if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
-		ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
-	this->manager_change_status |= change;
+	if ((this->manager) && (this->manager->owner))
+	{
+		if (this->manager_change_status == MANAGER_CHANGE_NONE(cmzn_field))
+		{
+			ADD_OBJECT_TO_LIST(cmzn_field)(this, this->manager->changed_object_list);
+		}
+		this->manager->owner->setFieldModify();
+		this->manager_change_status |= change;
+	}
 }
 
 inline void cmzn_field::setChangedRelated()

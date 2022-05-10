@@ -41,6 +41,27 @@ Computed_field_subobject_group::~Computed_field_subobject_group()
 			this->field ? this->field->name : "?");
 }
 
+void Computed_field_element_group::changeAdd()
+{
+	this->invalidateIterators();
+	this->change_detail.changeAdd();
+	this->field->setChanged();
+}
+
+void Computed_field_element_group::changeRemove()
+{
+	this->invalidateIterators();
+	this->change_detail.changeRemove();
+	this->field->setChanged();
+}
+
+void Computed_field_element_group::changeRemoveNoNotify()
+{
+	this->invalidateIterators();
+	this->change_detail.changeRemove();
+	this->field->setChangedPrivate(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+}
+
 Computed_field_element_group *Computed_field_element_group::create(FE_mesh *fe_mesh_in)
 {
 	Computed_field_element_group *element_group = 0;
@@ -67,9 +88,7 @@ int Computed_field_element_group::addObject(cmzn_element *object)
 	int return_code = this->labelsGroup->setIndex(get_FE_element_index(object), true);
 	if (CMZN_OK == return_code)
 	{
-		this->invalidateIterators();
-		change_detail.changeAdd();
-		update();
+		this->changeAdd();
 	}
 	if (handleSubelements)
 	{
@@ -191,9 +210,7 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 	const int newSize = this->getSize();
 	if (newSize != oldSize)
 	{
-		this->invalidateIterators();
-		change_detail.changeAdd();
-		update();
+		this->changeAdd();
 	}
 	cmzn_fieldcache_destroy(&cache);
 	this->endChange();
@@ -211,9 +228,7 @@ int Computed_field_element_group::removeObject(cmzn_element *object)
 	int return_code = this->labelsGroup->setIndex(get_FE_element_index(object), false);
 	if (CMZN_OK == return_code)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	if (handleSubelements)
 	{
@@ -301,9 +316,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	const int newSize = this->getSize();
 	if (newSize != oldSize)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	cmzn_fieldcache_destroy(&cache);
 	cmzn::Deaccess(removedLabelsGroup);
@@ -317,27 +330,18 @@ int Computed_field_element_group::clear()
 	if (0 < this->getSize())
 	{
 		this->beginChange();
-		this->invalidateIterators();
 		if (this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL)
 		{
 			DsLabelsGroup *tmpLabelsGroup = DsLabelsGroup::create(this->labelsGroup->getLabels());
-			if (tmpLabelsGroup)
-			{
-				tmpLabelsGroup->swap(*this->labelsGroup);
-				this->removeSubelementsList(*tmpLabelsGroup);
-				cmzn::Deaccess(tmpLabelsGroup);
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, "Computed_field_element_group::clear.  Failed to handle subelements");
-				this->labelsGroup->clear();
-				return_code = CMZN_ERROR_MEMORY;
-			}
+			tmpLabelsGroup->swap(*this->labelsGroup);
+			this->removeSubelementsList(*tmpLabelsGroup);
+			cmzn::Deaccess(tmpLabelsGroup);
 		}
 		else
+		{
 			this->labelsGroup->clear();
-		change_detail.changeRemove();
-		update();
+		}
+		this->changeRemove();
 		this->endChange();
 	}
 	return return_code;
@@ -577,9 +581,7 @@ int Computed_field_element_group::addElementFacesRecursive(FE_mesh& parentMesh, 
 	}
 	if (numberAdded)
 	{
-		this->invalidateIterators();
-		this->change_detail.changeAdd();
-		this->update();
+		this->changeAdd();
 	}
 	return return_code;
 }
@@ -623,31 +625,28 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 
 void Computed_field_element_group::destroyedAllElements()
 {
-	this->labelsGroup->clear();
-	this->invalidateIterators();
-	change_detail.changeRemove();
-	this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
-}
-
-void Computed_field_element_group::destroyedElement(DsLabelIndex destroyedElementIndex)
-{
-	if (this->labelsGroup->hasIndex(destroyedElementIndex))
+	if (this->getSize() > 0)
 	{
-		this->labelsGroup->setIndex(destroyedElementIndex, false);
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+		this->labelsGroup->clear();
+		this->changeRemoveNoNotify();
 	}
 }
 
-void Computed_field_element_group::destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup)
+void Computed_field_element_group::destroyedElement(DsLabelIndex destroyedIndex)
 {
-	const int numberRemoved = this->labelsGroup->removeGroup(destroyedElementLabelsGroup);
+	if (this->labelsGroup->hasIndex(destroyedIndex))
+	{
+		this->labelsGroup->setIndex(destroyedIndex, false);
+		this->changeRemoveNoNotify();
+	}
+}
+
+void Computed_field_element_group::destroyedElementGroup(DsLabelsGroup& destroyedLabelsGroup)
+{
+	const int numberRemoved = this->labelsGroup->removeGroup(destroyedLabelsGroup);
 	if (numberRemoved > 0)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+		this->changeRemoveNoNotify();
 	}
 }
 
@@ -705,9 +704,7 @@ int Computed_field_element_group::removeElementFacesRecursive(
 	}
 	if (numberRemoved)
 	{
-		this->invalidateIterators();
-		this->change_detail.changeRemove();
-		this->update();
+		this->changeRemove();
 	}
 	return return_code;
 }
@@ -746,6 +743,27 @@ Computed_field_element_group *Computed_field_element_group::getConditionalElemen
 	return otherElementGroup;
 }
 
+void Computed_field_node_group::changeAdd()
+{
+	this->invalidateIterators();
+	this->change_detail.changeAdd();
+	this->field->setChanged();
+}
+
+void Computed_field_node_group::changeRemove()
+{
+	this->invalidateIterators();
+	this->change_detail.changeRemove();
+	this->field->setChanged();
+}
+
+void Computed_field_node_group::changeRemoveNoNotify()
+{
+	this->invalidateIterators();
+	this->change_detail.changeRemove();
+	this->field->setChangedPrivate(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+}
+
 Computed_field_node_group *Computed_field_node_group::create(FE_nodeset *fe_nodeset_in)
 {
 	Computed_field_node_group *node_group = 0;
@@ -768,9 +786,7 @@ int Computed_field_node_group::addObject(cmzn_node *object)
 	int return_code = this->labelsGroup->setIndex(object->getIndex(), true);
 	if (CMZN_OK == return_code)
 	{
-		this->invalidateIterators();
-		change_detail.changeAdd();
-		update();
+		this->changeAdd();
 	}
 	return return_code;
 }
@@ -867,9 +883,7 @@ int Computed_field_node_group::addNodesConditional(cmzn_field_id conditional_fie
 	const int newSize = this->getSize();
 	if (newSize != oldSize)
 	{
-		this->invalidateIterators();
-		change_detail.changeAdd();
-		update();
+		this->changeAdd();
 	}
 	cmzn_fieldcache_destroy(&cache);
 	return CMZN_OK;
@@ -882,9 +896,7 @@ int Computed_field_node_group::removeObject(cmzn_node *object)
 	int return_code = this->labelsGroup->setIndex(object->getIndex(), false);
 	if (CMZN_OK == return_code)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	return return_code;
 }
@@ -938,9 +950,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	const int newSize = this->getSize();
 	if (newSize != oldSize)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	return return_code;
 }
@@ -966,8 +976,7 @@ int Computed_field_node_group::removeNodesInLabelsGroup(DsLabelsGroup &removeNod
 	const int newSize = this->getSize();
 	if (newSize < oldSize)
 	{
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	return return_code;
 }
@@ -977,9 +986,7 @@ int Computed_field_node_group::clear()
 	if (0 < this->getSize())
 	{
 		this->labelsGroup->clear();
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	return CMZN_OK;
 };
@@ -1001,8 +1008,7 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 	const int newSize = this->getSize();
 	if (newSize > oldSize)
 	{
-		change_detail.changeAdd();
-		update();
+		this->changeAdd();
 	}
 	return return_code;
 };
@@ -1018,39 +1024,35 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 	const int newSize = this->getSize();
 	if (newSize < oldSize)
 	{
-		change_detail.changeRemove();
-		update();
+		this->changeRemove();
 	}
 	return return_code;
 };
 
 void Computed_field_node_group::destroyedAllNodes()
 {
-	this->labelsGroup->clear();
-	this->invalidateIterators();
-	change_detail.changeRemove();
-	this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
-}
-
-void Computed_field_node_group::destroyedNode(DsLabelIndex destroyedNodeIndex)
-{
-	if (this->labelsGroup->hasIndex(destroyedNodeIndex))
+	if (this->getSize() > 0)
 	{
-		this->labelsGroup->setIndex(destroyedNodeIndex, false);
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+		this->labelsGroup->clear();
+		this->changeRemoveNoNotify();
 	}
 }
 
-void Computed_field_node_group::destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup)
+void Computed_field_node_group::destroyedNode(DsLabelIndex destroyedIndex)
 {
-	const int numberRemoved = this->labelsGroup->removeGroup(destroyedNodeLabelsGroup);
+	if (this->labelsGroup->hasIndex(destroyedIndex))
+	{
+		this->labelsGroup->setIndex(destroyedIndex, false);
+		this->changeRemoveNoNotify();
+	}
+}
+
+void Computed_field_node_group::destroyedNodeGroup(DsLabelsGroup& destroyedLabelsGroup)
+{
+	const int numberRemoved = this->labelsGroup->removeGroup(destroyedLabelsGroup);
 	if (numberRemoved > 0)
 	{
-		this->invalidateIterators();
-		change_detail.changeRemove();
-		this->field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+		this->changeRemoveNoNotify();
 	}
 }
 

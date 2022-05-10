@@ -77,7 +77,7 @@ public:
 		return values.isRangeTrue(/*minIndex*/belowIndex + 1, /*minIndex*/this->indexLimit-1);
 	}
 	
-	/** caller must be careful that index is for this labels */
+	/** caller must be careful that index is for this group's labels */
 	bool hasIndex(DsLabelIndex index) const
 	{
 		if (index < 0)
@@ -93,7 +93,7 @@ public:
 
 	/**
 	 * Set whether index is in the group.
-	 * Be careful that index is for this labels.
+	 * Be careful that index is for this group's labels.
 	 * @param inGroup  Boolean new status of index: true=in, false=out.
 	 * @return  CMZN_OK on success, CMZN_ALREADY_EXISTS if adding when already added,
 	 * CMZN_ERROR_NOT_FOUND if removing when already removed, any other error code on failure.

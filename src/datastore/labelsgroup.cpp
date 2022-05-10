@@ -53,7 +53,7 @@ int DsLabelsGroup::removeGroup(DsLabelsGroup& otherGroup)
 {
 	// This could be made faster by working directly with data blocks
 	int numberRemoved = 0;
-	DsLabelIndex index = -1; // DS_LABEL_INDEX_INVALID
+	DsLabelIndex index = -1;  // So first increment gives 0 == first valid index
 	while (this->incrementIndex(index))
 	{
 		if (otherGroup.hasIndex(index))

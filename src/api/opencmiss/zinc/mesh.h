@@ -181,7 +181,7 @@ ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
  * All handles to the destroyed element become invalid.
  *
  * @param mesh  Handle to mesh to destroy elements from.
- * @return  Result OK if all elements destroyed, or any other error if failed.
+ * @return  Result OK if all elements destroyed, or an error code if failed.
  */
 ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
 
@@ -192,7 +192,7 @@ ZINC_API int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh);
  *
  * @param mesh  Handle to the mesh whose element is to be destroyed.
  * @param element  The element to destroy.
- * @return  Result OK if element destroyed, or any other error if failed.
+ * @return  Result OK if element destroyed, or an error code if failed.
  */
 ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element);
 
@@ -207,8 +207,8 @@ ZINC_API int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id elemen
  * @param mesh  Handle to the mesh to destroy elements from.
  * @param conditional_field  Field which if non-zero in the element indicates it
  * is to be destroyed.
- * @return  Result OK if all elements passing condition are destroyed, or any
- * other error if failed.
+ * @return  Result OK if all elements passing condition are destroyed, or an
+ * error code if failed.
  */
 ZINC_API int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
 	cmzn_field_id conditional_field);
@@ -332,7 +332,7 @@ ZINC_C_INLINE cmzn_mesh_id cmzn_mesh_group_base_cast(
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to add. Must be from the group's master mesh.
  * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if element
- * was already in the group but otherwise successful, or any other value on
+ * was already in the group but otherwise successful, or any other error code on
  * more serious failure.
  */
 ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
@@ -366,8 +366,8 @@ ZINC_API int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group);
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to remove.
  * @return  Status CMZN_OK on success, CMZN_ERROR_NOT_FOUND if element was not
- * in the group but otherwise successful, or any other value on more serious
- * failure.
+ * in the group but otherwise successful, or any other error code on more
+ * serious failure.
  */
 ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);

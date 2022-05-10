@@ -311,6 +311,16 @@ public:
 			FE_mesh::deaccess(this->fe_mesh);
 		}
 
+		/* Record that group has changed by object added, with client notification */
+		void changeAdd();
+
+		/* Record that group has changed by object remove, with client notification */
+		void changeRemove();
+
+		/* Record that group has changed by object removal, but do not notify clients.
+		 * Only used when objects removed because destroyed in parent domain. */
+		void changeRemoveNoNotify();
+
 	public:
 
 		static Computed_field_element_group *create(FE_mesh *fe_mesh_in);
@@ -409,10 +419,10 @@ public:
 		virtual void destroyedAllElements();
 
 		/** notification from parent FE_mesh that an element has been destroyed: remove from this group */
-		virtual void destroyedElement(DsLabelIndex destroyedElementIndex);
+		virtual void destroyedElement(DsLabelIndex destroyedIndex);
 
 		/** notification from parent FE_mesh that a group of elements has been destroyed: remove from this group */
-		virtual void destroyedElementGroup(DsLabelsGroup& destroyedElementLabelsGroup);
+		virtual void destroyedElementGroup(DsLabelsGroup& destroyedLabelsGroup);
 
 	private:
 
@@ -470,11 +480,6 @@ public:
 			return 1;
 		};
 
-		inline void update()
-		{
-			this->field->setChanged();
-		}
-
 		bool isElementCompatible(cmzn_element_id element)
 		{
 			return this->fe_mesh->containsElement(element);
@@ -521,6 +526,16 @@ public:
 			cmzn::Deaccess(this->labelsGroup);
 			FE_nodeset::deaccess(this->fe_nodeset);
 		}
+
+		/* Record that group has changed by object added, with client notification */
+		void changeAdd();
+
+		/* Record that group has changed by object remove, with client notification */
+		void changeRemove();
+
+		/* Record that group has changed by object removal, but do not notify clients.
+		 * Only used when objects removed because destroyed in parent domain. */
+		void changeRemoveNoNotify();
 
 	public:
 
@@ -626,10 +641,10 @@ public:
 		virtual void destroyedAllNodes();
 
 		/** notification from parent FE_nodeset that a node has been destroyed: remove from this group */
-		virtual void destroyedNode(DsLabelIndex destroyedNodeIndex);
+		virtual void destroyedNode(DsLabelIndex destroyedIndex);
 
 		/** notification from parent FE_nodeset that a group of nodes has been destroyed: remove from this group */
-		virtual void destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup);
+		virtual void destroyedNodeGroup(DsLabelsGroup& destroyedLabelsGroup);
 
 	private:
 
@@ -663,11 +678,6 @@ public:
 		{
 			return 1;
 		};
-
-		inline void update()
-		{
-			this->field->setChanged();
-		}
 
 		static int FE_node_is_not_in_FE_nodeset(cmzn_node *node, void *fe_nodeset_void)
 		{

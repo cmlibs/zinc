@@ -425,10 +425,23 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 		else
 		{
 			fe_field = FE_field::create(name, fe_region);
-			if (!(set_FE_field_value_type(fe_field, value_type) &&
+			bool success = set_FE_field_value_type(fe_field, value_type) &&
 				set_FE_field_number_of_components(fe_field, number_of_components) &&
-				set_FE_field_type_general(fe_field) &&
-				FE_region_merge_FE_field(fe_region, fe_field)))
+				set_FE_field_type_general(fe_field);
+			if (success)
+			{
+				if (!Value_type_is_non_numeric(value_type))
+				{
+					// numeric field defaults to RC coordinate system
+					Coordinate_system rcCoordinateSystem(RECTANGULAR_CARTESIAN);
+					fe_field->setCoordinateSystem(rcCoordinateSystem);
+				}
+				if (!FE_region_merge_FE_field(fe_region, fe_field))
+				{
+					success = false;
+				}
+			}
+			if (!success)
 			{
 				FE_field::deaccess(fe_field);
 			}
