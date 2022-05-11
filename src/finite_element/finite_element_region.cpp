@@ -251,9 +251,9 @@ FE_region::~FE_region()
 
 	// then deaccess to destroy handle
 	for (int n = 0; n < 2; ++n)
-		FE_nodeset::deaccess(this->nodesets[n]);
+		cmzn::Deaccess(this->nodesets[n]);
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
-		FE_mesh::deaccess(this->meshes[dimension - 1]);
+		cmzn::Deaccess(this->meshes[dimension - 1]);
 
 	// remove FE_fields' pointers to this region
 	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(this->fe_field_list);

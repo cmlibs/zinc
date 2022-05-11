@@ -15,11 +15,11 @@
 
 
 FE_domain::FE_domain(FE_region *fe_region, int dimensionIn) :
+	RefCounted(),
 	fe_region(fe_region),
 	dimension(dimensionIn),
 	changeLog(nullptr),
-	destroyedLabelsGroup(nullptr),
-	access_count(1)
+	destroyedLabelsGroup(nullptr)
 {
 	// concrete derived classes must call this virtual function in their constructors:
 	//this->createChangeLog();

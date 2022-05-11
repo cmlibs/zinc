@@ -398,23 +398,6 @@ public:
 
 	virtual void detach_from_FE_region();
 
-	FE_nodeset *access()
-	{
-		++(this->access_count);
-		return this;
-	}
-
-	static void deaccess(FE_nodeset *&nodeset)
-	{
-		if (nodeset)
-		{
-			--(nodeset->access_count);
-			if (nodeset->access_count <= 0)
-				delete nodeset;
-			nodeset = nullptr;
-		}
-	}
-
 	// in following change is a logical OR of values from enum DsLabelChangeType
 	void nodeChange(DsLabelIndex nodeIndex, int change);
 	void nodeChange(DsLabelIndex nodeIndex, int change, cmzn_node *field_info_node);

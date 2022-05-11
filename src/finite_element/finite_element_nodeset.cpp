@@ -166,21 +166,21 @@ cmzn_node* cmzn_node::createFromTemplate(DsLabelIndex index, cmzn_node *template
 
 FE_node_template::FE_node_template(FE_nodeset *nodeset_in, struct FE_node_field_info *node_field_info) :
 	cmzn::RefCounted(),
-	nodeset(nodeset_in->access()),
+	nodeset(cmzn::Access(nodeset_in)),
 	template_node(cmzn_node::createTemplate(node_field_info))
 {
 }
 
 FE_node_template::FE_node_template(FE_nodeset *nodeset_in, cmzn_node *node) :
 	cmzn::RefCounted(),
-	nodeset(nodeset_in->access()),
+	nodeset(cmzn::Access(nodeset_in)),
 	template_node(cmzn_node::createFromTemplate(DS_LABEL_INDEX_INVALID, node))
 {
 }
 
 FE_node_template::~FE_node_template()
 {
-	FE_nodeset::deaccess(this->nodeset);
+	cmzn::Deaccess(this->nodeset);
 	cmzn_node::deaccess(this->template_node);
 }
 

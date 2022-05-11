@@ -41,70 +41,28 @@ Computed_field_subobject_group::~Computed_field_subobject_group()
 			this->field ? this->field->name : "?");
 }
 
-void Computed_field_element_group::changeAdd()
+void Computed_field_fe_domain_group::changeAdd()
 {
 	this->invalidateIterators();
 	this->change_detail.changeAdd();
 	this->field->setChanged();
 }
 
-void Computed_field_element_group::changeRemove()
+void Computed_field_fe_domain_group::changeRemove()
 {
 	this->invalidateIterators();
 	this->change_detail.changeRemove();
 	this->field->setChanged();
 }
 
-void Computed_field_element_group::changeRemoveNoNotify()
+void Computed_field_fe_domain_group::changeRemoveNoNotify()
 {
 	this->invalidateIterators();
 	this->change_detail.changeRemove();
 	this->field->setChangedPrivate(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
 }
 
-Computed_field_element_group *Computed_field_element_group::create(FE_mesh *fe_mesh_in)
-{
-	Computed_field_element_group *element_group = 0;
-	if (fe_mesh_in)
-	{
-		DsLabelsGroup *labelsGroup = fe_mesh_in->createLabelsGroup();
-		if (labelsGroup)
-		{
-			element_group = new Computed_field_element_group(fe_mesh_in, labelsGroup);
-			cmzn::Deaccess(labelsGroup);
-		}
-	}
-	return element_group;
-}
-
-int Computed_field_element_group::addObject(cmzn_element *object)
-{
-	if (!isElementCompatible(object))
-		return CMZN_ERROR_ARGUMENT;
-	const bool handleSubelements =
-		(this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL);
-	if (handleSubelements)
-		this->beginChange();
-	int return_code = this->labelsGroup->setIndex(get_FE_element_index(object), true);
-	if (CMZN_OK == return_code)
-	{
-		this->changeAdd();
-	}
-	if (handleSubelements)
-	{
-		if ((CMZN_OK == return_code) || (CMZN_ERROR_ALREADY_EXISTS == return_code))
-		{
-			int subresult = this->addSubelements(object);
-			if (CMZN_OK != subresult)
-				return_code = subresult;
-		}
-		this->endChange();
-	}
-	return return_code;
-}
-
-// GRC future: identical to Computed_field_node_group::addObjectsInIdentifierRange -> move to common base class
-int Computed_field_element_group::addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last)
+int Computed_field_fe_domain_group::addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last)
 {
 	DsLabels *labels = this->labelsGroup->getLabels();
 	if ((first > last) || (!labels))
@@ -151,6 +109,47 @@ int Computed_field_element_group::addObjectsInIdentifierRange(DsLabelIdentifier 
 	return return_code;
 }
 
+Computed_field_element_group *Computed_field_element_group::create(FE_mesh *feMeshIn)
+{
+	Computed_field_element_group *element_group = 0;
+	if (feMeshIn)
+	{
+		DsLabelsGroup *labelsGroup = feMeshIn->createLabelsGroup();
+		if (labelsGroup)
+		{
+			element_group = new Computed_field_element_group(feMeshIn, labelsGroup);
+			cmzn::Deaccess(labelsGroup);
+		}
+	}
+	return element_group;
+}
+
+int Computed_field_element_group::addObject(cmzn_element *object)
+{
+	if (!isElementCompatible(object))
+		return CMZN_ERROR_ARGUMENT;
+	const bool handleSubelements =
+		(this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL);
+	if (handleSubelements)
+		this->beginChange();
+	int return_code = this->labelsGroup->setIndex(get_FE_element_index(object), true);
+	if (CMZN_OK == return_code)
+	{
+		this->changeAdd();
+	}
+	if (handleSubelements)
+	{
+		if ((CMZN_OK == return_code) || (CMZN_ERROR_ALREADY_EXISTS == return_code))
+		{
+			int subresult = this->addSubelements(object);
+			if (CMZN_OK != subresult)
+				return_code = subresult;
+		}
+		this->endChange();
+	}
+	return return_code;
+}
+
 int Computed_field_element_group::addElementsConditional(cmzn_field_id conditional_field)
 {
 	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
@@ -171,8 +170,8 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 		iter = otherElementGroup->createElementiterator(); // could handle this case very efficiently with logical OR
 	else
 	{
-		iter = this->fe_mesh->createElementiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->fe_mesh->get_FE_region()));
+		iter = this->getFeMesh()->createElementiterator();
+		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -267,8 +266,8 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 		iter = otherElementGroup->createElementiterator(); // could handle this case very efficiently with logical AND of complement
 	else
 	{
-		iter = this->fe_mesh->createElementiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->fe_mesh->get_FE_region()));
+		iter = this->getFeMesh()->createElementiterator();
+		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeMesh()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -277,7 +276,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	DsLabelsGroup *removedLabelsGroup = 0;
 	if (handleSubelements)
 	{
-		removedLabelsGroup = this->fe_mesh->createLabelsGroup();
+		removedLabelsGroup = this->getFeMesh()->createLabelsGroup();
 		if (!removedLabelsGroup)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -349,7 +348,7 @@ int Computed_field_element_group::clear()
 
 void Computed_field_element_group::write_btree_statistics() const
 {
-	display_message(INFORMATION_MESSAGE, "%d-D elements:\n", this->fe_mesh->getDimension());
+	display_message(INFORMATION_MESSAGE, "%d-D elements:\n", this->getFeMesh()->getDimension());
 	display_message(INFORMATION_MESSAGE, "  %d labels in bool array\n", this->labelsGroup->getSize());
 }
 
@@ -359,7 +358,7 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 		return CMZN_ERROR_ARGUMENT;
 	const DsLabelIndex parentIndex = get_FE_element_index(parent);
 	const FE_mesh::ElementShapeFaces *elementShapeFaces =
-		this->fe_mesh->getParentMesh()->getElementShapeFacesConst(parentIndex);
+		this->getFeMesh()->getParentMesh()->getElementShapeFacesConst(parentIndex);
 	if (!elementShapeFaces)
 		return CMZN_ERROR_ARGUMENT;
 	const int faceCount = elementShapeFaces->getFaceCount();
@@ -374,7 +373,7 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 	{
 		if (faces[i] >= 0)
 		{
-			struct FE_element *face = this->fe_mesh->getElement(faces[i]);
+			struct FE_element *face = this->getFeMesh()->getElement(faces[i]);
 			if (face)
 			{
 				const int result = this->addObject(face);
@@ -393,13 +392,13 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 int Computed_field_element_group::addSubelements(cmzn_element_id element)
 {
 	int return_code = CMZN_OK;
-	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 	{
 		Computed_field_element_group *faceElementGroup =
 			this->ownerGroup->getElementGroupPrivate(faceMesh, /*create*/true);
 		if (faceElementGroup)
-			return_code = faceElementGroup->addElementFacesRecursive(*this->fe_mesh, get_FE_element_index(element));
+			return_code = faceElementGroup->addElementFacesRecursive(*this->getFeMesh(), get_FE_element_index(element));
 		else
 			return_code = CMZN_ERROR_GENERAL;
 	}
@@ -418,7 +417,7 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 {
 	int return_code = CMZN_OK;
 	const DsLabelIndex elementIndex = get_FE_element_index(element);
-	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 	{
 		Computed_field_element_group *faceElementGroup =
@@ -431,7 +430,7 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 		Computed_field_node_group *nodeGroup = this->ownerGroup->getNodeGroupPrivate(CMZN_FIELD_DOMAIN_TYPE_NODES);
 		if (nodeGroup)
 		{
-			DsLabelsGroup *removeNodeLabelsGroup = nodeGroup->createRelatedNodeLabelsGroup();
+			DsLabelsGroup *removeNodeLabelsGroup = nodeGroup->createRelatedLabelsGroup();
 			if (removeNodeLabelsGroup)
 			{
 				// add nodes from this element, but remove nodes from neighbours still in group
@@ -440,7 +439,7 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 				{
 					if (faceMesh)
 					{
-						const FE_mesh::ElementShapeFaces *elementShapeFaces = this->fe_mesh->getElementShapeFacesConst(elementIndex);
+						const FE_mesh::ElementShapeFaces *elementShapeFaces = this->getFeMesh()->getElementShapeFacesConst(elementIndex);
 						const DsLabelIndex *faces;
 						if ((elementShapeFaces) && (faces = elementShapeFaces->getElementFaces(elementIndex)))
 						{
@@ -452,14 +451,14 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 								for (int p = 0; p < parentsCount; ++p)
 									if ((parents[p] != elementIndex) && this->containsIndex(parents[p]))
 									{
-										return_code = cmzn_element_remove_nodes_from_labels_group(this->fe_mesh->getElement(parents[p]), *removeNodeLabelsGroup);
+										return_code = cmzn_element_remove_nodes_from_labels_group(this->getFeMesh()->getElement(parents[p]), *removeNodeLabelsGroup);
 										if (CMZN_OK != return_code)
 											break;
 									}
 							}
 						}
 					}
-					else if (1 == this->fe_mesh->getDimension())
+					else if (1 == this->getFeMesh()->getDimension())
 					{
 						// remove nodes used by remaining elements = expensive
 						cmzn_elementiterator *iter = this->createElementiterator();
@@ -487,14 +486,14 @@ int Computed_field_element_group::removeSubelementsList(DsLabelsGroup &removedla
 	int return_code = CMZN_OK;
 	cmzn_elementiterator *iter;
 	cmzn_element *element;
-	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 	{
 		Computed_field_element_group *faceElementGroup =
 			this->ownerGroup->getElementGroupPrivate(faceMesh);
 		if (faceElementGroup)
 		{
-			iter = this->fe_mesh->createElementiterator(&removedlabelsGroup);
+			iter = this->getFeMesh()->createElementiterator(&removedlabelsGroup);
 			if (!iter)
 				return_code = CMZN_ERROR_MEMORY;
 			while ((0 != (element = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
@@ -507,11 +506,11 @@ int Computed_field_element_group::removeSubelementsList(DsLabelsGroup &removedla
 		Computed_field_node_group *nodeGroup = this->ownerGroup->getNodeGroupPrivate(CMZN_FIELD_DOMAIN_TYPE_NODES);
 		if (nodeGroup)
 		{
-			DsLabelsGroup *removeNodeLabelsGroup = nodeGroup->createRelatedNodeLabelsGroup();
+			DsLabelsGroup *removeNodeLabelsGroup = nodeGroup->createRelatedLabelsGroup();
 			if (removeNodeLabelsGroup)
 			{
 				// fill list with nodes from removed elements
-				iter = this->fe_mesh->createElementiterator(&removedlabelsGroup);
+				iter = this->getFeMesh()->createElementiterator(&removedlabelsGroup);
 				if (!iter)
 					return_code = CMZN_ERROR_MEMORY;
 				while ((0 != (element = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
@@ -540,7 +539,7 @@ int Computed_field_element_group::removeSubelementsList(DsLabelsGroup &removedla
 int Computed_field_element_group::addElementFacesRecursive(FE_mesh& parentMesh, DsLabelIndex parentIndex)
 {
 	Computed_field_element_group *faceElementGroup = 0; // for adding faces of faces
-	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 	{
 		faceElementGroup = this->ownerGroup->getElementGroupPrivate(faceMesh, /*create*/true);
@@ -548,7 +547,7 @@ int Computed_field_element_group::addElementFacesRecursive(FE_mesh& parentMesh, 
 			return CMZN_ERROR_GENERAL;
 	}
 	const FE_mesh::ElementShapeFaces *elementShapeFaces =
-		this->fe_mesh->getParentMesh()->getElementShapeFacesConst(parentIndex);
+		this->getFeMesh()->getParentMesh()->getElementShapeFacesConst(parentIndex);
 	if (!elementShapeFaces)
 		return CMZN_ERROR_ARGUMENT;
 	const int faceCount = elementShapeFaces->getFaceCount();
@@ -592,7 +591,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 		return CMZN_ERROR_ARGUMENT;
 	const DsLabelIndex parentIndex = get_FE_element_index(parent);
 	const FE_mesh::ElementShapeFaces *elementShapeFaces =
-		this->fe_mesh->getParentMesh()->getElementShapeFacesConst(parentIndex);
+		this->getFeMesh()->getParentMesh()->getElementShapeFacesConst(parentIndex);
 	if (!elementShapeFaces)
 		return CMZN_ERROR_ARGUMENT;
 	const int faceCount = elementShapeFaces->getFaceCount();
@@ -607,7 +606,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 	{
 		if (faces[i] >= 0)
 		{
-			struct FE_element *face = this->fe_mesh->getElement(faces[i]);
+			struct FE_element *face = this->getFeMesh()->getElement(faces[i]);
 			if (face)
 			{
 				const int result = this->removeObject(face);
@@ -654,10 +653,10 @@ int Computed_field_element_group::removeElementFacesRecursive(
 	Computed_field_element_group& parentElementGroup, DsLabelIndex parentIndex)
 {
 	Computed_field_element_group *faceElementGroup = 0;
-	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
+	FE_mesh *faceMesh = this->getFeMesh()->getFaceMesh();
 	if (faceMesh)
 		faceElementGroup = this->ownerGroup->getElementGroupPrivate(faceMesh, /*create*/false);
-	FE_mesh *parentMesh = this->fe_mesh->getParentMesh();
+	FE_mesh *parentMesh = this->getFeMesh()->getParentMesh();
 	const FE_mesh::ElementShapeFaces *elementShapeFaces = parentMesh->getElementShapeFacesConst(parentIndex);
 	if (!elementShapeFaces)
 		return CMZN_ERROR_ARGUMENT;
@@ -674,7 +673,7 @@ int Computed_field_element_group::removeElementFacesRecursive(
 		if (faces[i] >= 0)
 		{
 			const DsLabelIndex *parents;
-			const int parentsCount = this->fe_mesh->getElementParents(faces[i], parents);
+			const int parentsCount = this->getFeMesh()->getElementParents(faces[i], parents);
 			bool keepFace = false;
 			for (int p = 0; p < parentsCount; ++p)
 				if (parentElementGroup.labelsGroup->hasIndex(parents[p]))
@@ -733,7 +732,7 @@ Computed_field_element_group *Computed_field_element_group::getConditionalElemen
 		Computed_field_group *group = dynamic_cast<Computed_field_group *>(conditionalField->core);
 		if (group)
 		{
-			otherElementGroup = group->getElementGroupPrivate(this->fe_mesh);
+			otherElementGroup = group->getElementGroupPrivate(this->getFeMesh());
 			if (!otherElementGroup)
 				isEmptyGroup = true;
 		}
@@ -743,36 +742,15 @@ Computed_field_element_group *Computed_field_element_group::getConditionalElemen
 	return otherElementGroup;
 }
 
-void Computed_field_node_group::changeAdd()
-{
-	this->invalidateIterators();
-	this->change_detail.changeAdd();
-	this->field->setChanged();
-}
-
-void Computed_field_node_group::changeRemove()
-{
-	this->invalidateIterators();
-	this->change_detail.changeRemove();
-	this->field->setChanged();
-}
-
-void Computed_field_node_group::changeRemoveNoNotify()
-{
-	this->invalidateIterators();
-	this->change_detail.changeRemove();
-	this->field->setChangedPrivate(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
-}
-
-Computed_field_node_group *Computed_field_node_group::create(FE_nodeset *fe_nodeset_in)
+Computed_field_node_group *Computed_field_node_group::create(FE_nodeset *feNodesetIn)
 {
 	Computed_field_node_group *node_group = 0;
-	if (fe_nodeset_in)
+	if (feNodesetIn)
 	{
-		DsLabelsGroup *labelsGroup = fe_nodeset_in->createLabelsGroup();
+		DsLabelsGroup *labelsGroup = feNodesetIn->createLabelsGroup();
 		if (labelsGroup)
 		{
-			node_group = new Computed_field_node_group(fe_nodeset_in, labelsGroup);
+			node_group = new Computed_field_node_group(feNodesetIn, labelsGroup);
 			cmzn::Deaccess(labelsGroup);
 		}
 	}
@@ -787,54 +765,6 @@ int Computed_field_node_group::addObject(cmzn_node *object)
 	if (CMZN_OK == return_code)
 	{
 		this->changeAdd();
-	}
-	return return_code;
-}
-
-// GRC future: identical to Computed_field_element_group::addObjectsInIdentifierRange -> move to common base class
-int Computed_field_node_group::addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last)
-{
-	DsLabels *labels = this->labelsGroup->getLabels();
-	if ((first > last) || (!labels))
-		return CMZN_ERROR_ARGUMENT;
-	int return_code = CMZN_OK;
-	DsLabelIndex index;
-	DsLabelIdentifier identifier;
-	const DsLabelIndex indexSize = labels->getIndexSize();
-	if (((last - first) > indexSize) ||
-		((!labels->isContiguous()) && ((last - first) > (indexSize/10))))
-	{
-		for (index = 0; index < indexSize; ++index)
-		{
-			identifier = labels->getIdentifier(index);
-			// invalid identifier == deleted element; skip
-			if ((DS_LABEL_IDENTIFIER_INVALID != identifier) &&
-				(identifier >= first) && (identifier <= last))
-			{
-				const int result = this->labelsGroup->setIndex(index, true);
-				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
-				{
-					return_code = result;
-					break;
-				}
-			}
-		}
-	}
-	else
-	{
-		for (identifier = first; identifier <= last; ++identifier)
-		{
-			index = labels->findLabelByIdentifier(identifier);
-			if (DS_LABEL_INDEX_INVALID != index)
-			{
-				const int result = this->labelsGroup->setIndex(index, true);
-				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
-				{
-					return_code = result;
-					break;
-				}
-			}
-		}
 	}
 	return return_code;
 }
@@ -856,8 +786,8 @@ int Computed_field_node_group::addNodesConditional(cmzn_field_id conditional_fie
 		iter = otherNodeGroup->createNodeiterator();
 	else
 	{
-		iter = this->fe_nodeset->createNodeiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->fe_nodeset->get_FE_region()));
+		iter = this->getFeNodeset()->createNodeiterator();
+		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -921,7 +851,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	else
 	{
 		iter = this->createNodeiterator();
-		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->fe_nodeset->get_FE_region()));
+		cache = new cmzn_fieldcache(FE_region_get_cmzn_region(this->getFeNodeset()->get_FE_region()));
 		if (!cache)
 			return_code = CMZN_ERROR_MEMORY;
 	}
@@ -957,7 +887,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 
 int Computed_field_node_group::removeNodesInLabelsGroup(DsLabelsGroup &removeNodeLabelsGroup)
 {
-	cmzn_nodeiterator *iter = this->fe_nodeset->createNodeiterator(&removeNodeLabelsGroup);
+	cmzn_nodeiterator *iter = this->getFeNodeset()->createNodeiterator(&removeNodeLabelsGroup);
 	if (!iter)
 		return CMZN_ERROR_MEMORY;
 	int return_code = CMZN_OK;
@@ -1001,7 +931,7 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
 		return CMZN_ERROR_ARGUMENT;
-	if (this->fe_nodeset->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
+	if (this->getFeNodeset()->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
 		return CMZN_ERROR_ARGUMENT;
 	const int oldSize = this->getSize();
 	int return_code = cmzn_element_add_nodes_to_labels_group(element, *this->labelsGroup);
@@ -1017,7 +947,7 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
 		return CMZN_ERROR_ARGUMENT;
-	if (this->fe_nodeset->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
+	if (this->getFeNodeset()->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
 		return CMZN_ERROR_ARGUMENT;
 	const int oldSize = this->getSize();
 	int return_code = cmzn_element_remove_nodes_from_labels_group(element, *this->labelsGroup);
@@ -1079,7 +1009,7 @@ Computed_field_node_group *Computed_field_node_group::getConditionalNodeGroup(
 		Computed_field_group *group = dynamic_cast<Computed_field_group *>(conditionalField->core);
 		if (group)
 		{
-			otherNodeGroup = group->getNodeGroupPrivate(this->fe_nodeset->getFieldDomainType());
+			otherNodeGroup = group->getNodeGroupPrivate(this->getFeNodeset()->getFieldDomainType());
 			if (!otherNodeGroup)
 				isEmptyGroup = true;
 		}

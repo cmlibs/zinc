@@ -289,26 +289,27 @@ public:
 
 	};
 
-	class Computed_field_element_group : public Computed_field_subobject_group, public FE_domain_group
+	/** Common base class for element group and node group, based on FE_domain / labels */
+	class Computed_field_fe_domain_group : public Computed_field_subobject_group, public FE_domain_group
 	{
-	private:
-		FE_mesh *fe_mesh;
+	protected:
+		FE_domain *fe_domain;
 		DsLabelsGroup *labelsGroup;
 		cmzn_field_subobject_group_change_detail change_detail;
 
-		Computed_field_element_group(FE_mesh *fe_mesh_in, DsLabelsGroup *labelsGroupIn) :
+		Computed_field_fe_domain_group(FE_domain *fe_domain_in, DsLabelsGroup *labelsGroupIn) :
 			Computed_field_subobject_group(),
-			fe_mesh(fe_mesh_in->access()),
+			fe_domain(cmzn::Access(fe_domain_in)),
 			labelsGroup(cmzn::Access(labelsGroupIn))
 		{
-			this->fe_mesh->addGroup(this);
+			this->fe_domain->addGroup(this);
 		}
 
-		~Computed_field_element_group()
+		~Computed_field_fe_domain_group()
 		{
-			this->fe_mesh->removeGroup(this);
+			this->fe_domain->removeGroup(this);
 			cmzn::Deaccess(this->labelsGroup);
-			FE_mesh::deaccess(this->fe_mesh);
+			cmzn::Deaccess(this->fe_domain);
 		}
 
 		/* Record that group has changed by object added, with client notification */
@@ -321,25 +322,49 @@ public:
 		 * Only used when objects removed because destroyed in parent domain. */
 		void changeRemoveNoNotify();
 
-	public:
-
-		static Computed_field_element_group *create(FE_mesh *fe_mesh_in);
-
-		/** @return  Non-accessed FE_mesh */
-		FE_mesh *get_fe_mesh() const
+		void invalidateIterators()
 		{
-			return this->fe_mesh;
+			this->labelsGroup->invalidateLabelIterators();
 		}
 
-		DsLabelsGroup& getLabelsGroup() const
+	public:
+
+		inline DsLabelsGroup& getLabelsGroup() const
 		{
 			return *(this->labelsGroup);
 		}
 
-		int addObject(cmzn_element *object);
-
-		// add object with identifier ranges from first to last, inclusive
+		// add objects with identifier ranges from first to last, inclusive
 		int addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
+
+		DsLabelsGroup *createRelatedLabelsGroup()
+		{
+			return this->fe_domain->createLabelsGroup();
+		}
+
+	};
+
+
+	class Computed_field_element_group : public Computed_field_fe_domain_group
+	{
+	private:
+
+		Computed_field_element_group(FE_mesh *feMeshIn, DsLabelsGroup *labelsGroupIn) :
+			Computed_field_fe_domain_group(feMeshIn, labelsGroupIn)
+		{
+		}
+
+	public:
+
+		static Computed_field_element_group *create(FE_mesh *feMeshIn);
+
+		/** @return  Non-accessed FE_mesh */
+		inline FE_mesh *getFeMesh() const
+		{
+			return static_cast<FE_mesh *>(this->fe_domain);
+		}
+
+		int addObject(cmzn_element *object);
 
 		/** add any elements from master mesh for which conditional_field is true */
 		int addElementsConditional(cmzn_field_id conditional_field);
@@ -359,15 +384,15 @@ public:
 
 		cmzn_elementiterator_id createElementiterator()
 		{
-			return this->fe_mesh->createElementiterator(this->labelsGroup);
+			return this->getFeMesh()->createElementiterator(this->labelsGroup);
 		}
 
 		/** @return  Non-accessed element with that identifier, or 0 if none */
 		inline cmzn_element_id findElementByIdentifier(int identifier)
 		{
-			const DsLabelIndex index = this->fe_mesh->findIndexByIdentifier(identifier);
+			const DsLabelIndex index = this->getFeMesh()->findIndexByIdentifier(identifier);
 			if (this->containsIndex(index))
-				return this->fe_mesh->getElement(index);
+				return this->getFeMesh()->getElement(index);
 			return 0;
 		}
 
@@ -383,7 +408,7 @@ public:
 
 		virtual int isIdentifierInList(int identifier)
 		{
-			const DsLabelIndex index = this->fe_mesh->findIndexByIdentifier(identifier);
+			const DsLabelIndex index = this->getFeMesh()->findIndexByIdentifier(identifier);
 			return this->labelsGroup->hasIndex(index);
 		}
 
@@ -450,7 +475,7 @@ public:
 
 		Computed_field_core* copy()
 		{
-			return Computed_field_element_group::create(this->fe_mesh);
+			return Computed_field_element_group::create(this->getFeMesh());
 		};
 
 		virtual int compare(Computed_field_core* other_field)
@@ -458,8 +483,8 @@ public:
 			Computed_field_element_group* otherCore;
 			if (field && (otherCore = dynamic_cast<Computed_field_element_group*>(other_field)))
 			{
-				if ((this->fe_mesh->getDimension() == otherCore->fe_mesh->getDimension()) &&
-					(this->fe_mesh->getName() == otherCore->fe_mesh->getName()))
+				if ((this->getFeMesh()->getDimension() == otherCore->getFeMesh()->getDimension()) &&
+					(this->getFeMesh()->getName() == otherCore->getFeMesh()->getName()))
 				{
 					return 1;
 				}
@@ -482,12 +507,12 @@ public:
 
 		bool isElementCompatible(cmzn_element_id element)
 		{
-			return this->fe_mesh->containsElement(element);
+			return this->getFeMesh()->containsElement(element);
 		}
 
 		bool isParentElementCompatible(cmzn_element_id element)
 		{
-			FE_mesh *parent_fe_mesh = this->fe_mesh->getParentMesh();
+			FE_mesh *parent_fe_mesh = this->getFeMesh()->getParentMesh();
 			if (parent_fe_mesh)
 				return parent_fe_mesh->containsElement(element);
 			return false;
@@ -499,52 +524,25 @@ public:
 		 */
 		Computed_field_element_group *getConditionalElementGroup(cmzn_field *conditionalField, bool &isEmptyGroup) const;
 
-		void invalidateIterators()
-		{
-			this->labelsGroup->invalidateLabelIterators();
-		}
 	};
 
-	class Computed_field_node_group : public Computed_field_subobject_group, public FE_domain_group
+	class Computed_field_node_group : public Computed_field_fe_domain_group
 	{
 	private:
-		FE_nodeset *fe_nodeset;
-		DsLabelsGroup *labelsGroup;
-		cmzn_field_subobject_group_change_detail change_detail;
 
-		Computed_field_node_group(FE_nodeset *fe_nodeset_in, DsLabelsGroup *labelsGroupIn) :
-			Computed_field_subobject_group(),
-			fe_nodeset(fe_nodeset_in->access()),
-			labelsGroup(cmzn::Access(labelsGroupIn))
+		Computed_field_node_group(FE_nodeset *feNodesetIn, DsLabelsGroup *labelsGroupIn) :
+			Computed_field_fe_domain_group(feNodesetIn, labelsGroupIn)
 		{
-			this->fe_nodeset->addGroup(this);
 		}
-
-		~Computed_field_node_group()
-		{
-			this->fe_nodeset->removeGroup(this);
-			cmzn::Deaccess(this->labelsGroup);
-			FE_nodeset::deaccess(this->fe_nodeset);
-		}
-
-		/* Record that group has changed by object added, with client notification */
-		void changeAdd();
-
-		/* Record that group has changed by object remove, with client notification */
-		void changeRemove();
-
-		/* Record that group has changed by object removal, but do not notify clients.
-		 * Only used when objects removed because destroyed in parent domain. */
-		void changeRemoveNoNotify();
 
 	public:
 
-		static Computed_field_node_group *create(FE_nodeset *fe_nodeset_in);
+		static Computed_field_node_group *create(FE_nodeset *feNodesetIn);
 
 		/** @return  Non-accessed FE_nodeset */
-		FE_nodeset *get_fe_nodeset() const
+		inline FE_nodeset *getFeNodeset() const
 		{
-			return this->fe_nodeset;
+			return static_cast<FE_nodeset *>(this->fe_domain);
 		}
 
 		DsLabelsGroup& getLabelsGroup() const
@@ -553,8 +551,6 @@ public:
 		}
 
 		int addObject(cmzn_node *object);
-
-		int addObjectsInIdentifierRange(DsLabelIdentifier first, DsLabelIdentifier last);
 
 		/** add any nodes from master nodeset for which conditional_field is true */
 		int addNodesConditional(cmzn_field_id conditional_field);
@@ -576,15 +572,15 @@ public:
 
 		cmzn_nodeiterator_id createNodeiterator()
 		{
-			return this->fe_nodeset->createNodeiterator(this->labelsGroup);
+			return this->getFeNodeset()->createNodeiterator(this->labelsGroup);
 		}
 
 		/** @return  non-accessed node with that identifier, or 0 if none */
 		inline cmzn_node_id findNodeByIdentifier(int identifier)
 		{
-			const DsLabelIndex index = this->fe_nodeset->findIndexByIdentifier(identifier);
+			const DsLabelIndex index = this->getFeNodeset()->findIndexByIdentifier(identifier);
 			if (this->containsIndex(index))
-				return this->fe_nodeset->getNode(index);
+				return this->getFeNodeset()->getNode(index);
 			return 0;
 		}
 
@@ -600,7 +596,7 @@ public:
 
 		virtual int isIdentifierInList(int identifier)
 		{
-			const DsLabelIndex index = this->fe_nodeset->findIndexByIdentifier(identifier);
+			const DsLabelIndex index = this->getFeNodeset()->findIndexByIdentifier(identifier);
 			return this->labelsGroup->hasIndex(index);
 		}
 
@@ -632,11 +628,6 @@ public:
 		/** ensure element's nodes are not in node group */
 		int removeElementNodes(cmzn_element_id element);
 
-		DsLabelsGroup *createRelatedNodeLabelsGroup()
-		{
-			return this->fe_nodeset->createLabelsGroup();
-		}
-
 		/** notification from parent FE_nodeset that all nodes have been destroyed: clear this group */
 		virtual void destroyedAllObjects();
 
@@ -650,7 +641,7 @@ public:
 
 		Computed_field_core* copy()
 		{
-			return Computed_field_node_group::create(this->fe_nodeset);
+			return Computed_field_node_group::create(this->getFeNodeset());
 		};
 
 		virtual int compare(Computed_field_core* other_field)
@@ -658,7 +649,7 @@ public:
 			Computed_field_node_group* otherCore;
 			if (field && (otherCore = dynamic_cast<Computed_field_node_group*>(other_field)))
 			{
-				if (this->fe_nodeset->getName() == otherCore->fe_nodeset->getName())
+				if (this->getFeNodeset()->getName() == otherCore->getFeNodeset()->getName())
 				{
 					return 1;
 				}
@@ -686,13 +677,13 @@ public:
 
 		bool isNodeCompatible(cmzn_node_id node)
 		{
-			return this->fe_nodeset->containsNode(node);
+			return this->getFeNodeset()->containsNode(node);
 		}
 
 		bool isParentElementCompatible(cmzn_element_id element)
 		{
 			if ((element) && element->getMesh())
-				return (this->fe_nodeset->get_FE_region() == element->getMesh()->get_FE_region());
+				return (this->getFeNodeset()->get_FE_region() == element->getMesh()->get_FE_region());
 			return false;
 		}
 

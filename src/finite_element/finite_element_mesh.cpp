@@ -120,7 +120,7 @@ bool FE_element_template::FE_field_data::mergeElementfieldtemplatesIntoMesh(FE_m
 
 FE_element_template::FE_element_template(FE_mesh *mesh_in, FE_element_shape *elementShapeIn) :
 	cmzn::RefCounted(),
-	mesh(mesh_in->access()),
+	mesh(cmzn::Access(mesh_in)),
 	elementShape(elementShapeIn ? ACCESS(FE_element_shape)(elementShapeIn) : 0),
 	fieldCount(0),
 	fields(0),
@@ -134,7 +134,7 @@ FE_element_template::~FE_element_template()
 	for (int i = 0; i < fieldCount; ++i)
 		delete this->fields[i];
 	delete[] this->fields;
-	FE_mesh::deaccess(this->mesh);
+	cmzn::Deaccess(this->mesh);
 	if (this->elementShape)
 		DEACCESS(FE_element_shape)(&(this->elementShape));
 }

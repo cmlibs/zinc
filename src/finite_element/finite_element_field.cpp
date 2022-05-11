@@ -145,7 +145,7 @@ FE_field::~FE_field()
 	{
 		for (int i = 0; i < 2; ++i)
 			this->element_xi_host_mesh->removeEmbeddedNodeField(this->embeddedNodeFields[i]);
-		FE_mesh::deaccess(this->element_xi_host_mesh);
+		cmzn::Deaccess(this->element_xi_host_mesh);
 	}
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		delete this->meshFieldData[d];
@@ -1300,7 +1300,7 @@ int FE_field::setElementXiHostMesh(FE_mesh *hostMesh)
 		display_message(ERROR_MESSAGE, "FE_field::setElementXiHostMesh.  Host mesh is already set");
 		return CMZN_ERROR_ALREADY_EXISTS;
 	}
-	this->element_xi_host_mesh = hostMesh->access();
+	this->element_xi_host_mesh = cmzn::Access(hostMesh);
 	for (int i = 0; i < 2; ++i)
 		this->embeddedNodeFields[i] = hostMesh->addEmbeddedNodeField(this, this->fe_region->nodesets[i]);
 	return CMZN_OK;

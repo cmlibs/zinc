@@ -408,7 +408,7 @@ class EXReader
 		std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence, used for reading one time
 
 		NodeTemplate(FE_nodeset *nodesetIn, const std::string& nameIn = noName) :
-			nodeset(nodesetIn->access()),
+			nodeset(cmzn::Access(nodesetIn)),
 			name(nameIn),
 			feNodeTemplate(nodesetIn->create_FE_node_template())
 		{
@@ -417,7 +417,7 @@ class EXReader
 		~NodeTemplate()
 		{
 			cmzn::Deaccess(this->feNodeTemplate);
-			FE_nodeset::deaccess(this->nodeset);
+			cmzn::Deaccess(this->nodeset);
 		}
 	};
 
@@ -432,7 +432,7 @@ class EXReader
 		std::vector<ScaleFactorSet *> scaleFactorSets;
 
 		ElementTemplate(FE_mesh *meshIn, const std::string& nameIn = noName) :
-			mesh(meshIn->access()),
+			mesh(cmzn::Access(meshIn)),
 			name(nameIn),
 			elementtemplate(cmzn_elementtemplate::create(this->mesh)),
 			hasElementValues(false)
@@ -447,7 +447,7 @@ class EXReader
 			{
 				delete this->scaleFactorSets[s];
 			}
-			FE_mesh::deaccess(this->mesh);
+			cmzn::Deaccess(this->mesh);
 		}
 
 		/** @return  Non-accessed shape or nullptr if none. */

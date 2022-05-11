@@ -13,6 +13,7 @@
 
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
+#include "general/refcounted.hpp"
 #include <list>
 
 struct FE_region;
@@ -37,7 +38,7 @@ public:
  * Abstract base class for finite element domain types built on a list of labels,
  * including FE_nodeset and FE_mesh.
  */
-class FE_domain
+class FE_domain : public cmzn::RefCounted
 {
 protected:
 
@@ -55,8 +56,6 @@ protected:
 
 	// when objects are destroyed, store their indexes to notify groups
 	DsLabelsGroup *destroyedLabelsGroup;
-
-	mutable int access_count;
 
 	FE_domain(FE_region *fe_region, int dimensionIn);
 

@@ -992,40 +992,6 @@ public:
 
 	bool equivalentFieldsInElements(DsLabelIndex elementIndex1, DsLabelIndex elementIndex2) const;
 
-	const FE_mesh *access() const
-	{
-		++(this->access_count);
-		return this;
-	}
-
-	FE_mesh *access()
-	{
-		++(this->access_count);
-		return this;
-	}
-
-	static void deaccess(const FE_mesh *&mesh)
-	{
-		if (mesh)
-		{
-			--(mesh->access_count);
-			if (mesh->access_count <= 0)
-				delete mesh;
-			mesh = 0;
-		}
-	}
-
-	static void deaccess(FE_mesh *&mesh)
-	{
-		if (mesh)
-		{
-			--(mesh->access_count);
-			if (mesh->access_count <= 0)
-				delete mesh;
-			mesh = 0;
-		}
-	}
-
 	void elementChange(DsLabelIndex elementIndex, int change);
 
 	void elementFieldChange(DsLabelIndex elementIndex, int change, FE_field *fe_field);
