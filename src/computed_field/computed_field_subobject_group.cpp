@@ -623,7 +623,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 	return return_code;
 }
 
-void Computed_field_element_group::destroyedAllElements()
+void Computed_field_element_group::destroyedAllObjects()
 {
 	if (this->getSize() > 0)
 	{
@@ -632,7 +632,7 @@ void Computed_field_element_group::destroyedAllElements()
 	}
 }
 
-void Computed_field_element_group::destroyedElement(DsLabelIndex destroyedIndex)
+void Computed_field_element_group::destroyedObject(DsLabelIndex destroyedIndex)
 {
 	if (this->labelsGroup->hasIndex(destroyedIndex))
 	{
@@ -641,7 +641,7 @@ void Computed_field_element_group::destroyedElement(DsLabelIndex destroyedIndex)
 	}
 }
 
-void Computed_field_element_group::destroyedElementGroup(DsLabelsGroup& destroyedLabelsGroup)
+void Computed_field_element_group::destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup)
 {
 	const int numberRemoved = this->labelsGroup->removeGroup(destroyedLabelsGroup);
 	if (numberRemoved > 0)
@@ -1029,7 +1029,7 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 	return return_code;
 };
 
-void Computed_field_node_group::destroyedAllNodes()
+void Computed_field_node_group::destroyedAllObjects()
 {
 	if (this->getSize() > 0)
 	{
@@ -1038,7 +1038,7 @@ void Computed_field_node_group::destroyedAllNodes()
 	}
 }
 
-void Computed_field_node_group::destroyedNode(DsLabelIndex destroyedIndex)
+void Computed_field_node_group::destroyedObject(DsLabelIndex destroyedIndex)
 {
 	if (this->labelsGroup->hasIndex(destroyedIndex))
 	{
@@ -1047,7 +1047,7 @@ void Computed_field_node_group::destroyedNode(DsLabelIndex destroyedIndex)
 	}
 }
 
-void Computed_field_node_group::destroyedNodeGroup(DsLabelsGroup& destroyedLabelsGroup)
+void Computed_field_node_group::destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup)
 {
 	const int numberRemoved = this->labelsGroup->removeGroup(destroyedLabelsGroup);
 	if (numberRemoved > 0)

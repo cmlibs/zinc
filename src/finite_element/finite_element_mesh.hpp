@@ -18,6 +18,7 @@
 #include "datastore/maparray.hpp"
 #include "finite_element/element_field_template.hpp"
 #include "finite_element/finite_element_constants.hpp"
+#include "finite_element/finite_element_domain.hpp"
 #include "finite_element/finite_element_shape.hpp"
 #include "general/block_array.hpp"
 #include "general/list.h"
@@ -722,7 +723,7 @@ public:
 /**
  * A set of elements in the FE_region.
  */
-class FE_mesh
+class FE_mesh : public FE_domain
 {
 public:
 
@@ -805,11 +806,6 @@ public:
 
 private:
 
-	FE_region *fe_region; // not accessed
-	const int dimension;
-
-	DsLabels labels; // element identifiers
-
 	// element shape and face/parent mappings
 	int elementShapeFacesCount;
 	ElementShapeFaces **elementShapeFacesArray;
@@ -854,9 +850,6 @@ private:
 	FE_mesh *faceMesh; // not accessed
 	FE_nodeset *nodeset; // not accessed
 
-	/* log of elements added, removed or otherwise changed */
-	DsLabelsChangeLog *changeLog;
-
 	/* information for defining faces */
 	/* existence of element_type_node_sequence_list can tell us whether faces
 		 are being defined */
@@ -868,21 +861,13 @@ private:
 	// list of element iterators to invalidate when mesh destroyed
 	cmzn_elementiterator *activeElementIterators;
 
-	// list of objects containing groups of elements owned by this FE_mesh
-	// to notify when elements are destroyed
-	std::list<FE_mesh_group *> groups;
-	// when elements are destroyed, store their indexes to notify groups
-	DsLabelsGroup *destroyedElementLabelsGroup;
-
-	mutable int access_count;
-
 private:
 
 	FE_mesh(FE_region *fe_regionIn, int dimensionIn);
 
-	~FE_mesh();
+	virtual ~FE_mesh();
 
-	void createChangeLog();
+	virtual void createChangeLog();
 
 	int findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex);
 
@@ -938,12 +923,7 @@ public:
 		return 0;
 	}
 
-	void detach_from_FE_region();
-
-	void clearChangeLog()
-	{
-		this->createChangeLog();
-	}
+	virtual void detach_from_FE_region();
 
 	int addElementfieldtemplate(FE_element_field_template *eft);
 
@@ -1052,16 +1032,6 @@ public:
 
 	void elementAllFieldChange(DsLabelIndex elementIndex, int change);
 
-	int getDimension() const
-	{
-		return this->dimension;
-	}
-
-	FE_region *get_FE_region() const
-	{
-		return this->fe_region;
-	}
-
 	FE_mesh *getFaceMesh() const
 	{
 		return this->faceMesh;
@@ -1093,23 +1063,9 @@ public:
 		return this->nodeset;
 	}
 
-	const char *getName() const;
+	virtual const char *getName() const;
 
-	const DsLabels& getLabels() const
-	{
-		return this->labels;
-	}
-
-	void clear();
-
-	/** @return Accessed changes */
-	DsLabelsChangeLog *extractChangeLog();
-
-	/** @retrun non-Accessed changes */
-	DsLabelsChangeLog *getChangeLog()
-	{
-		return this->changeLog;
-	}
+	virtual void clear();
 
 	int getElementShapeFacesCount() const
 	{
@@ -1206,16 +1162,11 @@ public:
 		return this->labels.getFirstFreeIdentifier(start_identifier);
 	}
 
-	void list_btree_statistics();
+	virtual void list_btree_statistics();
 
 	bool containsElement(cmzn_element *element) const
 	{
 		return (element) && (element->getMesh() == this) && (element->getIndex() >= 0);
-	}
-
-	DsLabelIndex findIndexByIdentifier(DsLabelIdentifier identifier) const
-	{
-		return this->labels.findLabelByIdentifier(identifier);
 	}
 
 	/** @return  Non-accessed element */
@@ -1234,8 +1185,6 @@ public:
 		LIST_CONDITIONAL_FUNCTION(cmzn_element) *conditional_function, void *user_data_void);
 
 	int for_each_FE_element(LIST_ITERATOR_FUNCTION(cmzn_element) iterator_function, void *user_data_void);
-
-	DsLabelsGroup *createLabelsGroup();
 
 	int setElementIdentifier(DsLabelIndex elementIndex, int identifier);
 
@@ -1347,18 +1296,6 @@ public:
 	void end_define_faces();
 
 	int define_faces();
-
-	/** Add group for notification when elements destroyed */
-	void addGroup(FE_mesh_group *group)
-	{
-		this->groups.push_back(group);
-	}
-
-	/** Add group for notification when elements destroyed */
-	void removeGroup(FE_mesh_group *group)
-	{
-		this->groups.remove(group);
-	}
 
 	int destroyElement(cmzn_element *element);
 

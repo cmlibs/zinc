@@ -184,20 +184,18 @@ FE_node_template::~FE_node_template()
 	cmzn_node::deaccess(this->template_node);
 }
 
-FE_nodeset::FE_nodeset(FE_region *fe_region) :
-	fe_region(fe_region),
+FE_nodeset::FE_nodeset(FE_region *fe_regionIn) :
+	FE_domain(fe_regionIn, /*dimensionIn*/0),
 	domainType(CMZN_FIELD_DOMAIN_TYPE_INVALID),
 	last_fe_node_field_info(0),
-	changeLog(0),
-	activeNodeIterators(0),
-	destroyedNodeLabelsGroup(nullptr),
-	access_count(1)
+	activeNodeIterators(0)
 {
 	this->createChangeLog();
 }
 
 FE_nodeset::~FE_nodeset()
 {
+	// must remove change log here to avoid messages during cleanup
 	cmzn::Deaccess(this->changeLog);
 	this->last_fe_node_field_info = 0;
 
@@ -221,20 +219,8 @@ FE_nodeset::~FE_nodeset()
 /** Private: assumes current change log pointer is null or invalid */
 void FE_nodeset::createChangeLog()
 {
-	cmzn::Deaccess(this->changeLog);
-	this->changeLog = DsLabelsChangeLog::create(&this->labels);
-	if (!this->changeLog)
-		display_message(ERROR_MESSAGE, "FE_nodeset::createChangeLog.  Failed to create change log");
+	this->FE_domain::createChangeLog();
 	this->last_fe_node_field_info = 0;
-}
-
-DsLabelsChangeLog *FE_nodeset::extractChangeLog()
-{
-	// take access count of changelog when extracting
-	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = nullptr;
-	this->createChangeLog();
-	return returnChangeLog;
 }
 
 /**
@@ -424,7 +410,7 @@ void FE_nodeset::detach_from_FE_region()
 {
 	// clear embedded locations to avoid circular dependencies which prevent cleanup
 	FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
-	this->fe_region = 0;
+	this->FE_domain::detach_from_FE_region();
 }
 
 /** Remove iterator from linked list in this nodeset */
@@ -465,11 +451,6 @@ cmzn_nodeiterator *FE_nodeset::createNodeiterator(DsLabelsGroup *labelsGroup)
 	else
 		cmzn::Deaccess(labelIterator);
 	return iterator;
-}
-
-DsLabelsGroup *FE_nodeset::createLabelsGroup()
-{
-	return DsLabelsGroup::create(&this->labels); // GRC dodgy taking address here
 }
 
 /**
@@ -617,7 +598,7 @@ void FE_nodeset::clear()
 		}
 	}
 	this->fe_nodes.clear();
-	this->labels.clear();
+	this->FE_domain::clear();
 }
 
 int FE_nodeset::change_FE_node_identifier(cmzn_node *node, DsLabelIdentifier new_identifier)
@@ -817,7 +798,7 @@ int FE_nodeset::for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_func
  * Not to be nested. */
 void FE_nodeset::beginDestroyNodes()
 {
-	this->destroyedNodeLabelsGroup = this->createLabelsGroup();
+	this->destroyedLabelsGroup = this->createLabelsGroup();
 }
 
 /**
@@ -839,7 +820,7 @@ void FE_nodeset::destroyNodePrivate(DsLabelIndex nodeIndex)
 	this->fe_nodes.setValue(nodeIndex, nullptr);
 	node->invalidate();
 	this->labels.removeLabel(nodeIndex);
-	this->destroyedNodeLabelsGroup->setIndex(nodeIndex, true);
+	this->destroyedLabelsGroup->setIndex(nodeIndex, true);
 	cmzn_node::deaccess(node);
 }
 
@@ -848,17 +829,17 @@ void FE_nodeset::destroyNodePrivate(DsLabelIndex nodeIndex)
  * @return  Number of nodes destroyed. */
 int FE_nodeset::endDestroyNodes()
 {
-	const int numberDestroyed = this->destroyedNodeLabelsGroup->getSize();
+	const int numberDestroyed = this->destroyedLabelsGroup->getSize();
 	if (0 == this->labels.getSize())
 	{
 		this->clear();
 		if (numberDestroyed > 0)
 		{
 			// notify groups that all nodes were destroyed
-			for (std::list<FE_nodeset_group*>::iterator groupIter = this->groups.begin();
+			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
 				groupIter != this->groups.end(); ++groupIter)
 			{
-				(*groupIter)->destroyedAllNodes();
+				(*groupIter)->destroyedAllObjects();
 			}
 		}
 	}
@@ -866,23 +847,23 @@ int FE_nodeset::endDestroyNodes()
 	{
 		// more efficient to notify of one index change
 		DsLabelIndex nodeIndex = -1;
-		this->destroyedNodeLabelsGroup->incrementIndex(nodeIndex);
-		for (std::list<FE_nodeset_group*>::iterator groupIter = this->groups.begin();
+		this->destroyedLabelsGroup->incrementIndex(nodeIndex);
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
 			groupIter != this->groups.end(); ++groupIter)
 		{
-			(*groupIter)->destroyedNode(nodeIndex);
+			(*groupIter)->destroyedObject(nodeIndex);
 		}
 	}
 	else if (numberDestroyed > 0)
 	{
 		// notify groups that a group of nodes were destroyed
-		for (std::list<FE_nodeset_group*>::iterator groupIter = this->groups.begin();
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
 			groupIter != this->groups.end(); ++groupIter)
 		{
-			(*groupIter)->destroyedNodeGroup(*this->destroyedNodeLabelsGroup);
+			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
 		}
 	}
-	cmzn::Deaccess(this->destroyedNodeLabelsGroup);
+	cmzn::Deaccess(this->destroyedLabelsGroup);
 	return numberDestroyed;
 }
 
@@ -1007,7 +988,7 @@ void FE_nodeset::list_btree_statistics()
 			display_message(INFORMATION_MESSAGE, "Datapoints:\n");
 		else
 			display_message(INFORMATION_MESSAGE, "General nodeset:\n");
-		this->labels.list_storage_details();
+		this->FE_domain::list_btree_statistics();
 	}
 }
 

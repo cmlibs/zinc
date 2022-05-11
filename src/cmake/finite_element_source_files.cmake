@@ -15,6 +15,7 @@ SET( FINITE_ELEMENT_CORE_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_basis.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_discretization.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_domain.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_evaluation.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_parameters.cpp
@@ -33,6 +34,7 @@ SET( FINITE_ELEMENT_CORE_HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_basis.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_constants.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_discretization.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_domain.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_evaluation.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/finite_element/finite_element_field_parameters.hpp

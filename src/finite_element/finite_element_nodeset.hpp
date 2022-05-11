@@ -17,6 +17,7 @@
 #include "datastore/labels.hpp"
 #include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
+#include "finite_element/finite_element_domain.hpp"
 #include "general/block_array.hpp"
 #include "general/enumerator.h"
 #include "general/list.h"
@@ -346,27 +347,14 @@ public:
 	}
 };
 
-/** Abstract base class for an object holding nodes owned by an FE_nodeset.
- * Interface for notifying when nodes are destroyed */
-class FE_nodeset_group
-{
-public:
-	virtual void destroyedAllNodes() = 0;
-
-	virtual void destroyedNode(DsLabelIndex destroyedNodeIndex) = 0;
-
-	virtual void destroyedNodeGroup(DsLabelsGroup& destroyedNodeLabelsGroup) = 0;
-};
-
 /**
  * A set of nodes/datapoints in the FE_region.
  */
-class FE_nodeset
+class FE_nodeset : public FE_domain
 {
-	FE_region *fe_region; // not accessed
-	cmzn_field_domain_type domainType;
+private:
 
-	DsLabels labels; // node identifiers
+	cmzn_field_domain_type domainType;
 
 	// map labels -> cmzn_node (accessed)
 	block_array<DsLabelIndex, cmzn_node*> fe_nodes;
@@ -378,25 +366,16 @@ class FE_nodeset
 	std::list<FE_node_field_info*> node_field_info_list;
 	struct FE_node_field_info *last_fe_node_field_info;
 
-	// log of nodes added, removed or otherwise changed
-	DsLabelsChangeLog *changeLog;
-
 	// list of node iterators to invalidate when nodeset destroyed
 	cmzn_nodeiterator *activeNodeIterators;
 
-	// list of objects containing groups of nodes owned by this FE_nodeset
-	// to notify when nodes are destroyed
-	std::list<FE_nodeset_group *> groups;
-	// when nodes are destroyed, store their indexes to notify groups
-	DsLabelsGroup *destroyedNodeLabelsGroup;
+private:
 
-	int access_count;
+	FE_nodeset(FE_region *fe_regionIn);
 
-	FE_nodeset(FE_region *fe_region);
+	virtual ~FE_nodeset();
 
-	~FE_nodeset();
-
-	void createChangeLog();
+	virtual void createChangeLog();
 
 	void beginDestroyNodes();
 
@@ -417,7 +396,7 @@ public:
 		return 0;
 	}
 
-	void detach_from_FE_region();
+	virtual void detach_from_FE_region();
 
 	FE_nodeset *access()
 	{
@@ -434,11 +413,6 @@ public:
 				delete nodeset;
 			nodeset = nullptr;
 		}
-	}
-
-	void clearChangeLog()
-	{
-		this->createChangeLog();
 	}
 
 	// in following change is a logical OR of values from enum DsLabelChangeType
@@ -461,11 +435,6 @@ public:
 		this->nodeChange(node->getIndex(), DS_LABEL_CHANGE_TYPE_REMOVE, node);
 	}
 
-	FE_region *get_FE_region() const
-	{
-		return this->fe_region;
-	}
-
 	cmzn_field_domain_type getFieldDomainType() const
 	{
 		return this->domainType;
@@ -477,23 +446,9 @@ public:
 		this->labels.setName(this->getName());
 	}
 
-	const char *getName() const;
+	virtual const char *getName() const;
 
-	const DsLabels& getLabels() const
-	{
-		return this->labels;
-	}
-
-	void clear();
-
-	/** @return Accessed changes */
-	DsLabelsChangeLog *extractChangeLog();
-
-	/** @retrun non-Accessed changes */
-	DsLabelsChangeLog *getChangeLog()
-	{
-		return this->changeLog;
-	}
+	virtual void clear();
 
 	struct FE_node_field_info *get_FE_node_field_info(int number_of_values,
 		struct LIST(FE_node_field) *fe_node_field_list);
@@ -538,16 +493,11 @@ public:
 		return this->labels.getFirstFreeIdentifier(start_identifier);
 	}
 
-	void list_btree_statistics();
+	virtual void list_btree_statistics();
 
 	bool containsNode(cmzn_node *node) const
 	{
 		return (node) ? (node->getNodeset() == this) && (node->getIndex() >= 0) : false;
-	}
-
-	DsLabelIndex findIndexByIdentifier(DsLabelIdentifier identifier) const
-	{
-		return this->labels.findLabelByIdentifier(identifier);
 	}
 
 	/** @return  Non-accessed node */
@@ -562,8 +512,6 @@ public:
 
 	int for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_function, void *user_data_void);
 
-	DsLabelsGroup *createLabelsGroup();
-
 	int change_FE_node_identifier(cmzn_node *node, DsLabelIdentifier new_identifier);
 
 	FE_node_template *create_FE_node_template(cmzn_node *node);
@@ -577,18 +525,6 @@ public:
 	int merge_FE_node_template(struct cmzn_node *destination, FE_node_template *fe_node_template);
 
 	int undefineFieldAtNode(struct cmzn_node *node, struct FE_field *fe_field);
-
-	/** Add group for notification when nodes destroyed */
-	void addGroup(FE_nodeset_group *group)
-	{
-		this->groups.push_back(group);
-	}
-
-	/** Add group for notification when nodes destroyed */
-	void removeGroup(FE_nodeset_group *group)
-	{
-		this->groups.remove(group);
-	}
 
 	int destroyNode(struct cmzn_node *node);
 
@@ -686,4 +622,4 @@ public:
 	}
 };
 
-#endif /* !defined (FINITE_node_NODESET_HPP) */
+#endif /* !defined (FINITE_ELEMENT_NODESET_HPP) */

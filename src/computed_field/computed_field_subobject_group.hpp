@@ -289,7 +289,7 @@ public:
 
 	};
 
-	class Computed_field_element_group : public Computed_field_subobject_group, public FE_mesh_group
+	class Computed_field_element_group : public Computed_field_subobject_group, public FE_domain_group
 	{
 	private:
 		FE_mesh *fe_mesh;
@@ -416,13 +416,13 @@ public:
 		int removeElementFaces(cmzn_element_id parent);
 
 		/** notification from parent FE_mesh that all elements have been destroyed: clear this group */
-		virtual void destroyedAllElements();
+		virtual void destroyedAllObjects();
 
 		/** notification from parent FE_mesh that an element has been destroyed: remove from this group */
-		virtual void destroyedElement(DsLabelIndex destroyedIndex);
+		virtual void destroyedObject(DsLabelIndex destroyedIndex);
 
 		/** notification from parent FE_mesh that a group of elements has been destroyed: remove from this group */
-		virtual void destroyedElementGroup(DsLabelsGroup& destroyedLabelsGroup);
+		virtual void destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup);
 
 	private:
 
@@ -505,7 +505,7 @@ public:
 		}
 	};
 
-	class Computed_field_node_group : public Computed_field_subobject_group, public FE_nodeset_group
+	class Computed_field_node_group : public Computed_field_subobject_group, public FE_domain_group
 	{
 	private:
 		FE_nodeset *fe_nodeset;
@@ -638,13 +638,13 @@ public:
 		}
 
 		/** notification from parent FE_nodeset that all nodes have been destroyed: clear this group */
-		virtual void destroyedAllNodes();
+		virtual void destroyedAllObjects();
 
 		/** notification from parent FE_nodeset that a node has been destroyed: remove from this group */
-		virtual void destroyedNode(DsLabelIndex destroyedIndex);
+		virtual void destroyedObject(DsLabelIndex destroyedIndex);
 
 		/** notification from parent FE_nodeset that a group of nodes has been destroyed: remove from this group */
-		virtual void destroyedNodeGroup(DsLabelsGroup& destroyedLabelsGroup);
+		virtual void destroyedObjectGroup(DsLabelsGroup& destroyedLabelsGroup);
 
 	private:
 
