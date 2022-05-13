@@ -21,10 +21,12 @@
 #include <opencmiss/zinc/streamregion.h>
 #include "zinctestsetup.hpp"
 
+#include <opencmiss/zinc/changemanager.hpp>
 #include <opencmiss/zinc/context.hpp>
 #include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldgroup.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmodule.hpp>
 #include <opencmiss/zinc/node.hpp>
@@ -386,7 +388,7 @@ TEST(ZincMesh, destroyElements)
 	Mesh mesh = zinc.fm.findMeshByDimension(3);
 	Elementtemplate elementTemplate = mesh.createElementtemplate();
 	EXPECT_TRUE(elementTemplate.isValid());
-	EXPECT_EQ(OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+	EXPECT_EQ(RESULT_OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
 
 	Element element[32];
 	for (int e = 0; e < 32; ++e)
@@ -404,7 +406,7 @@ TEST(ZincMesh, destroyElements)
 	FieldGreaterThan topHalfIdentifiers = zinc.fm.createFieldGreaterThan(cmiss_number, midIdentifier);
 	EXPECT_TRUE(midIdentifier.isValid());
 
-	EXPECT_EQ(OK, mesh.destroyElementsConditional(topHalfIdentifiers));
+	EXPECT_EQ(RESULT_OK, mesh.destroyElementsConditional(topHalfIdentifiers));
 	EXPECT_EQ(16, mesh.getSize());
 	Mesh tmpMesh = element[16].getMesh();
 	EXPECT_FALSE(tmpMesh.isValid());
@@ -416,8 +418,136 @@ TEST(ZincMesh, destroyElements)
 		el = iter.next();
 		EXPECT_EQ(element[e], el);
 	}
-	EXPECT_EQ(OK, mesh.destroyAllElements());
+	EXPECT_EQ(RESULT_OK, mesh.destroyAllElements());
 	EXPECT_EQ(0, mesh.getSize());
+}
+
+// Test destroying elements removes them from all groups, even while change cache is active
+TEST(ZincMesh, destroyElementsGroupChangeManager_simple)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Elementtemplate elementTemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementTemplate.isValid());
+	EXPECT_EQ(RESULT_OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+
+	FieldGroup group1 = zinc.fm.createFieldGroup();
+	group1.setName("group1");
+	group1.setManaged(true);
+	MeshGroup group1mesh = group1.createFieldElementGroup(mesh).getMeshGroup();
+	EXPECT_TRUE(group1mesh.isValid());
+
+	for (int n = 0; n < 32; ++n)
+	{
+		Element element = mesh.createElement(n + 1, elementTemplate);
+		EXPECT_TRUE(element.isValid());
+	}
+	EXPECT_EQ(32, mesh.getSize());
+	const double one = 1.0;
+	EXPECT_EQ(RESULT_OK, group1mesh.addElementsConditional(zinc.fm.createFieldConstant(1, &one)));
+	EXPECT_EQ(32, group1mesh.getSize());
+
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	EXPECT_TRUE(mesh.containsElement(element1));
+	EXPECT_TRUE(group1mesh.containsElement(element1));
+	Element element16 = mesh.findElementByIdentifier(16);
+	EXPECT_TRUE(element16.isValid());
+	EXPECT_TRUE(mesh.containsElement(element16));
+	EXPECT_TRUE(group1mesh.containsElement(element16));
+	Element element32 = mesh.findElementByIdentifier(32);
+	EXPECT_TRUE(element32.isValid());
+	EXPECT_TRUE(mesh.containsElement(element32));
+	EXPECT_TRUE(group1mesh.containsElement(element32));
+
+	{
+		ChangeManager<Fieldmodule> fieldChangeManager(zinc.fm);
+		int identifier;
+
+		EXPECT_EQ(RESULT_OK, mesh.destroyElement(element1));
+		EXPECT_NE(1, identifier = element1.getIdentifier());  // since invalidated
+		EXPECT_FALSE(mesh.containsElement(element1));
+		EXPECT_EQ(31, mesh.getSize());
+		EXPECT_FALSE(group1mesh.containsElement(element1));  // false as invalidated
+		EXPECT_EQ(31, group1mesh.getSize());
+
+		Field cmiss_number = zinc.fm.findFieldByName("cmiss_number");
+		EXPECT_TRUE(cmiss_number.isValid());
+		const double midIdentifierValue = 16.5;
+		FieldConstant midIdentifier = zinc.fm.createFieldConstant(1, &midIdentifierValue);
+		EXPECT_TRUE(midIdentifier.isValid());
+		FieldLessThan lowerHalfIdentifiers = zinc.fm.createFieldLessThan(cmiss_number, midIdentifier);
+		EXPECT_TRUE(midIdentifier.isValid());
+
+		EXPECT_EQ(RESULT_OK, mesh.destroyElementsConditional(lowerHalfIdentifiers));
+		EXPECT_NE(16, identifier = element16.getIdentifier());  // since invalidated
+		EXPECT_FALSE(mesh.containsElement(element16));
+		EXPECT_EQ(16, mesh.getSize());
+		EXPECT_FALSE(group1mesh.containsElement(element16));  // false as invalidated
+		EXPECT_EQ(16, group1mesh.getSize());
+
+		EXPECT_EQ(RESULT_OK, mesh.destroyAllElements());
+		EXPECT_NE(32, identifier = element32.getIdentifier());  // since invalidated
+		EXPECT_FALSE(mesh.containsElement(element32));
+		EXPECT_EQ(0, mesh.getSize());
+		EXPECT_FALSE(group1mesh.containsElement(element32));  // false as invalidated
+		EXPECT_EQ(0, group1mesh.getSize());
+	}
+}
+
+// Test destroying 3D element removes it and all orphaned faces from groups,
+// even while change cache is active
+TEST(ZincNodeset, destroyElementsGroupChangeManager_cube)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	// put everything in group1
+	FieldGroup group1 = zinc.fm.createFieldGroup();
+	group1.setName("group1");
+	group1.setManaged(true);
+	group1.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL);
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(1, mesh3d.getSize());
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	MeshGroup group1mesh3d = group1.createFieldElementGroup(mesh3d).getMeshGroup();
+	EXPECT_TRUE(group1mesh3d.isValid());
+	EXPECT_EQ(RESULT_OK, group1mesh3d.addElement(element1));
+	EXPECT_EQ(1, group1mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(6, mesh2d.getSize());
+	MeshGroup group1mesh2d = group1.getFieldElementGroup(mesh2d).getMeshGroup();
+	EXPECT_EQ(6, group1mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(12, mesh1d.getSize());
+	MeshGroup group1mesh1d = group1.getFieldElementGroup(mesh1d).getMeshGroup();
+	EXPECT_EQ(12, group1mesh1d.getSize());
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(8, nodes.getSize());
+	NodesetGroup group1nodes = group1.getFieldNodeGroup(nodes).getNodesetGroup();
+	EXPECT_EQ(8, group1nodes.getSize());
+
+	{
+		ChangeManager<Fieldmodule> fieldChangeManager(zinc.fm);
+		int identifier;
+
+		EXPECT_EQ(RESULT_OK, mesh3d.destroyElement(element1));
+		EXPECT_NE(1, identifier = element1.getIdentifier());  // since invalidated
+		EXPECT_EQ(0, mesh3d.getSize());
+		EXPECT_FALSE(mesh3d.containsElement(element1));
+		EXPECT_FALSE(group1mesh3d.containsElement(element1));  // false as invalidated
+		EXPECT_EQ(0, group1mesh3d.getSize());
+		EXPECT_EQ(0, mesh2d.getSize());
+		EXPECT_EQ(0, group1mesh2d.getSize());
+		EXPECT_EQ(0, mesh1d.getSize());
+		EXPECT_EQ(0, group1mesh1d.getSize());
+		// nodes are not affected
+		EXPECT_EQ(8, nodes.getSize());
+		EXPECT_EQ(8, group1nodes.getSize());
+	}
 }
 
 TEST(ZincNodeset, destroyNodes)
@@ -444,7 +574,7 @@ TEST(ZincNodeset, destroyNodes)
 	FieldGreaterThan topHalfIdentifiers = zinc.fm.createFieldGreaterThan(cmiss_number, midIdentifier);
 	EXPECT_TRUE(midIdentifier.isValid());
 
-	EXPECT_EQ(OK, nodeset.destroyNodesConditional(topHalfIdentifiers));
+	EXPECT_EQ(RESULT_OK, nodeset.destroyNodesConditional(topHalfIdentifiers));
 	EXPECT_EQ(16, nodeset.getSize());
 	Nodeset tmpNodeset = node[16].getNodeset();
 	EXPECT_FALSE(tmpNodeset.isValid());
@@ -456,8 +586,81 @@ TEST(ZincNodeset, destroyNodes)
 		el = iter.next();
 		EXPECT_EQ(node[n], el);
 	}
-	EXPECT_EQ(OK, nodeset.destroyAllNodes());
+	EXPECT_EQ(RESULT_OK, nodeset.destroyAllNodes());
 	EXPECT_EQ(0, nodeset.getSize());
+}
+
+// Test destroying nodes removes them from all groups, even while change cache is active
+TEST(ZincNodeset, destroyNodesGroupChangeManager)
+{
+	ZincTestSetupCpp zinc;
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodetemplate nodeTemplate = nodes.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+
+	FieldGroup group1 = zinc.fm.createFieldGroup();
+	group1.setName("group1");
+	group1.setManaged(true);
+	NodesetGroup group1nodes = group1.createFieldNodeGroup(nodes).getNodesetGroup();
+	EXPECT_TRUE(group1nodes.isValid());
+
+	for (int n = 0; n < 32; ++n)
+	{
+		Node node = nodes.createNode(n + 1, nodeTemplate);
+		EXPECT_TRUE(node.isValid());
+	}
+	EXPECT_EQ(32, nodes.getSize());
+	const double one = 1.0;
+	EXPECT_EQ(RESULT_OK, group1nodes.addNodesConditional(zinc.fm.createFieldConstant(1, &one)));
+	EXPECT_EQ(32, group1nodes.getSize());
+
+	Node node1 = nodes.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+	EXPECT_TRUE(nodes.containsNode(node1));
+	EXPECT_TRUE(group1nodes.containsNode(node1));
+	Node node16 = nodes.findNodeByIdentifier(16);
+	EXPECT_TRUE(node16.isValid());
+	EXPECT_TRUE(nodes.containsNode(node16));
+	EXPECT_TRUE(group1nodes.containsNode(node16));
+	Node node32 = nodes.findNodeByIdentifier(32);
+	EXPECT_TRUE(node32.isValid());
+	EXPECT_TRUE(nodes.containsNode(node32));
+	EXPECT_TRUE(group1nodes.containsNode(node32));
+
+	{
+		ChangeManager<Fieldmodule> fieldChangeManager(zinc.fm);
+		int identifier;
+
+		EXPECT_EQ(RESULT_OK, nodes.destroyNode(node1));
+		EXPECT_NE(1, identifier = node1.getIdentifier());  // since invalidated
+		EXPECT_FALSE(nodes.containsNode(node1));
+		EXPECT_EQ(31, nodes.getSize());
+		EXPECT_FALSE(group1nodes.containsNode(node1));  // false as invalidated
+		EXPECT_EQ(31, group1nodes.getSize());
+
+		Field cmiss_number = zinc.fm.findFieldByName("cmiss_number");
+		EXPECT_TRUE(cmiss_number.isValid());
+		const double midIdentifierValue = 16.5;
+		FieldConstant midIdentifier = zinc.fm.createFieldConstant(1, &midIdentifierValue);
+		EXPECT_TRUE(midIdentifier.isValid());
+		FieldLessThan lowerHalfIdentifiers = zinc.fm.createFieldLessThan(cmiss_number, midIdentifier);
+		EXPECT_TRUE(midIdentifier.isValid());
+
+		EXPECT_EQ(RESULT_OK, nodes.destroyNodesConditional(lowerHalfIdentifiers));
+		EXPECT_NE(16, identifier = node16.getIdentifier());  // since invalidated
+		EXPECT_FALSE(nodes.containsNode(node16));
+		EXPECT_EQ(16, nodes.getSize());
+		EXPECT_FALSE(group1nodes.containsNode(node16));  // false as invalidated
+		EXPECT_EQ(16, group1nodes.getSize());
+
+		EXPECT_EQ(RESULT_OK, nodes.destroyAllNodes());
+		EXPECT_NE(32, identifier = node32.getIdentifier());  // since invalidated
+		EXPECT_FALSE(nodes.containsNode(node32));
+		EXPECT_EQ(0, nodes.getSize());
+		EXPECT_FALSE(group1nodes.containsNode(node32));  // false as invalidated
+		EXPECT_EQ(0, group1nodes.getSize());
+	}
 }
 
 TEST(ZincElement, FaceTypeEnum)

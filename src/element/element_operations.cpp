@@ -621,7 +621,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	if (element_group_field)
 		element_group = Computed_field_element_group_core_cast(element_group_field);
 	if (fe_region && (fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)) &&
-		((!element_group) || (element_group->get_fe_mesh() == fe_mesh)))
+		((!element_group) || (element_group->getFeMesh() == fe_mesh)))
 	{
 		FE_region_begin_change(fe_region);
 		const int number_of_elements = (element_group) ? element_group->getSize() : fe_mesh->getSize();

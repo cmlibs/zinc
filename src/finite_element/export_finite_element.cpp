@@ -206,6 +206,68 @@ public:
 	}
 };
 
+/** Stores start-stop ranges of node/element identifiers for efficiently writing groups. */
+class IdentifierRanges
+{
+private:
+	std::list<std::pair<int, int>> ranges;
+	int lastIdentifier;
+
+public:
+	IdentifierRanges() :
+		lastIdentifier(-1)
+	{
+	}
+
+	void addIdentifier(int identifier)
+	{
+		if (identifier == (this->lastIdentifier + 1))
+		{
+			ranges.back().second = identifier;
+		}
+		else
+		{
+			ranges.push_back(std::pair<int, int>(identifier, identifier));
+		}
+		this->lastIdentifier = identifier;
+	}
+
+	size_t getNumberOfRanges() const
+	{
+		return this->ranges.size();
+	}
+
+	void write(std::ostream& outStream)
+	{
+		const int columnLimit = 10;  // limit of numbers written on each row, will get one more if range started
+		int columns = 0;
+		for (std::list<std::pair<int, int>>::iterator iter = this->ranges.begin();
+			iter != this->ranges.end(); ++iter)
+		{
+			if (columns >= columnLimit)
+			{
+				outStream << ",\n";
+				columns = 0;
+			}
+			else if (columns > 0)
+			{
+				outStream << ",";
+			}
+			outStream << iter->first;
+			++columns;
+			if (iter->first < iter->second)
+			{
+				outStream << ".." << iter->second;
+				++columns;
+			}
+		}
+		if (columns > 0)
+		{
+			outStream << "\n";
+		}
+	}
+};
+
 /** Add field to vector, but ensure indexer fields added before any fields they index */
 int FE_field_add_to_vector_indexer_priority(struct FE_field *field, void *field_vector_void)
 {
@@ -1674,70 +1736,39 @@ bool EXWriter::writeMesh(int dimension, cmzn_field_group *group)
  */
 bool EXWriter::writeElementGroup(int dimension, cmzn_field_group *group)
 {
-	bool result = true;
-	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
-	if (group)
+	if (!group)
 	{
-		cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
-		cmzn_mesh_destroy(&mesh);
-		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
-		cmzn_field_element_group_destroy(&element_group);
+		return false;
 	}
-	if (mesh && (cmzn_mesh_get_size(mesh) > 0))
+	cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(this->fieldmodule, dimension);
+	cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+	cmzn_mesh_destroy(&mesh);
+	mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+	cmzn_field_element_group_destroy(&element_group);
+	if (cmzn_mesh_get_size(mesh) > 0)
 	{
-		FE_mesh *tmpFeMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
-		this->writeFeMesh(tmpFeMesh);
-		(*this->outStream) << "Element group:\n";
+		// get identifier ranges first in case the write criterion makes it empty which would produce an invalid EX file
+		IdentifierRanges elementIdentifiers;
 		cmzn_elementiterator *iter = cmzn_mesh_create_elementiterator(mesh);
 		cmzn_element *element = nullptr;
-		int stopIdentifier = -2;  // forces starting a new range
-		int startIdentifier = -2;
-		const int columnCount = 10;  // limit of numbers written on each row, will get one more if range started
-		int columns = 0;
 		while (nullptr != (element = iter->nextElement()))
 		{
 			if (this->elementIsToBeWritten(element))
 			{
-				const int identifier = element->getIdentifier();
-				if (identifier == (stopIdentifier + 1))
-				{
-					stopIdentifier = identifier;  // enlarge range
-				}
-				else
-				{
-					if (startIdentifier < stopIdentifier)
-					{
-						(*this->outStream) << ".." << stopIdentifier;
-						++columns;
-					}
-					if (columns >= columnCount)
-					{
-						(*this->outStream) << ",\n";
-						columns = 0;
-					}
-					else if (columns > 0)
-					{
-						(*this->outStream) << ",";
-					}
-					(*this->outStream) << identifier;
-					++columns;
-					startIdentifier = stopIdentifier = identifier;
-				}
+				elementIdentifiers.addIdentifier(element->getIdentifier());
 			}
 		}
-		if (startIdentifier < stopIdentifier)
-		{
-			(*this->outStream) << ".." << stopIdentifier;
-			++columns;
-		}
-		if (columns > 0)
-		{
-			(*this->outStream) << "\n";
-		}
 		cmzn_elementiterator_destroy(&iter);
-		cmzn_mesh_destroy(&mesh);
+		if (elementIdentifiers.getNumberOfRanges() > 0)
+		{
+			FE_mesh *tmpFeMesh = FE_region_find_FE_mesh_by_dimension(this->feRegion, dimension);
+			this->writeFeMesh(tmpFeMesh);
+			(*this->outStream) << "Element group:\n";
+			elementIdentifiers.write(*this->outStream);
+		}
 	}
-	return result;
+	cmzn_mesh_destroy(&mesh);
+	return true;
 }
 
 /**
@@ -2148,70 +2179,38 @@ bool EXWriter::writeNodeset(cmzn_field_domain_type fieldDomainType, cmzn_field_g
  */
 bool EXWriter::writeNodeGroup(cmzn_field_domain_type fieldDomainType, cmzn_field_group *group)
 {
-	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule,
-		fieldDomainType);
-	if (group)
+	if (!group)
 	{
-		cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
-		cmzn_nodeset_destroy(&nodeset);
-		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
-		cmzn_field_node_group_destroy(&node_group);
+		return false;
 	}
-	if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
+	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, fieldDomainType);
+	cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+	cmzn_nodeset_destroy(&nodeset);
+	nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+	cmzn_field_node_group_destroy(&node_group);
+	if (cmzn_nodeset_get_size(nodeset) > 0)
 	{
-		FE_nodeset *tmpFeNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
-		this->setNodeset(tmpFeNodeset);
-		this->writeFeNodeset(tmpFeNodeset);
-		(*this->outStream) << "Node group:\n";
+		// get identifier ranges first in case the write criterion makes it empty which would produce an invalid EX file
+		IdentifierRanges nodeIdentifiers;
 		cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
 		cmzn_node *node = nullptr;
-		int stopIdentifier = -2;  // forces starting a new range
-		int startIdentifier = -2;
-		const int columnCount = 10;  // limit of numbers written on each row, will get one more if range started
-		int columns = 0;
-		while (0 != (node = iter->nextNode()))
+		while (nullptr != (node = iter->nextNode()))
 		{
 			if (this->nodeIsToBeWritten(node))
 			{
-				const int identifier = node->getIdentifier();
-				if (identifier == (stopIdentifier + 1))
-				{
-					stopIdentifier = identifier;  // enlarge range
-				}
-				else
-				{
-					if (startIdentifier < stopIdentifier)
-					{
-						(*this->outStream) << ".." << stopIdentifier;
-						++columns;
-					}
-					if (columns >= columnCount)
-					{
-						(*this->outStream) << ",\n";
-						columns = 0;
-					}
-					else if (columns > 0)
-					{
-						(*this->outStream) << ",";
-					}
-					(*this->outStream) << identifier;
-					++columns;
-					startIdentifier = stopIdentifier = identifier;
-				}
+				nodeIdentifiers.addIdentifier(node->getIdentifier());
 			}
 		}
-		if (startIdentifier < stopIdentifier)
-		{
-			(*this->outStream) << ".." << stopIdentifier;
-			++columns;
-		}
-		if (columns > 0)
-		{
-			(*this->outStream) << "\n";
-		}
 		cmzn_nodeiterator_destroy(&iter);
-		cmzn_nodeset_destroy(&nodeset);
+		if (nodeIdentifiers.getNumberOfRanges() > 0)
+		{
+			FE_nodeset *tmpFeNodeset = FE_region_find_FE_nodeset_by_field_domain_type(this->feRegion, fieldDomainType);
+			this->writeFeNodeset(tmpFeNodeset);
+			(*this->outStream) << "Node group:\n";
+			nodeIdentifiers.write(*this->outStream);
+		}
 	}
+	cmzn_nodeset_destroy(&nodeset);
 	return true;
 }
 

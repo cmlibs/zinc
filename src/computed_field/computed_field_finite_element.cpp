@@ -389,6 +389,14 @@ public:
 
 	virtual ~Computed_field_finite_element();
 
+	virtual void inherit_source_field_attributes()
+	{
+		if (this->field)
+		{
+			this->field->setCoordinateSystem(fe_field->getCoordinateSystem(), /*notifyChange*/false);
+		}
+	}
+
 	/** @param componentNumber  Component number >= 0 or negative to get all components
 	  * @param versionNumber  Version number >= 0 */
 	int getNodeParameters(cmzn_fieldcache& cache, int componentNumber,
@@ -1511,8 +1519,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_finite_element_internal(
 		fe_region, fieldName, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system((value_type == FE_VALUE_VALUE) ? RECTANGULAR_CARTESIAN : NOT_APPLICABLE);
-		fe_field->setCoordinateSystem(coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true, number_of_components,
 			/*number_of_source_fields*/0, NULL,
