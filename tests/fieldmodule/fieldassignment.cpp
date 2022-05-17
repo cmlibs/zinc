@@ -8,17 +8,25 @@
 
 #include <gtest/gtest.h>
 
+#include <opencmiss/zinc/changemanager.hpp>
+#include <opencmiss/zinc/element.hpp>
 #include <opencmiss/zinc/field.hpp>
+#include <opencmiss/zinc/fieldapply.hpp>
 #include <opencmiss/zinc/fieldarithmeticoperators.hpp>
 #include <opencmiss/zinc/fieldassignment.hpp>
 #include <opencmiss/zinc/fieldcache.hpp>
 #include <opencmiss/zinc/fieldcomposite.hpp>
 #include <opencmiss/zinc/fieldcoordinatetransformation.hpp>
 #include <opencmiss/zinc/fieldconstant.hpp>
+#include <opencmiss/zinc/fieldderivatives.hpp>
 #include <opencmiss/zinc/fieldfiniteelement.hpp>
 #include <opencmiss/zinc/fieldlogicaloperators.hpp>
 #include <opencmiss/zinc/fieldmeshoperators.hpp>
 #include <opencmiss/zinc/fieldsubobjectgroup.hpp>
+#include <opencmiss/zinc/mesh.hpp>
+#include <opencmiss/zinc/node.hpp>
+#include <opencmiss/zinc/nodeset.hpp>
+#include <opencmiss/zinc/streamregion.hpp>
 #include <opencmiss/zinc/status.hpp>
 
 #include "utilities/zinctestsetupcpp.hpp"
@@ -547,4 +555,131 @@ TEST(ZincFieldassignment, assignNodeValueVersions)
 	EXPECT_TRUE(fieldassignment.isValid());
 	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
 	checkAssignNodeValueVersions(zinc.fm, offsetZero, scaleOne);
+}
+
+// Test that field assignment can assign field derivatives with multiple versions for
+// a destination finite element field when the source field is an embedding map from
+// an Apply field. This uses the gradient finite difference calculation at nodes.
+TEST(ZincFieldassignment, assignApplyEmbeddingDerivativesVersions)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_EMBED_HOST_RESOURCE)));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	Field fittedCoordinates = zinc.fm.findFieldByName("fitted coordinates");
+	EXPECT_TRUE(fittedCoordinates.isValid());
+	const char *materialCoordinatesName = "material coordinates";
+	Field materialCoordinates = zinc.fm.findFieldByName(materialCoordinatesName);
+	EXPECT_TRUE(materialCoordinates.isValid());
+
+	FieldArgumentReal coordinatesArgument = zinc.fm.createFieldArgumentReal(3);
+	EXPECT_TRUE(coordinatesArgument.isValid());
+	FieldFindMeshLocation findHostLocationFittedCoordinates = zinc.fm.createFieldFindMeshLocation(coordinatesArgument, fittedCoordinates, mesh3d);
+	EXPECT_TRUE(findHostLocationFittedCoordinates.isValid());
+	FieldEmbedded hostMaterialCoordinates = zinc.fm.createFieldEmbedded(materialCoordinates, findHostLocationFittedCoordinates);
+	EXPECT_TRUE(hostMaterialCoordinates.isValid());
+
+	Region dataRegion = zinc.root_region.createChild("data");
+	EXPECT_TRUE(dataRegion.isValid());
+	Fieldmodule dataFm = dataRegion.getFieldmodule();
+	EXPECT_TRUE(dataFm.isValid());
+	EXPECT_EQ(RESULT_OK, dataRegion.readFile(TestResources::getLocation(TestResources::FIELDMODULE_EX3_EMBED_NETWORK_RESOURCE)));
+	FieldFiniteElement dataCoordinates = dataFm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(dataCoordinates.isValid());
+	{
+		ChangeManager<Fieldmodule> changeFields(dataFm);
+
+		// temporarily rename coordinates, write and re-read, to copy to "material coordinates"
+		EXPECT_EQ(RESULT_OK, dataCoordinates.setName(materialCoordinatesName));
+		StreaminformationRegion sir = dataRegion.createStreaminformationRegion();
+		StreamresourceMemory srm = sir.createStreamresourceMemory();
+		sir.setResourceFieldNames(srm, 1, &materialCoordinatesName);
+		EXPECT_EQ(RESULT_OK, dataRegion.write(sir));
+		const void *buffer;
+		unsigned int bufferSize;
+		EXPECT_EQ(RESULT_OK, srm.getBuffer(&buffer, &bufferSize));
+
+		EXPECT_EQ(RESULT_OK, dataCoordinates.setName("coordinates"));
+
+		StreaminformationRegion sir2 = dataRegion.createStreaminformationRegion();
+		StreamresourceMemory srm2 = sir2.createStreamresourceMemoryBuffer(buffer, bufferSize);
+		EXPECT_EQ(RESULT_OK, dataRegion.read(sir2));
+	}
+	FieldFiniteElement dataMaterialCoordinates = dataFm.findFieldByName(materialCoordinatesName).castFiniteElement();
+	EXPECT_TRUE(dataMaterialCoordinates.isValid());
+
+	FieldApply applyHostMaterialCoordinates = dataFm.createFieldApply(hostMaterialCoordinates);
+	EXPECT_TRUE(applyHostMaterialCoordinates.isValid());
+	EXPECT_EQ(RESULT_OK, applyHostMaterialCoordinates.setBindArgumentSourceField(coordinatesArgument, dataCoordinates));
+
+	Fieldassignment fieldassignment = dataMaterialCoordinates.createFieldassignment(applyHostMaterialCoordinates);
+	EXPECT_TRUE(fieldassignment.isValid());
+	EXPECT_EQ(RESULT_OK, fieldassignment.assign());
+
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+
+	const int dataDerivativeVersionsCount[4] = { 1, 3, 1, 1 };
+	Nodeset dataNodes = dataFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Fieldcache hostFieldcache = zinc.fm.createFieldcache();
+	Fieldcache dataFieldcache = dataFm.createFieldcache();
+
+	// Use precise gradient of fitted coordinates w.r.t. material Coordinates to transform derivatives
+	FieldGradient gradFittedMaterial = zinc.fm.createFieldGradient(materialCoordinates, fittedCoordinates);
+	EXPECT_TRUE(gradFittedMaterial.isValid());
+	double dx_dX[9];
+
+	double dataX[3] = { 0.0, 0.0, 0.0 };
+	double dataD[3];
+	FieldConstant constCoordinates = zinc.fm.createFieldConstant(3, dataX);
+	EXPECT_TRUE(constCoordinates.isValid());
+	FieldFindMeshLocation findFittedMeshLocation = zinc.fm.createFieldFindMeshLocation(constCoordinates, fittedCoordinates, mesh3d);
+	EXPECT_TRUE(findFittedMeshLocation.isValid());
+	EXPECT_EQ(RESULT_OK, findFittedMeshLocation.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+	double dataXi[3];
+	double expectedMX[3], actualMX[3];
+	double expectedMD[3], actualMD[3];
+	const double XTOL = 1.0E-12;
+	const double DTOL = 1.0E-9;  // coarser as finite difference approximation in actual values
+	for (int n = 0; n < 4; ++n)
+	{
+		Node node = dataNodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		// find dataXi from dataCoordinates
+		EXPECT_EQ(RESULT_OK, dataFieldcache.setNode(node));
+		EXPECT_EQ(RESULT_OK, dataCoordinates.getNodeParameters(dataFieldcache, -1, Node::VALUE_LABEL_VALUE, 1, 3, dataX));
+		EXPECT_EQ(RESULT_OK, constCoordinates.assignReal(hostFieldcache, 3, dataX));
+		EXPECT_EQ(element1, findFittedMeshLocation.evaluateMeshLocation(hostFieldcache, 3, dataXi));
+
+		EXPECT_EQ(RESULT_OK, hostFieldcache.setMeshLocation(element1, 3, dataXi));
+		EXPECT_EQ(RESULT_OK, materialCoordinates.evaluateReal(hostFieldcache, 3, expectedMX));
+		EXPECT_EQ(RESULT_OK, dataMaterialCoordinates.getNodeParameters(dataFieldcache, -1, Node::VALUE_LABEL_VALUE, 1, 3, actualMX));
+		for (int c = 0; c < 3; ++c)
+		{
+			EXPECT_NEAR(expectedMX[c], actualMX[c], XTOL);
+		}
+
+		EXPECT_EQ(RESULT_OK, gradFittedMaterial.evaluateReal(hostFieldcache, 9, dx_dX));
+		for (int v = 0; v < dataDerivativeVersionsCount[n]; ++v)
+		{
+			// get data coordinates derivatives and transform with gradient
+			// which gives transformed derivatives by an independent and precise calculation
+			EXPECT_EQ(RESULT_OK, dataCoordinates.getNodeParameters(dataFieldcache, -1, Node::VALUE_LABEL_D_DS1, v + 1, 3, dataD));
+			for (int i = 0; i < 3; ++i)
+			{
+				expectedMD[i] = 0.0;
+				for (int j = 0; j < 3; ++j)
+				{
+					expectedMD[i] += dx_dX[i*3 + j] * dataD[j];
+				}
+			}
+			EXPECT_EQ(RESULT_OK, dataMaterialCoordinates.getNodeParameters(dataFieldcache, -1, Node::VALUE_LABEL_D_DS1, v + 1, 3, actualMD));
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(expectedMD[c], actualMD[c], DTOL);
+			}
+		}
+	}
 }

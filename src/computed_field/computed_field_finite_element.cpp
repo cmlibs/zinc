@@ -3981,23 +3981,14 @@ int cmzn_field_add_source_FE_field_to_list(cmzn_field *field, void *fe_field_lis
 
 struct LIST(FE_field)
 	*Computed_field_get_defining_FE_field_list(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns the list of FE_fields that <field> depends on.
-==============================================================================*/
 {
-	struct LIST(FE_field) *fe_field_list;
-
-	ENTER(Computed_field_get_defining_FE_field_list);
-	fe_field_list = (struct LIST(FE_field) *)NULL;
+	struct LIST(FE_field) *fe_field_list = nullptr;
 	if (field)
 	{
 		fe_field_list = CREATE(LIST(FE_field))();
 		if (fe_field_list)
 		{
-			if (!Computed_field_for_each_ancestor(field,
+			if (!Computed_field_for_each_ancestor_same_region(field,
 				cmzn_field_add_source_FE_field_to_list, (void *)fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
@@ -4011,33 +4002,21 @@ Returns the list of FE_fields that <field> depends on.
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_defining_FE_field_list.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_field_list);
-} /* Computed_field_get_defining_FE_field_list */
+}
 
 struct LIST(FE_field)
 	*Computed_field_array_get_defining_FE_field_list(
 		int number_of_fields, struct Computed_field **field_array)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns the compiled list of FE_fields that are required by any of
-the <number_of_fields> fields in <field_array>.
-==============================================================================*/
 {
-	int i;
-	struct LIST(FE_field) *additional_fe_field_list, *fe_field_list;
-
-	ENTER(Computed_field_get_defining_FE_field_list);
-	fe_field_list = (struct LIST(FE_field) *)NULL;
-	if ((0 < number_of_fields) && field_array)
+	struct LIST(FE_field) *fe_field_list = nullptr;
+	if ((0 < number_of_fields) && (field_array))
 	{
 		fe_field_list = Computed_field_get_defining_FE_field_list(field_array[0]);
-		for (i = 1 ; i < number_of_fields ; i++)
+		for (int i = 1 ; i < number_of_fields ; i++)
 		{
-			additional_fe_field_list = Computed_field_get_defining_FE_field_list(field_array[i]);
+			struct LIST(FE_field) *additional_fe_field_list =
+				Computed_field_get_defining_FE_field_list(field_array[i]);
 			FOR_EACH_OBJECT_IN_LIST(FE_field)(ensure_FE_field_is_in_list,
 				(void *)fe_field_list, additional_fe_field_list);
 			DESTROY(LIST(FE_field))(&additional_fe_field_list);
@@ -4048,10 +4027,8 @@ the <number_of_fields> fields in <field_array>.
 		display_message(ERROR_MESSAGE,
 			"Computed_field_array_get_defining_FE_field_list.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_field_list);
-} /* Computed_field_array_get_defining_FE_field_list */
+}
 
 int Computed_field_is_type_finite_element_iterator(
 	struct Computed_field *field, void *dummy_void)
