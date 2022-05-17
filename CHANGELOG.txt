@@ -4,6 +4,7 @@ v3.7.0
 Add Sceneviewer incremental graphics build render timeout API.
 Fix groups not immediately removing destoyed nodes or elements within begin/end change.
 Fix enforce non-numeric fields have NOT_APPLICABLE coordinate system type.
+Fix field assignment for embedding maps. Derivatives can now be mapped with finite difference node gradient of Apply field.
 
 v3.6.0
 Add material module change notifier.
