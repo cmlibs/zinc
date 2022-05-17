@@ -1367,38 +1367,29 @@ Returns 1 if any of the source fields have multiple times.
 	return (return_code);
 } /* Computed_field_default_has_multiple_times */
 
-int Computed_field_for_each_ancestor(struct cmzn_field *field,
+int Computed_field_for_each_ancestor_same_region(struct cmzn_field *field,
 	LIST_ITERATOR_FUNCTION(cmzn_field) *iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-For <field> and all of its source Computed_fields, calls <iterator_function>
-with <user_data>. Iteration stops if a single iterator_function call returns 0.
-==============================================================================*/
 {
-	int i, return_code;
-
-	ENTER(Computed_field_for_each_ancestor);
-	if (field && iterator_function)
+	int return_code = 0;
+	if ((field) && (iterator_function))
 	{
 		return_code = (iterator_function)(field, user_data);
-		for (i = 0; (i < field->number_of_source_fields) && return_code; i++)
+		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
 		{
-			return_code = Computed_field_for_each_ancestor(
-				field->source_fields[i], iterator_function, user_data);
+			if (field->source_fields[i]->manager == field->manager)
+			{
+				return_code = Computed_field_for_each_ancestor_same_region(
+					field->source_fields[i], iterator_function, user_data);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_for_each_ancestor.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_for_each_ancestor_same_region.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_for_each_ancestor */
+}
 
 // External API
 int cmzn_field_assign_mesh_location(cmzn_field_id field,
