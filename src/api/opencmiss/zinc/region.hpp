@@ -20,6 +20,7 @@ namespace Zinc
 class Fieldmodule;
 class Scene;
 class StreaminformationRegion;
+class Regionnotifier;
 
 class Region
 {
@@ -212,6 +213,8 @@ public:
 		return cmzn_region_get_hierarchical_time_range(this->id, minimumValueOut, maximumValueOut);
 	}
 
+	inline Regionnotifier createRegionnotifier();
+
 };
 
 inline bool operator==(const Region& a, const Region& b)
@@ -232,6 +235,151 @@ inline int Context::setDefaultRegion(const Region& region)
 inline Region Context::createRegion()
 {
 	return Region(cmzn_context_create_region(id));
+}
+
+class Regionevent
+{
+protected:
+	cmzn_regionevent_id id;
+
+public:
+
+	Regionevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Regionevent(cmzn_regionevent_id in_regionevent_id) :
+		id(in_regionevent_id)
+	{  }
+
+	Regionevent(const Regionevent& regionEvent) :
+		id(cmzn_regionevent_access(regionEvent.id))
+	{  }
+
+	Regionevent& operator=(const Regionevent& regionEvent)
+	{
+		cmzn_regionevent_id temp_id = cmzn_regionevent_access(regionEvent.id);
+		if (0 != id)
+			cmzn_regionevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Regionevent()
+	{
+		if (0 != id)
+		{
+			cmzn_regionevent_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_regionevent_id getId() const
+	{
+		return id;
+	}
+
+};
+
+/**
+ * @brief Base class functor for region notifier callbacks
+ *
+ * Base class functor for region notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Regionevent&) to handle callback.
+ * @see Regionnotifier::setCallback()
+ */
+class Regioncallback
+{
+	friend class Regionnotifier;
+private:
+	Regioncallback(const Regioncallback&); // not implemented
+	Regioncallback& operator=(const Regioncallback&); // not implemented
+
+	static void C_callback(cmzn_regionevent_id regionevent_id, void *callbackVoid)
+	{
+		Regionevent regionevent(cmzn_regionevent_access(regionevent_id));
+		Regioncallback *callback = reinterpret_cast<Regioncallback *>(callbackVoid);
+		(*callback)(regionevent);
+	}
+
+	virtual void operator()(const Regionevent &regionevent) = 0;
+
+protected:
+	Regioncallback()
+	{ }
+
+public:
+	virtual ~Regioncallback()
+	{ }
+};
+
+class Regionnotifier
+{
+protected:
+	cmzn_regionnotifier_id id;
+
+public:
+
+	Regionnotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Regionnotifier(cmzn_regionnotifier_id in_regionnotifier_id) :
+		id(in_regionnotifier_id)
+	{  }
+
+	Regionnotifier(const Regionnotifier& regionNotifier) :
+		id(cmzn_regionnotifier_access(regionNotifier.id))
+	{  }
+
+	Regionnotifier& operator=(const Regionnotifier& regionNotifier)
+	{
+		cmzn_regionnotifier_id temp_id = cmzn_regionnotifier_access(regionNotifier.id);
+		if (0 != id)
+		{
+			cmzn_regionnotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Regionnotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_regionnotifier_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_regionnotifier_id getId() const
+	{
+		return id;
+	}
+
+	int setCallback(Regioncallback& callback)
+	{
+		return cmzn_regionnotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_regionnotifier_clear_callback(id);
+	}
+};
+
+inline Regionnotifier Region::createRegionnotifier()
+{
+	return Regionnotifier(cmzn_region_create_regionnotifier(id));
 }
 
 }  // namespace Zinc

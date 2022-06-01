@@ -16,8 +16,6 @@
 #include "opencmiss/zinc/types/regionid.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/field_derivative.hpp"
-#include "general/callback.h"
-#include "general/object.h"
 #include <list>
 
 
@@ -36,38 +34,92 @@ Global types
 ------------
 */
 
-/** Data broadcast with callbacks from <cmzn_region> describing the changes. */
-class cmzn_region_changes
+struct cmzn_regionevent
 {
-public:
-	/* true if the name of this region has changed */
-	int name_changed;
-	/* true if children added, removed or reordered in cmzn_region */
-	int children_changed;
-	/* if a single child has been added (and none removed) it is indicated here */
-	struct cmzn_region *child_added;  // currently region responsibility to reference count
-	/* if a single child has been removed (and none added) it is indicated here */
-	struct cmzn_region *child_removed;  // currently region responsibility to reference count
+private:
+	cmzn_region *region;
+	int access_count;
 
-	cmzn_region_changes() :
-		name_changed(0),
-		children_changed(0),
-		child_added(nullptr),
-		child_removed(nullptr)
+	cmzn_regionevent(cmzn_region *regionIn);
+
+	~cmzn_regionevent();
+
+public:
+
+	/** @param regionIn  Owning region; can be NULL for FINAL event */
+	static cmzn_regionevent *create(cmzn_region *regionIn)
 	{
+		return new cmzn_regionevent(regionIn);
 	}
 
-	void clear()
+	cmzn_regionevent *access()
 	{
-		this->name_changed = 0;
-		this->children_changed = 0;
-		this->child_added = nullptr;
-		this->child_removed = nullptr;
+		++(this->access_count);
+		return this;
+	}
+
+	static void deaccess(cmzn_regionevent* &event);
+
+	cmzn_region *getRegion()
+	{
+		return this->region;
 	}
 };
 
-DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
-	struct cmzn_region *, cmzn_region_changes *, void);
+struct cmzn_regionnotifier
+{
+private:
+	cmzn_region_id region;  // not accessed
+	cmzn_regionnotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_regionnotifier(cmzn_region *region);
+
+	~cmzn_regionnotifier();
+
+public:
+
+	/** private: external code must use cmzn_region_create_notifier */
+	static cmzn_regionnotifier *create(cmzn_region *region)
+	{
+		if (region)
+		{
+			return new cmzn_regionnotifier(region);
+		}
+		return nullptr;
+	}
+
+	cmzn_regionnotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static void deaccess(cmzn_regionnotifier* &notifier);
+
+	int setCallback(cmzn_regionnotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void regionDestroyed();
+
+	void notify(cmzn_regionevent *event)
+	{
+		if ((this->function) && (event))
+		{
+			(this->function)(event, this->user_data);
+		}
+	}
+};
+
+typedef std::list<cmzn_regionnotifier *> cmzn_regionnotifier_list;
 
 typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
 
@@ -114,12 +166,14 @@ private:
 	 * change_level will have one increment per ancestor hierarchical_change_level.
 	 * Must be tracked to safely transfer when re-parenting regions */
 	int hierarchical_change_level;
-	cmzn_region_changes changes;
-	/* list of change callbacks */
-	struct LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
+
+	// list of notifiers which receive region tree name/structure changes
+	cmzn_regionnotifier_list regionnotifierList;
+	// whether the region tree structure has changed:
+	bool regionChanged;
 
 	// list of notifiers which receive field module callbacks
-	cmzn_fieldmodulenotifier_list notifier_list;
+	cmzn_fieldmodulenotifier_list fieldmodulenotifierList;
 
 	/* number of objects using this region */
 	int access_count;
@@ -141,7 +195,42 @@ private:
 
 	static void Computed_field_change(struct MANAGER_MESSAGE(Computed_field) *message, void *region_void);
 
-	void updateClients();
+	/** Notify clients and parent region of region tree structure changes.
+	 * Only call if changed and not caching */
+	void notifyRegionChanged();
+
+	/** Mark this region's tree structure as changed and notify clients if not caching */
+	void setRegionChanged();
+
+	/** Mark this region's tree structure as changed from a child change; complete with call to endRegionChangedChild() */
+	void beginRegionChangedChild();
+
+	/** Complete change notification from child change and notify clients if not caching */
+	void endRegionChangedChild();
+
+	/** Mark this region's tree structure as changed from child change and notify clients if not caching */
+	void setRegionChangedChild()
+	{
+		this->setRegionChanged();
+	}
+
+	/** Mark this region's name as changed and notify clients if not caching */
+	void setRegionChangedName()
+	{
+		this->setRegionChanged();
+	}
+
+	// clear cached changes to prevent notifications about them
+	void clearCachedChanges();
+
+	void addTreeChange(int delta_change_level);
+
+	/** Counterpart to canMerge() to call for source region without a matching global region */
+	bool isMergable();
+
+	int mergeFields(cmzn_region& sourceRegion);
+
+	int mergePrivate(cmzn_region& sourceRegion);
 
 public:
 
@@ -185,40 +274,37 @@ public:
 		return this->fieldModifyCounter;
 	}
 
+	/** begin cache changes to fields in region, not region tree structure */
 	void beginChangeFields();
 
+	/** end cache changes to fields in region, not region tree structure */
 	void endChangeFields();
 
+	/** begin cache changes to region tree and fields */
 	void beginChange()
 	{
 		++(this->change_level);
 		this->beginChangeFields();
 	}
 
-	// clear cached changes to prevent notifications about them
-	void clearCachedChanges();
-
+	/** end cache changes to region tree and fields */
 	int endChange();
 
 	int getSumHierarchicalChangeLevel() const;
 
-	void treeChange(int delta_change_level);
-
+	/** begin cache changes to region tree and fields for entire tree */
 	void beginHierarchicalChange()
 	{
 		++(this->hierarchical_change_level);
-		this->treeChange(+1);
+		this->addTreeChange(+1);
 	}
 
+	/** end cache changes to region tree and fields for entire tree */
 	void endHierarchicalChange()
 	{
 		--(this->hierarchical_change_level);
-		this->treeChange(-1);
+		this->addTreeChange(-1);
 	}
-
-	int addCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
-
-	int removeCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 
 	/**
 	 * Returns pointer to context this region was created for. Can be NULL if
@@ -381,6 +467,10 @@ public:
 
 	void removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier);
 
+	void addRegionnotifier(cmzn_regionnotifier *notifier);
+
+	void removeRegionnotifier(cmzn_regionnotifier *notifier);
+
 	/** @return  Non-accessed pointer to scene for region, or nullptr if none */
 	cmzn_scene *getScene() const
 	{
@@ -389,14 +479,36 @@ public:
 
 	int getTimeRange(FE_value& minimumTime, FE_value& maximumTime, bool hierarchical) const;
 
+	/**
+	 * Check that fields and other object definitions in source region are properly
+	 * defined and compatible with definitions in this region.
+	 * Converts legacy field representations e.g. read from older EX files, hence
+	 * source region can be modified, and function fails if conversion is not
+	 * possible.
+	 * A successful call to this function is prerequisite for calling merge().
+	 * @see merge()
+	 * @param sourceRegion  Source region to check. Can be modified.
+	 * @return  True if compatible and conversions successful, false if failed.
+	 */
+	bool canMerge(cmzn_region& sourceRegion);
+
+	/**
+	 * Merge fields and other objects from source region tree into this region,
+	 * transferring objects in some cases for efficiency.
+	 * @see canMerge()
+	 * @param sourceRegion  Source region to merge from. Modified and left in an
+	 * in an unusable state by this function as some of its objects may have been
+	 * merged into this region, hence must be destroyed after calling.
+	 * @return  Result OK on success, otherwise any error code.
+	 */
+	int merge(cmzn_region& sourceRegion);
+
 };
 
 /*
 Global functions
 ----------------
 */
-
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
@@ -416,26 +528,6 @@ struct FE_region *cmzn_region_get_FE_region(struct cmzn_region *region);
  */
 struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
 	struct cmzn_region *region);
-
-int cmzn_region_add_callback(struct cmzn_region *region,
-	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Adds a callback to <region> so that when it changes <function> is called with
-<user_data>. <function> has 3 arguments, a struct cmzn_region *, a
-cmzn_region_changes * and the void *user_data.
-==============================================================================*/
-
-int cmzn_region_remove_callback(struct cmzn_region *region,
-	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from <region>.
-==============================================================================*/
 
 /***************************************************************************//**
  * Allocates and returns the path to the root_region ("/").
@@ -509,36 +601,6 @@ Lists the cmzn_region hierarchy starting from <region>. Contents are listed
 indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
-
-/**
- * Check that fields and other object definitions in source region are properly
- * defined and compatible with definitions in target region.
- * Converts legacy field representations e.g. read from older EX files, hence
- * source region can be modified, and function fails if conversion is not
- * possible.
- * Successful from this function is prerequisite for calling cmzn_region_merge.
- * @see cmzn_region_merge
- * @param target_region  Optional target/global region to check compatibility
- * with. Omit to confirm conversion of legacy field representations only.
- * Not modified.
- * @param source_region  Source region to check. Can be modified.
- * @return  True if compatible and conversions successful, false if failed or
- * source region is missing.
- */
-bool cmzn_region_can_merge(cmzn_region_id target_region,
-	cmzn_region_id source_region);
-
-/**
- * Merge fields and other objects from source region tree into target region,
- * transferring objects in some cases for efficiency.
- * @see cmzn_region_can_merge
- * @param target_region  Target / global region to merge into.
- * @param source_region  Source region to merge from. Modified and left in an
- * in an unusable state by this function as some of its objects, hence must be
- * destroyed after calling.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region);
 
 /** Called only by ~FieldDerivative.
  * Add the field derivative to the list in the region and assign its unique
