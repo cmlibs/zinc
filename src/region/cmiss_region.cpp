@@ -1177,7 +1177,7 @@ int cmzn_region::mergeFields(cmzn_region& sourceRegion)
 
 int cmzn_region::mergePrivate(cmzn_region& sourceRegion)
 {
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	sourceRegion.beginChange();
 
 	if (!FE_region_merge(this->get_FE_region(), sourceRegion.get_FE_region()))
