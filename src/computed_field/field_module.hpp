@@ -42,7 +42,7 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_fieldmoduleevent* &event);
+	static void deaccess(cmzn_fieldmoduleevent* &event);
 
 	cmzn_field_change_flags getChangeFlags() const
 	{
@@ -112,7 +112,7 @@ public:
 		return this;
 	}
 
-	static int deaccess(cmzn_fieldmodulenotifier* &notifier);
+	static void deaccess(cmzn_fieldmodulenotifier* &notifier);
 
 	int setCallback(cmzn_fieldmodulenotifier_callback_function function_in,
 		void *user_data_in);

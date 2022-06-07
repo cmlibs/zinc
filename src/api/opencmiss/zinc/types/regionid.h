@@ -24,6 +24,26 @@ struct cmzn_region;
 typedef struct cmzn_region * cmzn_region_id;
 
 /**
+ * @brief Information about changes to the region tree.
+ *
+ * Information about changes to the region tree, sent with each callback from
+ * the region notifier.
+ */
+struct cmzn_regionevent;
+typedef struct cmzn_regionevent *cmzn_regionevent_id;
+
+/**
+ * @brief Manages user notification of changes to a region tree.
+ *
+ * Manages user notification of changes to a region tree.
+ */
+struct cmzn_regionnotifier;
+typedef struct cmzn_regionnotifier *cmzn_regionnotifier_id;
+
+typedef void(*cmzn_regionnotifier_callback_function)(
+	cmzn_regionevent_id event, void *client_data);
+
+/**
  * @brief A region-specific stream information object.
  *
  * A region-specific stream information object, used to specify one or more
@@ -81,7 +101,6 @@ enum cmzn_streaminformation_region_recursion_mode
 	/*!< Region will be exported recursively */
 	CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF = 2,
 	/*!< Region will not be exported recursively */
-
 };
 
 #endif /* CMZN_REGION_ID_H */
