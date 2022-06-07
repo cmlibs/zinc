@@ -144,9 +144,6 @@ namespace {
 
 } // anonymous namespace
 
-static void cmzn_scene_region_change(struct cmzn_region *region,
-	cmzn_region_changes *region_changes, void *scene_void);
-
 DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_transformation, void)
 
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_scene_transformation, \
@@ -294,7 +291,6 @@ cmzn_scene *cmzn_scene::create(cmzn_region *regionIn, cmzn_graphics_module *grap
 		&& scene->transformation_callback_list
 		&& scene->top_region_change_callback_list)
 	{
-		cmzn_region_add_callback(scene->region, cmzn_scene_region_change, (void *)scene);
 		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(scene->region);
 		scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
 		cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
@@ -834,23 +830,6 @@ void cmzn_scene::processFieldmoduleevent(cmzn_fieldmoduleevent *event)
 	}
 	this->endChange();
 }
-
-static void cmzn_scene_region_change(struct cmzn_region *region,
-	cmzn_region_changes *region_changes, void *scene_void)
-{
-	cmzn_scene *scene = static_cast<cmzn_scene *>(scene_void);
-	if (region && region_changes && scene)
-	{
-		if (region_changes->children_changed)
-			scene->setChanged();
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_cmzn_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* cmzn_scene_region_change */
 
 PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_scene)
 {

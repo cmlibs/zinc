@@ -166,37 +166,36 @@ cmzn_node* cmzn_node::createFromTemplate(DsLabelIndex index, cmzn_node *template
 
 FE_node_template::FE_node_template(FE_nodeset *nodeset_in, struct FE_node_field_info *node_field_info) :
 	cmzn::RefCounted(),
-	nodeset(nodeset_in->access()),
+	nodeset(cmzn::Access(nodeset_in)),
 	template_node(cmzn_node::createTemplate(node_field_info))
 {
 }
 
 FE_node_template::FE_node_template(FE_nodeset *nodeset_in, cmzn_node *node) :
 	cmzn::RefCounted(),
-	nodeset(nodeset_in->access()),
+	nodeset(cmzn::Access(nodeset_in)),
 	template_node(cmzn_node::createFromTemplate(DS_LABEL_INDEX_INVALID, node))
 {
 }
 
 FE_node_template::~FE_node_template()
 {
-	FE_nodeset::deaccess(this->nodeset);
+	cmzn::Deaccess(this->nodeset);
 	cmzn_node::deaccess(this->template_node);
 }
 
-FE_nodeset::FE_nodeset(FE_region *fe_region) :
-	fe_region(fe_region),
+FE_nodeset::FE_nodeset(FE_region *fe_regionIn) :
+	FE_domain(fe_regionIn, /*dimensionIn*/0),
 	domainType(CMZN_FIELD_DOMAIN_TYPE_INVALID),
 	last_fe_node_field_info(0),
-	changeLog(0),
-	activeNodeIterators(0),
-	access_count(1)
+	activeNodeIterators(0)
 {
 	this->createChangeLog();
 }
 
 FE_nodeset::~FE_nodeset()
 {
+	// must remove change log here to avoid messages during cleanup
 	cmzn::Deaccess(this->changeLog);
 	this->last_fe_node_field_info = 0;
 
@@ -220,20 +219,8 @@ FE_nodeset::~FE_nodeset()
 /** Private: assumes current change log pointer is null or invalid */
 void FE_nodeset::createChangeLog()
 {
-	cmzn::Deaccess(this->changeLog);
-	this->changeLog = DsLabelsChangeLog::create(&this->labels);
-	if (!this->changeLog)
-		display_message(ERROR_MESSAGE, "FE_nodeset::createChangeLog.  Failed to create change log");
+	this->FE_domain::createChangeLog();
 	this->last_fe_node_field_info = 0;
-}
-
-DsLabelsChangeLog *FE_nodeset::extractChangeLog()
-{
-	// take access count of changelog when extracting
-	DsLabelsChangeLog *returnChangeLog = this->changeLog;
-	this->changeLog = nullptr;
-	this->createChangeLog();
-	return returnChangeLog;
 }
 
 /**
@@ -423,7 +410,7 @@ void FE_nodeset::detach_from_FE_region()
 {
 	// clear embedded locations to avoid circular dependencies which prevent cleanup
 	FE_nodeset_clear_embedded_locations(this, this->fe_region->fe_field_list);
-	this->fe_region = 0;
+	this->FE_domain::detach_from_FE_region();
 }
 
 /** Remove iterator from linked list in this nodeset */
@@ -464,11 +451,6 @@ cmzn_nodeiterator *FE_nodeset::createNodeiterator(DsLabelsGroup *labelsGroup)
 	else
 		cmzn::Deaccess(labelIterator);
 	return iterator;
-}
-
-DsLabelsGroup *FE_nodeset::createLabelsGroup()
-{
-	return DsLabelsGroup::create(&this->labels); // GRC dodgy taking address here
 }
 
 /**
@@ -616,7 +598,7 @@ void FE_nodeset::clear()
 		}
 	}
 	this->fe_nodes.clear();
-	this->labels.clear();
+	this->FE_domain::clear();
 }
 
 int FE_nodeset::change_FE_node_identifier(cmzn_node *node, DsLabelIdentifier new_identifier)
@@ -811,25 +793,78 @@ int FE_nodeset::for_each_FE_node(LIST_ITERATOR_FUNCTION(cmzn_node) iterator_func
 	return return_code;
 }
 
-/**
- * Removes node from the nodeset if not in use by elements.
- * Private function which avoids checking whether node is in nodeset.
- * @return OK on success ERROR_IN_USE if in use by element
- */
-int FE_nodeset::remove_FE_node_private(cmzn_node *node)
+/** Call before any number of calls to destroyNodePrivate
+ * Handles notification of destroyed nodes to groups
+ * Not to be nested. */
+void FE_nodeset::beginDestroyNodes()
 {
-	const DsLabelIndex nodeIndex = node->getIndex();
-	if (this->getElementUsageCount(nodeIndex) > 0)
-		return CMZN_ERROR_IN_USE;
-	// must notify of change before invalidating node otherwise has no fields
-	// assumes within begin/end change
+	this->destroyedLabelsGroup = this->createLabelsGroup();
+}
+
+/**
+ * Destroys and removes node from the nodeset.
+ * Caller must have ensured it is in nodeset and not in use by elements.
+ * Must be called between beginDestroyNodes/endDestroyNodes
+ * @param node  Reference to node pointer, deaccessed and cleared here.
+ */
+void FE_nodeset::destroyNodePrivate(DsLabelIndex nodeIndex)
+{
+	cmzn_node *node = this->getNode(nodeIndex);
+	if (!node)
+	{
+		display_message(WARNING_MESSAGE, "FE_nodeset::destroyNodePrivate.  No node at index");
+		return;
+	}
 	this->nodeRemovedChange(node);
 	// clear cmzn_node entry but deaccess at end of this function
-	this->fe_nodes.setValue(nodeIndex, 0);
+	this->fe_nodes.setValue(nodeIndex, nullptr);
 	node->invalidate();
 	this->labels.removeLabel(nodeIndex);
+	this->destroyedLabelsGroup->setIndex(nodeIndex, true);
 	cmzn_node::deaccess(node);
-	return CMZN_OK;
+}
+
+/** Call after any number of calls to destroyNodePrivate
+ * Handles notification of destroyed nodes to groups.
+ * @return  Number of nodes destroyed. */
+int FE_nodeset::endDestroyNodes()
+{
+	const int numberDestroyed = this->destroyedLabelsGroup->getSize();
+	if (0 == this->labels.getSize())
+	{
+		this->clear();
+		if (numberDestroyed > 0)
+		{
+			// notify groups that all nodes were destroyed
+			for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+				groupIter != this->groups.end(); ++groupIter)
+			{
+				(*groupIter)->destroyedAllObjects();
+			}
+		}
+	}
+	else if (numberDestroyed == 1)
+	{
+		// more efficient to notify of one index change
+		DsLabelIndex nodeIndex = -1;
+		this->destroyedLabelsGroup->incrementIndex(nodeIndex);
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+			groupIter != this->groups.end(); ++groupIter)
+		{
+			(*groupIter)->destroyedObject(nodeIndex);
+		}
+	}
+	else if (numberDestroyed > 0)
+	{
+		// notify groups that a group of nodes were destroyed
+		for (std::list<FE_domain_group*>::iterator groupIter = this->groups.begin();
+			groupIter != this->groups.end(); ++groupIter)
+		{
+			(*groupIter)->destroyedObjectGroup(*this->destroyedLabelsGroup);
+		}
+	}
+	cmzn::Deaccess(this->destroyedLabelsGroup);
+	return numberDestroyed;
 }
 
 /**
@@ -839,56 +874,53 @@ int FE_nodeset::remove_FE_node_private(cmzn_node *node)
  */
 int FE_nodeset::destroyNode(cmzn_node *node)
 {
-	if (this->containsNode(node))
+	if (!this->containsNode(node))
 	{
-		FE_region_begin_change(this->fe_region);
-		const int result = this->remove_FE_node_private(node);
-		if (0 == this->labels.getSize())
-			this->clear();
-		FE_region_end_change(this->fe_region);
-		return result;
+		display_message(ERROR_MESSAGE, "FE_nodeset::destroyNode.  Invalid argument(s)");
+		return CMZN_ERROR_ARGUMENT;
 	}
-	display_message(ERROR_MESSAGE, "FE_nodeset::destroyNode.  Invalid argument(s)");
-	return CMZN_ERROR_ARGUMENT;
+	// need to store index before node is invalidated
+	const DsLabelIndex nodeIndex = node->getIndex();
+	if (this->getElementUsageCount(nodeIndex) > 0)
+	{
+		return CMZN_ERROR_IN_USE;
+	}
+	// don't want FE_region change message to be sent before groups are updated
+	FE_region_begin_change(this->fe_region);
+	this->beginDestroyNodes();
+	this->destroyNodePrivate(nodeIndex);
+	this->endDestroyNodes();
+	FE_region_end_change(this->fe_region);
+	return CMZN_OK;
 }
 
 /**
  * Destroy all nodes not in use by elements.
  * @return OK on success ERROR_IN_USE if any not removed because in use by
- * elements, or other error if more serious failure.
+ * elements.
  */
 int FE_nodeset::destroyAllNodes()
 {
-	int return_code = CMZN_OK;
 	FE_region_begin_change(this->fe_region);
+	this->beginDestroyNodes();
 	// can't use an iterator as invalidated when node removed
-	const DsLabelIndex indexLimit = this->labels.getIndexSize();
-	cmzn_node *node;
+	const DsLabelIndex nodeIndexLimit = this->labels.getIndexSize();
 	const bool contiguous = this->labels.isContiguous();
-	for (DsLabelIndex index = 0; index < indexLimit; ++index)
+	for (DsLabelIndex nodeIndex = 0; nodeIndex < nodeIndexLimit; ++nodeIndex)
 	{
 		// must handle holes left in identifier array by deleted nodes
-		if (contiguous || (DS_LABEL_IDENTIFIER_INVALID != this->getNodeIdentifier(index)))
+		if (contiguous || (DS_LABEL_IDENTIFIER_INVALID != this->getNodeIdentifier(nodeIndex)))
 		{
-			node = this->getNode(index);
-			if (!node)
+			if (this->getElementUsageCount(nodeIndex) > 0)
 			{
-				display_message(WARNING_MESSAGE, "FE_nodeset::destroyAllNodes.  No node at index");
 				continue;
 			}
-			int result = this->remove_FE_node_private(node);
-			if (result != CMZN_OK)
-			{
-				return_code = result;
-				if (result != CMZN_ERROR_IN_USE)
-					break;
-			}
+			this->destroyNodePrivate(nodeIndex);
 		}
 	}
-	if (0 == this->labels.getSize())
-		this->clear();
+	this->endDestroyNodes();
 	FE_region_end_change(this->fe_region);
-	return (return_code);
+	return (this->labels.getSize() > 0) ? CMZN_ERROR_IN_USE : CMZN_OK ;
 }
 
 /**
@@ -898,31 +930,21 @@ int FE_nodeset::destroyAllNodes()
  */
 int FE_nodeset::destroyNodesInGroup(DsLabelsGroup& labelsGroup)
 {
-	int return_code = CMZN_OK;
 	FE_region_begin_change(this->fe_region);
+	this->beginDestroyNodes();
 	// can't use an iterator as invalidated when node removed
-	DsLabelIndex index = -1; // DS_LABEL_INDEX_INVALID
-	cmzn_node *node;
-	while (labelsGroup.incrementIndex(index))
+	DsLabelIndex nodeIndex = -1; // DS_LABEL_INDEX_INVALID
+	while (labelsGroup.incrementIndex(nodeIndex))
 	{
-		node = this->getNode(index);
-		if (!node)
+		if (this->getElementUsageCount(nodeIndex) > 0)
 		{
-			display_message(WARNING_MESSAGE, "FE_nodeset::destroyNodesInGroup.  No node at index");
 			continue;
 		}
-		int result = this->remove_FE_node_private(node);
-		if (result != CMZN_OK)
-		{
-			return_code = result;
-			if (result != CMZN_ERROR_IN_USE)
-				break;
-		}
+		this->destroyNodePrivate(nodeIndex);
 	}
-	if (0 == this->labels.getSize())
-		this->clear();
+	const int numberDestroyed = this->endDestroyNodes();
 	FE_region_end_change(this->fe_region);
-	return (return_code);
+	return (numberDestroyed < labelsGroup.getSize()) ? CMZN_ERROR_IN_USE : CMZN_OK;
 }
 
 int FE_nodeset::get_last_FE_node_identifier()
@@ -966,7 +988,7 @@ void FE_nodeset::list_btree_statistics()
 			display_message(INFORMATION_MESSAGE, "Datapoints:\n");
 		else
 			display_message(INFORMATION_MESSAGE, "General nodeset:\n");
-		this->labels.list_storage_details();
+		this->FE_domain::list_btree_statistics();
 	}
 }
 

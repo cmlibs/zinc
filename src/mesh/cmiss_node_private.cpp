@@ -187,7 +187,7 @@ private:
 
 public:
 	cmzn_nodetemplate(FE_nodeset *fe_nodeset_in) :
-		fe_nodeset(fe_nodeset_in->access()),
+		fe_nodeset(cmzn::Access(fe_nodeset_in)),
 		fe_node_template(0),
 		access_count(1)
 	{
@@ -451,7 +451,7 @@ private:
 			DEACCESS(FE_field)(&(undefine_fields[i]));
 		}
 		cmzn::Deaccess(this->fe_node_template);
-		FE_nodeset::deaccess(fe_nodeset);
+		cmzn::Deaccess(this->fe_nodeset);
 	}
 
 	cmzn_node_field *getNodeField(FE_field *fe_field)
@@ -550,7 +550,7 @@ protected:
 	int access_count;
 
 	cmzn_nodeset(cmzn_field_node_group_id group) :
-		fe_nodeset(Computed_field_node_group_core_cast(group)->get_fe_nodeset()->access()),
+		fe_nodeset(cmzn::Access(Computed_field_node_group_core_cast(group)->getFeNodeset())),
 		group(group),
 		access_count(1)
 	{
@@ -560,7 +560,7 @@ protected:
 
 public:
 	cmzn_nodeset(FE_nodeset *fe_nodeset_in) :
-		fe_nodeset(fe_nodeset_in->access()),
+		fe_nodeset(cmzn::Access(fe_nodeset_in)),
 		group(0),
 		access_count(1)
 	{
@@ -670,7 +670,6 @@ public:
 		return CMZN_ERROR_GENERAL;
 	}
 
-
 	cmzn_node_id findNodeByIdentifier(int identifier) const
 	{
 		cmzn_node_id node = 0;
@@ -736,7 +735,7 @@ protected:
 	{
 		if (group)
 			cmzn_field_node_group_destroy(&group);
-		FE_nodeset::deaccess(fe_nodeset);
+		cmzn::Deaccess(this->fe_nodeset);
 	}
 
 };

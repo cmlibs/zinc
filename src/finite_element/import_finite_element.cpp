@@ -408,7 +408,7 @@ class EXReader
 		std::map<FE_field *, TimeSequence *> nodeFieldTimeSequences;  // map of node field to timesequence, used for reading one time
 
 		NodeTemplate(FE_nodeset *nodesetIn, const std::string& nameIn = noName) :
-			nodeset(nodesetIn->access()),
+			nodeset(cmzn::Access(nodesetIn)),
 			name(nameIn),
 			feNodeTemplate(nodesetIn->create_FE_node_template())
 		{
@@ -417,7 +417,7 @@ class EXReader
 		~NodeTemplate()
 		{
 			cmzn::Deaccess(this->feNodeTemplate);
-			FE_nodeset::deaccess(this->nodeset);
+			cmzn::Deaccess(this->nodeset);
 		}
 	};
 
@@ -432,7 +432,7 @@ class EXReader
 		std::vector<ScaleFactorSet *> scaleFactorSets;
 
 		ElementTemplate(FE_mesh *meshIn, const std::string& nameIn = noName) :
-			mesh(meshIn->access()),
+			mesh(cmzn::Access(meshIn)),
 			name(nameIn),
 			elementtemplate(cmzn_elementtemplate::create(this->mesh)),
 			hasElementValues(false)
@@ -447,7 +447,7 @@ class EXReader
 			{
 				delete this->scaleFactorSets[s];
 			}
-			FE_mesh::deaccess(this->mesh);
+			cmzn::Deaccess(this->mesh);
 		}
 
 		/** @return  Non-accessed shape or nullptr if none. */
@@ -1495,7 +1495,6 @@ FE_field *EXReader::readField(TimeSequence*& timeSequence)
 	FE_value focus;
 	FE_mesh *elementXiHostMesh = nullptr;
 	int number_of_components, number_of_indexed_values;
-	struct Coordinate_system coordinate_system;
 	FE_field *field = 0;
 	FE_field *indexer_field = 0;
 	int return_code = 1;
@@ -1623,7 +1622,7 @@ FE_field *EXReader::readField(TimeSequence*& timeSequence)
 		}
 	}
 	/* read the coordinate system (optional) */
-	coordinate_system.type = NOT_APPLICABLE;
+	Coordinate_system coordinate_system(NOT_APPLICABLE);
 	if (return_code)
 	{
 		if (fuzzy_string_compare_same_length(next_block,
@@ -1829,7 +1828,12 @@ FE_field *EXReader::readField(TimeSequence*& timeSequence)
 			return_code = 0;
 		}
 		field->set_CM_field_type(cm_field_type);
-		field->setCoordinateSystem(coordinate_system);
+		// many legacy EX files set a coordinate system for non-numeric fields which is
+		// now prohibited internally. Silently ignore & keep default NOT_APPLICABLE.
+		if (!Value_type_is_non_numeric(value_type))
+		{
+			field->setCoordinateSystem(coordinate_system);
+		}
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,

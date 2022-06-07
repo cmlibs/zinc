@@ -50,7 +50,7 @@ cmzn_fieldparameters::~cmzn_fieldparameters()
 						this->mixedFieldDerivatives[meshIndex][mo][po]->clearOwnerPrivate();
 						FieldDerivative::deaccess(this->mixedFieldDerivatives[meshIndex][mo][po]);
 					}
-			FE_mesh::deaccess(this->meshes[meshIndex]);
+			cmzn::Deaccess(this->meshes[meshIndex]);
 		}
 	for (int i = 0; i < MAXIMUM_PARAMETER_DERIVATIVE_ORDER; ++i)
 	{
@@ -103,7 +103,7 @@ FieldDerivative *cmzn_fieldparameters::getFieldDerivativeMixed(FE_mesh *mesh, in
 	}
 	const int meshIndex = mesh->getDimension() - 1;
 	if (!this->meshes[meshIndex])
-		this->meshes[meshIndex] = mesh->access();  // so mesh exists while this holds mesh derivatives for it
+		this->meshes[meshIndex] = cmzn::Access(mesh);  // so mesh exists while this holds mesh derivatives for it
 	FieldDerivative *fieldDerivative = this->mixedFieldDerivatives[meshIndex][meshOrder - 1][parameterOrder - 1];
 	if (!fieldDerivative)
 	{

@@ -251,9 +251,9 @@ FE_region::~FE_region()
 
 	// then deaccess to destroy handle
 	for (int n = 0; n < 2; ++n)
-		FE_nodeset::deaccess(this->nodesets[n]);
+		cmzn::Deaccess(this->nodesets[n]);
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
-		FE_mesh::deaccess(this->meshes[dimension - 1]);
+		cmzn::Deaccess(this->meshes[dimension - 1]);
 
 	// remove FE_fields' pointers to this region
 	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(this->fe_field_list);
@@ -425,10 +425,23 @@ struct FE_field *FE_region_get_FE_field_with_general_properties(
 		else
 		{
 			fe_field = FE_field::create(name, fe_region);
-			if (!(set_FE_field_value_type(fe_field, value_type) &&
+			bool success = set_FE_field_value_type(fe_field, value_type) &&
 				set_FE_field_number_of_components(fe_field, number_of_components) &&
-				set_FE_field_type_general(fe_field) &&
-				FE_region_merge_FE_field(fe_region, fe_field)))
+				set_FE_field_type_general(fe_field);
+			if (success)
+			{
+				if (!Value_type_is_non_numeric(value_type))
+				{
+					// numeric field defaults to RC coordinate system
+					Coordinate_system rcCoordinateSystem(RECTANGULAR_CARTESIAN);
+					fe_field->setCoordinateSystem(rcCoordinateSystem);
+				}
+				if (!FE_region_merge_FE_field(fe_region, fe_field))
+				{
+					success = false;
+				}
+			}
+			if (!success)
 			{
 				FE_field::deaccess(fe_field);
 			}

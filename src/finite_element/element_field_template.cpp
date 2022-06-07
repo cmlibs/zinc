@@ -680,6 +680,8 @@ int FE_element_field_template::setNumberOfLocalScaleFactors(int number)
 			this->scaleFactorTypes[sf] = oldScaleFactorTypes[sf];
 			this->scaleFactorIdentifiers[sf] = oldScaleFactorIdentifiers[sf];
 		}
+		delete[] oldScaleFactorTypes;
+		delete[] oldScaleFactorIdentifiers;
 		// give new scale factors default type and version
 		for (int sf = this->numberOfLocalScaleFactors; sf < number; ++sf)
 		{

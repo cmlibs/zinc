@@ -242,15 +242,13 @@ int Computed_field_is_defined_at_node_conditional(struct cmzn_field *field,
 int Computed_field_has_string_value_type(struct cmzn_field *field,
 	void *dummy_void);
 
-int Computed_field_for_each_ancestor(struct cmzn_field *field,
+/**
+ * For <field> and all of its source fields (and their source fields) from the
+ * same region/manager as field, calls <iterator_function> with <user_data>.
+ * Iteration stops if a single iterator_function call returns 0.
+ */
+int Computed_field_for_each_ancestor_same_region(struct cmzn_field *field,
 	LIST_ITERATOR_FUNCTION(cmzn_field) *iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-For <field> and all of its source Computed_fields, calls <iterator_function>
-with <user_data>. Iteration stops if a single iterator_function call returns 0.
-==============================================================================*/
 
 /***************************************************************************//**
  * Prescribes a location in an element for field evaluation or assignment with
