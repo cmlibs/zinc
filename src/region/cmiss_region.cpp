@@ -369,12 +369,7 @@ void cmzn_region::clearCachedChanges()
 	this->fe_region->clearCachedChanges();
 }
 
-/**
- * Adds delta_change_level to change_level of region and all its descendents.
- * Begins or ends change cache as many times as magnitude of delta_change_level.
- * +ve = beginChange, -ve = endChange.
- */
-void cmzn_region::addTreeChange(int delta_change_level)
+void cmzn_region::deltaTreeChange(int delta_change_level)
 {
 	for (int i = 0; i < delta_change_level; i++)
 	{
@@ -383,7 +378,7 @@ void cmzn_region::addTreeChange(int delta_change_level)
 	cmzn_region *child = this->first_child;
 	while (child)
 	{
-		child->addTreeChange(delta_change_level);
+		child->deltaTreeChange(delta_change_level);
 		child = child->next_sibling;
 	}
 	for (int i = 0; i > delta_change_level; i--)
@@ -818,7 +813,7 @@ int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_chil
 	}
 	if (delta_change_level != 0)
 	{
-		new_child->addTreeChange(delta_change_level);
+		new_child->deltaTreeChange(delta_change_level);
 	}
 	this->setRegionChangedChild();
 	this->endChange();
@@ -852,7 +847,7 @@ int cmzn_region::removeChild(cmzn_region *old_child)
 	cmzn_region::deaccess(old_child);
 	if (delta_change_level != 0)
 	{
-		old_child->addTreeChange(delta_change_level);
+		old_child->deltaTreeChange(delta_change_level);
 	}
 	this->setRegionChangedChild();
 	this->endChange();

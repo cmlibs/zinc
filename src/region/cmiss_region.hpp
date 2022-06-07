@@ -223,7 +223,12 @@ private:
 	// clear cached changes to prevent notifications about them
 	void clearCachedChanges();
 
-	void addTreeChange(int delta_change_level);
+	/**
+	 * Adds delta_change_level to change_level of region and all its descendents.
+	 * Begins or ends change cache as many times as magnitude of delta_change_level.
+	 * +ve = beginChange, -ve = endChange.
+	 */
+	void deltaTreeChange(int delta_change_level);
 
 	/** Counterpart to canMerge() to call for source region without a matching global region */
 	bool isMergable();
@@ -296,14 +301,14 @@ public:
 	void beginHierarchicalChange()
 	{
 		++(this->hierarchical_change_level);
-		this->addTreeChange(+1);
+		this->deltaTreeChange(+1);
 	}
 
 	/** end cache changes to region tree and fields for entire tree */
 	void endHierarchicalChange()
 	{
 		--(this->hierarchical_change_level);
-		this->addTreeChange(-1);
+		this->deltaTreeChange(-1);
 	}
 
 	/**
