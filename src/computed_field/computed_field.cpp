@@ -810,17 +810,114 @@ cmzn_fieldparameters *cmzn_field::getFieldparameters()
 	return this->fieldparameters;
 }
 
-void cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
+int cmzn_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn, bool notifyChange)
 {
+	if (coordinateSystemIn.type != NOT_APPLICABLE)
+	{
+		const cmzn_field_value_type valueType = this->getValueType();
+		if ((valueType == CMZN_FIELD_VALUE_TYPE_STRING) ||
+			(valueType == CMZN_FIELD_VALUE_TYPE_MESH_LOCATION))
+		{
+			display_message(ERROR_MESSAGE,
+				"Field setCoordinateSystem.  Non-numeric fields may only have coordinate system type NOT_APPLICABLE");
+			return CMZN_ERROR_ARGUMENT;
+		}
+	}
 	if (!(this->coordinate_system == coordinateSystemIn))
 	{
 		this->coordinate_system = coordinateSystemIn;
+		// propagate to wrapped FE_field or other object
 		this->core->propagate_coordinate_system();
 		if (notifyChange)
 		{
 			this->setChanged();
 		}
 	}
+	return CMZN_OK;
+}
+
+FE_value cmzn_field::getCoordinateSystemFocus() const
+{
+	return this->coordinate_system.parameters.focus;
+}
+
+int cmzn_field::setCoordinateSystemFocus(FE_value focus)
+{
+	if (focus <= 0.0)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	Coordinate_system tmpCoordinateSystem(this->coordinate_system.type, focus);
+	return this->setCoordinateSystem(tmpCoordinateSystem);
+}
+
+cmzn_field_coordinate_system_type cmzn_field::getCoordinateSystemType() const
+{
+	cmzn_field_coordinate_system_type coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
+	switch (this->coordinate_system.type)
+	{
+	case RECTANGULAR_CARTESIAN:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN;
+		break;
+	case CYLINDRICAL_POLAR:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR;
+		break;
+	case SPHERICAL_POLAR:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR;
+		break;
+	case PROLATE_SPHEROIDAL:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL;
+		break;
+	case OBLATE_SPHEROIDAL:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL;
+		break;
+	case FIBRE:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE;
+		break;
+	case NOT_APPLICABLE:
+		coordinateSystemType = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE;
+		break;
+	default:
+		break;
+	}
+	return coordinateSystemType;
+}
+
+int cmzn_field::setCoordinateSystemType(cmzn_field_coordinate_system_type coordinateSystemType)
+{
+	Coordinate_system_type type = UNKNOWN_COORDINATE_SYSTEM;
+	switch (coordinateSystemType)
+	{
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID:
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
+		type = RECTANGULAR_CARTESIAN;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
+		type = CYLINDRICAL_POLAR;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
+		type = SPHERICAL_POLAR;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
+		type = PROLATE_SPHEROIDAL;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
+		type = OBLATE_SPHEROIDAL;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
+		type = FIBRE;
+		break;
+	case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE:
+		type = NOT_APPLICABLE;
+		break;
+	}
+	if (type == UNKNOWN_COORDINATE_SYSTEM)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	Coordinate_system tmpCoordinateSystem(type, this->coordinate_system.parameters.focus);
+	return this->setCoordinateSystem(tmpCoordinateSystem);
 }
 
 int cmzn_field::setName(const char *nameIn)
@@ -1270,38 +1367,29 @@ Returns 1 if any of the source fields have multiple times.
 	return (return_code);
 } /* Computed_field_default_has_multiple_times */
 
-int Computed_field_for_each_ancestor(struct cmzn_field *field,
+int Computed_field_for_each_ancestor_same_region(struct cmzn_field *field,
 	LIST_ITERATOR_FUNCTION(cmzn_field) *iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-For <field> and all of its source Computed_fields, calls <iterator_function>
-with <user_data>. Iteration stops if a single iterator_function call returns 0.
-==============================================================================*/
 {
-	int i, return_code;
-
-	ENTER(Computed_field_for_each_ancestor);
-	if (field && iterator_function)
+	int return_code = 0;
+	if ((field) && (iterator_function))
 	{
 		return_code = (iterator_function)(field, user_data);
-		for (i = 0; (i < field->number_of_source_fields) && return_code; i++)
+		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
 		{
-			return_code = Computed_field_for_each_ancestor(
-				field->source_fields[i], iterator_function, user_data);
+			if (field->source_fields[i]->manager == field->manager)
+			{
+				return_code = Computed_field_for_each_ancestor_same_region(
+					field->source_fields[i], iterator_function, user_data);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_for_each_ancestor.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_for_each_ancestor_same_region.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_for_each_ancestor */
+}
 
 // External API
 int cmzn_field_assign_mesh_location(cmzn_field_id field,
@@ -2661,23 +2749,17 @@ int cmzn_field_set_component_name(cmzn_field_id field,
 double cmzn_field_get_coordinate_system_focus(cmzn_field_id field)
 {
 	if (field)
-		return static_cast<double>(field->coordinate_system.parameters.focus);
-	return 0;
+	{
+		return static_cast<double>(field->getCoordinateSystemFocus());
+	}
+	return 0.0;
 }
 
 int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus)
 {
-	if (field && (focus > 0.0))
+	if (field)
 	{
-		FE_value useFocus = static_cast<FE_value>(focus);
-		if (useFocus != field->coordinate_system.parameters.focus)
-		{
-			field->coordinate_system.parameters.focus = useFocus;
-			// copy to wrapped FE_field:
-			field->core->propagate_coordinate_system();
-			field->setChanged();
-		}
-		return CMZN_OK;
+		return field->setCoordinateSystemFocus(static_cast<FE_value>(focus));
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -2685,73 +2767,21 @@ int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus)
 enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system_type(
 	cmzn_field_id field)
 {
-	enum cmzn_field_coordinate_system_type coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
 	if (field)
 	{
-		switch (field->coordinate_system.type)
-		{
-			case RECTANGULAR_CARTESIAN:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN;
-				break;
-			case CYLINDRICAL_POLAR:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR;
-				break;
-			case SPHERICAL_POLAR:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR;
-				break;
-			case PROLATE_SPHEROIDAL:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL;
-				break;
-			case OBLATE_SPHEROIDAL:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL;
-				break;
-			case FIBRE:
-				coordinate_system_type = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE;
-				break;
-			default:
-				break;
-		}
+		return field->getCoordinateSystemType();
 	}
-	return coordinate_system_type;
+	return CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID;
 }
 
 int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 	enum cmzn_field_coordinate_system_type coordinate_system_type)
 {
-	if (!field)
-		return 0;
-	enum Coordinate_system_type type = NOT_APPLICABLE;
-	switch (coordinate_system_type)
+	if (field)
 	{
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN:
-			type = RECTANGULAR_CARTESIAN;
-			break;
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR:
-			type = CYLINDRICAL_POLAR;
-			break;
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR:
-			type = SPHERICAL_POLAR;
-			break;
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL:
-			type = PROLATE_SPHEROIDAL;
-			break;
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL:
-			type = OBLATE_SPHEROIDAL;
-			break;
-		case CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE:
-			type = FIBRE;
-			break;
-		default:
-			break;
+		return field->setCoordinateSystemType(coordinate_system_type);
 	}
-	if (type != field->coordinate_system.type)
-	{
-		field->coordinate_system.type = type;
-		// copy to wrapped FE_field:
-		field->core->propagate_coordinate_system();
-		field->setChanged();
-	}
-	return 1;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_field_get_name(cmzn_field_id field)

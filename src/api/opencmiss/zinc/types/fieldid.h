@@ -123,6 +123,8 @@ enum cmzn_field_coordinate_system_type
 	     fibre vectors about the rotated sheet vector.
 	  3. sheet angle = anticlockwise rotation of the rotated sheet and rotated
 	     normal vectors about the rotated fibre vector. */
+	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_NOT_APPLICABLE = 7
+	/*!< Coordinate system is not applicable e.g. for non-numeric field */
 };
 
 /**

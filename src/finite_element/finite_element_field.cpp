@@ -93,7 +93,7 @@ FE_field::FE_field() :
 	number_of_indexed_values(0),
 	number_of_components(0),
 	component_names(nullptr),
-	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
+	coordinate_system(NOT_APPLICABLE),
 	number_of_values(0),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
@@ -118,7 +118,7 @@ FE_field::FE_field(const char *nameIn, struct FE_region *fe_regionIn) :
 	number_of_indexed_values(0),
 	number_of_components(0),
 	component_names(nullptr),  // not allocated until we have custom names
-	coordinate_system(UNKNOWN_COORDINATE_SYSTEM),
+	coordinate_system(NOT_APPLICABLE),
 	number_of_values(0),
 	value_type(UNKNOWN_VALUE),
 	element_xi_host_mesh(nullptr),
@@ -145,7 +145,7 @@ FE_field::~FE_field()
 	{
 		for (int i = 0; i < 2; ++i)
 			this->element_xi_host_mesh->removeEmbeddedNodeField(this->embeddedNodeFields[i]);
-		FE_mesh::deaccess(this->element_xi_host_mesh);
+		cmzn::Deaccess(this->element_xi_host_mesh);
 	}
 	for (int d = 0; d < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++d)
 		delete this->meshFieldData[d];
@@ -828,17 +828,15 @@ int set_FE_field_component_name(struct FE_field *field,int component_no,
 	return 0;
 }
 
-int set_FE_field_coordinate_system(struct FE_field *field,
-	const Coordinate_system *coordinate_system)
+void FE_field::setCoordinateSystem(const Coordinate_system& coordinateSystemIn)
 {
-	if ((field) && (coordinate_system))
+	if (Value_type_is_non_numeric(this->value_type) && (coordinateSystemIn.type != NOT_APPLICABLE))
 	{
-		field->setCoordinateSystem(*coordinate_system);
-		return 1;
+		display_message(WARNING_MESSAGE,
+			"FE_field::setCoordinateSystem.  Non-numeric fields may only have coordinate system type NOT_APPLICABLE. Ignoring change.");
+		return;
 	}
-	display_message(ERROR_MESSAGE,
-		"set_FE_field_coordinate_system.  Invalid argument(s)");
-	return 0;
+	this->coordinate_system = coordinateSystemIn;
 }
 
 void FE_field::clearMeshFieldData(FE_mesh *mesh)
@@ -1302,7 +1300,7 @@ int FE_field::setElementXiHostMesh(FE_mesh *hostMesh)
 		display_message(ERROR_MESSAGE, "FE_field::setElementXiHostMesh.  Host mesh is already set");
 		return CMZN_ERROR_ALREADY_EXISTS;
 	}
-	this->element_xi_host_mesh = hostMesh->access();
+	this->element_xi_host_mesh = cmzn::Access(hostMesh);
 	for (int i = 0; i < 2; ++i)
 		this->embeddedNodeFields[i] = hostMesh->addEmbeddedNodeField(this, this->fe_region->nodesets[i]);
 	return CMZN_OK;

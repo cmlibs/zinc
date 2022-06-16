@@ -47,6 +47,10 @@ TEST(ZincFieldparameters, validAPI)
 	EXPECT_TRUE(fieldOut.isValid());
 	EXPECT_EQ(coordinates, fieldOut);
 
+	EXPECT_DOUBLE_EQ(0.0, fieldparameters.getTime());
+	EXPECT_EQ(RESULT_OK, fieldparameters.setTime(1.234));
+	EXPECT_DOUBLE_EQ(1.234, fieldparameters.getTime());
+
 	EXPECT_EQ(24, fieldparameters.getNumberOfElementParameters(element));
 	EXPECT_EQ(24, fieldparameters.getNumberOfParameters());
 	int parameterIndexes[24], parameterIndexesZero[24];

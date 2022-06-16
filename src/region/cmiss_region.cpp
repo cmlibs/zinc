@@ -24,40 +24,100 @@
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "context/context.hpp"
-#include "general/callback_private.h"
-#include "general/debug.h"
-#include "general/mystring.h"
-#include "graphics/scene.hpp"
-#include "region/cmiss_region.hpp"
 #include "finite_element/finite_element_basis.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
+#include "general/debug.h"
 #include "general/message.h"
+#include "general/mystring.h"
+#include "graphics/scene.hpp"
+#include "region/cmiss_region.hpp"
 #include <algorithm>
 #include <vector>
-
-/*
-Module types
-------------
-*/
-
-FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
-	struct cmzn_region *, cmzn_region_changes *);
-
-/*
-Module functions
-----------------
-*/
-
-DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_region_change, void)
-
-DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_region_change, \
-	struct cmzn_region *, cmzn_region_changes *)
 
 /*
 Class methods
 -------------
 */
+
+cmzn_regionevent::cmzn_regionevent(
+	cmzn_region *regionIn) :
+	region(cmzn_region_access(regionIn)),
+	access_count(1)
+{
+}
+
+cmzn_regionevent::~cmzn_regionevent()
+{
+	cmzn_region::deaccess(this->region);
+}
+
+void cmzn_regionevent::deaccess(cmzn_regionevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+		{
+			delete event;
+		}
+		event = nullptr;
+	}
+}
+
+cmzn_regionnotifier::cmzn_regionnotifier(
+	cmzn_region *region) :
+	region(region),
+	function(nullptr),
+	user_data(nullptr),
+	access_count(1)
+{
+	region->addRegionnotifier(this);
+}
+
+cmzn_regionnotifier::~cmzn_regionnotifier()
+{
+}
+
+void cmzn_regionnotifier::deaccess(cmzn_regionnotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+		{
+			delete notifier;
+		}
+		else if ((1 == notifier->access_count) && (notifier->region))
+		{
+			notifier->region->removeRegionnotifier(notifier);
+		}
+		notifier = nullptr;
+	}
+}
+
+int cmzn_regionnotifier::setCallback(cmzn_regionnotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_regionnotifier::clearCallback()
+{
+	this->function = nullptr;
+	this->user_data = nullptr;
+}
+
+void cmzn_regionnotifier::regionDestroyed()
+{
+	this->region = nullptr;
+}
 
 cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	name(nullptr),
@@ -75,7 +135,7 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 	fieldModifyCounter(0),
 	change_level(0),
 	hierarchical_change_level(0),
-	change_callback_list(CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))()),
+	regionChanged(false),
 	access_count(1)
 {
 	Computed_field_manager_set_region(this->field_manager, this);
@@ -90,25 +150,28 @@ cmzn_region::cmzn_region(cmzn_context* contextIn) :
 cmzn_region::~cmzn_region()
 {
 	// first notify clients as they call some region/fieldmodule APIs
-	for (cmzn_fieldmodulenotifier_list::iterator iter = this->notifier_list.begin();
-		iter != this->notifier_list.end(); ++iter)
+	for (cmzn_fieldmodulenotifier_list::iterator iter = this->fieldmodulenotifierList.begin();
+		iter != this->fieldmodulenotifierList.end(); ++iter)
 	{
 		cmzn_fieldmodulenotifier *notifier = *iter;
 		notifier->regionDestroyed();
 		cmzn_fieldmodulenotifier::deaccess(notifier);
 	}
 
-	DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(&(this->change_callback_list));
+	// clear pointers to region in region notifiers and deaccess
+	for (cmzn_regionnotifier_list::iterator iter = this->regionnotifierList.begin();
+		iter != this->regionnotifierList.end(); ++iter)
+	{
+		cmzn_regionnotifier *notifier = *iter;
+		notifier->regionDestroyed();
+		cmzn_regionnotifier::deaccess(notifier);
+	}
 
 	// release field derivative pointers to this region
 	const int size = static_cast<int>(this->fieldDerivatives.size());
 	for (int i = 0; i < size; ++i)
 		if (this->fieldDerivatives[i])
 			this->fieldDerivatives[i]->setRegionAndCacheIndexPrivate();
-
-	// GRC move to changes object?
-	cmzn_region::deaccess(this->changes.child_added);
-	cmzn_region::deaccess(this->changes.child_removed);
 
 	// destroy child list
 	cmzn_region *next_child = this->first_child;
@@ -139,8 +202,7 @@ cmzn_region *cmzn_region::create(cmzn_context* contextIn)
 		return nullptr;
 	}
 	cmzn_region *region = new cmzn_region(contextIn);
-	if ((region->change_callback_list) &&
-		(region->field_manager) &&
+	if ((region->field_manager) &&
 		(region->field_manager_callback_id) &&
 		(region->scene) &&
 		(region->fe_region))
@@ -211,7 +273,7 @@ void cmzn_region::Computed_field_change(
 			cmzn_fielditerator_destroy(&iter);
 			DESTROY(LIST(Computed_field))(&changedFieldList);
 		}
-		if (0 < region->notifier_list.size())
+		if (0 < region->fieldmodulenotifierList.size())
 		{
 			cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(region);
 			event->setChangeFlags(change_summary);
@@ -219,8 +281,8 @@ void cmzn_region::Computed_field_change(
 			FE_region_changes *changes = FE_region_changes::create(region->fe_region);
 			event->setFeRegionChanges(changes);
 			FE_region_changes::deaccess(changes);
-			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list.begin();
-				iter != region->notifier_list.end(); ++iter)
+			for (cmzn_fieldmodulenotifier_list::iterator iter = region->fieldmodulenotifierList.begin();
+				iter != region->fieldmodulenotifierList.end(); ++iter)
 			{
 				(*iter)->notify(event);
 			}
@@ -240,33 +302,91 @@ void cmzn_region::Computed_field_change(
 }
 
 /**
- * Tells the clients of the <region> about changes of children or objects in this
- * region. No messages sent if change count positive or no changes have occurred.
+ * Notifies parent region, scene and clients of the region about changes to the
+ * region tree structure.
+ * Only call if changes have been made and not caching changes.
  */
-void cmzn_region::updateClients()
+void cmzn_region::notifyRegionChanged()
 {
-	cmzn_region_changes changes;
-	if ((0 == this->change_level) && ((this->changes.children_changed) ||
-		(this->changes.name_changed)))
+	this->regionChanged = false;
+	if (this->parent)
 	{
-		if (0 != this->hierarchical_change_level)
+		this->parent->beginRegionChangedChild();
+	}
+	if (this->scene)
+	{
+		this->scene->setChanged();
+	}
+	if (0 < this->regionnotifierList.size())
+	{
+		cmzn_regionevent *event = cmzn_regionevent::create(this);
+		for (cmzn_regionnotifier_list::iterator iter = this->regionnotifierList.begin();
+			iter != this->regionnotifierList.end(); ++iter)
 		{
-			display_message(WARNING_MESSAGE, "cmzn_region_update.  Hierarchical change level mismatch");
+			(*iter)->notify(event);
 		}
-		changes = this->changes;
-		this->changes.clear();  // next changes in the region must be cleared before notification
-		/* send the callbacks */
-		CMZN_CALLBACK_LIST_CALL(cmzn_region_change)(
-			this->change_callback_list, this, &changes);
-		// deaccess child pointers from message
-		cmzn_region::deaccess(changes.child_added);
-		cmzn_region::deaccess(changes.child_removed);
+		cmzn_regionevent::deaccess(event);
+	}
+	if (this->parent)
+	{
+		this->parent->endRegionChangedChild();
 	}
 }
 
-/**
- * Forwards begin change cache to region fields.
- */
+void cmzn_region::setRegionChanged()
+{
+	this->regionChanged = true;
+	if (0 == this->change_level)
+	{
+		this->notifyRegionChanged();
+	}
+}
+
+void cmzn_region::beginRegionChangedChild()
+{
+	this->regionChanged = true;
+	if (this->scene)
+	{
+		this->scene->beginChange();
+	}
+}
+
+void cmzn_region::endRegionChangedChild()
+{
+	if (this->scene)
+	{
+		this->scene->endChange();
+	}
+	if (0 == this->change_level)
+	{
+		this->notifyRegionChanged();
+	}
+}
+
+void cmzn_region::clearCachedChanges()
+{
+	this->regionChanged = false;
+	this->fe_region->clearCachedChanges();
+}
+
+void cmzn_region::deltaTreeChange(int delta_change_level)
+{
+	for (int i = 0; i < delta_change_level; i++)
+	{
+		this->beginChange();
+	}
+	cmzn_region *child = this->first_child;
+	while (child)
+	{
+		child->deltaTreeChange(delta_change_level);
+		child = child->next_sibling;
+	}
+	for (int i = 0; i > delta_change_level; i--)
+	{
+		this->endChange();
+	}
+}
+
 void cmzn_region::beginChangeFields()
 {
 	// reset field value caches so always re-evaluated. See cmzn_field::evaluate()
@@ -280,19 +400,10 @@ void cmzn_region::beginChangeFields()
 	FE_region_begin_change(this->fe_region);
 }
 
-/**
- * Forwards end change cache to region fields.
- */
 void cmzn_region::endChangeFields()
 {
 	FE_region_end_change(this->fe_region);
 	MANAGER_END_CACHE(Computed_field)(this->field_manager);
-}
-
-void cmzn_region::clearCachedChanges()
-{
-	this->changes.clear();
-	this->fe_region->clearCachedChanges();
 }
 
 int cmzn_region::endChange()
@@ -301,8 +412,10 @@ int cmzn_region::endChange()
 	{
 		this->endChangeFields();
 		--(this->change_level);
-		if (0 == this->change_level)
-			this->updateClients();
+		if ((this->regionChanged) && (0 == this->change_level))
+		{
+			this->notifyRegionChanged();
+		}
 		return CMZN_OK;
 	}
 	else
@@ -328,55 +441,6 @@ int cmzn_region::getSumHierarchicalChangeLevel() const
 		region = region->parent;
 	}
 	return sum_hierarchical_change_level;
-}
-
-/**
- * Adds delta_change_level to change_level of region and all its descendents.
- * Begins or ends change cache as many times as magnitude of delta_change_level.
- * +ve = beginChange, -ve = endChange.
- */
-void cmzn_region::treeChange(int delta_change_level)
-{
-	for (int i = 0; i < delta_change_level; i++)
-		this->beginChange();
-	cmzn_region *child = this->first_child;
-	while (child)
-	{
-		child->treeChange(delta_change_level);
-		child = child->next_sibling;
-	}
-	for (int i = 0; i > delta_change_level; i--)
-		this->endChange();
-}
-
-/**
- * Adds a callback to region so that when it changes <function> is called with
- * <user_data>. <function> has 3 arguments, a struct cmzn_region *, a
- * cmzn_region_changes * and the void *user_data.
- */
-int cmzn_region::addCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
-{
-	if (CMZN_CALLBACK_LIST_ADD_CALLBACK(cmzn_region_change)(
-		this->change_callback_list, function, user_data))
-	{
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "cmzn_region::addCallback.  Could not add callback");
-	return 0;
-}
-
-/**
- * Removes the callback calling <function> with <user_data> from <region>.
- */
-int cmzn_region::removeCallback(CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
-{
-	if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_region_change)(
-		this->change_callback_list, function, user_data))
-	{
-		return 1;
-	}
-	display_message(ERROR_MESSAGE, "cmzn_region::removeCallback.  Could not remove callback");
-	return 0;
 }
 
 cmzn_region *cmzn_region::findChildByName(const char *name) const
@@ -443,6 +507,8 @@ cmzn_region *cmzn_region::createSubregion(const char *path)
 	if (childName[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
 		++childName;
 	bool created = false;
+	// in case path/to/region supplied so multiple intermediate regions created
+	this->beginHierarchicalChange();
 	while ((subregion) && (childName[0] != '\0'))
 	{
 		char *childNameEnd = strchr(childName, CMZN_REGION_PATH_SEPARATOR_CHAR);
@@ -472,6 +538,7 @@ cmzn_region *cmzn_region::createSubregion(const char *path)
 		else
 			break;
 	}
+	this->endHierarchicalChange();
 	DEALLOCATE(pathCopy);
 	if (!created)
 		return nullptr;  // failed to create or subregion already exists
@@ -606,8 +673,7 @@ int cmzn_region::setName(const char *name)
 			if (this->name)
 				DEALLOCATE(this->name);
 			this->name = temp_name;
-			this->changes.name_changed = 1;
-			this->updateClients();
+			this->setRegionChangedName();
 		}
 		else
 			return CMZN_ERROR_ARGUMENT; // name is in use by sibling
@@ -745,21 +811,11 @@ int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_chil
 			this->first_child = new_child->access();
 		}
 	}
-	if (!this->changes.children_changed)
-	{
-		this->changes.children_changed = 1;
-		this->changes.child_added = new_child->access();
-	}
-	else
-	{
-		/* multiple changes */
-		cmzn_region::deaccess(this->changes.child_added);
-		cmzn_region::deaccess(this->changes.child_removed);
-	}
 	if (delta_change_level != 0)
 	{
-		new_child->treeChange(delta_change_level);
+		new_child->deltaTreeChange(delta_change_level);
 	}
+	this->setRegionChangedChild();
 	this->endChange();
 	return CMZN_OK;
 }
@@ -767,7 +823,9 @@ int cmzn_region::insertChildBefore(cmzn_region *new_child, cmzn_region *ref_chil
 int cmzn_region::removeChild(cmzn_region *old_child)
 {
 	if ((!old_child) || (old_child->parent != this))
+	{
 		return CMZN_ERROR_ARGUMENT;
+	}
 	this->beginChange();
 	Computed_field_manager_subregion_removed(this->field_manager, old_child);
 	int delta_change_level = this->getSumHierarchicalChangeLevel();
@@ -782,27 +840,16 @@ int cmzn_region::removeChild(cmzn_region *old_child)
 	if (old_child->next_sibling)
 	{
 		old_child->next_sibling->previous_sibling = old_child->previous_sibling;
-		old_child->next_sibling = NULL;
+		old_child->next_sibling = nullptr;
 	}
-	old_child->previous_sibling = NULL;
-	old_child->parent = NULL;
-	if (!this->changes.children_changed)
-	{
-		this->changes.children_changed = 1;
-		this->changes.child_removed = old_child->access();
-	}
-	else
-	{
-		/* multiple changes */
-		cmzn_region::deaccess(this->changes.child_added);
-		cmzn_region::deaccess(this->changes.child_removed);
-	}
+	old_child->previous_sibling = nullptr;
+	old_child->parent = nullptr;
+	cmzn_region::deaccess(old_child);
 	if (delta_change_level != 0)
 	{
-		old_child->treeChange(delta_change_level);
+		old_child->deltaTreeChange(delta_change_level);
 	}
-	this->updateClients();
-	cmzn_region::deaccess(old_child);
+	this->setRegionChangedChild();
 	this->endChange();
 	return CMZN_OK;
 }
@@ -821,7 +868,9 @@ bool cmzn_region::containsSubregion(const cmzn_region *subregion) const
 void cmzn_region::addFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
 {
 	if (notifier)
-		this->notifier_list.push_back(notifier->access());
+	{
+		this->fieldmodulenotifierList.push_back(notifier->access());
+	}
 }
 
 void cmzn_region::removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
@@ -829,11 +878,33 @@ void cmzn_region::removeFieldmodulenotifier(cmzn_fieldmodulenotifier *notifier)
 	if (notifier)
 	{
 		cmzn_fieldmodulenotifier_list::iterator iter = std::find(
-			this->notifier_list.begin(), this->notifier_list.end(), notifier);
-		if (iter != this->notifier_list.end())
+			this->fieldmodulenotifierList.begin(), this->fieldmodulenotifierList.end(), notifier);
+		if (iter != this->fieldmodulenotifierList.end())
 		{
 			cmzn_fieldmodulenotifier::deaccess(notifier);
-			this->notifier_list.erase(iter);
+			this->fieldmodulenotifierList.erase(iter);
+		}
+	}
+}
+
+void cmzn_region::addRegionnotifier(cmzn_regionnotifier *notifier)
+{
+	if (notifier)
+	{
+		this->regionnotifierList.push_back(notifier->access());
+	}
+}
+
+void cmzn_region::removeRegionnotifier(cmzn_regionnotifier *notifier)
+{
+	if (notifier)
+	{
+		cmzn_regionnotifier_list::iterator iter = std::find(
+			this->regionnotifierList.begin(), this->regionnotifierList.end(), notifier);
+		if (iter != this->regionnotifierList.end())
+		{
+			cmzn_regionnotifier::deaccess(notifier);
+			this->regionnotifierList.erase(iter);
 		}
 	}
 }
@@ -871,34 +942,360 @@ int cmzn_region::getTimeRange(FE_value& minimumTime, FE_value& maximumTime, bool
 	return result;
 }
 
+bool cmzn_region::isMergable()
+{
+	if (!FE_region_can_merge(nullptr, this->get_FE_region()))
+	{
+		char *path = this->getPath();
+		display_message(ERROR_MESSAGE, "Source region %s is not mergable", path);
+		DEALLOCATE(path);
+		return false;
+	}
+
+	// check child regions are mergable
+	cmzn_region *child = this->getFirstChild();
+	while (child)
+	{
+		if (!child->isMergable())
+		{
+			return false;
+		}
+		child = child->getNextSibling();
+	}
+
+	return true;
+}
+
+bool cmzn_region::canMerge(cmzn_region& sourceRegion)
+{
+	// check fields
+	bool fieldsOK = true;
+	cmzn_fielditerator *iter = sourceRegion.createFielditerator();
+	cmzn_field *field = nullptr;
+	while ((field = iter->next_non_access()))
+	{
+		cmzn_field *existingField = this->findFieldByName(field->getName());
+		if (existingField)
+		{
+			if (existingField->hasAutomaticName())
+			{
+				// will be renamed to make way for new field if not compatible
+			}
+			else if (existingField->compareFullDefinition(*field))
+			{
+				// found the matching field
+			}
+			else if (existingField->compareBasicDefinition(*field) &&
+				cmzn_field_is_dummy_real(existingField))
+			{
+				// dummy_real will have incoming field merged into it
+			}
+			else
+			{
+				fieldsOK = false;
+				char *target_path = this->getPath();
+				display_message(ERROR_MESSAGE, "Cannot merge incompatible field %s into region %s%s", field->getName(), CMZN_REGION_PATH_SEPARATOR_STRING, target_path);
+				DEALLOCATE(target_path);
+			}
+		}
+	}
+	cmzn_fielditerator::deaccess(iter);
+	if (!fieldsOK)
+	{
+		return false;
+	}
+
+	// check FE_regions
+	if (!FE_region_can_merge(this->get_FE_region(), sourceRegion.get_FE_region()))
+	{
+		char *source_path = sourceRegion.getPath();
+		char *target_path = this->getPath();
+		display_message(ERROR_MESSAGE, "Cannot merge source region %s into %s", source_path, target_path);
+		DEALLOCATE(source_path);
+		DEALLOCATE(target_path);
+		return false;
+	}
+
+	// check child regions can be merged
+	cmzn_region *sourceChild = this->getFirstChild();
+	while (sourceChild)
+	{
+		cmzn_region *targetChild = this->findChildByName(sourceChild->getName());
+		if (targetChild)
+		{
+			if (!targetChild->canMerge(*sourceChild))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (!sourceChild->isMergable())
+			{
+				return false;
+			}
+		}
+		sourceChild = sourceChild->getNextSibling();
+	}
+
+	return true;
+}
+
+/** currently just merges group fields */
+int cmzn_region::mergeFields(cmzn_region& sourceRegion)
+{
+	int return_code = 1;
+	cmzn_fieldmodule_id target_field_module = cmzn_region_get_fieldmodule(this);
+	cmzn_fieldmodule_id source_field_module = cmzn_region_get_fieldmodule(&sourceRegion);
+	cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(source_field_module);
+	cmzn_field_id source_field = 0;
+	while ((0 != (source_field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
+	{
+		cmzn_field_group_id source_group = cmzn_field_cast_group(source_field);
+		if (source_group)
+		{
+			char *name = cmzn_field_get_name(source_field);
+			cmzn_field_id target_field = cmzn_fieldmodule_find_field_by_name(target_field_module, name);
+			if (!target_field)
+			{
+				target_field = cmzn_fieldmodule_create_field_group(target_field_module);
+				cmzn_field_set_managed(target_field, true);
+				cmzn_field_set_name(target_field, name);
+			}
+			cmzn_field_group_id target_group = cmzn_field_cast_group(target_field);
+			if (target_field && (!target_group))
+			{
+				char *source_path = sourceRegion.getPath();
+				char *target_path = this->getPath();
+				display_message(ERROR_MESSAGE,
+					"Cannot merge group %s from source region %s into field using same name in %s", name, source_path, target_path);
+				DEALLOCATE(source_path);
+				DEALLOCATE(target_path);
+			}
+			else if (target_group)
+			{
+				// merge node groups
+				for (int i = 0; i < 2; i++)
+				{
+					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
+					cmzn_nodeset_id source_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(source_field_module, nodeset_domain_type);
+					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_field_node_group(source_group, source_nodeset);
+					if (source_node_group)
+					{
+						cmzn_nodeset_group_id source_nodeset_group = cmzn_field_node_group_get_nodeset_group(source_node_group);
+						cmzn_nodeset_id target_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(target_field_module, nodeset_domain_type);
+						cmzn_field_node_group_id target_node_group = cmzn_field_group_get_field_node_group(target_group, target_nodeset);
+						if (!target_node_group)
+						{
+							target_node_group = cmzn_field_group_create_field_node_group(target_group, target_nodeset);
+						}
+						cmzn_nodeset_group_id target_nodeset_group = cmzn_field_node_group_get_nodeset_group(target_node_group);
+
+						cmzn_nodeiterator_id node_iter = cmzn_nodeset_create_nodeiterator(cmzn_nodeset_group_base_cast(source_nodeset_group));
+						cmzn_node_id source_node = 0;
+						while ((source_node = cmzn_nodeiterator_next_non_access(node_iter)) && return_code)
+						{
+							const int identifier = cmzn_node_get_identifier(source_node);
+							cmzn_node_id target_node = cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_group_base_cast(target_nodeset_group), identifier);
+							if (!target_node)
+							{
+								target_node = cmzn_nodeset_find_node_by_identifier(target_nodeset, identifier);
+								return_code = cmzn_nodeset_group_add_node(target_nodeset_group, target_node);
+							}
+							cmzn_node_destroy(&target_node);
+						}
+						cmzn_nodeiterator_destroy(&node_iter);
+
+						cmzn_nodeset_group_destroy(&target_nodeset_group);
+						cmzn_field_node_group_destroy(&target_node_group);
+						cmzn_nodeset_destroy(&target_nodeset);
+						cmzn_nodeset_group_destroy(&source_nodeset_group);
+						cmzn_field_node_group_destroy(&source_node_group);
+					}
+					cmzn_nodeset_destroy(&source_nodeset);
+				}
+				// merge element groups
+				for (int dimension = 3; 0 < dimension; --dimension)
+				{
+					cmzn_mesh_id source_mesh = cmzn_fieldmodule_find_mesh_by_dimension(source_field_module, dimension);
+					cmzn_field_element_group_id source_element_group = cmzn_field_group_get_field_element_group(source_group, source_mesh);
+					if (source_element_group)
+					{
+						cmzn_mesh_group_id source_mesh_group = cmzn_field_element_group_get_mesh_group(source_element_group);
+						cmzn_mesh_id target_mesh = cmzn_fieldmodule_find_mesh_by_dimension(target_field_module, dimension);
+						cmzn_field_element_group_id target_element_group = cmzn_field_group_get_field_element_group(target_group, target_mesh);
+						if (!target_element_group)
+						{
+							target_element_group = cmzn_field_group_create_field_element_group(target_group, target_mesh);
+						}
+						cmzn_mesh_group_id target_mesh_group = cmzn_field_element_group_get_mesh_group(target_element_group);
+
+						cmzn_elementiterator_id element_iter = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(source_mesh_group));
+						cmzn_element_id source_element = 0;
+						while ((source_element = cmzn_elementiterator_next_non_access(element_iter)) && return_code)
+						{
+							const int identifier = cmzn_element_get_identifier(source_element);
+							cmzn_element_id target_element = cmzn_mesh_find_element_by_identifier(cmzn_mesh_group_base_cast(target_mesh_group), identifier);
+							if (!target_element)
+							{
+								target_element = cmzn_mesh_find_element_by_identifier(target_mesh, identifier);
+								return_code = cmzn_mesh_group_add_element(target_mesh_group, target_element);
+							}
+							cmzn_element_destroy(&target_element);
+						}
+						cmzn_elementiterator_destroy(&element_iter);
+
+						cmzn_mesh_group_destroy(&target_mesh_group);
+						cmzn_field_element_group_destroy(&target_element_group);
+						cmzn_mesh_destroy(&target_mesh);
+						cmzn_mesh_group_destroy(&source_mesh_group);
+						cmzn_field_element_group_destroy(&source_element_group);
+					}
+					cmzn_mesh_destroy(&source_mesh);
+				}
+				cmzn_field_group_destroy(&target_group);
+			}
+			else
+			{
+				return_code = 0;
+			}
+			cmzn_field_destroy(&target_field);
+			DEALLOCATE(name);
+			cmzn_field_group_destroy(&source_group);
+		}
+	}
+	cmzn_fielditerator_destroy(&field_iter);
+	cmzn_fieldmodule_destroy(&source_field_module);
+	cmzn_fieldmodule_destroy(&target_field_module);
+	return return_code;
+}
+
+int cmzn_region::mergePrivate(cmzn_region& sourceRegion)
+{
+	int return_code = CMZN_OK;
+	sourceRegion.beginChange();
+
+	if (!FE_region_merge(this->get_FE_region(), sourceRegion.get_FE_region()))
+	{
+		char *source_path = sourceRegion.getPath();
+		char *target_path = this->getPath();
+		display_message(ERROR_MESSAGE,
+			"Could not merge source region %s into %s", source_path, target_path);
+		DEALLOCATE(source_path);
+		DEALLOCATE(target_path);
+		return_code = CMZN_ERROR_GENERAL;
+	}
+
+	if (!this->mergeFields(sourceRegion))
+	{
+		return_code = CMZN_ERROR_GENERAL;
+	}
+
+	// merge child regions
+	cmzn_region *sourceChild = sourceRegion.getFirstChild();
+	while ((sourceChild) && (CMZN_OK == return_code))
+	{
+		cmzn_region *targetChild = this->findChildByName(sourceChild->name);
+		if (targetChild)
+		{
+			return_code = targetChild->mergePrivate(*sourceChild);
+			sourceChild = sourceChild->getNextSibling();
+		}
+		else
+		{
+			cmzn_region *sourceNextSibling = sourceChild->getNextSibling();
+			sourceChild->access();
+			this->appendChild(sourceChild);
+			cmzn_region::deaccess(sourceChild);
+			sourceChild = sourceNextSibling;
+		}
+	}
+	sourceRegion.clearCachedChanges();  // so no notifications sent with endChange below
+	sourceRegion.endChange();
+	return (return_code);
+}
+
+int cmzn_region::merge(cmzn_region& sourceRegion)
+{
+	this->beginHierarchicalChange();
+	int return_code = this->mergePrivate(sourceRegion);
+	this->endHierarchicalChange();
+	return return_code;
+}
+
 /*
 Global functions
 ----------------
 */
 
-PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_region)
+cmzn_regionevent_id cmzn_regionevent_access(cmzn_regionevent_id event)
 {
-	if (object)
-		return object->access();
+	if (event)
+	{
+		return event->access();
+	}
 	return nullptr;
 }
 
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_region)
+int cmzn_regionevent_destroy(cmzn_regionevent_id *event_address)
 {
-	if (object_address)
-		return cmzn_region::deaccess(*object_address);
+	if (event_address)
+	{
+		cmzn_regionevent::deaccess(*event_address);
+		return CMZN_OK;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_region)
+cmzn_regionnotifier_id cmzn_regionnotifier_access(
+	cmzn_regionnotifier_id notifier)
 {
-	if (!object_address)
-		return CMZN_ERROR_ARGUMENT;
-	if (new_object)
-		new_object->access();
-	cmzn_region::deaccess(*object_address);
-	*object_address = new_object;
-	return CMZN_OK;
+	if (notifier)
+	{
+		return notifier->access();
+	}
+	return nullptr;
+}
+
+int cmzn_regionnotifier_destroy(cmzn_regionnotifier_id *notifier_address)
+{
+	if (notifier_address)
+	{
+		cmzn_regionnotifier::deaccess(*notifier_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_regionnotifier_clear_callback(cmzn_regionnotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_regionnotifier_set_callback(cmzn_regionnotifier_id notifier,
+	cmzn_regionnotifier_callback_function function_in, void *user_data_in)
+{
+	if ((notifier) && (function_in))
+	{
+		return notifier->setCallback(function_in, user_data_in);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+/** This is needed by SWIGZinc */
+void *cmzn_regionnotifier_get_callback_user_data(
+	cmzn_regionnotifier_id notifier)
+{
+	if (notifier)
+	{
+		return notifier->getUserData();
+	}
+	return 0;
 }
 
 cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region)
@@ -950,6 +1347,11 @@ int cmzn_region_get_hierarchical_time_range(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_regionnotifier_id cmzn_region_create_regionnotifier(
+	cmzn_region_id region)
+{
+	return cmzn_regionnotifier::create(region);
+}
 
 int cmzn_region_clear_finite_elements(struct cmzn_region *region)
 {
@@ -1031,24 +1433,6 @@ int cmzn_region_end_hierarchical_change(struct cmzn_region *region)
 		region->endHierarchicalChange();
 		return 1;
 	}
-	return 0;
-}
-
-int cmzn_region_add_callback(struct cmzn_region *region,
-	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
-{
-	if (region)
-		return region->addCallback(function, user_data);
-	display_message(ERROR_MESSAGE, "cmzn_region_add_callback.  Invalid argument(s)");
-	return 0;
-}
-
-int cmzn_region_remove_callback(struct cmzn_region *region,
-	CMZN_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data)
-{
-	if (region)
-		return region->removeCallback(function, user_data);
-	display_message(ERROR_MESSAGE, "cmzn_region_remove_callback.  Invalid argument(s)");
 	return 0;
 }
 
@@ -1394,269 +1778,6 @@ int cmzn_region_destroy(cmzn_region_id *region)
 	if (region)
 		return cmzn_region::deaccess(*region);
 	return 0;
-}
-
-bool cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_region)
-{
-	if (!source_region)
-		return false;
-
-	if (target_region)
-	{
-		// check fields
-		bool fieldsOK = true;
-		cmzn_fielditerator *iter = source_region->createFielditerator();
-		cmzn_field *field = nullptr;
-		while ((field = iter->next_non_access()))
-		{
-			cmzn_field *existingField = target_region->findFieldByName(field->getName());
-			if (existingField)
-			{
-				if (existingField->hasAutomaticName())
-				{
-					// will be renamed to make way for new field if not compatible
-				}
-				else if (existingField->compareFullDefinition(*field))
-				{
-					// found the matching field
-				}
-				else if (existingField->compareBasicDefinition(*field) &&
-					cmzn_field_is_dummy_real(existingField))
-				{
-					// dummy_real will have incoming field merged into it
-				}
-				else
-				{
-					fieldsOK = false;
-					char *target_path = target_region->getPath();
-					display_message(ERROR_MESSAGE, "Cannot merge incompatible field %s into region %s%s", field->getName(), CMZN_REGION_PATH_SEPARATOR_STRING, target_path);
-					DEALLOCATE(target_path);
-				}
-			}
-		}
-		cmzn_fielditerator::deaccess(iter);
-		if (!fieldsOK)
-		{
-			return false;
-		}
-	}
-
-	// check FE_regions
-	if (!FE_region_can_merge((target_region) ? target_region->get_FE_region() : nullptr, source_region->get_FE_region()))
-	{
-		char *source_path = source_region->getPath();
-		char *target_path = target_region->getPath();
-		display_message(ERROR_MESSAGE,
-			"Cannot merge source region %s into %s", source_path, target_path);
-		DEALLOCATE(source_path);
-		DEALLOCATE(target_path);
-		return false;
-	}
-
-	// check child regions can be merged
-	cmzn_region_id source_child = cmzn_region_get_first_child(source_region);
-	while (NULL != source_child)
-	{
-		cmzn_region_id target_child = 0;
-		if (target_region)
-			target_child = target_region->findChildByName(source_child->getName());
-		if (!cmzn_region_can_merge(target_child, source_child))
-		{
-			cmzn_region_destroy(&source_child);
-			return 0;
-		}
-		cmzn_region_reaccess_next_sibling(&source_child);
-	}
-
-	return true;
-}
-
-/** currently just merges group fields */
-static int cmzn_region_merge_fields(cmzn_region_id target_region,
-	cmzn_region_id source_region)
-{
-	int return_code = 1;
-	cmzn_fieldmodule_id target_field_module = cmzn_region_get_fieldmodule(target_region);
-	cmzn_fieldmodule_id source_field_module = cmzn_region_get_fieldmodule(source_region);
-	cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(source_field_module);
-	cmzn_field_id source_field = 0;
-	while ((0 != (source_field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
-	{
-		cmzn_field_group_id source_group = cmzn_field_cast_group(source_field);
-		if (source_group)
-		{
-			char *name = cmzn_field_get_name(source_field);
-			cmzn_field_id target_field = cmzn_fieldmodule_find_field_by_name(target_field_module, name);
-			if (!target_field)
-			{
-				target_field = cmzn_fieldmodule_create_field_group(target_field_module);
-				cmzn_field_set_managed(target_field, true);
-				cmzn_field_set_name(target_field, name);
-			}
-			cmzn_field_group_id target_group = cmzn_field_cast_group(target_field);
-			if (target_field && (!target_group))
-			{
-				char *source_path = source_region->getPath();
-				char *target_path = target_region->getPath();
-				display_message(ERROR_MESSAGE,
-					"Cannot merge group %s from source region %s into field using same name in %s", name, source_path, target_path);
-				DEALLOCATE(source_path);
-				DEALLOCATE(target_path);
-			}
-			else if (target_group)
-			{
-				// merge node groups
-				for (int i = 0; i < 2; i++)
-				{
-					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
-					cmzn_nodeset_id source_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(source_field_module, nodeset_domain_type);
-					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_field_node_group(source_group, source_nodeset);
-					if (source_node_group)
-					{
-						cmzn_nodeset_group_id source_nodeset_group = cmzn_field_node_group_get_nodeset_group(source_node_group);
-						cmzn_nodeset_id target_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(target_field_module, nodeset_domain_type);
-						cmzn_field_node_group_id target_node_group = cmzn_field_group_get_field_node_group(target_group, target_nodeset);
-						if (!target_node_group)
-						{
-							target_node_group = cmzn_field_group_create_field_node_group(target_group, target_nodeset);
-						}
-						cmzn_nodeset_group_id target_nodeset_group = cmzn_field_node_group_get_nodeset_group(target_node_group);
-
-						cmzn_nodeiterator_id node_iter = cmzn_nodeset_create_nodeiterator(cmzn_nodeset_group_base_cast(source_nodeset_group));
-						cmzn_node_id source_node = 0;
-						while ((source_node = cmzn_nodeiterator_next_non_access(node_iter)) && return_code)
-						{
-							const int identifier =  cmzn_node_get_identifier(source_node);
-							cmzn_node_id target_node = cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_group_base_cast(target_nodeset_group), identifier);
-							if (!target_node)
-							{
-								target_node = cmzn_nodeset_find_node_by_identifier(target_nodeset, identifier);
-								return_code = cmzn_nodeset_group_add_node(target_nodeset_group, target_node);
-							}
-							cmzn_node_destroy(&target_node);
-						}
-						cmzn_nodeiterator_destroy(&node_iter);
-
-						cmzn_nodeset_group_destroy(&target_nodeset_group);
-						cmzn_field_node_group_destroy(&target_node_group);
-						cmzn_nodeset_destroy(&target_nodeset);
-						cmzn_nodeset_group_destroy(&source_nodeset_group);
-						cmzn_field_node_group_destroy(&source_node_group);
-					}
-					cmzn_nodeset_destroy(&source_nodeset);
-				}
-				// merge element groups
-				for (int dimension = 3; 0 < dimension; --dimension)
-				{
-					cmzn_mesh_id source_mesh = cmzn_fieldmodule_find_mesh_by_dimension(source_field_module, dimension);
-					cmzn_field_element_group_id source_element_group = cmzn_field_group_get_field_element_group(source_group, source_mesh);
-					if (source_element_group)
-					{
-						cmzn_mesh_group_id source_mesh_group = cmzn_field_element_group_get_mesh_group(source_element_group);
-						cmzn_mesh_id target_mesh = cmzn_fieldmodule_find_mesh_by_dimension(target_field_module, dimension);
-						cmzn_field_element_group_id target_element_group = cmzn_field_group_get_field_element_group(target_group, target_mesh);
-						if (!target_element_group)
-						{
-							target_element_group = cmzn_field_group_create_field_element_group(target_group, target_mesh);
-						}
-						cmzn_mesh_group_id target_mesh_group = cmzn_field_element_group_get_mesh_group(target_element_group);
-
-						cmzn_elementiterator_id element_iter = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(source_mesh_group));
-						cmzn_element_id source_element = 0;
-						while ((source_element = cmzn_elementiterator_next_non_access(element_iter)) && return_code)
-						{
-							const int identifier =  cmzn_element_get_identifier(source_element);
-							cmzn_element_id target_element = cmzn_mesh_find_element_by_identifier(cmzn_mesh_group_base_cast(target_mesh_group), identifier);
-							if (!target_element)
-							{
-								target_element = cmzn_mesh_find_element_by_identifier(target_mesh, identifier);
-								return_code = cmzn_mesh_group_add_element(target_mesh_group, target_element);
-							}
-							cmzn_element_destroy(&target_element);
-						}
-						cmzn_elementiterator_destroy(&element_iter);
-
-						cmzn_mesh_group_destroy(&target_mesh_group);
-						cmzn_field_element_group_destroy(&target_element_group);
-						cmzn_mesh_destroy(&target_mesh);
-						cmzn_mesh_group_destroy(&source_mesh_group);
-						cmzn_field_element_group_destroy(&source_element_group);
-					}
-					cmzn_mesh_destroy(&source_mesh);
-				}
-				cmzn_field_group_destroy(&target_group);
-			}
-			else
-			{
-				return_code = 0;
-			}
-			cmzn_field_destroy(&target_field);
-			DEALLOCATE(name);
-			cmzn_field_group_destroy(&source_group);
-		}
-	}
-	cmzn_fielditerator_destroy(&field_iter);
-	cmzn_fieldmodule_destroy(&source_field_module);
-	cmzn_fieldmodule_destroy(&target_field_module);
-	return return_code;
-}
-
-static int cmzn_region_merge_private(cmzn_region_id target_region,
-	cmzn_region_id source_region)
-{
-	int return_code = 1;
-	source_region->beginChange();
-
-	if (!FE_region_merge(target_region->get_FE_region(), source_region->get_FE_region()))
-	{
-		char *source_path = source_region->getPath();
-		char *target_path = target_region->getPath();
-		display_message(ERROR_MESSAGE,
-			"Could not merge source_region region %s into %s", source_path, target_path);
-		DEALLOCATE(source_path);
-		DEALLOCATE(target_path);
-		return_code = 0;
-	}
-
-	if (!cmzn_region_merge_fields(target_region, source_region))
-	{
-		return_code = 0;
-	}
-
-	// merge child regions
-	cmzn_region_id source_child = cmzn_region_get_first_child(source_region);
-	while (source_child && return_code)
-	{
-		cmzn_region_id target_child = cmzn_region_find_child_by_name(target_region, source_child->getName());
-		if (target_child)
-		{
-			return_code = cmzn_region_merge_private(target_child, source_child);
-			cmzn_region_reaccess_next_sibling(&source_child);
-		}
-		else
-		{
-			cmzn_region_id sibling_region = cmzn_region_get_next_sibling(source_child);
-			return_code = cmzn_region_append_child(target_region, source_child);
-			cmzn_region_destroy(&source_child);
-			source_child = sibling_region;
-		}
-		cmzn_region_destroy(&target_child);
-	}
-	cmzn_region_destroy(&source_child);
-
-	source_region->clearCachedChanges();  // so no notifications sent with endChange below
-	source_region->endChange();
-	return (return_code);
-}
-
-int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region)
-{
-	if (!target_region || !source_region)
-		return 0;
-	cmzn_region_begin_hierarchical_change(target_region);
-	int return_code = cmzn_region_merge_private(target_region, source_region);
-	cmzn_region_end_hierarchical_change(target_region);
-	return return_code;
 }
 
 /**

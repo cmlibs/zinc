@@ -135,7 +135,7 @@ int cmzn_region_read(cmzn_region_id region,
 		struct cmzn_region *temp_region = cmzn_region_create_region(region);
 		if (!(streams_list.empty()) && io_stream_package && temp_region)
 		{
-			cmzn_region_begin_hierarchical_change(temp_region);
+			temp_region->beginHierarchicalChange();
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
@@ -215,13 +215,17 @@ int cmzn_region_read(cmzn_region_id region,
 			}
 			// end change before merge otherwise there will be callbacks for changes
 			// to half-temporary, half-global objects, leading to errors
-			cmzn_region_end_hierarchical_change(temp_region);
+			temp_region->endHierarchicalChange();
 			if (return_code == CMZN_OK)
 			{
-				if (!cmzn_region_can_merge(region, temp_region))
+				if (!region->canMerge(*temp_region))
+				{
 					return_code = CMZN_ERROR_INCOMPATIBLE_DATA;
-				else if (!cmzn_region_merge(region, temp_region))
-					return_code = CMZN_ERROR_GENERAL;
+				}
+				else
+				{
+					return_code = region->merge(*temp_region);
+				}
 			}
 		}
 		cmzn_region::deaccess(temp_region);

@@ -56,6 +56,7 @@ public:
 	double linesearchTolerance;
 	int maximumBacktrackIterations;
 	double trustRegionSize;
+	double fieldParametersTime;
 	std::stringbuf solution_report; // solution details output by Opt++ during and after solution
 
 	~cmzn_optimisation();
