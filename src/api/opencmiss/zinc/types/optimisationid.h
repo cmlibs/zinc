@@ -154,6 +154,8 @@ enum cmzn_optimisation_attribute
 	/*!< Time at which finite element field parameters are to be optimised, and objective fields are evaluated.
 		* Default 0.0.
 		* Only set to a time from a timesequence defined for dependent field at nodes.
+		* This is not currently checked; setting a time at which dependent field parameters are not held
+		* will result in failure when the optimisation is run.
 		* Ignored if field parameters are not time-varying.
 		* Currently only supported for optimisation METHOD_NEWTON.
 		*/

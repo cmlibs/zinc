@@ -369,10 +369,11 @@ template <class ProcessValuesOperator> int FE_field_parameters::processParameter
 		{
 			const FE_node_field_template *nft = nodeField->getComponent(c);
 			const int componentValuesCount = nft->getTotalValuesCount();
-			if (!processValues(node, this->field, c, this->time, componentValuesCount, valueIndex))
+			const int processResult = processValues(node, this->field, c, this->time, componentValuesCount, valueIndex);
+			if (CMZN_RESULT_OK != processResult)
 			{
 				display_message(ERROR_MESSAGE, "Fieldparameters %s:  Failed to process node field component", processValues.getApiName());
-				return CMZN_RESULT_ERROR_GENERAL;
+				return processResult;
 			}
 			valueIndex += componentValuesCount;
 		}

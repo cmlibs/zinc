@@ -811,4 +811,7 @@ TEST(ZincOptimisation, fitLineTime)
 			}
 		}
 	}
+	// check optimise fails if parameters are not held the time set
+	EXPECT_EQ(RESULT_OK, optimisation.setAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME, 0.5));
+	EXPECT_EQ(RESULT_ERROR_GENERAL, optimisation.optimise());
 }

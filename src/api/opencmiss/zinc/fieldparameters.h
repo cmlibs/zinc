@@ -198,8 +198,11 @@ ZINC_API double cmzn_fieldparameters_get_time(
  * Client should get number of parameters after this call in case different.
  *
  * @param fieldparameters  The field parameters to modify.
- * @param timeIn  The time to set. Must match a time held at nodes.
- * @return  Result OK on success, otherwise any other error code.
+ * @param timeIn  The time to set. Expected to match a time that parameters are
+ * held for the field at nodes. This is not currently checked but a check may be
+ * added in future. If it is not a valid time, errors will result when used in
+ * subsequent API calls.
+ * @return  Result OK on success, otherwise ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_fieldparameters_set_time(
 	cmzn_fieldparameters_id fieldparameters, double timeIn);

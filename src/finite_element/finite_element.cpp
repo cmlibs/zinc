@@ -4300,7 +4300,7 @@ template <typename VALUE_TYPE> int cmzn_node_add_field_component_values(
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_node_add_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
-			return CMZN_ERROR_ARGUMENT;
+			return CMZN_ERROR_NOT_FOUND;
 		}
 		VALUE_TYPE **destArray = (VALUE_TYPE **)(node->values_storage + nft.getValuesOffset());
 		for (int j = 0; j < totalValuesCount; ++j)
@@ -4361,7 +4361,7 @@ template <typename VALUE_TYPE> int cmzn_node_set_field_component_values(
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_node_set_field_component_values<VALUE_TYPE>.  Field %s does not store parameters at time %g", field->getName(), time);
-			return CMZN_ERROR_ARGUMENT;
+			return CMZN_ERROR_NOT_FOUND;
 		}
 		VALUE_TYPE **destArray = (VALUE_TYPE **)(node->values_storage + nft.getValuesOffset());
 		for (int j = 0; j < totalValuesCount; ++j)
