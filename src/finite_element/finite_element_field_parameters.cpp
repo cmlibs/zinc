@@ -22,6 +22,7 @@
 
 FE_field_parameters::FE_field_parameters(FE_field *fieldIn) :
 	field(fieldIn->access()),
+	time(0.0),
 	parameterCount(0),
 	nodeParameterMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
 	parameterNodeMap(/*blockLengthIn*/256, /*allocInitValueIn*/DS_LABEL_INDEX_INVALID),  // Assumes DS_LABEL_INDEX_INVALID == -1
@@ -75,7 +76,7 @@ void FE_field_parameters::generateMaps()
 		this->nodeParameterMap.setValue(node->getIndex(), parameterIndex);
 		this->parameterNodeMap.setValues(parameterIndex, nodeValuesCount, node->getIndex());
 		parameterIndex += nodeValuesCount;
-		if (get_FE_nodal_FE_value_value(node, this->field, /*component*/-1, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, /*time*/0.0, values.data()))
+		if (get_FE_nodal_FE_value_value(node, this->field, /*component*/-1, CMZN_NODE_VALUE_LABEL_VALUE, /*version*/0, this->time, values.data()))
 		{
 			if (nodeRangeCount)
 			{
@@ -368,7 +369,7 @@ template <class ProcessValuesOperator> int FE_field_parameters::processParameter
 		{
 			const FE_node_field_template *nft = nodeField->getComponent(c);
 			const int componentValuesCount = nft->getTotalValuesCount();
-			if (!processValues(node, this->field, c, /*time*/0.0, componentValuesCount, valueIndex))
+			if (!processValues(node, this->field, c, this->time, componentValuesCount, valueIndex))
 			{
 				display_message(ERROR_MESSAGE, "Fieldparameters %s:  Failed to process node field component", processValues.getApiName());
 				return CMZN_RESULT_ERROR_GENERAL;
@@ -434,7 +435,7 @@ int FE_field_parameters::addParameters(int valuesCount, const FE_value *valuesIn
 		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
 		{
 			return cmzn_node_add_field_component_FE_value_values(node, field, componentNumber,
-				/*time*/0.0, processValuesCount, this->values + valueIndex);
+				time, processValuesCount, this->values + valueIndex);
 		}
 
 		const char *getApiName()
@@ -459,7 +460,7 @@ int FE_field_parameters::getParameters(int valuesCount, FE_value *valuesOut)
 		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
 		{
 			return cmzn_node_get_field_component_FE_value_values(node, field, componentNumber,
-				/*time*/0.0, processValuesCount, this->values + valueIndex);
+				time, processValuesCount, this->values + valueIndex);
 		}
 
 		const char *getApiName()
@@ -484,7 +485,7 @@ int FE_field_parameters::setParameters(int valuesCount, const FE_value *valuesIn
 		inline int operator() (cmzn_node *node, FE_field *field, int componentNumber, FE_value time, int processValuesCount, int valueIndex)
 		{
 			return cmzn_node_set_field_component_FE_value_values(node, field, componentNumber,
-				/*time*/0.0, processValuesCount, this->values + valueIndex);
+				time, processValuesCount, this->values + valueIndex);
 		}
 
 		const char *getApiName()
@@ -494,4 +495,10 @@ int FE_field_parameters::setParameters(int valuesCount, const FE_value *valuesIn
 	};
 	ProcessValuesOperatorSet processSet(this->field->get_FE_region(), valuesCount, valuesIn);
 	return this->processParameters(processSet);
+}
+
+int FE_field_parameters::setTime(FE_value timeIn)
+{
+	this->time = timeIn;
+	return CMZN_OK;
 }

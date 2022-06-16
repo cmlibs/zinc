@@ -38,7 +38,8 @@ cmzn_optimisation::cmzn_optimisation(cmzn_fieldmodule_id field_module) :
 	minimumStep(1.49012e-8),
 	linesearchTolerance(1.e-4),
 	maximumBacktrackIterations(5),
-	trustRegionSize(0.1)
+	trustRegionSize(0.1),
+	fieldParametersTime(0.0)
 {
 }
 
@@ -443,6 +444,8 @@ double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimisation,
 		case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			return optimisation->trustRegionSize;
 			break;
+		case CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME:
+			return optimisation->fieldParametersTime;
 		default:
 			break;
 		}
@@ -479,6 +482,9 @@ int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
 			break;
 		case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 			optimisation->trustRegionSize = value;
+			break;
+		case CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME:
+			optimisation->fieldParametersTime = value;
 			break;
 		default:
 			return_code = CMZN_ERROR_ARGUMENT;
@@ -525,6 +531,9 @@ public:
 				break;
 			case CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE:
 				enum_string = "TRUST_REGION_SIZE";
+				break;
+			case CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME:
+				enum_string = "FIELD_PARAMETERS_TIME";
 				break;
 			default:
 				break;

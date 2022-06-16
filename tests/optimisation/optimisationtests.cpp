@@ -49,6 +49,10 @@ TEST(cmzn_optimisation, arguments)
 	EXPECT_EQ(OK, result = cmzn_optimisation_set_method(optimisation, CMZN_OPTIMISATION_METHOD_NEWTON));
 	EXPECT_EQ(CMZN_OPTIMISATION_METHOD_NEWTON, cmzn_optimisation_get_method(optimisation));
 
+	EXPECT_DOUBLE_EQ(0.0, cmzn_optimisation_get_attribute_real(optimisation, CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME));
+	EXPECT_EQ(OK, result = cmzn_optimisation_set_attribute_real(optimisation, CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME, 1.234));
+	EXPECT_DOUBLE_EQ(1.234, cmzn_optimisation_get_attribute_real(optimisation, CMZN_OPTIMISATION_ATTRIBUTE_FIELD_PARAMETERS_TIME));
+
 	cmzn_optimisation_destroy(&optimisation);
 }
 
@@ -65,6 +69,10 @@ TEST(ZincOptimisation, arguments)
 	EXPECT_EQ(Optimisation::METHOD_LEAST_SQUARES_QUASI_NEWTON, optimisation.getMethod());
 	EXPECT_EQ(OK, result = optimisation.setMethod(Optimisation::METHOD_NEWTON));
 	EXPECT_EQ(Optimisation::METHOD_NEWTON, optimisation.getMethod());
+
+	EXPECT_DOUBLE_EQ(0.0, optimisation.getAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME));
+	EXPECT_EQ(OK, result = optimisation.setAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME, 1.234));
+	EXPECT_DOUBLE_EQ(1.234, optimisation.getAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME));
 
 	// made-up fields to test objective/dependent field APIs
 	FieldFiniteElement f1 = zinc.fm.createFieldFiniteElement(3);
@@ -731,4 +739,76 @@ TEST(ZincOptimisation, leastSquaresFitNewtonSmooth)
 	double outSmoothingObjectiveValue;
 	EXPECT_EQ(RESULT_OK, smoothingObjective.evaluateReal(fieldcache, 1, &outSmoothingObjectiveValue));
 	EXPECT_NEAR(0.31669258057011818, outSmoothingObjectiveValue, TOL);
+}
+
+// Use NEWTON method to solve least squares fit of best fit line for field with two times
+TEST(ZincOptimisation, fitLineTime)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(RESULT_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::OPTIMISATION_FIT_LINE_TIME_EX3_RESOURCE)));
+
+	FieldFiniteElement coordinates = zinc.fm.findFieldByName("coordinates").castFiniteElement();
+	EXPECT_TRUE(coordinates.isValid());
+	FieldFiniteElement dataCoordinates = zinc.fm.findFieldByName("data_coordinates").castFiniteElement();
+	EXPECT_TRUE(dataCoordinates.isValid());
+	FieldStoredMeshLocation hostLocation = zinc.fm.findFieldByName("host_location").castStoredMeshLocation();
+	EXPECT_TRUE(hostLocation.isValid());
+
+	Nodeset nodes = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(2, nodes.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(1, mesh1d.getSize());
+	Nodeset datapoints = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_DATAPOINTS);
+	EXPECT_EQ(2, datapoints.getSize());
+
+	FieldEmbedded hostCoordinates = zinc.fm.createFieldEmbedded(coordinates, hostLocation);
+	EXPECT_TRUE(hostCoordinates.isValid());
+	FieldSubtract delta = hostCoordinates - dataCoordinates;
+	EXPECT_TRUE(delta.isValid());
+	FieldDotProduct delta_sq = zinc.fm.createFieldDotProduct(delta, delta);
+	EXPECT_TRUE(delta_sq.isValid());
+
+	const double times[2] = { 0.0, 1.0 };
+
+	FieldNodesetSum dataFitObjective = zinc.fm.createFieldNodesetSum(delta_sq, datapoints);
+	EXPECT_TRUE(dataFitObjective.isValid());
+	EXPECT_EQ(RESULT_OK, dataFitObjective.setElementMapField(hostLocation));
+
+	Optimisation optimisation = zinc.fm.createOptimisation();
+	EXPECT_TRUE(optimisation.isValid());
+	EXPECT_EQ(RESULT_OK, optimisation.setMethod(Optimisation::METHOD_NEWTON));
+	EXPECT_EQ(RESULT_OK, optimisation.addObjectiveField(dataFitObjective));
+	EXPECT_EQ(RESULT_OK, optimisation.addDependentField(coordinates));
+	EXPECT_EQ(RESULT_OK, optimisation.setAttributeInteger(Optimisation::ATTRIBUTE_MAXIMUM_ITERATIONS, 1));
+
+	for (int timeIndex = 0; timeIndex < 2; ++timeIndex)
+	{
+		double time = times[timeIndex];
+		EXPECT_EQ(RESULT_OK, optimisation.setAttributeReal(Optimisation::ATTRIBUTE_FIELD_PARAMETERS_TIME, time));
+		EXPECT_EQ(RESULT_OK, optimisation.optimise());
+	}
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double expectedTimeNodeCoordinates[2][2][3] =
+	{
+		{ { -0.5, -0.5, -0.5 }, {  1.5,  1.5,  1.5 } },
+		{ {  0.0,  1.0,  1.0 }, {  1.0,  0.0,  0.0 } }
+	};
+	double x[3];
+	const double TOL = 1.0E-10;
+	for (int timeIndex = 0; timeIndex < 2; ++timeIndex)
+	{
+		double time = times[timeIndex];
+		EXPECT_EQ(RESULT_OK, fieldcache.setTime(time));
+		for (int nodeIndex = 0; nodeIndex < 2; ++nodeIndex)
+		{
+			Node node = nodes.findNodeByIdentifier(nodeIndex + 1);
+			EXPECT_EQ(RESULT_OK, fieldcache.setNode(node));
+			EXPECT_EQ(RESULT_OK, coordinates.getNodeParameters(fieldcache, -1, Node::VALUE_LABEL_VALUE, 1, 3, x));
+			for (int c = 0; c < 3; ++c)
+			{
+				EXPECT_NEAR(expectedTimeNodeCoordinates[timeIndex][nodeIndex][c], x[c], TOL);
+			}
+		}
+	}
 }

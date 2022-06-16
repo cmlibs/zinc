@@ -115,6 +115,12 @@ public:
 	/** @return  Positive delta to apply when perturbing parameters to calculate numerical derivatives */
 	FE_value getPerturbationDelta() const;
 
+	/** Get time at which parameters are being used. */
+	double getTime() const;
+
+	/** Set time at which parameters are to be used, must match a time held at nodes.
+	 * Client should call getNumberOfParameters() afterwards to re-generate map. */
+	int setTime(double timeIn);
 };
 
 #endif /* !defined (CMZN_FIELDPARAMETERSPRIVATE_HPP) */

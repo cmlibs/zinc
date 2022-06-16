@@ -184,6 +184,26 @@ ZINC_API int cmzn_fieldparameters_set_parameters(
 	cmzn_fieldparameters_id fieldparameters,
 	int valuesCount, const double *valuesIn);
 
+/**
+ * Get time at which parameters are being used.
+ *
+ * @param fieldparameters  The field parameters to query.
+ * @return  Time being used.
+ */
+ZINC_API double cmzn_fieldparameters_get_time(
+	cmzn_fieldparameters_id fieldparameters);
+
+/**
+ * Set time at which parameters are to be used. Default is 0.0.
+ * Client should get number of parameters after this call in case different.
+ *
+ * @param fieldparameters  The field parameters to modify.
+ * @param timeIn  The time to set. Must match a time held at nodes.
+ * @return  Result OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_fieldparameters_set_time(
+	cmzn_fieldparameters_id fieldparameters, double timeIn);
+
 #ifdef __cplusplus
 }
 #endif

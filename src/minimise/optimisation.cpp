@@ -602,7 +602,12 @@ int Minimisation::minimise_Newton()
 	Fieldparameters fieldparameters = dependentField.getFieldparameters();
 	if (!fieldparameters.isValid())
 	{
-		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Could not get fieldparameters for dependent field which must be finite element type");
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Could not get field parameters for dependent field which must be finite element type");
+		return 0;
+	}
+	if (CMZN_OK != fieldparameters.setTime(this->optimisation.fieldParametersTime))
+	{
+		display_message(ERROR_MESSAGE, "Optimisation optimise NEWTON:  Invalid field parameters time");
 		return 0;
 	}
 	const int globalParameterCount = fieldparameters.getNumberOfParameters();
@@ -663,6 +668,7 @@ int Minimisation::minimise_Newton()
 	std::vector<unsigned char> parameterUsed(globalParameterCount, 0);  // set to 1 if parameter used in element
 
 	Fieldcache fieldcache = fieldmodule.createFieldcache();
+	fieldcache.setTime(this->optimisation.fieldParametersTime);
 	std::vector<int> elementParameterIndexes;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementJacobian;  // grows to fit maximum elementParametersCount
 	std::vector<double> elementHessian;  // grows to fit maximum elementParametersCount*elementParametersCount
