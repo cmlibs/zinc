@@ -116,12 +116,31 @@ public:
 
 	char* get_command_string();
 
-	cmzn_mesh_id getMesh()
+	/** @return  Non-accessed mesh */
+	cmzn_mesh_id getMesh() const
 	{
 		return mesh;
 	}
 
-	int getNumbersOfPoints(int valuesCount, int *values)
+	/** @return  Result OK on success, ERROR_ARGUMENT if mesh missing or from wrong region */
+	int setMesh(cmzn_mesh *meshIn)
+	{
+		if ((!meshIn) || (cmzn_mesh_get_region_internal(meshIn) != this->field->getRegion()))
+		{
+			display_message(ERROR_MESSAGE, "FieldMeshIntegral setMesh:  Invalid mesh");
+			return CMZN_ERROR_ARGUMENT;
+		}
+		if (!cmzn_mesh_match(this->mesh, meshIn))
+		{
+			cmzn_mesh *oldMesh = this->mesh;
+			this->mesh = cmzn_mesh_access(meshIn);
+			cmzn_mesh_destroy(&oldMesh);
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
+	int getNumbersOfPoints(int valuesCount, int *values) const
 	{
 		if ((0 == valuesCount) || ((0 < valuesCount) && values))
 		{
@@ -725,6 +744,28 @@ inline Computed_field_mesh_integral *Computed_field_mesh_integral_core_cast(
 {
 	return (static_cast<Computed_field_mesh_integral*>(
 		reinterpret_cast<Computed_field*>(mesh_integral_field)->core));
+}
+
+cmzn_mesh_id cmzn_field_mesh_integral_get_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field)
+{
+	if (mesh_integral_field)
+	{
+		Computed_field_mesh_integral *mesh_integral_core = Computed_field_mesh_integral_core_cast(mesh_integral_field);
+		return cmzn_mesh_access(mesh_integral_core->getMesh());
+	}
+	return nullptr;
+}
+
+int cmzn_field_mesh_integral_set_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field, cmzn_mesh_id mesh)
+{
+	if (mesh_integral_field)
+	{
+		Computed_field_mesh_integral *mesh_integral_core = Computed_field_mesh_integral_core_cast(mesh_integral_field);
+		return mesh_integral_core->setMesh(mesh);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_mesh_integral_get_numbers_of_points(

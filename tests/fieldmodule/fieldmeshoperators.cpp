@@ -64,12 +64,15 @@ TEST(ZincFieldMeshIntegral, quadrature)
 
 	FieldMeshIntegral volumeField = zinc.fm.createFieldMeshIntegral(integrandField, coordinateField, mesh3d);
 	EXPECT_TRUE(volumeField.isValid());
+	EXPECT_EQ(mesh3d, volumeField.getMesh());
 	EXPECT_EQ(Element::QUADRATURE_RULE_GAUSSIAN, volumeField.getElementQuadratureRule());
 	FieldMeshIntegral surfaceAreaField = zinc.fm.createFieldMeshIntegral(integrandField, coordinateField, exteriorMesh2d);
 	EXPECT_TRUE(surfaceAreaField.isValid());
+	EXPECT_EQ(exteriorMesh2d, surfaceAreaField.getMesh());
 	EXPECT_EQ(Element::QUADRATURE_RULE_GAUSSIAN, surfaceAreaField.getElementQuadratureRule());
 	FieldMeshIntegral lengthField = zinc.fm.createFieldMeshIntegral(integrandField, coordinateField, mesh1d);
 	EXPECT_TRUE(lengthField.isValid());
+	EXPECT_EQ(mesh1d, lengthField.getMesh());
 	EXPECT_EQ(Element::QUADRATURE_RULE_GAUSSIAN, lengthField.getElementQuadratureRule());
 
 	const double scaleFactors[3] = { 1.5, 0.75, 2.0 };
@@ -265,6 +268,71 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	}
 }
 
+TEST(ZincFieldMeshIntegral, cube_setMesh)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(RESULT_OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(1, mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(6, mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(12, mesh1d.getSize());
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	const double oneValue = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &oneValue);
+	EXPECT_TRUE(one.isValid());
+
+	FieldMeshIntegral meshIntegral = zinc.fm.createFieldMeshIntegral(one, coordinates, mesh3d);
+	EXPECT_TRUE(meshIntegral.isValid());
+	EXPECT_EQ(mesh3d, meshIntegral.getMesh());
+
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	const double TOL = 1.0E-12;
+	double volume;
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &volume));
+	EXPECT_NEAR(1.0, volume, TOL);
+
+	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(mesh2d));
+	EXPECT_EQ(mesh2d, meshIntegral.getMesh());
+	double area;
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &area));
+	EXPECT_NEAR(6.0, area, TOL);
+
+	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(mesh1d));
+	EXPECT_EQ(mesh1d, meshIntegral.getMesh());
+	double length;
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &length));
+	EXPECT_NEAR(12.0, length, TOL);
+
+	FieldElementGroup elementGroup2 = zinc.fm.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(elementGroup2.isValid());
+	MeshGroup meshGroup2 = elementGroup2.getMeshGroup();
+	EXPECT_TRUE(meshGroup2.isValid());
+	EXPECT_EQ(0, meshGroup2.getSize());
+	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(meshGroup2));
+	EXPECT_EQ(meshGroup2, meshIntegral.getMesh());
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &area));
+	EXPECT_NEAR(0.0, area, TOL);
+
+	Element face2 = mesh2d.findElementByIdentifier(2);
+	EXPECT_EQ(RESULT_OK, meshGroup2.addElement(face2));
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &area));
+	EXPECT_NEAR(1.0, area, TOL);
+
+	Element face5 = mesh2d.findElementByIdentifier(5);
+	EXPECT_EQ(RESULT_OK, meshGroup2.addElement(face5));
+	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &area));
+	EXPECT_NEAR(2.0, area, TOL);
+}
+
 TEST(ZincFieldMeshIntegral, midpoint_quadrature_large_numbers)
 {
 	ZincTestSetupCpp zinc;
@@ -349,7 +417,13 @@ TEST(ZincFieldMeshIntegralSquares, quadrature)
 
 	FieldMeshIntegralSquares integralSquaresField = zinc.fm.createFieldMeshIntegralSquares(integrandField, coordinateField, mesh3d);
 	EXPECT_TRUE(integralSquaresField.isValid());
+	EXPECT_EQ(mesh3d, integralSquaresField.getMesh());
 	EXPECT_EQ(Element::QUADRATURE_RULE_GAUSSIAN, integralSquaresField.getElementQuadratureRule());
+
+	// test can cast to MeshIntegral field and query it, as it's a base class of this field
+	FieldMeshIntegral integralField = integralSquaresField.castMeshIntegral();
+	EXPECT_TRUE(integralField.isValid());
+	EXPECT_EQ(mesh3d, integralField.getMesh());
 
 	const double expectedValue[] = { 3.0 + 1.0/6.0, 4.0*(3.0 + 1.0/6.0) };
 	double value[2];

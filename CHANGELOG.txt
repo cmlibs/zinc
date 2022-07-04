@@ -1,5 +1,8 @@
 CHANGE LOG: OpenCMISS-Zinc Library
 
+v3.8.0
+Add missing type-specific field API.
+
 v3.7.0
 Support optimisation at time for time-varying fields.
 Add Region change notifier, for tree structure changes.

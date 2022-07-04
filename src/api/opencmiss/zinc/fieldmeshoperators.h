@@ -88,6 +88,24 @@ ZINC_API int cmzn_field_mesh_integral_destroy(
 	cmzn_field_mesh_integral_id *mesh_integral_field_address);
 
 /**
+ * Get the mesh integrated over.
+ * @param mesh_integral_field  Handle to the mesh integral field to query.
+ * @return  Handle to the mesh, or NULL/invalid handle if invalid field.
+ */
+ZINC_API cmzn_mesh_id cmzn_field_mesh_integral_get_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field);
+
+/**
+ * Set the mesh integrated over.
+ * @param mesh_integral_field  Handle to the mesh integral field to modify.
+ * @param mesh  The mesh to integrate over.
+ * @return  Result OK on success, or ERROR_ARGUMENT if invalid mesh or mesh is
+ * not from this region.
+ */
+ZINC_API int cmzn_field_mesh_integral_set_mesh(
+	cmzn_field_mesh_integral_id mesh_integral_field, cmzn_mesh_id mesh);
+
+/**
  * Get the numbers of quadrature points in each element axis.
  * @see cmzn_field_mesh_integral_set_numbers_of_points
  *
