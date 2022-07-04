@@ -513,11 +513,14 @@ TEST(ZincFieldIsOnFace, evaluate)
 		{  1,  2,  4,  6,  0 },
 		{  9, 10, 11, 12,  0 } };
 	int f, i, j;
+	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_ALL);
+	EXPECT_TRUE(isOnFaceField.isValid());
+	EXPECT_EQ(ERROR_ARGUMENT, isOnFaceField.setElementFaceType(Element::FACE_TYPE_INVALID));
 	for (f = 0; f < 6; ++f)
 	{
-		Element::FaceType faceType = static_cast<Element::FaceType>(Element::FACE_TYPE_XI1_0 + f);
-		FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(faceType);
-		EXPECT_TRUE(isOnFaceField.isValid());
+		Element::FaceType elementFaceType = static_cast<Element::FaceType>(Element::FACE_TYPE_XI1_0 + f);
+		EXPECT_EQ(OK, isOnFaceField.setElementFaceType(elementFaceType));
+		EXPECT_EQ(elementFaceType, isOnFaceField.getElementFaceType());
 
 		for (i = 1; i <= size3; ++i)
 		{

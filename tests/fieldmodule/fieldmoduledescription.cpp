@@ -203,6 +203,11 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id isOnFaceField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "isOnFace");
 	EXPECT_NE(static_cast<cmzn_field *>(0), isOnFaceField);
+	// check the element face type with type-specific API
+	cmzn_field_is_on_face_id isOnFace = cmzn_field_cast_is_on_face(isOnFaceField);
+	EXPECT_NE(static_cast<cmzn_field_is_on_face *>(0), isOnFace);
+	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_XI1_0, cmzn_field_is_on_face_get_element_face_type(isOnFace));
+	cmzn_field_is_on_face_destroy(&isOnFace);
 
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "storedMeshLocation");

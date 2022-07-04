@@ -14,7 +14,7 @@
 #include "opencmiss/zinc/fieldmodule.h"
 #include "opencmiss/zinc/fieldfiniteelement.h"
 #include "opencmiss/zinc/mesh.h"
-#include "opencmiss/zinc/result.h"
+#include "opencmiss/zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -197,12 +197,12 @@ public:
 	static int deaccess(FE_element_field_evaluation_cache* &evaluation_cache)
 	{
 		if (!evaluation_cache)
-			return CMZN_RESULT_ERROR_ARGUMENT;
+			return CMZN_ERROR_ARGUMENT;
 		--(evaluation_cache->access_count);
 		if (evaluation_cache->access_count <= 0)
 			delete evaluation_cache;
 		evaluation_cache = 0;
-		return CMZN_RESULT_OK;
+		return CMZN_OK;
 	}
 
 	void clear()
@@ -3348,14 +3348,14 @@ public:
 				|| (feSearchMesh->getDimension() > feMesh->getDimension()))
 			{
 				display_message(ERROR_MESSAGE, "FieldFindMeshLocation setSearchMesh  Invalid search mesh");
-				return CMZN_RESULT_ERROR_ARGUMENT;
+				return CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_mesh_access(searchMeshIn);
 			cmzn_mesh_destroy(&this->searchMesh);
 			this->searchMesh = searchMeshIn;
 			this->field->setChanged();
 		}
-		return CMZN_RESULT_OK;
+		return CMZN_OK;
 	}
 
 	enum cmzn_field_find_mesh_location_search_mode getSearchMode() const
@@ -4370,18 +4370,35 @@ const char computed_field_is_on_face_type_string[] = "is_on_face";
 
 class Computed_field_is_on_face : public Computed_field_core
 {
-	cmzn_element_face_type faceType;
+	cmzn_element_face_type elementFaceType;
 
 public:
-	Computed_field_is_on_face(cmzn_element_face_type faceTypeIn) :
+	Computed_field_is_on_face(cmzn_element_face_type elementFaceTypeIn) :
 		Computed_field_core(),
-		faceType(faceTypeIn)
+		elementFaceType(elementFaceTypeIn)
 	{
 	};
 
-	cmzn_element_face_type get_face_type()
+	cmzn_element_face_type getElementFaceType() const
 	{
-		return faceType;
+		return this->elementFaceType;
+	}
+
+	int setElementFaceType(cmzn_element_face_type elementFaceTypeIn)
+	{
+		if (elementFaceTypeIn != this->elementFaceType)
+		{
+			char *s = cmzn_element_face_type_enum_to_string(elementFaceTypeIn);
+			if (!s)
+			{
+				display_message(ERROR_MESSAGE, "FieldIsOnFace setElementFaceType.  Invalid element face type");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			DEALLOCATE(s);
+			this->elementFaceType = elementFaceTypeIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
 	}
 
 	virtual bool is_purely_function_of_field(cmzn_field *other_field)
@@ -4392,7 +4409,7 @@ public:
 private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_is_on_face(this->faceType);
+		return new Computed_field_is_on_face(this->elementFaceType);
 	}
 
 	const char *get_type_string()
@@ -4408,7 +4425,7 @@ private:
 	int compare(Computed_field_core* other_field)
 	{
 		Computed_field_is_on_face* other_core = dynamic_cast<Computed_field_is_on_face*>(other_field);
-		return (0 != other_core) && (other_core->faceType == this->faceType);
+		return (0 != other_core) && (other_core->elementFaceType == this->elementFaceType);
 	}
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
@@ -4422,7 +4439,7 @@ private:
 
 	int list()
 	{
-		display_message(INFORMATION_MESSAGE,"    face : %s\n", ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType));
+		display_message(INFORMATION_MESSAGE,"    face : %s\n", ENUMERATOR_STRING(cmzn_element_face_type)(this->elementFaceType));
 		return 1;
 	}
 
@@ -4431,7 +4448,7 @@ private:
 		char *command_string = duplicate_string(computed_field_is_on_face_type_string);
 		int error = 0;
 		append_string(&command_string, " face ", &error);
-		append_string(&command_string, ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType), &error);
+		append_string(&command_string, ENUMERATOR_STRING(cmzn_element_face_type)(this->elementFaceType), &error);
 		return command_string;
 	}
 
@@ -4450,11 +4467,11 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		cmzn_element* element = element_xi_location->get_element();
 		FE_mesh *fe_mesh = element->getMesh();
 		if (fe_mesh &&
-				((CMZN_ELEMENT_FACE_TYPE_ALL == this->faceType) ||
-				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->faceType) &&
+				((CMZN_ELEMENT_FACE_TYPE_ALL == this->elementFaceType) ||
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->elementFaceType) &&
 					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), CMZN_ELEMENT_FACE_TYPE_ANY_FACE) < 0)) ||
-				((CMZN_ELEMENT_FACE_TYPE_NO_FACE != this->faceType) &&
-					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->faceType) >= 0))))
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE != this->elementFaceType) &&
+					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->elementFaceType) >= 0))))
 			valueCache.values[0] = 1.0;
 		else
 			valueCache.values[0] = 0.0;
@@ -4472,18 +4489,6 @@ int Computed_field_is_on_face::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 
 } // namespace
 
-enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field)
-{
-	enum cmzn_element_face_type type = CMZN_ELEMENT_FACE_TYPE_INVALID;
-	if (field && field->core)
-	{
-		Computed_field_is_on_face *fieldIsOnFace= static_cast<Computed_field_is_on_face*>(
-			field->core);
-		type = fieldIsOnFace->get_face_type();
-	}
-	return type;
-}
-
 cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 	struct cmzn_fieldmodule *fieldmodule, cmzn_element_face_type face)
 {
@@ -4498,6 +4503,51 @@ cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
 			new Computed_field_is_on_face(face));
 	}
 	return field;
+}
+
+cmzn_field_is_on_face_id cmzn_field_cast_is_on_face(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_is_on_face*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_is_on_face_id>(field));
+	}
+	return nullptr;
+}
+
+int cmzn_field_is_on_face_destroy(
+	cmzn_field_is_on_face_id *is_on_face_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(is_on_face_field_address));
+}
+
+inline Computed_field_is_on_face *Computed_field_is_on_face_core_cast(
+	cmzn_field_is_on_face *is_on_face_field)
+{
+	return static_cast<Computed_field_is_on_face*>(
+		reinterpret_cast<Computed_field*>(is_on_face_field)->core);
+}
+
+enum cmzn_element_face_type cmzn_field_is_on_face_get_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field)
+{
+	if (is_on_face_field)
+	{
+		Computed_field_is_on_face *is_on_face_core = Computed_field_is_on_face_core_cast(is_on_face_field);
+		return is_on_face_core->getElementFaceType();
+	}
+	return CMZN_ELEMENT_FACE_TYPE_INVALID;
+}
+
+int cmzn_field_is_on_face_set_element_face_type(
+	cmzn_field_is_on_face_id is_on_face_field, enum cmzn_element_face_type face)
+{
+	if (is_on_face_field)
+	{
+		Computed_field_is_on_face *is_on_face_core = Computed_field_is_on_face_core_cast(is_on_face_field);
+		return is_on_face_core->setElementFaceType(face);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 

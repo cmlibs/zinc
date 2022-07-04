@@ -159,8 +159,6 @@ struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
 
-enum cmzn_element_face_type cmzn_field_is_on_face_get_face_type(cmzn_field_id field);
-
 /** If field is node_value type, return the value label, otherwise INVALID */
 cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
 

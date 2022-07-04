@@ -19,6 +19,7 @@
 #include "description_io/field_json_io.hpp"
 #include "general/debug.h"
 #include "opencmiss/zinc/changemanager.hpp"
+#include "opencmiss/zinc/element.hpp"
 #include "opencmiss/zinc/fieldalias.hpp"
 #include "opencmiss/zinc/fieldapply.hpp"
 #include "opencmiss/zinc/fieldarithmeticoperators.hpp"
@@ -552,10 +553,9 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 		{
 			if (typeSettings["ElementFaceType"].isString())
 			{
-				enum cmzn_element_face_type type = cmzn_element_face_type_enum_from_string(
-					typeSettings["ElementFaceType"].asCString());
-				field = OpenCMISS::Zinc::Field(cmzn_fieldmodule_create_field_is_on_face(
-					fieldmodule.getId(), type));
+				OpenCMISS::Zinc::Element::FaceType elementFaceType =
+					OpenCMISS::Zinc::Element::FaceTypeEnumFromString(typeSettings["ElementFaceType"].asCString());
+				field = fieldmodule.createFieldIsOnFace(elementFaceType);
 			}
 		}	break;
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
@@ -923,12 +923,12 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{
-			char *enumString = cmzn_element_face_type_enum_to_string(
-				cmzn_field_is_on_face_get_face_type(field.getId()));
-			if (enumString)
+			OpenCMISS::Zinc::FieldIsOnFace fieldIsOnFace = this->field.castIsOnFace();
+			char *elementFaceTypeString = OpenCMISS::Zinc::Element::FaceTypeEnumToString(fieldIsOnFace.getElementFaceType());
+			if (elementFaceTypeString)
 			{
-				typeSettings["ElementFaceType"] = enumString;
-				DEALLOCATE(enumString);
+				typeSettings["ElementFaceType"] = elementFaceTypeString;
+				DEALLOCATE(elementFaceTypeString);
 			}
 		} break;
 		case CMZN_FIELD_TYPE_EDGE_DISCONTINUITY:
