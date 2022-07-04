@@ -41,7 +41,7 @@ public:
 		return Mesh(cmzn_field_mesh_integral_get_mesh(this->getDerivedId()));
 	}
 
-	int setMesh(const Mesh& mesh) const
+	int setMesh(const Mesh& mesh)
 	{
 		return cmzn_field_mesh_integral_set_mesh(this->getDerivedId(), mesh.getId());
 	}

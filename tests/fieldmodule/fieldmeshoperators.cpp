@@ -300,6 +300,13 @@ TEST(ZincFieldMeshIntegral, cube_setMesh)
 	EXPECT_EQ(RESULT_OK, meshIntegral.evaluateReal(fieldcache, 1, &volume));
 	EXPECT_NEAR(1.0, volume, TOL);
 
+	// test can't set a mesh from another region
+	Region tmpRegion = zinc.context.createRegion();
+	EXPECT_TRUE(tmpRegion.isValid());
+	Mesh tmpMesh3d = tmpRegion.getFieldmodule().findMeshByDimension(3);
+	EXPECT_TRUE(tmpMesh3d.isValid());
+	EXPECT_EQ(RESULT_ERROR_ARGUMENT, meshIntegral.setMesh(tmpMesh3d));
+
 	EXPECT_EQ(RESULT_OK, meshIntegral.setMesh(mesh2d));
 	EXPECT_EQ(mesh2d, meshIntegral.getMesh());
 	double area;
