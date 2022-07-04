@@ -199,6 +199,12 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_id nodeValueField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "nodeValue");
 	EXPECT_NE(static_cast<cmzn_field *>(0), nodeValueField);
+	// check the parameters with type-specific API
+	cmzn_field_node_value_id nodeValue = cmzn_field_cast_node_value(nodeValueField);
+	EXPECT_NE(static_cast<cmzn_field_node_value *>(0), nodeValue);
+	EXPECT_EQ(CMZN_NODE_VALUE_LABEL_D_DS1, cmzn_field_node_value_get_node_value_label(nodeValue));
+	EXPECT_EQ(2, cmzn_field_node_value_get_version_number(nodeValue));
+	cmzn_field_node_value_destroy(&nodeValue);
 
 	cmzn_field_id isOnFaceField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "isOnFace");
@@ -466,7 +472,7 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_name(transposeField, "transpose");
 
 	cmzn_field_id nodeValueField = cmzn_fieldmodule_create_field_node_value(
-		fieldmodule, coordinatesField, CMZN_NODE_VALUE_LABEL_VALUE, 1);
+		fieldmodule, coordinatesField, CMZN_NODE_VALUE_LABEL_D_DS1, 2);
 	EXPECT_NE(static_cast<cmzn_field *>(0), nodeValueField);
 	cmzn_field_set_managed(nodeValueField, true);
 	cmzn_field_set_name(nodeValueField, "nodeValue");

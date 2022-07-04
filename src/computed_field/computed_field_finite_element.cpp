@@ -2123,14 +2123,14 @@ class Computed_field_node_value : public Computed_field_core
 {
 public:
 	struct FE_field *fe_field;
-	cmzn_node_value_label valueLabel;
+	cmzn_node_value_label nodeValueLabel;
 	int versionNumber; // starting at 0
 
 	Computed_field_node_value(cmzn_field_id finite_element_field,
-			cmzn_node_value_label valueLabelIn, int versionNumberIn) :
+			cmzn_node_value_label nodeValueLabelIn, int versionNumberIn) :
 		Computed_field_core(),
 		fe_field(0),
-		valueLabel(valueLabelIn),
+		nodeValueLabel(nodeValueLabelIn),
 		versionNumber(versionNumberIn)
 	{
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field);
@@ -2138,6 +2138,49 @@ public:
 	};
 
 	virtual ~Computed_field_node_value();
+
+	cmzn_node_value_label getNodeValueLabel() const
+	{
+		return this->nodeValueLabel;
+	}
+
+	int setNodeValueLabel(cmzn_node_value_label nodeValueLabelIn)
+	{
+		if (nodeValueLabelIn != this->nodeValueLabel)
+		{
+			const char *s = cmzn_node_value_label_conversion::to_string(nodeValueLabelIn);
+			if (!s)
+			{
+				display_message(ERROR_MESSAGE, "FieldNodeValue setNodeValueLabel.  Invalid node value label");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			this->nodeValueLabel = nodeValueLabelIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
+	/** @return  Version number starting at 0 */
+	int getVersionNumber() const
+	{
+		return this->versionNumber;
+	}
+
+	/** @param versionNumberIn  Version number >= 0 */
+	int setVersionNumber(int versionNumberIn)
+	{
+		if (versionNumberIn != this->versionNumber)
+		{
+			if (versionNumberIn < 0)
+			{
+				display_message(ERROR_MESSAGE, "FieldNodeValue setVersionNumber.  Invalid version number");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			this->versionNumber = versionNumberIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
 
 	virtual void inherit_source_field_attributes()
 	{
@@ -2201,7 +2244,7 @@ Computed_field_node_value::~Computed_field_node_value()
 
 Computed_field_core* Computed_field_node_value::copy()
 {
-	return new Computed_field_node_value(this->getSourceField(0), this->valueLabel, this->versionNumber);
+	return new Computed_field_node_value(this->getSourceField(0), this->nodeValueLabel, this->versionNumber);
 }
 
 int Computed_field_node_value::compare(Computed_field_core *other_core)
@@ -2219,7 +2262,7 @@ Compare the type specific data
 	if (field && (other = dynamic_cast<Computed_field_node_value*>(other_core)))
 	{
 		return_code = ((this->fe_field == other->fe_field)
-			&& (this->valueLabel == other->valueLabel)
+			&& (this->nodeValueLabel == other->nodeValueLabel)
 			&& (this->versionNumber == other->versionNumber));
 	}
 	else
@@ -2244,7 +2287,7 @@ bool Computed_field_node_value::is_defined_at_location(cmzn_fieldcache& cache)
 			const int componentCount = field->number_of_components;
 			for (int c = 0; c < componentCount; ++c)
 			{
-				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(this->valueLabel);
+				const int versionsCount = node_field->getComponent(c)->getValueNumberOfVersions(this->nodeValueLabel);
 				if (this->versionNumber < versionsCount)
 				{
 					return true;
@@ -2299,7 +2342,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			double *double_values = valueCache.double_values.data();
 			result = get_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, double_values);
+				this->nodeValueLabel, this->versionNumber, time, double_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(double_values[c]);
@@ -2308,13 +2351,13 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		case FE_VALUE_VALUE:
 		{
 			result = get_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, valueCache.values);
+				this->nodeValueLabel, this->versionNumber, time, valueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
 			float *float_values = valueCache.float_values.data();
 			result = get_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, float_values);
+				this->nodeValueLabel, this->versionNumber, time, float_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(float_values[c]);
@@ -2324,7 +2367,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			int *int_values = valueCache.int_values.data();
 			result = get_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, int_values);
+				this->nodeValueLabel, this->versionNumber, time, int_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(int_values[c]);
@@ -2334,7 +2377,7 @@ int Computed_field_node_value::evaluate(cmzn_fieldcache& cache,
 		{
 			short *short_values = valueCache.short_values.data();
 			result = get_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, short_values);
+				this->nodeValueLabel, this->versionNumber, time, short_values);
 			for (int c = 0; c < componentCount; ++c)
 			{
 				valueCache.values[c] = static_cast<FE_value>(short_values[c]);
@@ -2399,12 +2442,12 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				double_values[c] = static_cast<double>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_double_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, double_values);
+				this->nodeValueLabel, this->versionNumber, time, double_values);
 		} break;
 		case FE_VALUE_VALUE:
 		{
 			return_code = set_FE_nodal_FE_value_value(node, fe_field,/*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, feValueCache.values);
+				this->nodeValueLabel, this->versionNumber, time, feValueCache.values);
 		} break;
 		case FLT_VALUE:
 		{
@@ -2414,7 +2457,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				float_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_float_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, float_values);
+				this->nodeValueLabel, this->versionNumber, time, float_values);
 		} break;
 		case INT_VALUE:
 		{
@@ -2424,7 +2467,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				int_values[c] = static_cast<FE_value>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_int_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, int_values);
+				this->nodeValueLabel, this->versionNumber, time, int_values);
 		} break;
 		case SHORT_VALUE:
 		{
@@ -2434,7 +2477,7 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 				short_values[c] = static_cast<short>(feValueCache.values[c]);
 			}
 			return_code = set_FE_nodal_short_value(node, this->fe_field, /*componentNumber=ALL*/-1,
-				this->valueLabel, this->versionNumber, time, short_values);
+				this->nodeValueLabel, this->versionNumber, time, short_values);
 		} break;
 		default:
 		{
@@ -2461,7 +2504,7 @@ int Computed_field_node_value::list()
 	{
 		display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",this->fe_field->getName());
 		display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel));
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->nodeValueLabel));
 		display_message(INFORMATION_MESSAGE,"    version : %d\n", this->versionNumber + 1);
 		return 1;
 	}
@@ -2498,7 +2541,7 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(cmzn_node_value_label)(this->valueLabel), &error);
+			ENUMERATOR_STRING(cmzn_node_value_label)(this->nodeValueLabel), &error);
 		sprintf(temp_string, " version %d", this->versionNumber + 1);
 		append_string(&command_string, temp_string, &error);
 	}
@@ -2539,24 +2582,73 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	return field;
 }
 
-cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field)
+cmzn_field_node_value_id cmzn_field_cast_node_value(cmzn_field_id field)
 {
-	Computed_field_node_value *fieldNodeValue;
-	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
+	if (field && (dynamic_cast<Computed_field_node_value*>(field->core)))
 	{
-		return CMZN_NODE_VALUE_LABEL_INVALID;
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_node_value_id>(field));
 	}
-	return fieldNodeValue->valueLabel;
+	return nullptr;
 }
 
-int cmzn_field_node_value_get_version_number(cmzn_field_id field)
+int cmzn_field_node_value_destroy(
+	cmzn_field_node_value_id *node_value_field_address)
 {
-	Computed_field_node_value *fieldNodeValue;
-	if (!(field && (fieldNodeValue = dynamic_cast<Computed_field_node_value*>(field->core))))
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(node_value_field_address));
+}
+
+inline Computed_field_node_value *Computed_field_node_value_core_cast(
+	cmzn_field_node_value *node_value_field)
+{
+	return static_cast<Computed_field_node_value*>(
+		reinterpret_cast<Computed_field*>(node_value_field)->core);
+}
+
+enum cmzn_node_value_label cmzn_field_node_value_get_node_value_label(
+	cmzn_field_node_value_id node_value_field)
+{
+	if (node_value_field)
 	{
-		return CMZN_NODE_VALUE_LABEL_INVALID;
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->getNodeValueLabel();
 	}
-	return fieldNodeValue->versionNumber + 1;
+	return CMZN_NODE_VALUE_LABEL_INVALID;
+}
+
+int cmzn_field_node_value_set_node_value_label(
+	cmzn_field_node_value_id node_value_field,
+	enum cmzn_node_value_label node_value_label)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->setNodeValueLabel(node_value_label);
+	}
+	return CMZN_ERROR_ARGUMENT;
+
+}
+
+int cmzn_field_node_value_get_version_number(
+	cmzn_field_node_value_id node_value_field)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->getVersionNumber() + 1;
+	}
+	return 0;
+}
+
+int cmzn_field_node_value_set_version_number(
+	cmzn_field_node_value_id node_value_field, int version_number)
+{
+	if (node_value_field)
+	{
+		Computed_field_node_value *node_value_core = Computed_field_node_value_core_cast(node_value_field);
+		return node_value_core->setVersionNumber(version_number - 1);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_edge_discontinuity_measure)

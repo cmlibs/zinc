@@ -112,4 +112,14 @@ enum cmzn_field_find_mesh_location_search_mode
 struct cmzn_field_is_on_face;
 typedef struct cmzn_field_is_on_face *cmzn_field_is_on_face_id;
 
+/**
+ * @brief A field returning a specific node parameter.
+ *
+ * A field returning node parameters with specified node value label and
+ * version number at a node instead of the default VALUE_LABEL_VALUE version 1
+ * returned by the original source field.
+ */
+struct cmzn_field_node_value;
+typedef struct cmzn_field_node_value *cmzn_field_node_value_id;
+
 #endif

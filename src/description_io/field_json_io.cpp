@@ -582,16 +582,13 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 		case CMZN_FIELD_TYPE_NODE_VALUE:
 		{
 			unsigned int sourcesCount = 0;
-			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount,
-				jsonImport);
-			if (sourcesCount == 1 && typeSettings["NodeValueLabel"].isString())
+			OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount, jsonImport);
+			if ((sourcesCount == 1) && typeSettings["NodeValueLabel"].isString() && typeSettings["VersionNumber"].isInt())
 			{
-				enum cmzn_node_value_label valueLabel = cmzn_node_value_label_enum_from_string(
+				OpenCMISS::Zinc::Node::ValueLabel nodeValueLabel = OpenCMISS::Zinc::Node::ValueLabelEnumFromString(
 					typeSettings["NodeValueLabel"].asCString());
-				int version = typeSettings["VersionNumber"].isInt();
-				field = OpenCMISS::Zinc::Field(
-					cmzn_fieldmodule_create_field_node_value(fieldmodule.getId(),
-						sourcefields[0].getId(), valueLabel, version));
+				const int versionNumber = typeSettings["VersionNumber"].asInt();
+				field = fieldmodule.createFieldNodeValue(sourcefields[0], nodeValueLabel, versionNumber);
 			}
 			delete[] sourcefields;
 		}	break;
@@ -943,14 +940,14 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_NODE_VALUE:
 		{
-			char *enumString = cmzn_node_value_label_enum_to_string(
-				cmzn_field_node_value_get_value_label(field.getId()));
-			if (enumString)
+			OpenCMISS::Zinc::FieldNodeValue fieldNodeValue = this->field.castNodeValue();
+			char *nodeValueLabelString = OpenCMISS::Zinc::Node::ValueLabelEnumToString(fieldNodeValue.getNodeValueLabel());
+			if (nodeValueLabelString)
 			{
-				typeSettings["NodeValueLabel"] = enumString;
-				DEALLOCATE(enumString);
+				typeSettings["NodeValueLabel"] = nodeValueLabelString;
+				DEALLOCATE(nodeValueLabelString);
 			}
-			int versionNumber = cmzn_field_node_value_get_version_number(field.getId());
+			const int versionNumber = fieldNodeValue.getVersionNumber();
 			typeSettings["VersionNumber"] = versionNumber;
 		} break;
 		case CMZN_FIELD_TYPE_MATRIX_MULTIPLY:

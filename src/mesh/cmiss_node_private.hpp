@@ -29,6 +29,8 @@ public:
 		const char *enum_string = nullptr;
 		switch (label)
 		{
+		case CMZN_NODE_VALUE_LABEL_INVALID:
+			break;
 		case CMZN_NODE_VALUE_LABEL_VALUE:
 			enum_string = "VALUE";
 			break;
@@ -38,11 +40,11 @@ public:
 		case CMZN_NODE_VALUE_LABEL_D_DS2:
 			enum_string = "D_DS2";
 			break;
-		case CMZN_NODE_VALUE_LABEL_D_DS3:
-			enum_string = "D_DS3";
-			break;
 		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 			enum_string = "D2_DS1DS2";
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS3:
+			enum_string = "D_DS3";
 			break;
 		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 			enum_string = "D2_DS1DS3";
@@ -52,8 +54,6 @@ public:
 			break;
 		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 			enum_string = "D3_DS1DS2DS3";
-			break;
-		default:
 			break;
 		}
 		return enum_string;

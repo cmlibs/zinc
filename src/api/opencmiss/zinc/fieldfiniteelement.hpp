@@ -193,17 +193,42 @@ public:
 class FieldNodeValue : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNodeValue(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
-		Node::ValueLabel nodeValueLabel, int versionNumber);
+	inline cmzn_field_node_value_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_node_value_id>(this->id);
+	}
 
 public:
 
 	FieldNodeValue() : Field(0)
 	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldNodeValue(cmzn_field_node_value_id field_node_value_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_node_value_id))
+	{	}
+
+	Node::ValueLabel getNodeValueLabel() const
+	{
+		return static_cast<Node::ValueLabel>(
+			cmzn_field_node_value_get_node_value_label(this->getDerivedId()));
+	}
+
+	int setNodeValueLabel(Node::ValueLabel nodeValueLabel)
+	{
+		return cmzn_field_node_value_set_node_value_label(this->getDerivedId(),
+			static_cast<cmzn_node_value_label>(nodeValueLabel));
+	}
+
+	int getVersionNumber() const
+	{
+		return cmzn_field_node_value_get_version_number(this->getDerivedId());
+	}
+
+	int setVersionNumber(int versionNumber)
+	{
+		return cmzn_field_node_value_set_version_number(this->getDerivedId(), versionNumber);
+	}
 
 };
 
@@ -353,9 +378,14 @@ inline FieldFindMeshLocation Field::castFindMeshLocation()
 inline FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
 	Node::ValueLabel nodeValueLabel, int versionNumber)
 {
-	return FieldNodeValue(cmzn_fieldmodule_create_field_node_value(id,
-		sourceField.getId(), static_cast<cmzn_node_value_label>(nodeValueLabel),
-		versionNumber));
+	return FieldNodeValue(reinterpret_cast<cmzn_field_node_value_id>(
+		cmzn_fieldmodule_create_field_node_value(this->id, sourceField.getId(),
+			static_cast<cmzn_node_value_label>(nodeValueLabel), versionNumber)));
+}
+
+inline FieldNodeValue Field::castNodeValue()
+{
+	return FieldNodeValue(cmzn_field_cast_node_value(this->id));
 }
 
 inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& hostMesh)

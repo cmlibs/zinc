@@ -152,9 +152,9 @@
       },
       {
          "FieldNodeValue" : {
-            "NodeValueLabel" : "VALUE",
+            "NodeValueLabel" : "D_DS1",
             "SourceFields" : [ "coordinates" ],
-            "VersionNumber" : 1
+            "VersionNumber" : 2
          },
          "IsManaged" : true,
          "Name" : "nodeValue"

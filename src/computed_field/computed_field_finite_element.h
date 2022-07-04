@@ -159,12 +159,6 @@ struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
 
-/** If field is node_value type, return the value label, otherwise INVALID */
-cmzn_node_value_label cmzn_field_node_value_get_value_label(cmzn_field_id field);
-
-/** If field is node_value type, return the version_number >= 1, otherwise 0 */
-int cmzn_field_node_value_get_version_number(cmzn_field_id field);
-
 enum cmzn_field_edge_discontinuity_measure
 cmzn_field_edge_discontinuity_measure_enum_from_string(const char *name);
 

@@ -379,10 +379,16 @@ TEST(ZincFieldFiniteElement, node_value_label)
 
 	FieldNodeValue dx_ds1_v1 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS1, 1);
 	EXPECT_TRUE(dx_ds1_v1.isValid());
+	EXPECT_EQ(Node::VALUE_LABEL_D_DS1, dx_ds1_v1.getNodeValueLabel());
+	EXPECT_EQ(1, dx_ds1_v1.getVersionNumber());
 	FieldNodeValue dx_ds1_v2 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS1, 2);
 	EXPECT_TRUE(dx_ds1_v2.isValid());
+	EXPECT_EQ(Node::VALUE_LABEL_D_DS1, dx_ds1_v2.getNodeValueLabel());
+	EXPECT_EQ(2, dx_ds1_v2.getVersionNumber());
 	FieldNodeValue dx_ds2 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS2, 1);
 	EXPECT_TRUE(dx_ds2.isValid());
+	EXPECT_EQ(Node::VALUE_LABEL_D_DS2, dx_ds2.getNodeValueLabel());
+	EXPECT_EQ(1, dx_ds2.getVersionNumber());
 
 	Node node = nodeset.createNode(1, nodeTemplate);
 	double coordinates[3] = { 1.0, 2.0, 3.0 };
@@ -404,6 +410,7 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	double outDerivatives1_v1[3];
 	double outDerivatives1_v2[3];
 	double outDerivatives2[3];
+	double outDerivatives2mod[3];
 	EXPECT_EQ(OK, result = coordinateField.evaluateReal(cache, 3, outCoordinates));
 	ASSERT_DOUBLE_EQ(coordinates[0], outCoordinates[0]);
 	ASSERT_DOUBLE_EQ(coordinates[1], outCoordinates[1]);
@@ -420,6 +427,15 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	ASSERT_DOUBLE_EQ(derivatives2[0], outDerivatives2[0]);
 	ASSERT_DOUBLE_EQ(derivatives2[1], outDerivatives2[1]);
 	ASSERT_DOUBLE_EQ(derivatives2[2], outDerivatives2[2]);
+	// Test setting node value label and version number:
+	EXPECT_EQ(OK, dx_ds2.setNodeValueLabel(Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(Node::VALUE_LABEL_D_DS1, dx_ds2.getNodeValueLabel());
+	EXPECT_EQ(OK, dx_ds2.setVersionNumber(2));
+	EXPECT_EQ(2, dx_ds2.getVersionNumber());
+	EXPECT_EQ(OK, result = dx_ds2.evaluateReal(cache, 3, outDerivatives2mod));
+	ASSERT_DOUBLE_EQ(derivatives1_v2[0], outDerivatives2mod[0]);
+	ASSERT_DOUBLE_EQ(derivatives1_v2[1], outDerivatives2mod[1]);
+	ASSERT_DOUBLE_EQ(derivatives1_v2[2], outDerivatives2mod[2]);
 }
 
 TEST(ZincFieldIsExterior, evaluate3d)

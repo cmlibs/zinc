@@ -37,6 +37,7 @@ class FieldImagefilterThreshold;
 class FieldIsOnFace;
 class FieldMeshIntegral;
 class FieldNodeGroup;
+class FieldNodeValue;
 class FieldNodesetOperator;
 class FieldStringConstant;
 class FieldStoredMeshLocation;
@@ -308,6 +309,7 @@ public:
 	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldIsOnFace castIsOnFace();
 	inline FieldNodeGroup castNodeGroup();
+	inline FieldNodeValue castNodeValue();
 	inline FieldNodesetOperator castNodesetOperator();
 	inline FieldStringConstant castStringConstant();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
