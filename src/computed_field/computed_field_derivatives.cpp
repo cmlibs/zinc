@@ -1,12 +1,9 @@
-/*******************************************************************************
-FILE : computed_field_derivatives.c
-
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Implements computed_fields for calculating various derivative quantities such
-as derivatives w.r.t. Xi, gradient, curl, divergence etc.
-==============================================================================*/
+/**
+ * FILE : computed_field_derivatives.cpp
+ *
+ * Implements computed_fields for calculating various derivative quantities such
+ * as derivatives w.r.t. Xi, gradient, curl, divergence etc.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -216,16 +213,16 @@ class Computed_field_derivative : public Computed_field_core
 		an image based derivative is calculated using ITK.
 		It creates a Computed_field_derivative_image_filter if and
 		when required. */
+	int xiIndex;
 
 public:
-
-	int xi_index;
 
 	Computed_field_derivative_image_filter *derivative_image_filter;
 
 	/** @param xi_indexIn  Internal xi index starting at 0. */
-	Computed_field_derivative(int xi_indexIn) :
-		Computed_field_core(), xi_index(xi_indexIn)
+	Computed_field_derivative(int xiIndexIn) :
+		Computed_field_core(),
+		xiIndex(xiIndexIn)
 	{
 		/* Only construct the image filter version if it is required */
 		derivative_image_filter = (Computed_field_derivative_image_filter *)NULL;
@@ -239,10 +236,32 @@ public:
 		}
 	}
 
+	/** @return  Xi index starting at 0 */
+	int getXiIndex() const
+	{
+		return this->xiIndex;
+	}
+
+	/** @param xiIndexIn  Xi index >= 0 */
+	int setXiIndex(int xiIndexIn)
+	{
+		if (xiIndexIn != this->xiIndex)
+		{
+			if (xiIndexIn < 0)
+			{
+				display_message(ERROR_MESSAGE, "FieldDerivative setXiIndex.  Invalid xi index");
+				return CMZN_ERROR_ARGUMENT;
+			}
+			this->xiIndex = xiIndexIn;
+			this->field->setChanged();
+		}
+		return CMZN_OK;
+	}
+
 private:
 	Computed_field_core *copy()
 	{
-		return new Computed_field_derivative(this->xi_index);
+		return new Computed_field_derivative(this->xiIndex);
 	}
 
 	const char *get_type_string()
@@ -284,7 +303,7 @@ Compare the type specific data
 	USE_PARAMETER(other_core);
 	if (field && (other = dynamic_cast<Computed_field_derivative*>(field->core)))
 	{
-		if (xi_index == other->xi_index)
+		if (xiIndex == other->xiIndex)
 		{
 			return_code = 1;
 		}
@@ -307,7 +326,7 @@ bool Computed_field_derivative::is_defined_at_location(cmzn_fieldcache& cache)
 	// derivative values are only defined for element_xi locations, and only up to element dimension...
 	const Field_location_element_xi* element_xi_location;
 	if ((element_xi_location = cache.get_location_element_xi()) &&
-		(xi_index < element_xi_location->get_element_dimension()))
+		(xiIndex < element_xi_location->get_element_dimension()))
 	{
 		// check the source fields
 		return Computed_field_core::is_defined_at_location(cache);
@@ -343,14 +362,14 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	{
 		cmzn_element* element = element_xi_location->get_element();
 		const int element_dimension = element_xi_location->get_element_dimension();
-		if (this->xi_index < element_dimension)
+		if (this->xiIndex < element_dimension)
 		{
 			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 			const FieldDerivative& fieldDerivative = *element->getMesh()->getFieldDerivative(/*order*/1);
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, fieldDerivative);
 			if (sourceDerivativeCache)
 			{
-				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index;
+				const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xiIndex;
 				for (int i = 0; i < field->number_of_components; ++i)
 					valueCache.values[i] = sourceDerivatives[i*element_dimension];
 				return 1;
@@ -371,7 +390,7 @@ int Computed_field_derivative::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 				/* Hard coding the default first order operator for now */
 				derivative_image_filter = new
 					Computed_field_derivative_image_filter(field->source_fields[0],
-						xi_index, /*derivative_operator_order*/1);
+						xiIndex, /*derivative_operator_order*/1);
 				// Note: following attaches another core to the same field
 				if (derivative_image_filter)
 				{
@@ -404,7 +423,7 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 		const FieldDerivative *sourceFieldDerivative = mesh->getHigherFieldDerivative(fieldDerivative);
 		if (!sourceFieldDerivative)
 			return this->evaluateDerivativeFiniteDifference(cache, inValueCache, fieldDerivative);
-		if (this->xi_index < elementDimension)
+		if (this->xiIndex < elementDimension)
 		{
 			const DerivativeValueCache *sourceDerivativeCache = getSourceField(0)->evaluateDerivative(cache, *sourceFieldDerivative);
 			if (!sourceDerivativeCache)
@@ -414,7 +433,7 @@ int Computed_field_derivative::evaluateDerivative(cmzn_fieldcache& cache, RealFi
 			const int sourceTermCount = sourceDerivativeCache->getTermCount();
 			// the extra mesh derivative added here becomes the first/outermost index
 			FE_value *derivatives = derivativeCache->values;
-			const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xi_index*termCount;
+			const FE_value *sourceDerivatives = sourceDerivativeCache->values + this->xiIndex*termCount;
 			const int componentCount = field->number_of_components;
 			for (int i = 0; i < componentCount; ++i)
 			{
@@ -444,7 +463,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    xi number : %d\n",xi_index + 1);
+			"    xi number : %d\n", this->xiIndex + 1);
 		return_code = 1;
 	}
 	else
@@ -484,7 +503,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " xi_index %d", xi_index + 1);
+		sprintf(temp_string, " xi_index %d", this->xiIndex + 1);
 		append_string(&command_string, temp_string, &error);
 	}
 	else
@@ -499,21 +518,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int cmzn_field_derivative_get_xi_index(cmzn_field_id field)
-{
-	int index = -1;
-	if (field && field->core)
-	{
-		Computed_field_derivative *fieldDerivative= static_cast<Computed_field_derivative*>(
-			field->core);
-		index = fieldDerivative->xi_index + 1;
-	}
-	return index;
-}
-
 cmzn_field_id cmzn_fieldmodule_create_field_derivative(
-	cmzn_fieldmodule_id fieldmodule,
-	cmzn_field_id source_field, int xi_index)
+	cmzn_fieldmodule_id fieldmodule, cmzn_field_id source_field, int xi_index)
 {
 	cmzn_field *field = NULL;
 	if ((fieldmodule) && (source_field) && source_field->isNumerical() &&
@@ -535,6 +541,51 @@ cmzn_field_id cmzn_fieldmodule_create_field_derivative(
 	return (field);
 }
 
+cmzn_field_derivative_id cmzn_field_cast_derivative(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_derivative*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_derivative_id>(field));
+	}
+	return nullptr;
+}
+
+int cmzn_field_derivative_destroy(
+	cmzn_field_derivative_id *derivative_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(derivative_field_address));
+}
+
+inline Computed_field_derivative *Computed_field_derivative_core_cast(
+	cmzn_field_derivative *derivative_field)
+{
+	return static_cast<Computed_field_derivative*>(
+		reinterpret_cast<Computed_field*>(derivative_field)->core);
+}
+
+int cmzn_field_derivative_get_xi_index(
+	cmzn_field_derivative_id derivative_field)
+{
+	if (derivative_field)
+	{
+		Computed_field_derivative *derivative_core = Computed_field_derivative_core_cast(derivative_field);
+		return derivative_core->getXiIndex() + 1;
+	}
+	return 0;
+}
+
+int cmzn_field_derivative_set_xi_index(
+	cmzn_field_derivative_id derivative_field, int xi_index)
+{
+	if (derivative_field)
+	{
+		Computed_field_derivative *derivative_core = Computed_field_derivative_core_cast(derivative_field);
+		return derivative_core->setXiIndex(xi_index - 1);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int Computed_field_get_type_derivative(struct Computed_field *field,
 	struct Computed_field **source_field, int *xi_index)
 /*******************************************************************************
@@ -554,7 +605,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
-		*xi_index = derivative_core->xi_index;
+		*xi_index = derivative_core->getXiIndex();
 		return_code=1;
 	}
 	else

@@ -2626,7 +2626,6 @@ int cmzn_field_node_value_set_node_value_label(
 		return node_value_core->setNodeValueLabel(node_value_label);
 	}
 	return CMZN_ERROR_ARGUMENT;
-
 }
 
 int cmzn_field_node_value_get_version_number(

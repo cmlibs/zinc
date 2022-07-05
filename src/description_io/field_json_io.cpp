@@ -500,7 +500,7 @@ OpenCMISS::Zinc::Field importDerivativeField(enum cmzn_field_type type,
 				if (typeSettings["XiIndexes"].isArray())
 				{
 					unsigned int size = typeSettings["XiIndexes"].size();
-					if (size > 0)
+					if (size == 1)
 					{
 						field = fieldmodule.createFieldDerivative(sourcefields[0],
 							typeSettings["XiIndexes"][0].asInt());
@@ -915,8 +915,9 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 		} break;
 		case CMZN_FIELD_TYPE_DERIVATIVE:
 		{
-			int xi_index = cmzn_field_derivative_get_xi_index(field.getId());
-			typeSettings["XiIndexes"].append(xi_index);
+			OpenCMISS::Zinc::FieldDerivative fieldDerivative = this->field.castDerivative();
+			const int xiIndex = fieldDerivative.getXiIndex();
+			typeSettings["XiIndexes"].append(xiIndex);
 		} break;
 		case CMZN_FIELD_TYPE_IS_ON_FACE:
 		{

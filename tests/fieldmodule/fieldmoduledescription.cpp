@@ -149,6 +149,11 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_NE(static_cast<cmzn_field *>(0), derivativeField);
 	EXPECT_TRUE(cmzn_field_is_managed(derivativeField));
 	EXPECT_EQ(1, cmzn_field_get_number_of_source_fields(derivativeField));
+	// check the parameters with type-specific API
+	cmzn_field_derivative_id derivative = cmzn_field_cast_derivative(derivativeField);
+	EXPECT_NE(static_cast<cmzn_field_derivative *>(0), derivative);
+	EXPECT_EQ(2, cmzn_field_derivative_get_xi_index(derivative));
+	cmzn_field_derivative_destroy(&derivative);
 
 	cmzn_field_id coordinateTransformationField =
 		cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinateTransformation");
@@ -385,7 +390,7 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_name(sumComponentField, "sumComponent");
 
 	cmzn_field_id derivativeField = cmzn_fieldmodule_create_field_derivative(fieldmodule,
-		coordinatesField, 1);
+		coordinatesField, 2);
 	EXPECT_NE(static_cast<cmzn_field *>(0), derivativeField);
 	cmzn_field_set_managed(derivativeField, true);
 	cmzn_field_set_name(derivativeField, "derivative");

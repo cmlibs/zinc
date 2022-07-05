@@ -21,16 +21,29 @@ namespace Zinc
 class FieldDerivative : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDerivative(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldDerivative Fieldmodule::createFieldDerivative(const Field& sourceField, int xi_index);
+	inline cmzn_field_derivative_id getDerivedId() const
+	{
+		return reinterpret_cast<cmzn_field_derivative_id>(this->id);
+	}
 
 public:
-
 	FieldDerivative() : Field(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldDerivative(cmzn_field_derivative_id field_derivative_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_derivative_id))
 	{	}
+
+	int getXiIndex() const
+	{
+		return cmzn_field_derivative_get_xi_index(this->getDerivedId());
+	}
+
+	int setXiIndex(int xiIndex)
+	{
+		return cmzn_field_derivative_set_xi_index(this->getDerivedId(), xiIndex);
+	}
 
 };
 
@@ -82,9 +95,15 @@ public:
 
 };
 
-inline FieldDerivative Fieldmodule::createFieldDerivative(const Field& sourceField, int xi_index)
+inline FieldDerivative Fieldmodule::createFieldDerivative(const Field& sourceField, int xiIndex)
 {
-	return FieldDerivative(cmzn_fieldmodule_create_field_derivative(id, sourceField.getId(), xi_index));
+	return FieldDerivative(reinterpret_cast<cmzn_field_derivative_id>(
+		cmzn_fieldmodule_create_field_derivative(this->id, sourceField.getId(), xiIndex)));
+}
+
+inline FieldDerivative Field::castDerivative()
+{
+	return FieldDerivative(cmzn_field_cast_derivative(this->id));
 }
 
 inline FieldCurl Fieldmodule::createFieldCurl(const Field& vectorField, const Field& coordinateField)

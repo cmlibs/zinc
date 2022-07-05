@@ -23,6 +23,7 @@ class FieldApply;
 class FieldArgumentReal;
 class FieldComponent;
 class FieldConstant;
+class FieldDerivative;
 class FieldEdgeDiscontinuity;
 class FieldEigenvalues;
 class FieldElementGroup;
@@ -295,6 +296,7 @@ public:
 	inline FieldArgumentReal castArgumentReal();
 	inline FieldComponent castComponent();
 	inline FieldConstant castConstant();
+	inline FieldDerivative castDerivative();
 	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();
 	inline FieldEigenvalues castEigenvalues();
 	inline FieldElementGroup castElementGroup();
