@@ -151,6 +151,26 @@
          "Name" : "matrixMultiply"
       },
       {
+         "FieldMeshIntegral" : {
+            "ElementQuadratureRule" : "GAUSSIAN",
+            "Mesh" : "mesh2d",
+            "NumbersOfPoints" : [ 2, 4 ],
+            "SourceFields" : [ "constant", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "meshIntegral"
+      },
+      {
+         "FieldMeshIntegralSquares" : {
+            "ElementQuadratureRule" : "MIDPOINT",
+            "Mesh" : "mesh2d",
+            "NumbersOfPoints" : [ 3, 7 ],
+            "SourceFields" : [ "constant", "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "meshIntegralSquares"
+      },
+      {
          "FieldNodeValue" : {
             "NodeValueLabel" : "D_DS1",
             "SourceFields" : [ "coordinates" ],

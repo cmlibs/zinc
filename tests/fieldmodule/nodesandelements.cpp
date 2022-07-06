@@ -675,6 +675,12 @@ TEST(ZincElement, PointSamplingModeEnum)
 	testEnum(6, enumNames, Element::PointSamplingModeEnumToString, Element::PointSamplingModeEnumFromString);
 }
 
+TEST(ZincElement, QuadratureRuleEnum)
+{
+	const char *enumNames[3] = { nullptr, "GAUSSIAN", "MIDPOINT" };
+	testEnum(3, enumNames, Element::QuadratureRuleEnumToString, Element::QuadratureRuleEnumFromString);
+}
+
 TEST(ZincElement, ShapeTypeEnum)
 {
 	const char *enumNames[9] = { nullptr, "LINE", "SQUARE", "TRIANGLE", "CUBE", "TETRAHEDRON", "WEDGE12", "WEDGE13", "WEDGE23" };

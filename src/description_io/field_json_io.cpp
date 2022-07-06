@@ -32,6 +32,7 @@
 #include "opencmiss/zinc/fieldfiniteelement.hpp"
 #include "opencmiss/zinc/fieldlogicaloperators.hpp"
 #include "opencmiss/zinc/fieldmatrixoperators.hpp"
+#include "opencmiss/zinc/fieldmeshoperators.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/fieldtime.hpp"
 #include "opencmiss/zinc/fieldtrigonometry.hpp"
@@ -636,6 +637,50 @@ OpenCMISS::Zinc::Field importFiniteElementField(enum cmzn_field_type type,
 	return field;
 }
 
+OpenCMISS::Zinc::Field importMeshOperatorsField(enum cmzn_field_type type,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings, const Json::Value &typeSettings,
+	FieldmoduleJsonImport *jsonImport)
+{
+	OpenCMISS::Zinc::Field field;
+	switch (type)
+	{
+	case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+	case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+	{
+		unsigned int sourcesCount = 0;
+		OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount, jsonImport);
+		if ((sourcesCount == 2)
+			&& typeSettings["Mesh"].isString()
+			&& typeSettings["ElementQuadratureRule"].isString()
+			&& typeSettings["NumbersOfPoints"].isArray())
+		{
+			OpenCMISS::Zinc::Mesh mesh = fieldmodule.findMeshByName(typeSettings["Mesh"].asCString());
+			// FieldMeshIntegral is the base class for FieldMeshIntegralSquares
+			OpenCMISS::Zinc::FieldMeshIntegral fieldMeshIntegral =
+				(type == CMZN_FIELD_TYPE_MESH_INTEGRAL) ? fieldmodule.createFieldMeshIntegral(sourcefields[0], sourcefields[1], mesh)
+				: fieldmodule.createFieldMeshIntegralSquares(sourcefields[0], sourcefields[1], mesh);
+			OpenCMISS::Zinc::Element::QuadratureRule quadratureRule =
+				OpenCMISS::Zinc::Element::QuadratureRuleEnumFromString(typeSettings["ElementQuadratureRule"].asCString());
+			fieldMeshIntegral.setElementQuadratureRule(quadratureRule);
+			const int numbersCount = typeSettings["NumbersOfPoints"].size();
+			int *numbersOfPoints = new int[numbersCount];
+			for (int i = 0; i < numbersCount; i++)
+			{
+				numbersOfPoints[i] = typeSettings["NumbersOfPoints"][i].asInt();
+			}
+			fieldMeshIntegral.setNumbersOfPoints(numbersCount, numbersOfPoints);
+			delete[] numbersOfPoints;
+			field = fieldMeshIntegral;
+		}
+		delete[] sourcefields;
+	} break;
+	default:
+		break;
+
+	}
+	return field;
+}
+
 /* Deserialise field with varying number of fields */
 OpenCMISS::Zinc::Field importGenericMultiComponentField(enum cmzn_field_type type,
 	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &typeSettings,
@@ -796,6 +841,10 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_STORED_MESH_LOCATION:
 		case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 			field = importFiniteElementField(type, fieldmodule, fieldSettings, typeSettings, jsonImport);
+			break;
+		case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+		case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+			field = importMeshOperatorsField(type, fieldmodule, fieldSettings, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_CROSS_PRODUCT:
 			field = importGenericMultiComponentField(type, fieldmodule, typeSettings, jsonImport);
@@ -996,6 +1045,25 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			DEALLOCATE(meshName);
 			DEALLOCATE(searchMeshName);
 			DEALLOCATE(searchModeName);
+		} break;
+		case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+		case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+		{
+			OpenCMISS::Zinc::FieldMeshIntegral fieldMeshIntegral = this->field.castMeshIntegral();
+			OpenCMISS::Zinc::Mesh mesh = fieldMeshIntegral.getMesh();
+			char *meshName = mesh.getName();
+			char *elementQuadratureRuleName = OpenCMISS::Zinc::Element::QuadratureRuleEnumToString(
+				fieldMeshIntegral.getElementQuadratureRule());
+			int numbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+			const int numbersCount = fieldMeshIntegral.getNumbersOfPoints(MAXIMUM_ELEMENT_XI_DIMENSIONS, numbersOfPoints);
+			typeSettings["Mesh"] = meshName;
+			typeSettings["ElementQuadratureRule"] = elementQuadratureRuleName;
+			for (int i = 0; i < numbersCount; i++)
+			{
+				typeSettings["NumbersOfPoints"].append(numbersOfPoints[i]);
+			}
+			DEALLOCATE(meshName);
+			DEALLOCATE(elementQuadratureRuleName);
 		} break;
 		default:
 		{

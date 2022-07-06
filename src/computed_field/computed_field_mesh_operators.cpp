@@ -82,6 +82,11 @@ public:
 		return new Computed_field_mesh_integral(mesh);
 	}
 
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MESH_INTEGRAL;
+	}
+
 	const char *get_type_string()
 	{
 		return (computed_field_mesh_integral_type_string);
@@ -156,14 +161,16 @@ public:
 	{
 		if ((0 < valuesCount) && values)
 		{
-			for (int i = 0; i < valuesCount; ++i)
+			const int maxValuesCount = (valuesCount > MAXIMUM_ELEMENT_XI_DIMENSIONS) ?
+				MAXIMUM_ELEMENT_XI_DIMENSIONS : valuesCount;
+			for (int i = 0; i < maxValuesCount; ++i)
 			{
 				if (values[i] < 1)
 					return CMZN_ERROR_ARGUMENT;
 			}
-			bool change = (static_cast<int>(this->numbersOfPoints.size()) != valuesCount);
-			this->numbersOfPoints.resize(valuesCount);
-			for (int i = 0; i < valuesCount; ++i)
+			bool change = (static_cast<int>(this->numbersOfPoints.size()) != maxValuesCount);
+			this->numbersOfPoints.resize(maxValuesCount);
+			for (int i = 0; i < maxValuesCount; ++i)
 			{
 				if (this->numbersOfPoints[i] != values[i])
 				{
@@ -172,7 +179,9 @@ public:
 				}
 			}
 			if (change)
+			{
 				this->field->setChanged();
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -530,6 +539,11 @@ public:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_mesh_integral_squares(mesh);
+	}
+
+	virtual enum cmzn_field_type get_type()
+	{
+		return CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES;
 	}
 
 	const char *get_type_string()

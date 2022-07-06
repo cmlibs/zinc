@@ -22,6 +22,7 @@
 #include <opencmiss/zinc/fieldfiniteelement.h>
 #include <opencmiss/zinc/fieldlogicaloperators.h>
 #include <opencmiss/zinc/fieldmatrixoperators.h>
+#include <opencmiss/zinc/fieldmeshoperators.h>
 #include <opencmiss/zinc/fieldvectoroperators.h>
 #include <opencmiss/zinc/fieldtime.h>
 #include <opencmiss/zinc/mesh.h>
@@ -124,6 +125,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_EQ(1, cmzn_field_get_number_of_components(stringConstantField));
 	char *returned_string = cmzn_field_evaluate_string(stringConstantField, fieldCache);
 	EXPECT_STREQ(returned_string, "string_constant");
+	cmzn_deallocate(returned_string);
 
 	cmzn_field_id andField =  cmzn_fieldmodule_find_field_by_name(fieldmodule,
 		"and");
@@ -224,13 +226,55 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		fieldmodule, "storedMeshLocation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
 
+	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
+	cmzn_mesh_id mesh;
+
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "findMeshLocation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
-
-	cmzn_deallocate(returned_string);
-	cmzn_fieldcache_destroy(&fieldCache);
+	cmzn_field_find_mesh_location_id findMeshLocation = cmzn_field_cast_find_mesh_location(findMeshLocationField);
+	EXPECT_NE(static_cast<cmzn_field_find_mesh_location *>(0), findMeshLocation);
+	mesh = cmzn_field_find_mesh_location_get_mesh(findMeshLocation);
+	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	cmzn_mesh_destroy(&mesh);
+	cmzn_field_find_mesh_location_destroy(&findMeshLocation);
 	cmzn_field_destroy(&findMeshLocationField);
+
+	int numbersOfPoints[2];
+
+	cmzn_field_id meshIntegralField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "meshIntegral");
+	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralField);
+	cmzn_field_mesh_integral_id meshIntegral = cmzn_field_cast_mesh_integral(meshIntegralField);
+	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegral);
+	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegral);
+	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	cmzn_mesh_destroy(&mesh);
+	EXPECT_EQ(CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN, cmzn_field_mesh_integral_get_element_quadrature_rule(meshIntegral));
+	EXPECT_EQ(2, cmzn_field_mesh_integral_get_numbers_of_points(meshIntegral, 2, numbersOfPoints));
+	EXPECT_EQ(2, numbersOfPoints[0]);
+	EXPECT_EQ(4, numbersOfPoints[1]);
+	cmzn_field_mesh_integral_destroy(&meshIntegral);
+	cmzn_field_destroy(&meshIntegralField);
+
+	cmzn_field_id meshIntegralSquaresField = cmzn_fieldmodule_find_field_by_name(
+		fieldmodule, "meshIntegralSquares");
+	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralSquaresField);
+	cmzn_field_mesh_integral_id meshIntegralSquares = cmzn_field_cast_mesh_integral(meshIntegralSquaresField);
+	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegralSquares);
+	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegralSquares);
+	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	cmzn_mesh_destroy(&mesh);
+	EXPECT_EQ(CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT, cmzn_field_mesh_integral_get_element_quadrature_rule(meshIntegralSquares));
+	EXPECT_EQ(2, cmzn_field_mesh_integral_get_numbers_of_points(meshIntegralSquares, 2, numbersOfPoints));
+	EXPECT_EQ(3, numbersOfPoints[0]);
+	EXPECT_EQ(7, numbersOfPoints[1]);
+	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
+	cmzn_field_destroy(&meshIntegralSquaresField);
+
+	cmzn_mesh_destroy(&mesh2d);
+
+	cmzn_fieldcache_destroy(&fieldCache);
 	cmzn_field_destroy(&storedMeshLocationField);
 	cmzn_field_destroy(&isOnFaceField);
 	cmzn_field_destroy(&nodeValueField);
@@ -488,19 +532,52 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_managed(isOnFaceField, true);
 	cmzn_field_set_name(isOnFaceField, "isOnFace");
 
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_name(fieldmodule, "mesh2d");
+	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_name(fieldmodule, "mesh2d");
+
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_create_field_stored_mesh_location(
-		fieldmodule, mesh);
+		fieldmodule, mesh2d);
 	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
 	cmzn_field_set_managed(storedMeshLocationField, true);
 	cmzn_field_set_name(storedMeshLocationField, "storedMeshLocation");
 
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_create_field_find_mesh_location(
-		fieldmodule, coordinatesField, coordinatesField, mesh);
+		fieldmodule, coordinatesField, coordinatesField, mesh2d);
 	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
 	cmzn_field_set_managed(findMeshLocationField, true);
 	cmzn_field_set_name(findMeshLocationField, "findMeshLocation");
-	cmzn_mesh_destroy(&mesh);
+
+	cmzn_field_id meshIntegralField = cmzn_fieldmodule_create_field_mesh_integral(
+		fieldmodule, constantField, coordinatesField, mesh2d);
+	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralField);
+	cmzn_field_set_managed(meshIntegralField, true);
+	cmzn_field_set_name(meshIntegralField, "meshIntegral");
+	cmzn_field_mesh_integral_id meshIntegral = cmzn_field_cast_mesh_integral(meshIntegralField);
+	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegral);
+	EXPECT_EQ(CMZN_OK, cmzn_field_mesh_integral_set_element_quadrature_rule(meshIntegral,
+		CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN));
+	const int numbersOfPoints1[2] = { 2, 4 };
+	EXPECT_EQ(CMZN_OK, cmzn_field_mesh_integral_set_numbers_of_points(
+		meshIntegral, 2, numbersOfPoints1));
+	cmzn_field_mesh_integral_destroy(&meshIntegral);
+	cmzn_field_destroy(&meshIntegralField);
+
+	cmzn_field_id meshIntegralSquaresField = cmzn_fieldmodule_create_field_mesh_integral_squares(
+		fieldmodule, constantField, coordinatesField, mesh2d);
+	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralSquaresField);
+	cmzn_field_set_managed(meshIntegralSquaresField, true);
+	cmzn_field_set_name(meshIntegralSquaresField, "meshIntegralSquares");
+	// can only cast to mesh_integral type
+	cmzn_field_mesh_integral_id meshIntegralSquares = cmzn_field_cast_mesh_integral(meshIntegralSquaresField);
+	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegralSquares);
+	EXPECT_EQ(CMZN_OK, cmzn_field_mesh_integral_set_element_quadrature_rule(meshIntegralSquares,
+		CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT));
+	const int numbersOfPoints2[2] = { 3, 7 };
+	EXPECT_EQ(CMZN_OK, cmzn_field_mesh_integral_set_numbers_of_points(
+		meshIntegralSquares, 2, numbersOfPoints2));
+	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
+	cmzn_field_destroy(&meshIntegralSquaresField);
+
+	cmzn_mesh_destroy(&mesh2d);
 
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);

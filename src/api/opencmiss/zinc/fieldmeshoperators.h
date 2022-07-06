@@ -141,7 +141,9 @@ ZINC_API int cmzn_field_mesh_integral_get_numbers_of_points(
  * There is no upper limit on the numbers of points with midpoint quadrature.
  *
  * @param mesh_integral_field  Handle to the mesh integral field.
- * @param values_count  Size of the values array, at least 1.
+ * @param values_count  Size of the values array, at least 1. If more numbers
+ * are supplied than the internal maximum element dimension of 3, then surplus
+ * numbers are ignored.
  * @param values  Array containing numbers of quadrature points >=1, applied on
  * the corresponding element axis, with the last value in the arrray applying
  * on all subsequent element axes. For example [1, 2, 3] gives 1 point on xi1,

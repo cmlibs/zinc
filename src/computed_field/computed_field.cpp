@@ -3180,6 +3180,12 @@ public:
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				enum_string = "FIND_MESH_LOCATION";
 				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				enum_string = "MESH_INTEGRAL";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				enum_string = "MESH_INTEGRAL_SQUARES";
+				break;
 			default:
 				break;
 		}
@@ -3394,6 +3400,12 @@ public:
 				break;
 			case CMZN_FIELD_TYPE_FIND_MESH_LOCATION:
 				class_name = "FieldFindMeshLocation";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL:
+				class_name = "FieldMeshIntegral";
+				break;
+			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
+				class_name = "FieldMeshIntegralSquares";
 				break;
 			default:
 				break;
