@@ -20,9 +20,11 @@
 #include <opencmiss/zinc/fieldcoordinatetransformation.h>
 #include <opencmiss/zinc/fieldderivatives.h>
 #include <opencmiss/zinc/fieldfiniteelement.h>
+#include <opencmiss/zinc/fieldgroup.h>
 #include <opencmiss/zinc/fieldlogicaloperators.h>
 #include <opencmiss/zinc/fieldmatrixoperators.h>
 #include <opencmiss/zinc/fieldmeshoperators.h>
+#include <opencmiss/zinc/fieldsubobjectgroup.h>
 #include <opencmiss/zinc/fieldvectoroperators.h>
 #include <opencmiss/zinc/fieldtime.h>
 #include <opencmiss/zinc/mesh.h>
@@ -226,7 +228,15 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 		fieldmodule, "storedMeshLocation");
 	EXPECT_NE(static_cast<cmzn_field *>(0), storedMeshLocationField);
 
+	cmzn_mesh_id mesh3d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
+	cmzn_field_id triangleField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "triangle");
+	cmzn_field_group_id triangleGroup = cmzn_field_cast_group(triangleField);
+	cmzn_field_element_group_id triangleElementGroup2d = cmzn_field_group_get_field_element_group(triangleGroup, mesh2d);
+	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
+	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
+	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
+
 	cmzn_mesh_id mesh;
 
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_find_field_by_name(
@@ -235,7 +245,11 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_find_mesh_location_id findMeshLocation = cmzn_field_cast_find_mesh_location(findMeshLocationField);
 	EXPECT_NE(static_cast<cmzn_field_find_mesh_location *>(0), findMeshLocation);
 	mesh = cmzn_field_find_mesh_location_get_mesh(findMeshLocation);
-	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	EXPECT_TRUE(cmzn_mesh_match(mesh3d, mesh));
+	cmzn_mesh_destroy(&mesh);
+	EXPECT_EQ(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST, cmzn_field_find_mesh_location_get_search_mode(findMeshLocation));
+	mesh = cmzn_field_find_mesh_location_get_search_mesh(findMeshLocation);
+	EXPECT_TRUE(cmzn_mesh_match(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh));
 	cmzn_mesh_destroy(&mesh);
 	cmzn_field_find_mesh_location_destroy(&findMeshLocation);
 	cmzn_field_destroy(&findMeshLocationField);
@@ -248,7 +262,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_mesh_integral_id meshIntegral = cmzn_field_cast_mesh_integral(meshIntegralField);
 	EXPECT_NE(static_cast<cmzn_field_mesh_integral *>(0), meshIntegral);
 	mesh = cmzn_field_mesh_integral_get_mesh(meshIntegral);
-	EXPECT_TRUE(cmzn_mesh_match(mesh2d, mesh));
+	EXPECT_TRUE(cmzn_mesh_match(cmzn_mesh_group_base_cast(triangleMeshGroup2d), mesh));
 	cmzn_mesh_destroy(&mesh);
 	EXPECT_EQ(CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN, cmzn_field_mesh_integral_get_element_quadrature_rule(meshIntegral));
 	EXPECT_EQ(2, cmzn_field_mesh_integral_get_numbers_of_points(meshIntegral, 2, numbersOfPoints));
@@ -272,7 +286,12 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
 	cmzn_field_destroy(&meshIntegralSquaresField);
 
+	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
+	cmzn_field_element_group_destroy(&triangleElementGroup2d);
+	cmzn_field_group_destroy(&triangleGroup);
+	cmzn_field_destroy(&triangleField);
 	cmzn_mesh_destroy(&mesh2d);
+	cmzn_mesh_destroy(&mesh3d);
 
 	cmzn_fieldcache_destroy(&fieldCache);
 	cmzn_field_destroy(&storedMeshLocationField);
@@ -532,7 +551,14 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_managed(isOnFaceField, true);
 	cmzn_field_set_name(isOnFaceField, "isOnFace");
 
-	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_name(fieldmodule, "mesh2d");
+	cmzn_mesh_id mesh3d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
+	cmzn_mesh_id mesh2d = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 2);
+	cmzn_field_id triangleField = cmzn_fieldmodule_find_field_by_name(fieldmodule, "triangle");
+	cmzn_field_group_id triangleGroup = cmzn_field_cast_group(triangleField);
+	cmzn_field_element_group_id triangleElementGroup2d = cmzn_field_group_get_field_element_group(triangleGroup, mesh2d);
+	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
+	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
+	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
 
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_create_field_stored_mesh_location(
 		fieldmodule, mesh2d);
@@ -541,13 +567,21 @@ TEST(fieldmodule_description, write)
 	cmzn_field_set_name(storedMeshLocationField, "storedMeshLocation");
 
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_create_field_find_mesh_location(
-		fieldmodule, coordinatesField, coordinatesField, mesh2d);
+		fieldmodule, coordinatesField, coordinatesField, mesh3d);
 	EXPECT_NE(static_cast<cmzn_field *>(0), findMeshLocationField);
 	cmzn_field_set_managed(findMeshLocationField, true);
 	cmzn_field_set_name(findMeshLocationField, "findMeshLocation");
+	cmzn_field_find_mesh_location_id findMeshLocation = cmzn_field_cast_find_mesh_location(findMeshLocationField);
+	EXPECT_NE(static_cast<cmzn_field_find_mesh_location *>(0), findMeshLocation);
+	EXPECT_EQ(CMZN_OK, cmzn_field_find_mesh_location_set_search_mesh(findMeshLocation,
+		cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
+	EXPECT_EQ(CMZN_OK, cmzn_field_find_mesh_location_set_search_mode(findMeshLocation,
+		CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST));
+	cmzn_field_find_mesh_location_destroy(&findMeshLocation);
+	cmzn_field_destroy(&findMeshLocationField);
 
 	cmzn_field_id meshIntegralField = cmzn_fieldmodule_create_field_mesh_integral(
-		fieldmodule, constantField, coordinatesField, mesh2d);
+		fieldmodule, constantField, coordinatesField, cmzn_mesh_group_base_cast(triangleMeshGroup2d));
 	EXPECT_NE(static_cast<cmzn_field *>(0), meshIntegralField);
 	cmzn_field_set_managed(meshIntegralField, true);
 	cmzn_field_set_name(meshIntegralField, "meshIntegral");
@@ -577,7 +611,12 @@ TEST(fieldmodule_description, write)
 	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
 	cmzn_field_destroy(&meshIntegralSquaresField);
 
+	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
+	cmzn_field_element_group_destroy(&triangleElementGroup2d);
+	cmzn_field_group_destroy(&triangleGroup);
+	cmzn_field_destroy(&triangleField);
 	cmzn_mesh_destroy(&mesh2d);
+	cmzn_mesh_destroy(&mesh3d);
 
 	char *description_string = cmzn_fieldmodule_write_description(fieldmodule);
 	EXPECT_NE(static_cast<char *>(0), description_string);

@@ -102,9 +102,9 @@
       },
       {
          "FieldFindMeshLocation" : {
-            "Mesh" : "mesh2d",
-            "SearchMesh" : "mesh2d",
-            "SearchMode" : "FIND_EXACT",
+            "Mesh" : "mesh3d",
+            "SearchMesh" : "triangle.mesh2d",
+            "SearchMode" : "FIND_NEAREST",
             "SourceFields" : [ "coordinates", "coordinates" ]
          },
          "IsManaged" : true,
@@ -153,7 +153,7 @@
       {
          "FieldMeshIntegral" : {
             "ElementQuadratureRule" : "GAUSSIAN",
-            "Mesh" : "mesh2d",
+            "Mesh" : "triangle.mesh2d",
             "NumbersOfPoints" : [ 2, 4 ],
             "SourceFields" : [ "constant", "coordinates" ]
          },

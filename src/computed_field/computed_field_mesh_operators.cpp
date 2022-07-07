@@ -122,9 +122,9 @@ public:
 	char* get_command_string();
 
 	/** @return  Non-accessed mesh */
-	cmzn_mesh_id getMesh() const
+	cmzn_mesh *getMesh() const
 	{
-		return mesh;
+		return this->mesh;
 	}
 
 	/** @return  Result OK on success, ERROR_ARGUMENT if mesh missing or from wrong region */
