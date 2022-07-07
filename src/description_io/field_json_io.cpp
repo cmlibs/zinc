@@ -33,6 +33,7 @@
 #include "opencmiss/zinc/fieldlogicaloperators.hpp"
 #include "opencmiss/zinc/fieldmatrixoperators.hpp"
 #include "opencmiss/zinc/fieldmeshoperators.hpp"
+#include "opencmiss/zinc/fieldnodesetoperators.hpp"
 #include "opencmiss/zinc/fieldmodule.hpp"
 #include "opencmiss/zinc/fieldtime.hpp"
 #include "opencmiss/zinc/fieldtrigonometry.hpp"
@@ -657,8 +658,9 @@ OpenCMISS::Zinc::Field importMeshOperatorsField(enum cmzn_field_type type,
 			OpenCMISS::Zinc::Mesh mesh = fieldmodule.findMeshByName(typeSettings["Mesh"].asCString());
 			// FieldMeshIntegral is the base class for FieldMeshIntegralSquares
 			OpenCMISS::Zinc::FieldMeshIntegral fieldMeshIntegral =
-				(type == CMZN_FIELD_TYPE_MESH_INTEGRAL) ? fieldmodule.createFieldMeshIntegral(sourcefields[0], sourcefields[1], mesh)
-				: fieldmodule.createFieldMeshIntegralSquares(sourcefields[0], sourcefields[1], mesh);
+				(type == CMZN_FIELD_TYPE_MESH_INTEGRAL) ? fieldmodule.createFieldMeshIntegral(sourcefields[0], sourcefields[1], mesh) :
+				(type == CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES) ? fieldmodule.createFieldMeshIntegralSquares(sourcefields[0], sourcefields[1], mesh) :
+				OpenCMISS::Zinc::FieldMeshIntegral();
 			OpenCMISS::Zinc::Element::QuadratureRule quadratureRule =
 				OpenCMISS::Zinc::Element::QuadratureRuleEnumFromString(typeSettings["ElementQuadratureRule"].asCString());
 			fieldMeshIntegral.setElementQuadratureRule(quadratureRule);
@@ -676,7 +678,51 @@ OpenCMISS::Zinc::Field importMeshOperatorsField(enum cmzn_field_type type,
 	} break;
 	default:
 		break;
+	}
+	return field;
+}
 
+OpenCMISS::Zinc::Field importNodesetOperatorsField(enum cmzn_field_type type,
+	OpenCMISS::Zinc::Fieldmodule &fieldmodule, const Json::Value &fieldSettings, const Json::Value &typeSettings,
+	FieldmoduleJsonImport *jsonImport)
+{
+	OpenCMISS::Zinc::Field field;
+	switch (type)
+	{
+	case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+	case CMZN_FIELD_TYPE_NODESET_MEAN:
+	case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+	case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+	case CMZN_FIELD_TYPE_NODESET_SUM:
+	case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+	{
+		unsigned int sourcesCount = 0;
+		OpenCMISS::Zinc::Field *sourcefields = getSourceFields(typeSettings, &sourcesCount, jsonImport);
+		if ((sourcesCount >= 1) && typeSettings["Nodeset"].isString())
+		{
+			OpenCMISS::Zinc::Nodeset nodeset = fieldmodule.findNodesetByName(typeSettings["Nodeset"].asCString());
+			// FieldNodesetOperator is the base class containing all API for all these types
+			OpenCMISS::Zinc::FieldNodesetOperator fieldNodesetOperator =
+				(type == CMZN_FIELD_TYPE_NODESET_MAXIMUM) ? fieldmodule.createFieldNodesetMaximum(sourcefields[0], nodeset) :
+				(type == CMZN_FIELD_TYPE_NODESET_MEAN) ? fieldmodule.createFieldNodesetMean(sourcefields[0], nodeset) :
+				(type == CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES) ? fieldmodule.createFieldNodesetMeanSquares(sourcefields[0], nodeset) :
+				(type == CMZN_FIELD_TYPE_NODESET_MINIMUM) ? fieldmodule.createFieldNodesetMinimum(sourcefields[0], nodeset) :
+				(type == CMZN_FIELD_TYPE_NODESET_SUM) ? fieldmodule.createFieldNodesetSum(sourcefields[0], nodeset) :
+				(type == CMZN_FIELD_TYPE_NODESET_SUM_SQUARES) ? fieldmodule.createFieldNodesetSumSquares(sourcefields[0], nodeset) :
+				OpenCMISS::Zinc::FieldNodesetOperator();
+			if (typeSettings["ElementMapField"].isString())
+			{
+				// optional element map field is also in source fields; store separately to support future optional fields
+				const char *elementMapFieldName = typeSettings["ElementMapField"].asCString();
+				OpenCMISS::Zinc::Field elementMapField = jsonImport->getFieldByName(elementMapFieldName);
+				fieldNodesetOperator.setElementMapField(elementMapField);
+			}
+			field = fieldNodesetOperator;
+		}
+		delete[] sourcefields;
+	} break;
+	default:
+		break;
 	}
 	return field;
 }
@@ -845,6 +891,14 @@ OpenCMISS::Zinc::Field importTypeSpecificField(
 		case CMZN_FIELD_TYPE_MESH_INTEGRAL:
 		case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
 			field = importMeshOperatorsField(type, fieldmodule, fieldSettings, typeSettings, jsonImport);
+			break;
+		case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+		case CMZN_FIELD_TYPE_NODESET_MEAN:
+		case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+		case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+		case CMZN_FIELD_TYPE_NODESET_SUM:
+		case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+			field = importNodesetOperatorsField(type, fieldmodule, fieldSettings, typeSettings, jsonImport);
 			break;
 		case CMZN_FIELD_TYPE_CROSS_PRODUCT:
 			field = importGenericMultiComponentField(type, fieldmodule, typeSettings, jsonImport);
@@ -1064,6 +1118,27 @@ void FieldJsonIO::exportTypeSpecificParameters(Json::Value &fieldSettings)
 			}
 			DEALLOCATE(meshName);
 			DEALLOCATE(elementQuadratureRuleName);
+		} break;
+		case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+		case CMZN_FIELD_TYPE_NODESET_MEAN:
+		case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+		case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+		case CMZN_FIELD_TYPE_NODESET_SUM:
+		case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+		{
+			OpenCMISS::Zinc::FieldNodesetOperator fieldNodesetOperator = this->field.castNodesetOperator();
+			OpenCMISS::Zinc::Nodeset nodeset = fieldNodesetOperator.getNodeset();
+			OpenCMISS::Zinc::Field elementMapField = fieldNodesetOperator.getElementMapField();
+			if (elementMapField.isValid())
+			{
+				// optional element map field is also in source fields; store separately to support future optional fields
+				char *elementMapFieldName = elementMapField.getName();
+				typeSettings["ElementMapField"] = elementMapFieldName;
+				DEALLOCATE(elementMapFieldName);
+			}
+			char *nodesetName = nodeset.getName();
+			typeSettings["Nodeset"] = nodesetName;
+			DEALLOCATE(nodesetName);
 		} break;
 		default:
 		{

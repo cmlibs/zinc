@@ -180,6 +180,55 @@
          "Name" : "nodeValue"
       },
       {
+         "FieldNodesetMaximum" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMaximum"
+      },
+      {
+         "FieldNodesetMean" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMean"
+      },
+      {
+         "FieldNodesetMeanSquares" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMeanSquares"
+      },
+      {
+         "FieldNodesetMinimum" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetMinimum"
+      },
+      {
+         "FieldNodesetSum" : {
+            "ElementMapField" : "storedMeshLocation",
+            "Nodeset" : "triangle.nodes",
+            "SourceFields" : [ "coordinates", "storedMeshLocation" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetSum"
+      },
+      {
+         "FieldNodesetSumSquares" : {
+            "Nodeset" : "nodes",
+            "SourceFields" : [ "coordinates" ]
+         },
+         "IsManaged" : true,
+         "Name" : "nodesetSumSquares"
+      },
+      {
          "CoordinateSystemType" : "RECTANGULAR_CARTESIAN",
          "FieldConstant" : {
             "Values" : [ 3, 2, 1 ]

@@ -695,7 +695,7 @@ public:
 	 * source to the end of the list.
 	 * To be used with care by certain field types only!
 	 * Caller must ensure this is a source field permitted to be changed, usually
-	 * an optional source field added after the compulsory one.
+	 * an optional source field added after the compulsory one(s).
 	 * Not to be exposed directly in the public API.
 	 *
 	 * @param index  Index of source field, starting at 0. Must be either

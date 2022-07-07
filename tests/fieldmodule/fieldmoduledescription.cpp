@@ -24,11 +24,13 @@
 #include <opencmiss/zinc/fieldlogicaloperators.h>
 #include <opencmiss/zinc/fieldmatrixoperators.h>
 #include <opencmiss/zinc/fieldmeshoperators.h>
+#include <opencmiss/zinc/fieldnodesetoperators.h>
 #include <opencmiss/zinc/fieldsubobjectgroup.h>
 #include <opencmiss/zinc/fieldvectoroperators.h>
 #include <opencmiss/zinc/fieldtime.h>
 #include <opencmiss/zinc/mesh.h>
 #include <opencmiss/zinc/node.h>
+#include <opencmiss/zinc/nodeset.h>
 #include <opencmiss/zinc/region.h>
 #include <opencmiss/zinc/status.h>
 #include <opencmiss/zinc/stream.h>
@@ -113,14 +115,14 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_TRUE(cmzn_field_is_managed(constantField));
 	EXPECT_EQ(0, cmzn_field_get_number_of_source_fields(constantField));
 	EXPECT_EQ(3, cmzn_field_get_number_of_components(constantField));
-	double values3[3] = {0, 0, 0};
+	double values3[3] = { 0.0, 0.0, 0.0 };
 	EXPECT_EQ(CMZN_OK, cmzn_field_evaluate_real(constantField, fieldCache, 3, &values3[0]));
 	EXPECT_EQ(1.0, values3[0]);
 	EXPECT_EQ(4.0, values3[1]);
 	EXPECT_EQ(2.0, values3[2]);
 
 	cmzn_field_id stringConstantField = cmzn_fieldmodule_find_field_by_name(
-		fieldmodule,"stringConstant");
+		fieldmodule, "stringConstant");
 	EXPECT_NE(static_cast<cmzn_field *>(0), stringConstantField);
 	EXPECT_TRUE(cmzn_field_is_managed(stringConstantField));
 	EXPECT_EQ(0, cmzn_field_get_number_of_source_fields(stringConstantField));
@@ -129,7 +131,7 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_STREQ(returned_string, "string_constant");
 	cmzn_deallocate(returned_string);
 
-	cmzn_field_id andField =  cmzn_fieldmodule_find_field_by_name(fieldmodule,
+	cmzn_field_id andField = cmzn_fieldmodule_find_field_by_name(fieldmodule,
 		"and");
 	EXPECT_NE(static_cast<cmzn_field *>(0), andField);
 	EXPECT_TRUE(cmzn_field_is_managed(andField));
@@ -236,8 +238,15 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
 	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
 	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
+	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_field_node_group_id triangleNodeGroup = cmzn_field_group_get_field_node_group(triangleGroup, nodes);
+	EXPECT_NE(static_cast<cmzn_field_node_group *>(0), triangleNodeGroup);
+	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_node_group_get_nodeset_group(triangleNodeGroup);
+	EXPECT_EQ(3, cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(triangleNodesetGroup)));
 
 	cmzn_mesh_id mesh;
+	cmzn_nodeset_id nodeset;
+	cmzn_field_id field;
 
 	cmzn_field_id findMeshLocationField = cmzn_fieldmodule_find_field_by_name(
 		fieldmodule, "findMeshLocation");
@@ -286,6 +295,28 @@ void testFields(cmzn_fieldmodule_id fieldmodule)
 	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
 	cmzn_field_destroy(&meshIntegralSquaresField);
 
+	const char *nodesetOperatorNames[6] = { "Maximum", "Mean", "MeanSquares", "Minimum", "Sum", "SumSquares" };
+	for (int i = 0; i < 6; ++i)
+	{
+		std::string fieldName("nodeset");
+		fieldName += nodesetOperatorNames[i];
+		cmzn_field_id nodesetOperatorField = cmzn_fieldmodule_find_field_by_name(fieldmodule, fieldName.c_str());
+		EXPECT_NE(static_cast<cmzn_field *>(0), nodesetOperatorField);
+		cmzn_field_nodeset_operator_id nodesetOperator = cmzn_field_cast_nodeset_operator(nodesetOperatorField);
+		EXPECT_NE(static_cast<cmzn_field_nodeset_operator *>(0), nodesetOperator);
+		field = cmzn_field_nodeset_operator_get_element_map_field(nodesetOperator);
+		EXPECT_EQ((i == 4) ? storedMeshLocationField : static_cast<cmzn_field *>(0), field);
+		cmzn_field_destroy(&field);
+		nodeset = cmzn_field_nodeset_operator_get_nodeset(nodesetOperator);
+		EXPECT_TRUE(cmzn_nodeset_match((i == 4) ? cmzn_nodeset_group_base_cast(triangleNodesetGroup) : nodes, nodeset));
+		cmzn_nodeset_destroy(&nodeset);
+		cmzn_field_nodeset_operator_destroy(&nodesetOperator);
+		cmzn_field_destroy(&nodesetOperatorField);
+	}
+
+	cmzn_nodeset_group_destroy(&triangleNodesetGroup);
+	cmzn_field_node_group_destroy(&triangleNodeGroup);
+	cmzn_nodeset_destroy(&nodes);
 	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
 	cmzn_field_element_group_destroy(&triangleElementGroup2d);
 	cmzn_field_group_destroy(&triangleGroup);
@@ -559,6 +590,11 @@ TEST(fieldmodule_description, write)
 	EXPECT_NE(static_cast<cmzn_field_element_group *>(0), triangleElementGroup2d);
 	cmzn_mesh_group_id triangleMeshGroup2d = cmzn_field_element_group_get_mesh_group(triangleElementGroup2d);
 	EXPECT_EQ(1, cmzn_mesh_get_size(cmzn_mesh_group_base_cast(triangleMeshGroup2d)));
+	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_field_node_group_id triangleNodeGroup = cmzn_field_group_get_field_node_group(triangleGroup, nodes);
+	EXPECT_NE(static_cast<cmzn_field_node_group *>(0), triangleNodeGroup);
+	cmzn_nodeset_group_id triangleNodesetGroup = cmzn_field_node_group_get_nodeset_group(triangleNodeGroup);
+	EXPECT_EQ(3, cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(triangleNodesetGroup)));
 
 	cmzn_field_id storedMeshLocationField = cmzn_fieldmodule_create_field_stored_mesh_location(
 		fieldmodule, mesh2d);
@@ -611,6 +647,35 @@ TEST(fieldmodule_description, write)
 	cmzn_field_mesh_integral_destroy(&meshIntegralSquares);
 	cmzn_field_destroy(&meshIntegralSquaresField);
 
+	const char *nodesetOperatorNames[6] = { "Maximum", "Mean", "MeanSquares", "Minimum", "Sum", "SumSquares" };
+	for (int i = 0; i < 6; ++i)
+	{
+		std::string fieldName("nodeset");
+		fieldName += nodesetOperatorNames[i];
+		cmzn_field_id nodesetOperatorField =
+			(i == 0) ? cmzn_fieldmodule_create_field_nodeset_maximum(fieldmodule, coordinatesField, nodes) :
+			(i == 1) ? cmzn_fieldmodule_create_field_nodeset_mean(fieldmodule, coordinatesField, nodes) :
+			(i == 2) ? cmzn_fieldmodule_create_field_nodeset_mean_squares(fieldmodule, coordinatesField, nodes) :
+			(i == 3) ? cmzn_fieldmodule_create_field_nodeset_minimum(fieldmodule, coordinatesField, nodes) :
+			(i == 4) ? cmzn_fieldmodule_create_field_nodeset_sum(fieldmodule, coordinatesField, cmzn_nodeset_group_base_cast(triangleNodesetGroup)) :
+			(i == 5) ? cmzn_fieldmodule_create_field_nodeset_sum_squares(fieldmodule, coordinatesField, nodes) :
+			static_cast<cmzn_field *>(0);
+		EXPECT_NE(static_cast<cmzn_field *>(0), nodesetOperatorField);
+		cmzn_field_set_managed(nodesetOperatorField, true);
+		cmzn_field_set_name(nodesetOperatorField, fieldName.c_str());
+		if (i == 4)
+		{
+			cmzn_field_nodeset_operator_id nodesetSum = cmzn_field_cast_nodeset_operator(nodesetOperatorField);
+			EXPECT_NE(static_cast<cmzn_field_nodeset_operator *>(0), nodesetSum);
+			EXPECT_EQ(CMZN_OK, cmzn_field_nodeset_operator_set_element_map_field(nodesetSum, storedMeshLocationField));
+			cmzn_field_nodeset_operator_destroy(&nodesetSum);
+		}
+		cmzn_field_destroy(&nodesetOperatorField);
+	}
+
+	cmzn_nodeset_group_destroy(&triangleNodesetGroup);
+	cmzn_field_node_group_destroy(&triangleNodeGroup);
+	cmzn_nodeset_destroy(&nodes);
 	cmzn_mesh_group_destroy(&triangleMeshGroup2d);
 	cmzn_field_element_group_destroy(&triangleElementGroup2d);
 	cmzn_field_group_destroy(&triangleGroup);

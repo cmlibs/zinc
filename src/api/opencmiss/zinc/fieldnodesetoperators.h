@@ -97,6 +97,29 @@ ZINC_API int cmzn_field_nodeset_operator_set_element_map_field(
 	cmzn_field_id element_map_field);
 
 /**
+ * Get the nodeset the operator acts over.
+ *
+ * @param nodeset_operator_field  Handle to the nodeset operator field to
+ * query.
+ * @return  Handle to the nodeset, or NULL/invalid handle if invalid field.
+ */
+ZINC_API cmzn_nodeset_id cmzn_field_nodeset_operator_get_nodeset(
+	cmzn_field_nodeset_operator_id nodeset_operator_field);
+
+/**
+ * Set the nodeset the operator acts over.
+ *
+ * @param nodeset_operator_field  Handle to the nodeset operator field to
+ * modify.
+ * @param nodeset  The nodeset to act over.
+ * @return  Result OK on success, or ERROR_ARGUMENT if invalid nodeset or
+ * nodeset is not from this region.
+ */
+ZINC_API int cmzn_field_nodeset_operator_set_nodeset(
+	cmzn_field_nodeset_operator_id nodeset_operator_field,
+	cmzn_nodeset_id nodeset);
+
+/**
  * Creates a field which computes the sum of each source field component over
  * all nodes in the nodeset for which it is defined. Returned field has same
  * number of components as the source field.

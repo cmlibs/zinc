@@ -1027,8 +1027,7 @@ int cmzn_field::setNameUnique(const char *part1, const char *part2, int startNum
 
 int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyChange)
 {
-	if ((index < 0) || (index > this->number_of_source_fields) ||
-		((index == this->number_of_source_fields) && (!sourceField)))
+	if ((index < 0) || (index > this->number_of_source_fields))
 	{
 		display_message(ERROR_MESSAGE, "cmzn_field::setSourceField  Invalid arguments");
 		return CMZN_ERROR_ARGUMENT;
@@ -1053,7 +1052,7 @@ int cmzn_field::setSourceField(int index, cmzn_field *sourceField, bool notifyCh
 			changed = true;
 		}
 	}
-	else
+	else if (index != this->number_of_source_fields)
 	{
 		cmzn_field::deaccess(this->source_fields[index]);
 		--(this->number_of_source_fields);
@@ -3186,6 +3185,24 @@ public:
 			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
 				enum_string = "MESH_INTEGRAL_SQUARES";
 				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				enum_string = "NODESET_MAXIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				enum_string = "NODESET_MEAN";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				enum_string = "NODESET_MEAN_SQUARES";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				enum_string = "NODESET_MINIMUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				enum_string = "NODESET_SUM";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				enum_string = "NODESET_SUM_SQUARES";
+				break;
 			default:
 				break;
 		}
@@ -3406,6 +3423,24 @@ public:
 				break;
 			case CMZN_FIELD_TYPE_MESH_INTEGRAL_SQUARES:
 				class_name = "FieldMeshIntegralSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MAXIMUM:
+				class_name = "FieldNodesetMaximum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN:
+				class_name = "FieldNodesetMean";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MEAN_SQUARES:
+				class_name = "FieldNodesetMeanSquares";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_MINIMUM:
+				class_name = "FieldNodesetMinimum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM:
+				class_name = "FieldNodesetSum";
+				break;
+			case CMZN_FIELD_TYPE_NODESET_SUM_SQUARES:
+				class_name = "FieldNodesetSumSquares";
 				break;
 			default:
 				break;
